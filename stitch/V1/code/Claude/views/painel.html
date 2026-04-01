@@ -1,0 +1,293 @@
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto space-y-10">
+<!-- Greeting & Time Filter -->
+<header class="space-y-6">
+<div class="space-y-1">
+<span class="font-label text-xs uppercase tracking-[0.15em] text-outline">Painel de Evolução</span>
+<h2 class="text-4xl font-headline italic tracking-tight">Bom dia, Bruno</h2>
+</div>
+<div class="flex gap-2 overflow-x-auto hide-scrollbar">
+<button class="px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95">Semana</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Mês</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Ciclo</button>
+</div>
+</header>
+<!-- Progresso por Área -->
+<section class="space-y-4">
+<div class="space-y-1">
+<h3 class="text-lg font-headline italic">Gestão de Áreas (O que eu faço)</h3>
+<p class="text-[10px] font-label uppercase tracking-widest text-outline">Progresso de Execução</p>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<!-- Card 1: Saúde -->
+<div class="bg-surface-container-lowest p-5 rounded-xl space-y-4 transition-shadow hover:shadow-sm" data-dimension="Saúde">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="material-symbols-outlined text-primary text-xl">fitness_center</span>
+<span class="font-label text-[10px] uppercase tracking-wider text-outline">Saúde</span>
+</div>
+<div class="relative w-8 h-8">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="22" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+<div class="text-2xl font-headline tracking-tight dim-score-text">75%</div>
+</div>
+<!-- Card 2: Mente -->
+<div class="bg-surface-container-lowest p-5 rounded-xl space-y-4 transition-shadow hover:shadow-sm" data-dimension="Mente">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="material-symbols-outlined text-primary text-xl">psychology</span>
+<span class="font-label text-[10px] uppercase tracking-wider text-outline">Mente</span>
+</div>
+<div class="relative w-8 h-8">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="35" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+<div class="text-2xl font-headline tracking-tight dim-score-text">60%</div>
+</div>
+<!-- Card 3: Carreira -->
+<div class="bg-surface-container-lowest p-5 rounded-xl space-y-4 transition-shadow hover:shadow-sm" data-dimension="Carreira">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="material-symbols-outlined text-primary text-xl">work</span>
+<span class="font-label text-[10px] uppercase tracking-wider text-outline">Carreira</span>
+</div>
+<div class="relative w-8 h-8">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="52" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+<div class="text-2xl font-headline tracking-tight dim-score-text">41%</div>
+</div>
+<!-- Card 4: Finanças -->
+<div class="bg-surface-container-lowest p-5 rounded-xl space-y-4 transition-shadow hover:shadow-sm" data-dimension="Finanças">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="material-symbols-outlined text-primary text-xl">payments</span>
+<span class="font-label text-[10px] uppercase tracking-wider text-outline">Finanças</span>
+</div>
+<div class="relative w-8 h-8">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="10" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+<div class="text-2xl font-headline tracking-tight dim-score-text">89%</div>
+</div>
+<!-- Card 5: Relacionamentos -->
+<div class="bg-surface-container-lowest p-5 rounded-xl space-y-4 transition-shadow hover:shadow-sm" data-dimension="Relacionamentos">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="material-symbols-outlined text-primary text-xl">groups</span>
+<span class="font-label text-[10px] uppercase tracking-wider text-outline">Relac.</span>
+</div>
+<div class="relative w-8 h-8">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="44" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+<div class="text-2xl font-headline tracking-tight dim-score-text">50%</div>
+</div>
+<!-- Card 6: Família -->
+<div class="bg-surface-container-lowest p-5 rounded-xl space-y-4 transition-shadow hover:shadow-sm" data-dimension="Família">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="material-symbols-outlined text-primary text-xl">family_restroom</span>
+<span class="font-label text-[10px] uppercase tracking-wider text-outline">Família</span>
+</div>
+<div class="relative w-8 h-8">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="18" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+<div class="text-2xl font-headline tracking-tight dim-score-text">80%</div>
+</div>
+<!-- Card 7: Lazer -->
+<div class="bg-surface-container-lowest p-5 rounded-xl space-y-4 transition-shadow hover:shadow-sm" data-dimension="Lazer">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="material-symbols-outlined text-primary text-xl">sports_esports</span>
+<span class="font-label text-[10px] uppercase tracking-wider text-outline">Lazer</span>
+</div>
+<div class="relative w-8 h-8">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="61" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+<div class="text-2xl font-headline tracking-tight dim-score-text">30%</div>
+</div>
+<!-- Card 8: Propósito -->
+<div class="bg-surface-container-lowest p-5 rounded-xl space-y-4 transition-shadow hover:shadow-sm" data-dimension="Propósito">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="material-symbols-outlined text-primary text-xl">auto_awesome</span>
+<span class="font-label text-[10px] uppercase tracking-wider text-outline">Propósito</span>
+</div>
+<div class="relative w-8 h-8">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
+<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="20" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+<div class="text-2xl font-headline tracking-tight dim-score-text">77%</div>
+</div>
+</div>
+</section>
+<!-- OKR do Ciclo Atual -->
+<section class="space-y-4">
+<h3 class="text-lg font-headline italic">OKR do Ciclo Atual</h3>
+<div class="bg-surface-container-low p-6 rounded-xl space-y-6">
+<div class="space-y-2">
+<div class="flex justify-between text-sm font-medium">
+<span class="text-on-surface">Tempo de Ciclo</span>
+<span class="text-primary">33%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-[33%]"></div>
+</div>
+<p class="text-[11px] text-on-surface-variant uppercase tracking-widest text-center pt-1">Semana 4 de 12</p>
+</div>
+<div class="space-y-3">
+<div class="flex items-start gap-3">
+<div class="mt-1 w-2 h-2 rounded-full bg-primary shrink-0"></div>
+<div class="text-sm text-on-surface leading-relaxed">Concluir o manuscrito do livro (Capítulos 1-5)</div>
+</div>
+<div class="flex items-start gap-3">
+<div class="mt-1 w-2 h-2 rounded-full bg-primary shrink-0"></div>
+<div class="text-sm text-on-surface leading-relaxed">Reduzir gordura corporal para 14% via protocolo 16:8</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Execução -->
+<section class="space-y-4">
+<div class="flex justify-between items-baseline">
+<h3 class="text-lg font-headline italic">Execução</h3>
+<span class="text-sm font-medium text-primary">22 de 28 dias concluídos</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl">
+<div class="grid grid-cols-7 gap-1.5">
+<div class="aspect-square bg-primary/20 rounded-sm"></div>
+<div class="aspect-square bg-primary/40 rounded-sm"></div>
+<div class="aspect-square bg-primary/10 rounded-sm"></div>
+<div class="aspect-square bg-primary/60 rounded-sm"></div>
+<div class="aspect-square bg-primary/80 rounded-sm"></div>
+<div class="aspect-square bg-primary rounded-sm"></div>
+<div class="aspect-square bg-primary/30 rounded-sm"></div>
+<div class="aspect-square bg-primary/90 rounded-sm"></div>
+<div class="aspect-square bg-primary/50 rounded-sm"></div>
+<div class="aspect-square bg-primary/10 rounded-sm"></div>
+<div class="aspect-square bg-primary/70 rounded-sm"></div>
+<div class="aspect-square bg-primary rounded-sm"></div>
+<div class="aspect-square bg-primary/20 rounded-sm"></div>
+<div class="aspect-square bg-primary/40 rounded-sm"></div>
+<div class="aspect-square bg-primary/60 rounded-sm"></div>
+<div class="aspect-square bg-primary/80 rounded-sm"></div>
+<div class="aspect-square bg-primary rounded-sm"></div>
+<div class="aspect-square bg-primary/10 rounded-sm"></div>
+<div class="aspect-square bg-primary/30 rounded-sm"></div>
+<div class="aspect-square bg-primary/50 rounded-sm"></div>
+<div class="aspect-square bg-primary/70 rounded-sm"></div>
+<div class="aspect-square bg-primary rounded-sm"></div>
+<div class="aspect-square bg-primary/20 rounded-sm"></div>
+<div class="aspect-square bg-primary/40 rounded-sm"></div>
+<div class="aspect-square bg-primary/60 rounded-sm"></div>
+<div class="aspect-square bg-primary/80 rounded-sm"></div>
+<div class="aspect-square bg-primary/10 rounded-sm"></div>
+<div class="aspect-square bg-surface-container-high rounded-sm"></div>
+</div>
+<div class="flex justify-between mt-4 text-[10px] text-outline uppercase tracking-widest">
+<span>Início do Mês</span>
+<span>Hoje</span>
+</div>
+</div>
+</section>
+<!-- Evolução PERMA -->
+<section class="space-y-4">
+<div class="space-y-1">
+<h3 class="text-lg font-headline italic">Diagnóstico PERMA (Como eu me sinto)</h3>
+<p class="text-[10px] font-label uppercase tracking-widest text-outline">Bem-estar e Florescimento</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col items-center">
+<div class="relative w-full max-w-[280px] aspect-square flex items-center justify-center">
+<svg class="w-full h-full overflow-visible" viewbox="0 0 100 100">
+<!-- Concentric Circles (Rings) -->
+<circle class="stroke-outline-variant opacity-20 fill-none" cx="50" cy="50" r="8" stroke-width="0.5"></circle>
+<circle class="stroke-outline-variant opacity-20 fill-none" cx="50" cy="50" r="16" stroke-width="0.5"></circle>
+<circle class="stroke-outline-variant opacity-20 fill-none" cx="50" cy="50" r="24" stroke-width="0.5"></circle>
+<circle class="stroke-outline-variant opacity-20 fill-none" cx="50" cy="50" r="32" stroke-width="0.5"></circle>
+<circle class="stroke-outline-variant opacity-20 fill-none" cx="50" cy="50" r="40" stroke-width="0.5"></circle>
+<!-- Axis Lines -->
+<g class="stroke-outline-variant opacity-10" stroke-width="0.5">
+<line x1="50" x2="50" y1="50" y2="10"></line>
+<line x1="50" x2="88" y1="50" y2="37.6"></line>
+<line x1="50" x2="73.5" y1="50" y2="82.4"></line>
+<line x1="50" x2="26.5" y1="50" y2="82.4"></line>
+<line x1="50" x2="12" y1="50" y2="37.6"></line>
+</g>
+<!-- Data Polygon (P=72, E=85, R=58, M=90, A=67) -->
+<polygon id="perma-polygon" class="fill-primary/20 stroke-primary stroke-2" points="50,21.2 82.3,39.5 63.5,68.8 28.8,79.2 24.5,41.7"></polygon>
+<!-- Labels -->
+<text class="text-[5px] font-label font-bold uppercase tracking-widest fill-outline" text-anchor="middle" x="50" y="6">P - Emoções</text>
+<text class="text-[5px] font-label font-bold uppercase tracking-widest fill-outline" text-anchor="start" x="92" y="38">E - Engaj.</text>
+<text class="text-[5px] font-label font-bold uppercase tracking-widest fill-outline" text-anchor="start" x="75" y="86">R - Relac.</text>
+<text class="text-[5px] font-label font-bold uppercase tracking-widest fill-outline" text-anchor="end" x="25" y="86">M - Signif.</text>
+<text class="text-[5px] font-label font-bold uppercase tracking-widest fill-outline" text-anchor="end" x="8" y="38">A - Realiz.</text>
+</svg>
+</div>
+<div class="mt-8 text-center">
+<p id="perma-score" class="font-headline text-3xl italic text-primary">Score PERMA: 74.4</p>
+</div>
+<!-- Legend -->
+<div class="flex justify-center gap-6 mt-8 flex-wrap border-t border-outline-variant/10 pt-6 w-full">
+<div class="flex items-center gap-2 grayscale opacity-40">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+<span class="text-[10px] font-medium text-on-surface-variant uppercase tracking-widest">Semana Passada</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Foco Atual</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Meta Financeira -->
+<section class="space-y-4">
+<h3 class="text-lg font-headline italic">Meta Financeira</h3>
+<div class="bg-primary text-on-primary p-8 rounded-xl relative overflow-hidden">
+<div class="absolute -right-10 -bottom-10 opacity-10">
+<span class="material-symbols-outlined text-9xl">payments</span>
+</div>
+<div class="relative z-10 space-y-6">
+<div class="space-y-1">
+<span class="font-label text-[10px] uppercase tracking-widest opacity-70">Patrimônio Líquido</span>
+<div class="text-3xl font-headline tracking-tighter">R$ 542.180 <span class="text-sm opacity-50 font-body tracking-normal">/ R$ 800k</span></div>
+</div>
+<div class="space-y-2">
+<div class="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+<div class="h-full bg-white rounded-full w-[67.7%]"></div>
+</div>
+<p class="text-[13px] italic font-light opacity-90">No ritmo atual, chega à meta em Dezembro de 2027</p>
+</div>
+<button class="w-full py-3 bg-white text-primary rounded-lg font-medium text-sm transition-transform active:scale-[0.98] hover:shadow-lg">
+                        Ver simulador completo
+                    </button>
+</div>
+</div>
+</section>
+</main>

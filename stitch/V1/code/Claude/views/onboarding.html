@@ -1,0 +1,343 @@
+<main class="pt-24 pb-12 px-6 max-w-xl mx-auto min-h-screen relative overflow-hidden">
+        
+        <!-- STEP 1: WELCOME -->
+        <div id="step-1" class="step-transition step-active">
+            <h1 class="text-4xl md:text-5xl font-headline font-semibold italic leading-tight text-on-background mb-6">
+                Este app conecta o que você faz <span class="text-primary italic">hoje</span> com quem você <span class="text-primary italic">quer ser</span>.
+            </h1>
+            <p class="text-on-surface-variant text-base leading-relaxed mb-10">
+                O Sistema Vida organiza sua existência em uma hierarquia de intenção:
+                <span class="block mt-4 text-sm font-medium text-outline-variant italic">
+                    Propósito → Metas → OKRs → Macro ações → Micro ações → Checklist diário
+                </span>
+            </p>
+            
+            <!-- Bento Preview -->
+            <div class="grid grid-cols-2 gap-3 mb-12">
+                <div class="bg-surface-container-low p-4 rounded-xl flex flex-col gap-3">
+                    <span class="material-symbols-outlined text-primary">calendar_today</span>
+                    <span class="text-xs font-bold uppercase tracking-tighter">Hoje</span>
+                </div>
+                <div class="bg-surface-container-low p-4 rounded-xl flex flex-col gap-3">
+                    <span class="material-symbols-outlined text-primary">layers</span>
+                    <span class="text-xs font-bold uppercase tracking-tighter">Planos</span>
+                </div>
+                <div class="bg-surface-container-low p-4 rounded-xl flex flex-col gap-3">
+                    <span class="material-symbols-outlined text-primary">explore</span>
+                    <span class="text-xs font-bold uppercase tracking-tighter">Propósito</span>
+                </div>
+                <div class="bg-surface-container-low p-4 rounded-xl flex flex-col gap-3">
+                    <span class="material-symbols-outlined text-primary">analytics</span>
+                    <span class="text-xs font-bold uppercase tracking-tighter">Painel</span>
+                </div>
+                <div class="col-span-2 bg-surface-container-low p-4 rounded-xl flex items-center gap-4">
+                    <span class="material-symbols-outlined text-primary">person</span>
+                    <span class="text-xs font-bold uppercase tracking-tighter">Perfil & Configurações</span>
+                </div>
+            </div>
+            
+            <button onclick="nextStep()" class="w-full bg-primary text-white py-4 rounded-xl font-bold font-label uppercase tracking-widest text-sm shadow-xl shadow-primary/10 active:scale-95 transition-transform">
+                Iniciar Configuração
+            </button>
+        </div>
+
+        <!-- STEP 2: RODA DA VIDA -->
+        <div id="step-2" class="step-transition step-hidden-right absolute w-[calc(100%-3rem)]">
+            <h2 class="text-3xl font-headline font-semibold italic text-on-background mb-4 text-center">Como está seu equilíbrio hoje?</h2>
+            
+            <!-- SVG Radar -->
+            <div class="flex justify-center mb-8">
+                <svg width="240" height="240" viewBox="0 0 100 100" class="filter drop-shadow-sm">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e3e2df" stroke-width="0.5" stroke-dasharray="1 2"></circle>
+                    <circle cx="50" cy="50" r="30" fill="none" stroke="#e3e2df" stroke-width="0.5" stroke-dasharray="1 2"></circle>
+                    <circle cx="50" cy="50" r="15" fill="none" stroke="#e3e2df" stroke-width="0.5" stroke-dasharray="1 2"></circle>
+                    <g stroke="#e3e2df" stroke-width="0.3" stroke-dasharray="1 2">
+                        <line x1="50" y1="5" x2="50" y2="95"></line>
+                        <line x1="5" y1="50" x2="95" y2="50"></line>
+                        <line x1="18.18" y1="18.18" x2="81.81" y2="81.81"></line>
+                        <line x1="18.18" y1="81.81" x2="81.81" y2="18.18"></line>
+                    </g>
+                    <polygon id="radar-poly" fill="rgba(1, 105, 111, 0.2)" stroke="#01696f" stroke-width="1.2" points=""></polygon>
+                </svg>
+            </div>
+
+            <div id="wheel-sliders" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+                <!-- Sliders injected -->
+            </div>
+
+            <button onclick="nextStep()" class="w-full bg-primary text-white py-4 rounded-xl font-bold font-label uppercase tracking-widest text-sm active:scale-95 transition-transform mb-8">
+                Continuar
+            </button>
+        </div>
+
+        <!-- STEP 3: CARD SORT -->
+        <div id="step-3" class="step-transition step-hidden-right absolute w-[calc(100%-3rem)]">
+            <h2 class="text-3xl font-headline font-semibold italic text-on-background mb-2">Quais valores são essenciais para você?</h2>
+            <p class="text-sm text-outline mb-8">Escolha sua bússola moral.</p>
+            
+            <div class="card-stack mb-10" id="card-container"></div>
+
+            <div id="sorted-values" class="min-h-[60px] border-t border-outline-variant/10 pt-4 mb-10 flex flex-wrap gap-2">
+                <span class="text-xs italic text-outline-variant">Seus valores essenciais aparecerão aqui...</span>
+            </div>
+
+            <button onclick="nextStep()" id="btn-confirm-values" class="w-full bg-primary text-white py-4 rounded-xl font-bold font-label uppercase tracking-widest text-sm opacity-50 pointer-events-none transition-all">
+                Confirmar Meus Valores
+            </button>
+        </div>
+
+        <!-- STEP 4: IKIGAI -->
+        <div id="step-4" class="step-transition step-hidden-right absolute w-[calc(100%-3rem)]">
+            <h2 class="text-3xl font-headline font-semibold italic text-on-background mb-8">Qual é o seu propósito?</h2>
+            
+            <div class="space-y-6 mb-10">
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-primary">O que você ama fazer</label>
+                    <input type="text" id="ikigai-love" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-primary h-12 text-sm" placeholder="Ex: Criar soluções visuais...">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-primary">No que você é bom</label>
+                    <input type="text" id="ikigai-good" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-primary h-12 text-sm" placeholder="Ex: Analisar problemas complexos...">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-primary">O que o mundo precisa</label>
+                    <input type="text" id="ikigai-need" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-primary h-12 text-sm" placeholder="Ex: Organização e clareza...">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-primary">Pelo que você pode ser pago</label>
+                    <input type="text" id="ikigai-paid" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-primary h-12 text-sm" placeholder="Ex: Consultoria estratégica...">
+                </div>
+                <div class="space-y-2 pt-4">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-outline">Meu legado em uma frase</label>
+                    <textarea id="legacy" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-primary text-sm italic" placeholder="Escreva aqui..."></textarea>
+                </div>
+            </div>
+
+            <button onclick="nextStep()" class="w-full bg-primary text-white py-4 rounded-xl font-bold font-label uppercase tracking-widest text-sm active:scale-95 transition-all">
+                Continuar
+            </button>
+        </div>
+
+        <!-- STEP 5: IMPORT -->
+        <div id="step-5" class="step-transition step-hidden-right absolute w-[calc(100%-3rem)]">
+            <h2 class="text-3xl font-headline font-semibold italic text-on-background mb-8">Você já possui dados?</h2>
+            
+            <div class="space-y-4 mb-10">
+                <label id="opt-xlsx" class="block cursor-pointer group">
+                    <div class="bg-surface-container-low p-6 rounded-xl border-2 border-transparent group-hover:border-primary/20 transition-all">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="material-symbols-outlined text-primary">table_view</span>
+                            <h3 class="font-bold text-sm uppercase tracking-tight">Importar planilha .xlsx</h3>
+                        </div>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">Sua planilha com metas e planos será lida e organizada nos níveis do app.</p>
+                        <input type="file" id="xlsx-file" class="text-xs text-outline border border-outline-variant/30 rounded w-full p-2 mt-4 opacity-70">
+                    </div>
+                </label>
+                
+                <label onclick="nextStep()" class="block cursor-pointer group">
+                    <div class="bg-surface-container-low p-6 rounded-xl border-2 border-transparent group-hover:border-primary/20 transition-all">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="material-symbols-outlined text-primary">add_circle</span>
+                            <h3 class="font-bold text-sm uppercase tracking-tight">Começar do zero</h3>
+                        </div>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">Configurar meus próprios objetivos manualmente dentro das telas.</p>
+                    </div>
+                </label>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <button onclick="nextStep()" class="w-full bg-primary text-white py-4 rounded-xl font-bold font-label uppercase tracking-widest text-sm active:scale-95 transition-all">
+                    Continuar
+                </button>
+                <button onclick="nextStep()" class="text-xs font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors py-2 text-center">
+                    Pular esta etapa
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 6: SUMMARY -->
+        <div id="step-6" class="step-transition step-hidden-right absolute w-[calc(100%-3rem)]">
+            <h2 class="text-3xl font-headline font-semibold italic text-on-background mb-8 text-center text-balance">Sua jornada começa agora</h2>
+            
+            <div class="space-y-6 mb-12">
+                <div class="bg-surface-container-low p-6 rounded-xl">
+                    <p class="text-[10px] uppercase tracking-widest font-bold text-outline mb-4">Foco Inicial</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-primary">priority_high</span>
+                        </div>
+                        <p id="sum-wheel-text" class="text-sm font-medium text-on-background flex-1"></p>
+                    </div>
+                </div>
+
+                <div class="bg-surface-container-low p-6 rounded-xl">
+                    <p class="text-[10px] uppercase tracking-widest font-bold text-outline mb-4">Seus Valores Base</p>
+                    <div id="sum-values" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <div class="bg-surface-container-low p-6 rounded-xl">
+                    <p class="text-[10px] uppercase tracking-widest font-bold text-outline mb-4">Seu Propósito</p>
+                    <p id="sum-ikigai-text" class="text-base font-headline italic leading-relaxed text-on-background"></p>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-6">
+                <button onclick="finishOnboarding()" class="w-full bg-primary text-white py-4 rounded-xl font-bold font-label uppercase tracking-widest text-sm shadow-xl shadow-primary/20 active:scale-95 transition-all">
+                    Entrar no Sistema Vida
+                </button>
+                <button onclick="app.navigate('hoje')" class="text-xs font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors text-center">
+                    Pular Onboarding
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const state = {
+            step: 1,
+            wheel: { 
+                Saúde: 5, 
+                Mente: 5, 
+                Carreira: 5, 
+                Finanças: 5, 
+                Relacionamentos: 5, 
+                Família: 5, 
+                Lazer: 5, 
+                Propósito: 5 
+            },
+            valuesSet: { essential: [], important: [], notNow: [] },
+            ikigai: { love: '', good: '', need: '', paid: '' },
+            legacy: '',
+            importRequested: false
+        };
+
+        const stepsInfo = ["Boas-vindas", "Roda da Vida", "Card Sort de Valores", "Visão & Ikigai", "Importar Dados", "Resumo & Entrada"];
+        const valuePool = ["Liberdade", "Verdade", "Impacto", "Equilíbrio", "Saúde", "Família", "Propósito", "Carreira", "Finanças", "Criatividade", "Conhecimento", "Coragem", "Amor", "Prosperidade", "Paz"];
+        let currentCardIndex = 0;
+
+        function updateUI() {
+            const progress = (state.step / 6) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('step-label').textContent = `Passo ${state.step} de 6 — ${stepsInfo[state.step-1]}`;
+            
+            const backBtn = document.getElementById('btn-back');
+            state.step > 1 ? backBtn.classList.remove('invisible') : backBtn.classList.add('invisible');
+
+            for (let i = 1; i <= 6; i++) {
+                const el = document.getElementById(`step-${i}`);
+                el.classList.remove('step-active', 'step-hidden-left', 'step-hidden-right');
+                if (i === state.step) el.classList.add('step-active');
+                else if (i < state.step) el.classList.add('step-hidden-left');
+                else el.classList.add('step-hidden-right');
+            }
+
+            if (state.step === 2) updateRadar();
+            if (state.step === 3 && document.getElementById('card-container').children.length === 0) initCardSort();
+            if (state.step === 6) renderSummary();
+        }
+
+        function nextStep() {
+            if (state.step === 4) {
+                state.ikigai.love = document.getElementById('ikigai-love').value;
+                state.ikigai.good = document.getElementById('ikigai-good').value;
+                state.ikigai.need = document.getElementById('ikigai-need').value;
+                state.ikigai.paid = document.getElementById('ikigai-paid').value;
+                state.legacy = document.getElementById('legacy').value;
+            }
+            if (state.step < 6) { state.step++; updateUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        }
+
+        document.getElementById('btn-back').onclick = () => { if (state.step > 1) { state.step--; updateUI(); } };
+
+        function initWheel() {
+            const container = document.getElementById('wheel-sliders');
+            Object.keys(state.wheel).forEach(dim => {
+                const div = document.createElement('div');
+                div.className = "flex flex-col gap-1";
+                div.innerHTML = `<div class="flex justify-between items-center text-[10px] uppercase font-bold text-outline"><span>${dim}</span><span id="val-${dim}" class="text-primary">${state.wheel[dim]}</span></div>
+                    <input type="range" min="1" max="10" value="${state.wheel[dim]}" class="w-full h-1 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" oninput="updateWheelVal('${dim}', this.value)">`;
+                container.appendChild(div);
+            });
+            updateRadar();
+        }
+
+        function updateWheelVal(dim, val) { state.wheel[dim] = parseInt(val); document.getElementById(`val-${dim}`).textContent = val; updateRadar(); }
+
+        function updateRadar() {
+            const dims = Object.keys(state.wheel);
+            const points = dims.map((dim, i) => {
+                const angle = (Math.PI * 2 / dims.length) * i - (Math.PI / 2);
+                const r = (state.wheel[dim] / 10) * 45;
+                return `${50 + r * Math.cos(angle)},${50 + r * Math.sin(angle)}`;
+            }).join(' ');
+            document.getElementById('radar-poly').setAttribute('points', points);
+        }
+
+        function initCardSort() {
+            const container = document.getElementById('card-container');
+            valuePool.forEach((val, i) => {
+                const card = document.createElement('div');
+                card.className = "value-card bg-surface-container-lowest p-8 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.04)] border border-outline-variant/10 flex flex-col items-center justify-center text-center transition-all";
+                card.id = `card-${i}`; card.style.zIndex = 100 - i; if (i > 0) card.style.opacity = '0';
+                card.innerHTML = `<span class="text-[10px] uppercase tracking-[0.2em] text-outline mb-6">Valores</span><h3 class="text-3xl font-headline font-bold text-on-background mb-12">${val}</h3>
+                    <div class="flex flex-col gap-3 w-full">
+                        <button onclick="sortValue('${val}', 'essential', ${i})" class="w-full border-2 border-primary text-primary py-3 rounded-lg text-xs font-bold uppercase hover:bg-primary hover:text-white transition-all">⭐ Essencial</button>
+                        <button onclick="sortValue('${val}', 'important', ${i})" class="w-full border-2 border-outline-variant text-outline py-3 rounded-lg text-xs font-bold uppercase hover:bg-outline-variant hover:text-white transition-all">✓ Importante</button>
+                        <button onclick="sortValue('${val}', 'notNow', ${i})" class="w-full text-outline-variant py-2 rounded-lg text-[10px] font-bold uppercase hover:text-error transition-colors">✗ Agora não</button>
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function sortValue(val, category, index) {
+            state.valuesSet[category].push(val);
+            const current = document.getElementById(`card-${index}`);
+            current.style.transform = category === 'essential' ? 'translateY(-200px) rotate(-10deg)' : 'translateY(200px)';
+            current.style.opacity = '0';
+            if (category === 'essential') updateEssentialChips();
+            currentCardIndex++;
+            if (currentCardIndex < valuePool.length) {
+                const next = document.getElementById(`card-${currentCardIndex}`);
+                next.style.opacity = '1';
+            } else {
+                document.getElementById('card-container').innerHTML = `<div class="h-full flex flex-col items-center justify-center text-center"><span class="material-symbols-outlined text-4xl text-primary mb-4">check_circle</span><p class="font-headline italic text-lg">Seleção concluída!</p></div>`;
+                document.getElementById('btn-confirm-values').classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        function updateEssentialChips() {
+            const container = document.getElementById('sorted-values');
+            if (state.valuesSet.essential.length === 1) container.innerHTML = '';
+            container.innerHTML = state.valuesSet.essential.map(v => `<span class="px-3 py-1.5 rounded-full bg-secondary-container text-primary text-[10px] font-bold uppercase tracking-wider">${v}</span>`).join('');
+        }
+
+        function renderSummary() {
+            const entries = Object.entries(state.wheel);
+            const lowest = entries.reduce((prev, curr) => curr[1] < prev[1] ? curr : prev);
+            document.getElementById('sum-wheel-text').innerHTML = `Atenção: sua dimensão <strong>${lowest[0]}</strong> está em <strong>${lowest[1]}</strong>.`;
+            document.getElementById('sum-values').innerHTML = (state.valuesSet.essential.length > 0 ? state.valuesSet.essential : ["Nenhum selecionado"]).map(v => `<span class="px-3 py-1.5 rounded-full bg-surface-container-highest text-primary text-[10px] font-bold uppercase tracking-wider">${v}</span>`).join('');
+            document.getElementById('sum-ikigai-text').textContent = `"${state.legacy.trim() || 'Minha jornada rumo ao propósito.'}"`;
+        }
+
+        
+        function finishOnboarding() {
+            const global = window.sistemaVidaState;
+            Object.keys(state.wheel).forEach(dim => {
+                global.dimensions[dim].score = state.wheel[dim] * 10;
+            });
+            if (state.valuesSet.essential.length > 0) {
+                global.profile.values = state.valuesSet.essential;
+            }
+            if (!global.profile) global.profile = {};
+            global.profile.legacy = state.legacy.trim();
+            
+            if (window.app && typeof window.app.saveState === 'function') {
+                window.app.saveState();
+            }
+            app.navigate('hoje');
+        }
+        
+        initWheel();
+
+        updateUI();
+    </script>
