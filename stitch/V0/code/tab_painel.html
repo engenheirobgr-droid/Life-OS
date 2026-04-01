@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-br"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-bright": "#fff8f5",
+                        "surface-container-low": "#fff1e8",
+                        "primary-fixed-dim": "#ffb778",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#ffdcc1",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#795638",
+                        "on-tertiary-container": "#b1d8ff",
+                        secondary: "#7a5739",
+                        "on-surface-variant": "#534438",
+                        error: "#ba1a1a",
+                        "on-secondary-fixed": "#2d1601",
+                        primary: "#683800",
+                        surface: "#fff8f5",
+                        "on-surface": "#211a15",
+                        "on-primary-container": "#ffca9d",
+                        "primary-container": "#8a4c00",
+                        "inverse-primary": "#ffb778",
+                        "inverse-surface": "#372f29",
+                        "surface-container-high": "#f4e5dc",
+                        "on-primary-fixed": "#2e1500",
+                        tertiary: "#004871",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#ffdcc1",
+                        "secondary-fixed-dim": "#ebbe98",
+                        "surface-tint": "#8d4f03",
+                        background: "#fff8f5",
+                        "surface-container-highest": "#eee0d7",
+                        outline: "#857466",
+                        "tertiary-container": "#006095",
+                        "secondary-container": "#fdcea8",
+                        "inverse-on-surface": "#fdeee5",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#5f4023",
+                        "on-tertiary-fixed": "#001d32",
+                        "on-primary-fixed-variant": "#6c3a00",
+                        "on-tertiary-fixed-variant": "#004a75",
+                        "tertiary-fixed-dim": "#95ccff",
+                        "surface-variant": "#eee0d7",
+                        "surface-dim": "#e5d7ce",
+                        "surface-container": "#faebe2",
+                        "outline-variant": "#d8c3b3",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#cde5ff",
+                        "on-background": "#211a15"
+                    },
+                    fontFamily: {
+                        headline: ["Newsreader"],
+                        body: ["Inter"],
+                        label: ["Inter"],
+                        display: "Newsreader"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    }
+                }
+            }
+        };
+    </script>
+<style>
+        body { background-color: #faf9f5; font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .serif-text { font-family: 'Newsreader', serif; }
+        .circular-progress {
+            background: conic-gradient(var(--tw-primary-container) calc(var(--progress) * 1%), var(--tw-surface-container-high) 0);
+        }
+        .signature-glow {
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.2), 0 12px 40px rgba(1, 105, 111, 0.1);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-[#faf9f5] dark:bg-[#171614] full-width top-0 sticky z-50 bg-gradient-to-b from-[#faf9f5] to-transparent">
+<div class="flex justify-between items-center w-full px-6 pt-8 pb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#01696f] dark:text-[#01a4ad]" data-icon="bolt">bolt</span>
+<h1 class="font-serif text-3xl tracking-tight text-[#3f4949] dark:text-[#e9e8e4]">Bom dia, Bruno</h1>
+</div>
+<button class="hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#3f4949]" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 pb-32 space-y-12">
+<!-- Filter Chips -->
+<div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+<button class="px-5 py-2 rounded-full bg-primary-container text-on-primary text-sm font-medium transition-all signature-glow">Esta semana</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-all">Este mês</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-all">Este ciclo</button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: OKRs & Progress Grid -->
+<div class="lg:col-span-8 space-y-12">
+<!-- Progresso por Área -->
+<section>
+<h2 class="serif-text text-2xl mb-6 text-on-surface-variant">Progresso por Área</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Profissional -->
+<div class="bg-surface-container-lowest p-6 rounded-xl space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-medium text-lg">Profissional</h3>
+<p class="text-sm text-on-surface-variant">4 OKRs ativos</p>
+</div>
+<div class="relative w-12 h-12 flex items-center justify-center rounded-full bg-surface-container-high">
+<span class="text-xs font-bold text-primary-container">78%</span>
+<div class="absolute inset-0 rounded-full border-[3px] border-primary-container/20 border-t-primary-container"></div>
+</div>
+</div>
+</div>
+<!-- Financeiro -->
+<div class="bg-surface-container-lowest p-6 rounded-xl space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-medium text-lg">Financeiro</h3>
+<p class="text-sm text-on-surface-variant">2 OKRs ativos</p>
+</div>
+<div class="relative w-12 h-12 flex items-center justify-center rounded-full bg-surface-container-high">
+<span class="text-xs font-bold text-primary-container">62%</span>
+<div class="absolute inset-0 rounded-full border-[3px] border-primary-container/20 border-t-primary-container" style="transform: rotate(45deg);"></div>
+</div>
+</div>
+</div>
+<!-- Pessoal -->
+<div class="bg-surface-container-lowest p-6 rounded-xl space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-medium text-lg">Pessoal</h3>
+<p class="text-sm text-on-surface-variant">3 OKRs ativos</p>
+</div>
+<div class="relative w-12 h-12 flex items-center justify-center rounded-full bg-surface-container-high">
+<span class="text-xs font-bold text-primary-container">45%</span>
+<div class="absolute inset-0 rounded-full border-[3px] border-primary-container/20 border-t-primary-container" style="transform: rotate(-30deg);"></div>
+</div>
+</div>
+</div>
+<!-- Contribuição -->
+<div class="bg-surface-container-lowest p-6 rounded-xl space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-medium text-lg">Contribuição</h3>
+<p class="text-sm text-on-surface-variant">1 OKR ativo</p>
+</div>
+<div class="relative w-12 h-12 flex items-center justify-center rounded-full bg-surface-container-high">
+<span class="text-xs font-bold text-primary-container">90%</span>
+<div class="absolute inset-0 rounded-full border-[3px] border-primary-container/20 border-t-primary-container" style="transform: rotate(120deg);"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- OKR do ciclo atual -->
+<section class="bg-surface-container-lowest p-8 rounded-xl">
+<div class="flex justify-between items-end mb-8">
+<div>
+<span class="text-xs font-semibold tracking-widest uppercase text-primary mb-2 block">Ciclo Q1 2024</span>
+<h2 class="serif-text text-3xl">Expansão de Impacto</h2>
+</div>
+<p class="text-on-surface-variant font-medium">Semana 4 de 12</p>
+</div>
+<!-- Time Bar -->
+<div class="w-full h-2 bg-surface-container-high rounded-full mb-10">
+<div class="w-1/3 h-full bg-primary-container rounded-full"></div>
+</div>
+<div class="space-y-10">
+<!-- KR 1: Aumentar receita (65% -> Amber) -->
+<div>
+<div class="flex items-center justify-between group mb-2">
+<p class="text-on-surface-variant group-hover:text-on-surface transition-colors">Aumentar receita recorrente em 25%</p>
+<span class="font-mono text-sm">65%</span>
+</div>
+<div class="relative w-full h-1.5 bg-surface-container-high overflow-visible rounded-full">
+<div class="absolute inset-y-0 left-0 w-[65%] h-full bg-amber-500 rounded-full"></div>
+<!-- Marker 70% -->
+<div class="absolute left-[70%] top-1/2 -translate-y-1/2 flex flex-col items-center">
+<div class="w-[2px] h-4 bg-amber-600"></div>
+<span class="text-[9px] font-bold text-amber-700 mt-1 whitespace-nowrap">Meta Mín.</span>
+</div>
+</div>
+</div>
+<!-- KR 2: Novos canais (33% -> Amber) -->
+<div>
+<div class="flex items-center justify-between group mb-2">
+<p class="text-on-surface-variant group-hover:text-on-surface transition-colors">Implementar 3 novos canais de distribuição</p>
+<span class="font-mono text-sm">33%</span>
+</div>
+<div class="relative w-full h-1.5 bg-surface-container-high overflow-visible rounded-full">
+<div class="absolute inset-y-0 left-0 w-[33%] h-full bg-amber-500 rounded-full"></div>
+<!-- Marker 70% -->
+<div class="absolute left-[70%] top-1/2 -translate-y-1/2 flex flex-col items-center">
+<div class="w-[2px] h-4 bg-amber-600"></div>
+<span class="text-[9px] font-bold text-amber-700 mt-1 whitespace-nowrap">Meta Mín.</span>
+</div>
+</div>
+</div>
+<!-- Example of KR above 70% for visual variety (e.g. 85% -> Green) -->
+<div>
+<div class="flex items-center justify-between group mb-2">
+<p class="text-on-surface-variant group-hover:text-on-surface transition-colors">Taxa de retenção de usuários</p>
+<span class="font-mono text-sm">85%</span>
+</div>
+<div class="relative w-full h-1.5 bg-surface-container-high overflow-visible rounded-full">
+<div class="absolute inset-y-0 left-0 w-[85%] h-full bg-emerald-500 rounded-full"></div>
+<!-- Marker 70% -->
+<div class="absolute left-[70%] top-1/2 -translate-y-1/2 flex flex-col items-center">
+<div class="w-[2px] h-4 bg-amber-600"></div>
+<span class="text-[9px] font-bold text-amber-700 mt-1 whitespace-nowrap">Meta Mín.</span>
+</div>
+</div>
+</div>
+<div class="pt-4 flex items-center gap-2 text-xs text-on-surface-variant font-medium">
+<span class="text-amber-500">🟡</span> 70% = zona ideal
+                    </div>
+</div>
+</section>
+<!-- Evolução do PERMA Section -->
+<section class="bg-surface-container-lowest p-8 rounded-xl">
+<h2 class="serif-text text-2xl mb-8">Evolução do PERMA</h2>
+<div class="h-48 w-full relative mb-6">
+<!-- Grid Lines Mockup -->
+<div class="absolute inset-0 grid grid-rows-4 gap-0">
+<div class="border-b border-surface-container-high w-full"></div>
+<div class="border-b border-surface-container-high w-full"></div>
+<div class="border-b border-surface-container-high w-full"></div>
+<div class="w-full"></div>
+</div>
+<!-- SVG Area/Line Chart Mockup -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<!-- P: Emoções Positivas (Blue) -->
+<path d="M0,80 Q20,60 40,70 T80,40 T100,30" fill="none" stroke="#3b82f6" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<!-- E: Engajamento (Amber) -->
+<path d="M0,70 Q20,85 40,50 T80,30 T100,25" fill="none" stroke="#f59e0b" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<!-- R: Relacionamentos (Rose) -->
+<path d="M0,90 Q20,80 40,85 T80,60 T100,55" fill="none" stroke="#f43f5e" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<!-- M: Significado (Indigo) -->
+<path d="M0,60 Q20,50 40,40 T80,20 T100,15" fill="none" stroke="#6366f1" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<!-- A: Conquistas (Emerald) -->
+<path d="M0,50 Q20,40 40,30 T80,45 T100,35" fill="none" stroke="#10b981" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+</svg>
+<!-- X-Axis Labels -->
+<div class="absolute -bottom-6 w-full flex justify-between text-[10px] text-on-surface-variant font-bold uppercase tracking-tighter">
+<span>Sem 1</span>
+<span>Sem 2</span>
+<span>Sem 3</span>
+<span>Sem 4</span>
+<span>Sem 5</span>
+<span>Sem 6</span>
+</div>
+</div>
+<!-- Chart Legend -->
+<div class="grid grid-cols-3 sm:grid-cols-5 gap-4 mt-8">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-blue-500"></div>
+<span class="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">P: Emoções</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-amber-500"></div>
+<span class="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">E: Engaja.</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-rose-500"></div>
+<span class="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">R: Relac.</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+<span class="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">M: Signif.</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+<span class="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">A: Conquistas</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Meta Financeira & Execução -->
+<div class="lg:col-span-4 space-y-8">
+<!-- Meta Financeira -->
+<section class="bg-primary-container text-on-primary p-8 rounded-xl shadow-lg">
+<h3 class="serif-text text-xl mb-6">Meta Financeira</h3>
+<div class="space-y-1 mb-8">
+<p class="text-sm opacity-80">Patrimônio Atual</p>
+<p class="text-3xl font-bold tracking-tight">R$ 542.800</p>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between text-xs font-medium uppercase tracking-wider opacity-80">
+<span>Progresso</span>
+<span>Alvo R$ 800k</span>
+</div>
+<div class="h-3 bg-white/20 rounded-full overflow-hidden">
+<div class="w-[68%] h-full bg-white"></div>
+</div>
+<p class="text-xs leading-relaxed opacity-90 italic">
+                        No ritmo atual, você atingirá a meta em Outubro de 2025.
+                    </p>
+</div>
+</section>
+<!-- Execução (Heatmap Style) -->
+<section class="bg-surface-container-lowest p-8 rounded-xl">
+<div class="flex justify-between items-center mb-6">
+<h3 class="serif-text text-xl">Execução</h3>
+<span class="text-sm font-semibold text-primary">18 de 22 dias</span>
+</div>
+<!-- Month Heatmap -->
+<div class="grid grid-cols-7 gap-2">
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-surface-container-high rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container/60 rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-surface-container-high rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container/40 rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-surface-container-high rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-primary-container rounded-sm"></div>
+<div class="aspect-square bg-surface-container-high rounded-sm"></div>
+<div class="aspect-square bg-surface-container-high rounded-sm"></div>
+<div class="aspect-square bg-surface-container-high rounded-sm"></div>
+<div class="aspect-square bg-surface-container-high rounded-sm"></div>
+<div class="aspect-square bg-surface-container-high rounded-sm"></div>
+</div>
+<div class="mt-4 flex justify-between text-[10px] text-on-surface-variant uppercase font-bold tracking-widest">
+<span>Seg</span>
+<span>Dom</span>
+</div>
+</section>
+<!-- Featured Image -->
+<div class="rounded-xl overflow-hidden h-48 relative group">
+<img alt="Notebook on desk" class="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 transition-all duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARVjwnaEicioQ1fxHfIv2cvJOtbe0cmPVnMIXjCZjyCO-M5NQELzxWknnL3v0ZkjtSdCK30et8_H5RUp7aFjj3HSgbeDL7OUgo8n3EM4DEgPhcj-DGsx0cHJdR_-aU9KvGrKx92gZGkq0REW0a4dQYLe0dGXi1ORwxdDB7npMjYbox3WWJeMryYdUZT6xMAOKU5bewNtQ976bdGexFxzlRpJ8S0ujb8GTcOlhQvZmUSxzNH_h-IeMNsz5OKv49fmOeUm8l4qpRG0w"/>
+<div class="absolute inset-0 bg-primary-container/20 mix-blend-multiply"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe h-20 bg-[#faf9f5]/90 dark:bg-[#171614]/90 backdrop-blur-xl z-50 border-t border-[#01696f]/10 shadow-[0_-12px_40px_rgba(27,28,26,0.05)]">
+<a class="flex flex-col items-center justify-center text-[#3f4949] dark:text-[#e9e8e4]/60 hover:text-[#01696f] transition-colors active:translate-y-[-2px] duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="today">today</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Hoje</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#3f4949] dark:text-[#e9e8e4]/60 hover:text-[#01696f] transition-colors active:translate-y-[-2px] duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Planos</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#3f4949] dark:text-[#e9e8e4]/60 hover:text-[#01696f] transition-colors active:translate-y-[-2px] duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Propósito</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#01696f] dark:text-[#01a4ad] after:content-[''] after:w-1 after:h-1 after:bg-[#01696f] after:rounded-full after:mt-1 active:translate-y-[-2px] duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Painel</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#3f4949] dark:text-[#e9e8e4]/60 hover:text-[#01696f] transition-colors active:translate-y-[-2px] duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Perfil</span>
+</a>
+</nav>
+<script>
+  (function() {
+    var urlMap = { 'Hoje': 'tab_hoje.html', 'Planos': 'tab_planos.html', 'Propósito': 'tab_proposito.html', 'Painel': 'tab_painel.html', 'Perfil': 'tab_perfil.html' };
+    document.querySelectorAll('nav a').forEach(function(link) {
+      var label = link.querySelector('span:last-child');
+      if (label && urlMap[label.textContent.trim()]) link.href = urlMap[label.textContent.trim()];
+    });
+  })();
+</script>
+</body></html>
