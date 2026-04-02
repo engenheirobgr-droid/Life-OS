@@ -90,6 +90,16 @@
             to { transform: translateY(0); opacity: 1; }
         }
         .toast-animate-in { animation: slideUp 0.4s cubic-bezier(0.19, 1, 0.22, 1); }
+        
+        /* Animações do Onboarding */
+        .step-transition { transition: opacity 0.4s ease, transform 0.4s ease; }
+        .step-hidden-right { opacity: 0; pointer-events: none; transform: translateX(30px); visibility: hidden; }
+        .step-hidden-left { opacity: 0; pointer-events: none; transform: translateX(-30px); visibility: hidden; }
+        .step-active { opacity: 1; pointer-events: auto; transform: translateX(0); position: relative !important; z-index: 10; visibility: visible; }
+        
+        /* Abas de Planos */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">

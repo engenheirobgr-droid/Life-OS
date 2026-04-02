@@ -125,6 +125,20 @@ const app = {
         }
     },
 
+    switchPlanosTab: function(tabId) {
+        // Esconde todos os conteúdos
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        // Mostra o selecionado
+        const targetContent = document.getElementById('tab-' + tabId);
+        if (targetContent) targetContent.classList.add('active');
+        
+        // Remove estado ativo dos botões
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('text-primary'));
+        // Adiciona estado ativo no botão clicado
+        const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
+        if (activeBtn) activeBtn.classList.add('text-primary');
+    },
+
     init: async function() {
         console.log("Sistema Vida OS inicializando...");
         await this.loadState();
