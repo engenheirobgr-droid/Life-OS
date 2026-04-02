@@ -145,9 +145,9 @@ const app = {
         await this.loadState();
         this.checkAlerts();
         if (!window.sistemaVidaState.onboardingComplete) {
-            this.navigate('onboarding');
+            this.switchView('onboarding');
         } else {
-            this.navigate('hoje');
+            this.switchView('hoje');
         }
 
         // Tarefa 2: Filtro Inteligente - Listener de Dimensão
@@ -160,7 +160,7 @@ const app = {
         }
     },
 
-    navigate: async function(viewName) {
+    switchView: async function(viewName) {
         if (!viewName) return;
         this.currentView = viewName;
         this.updateNavUI(viewName);
@@ -193,6 +193,11 @@ const app = {
                 container.style.opacity = '1';
             }
         }
+    },
+
+    // Alias para compatibilidade com as chamadas do index.html
+    navigate: function(viewName) {
+        this.switchView(viewName);
     },
 
     updateNavUI: function(viewName) {
