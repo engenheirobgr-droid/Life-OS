@@ -245,12 +245,10 @@
                         <label for="create-prazo" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Prazo</label>
                         <input type="date" id="create-prazo" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                     </div>
-                    <div class="flex flex-col gap-1.5">
-                        <label for="create-parent" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Vincular a (Pai)</label>
-                        <select id="create-parent" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface text-ellipsis overflow-hidden">
-                            <option value="">Sem vínculo</option>
-                        </select>
-                    </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-label tracking-widest uppercase text-outline">Vincular a (Hierarquia)</label>
+                    <select id="create-parent" class="w-full bg-transparent border border-outline-variant rounded-xl p-3 text-sm outline-none cursor-pointer"></select>
+                </div>
                 </div>
 
                 <div class="flex flex-col gap-1.5">
@@ -338,6 +336,36 @@
                 <button type="button" id="btn-save-review" onclick="window.app.saveReview()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
                     Salvar Revisão
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="text-edit-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-lg w-full p-6 shadow-xl flex flex-col">
+            <h3 id="text-edit-title" class="font-headline text-2xl italic mb-4">Editar</h3>
+            <textarea id="text-edit-input" rows="4" class="w-full bg-surface-container-low border border-outline-variant rounded-xl p-4 text-on-surface focus:border-primary outline-none resize-none mb-6"></textarea>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="window.app.closeTextModal()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface rounded-lg">Cancelar</button>
+                <button type="button" onclick="window.app.saveTextEdit()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="odyssey-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-lg w-full p-6 shadow-xl flex flex-col">
+            <h3 class="font-headline text-2xl italic mb-4">Editar Cenário Odyssey</h3>
+            <input type="hidden" id="odyssey-id">
+            <div class="space-y-4 mb-6">
+                <div><label class="text-[10px] font-bold uppercase text-outline">Título do Cenário</label><input type="text" id="odyssey-title" class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm"></div>
+                <div><label class="text-[10px] font-bold uppercase text-outline">Descrição / Foco</label><textarea id="odyssey-desc" rows="2" class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm resize-none"></textarea></div>
+                <div class="flex gap-4">
+                    <div class="flex-1"><label class="text-[10px] font-bold uppercase text-outline">Confiança (1-5)</label><input type="number" id="odyssey-conf" min="1" max="5" class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm"></div>
+                    <div class="flex-1"><label class="text-[10px] font-bold uppercase text-outline">Energia (1-5)</label><input type="number" id="odyssey-nrg" min="1" max="5" class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm"></div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('odyssey-modal').classList.add('hidden')" class="px-5 py-2.5 text-sm font-bold text-outline rounded-lg">Cancelar</button>
+                <button type="button" onclick="window.app.saveOdyssey()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md active:scale-95 transition-all">Salvar Cenário</button>
             </div>
         </div>
     </div>

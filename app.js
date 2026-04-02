@@ -145,36 +145,73 @@ const app = {
         await this.loadState();
         this.checkAlerts();
         if (!window.sistemaVidaState.onboardingComplete) {
-            this.navigate('onboarding');
+            this.switchView('onboarding');
         } else {
-            this.navigate('hoje');
+            this.switchView('hoje');
+        }
+
+        // Tarefa 2: Filtro Inteligente - Listener de Dimensão
+        const dimSelect = document.getElementById('crud-dimension');
+        if (dimSelect) {
+            dimSelect.addEventListener('change', () => {
+                const typeSelect = document.getElementById('crud-type');
+                if (typeSelect) this.updateParentList(typeSelect.value);
+            });
         }
     },
 
-    navigate: async function(viewName) {
+    switchView: async function(viewName) {
         if (!viewName) return;
         this.currentView = viewName;
         this.updateNavUI(viewName);
         
         const container = document.getElementById(this.config.containerId);
+        if (container) {
+            container.style.opacity = '0';
+            container.style.transition = 'opacity 0.2s ease-in-out';
+        }
 
         try {
             const response = await fetch(`${this.config.viewsPath}${viewName}.html`);
-            if (!response.ok) throw new Error(`Failed to load view: ${response.statusText}`);
-
-            container.innerHTML = await response.text();
-            console.log(`View carregada via fetch: ${viewName}`);
+            const html = response.ok ? await response.text() : this.getFallbackTemplate(viewName);
+            
+            setTimeout(() => {
+                if (container) {
+                    container.innerHTML = html;
+                    container.style.opacity = '1';
+                    this.executeInjectedScripts(container);
+                }
+                if (this.render[viewName]) {
+                    this.render[viewName]();
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 200);
         } catch (error) {
-            console.warn(`Fallback ativado para a view '${viewName}'. Erro (CORS):`, error);
-            container.innerHTML = this.getFallbackTemplate(viewName);
+            console.warn(`Erro ao carregar a view '${viewName}':`, error);
+            if (container) {
+                container.innerHTML = this.getFallbackTemplate(viewName);
+                container.style.opacity = '1';
+            }
         }
+    },
 
-        this.executeInjectedScripts(container);
-        
-        // Data Binding: Auto-render view
-        if (this.render[viewName]) {
-            this.render[viewName]();
-        }
+    updateNavUI: function(viewName) {
+        const nav = document.querySelector('nav');
+        if (!nav) return;
+        const btns = nav.querySelectorAll('button');
+        btns.forEach(btn => {
+            const icon = btn.querySelector('.material-symbols-outlined');
+            const isMatch = btn.getAttribute('onclick')?.includes(`'${viewName}'`);
+            if (isMatch) {
+                btn.classList.add('text-primary');
+                btn.classList.remove('text-on-surface-variant');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+            } else {
+                btn.classList.remove('text-primary');
+                btn.classList.add('text-on-surface-variant');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+            }
+        });
     },
 
     setPlanosFilter: function(dim) {
@@ -230,13 +267,22 @@ const app = {
         else if (type === 'okrs') parentType = 'metas';
 
         const state = window.sistemaVidaState;
+        const selectedDim = document.getElementById('crud-dimension') ? document.getElementById('crud-dimension').value : null;
+        
         if (parentType && state.entities[parentType]) {
-            state.entities[parentType].forEach(p => {
+            // Filtra os pais para mostrar apenas os da mesma dimensão, ou mostra todos se 'Geral' for selecionado
+            const filteredParents = state.entities[parentType].filter(p => {
+                if (!selectedDim || selectedDim === 'Geral') return true;
+                return p.dimension === selectedDim || p.dimensionName === selectedDim; // Suporte a chaves legadas
+            });
+
+            filteredParents.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
-                opt.textContent = p.title;
+                opt.textContent = `[${p.progress || 0}%] ${p.title}`;
                 parentSelect.appendChild(opt);
             });
+            if(filteredParents.length === 0) parentSelect.innerHTML += '<option value="" disabled>Nenhum item compatível nesta área</option>';
         }
     },
 
@@ -1173,17 +1219,17 @@ const app = {
 
             // Render Values (Bússola)
             const valuesContainer = document.getElementById('essentials-list');
-            if (valuesContainer && state.profile && state.profile.values) {
-                // If the user already finished the exercise
-                valuesContainer.innerHTML = state.profile.values.map(val => 
-                    `<span class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-xs font-medium animate-in fade-in zoom-in duration-300">${val}</span>`
-                ).join('');
-                
-                // Hide the cards and confirm buttons since we inject from state directly in real implementation
-                const cardCont = document.getElementById('value-card');
-                if (cardCont) cardCont.style.display = 'none';
-                const confirmBtn = document.getElementById('confirm-values');
-                if (confirmBtn) confirmBtn.style.display = 'none';
+            if (valuesContainer && state.profile && state.profile.values && state.profile.values.length > 0) {
+                valuesContainer.innerHTML = state.profile.values.map(val => `<span class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-xs font-medium">${val}</span>`).join('');
+                const redoBtn = document.createElement('button');
+                redoBtn.className = "ml-auto text-[10px] bg-surface-container-high px-3 py-1 rounded-full uppercase font-bold text-primary hover:bg-primary/10 mt-2";
+                redoBtn.textContent = "Refazer Exercício";
+                redoBtn.onclick = () => { if(confirm("Apagar valores e refazer?")) { window.sistemaVidaState.profile.values = []; window.app.saveState(); window.app.render.proposito(); } };
+                valuesContainer.appendChild(redoBtn);
+
+                ['value-card', 'confirm-values', 'value-action-btns'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+            } else {
+                ['value-card', 'confirm-values', 'value-action-btns'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = ''; });
             }
 
             // Render SVG Roda da Vida Trigonometry
@@ -1237,32 +1283,38 @@ const app = {
 
             textFields.forEach(field => {
                 const el = document.getElementById(field.id);
-                if (el) {
-                    const val = state.profile[field.group]?.[field.key];
-                    if (val && val.trim() !== "") {
-                        el.textContent = val;
-                        el.classList.remove('italic', 'text-on-surface-variant');
-                        el.classList.add('font-medium', 'text-on-surface');
-                    } else {
-                        el.textContent = el.getAttribute('data-default');
-                        el.classList.add('italic', 'text-on-surface-variant');
-                        el.classList.remove('font-medium');
-                    }
+                if (el && state.profile[field.group] && state.profile[field.group][field.key]) {
+                    el.textContent = state.profile[field.group][field.key];
                 }
             });
 
-            // Update PERMA progress bars and text
-            if (state.perma) {
-                const mapId = { P: 'p', E: 'e', R: 'r', M: 'm', A: 'a' };
-                for (const [key, val] of Object.entries(state.perma)) {
-                    const txt = document.getElementById('perma-text-' + mapId[key]);
-                    const bar = document.getElementById('perma-bar-' + mapId[key]);
-                    if (txt) txt.textContent = val + '%';
-                    if (bar) bar.style.width = val + '%';
-                }
+            // Odyssey Rendering
+            if (state.profile.odyssey) {
+                Object.entries(state.profile.odyssey).forEach(([id, plan]) => {
+                    const card = document.querySelector(`[onclick="window.app.openOdysseyModal('${id}')"]`);
+                    if (card) {
+                        const titleEl = card.querySelector('h4');
+                        if (titleEl) titleEl.textContent = plan.title;
+                        const descEl = card.querySelector('p.italic, p.text-on-surface-variant');
+                        if (descEl) descEl.textContent = plan.desc;
+                        
+                        // Estrelas (Confiança)
+                        const indicators = card.querySelectorAll('.flex.text-primary, .flex.text-secondary, .flex.text-tertiary');
+                        if (indicators.length >= 2) {
+                            const starsCont = indicators[0];
+                            starsCont.innerHTML = Array(5).fill(0).map((_, i) => 
+                                `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.conf ? 1 : 0};">star</span>`
+                            ).join('');
+
+                            const energyCont = indicators[1];
+                            energyCont.innerHTML = Array(5).fill(0).map((_, i) => 
+                                `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.nrg ? 1 : 0};">bolt</span>`
+                            ).join('');
+                        }
+                    }
+                });
             }
-        }
-    },
+        },
 
     updateCascadeProgress: function(entityId, type) {
         const state = window.sistemaVidaState;
@@ -1626,7 +1678,7 @@ const app = {
             // Finalização do Fluxo
             await window.app.saveState();
             alert('Dados importados com sucesso!');
-            window.app.navigate('painel');
+            window.app.switchView('painel');
             
         } catch (error) {
             console.error("Erro detalhado na importação:", error);
@@ -1638,16 +1690,18 @@ const app = {
     },
 
     updateNavUI: function(activeView) {
-        document.querySelectorAll('nav .nav-item-link').forEach(link => {
-            link.classList.remove('text-[#01696f]', 'dark:text-[#01696f]');
-            link.classList.add('text-stone-400', 'dark:text-stone-500');
-            const icon = link.querySelector('.material-symbols-outlined');
-            if (icon) icon.style.fontVariationSettings = "'FILL' 0";
-
-            if (link.getAttribute('data-view') === activeView) {
-                 link.classList.add('text-[#01696f]', 'dark:text-[#01696f]');
-                 link.classList.remove('text-stone-400', 'dark:text-stone-500');
-                 if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+        document.querySelectorAll('nav button').forEach(btn => {
+            const icon = btn.querySelector('.material-symbols-outlined');
+            const view = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            
+            if (view === activeView) {
+                btn.classList.add('text-primary');
+                btn.classList.remove('text-on-surface-variant');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+            } else {
+                btn.classList.remove('text-primary');
+                btn.classList.add('text-on-surface-variant');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 0";
             }
         });
     },
@@ -1664,6 +1718,42 @@ const app = {
 
     getFallbackTemplate: function(viewName) {
         return `<div class="p-6 mt-10 text-red-500 font-bold">Erro local de CORS: view '${viewName}' não pôde ser carregada via protocolo file. Use um servidor local.</div>`;
+    },
+
+    openOdysseyModal: function(id) {
+        const state = window.sistemaVidaState;
+        if (!state.profile.odyssey) state.profile.odyssey = {
+            A: { title: "A Via Consolidada", desc: "Foco em ascensão na carreira atual.", conf: 4, nrg: 4 },
+            B: { title: "O Salto Criativo", desc: "Transição para trabalho solo.", conf: 3, nrg: 5 },
+            C: { title: "A Vida Acadêmica", desc: "Doutorado e pesquisa.", conf: 2, nrg: 3 }
+        };
+        const plan = state.profile.odyssey[id];
+        document.getElementById('odyssey-id').value = id;
+        document.getElementById('odyssey-title').value = plan.title;
+        document.getElementById('odyssey-desc').value = plan.desc;
+        document.getElementById('odyssey-conf').value = plan.conf;
+        document.getElementById('odyssey-nrg').value = plan.nrg;
+        
+        const modal = document.getElementById('odyssey-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    },
+
+    saveOdyssey: function() {
+        const id = document.getElementById('odyssey-id').value;
+        if (!window.sistemaVidaState.profile.odyssey) window.sistemaVidaState.profile.odyssey = {};
+        
+        window.sistemaVidaState.profile.odyssey[id] = {
+            title: document.getElementById('odyssey-title').value,
+            desc: document.getElementById('odyssey-desc').value,
+            conf: parseInt(document.getElementById('odyssey-conf').value),
+            nrg: parseInt(document.getElementById('odyssey-nrg').value)
+        };
+        this.saveState();
+        const modal = document.getElementById('odyssey-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        if (this.render.proposito) this.render.proposito();
     }
 };
 
