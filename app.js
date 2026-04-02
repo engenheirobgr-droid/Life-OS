@@ -1288,33 +1288,32 @@ const app = {
                 }
             });
 
-            // Odyssey Rendering
-            if (state.profile.odyssey) {
-                Object.entries(state.profile.odyssey).forEach(([id, plan]) => {
-                    const card = document.querySelector(`[onclick="window.app.openOdysseyModal('${id}')"]`);
-                    if (card) {
-                        const titleEl = card.querySelector('h4');
-                        if (titleEl) titleEl.textContent = plan.title;
-                        const descEl = card.querySelector('p.italic, p.text-on-surface-variant');
-                        if (descEl) descEl.textContent = plan.desc;
-                        
-                        // Estrelas (Confiança)
-                        const indicators = card.querySelectorAll('.flex.text-primary, .flex.text-secondary, .flex.text-tertiary');
-                        if (indicators.length >= 2) {
-                            const starsCont = indicators[0];
-                            starsCont.innerHTML = Array(5).fill(0).map((_, i) => 
-                                `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.conf ? 1 : 0};">star</span>`
-                            ).join('');
+            // Injeção Dinâmica dos Odyssey Scenarios (A, B, C)
+            const scenarios = ['A', 'B', 'C'];
+            scenarios.forEach(id => {
+                const plan = state.profile.odyssey?.[id];
+                if (plan) {
+                    const titleEl = document.getElementById(`ody-title-${id}`);
+                    const descEl = document.getElementById(`ody-desc-${id}`);
+                    const confEl = document.getElementById(`ody-conf-${id}`);
+                    const nrgEl = document.getElementById(`ody-nrg-${id}`);
 
-                            const energyCont = indicators[1];
-                            energyCont.innerHTML = Array(5).fill(0).map((_, i) => 
-                                `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.nrg ? 1 : 0};">bolt</span>`
-                            ).join('');
-                        }
+                    if (titleEl) titleEl.textContent = plan.title;
+                    if (descEl) descEl.textContent = plan.desc;
+                    if (confEl) {
+                        confEl.innerHTML = Array(5).fill(0).map((_, i) => 
+                            `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.conf ? 1 : 0};">star</span>`
+                        ).join('');
                     }
-                });
-            }
+                    if (nrgEl) {
+                        nrgEl.innerHTML = Array(5).fill(0).map((_, i) => 
+                            `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.nrg ? 1 : 0};">bolt</span>`
+                        ).join('');
+                    }
+                }
+            });
         },
+    },
 
     updateCascadeProgress: function(entityId, type) {
         const state = window.sistemaVidaState;
