@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Life OS | Sistema Vida</title>
     
+    <!-- PWA Setup -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#01696f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
     <!-- Premium Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,6 +18,9 @@
     
     <!-- Tailwind for rapid premium layout -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -181,7 +190,151 @@
         </button>
     </nav>
 
+    <!-- CRUD Modal Universal -->
+    <div id="crud-modal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-outline-variant/20">
+                <h3 class="font-headline text-xl font-bold text-on-background">Novo Item</h3>
+            </div>
+            
+            <form id="crud-form" onsubmit="event.preventDefault()" class="p-6 flex flex-col gap-4">
+                <div class="flex flex-col gap-1.5">
+                    <label for="crud-title" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Título</label>
+                    <input type="text" id="crud-title" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" required>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="crud-type" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Tipo</label>
+                        <select id="crud-type" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" required onchange="document.getElementById('crud-trigger-container').style.display = (this.value === 'habits' ? 'flex' : 'none')">
+                            <option value="metas">Metas</option>
+                            <option value="okrs">OKRs</option>
+                            <option value="macros">Macro Ações</option>
+                            <option value="micros">Micro Ações</option>
+                            <option value="habits">Hábito Recorrente</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex flex-col gap-1.5">
+                        <label for="crud-dimension" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dimensão</label>
+                        <select id="crud-dimension" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" required>
+                            <option value="Saúde">Saúde</option>
+                            <option value="Mente">Mente</option>
+                            <option value="Carreira">Carreira</option>
+                            <option value="Finanças">Finanças</option>
+                            <option value="Relacionamentos">Relacionamentos</option>
+                            <option value="Família">Família</option>
+                            <option value="Lazer">Lazer</option>
+                            <option value="Propósito">Propósito</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col gap-1.5">
+                    <label for="crud-context" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Contexto / Detalhe</label>
+                    <input type="text" id="crud-context" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant" placeholder="Indicador, Propósito ou Contexto" required>
+                </div>
+
+                <div id="crud-trigger-container" class="flex-col gap-1.5" style="display: none;">
+                    <label for="crud-trigger" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Gatilho (Opcional)</label>
+                    <input type="text" id="crud-trigger" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant" placeholder="Ex: Depois de escovar os dentes, eu farei...">
+                    <p class="text-[10px] text-outline mt-0.5">Ancore este novo hábito a uma ação que você já faz todos os dias.</p>
+                </div>
+            </form>
+            
+            <div class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30">
+                <button type="button" onclick="window.app.closeModal()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
+                    Cancelar
+                </button>
+                <button type="button" onclick="window.app.saveNewEntity()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
+                    Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Text Edit Modal -->
+    <div id="text-edit-modal" class="hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-outline-variant/20">
+                <h3 id="text-edit-title" class="font-headline text-xl font-bold"></h3>
+            </div>
+            <div class="p-6">
+                <textarea id="text-edit-input" rows="6" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+            </div>
+            <div class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30">
+                <button type="button" onclick="window.app.closeTextModal()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
+                    Cancelar
+                </button>
+                <button type="button" onclick="window.app.saveTextEdit()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
+                    Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="review-modal" class="hidden fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-outline-variant/20 flex flex-col">
+                <h3 class="font-headline text-xl font-bold text-on-background">Revisão Semanal</h3>
+                <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Fechamento de Ciclo</p>
+            </div>
+            
+            <form id="review-form" onsubmit="event.preventDefault()" class="p-6 flex flex-col gap-6 overflow-y-auto no-scrollbar flex-1">
+                <div class="flex flex-col gap-2">
+                    <label for="rev-q1" class="text-xs uppercase text-primary font-bold tracking-wider">O que planejei?</label>
+                    <textarea id="rev-q1" rows="2" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label for="rev-q2" class="text-xs uppercase text-primary font-bold tracking-wider">O que executei?</label>
+                    <textarea id="rev-q2" rows="2" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="rev-q3" class="text-xs uppercase text-primary font-bold tracking-wider">O que aprendi?</label>
+                    <textarea id="rev-q3" rows="2" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="rev-q4" class="text-xs uppercase text-primary font-bold tracking-wider">O que ajustar?</label>
+                    <textarea id="rev-q4" rows="2" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="rev-q5" class="text-xs uppercase text-primary font-bold tracking-wider">Intenção da próxima semana</label>
+                    <textarea id="rev-q5" rows="2" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+            </form>
+            
+            <div class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30 rounded-b-2xl shrink-0">
+                <button type="button" onclick="window.app.closeReviewModal()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
+                    Cancelar
+                </button>
+                <button type="button" id="btn-save-review" onclick="window.app.saveReview()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
+                    Salvar Revisão
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- SPA Logic entry -->
     <script type="module" src="app.js"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('SW registered:', registration);
+                    })
+                    .catch(error => {
+                        console.log('SW registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>

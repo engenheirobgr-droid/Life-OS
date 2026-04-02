@@ -34,7 +34,7 @@
 </div>
 </div>
 <!-- Theme -->
-<div class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
+<div onclick="document.documentElement.classList.toggle('dark')" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined text-primary" data-icon="contrast">contrast</span>
 <div>
@@ -51,23 +51,24 @@
 <h3 class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-4 px-4">Dados &amp; Arquivo</h3>
 <div class="bg-surface-container-low rounded-xl overflow-hidden">
 <!-- Import -->
-<div class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer">
+<div onclick="document.getElementById('file-import').click()" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined text-primary" data-icon="upload_file">upload_file</span>
 <p class="text-sm font-medium text-on-surface">Import Planilha (.xlsx)</p>
 </div>
 <span class="material-symbols-outlined text-outline text-sm" data-icon="add">add</span>
 </div>
+<input type="file" id="file-import" accept=".xlsx, .xls" class="hidden" onchange="window.app.importFromExcel(event)">
 <!-- Export -->
-<div class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
+<div onclick="window.app.exportToExcel()" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined text-primary" data-icon="download">download</span>
-<p class="text-sm font-medium text-on-surface">Exportar Dados (JSON)</p>
+<p class="text-sm font-medium text-on-surface">Exportar Planilha (.xlsx)</p>
 </div>
 <span class="material-symbols-outlined text-outline text-sm" data-icon="open_in_new">open_in_new</span>
 </div>
 <!-- History -->
-<div class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
+<div onclick="window.app.openReviewModal()" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined text-primary" data-icon="history">history</span>
 <p class="text-sm font-medium text-on-surface">Weekly Review History</p>
@@ -94,7 +95,7 @@
 </div>
 <!-- Logout Action -->
 <div class="pt-4 pb-12">
-<button class="w-full py-4 bg-surface-container-low text-error font-medium rounded-xl hover:bg-error/5 transition-colors flex items-center justify-center gap-2">
+<button onclick="alert('Logout em breve')" class="w-full py-4 bg-surface-container-low text-error font-medium rounded-xl hover:bg-error/5 transition-colors flex items-center justify-center gap-2">
 <span class="material-symbols-outlined text-xl" data-icon="logout">logout</span>
                 Encerrar Sessão
             </button>

@@ -80,33 +80,7 @@
 <!-- Section: Hábitos -->
 <section class="space-y-4">
 <h3 class="text-2xl font-headline font-semibold italic text-on-background">Hábitos de hoje</h3>
-<div class="flex gap-4 overflow-x-auto pb-4 hide-scrollbar -mx-6 px-6">
-<!-- Habit 1 -->
-<div class="min-w-[160px] bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent hover:border-primary-container transition-all flex flex-col justify-between h-32">
-<div class="flex justify-between items-start">
-<span class="material-symbols-outlined text-primary text-2xl">fitness_center</span>
-<div class="w-5 h-5 rounded-full border-2 border-outline-variant"></div>
-</div>
-<p class="font-medium text-on-surface text-sm">Treino Intenso</p>
-</div>
-<!-- Habit 2 (Completed) -->
-<div class="min-w-[160px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between h-32 opacity-50">
-<div class="flex justify-between items-start">
-<span class="material-symbols-outlined text-primary text-2xl">local_drink</span>
-<div class="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-<span class="material-symbols-outlined text-white text-[10px]" style="font-variation-settings: 'wght' 700;">check</span>
-</div>
-</div>
-<p class="font-medium text-on-surface text-sm line-through">Beber 2L água</p>
-</div>
-<!-- Habit 3 -->
-<div class="min-w-[160px] bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent flex flex-col justify-between h-32">
-<div class="flex justify-between items-start">
-<span class="material-symbols-outlined text-primary text-2xl">menu_book</span>
-<div class="w-5 h-5 rounded-full border-2 border-outline-variant"></div>
-</div>
-<p class="font-medium text-on-surface text-sm">Leitura 20min</p>
-</div>
+<div id="habits-container" class="flex gap-4 overflow-x-auto pb-4 hide-scrollbar -mx-6 px-6">
 </div>
 <!-- Identity Toast (Dynamic) -->
 <div class="fixed bottom-28 left-0 right-0 z-50 flex justify-center pointer-events-none px-6">
@@ -125,16 +99,16 @@
 <div class="bg-surface-container-lowest p-6 rounded-xl space-y-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
 <div class="space-y-2">
 <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Pelo que sou grato hoje?</label>
-<textarea class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm placeholder:italic" placeholder="Escreva aqui..." rows="2"></textarea>
+<textarea id="diario-gratidao" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm placeholder:italic" placeholder="Escreva aqui..." rows="2"></textarea>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 <div class="space-y-2">
 <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">O que funcionou?</label>
-<input class="w-full bg-surface-container-low border-none rounded-lg text-sm" placeholder="..." type="text"/>
+<input id="diario-funcionou" class="w-full bg-surface-container-low border-none rounded-lg text-sm" placeholder="..." type="text"/>
 </div>
 <div class="space-y-2">
 <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">O que aprendi?</label>
-<input class="w-full bg-surface-container-low border-none rounded-lg text-sm" placeholder="..." type="text"/>
+<input id="diario-aprendi" class="w-full bg-surface-container-low border-none rounded-lg text-sm" placeholder="..." type="text"/>
 </div>
 </div>
 <div class="space-y-4 pt-2 border-t border-outline-variant/10">
@@ -146,15 +120,15 @@
 <div class="space-y-2">
 <div class="flex items-center gap-3">
 <span class="text-[10px] text-outline font-bold">01</span>
-<input class="flex-1 bg-transparent border-b border-outline-variant/30 focus:border-primary border-none p-0 text-sm focus:ring-0" placeholder="Soltar preocupação com..." type="text"/>
+<input id="diario-shutdown-1" class="flex-1 bg-transparent border-b border-outline-variant/30 focus:border-primary border-none p-0 text-sm focus:ring-0" placeholder="Soltar preocupação com..." type="text"/>
 </div>
 <div class="flex items-center gap-3">
 <span class="text-[10px] text-outline font-bold">02</span>
-<input class="flex-1 bg-transparent border-b border-outline-variant/30 focus:border-primary border-none p-0 text-sm focus:ring-0" placeholder="Soltar frustração de..." type="text"/>
+<input id="diario-shutdown-2" class="flex-1 bg-transparent border-b border-outline-variant/30 focus:border-primary border-none p-0 text-sm focus:ring-0" placeholder="Soltar frustração de..." type="text"/>
 </div>
 <div class="flex items-center gap-3">
 <span class="text-[10px] text-outline font-bold">03</span>
-<input class="flex-1 bg-transparent border-b border-outline-variant/30 focus:border-primary border-none p-0 text-sm focus:ring-0" placeholder="Agradecer e encerrar..." type="text"/>
+<input id="diario-shutdown-3" class="flex-1 bg-transparent border-b border-outline-variant/30 focus:border-primary border-none p-0 text-sm focus:ring-0" placeholder="Agradecer e encerrar..." type="text"/>
 </div>
 </div>
 </div>
@@ -163,7 +137,7 @@
 <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
 <span class="text-sm font-bold">12 Dias de sequência</span>
 </div>
-<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
+<button id="btn-salvar-diario" onclick="window.app.saveDailyLog()" class="bg-primary text-on-primary px-6 py-2.5 rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
                         Salvar diário
                     </button>
 </div>
@@ -171,7 +145,7 @@
 </section>
 </main>
 <!-- FAB -->
-<button class="fixed bottom-28 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-xl flex items-center justify-center z-50 hover:scale-105 active:scale-90 transition-transform">
+<button onclick="window.app.openCreateModal()" class="fixed bottom-28 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-xl flex items-center justify-center z-50 hover:scale-105 active:scale-90 transition-transform">
 <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'wght' 500;">add</span>
 </button>
 

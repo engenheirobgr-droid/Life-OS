@@ -322,13 +322,15 @@
         
         function finishOnboarding() {
             const global = window.sistemaVidaState;
+            global.onboardingComplete = true;
+            
             Object.keys(state.wheel).forEach(dim => {
                 global.dimensions[dim].score = state.wheel[dim] * 10;
             });
+            if (!global.profile) global.profile = {};
             if (state.valuesSet.essential.length > 0) {
                 global.profile.values = state.valuesSet.essential;
             }
-            if (!global.profile) global.profile = {};
             global.profile.legacy = state.legacy.trim();
             
             if (window.app && typeof window.app.saveState === 'function') {
