@@ -3,12 +3,12 @@
 <header class="space-y-6">
 <div class="space-y-1">
 <span class="font-label text-xs uppercase tracking-[0.15em] text-outline">Painel de Evolução</span>
-<h2 class="text-4xl font-headline italic tracking-tight">Bom dia, Bruno</h2>
+<h2 id="painel-title" class="text-4xl font-headline italic tracking-tight">Progresso Semana</h2>
 </div>
 <div class="flex gap-2 overflow-x-auto hide-scrollbar">
 <button class="px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95">Semana</button>
-<button onclick="alert('Filtros temporais em breve nas próximas atualizações.')" class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Mês</button>
-<button onclick="alert('Filtros temporais em breve nas próximas atualizações.')" class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Ciclo</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Mês</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Ciclo</button>
 </div>
 </header>
 
@@ -178,12 +178,12 @@
 <div class="space-y-2">
 <div class="flex justify-between text-sm font-medium">
 <span class="text-on-surface">Tempo de Ciclo</span>
-<span class="text-primary">33%</span>
+<span id="cycle-percent-val" class="text-primary">33%</span>
 </div>
 <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-<div class="h-full bg-primary rounded-full w-[33%]"></div>
+<div id="cycle-progress-bar" class="h-full bg-primary rounded-full transition-all duration-500" style="width: 33%"></div>
 </div>
-<p class="text-[11px] text-on-surface-variant uppercase tracking-widest text-center pt-1">Semana 4 de 12</p>
+<p id="cycle-week-text" class="text-[11px] text-on-surface-variant uppercase tracking-widest text-center pt-1">Semana 4 de 12</p>
 </div>
 <div class="space-y-3">
 <div class="flex items-start gap-3">
@@ -204,41 +204,25 @@
 <span class="text-sm font-medium text-primary">22 de 28 dias concluídos</span>
 </div>
 <div class="bg-surface-container-lowest p-6 rounded-xl">
-<div class="grid grid-cols-7 gap-1.5">
-<div class="aspect-square bg-primary/20 rounded-sm"></div>
-<div class="aspect-square bg-primary/40 rounded-sm"></div>
-<div class="aspect-square bg-primary/10 rounded-sm"></div>
-<div class="aspect-square bg-primary/60 rounded-sm"></div>
-<div class="aspect-square bg-primary/80 rounded-sm"></div>
-<div class="aspect-square bg-primary rounded-sm"></div>
-<div class="aspect-square bg-primary/30 rounded-sm"></div>
-<div class="aspect-square bg-primary/90 rounded-sm"></div>
-<div class="aspect-square bg-primary/50 rounded-sm"></div>
-<div class="aspect-square bg-primary/10 rounded-sm"></div>
-<div class="aspect-square bg-primary/70 rounded-sm"></div>
-<div class="aspect-square bg-primary rounded-sm"></div>
-<div class="aspect-square bg-primary/20 rounded-sm"></div>
-<div class="aspect-square bg-primary/40 rounded-sm"></div>
-<div class="aspect-square bg-primary/60 rounded-sm"></div>
-<div class="aspect-square bg-primary/80 rounded-sm"></div>
-<div class="aspect-square bg-primary rounded-sm"></div>
-<div class="aspect-square bg-primary/10 rounded-sm"></div>
-<div class="aspect-square bg-primary/30 rounded-sm"></div>
-<div class="aspect-square bg-primary/50 rounded-sm"></div>
-<div class="aspect-square bg-primary/70 rounded-sm"></div>
-<div class="aspect-square bg-primary rounded-sm"></div>
-<div class="aspect-square bg-primary/20 rounded-sm"></div>
-<div class="aspect-square bg-primary/40 rounded-sm"></div>
-<div class="aspect-square bg-primary/60 rounded-sm"></div>
-<div class="aspect-square bg-primary/80 rounded-sm"></div>
-<div class="aspect-square bg-primary/10 rounded-sm"></div>
-<div class="aspect-square bg-surface-container-high rounded-sm"></div>
+<div id="annual-heatmap" class="grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto p-2 no-scrollbar">
+    <!-- Gerado dinamicamente pelo app.js -->
 </div>
 <div class="flex justify-between mt-4 text-[10px] text-outline uppercase tracking-widest">
 <span>Início do Mês</span>
 <span>Hoje</span>
 </div>
 </div>
+</section>
+
+<!-- Distribuição de Foco -->
+<section class="space-y-4">
+    <div class="space-y-1">
+        <h3 class="text-lg font-headline italic">Distribuição de Foco</h3>
+        <p class="text-[10px] font-label uppercase tracking-widest text-outline">Esforço por Dimensão</p>
+    </div>
+    <div id="focus-distribution" class="bg-surface-container-lowest p-6 rounded-xl space-y-4">
+        <!-- Renderizado pelo app.js -->
+    </div>
 </section>
 <!-- Evolução PERMA -->
 <section class="space-y-4">
@@ -278,14 +262,7 @@
 </div>
 <!-- Legend -->
 <div class="flex justify-center gap-6 mt-8 flex-wrap border-t border-outline-variant/10 pt-6 w-full">
-<div class="flex items-center gap-2 grayscale opacity-40">
-<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
-<span class="text-[10px] font-medium text-on-surface-variant uppercase tracking-widest">Semana Passada</span>
-</div>
-<div class="flex items-center gap-2">
-<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
-<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Foco Atual</span>
-</div>
+<button onclick="window.app.openPermaModal()" class="px-6 py-2 bg-primary text-on-primary rounded-full text-xs font-bold shadow-md hover:shadow-lg active:scale-95 transition-all">Reavaliar</button>
 </div>
 </div>
 </section>

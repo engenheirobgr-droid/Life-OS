@@ -44,7 +44,8 @@ window.sistemaVidaState = {
     entities: { metas: [], okrs: [], macros: [], micros: [] },
     habits: [],
     dailyLogs: {},
-    reviews: {}
+    reviews: {},
+    cycleStartDate: new Date(new Date().setDate(new Date().getDate() - 21)).toISOString()
 };
 
 const app = {
@@ -194,8 +195,49 @@ const app = {
         app.saveState();
     },
 
-    openCreateModal: function() {
+    openCreateModal: function(type = 'metas') {
+        this.editingEntity = null; // Limpa estado de edição
+        const modalTitle = document.getElementById('modal-title');
+        if (modalTitle) modalTitle.textContent = 'Novo Item';
+
+        document.getElementById('crud-type').value = type;
+        this.onTypeChange(type);
         document.getElementById('crud-modal').classList.remove('hidden');
+        document.getElementById('crud-title').focus();
+    },
+
+    onTypeChange: function(type) {
+        const triggerContainer = document.getElementById('crud-trigger-container');
+        if (triggerContainer) triggerContainer.style.display = (type === 'habits' ? 'flex' : 'none');
+        
+        // Controle de visibilidade do seletor de Pai
+        const parentField = document.getElementById('create-parent')?.parentElement;
+        if (parentField) {
+            parentField.style.display = (type === 'metas' || type === 'habits' ? 'none' : 'flex');
+        }
+
+        this.updateParentList(type);
+    },
+
+    updateParentList: function(type) {
+        const parentSelect = document.getElementById('create-parent');
+        if (!parentSelect) return;
+
+        parentSelect.innerHTML = '<option value="">Sem vínculo</option>';
+        let parentType = '';
+        if (type === 'micros') parentType = 'macros';
+        else if (type === 'macros') parentType = 'okrs';
+        else if (type === 'okrs') parentType = 'metas';
+
+        const state = window.sistemaVidaState;
+        if (parentType && state.entities[parentType]) {
+            state.entities[parentType].forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.title;
+                parentSelect.appendChild(opt);
+            });
+        }
     },
 
     closeModal: function() {
@@ -256,8 +298,8 @@ const app = {
         };
         this.saveState();
         this.closePermaModal();
-        if (this.currentView === 'proposito' && this.render.proposito) {
-            this.render.proposito();
+        if (this.currentView && this.render[this.currentView]) {
+            this.render[this.currentView]();
         }
     },
 
@@ -431,35 +473,74 @@ const app = {
         const dimension = document.getElementById('crud-dimension').value;
         const context = document.getElementById('crud-context').value;
         const trigger = (type === 'habits' && document.getElementById('crud-trigger')) ? document.getElementById('crud-trigger').value.trim() : '';
+        const prazo = document.getElementById('create-prazo') ? document.getElementById('create-prazo').value : '';
+        const parentId = document.getElementById('create-parent') ? document.getElementById('create-parent').value : '';
 
-        const id = 'ent_' + Date.now();
-        const obj = { id, title, dimension };
+        const isEditing = !!this.editingEntity;
+        const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now();
+        const obj = { id, title, dimension, prazo };
+
+        const getOldItem = (eid, etype) => {
+            const state = window.sistemaVidaState;
+            const list = etype === 'habits' ? state.habits : state.entities[etype];
+            return (list || []).find(e => e.id === eid) || {};
+        };
 
         if (type === 'metas' || type === 'okrs') {
             obj.purpose = context;
-            obj.progress = 0;
+            obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
+            if (type === 'okrs' && parentId) obj.metaId = parentId;
         } else if (type === 'macros') {
             obj.description = context;
-            obj.progress = 0;
+            obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
+            if (parentId) {
+                obj.okrId = parentId;
+                const okr = window.sistemaVidaState.entities.okrs.find(o => o.id === parentId);
+                if (okr) obj.metaId = okr.metaId;
+            }
         } else if (type === 'micros') {
             obj.indicator = context;
-            obj.completed = false;
+            const oldItem = getOldItem(id, 'micros');
+            obj.status = isEditing ? (oldItem.status || 'pending') : 'pending';
+            obj.completed = obj.status === 'done';
+            obj.progress = obj.completed ? 100 : 0;
+            
+            if (parentId) {
+                const macro = window.sistemaVidaState.entities.macros.find(m => m.id === parentId);
+                if (macro) {
+                    obj.macroId = macro.id;
+                    obj.okrId = macro.okrId;
+                    obj.metaId = macro.metaId;
+                }
+            }
         } else if (type === 'habits') {
             obj.context = context;
-            obj.completed = false;
+            obj.completed = isEditing ? (getOldItem(id, 'habits').completed || false) : false;
             if (trigger) obj.trigger = trigger;
         }
 
-        if (type === 'habits') {
-            if (!window.sistemaVidaState.habits) window.sistemaVidaState.habits = [];
-            window.sistemaVidaState.habits.push(obj);
-        } else {
-            if (!window.sistemaVidaState.entities[type]) {
-                window.sistemaVidaState.entities[type] = [];
+        if (isEditing) {
+            const list = type === 'habits' ? window.sistemaVidaState.habits : window.sistemaVidaState.entities[type];
+            const idx = list.findIndex(e => e.id === id);
+            if (idx !== -1) list[idx] = obj;
+            
+            // Re-calcula cascata se necessário após edição
+            if (['micros', 'macros', 'okrs'].includes(type)) {
+                this.updateCascadeProgress(id, type);
             }
-            window.sistemaVidaState.entities[type].push(obj);
+        } else {
+            if (type === 'habits') {
+                if (!window.sistemaVidaState.habits) window.sistemaVidaState.habits = [];
+                window.sistemaVidaState.habits.push(obj);
+            } else {
+                if (!window.sistemaVidaState.entities[type]) {
+                    window.sistemaVidaState.entities[type] = [];
+                }
+                window.sistemaVidaState.entities[type].push(obj);
+            }
         }
 
+        this.editingEntity = null;
         this.closeModal();
         this.saveState();
 
@@ -549,9 +630,92 @@ const app = {
                     });
                     polygon.setAttribute('points', pts.join(' '));
                     const avg = (values.reduce((a, b) => a + b, 0) / 5).toFixed(1);
+                    if (scoreText) scoreText.textContent = `Score PERMA: ${avg}`;
                 }
             }
             const rb = document.getElementById('review-banner'); if (rb) { rb.style.display = app.needsReview ? 'flex' : 'none'; rb.classList.remove('hidden'); }
+
+            // Tarefa 1: Tempo de Ciclo Dinâmico
+            const diff = new Date() - new Date(state.cycleStartDate);
+            const week = Math.ceil(diff / (1000 * 60 * 60 * 24 * 7));
+            const cyclePercent = Math.min(100, Math.max(0, (week / 12) * 100)); // Base 12 semanas
+            
+            const weekText = document.getElementById('cycle-week-text');
+            const cycleBar = document.getElementById('cycle-progress-bar');
+            const cycleVal = document.getElementById('cycle-percent-val');
+            
+            if (weekText) weekText.textContent = `Semana ${week} de 12`;
+            if (cycleBar) cycleBar.style.width = cyclePercent + '%';
+            if (cycleVal) cycleVal.textContent = Math.round(cyclePercent) + '%';
+
+            // Tarefa 3: Distribuição de Foco
+            const focusContainer = document.getElementById('focus-distribution');
+            if (focusContainer) {
+                const counts = {};
+                (state.entities.micros || []).forEach(m => {
+                    counts[m.dimension] = (counts[m.dimension] || 0) + 1;
+                });
+                
+                const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+                let focusHtml = '';
+                
+                // Dimensões padrão para garantir ordem
+                ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'].forEach(dim => {
+                    const count = counts[dim] || 0;
+                    const pct = (count / total) * 100;
+                    focusHtml += `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] uppercase tracking-wider font-bold text-outline">
+                            <span>${dim}</span>
+                            <span>${count} ações</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                            <div class="h-full bg-primary rounded-full" style="width: ${pct}%"></div>
+                        </div>
+                    </div>`;
+                });
+                focusContainer.innerHTML = focusHtml;
+            }
+
+            // Tarefa 5: Ativar Filtros Temporais
+            const filterBtns = document.querySelectorAll('header .flex.gap-2 button');
+            const painelTitle = document.getElementById('painel-title');
+            
+            filterBtns.forEach(btn => {
+                btn.onclick = () => {
+                    filterBtns.forEach(b => b.className = "px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors");
+                    btn.className = "px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95";
+                    if (painelTitle) painelTitle.textContent = `Progresso ${btn.textContent}`;
+                };
+            });
+
+            this.renderAnnualHeatmap();
+        },
+
+        renderAnnualHeatmap: function() {
+            const heatmap = document.getElementById('annual-heatmap');
+            if (!heatmap) return;
+            
+            const state = window.sistemaVidaState;
+            const logs = state.dailyLogs || {};
+            let html = '';
+            
+            // Gerar 140 quadradinhos (20 semanas x 7 dias)
+            // Começa de 140 dias atrás até hoje
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 139);
+            
+            for (let i = 0; i < 140; i++) {
+                const d = new Date(startDate);
+                d.setDate(startDate.getDate() + i);
+                const key = d.toISOString().split('T')[0];
+                const hasLog = !!logs[key];
+                const color = hasLog ? 'bg-primary' : 'bg-stone-200 dark:bg-stone-800';
+                
+                html += `<div class="w-2 h-2 rounded-[1px] ${color}" title="${key}"></div>`;
+            }
+            
+            heatmap.innerHTML = html;
         },
 
         hoje: function() {
@@ -713,8 +877,14 @@ const app = {
 
             let html = '';
             let pendentes = 0;
+            const todayStr = new Date().toISOString().split('T')[0];
+            
+            // Filtro aplicado: Pendentes e Prazo <= Hoje (ou sem prazo)
+            const todayMicros = (state.entities.micros || []).filter(m => 
+                (m.status !== 'done' && (!m.prazo || m.prazo <= todayStr))
+            );
 
-            state.entities.micros.forEach((micro, idx) => {
+            todayMicros.forEach((micro, idx) => {
                 if (micro.completed) {
                     html += `
                     <div class="bg-surface-container-low/50 p-4 rounded-xl flex items-center gap-4 opacity-60">
@@ -882,16 +1052,18 @@ const app = {
                         trailNodes.push({ label: 'Dimensão', title: dim });
 
                         if (entityType === 'metas') {
-                            // nothing
+                            // metas are self-contained
                         } else if (entityType === 'okrs') {
                             const meta = state.entities.metas.find(x => x.id === item.metaId);
-                            if (meta) trailNodes.unshift({ label: 'Meta', title: meta.title });
+                            trailNodes.unshift({ label: 'Meta', title: meta ? meta.title : 'Não vinculado' });
                         } else if (entityType === 'macros') {
                             const okr = state.entities.okrs.find(x => x.id === item.okrId);
                             if (okr) {
                                 trailNodes.unshift({ label: 'OKR', title: okr.title });
                                 const meta = state.entities.metas.find(x => x.id === okr.metaId);
-                                if (meta) trailNodes.unshift({ label: 'Meta', title: meta.title });
+                                trailNodes.unshift({ label: 'Meta', title: meta ? meta.title : 'Não vinculado' });
+                            } else {
+                                trailNodes.unshift({ label: 'OKR', title: 'Não vinculado' });
                             }
                         } else if (entityType === 'micros') {
                             const macro = state.entities.macros.find(x => x.id === item.macroId);
@@ -901,8 +1073,12 @@ const app = {
                                 if (okr) {
                                     trailNodes.unshift({ label: 'OKR', title: okr.title });
                                     const meta = state.entities.metas.find(x => x.id === okr.metaId);
-                                    if (meta) trailNodes.unshift({ label: 'Meta', title: meta.title });
+                                    trailNodes.unshift({ label: 'Meta', title: meta ? meta.title : 'Não vinculado' });
+                                } else {
+                                    trailNodes.unshift({ label: 'OKR', title: 'Não vinculado' });
                                 }
+                            } else {
+                                trailNodes.unshift({ label: 'Macro Ação', title: 'Não vinculado' });
                             }
                         }
 
@@ -919,10 +1095,20 @@ const app = {
                         });
 
                         html += `
-                        <div class="bg-surface-container-lowest p-6 rounded-lg shadow-[0_12px_40px_rgba(27,28,26,0.02)] transition-all cursor-pointer hover:bg-surface-container-low" onclick="const p = this.querySelector('.trail-panel'); if(p){ p.classList.toggle('hidden'); p.classList.toggle('max-h-0'); }">
+                        <div class="bg-surface-container-lowest p-6 rounded-lg shadow-[0_12px_40px_rgba(27,28,26,0.02)] transition-all cursor-pointer hover:bg-surface-container-low group" onclick="const p = this.querySelector('.trail-panel'); if(p){ p.classList.toggle('hidden'); p.classList.toggle('max-h-0'); }">
                             <div class="flex justify-between items-start mb-4">
-                                <h4 class="font-headline text-xl font-medium">${item.title}</h4>
-                                <span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">${prog === 100 ? 'Concluído' : 'Ativo'}</span>
+                                <div class="flex flex-col gap-1">
+                                    <h4 class="font-headline text-xl font-medium">${item.title}</h4>
+                                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary-container/20 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
+                                            <span class="material-symbols-outlined text-[14px]">edit</span> Editar
+                                        </button>
+                                        <button onclick="event.stopPropagation(); app.deleteEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-error-container/20 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-error transition-colors">
+                                            <span class="material-symbols-outlined text-[14px]">delete</span> Excluir
+                                        </button>
+                                    </div>
+                                </div>
+                                <span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">${prog >= 100 ? 'Concluído' : 'Ativo'}</span>
                             </div>
                             <div class="flex items-center gap-2 text-stone-400 text-xs mb-6">
                                 <span class="material-symbols-outlined text-sm">event</span>
@@ -1073,56 +1259,129 @@ const app = {
         }
     },
 
+    updateCascadeProgress: function(entityId, type) {
+        const state = window.sistemaVidaState;
+        
+        if (type === 'micros') {
+            const micro = state.entities.micros.find(m => m.id === entityId);
+            if (micro && micro.macroId) {
+                const siblings = state.entities.micros.filter(m => m.macroId === micro.macroId);
+                const avg = siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length;
+                const macro = state.entities.macros.find(m => m.id === micro.macroId);
+                if (macro) {
+                    macro.progress = Math.round(avg);
+                    this.updateCascadeProgress(macro.id, 'macros');
+                }
+            }
+        } else if (type === 'macros') {
+            const macro = state.entities.macros.find(m => m.id === entityId);
+            if (macro && macro.okrId) {
+                const siblings = state.entities.macros.filter(m => m.okrId === macro.okrId);
+                const avg = siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length;
+                const okr = state.entities.okrs.find(o => o.id === macro.okrId);
+                if (okr) {
+                    okr.progress = Math.round(avg);
+                    this.updateCascadeProgress(okr.id, 'okrs');
+                }
+            }
+        } else if (type === 'okrs') {
+            const okr = state.entities.okrs.find(o => o.id === entityId);
+            if (okr && okr.metaId) {
+                const siblings = state.entities.okrs.filter(o => o.metaId === okr.metaId);
+                const avg = siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length;
+                const meta = state.entities.metas.find(m => m.id === okr.metaId);
+                if (meta) {
+                    meta.progress = Math.round(avg);
+                }
+            }
+        }
+    },
+
     // ------------------------------------------------------------------------
     // Reactive Actions
     // ------------------------------------------------------------------------
-    completeMicroAction: function(microId) {
+    completeMicroAction: function(id) {
         const state = window.sistemaVidaState;
-        const micro = state.entities.micros.find(m => m.id === microId);
-        
-        if (!micro || micro.completed) return;
-        
-        micro.completed = true;
-        console.log(`✅ Micro Concluída: ${micro.title}`);
+        const micro = state.entities.micros.find(m => m.id === id);
+        if (!micro) return;
 
-        const macro = state.entities.macros.find(m => m.id === micro.macroId);
-        if (macro) {
-            macro.progress += micro.weight || 10;
-            const okr = state.entities.okrs.find(o => o.id === macro.okrId);
-            if (okr) {
-                okr.progress += (micro.weight || 10) * 0.5;
-                
-                // Regra de Sucesso (Locke & Latham): 70% é o alvo ideal.
-                if (okr.progress >= 70 && !okr.rewarded70) {
-                    okr.rewarded70 = true;
-                    if (state.perma) {
-                        state.perma.A = Math.min(100, state.perma.A + 5); // Bônus de Realização
-                    }
-                    const metaLocal = state.entities.metas.find(m => m.id === okr.metaId);
-                    if (metaLocal && state.dimensions[metaLocal.dimensionName]) {
-                        state.dimensions[metaLocal.dimensionName].score = Math.min(100, state.dimensions[metaLocal.dimensionName].score + 5); // Bônus na Dimensão
-                    }
-                    console.log("🎯 OKR atingiu 70% (Alvo Ideal). Bônus de gamificação aplicado!");
-                }
-                const meta = state.entities.metas.find(m => m.id === okr.metaId);
-                if (meta) {
-                    meta.progress += (micro.weight || 10) * 0.2;
-                    const dimension = state.dimensions[meta.dimensionName];
-                    if (dimension) {
-                        dimension.score = Math.min(100, dimension.score + 1);
-                        if (typeof showIdentityToast === 'function') {
-                            showIdentityToast(meta.dimensionName);
+        // Define se estamos marcando ou desmarcando a tarefa
+        const isCompleting = micro.status !== 'done';
+        micro.status = isCompleting ? 'done' : 'pending';
+        // Sincroniza com a propriedade Legada 'completed' para manter UI funcionando
+        micro.completed = isCompleting;
+        micro.progress = isCompleting ? 100 : 0;
+
+        // Dispara cascata
+        this.updateCascadeProgress(micro.id, 'micros');
+
+        if (isCompleting && micro.macroId) {
+            const macro = state.entities.macros.find(m => m.id === micro.macroId);
+            if (macro && macro.okrId) {
+                const okr = state.entities.okrs.find(o => o.id === macro.okrId);
+                if (okr) {
+                    // Regra de Sucesso (Locke & Latham): 70% é o alvo ideal.
+                    if (okr.progress >= 70 && !okr.rewarded70) {
+                        okr.rewarded70 = true;
+                        if (state.perma) {
+                            state.perma.A = Math.min(100, state.perma.A + 5); 
                         }
+                        const metaLocal = state.entities.metas.find(m => m.id === okr.metaId);
+                        if (metaLocal && state.dimensions[metaLocal.dimensionName]) {
+                            state.dimensions[metaLocal.dimensionName].score = Math.min(100, state.dimensions[metaLocal.dimensionName].score + 5);
+                        }
+                        if (this.showNotification) this.showNotification("🎯 OKR atingiu 70% (Alvo Ideal). Bônus de realização aplicado!");
                     }
                 }
             }
         }
         
-        // Re-render active view after state mutation
-        if (this.currentView && this.render[this.currentView]) {
-            this.render[this.currentView]();
+        this.saveState();
+        if (this.render.hoje) this.render.hoje();
+        if (this.render.planos) this.render.planos();
+    },
+
+    deleteEntity: function(id, type) {
+        if (confirm('Deseja realmente excluir este item? Esta ação não pode ser desfeita.')) {
+            const state = window.sistemaVidaState;
+            state.entities[type] = state.entities[type].filter(e => e.id !== id);
+            this.saveState();
+            if (this.render.planos) this.render.planos();
+            if (this.render.hoje) this.render.hoje();
         }
-        app.saveState();
+    },
+
+    editEntity: function(id, type) {
+        const state = window.sistemaVidaState;
+        const item = state.entities[type].find(e => e.id === id);
+        if (!item) return;
+
+        this.editingEntity = { id, type };
+        
+        // Configura o modal para edição
+        document.getElementById('crud-modal').classList.remove('hidden');
+        const modalTitle = document.getElementById('modal-title');
+        if (modalTitle) modalTitle.textContent = 'Editar Item';
+        
+        // Preenche campos
+        document.getElementById('crud-title').value = item.title || '';
+        document.getElementById('crud-type').value = type;
+        document.getElementById('crud-dimension').value = item.dimension || 'Geral';
+        document.getElementById('create-prazo').value = item.prazo || '';
+        document.getElementById('crud-context').value = item.purpose || item.description || item.indicator || '';
+        
+        if (type === 'habits') {
+            document.getElementById('crud-trigger').value = item.trigger || '';
+        }
+
+        this.onTypeChange(type);
+        
+        // Seta o pai após popular a lista
+        const parentSelect = document.getElementById('create-parent');
+        if (parentSelect) {
+            const parentId = item.metaId || item.okrId || item.macroId || '';
+            parentSelect.value = parentId;
+        }
     },
 
     // ------------------------------------------------------------------------

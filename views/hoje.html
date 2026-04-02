@@ -56,42 +56,25 @@
 <span class="material-symbols-outlined text-tertiary">bedtime</span>
 <h3 class="text-2xl font-headline font-semibold italic text-on-background">Como foi o dia</h3>
 </div>
-<div class="bg-surface-container-lowest p-6 rounded-xl space-y-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-<div class="space-y-2">
-<label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Pelo que sou grato hoje?</label>
-<textarea id="diario-gratidao" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm placeholder:italic" placeholder="Escreva aqui..." rows="2"></textarea>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-<div class="space-y-2">
-<label class="text-xs font-label uppercase tracking-widest text-outline font-bold">O que funcionou?</label>
-<input id="diario-funcionou" class="w-full bg-surface-container-low border-none rounded-lg text-sm" placeholder="..." type="text"/>
-</div>
-<div class="space-y-2">
-<label class="text-xs font-label uppercase tracking-widest text-outline font-bold">O que aprendi?</label>
-<input id="diario-aprendi" class="w-full bg-surface-container-low border-none rounded-lg text-sm" placeholder="..." type="text"/>
-</div>
-</div>
-<div class="space-y-4 pt-2 border-t border-outline-variant/10">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
-<label class="text-xs font-label uppercase tracking-widest text-primary font-bold">Ritual de Desligamento</label>
-</div>
-<p class="text-xs text-outline italic">3 coisas que você deixa para trás agora para descansar em paz.</p>
-<div class="space-y-2">
-<div class="flex items-center gap-3">
-<span class="text-[10px] text-outline font-bold">01</span>
-<input id="diario-shutdown-1" class="flex-1 bg-transparent border-b border-outline-variant/30 focus:border-primary border-none p-0 text-sm focus:ring-0" placeholder="Soltar preocupação com..." type="text"/>
-</div>
-<div class="flex items-center gap-3">
-<span class="text-[10px] text-outline font-bold">02</span>
-<input id="diario-shutdown-2" class="flex-1 bg-transparent border-b border-outline-variant/30 focus:border-primary border-none p-0 text-sm focus:ring-0" placeholder="Soltar frustração de..." type="text"/>
-</div>
-<div class="flex items-center gap-3">
-<span class="text-[10px] text-outline font-bold">03</span>
-<input id="diario-shutdown-3" class="flex-1 bg-transparent border-b border-outline-variant/30 focus:border-primary border-none p-0 text-sm focus:ring-0" placeholder="Agradecer e encerrar..." type="text"/>
-</div>
-</div>
-</div>
+    <div class="bg-surface-container-lowest p-6 rounded-xl space-y-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+        <div class="space-y-2">
+            <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Pelo que sou grato hoje?</label>
+            <textarea id="diario-gratidao" class="w-full bg-transparent border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none" placeholder="Escreva aqui..." rows="3"></textarea>
+        </div>
+        
+        <div class="space-y-2">
+            <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">O que funcionou?</label>
+            <textarea id="diario-funcionou" class="w-full bg-transparent border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none" placeholder="Vindas do dia..." rows="3"></textarea>
+        </div>
+
+        <div class="space-y-4 pt-2 border-t border-outline-variant/10">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+                <label class="text-xs font-label uppercase tracking-widest text-primary font-bold">Ritual de Shutdown</label>
+            </div>
+            <p class="text-xs text-outline italic">O que você deixa para trás agora para descansar em paz.</p>
+            <textarea id="diario-shutdown-1" class="w-full bg-transparent border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none" placeholder="Encerrando o dia..." rows="3"></textarea>
+        </div>
 <div class="flex items-center justify-between pt-4">
 <div class="flex items-center gap-2 text-primary">
 <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>

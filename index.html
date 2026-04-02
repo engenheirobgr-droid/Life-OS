@@ -204,7 +204,7 @@
     <div id="crud-modal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
             <div class="p-6 border-b border-outline-variant/20">
-                <h3 class="font-headline text-xl font-bold text-on-background">Novo Item</h3>
+                <h3 id="modal-title" class="font-headline text-xl font-bold text-on-background">Novo Item</h3>
             </div>
             
             <form id="crud-form" onsubmit="event.preventDefault()" class="p-6 flex flex-col gap-4">
@@ -216,7 +216,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1.5">
                         <label for="crud-type" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Tipo</label>
-                        <select id="crud-type" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" required onchange="document.getElementById('crud-trigger-container').style.display = (this.value === 'habits' ? 'flex' : 'none')">
+                        <select id="crud-type" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" required onchange="window.app.onTypeChange(this.value)">
                             <option value="metas">Metas</option>
                             <option value="okrs">OKRs</option>
                             <option value="macros">Macro Ações</option>
@@ -240,6 +240,19 @@
                     </div>
                 </div>
                 
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="create-prazo" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Prazo</label>
+                        <input type="date" id="create-prazo" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="create-parent" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Vincular a (Pai)</label>
+                        <select id="create-parent" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface text-ellipsis overflow-hidden">
+                            <option value="">Sem vínculo</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="flex flex-col gap-1.5">
                     <label for="crud-context" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Contexto / Detalhe</label>
                     <input type="text" id="crud-context" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant" placeholder="Indicador, Propósito ou Contexto" required>
