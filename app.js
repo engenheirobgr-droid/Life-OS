@@ -537,6 +537,11 @@ const app = {
                     window.sistemaVidaState.entities[type] = [];
                 }
                 window.sistemaVidaState.entities[type].push(obj);
+
+                // Aciona a cascata para novas entidades
+                if (['micros', 'macros', 'okrs'].includes(type)) {
+                    this.updateCascadeProgress(obj.id, type);
+                }
             }
         }
 
@@ -1344,7 +1349,31 @@ const app = {
     deleteEntity: function(id, type) {
         if (confirm('Deseja realmente excluir este item? Esta ação não pode ser desfeita.')) {
             const state = window.sistemaVidaState;
+            const item = state.entities[type].find(e => e.id === id);
+            if (!item) return;
+
+            // Guarda o ID do pai antes de remover
+            const parentId = item.macroId || item.okrId || item.metaId;
+
+            // Remove a entidade
             state.entities[type] = state.entities[type].filter(e => e.id !== id);
+
+            // Força o recálculo da cascata a partir dos irmãos sobreviventes
+            if (parentId) {
+                const sibling = state.entities[type].find(e => (e.macroId === parentId || e.okrId === parentId || e.metaId === parentId));
+                if (sibling) {
+                    this.updateCascadeProgress(sibling.id, type);
+                } else {
+                    // Se não restarem irmãos, o pai deve ser zerado
+                    const parentType = type === 'micros' ? 'macros' : (type === 'macros' ? 'okrs' : 'metas');
+                    const parent = state.entities[parentType]?.find(p => p.id === parentId);
+                    if (parent) {
+                        parent.progress = 0;
+                        this.updateCascadeProgress(parent.id, parentType);
+                    }
+                }
+            }
+
             this.saveState();
             if (this.render.planos) this.render.planos();
             if (this.render.hoje) this.render.hoje();
