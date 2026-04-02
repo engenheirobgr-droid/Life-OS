@@ -217,14 +217,21 @@
 
         function updateUI() {
             const progress = (state.step / 6) * 100;
-            document.getElementById('progress-bar').style.width = `${progress}%`;
-            document.getElementById('step-label').textContent = `Passo ${state.step} de 6 — ${stepsInfo[state.step-1]}`;
+            
+            const pb = document.getElementById('progress-bar');
+            if (pb) pb.style.width = `${progress}%`;
+            
+            const sl = document.getElementById('step-label');
+            if (sl) sl.textContent = `Passo ${state.step} de 6 — ${stepsInfo[state.step-1]}`;
             
             const backBtn = document.getElementById('btn-back');
-            state.step > 1 ? backBtn.classList.remove('invisible') : backBtn.classList.add('invisible');
+            if (backBtn) {
+                state.step > 1 ? backBtn.classList.remove('invisible') : backBtn.classList.add('invisible');
+            }
 
             for (let i = 1; i <= 6; i++) {
                 const el = document.getElementById(`step-${i}`);
+                if (!el) continue;
                 el.classList.remove('step-active', 'step-hidden-left', 'step-hidden-right');
                 if (i === state.step) el.classList.add('step-active');
                 else if (i < state.step) el.classList.add('step-hidden-left');
@@ -247,7 +254,10 @@
             if (state.step < 6) { state.step++; updateUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
         }
 
-        document.getElementById('btn-back').onclick = () => { if (state.step > 1) { state.step--; updateUI(); } };
+        const backBtnEl = document.getElementById('btn-back');
+        if (backBtnEl) {
+            backBtnEl.onclick = () => { if (state.step > 1) { state.step--; updateUI(); } };
+        }
 
         function initWheel() {
             const container = document.getElementById('wheel-sliders');
