@@ -1216,6 +1216,12 @@ const app = {
             // 2. Aba: Propósito -> state.profile, state.dimensions
             const wsProp = workbook.Sheets['Propósito'] || workbook.Sheets['Proposito'] || workbook.Sheets['Identidade'];
             if (wsProp) {
+                // Safe checks para garantir a estrutura aninhada antes de popular
+                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                if (!window.sistemaVidaState.profile.ikigai) window.sistemaVidaState.profile.ikigai = {};
+                if (!window.sistemaVidaState.profile.legacyObj) window.sistemaVidaState.profile.legacyObj = {};
+                if (!window.sistemaVidaState.profile.vision) window.sistemaVidaState.profile.vision = {};
+
                 const propArr = XLSX.utils.sheet_to_json(wsProp);
                 propArr.forEach(row => {
                     let key = String(getValue(row, ['Chave', 'Dimensão', 'Propósito', 'Item', 'Key'])).trim();
