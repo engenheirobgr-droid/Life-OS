@@ -299,6 +299,47 @@ const app = {
         }
     },
 
+    factoryReset: async function() {
+        const confirm1 = confirm("⚠️ ATENÇÃO EXTREMA ⚠️\n\nIsso apagará TODOS os seus dados salvos na nuvem (Metas, OKRs, Diários, Roda da Vida). Essa ação NÃO pode ser desfeita.\n\nTem certeza absoluta?");
+        if (!confirm1) return;
+
+        const confirm2 = prompt("Para confirmar a exclusão total, digite a palavra: ZERAR");
+        if (confirm2 !== "ZERAR") {
+            alert("Reset cancelado. Seus dados estão seguros.");
+            return;
+        }
+
+        // Sobrescreve o estado global com a estrutura virgem
+        window.sistemaVidaState = {
+            profile: { 
+                name: "Viajante", level: 1, xp: 0, values: [], legacy: "", 
+                ikigai: { missao: "", vocacao: "", paixao: "", profissao: "" }, 
+                legacyObj: { familia: "", profissao: "", mundo: "" } 
+            },
+            dimensions: {
+                'Saúde': { score: 1 }, 'Mente': { score: 1 }, 'Carreira': { score: 1 }, 'Finanças': { score: 1 },
+                'Relacionamentos': { score: 1 }, 'Família': { score: 1 }, 'Lazer': { score: 1 }, 'Propósito': { score: 1 }
+            },
+            perma: { P: 50, E: 50, R: 50, M: 50, A: 50 },
+            entities: { metas: [], okrs: [], macros: [], micros: [] },
+            dailyLogs: {},
+            habits: [],
+            reviews: {},
+            onboardingComplete: false
+        };
+
+        // Salva no Firestore (sobrescrevendo o documento antigo) e limpa cache local
+        try {
+            await this.saveState();
+            localStorage.clear();
+            alert("Sistema Vida resetado com sucesso. Reiniciando...");
+            window.location.reload(); // Força o recarregamento da página para puxar o Onboarding
+        } catch (error) {
+            console.error("Erro ao resetar o sistema:", error);
+            alert("Houve um erro ao tentar apagar os dados da nuvem.");
+        }
+    },
+
     openQuarterlyModal: function() {
         const state = window.sistemaVidaState;
         const listContainer = document.getElementById('quarterly-okrs-list');
