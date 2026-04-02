@@ -13,7 +13,7 @@
 </header>
 
 <!-- Banner Revisão Semanal -->
-<section class="bg-primary-container text-on-primary-container p-6 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
+<section id="review-banner" class="hidden bg-primary-container text-on-primary-container p-6 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
     <div class="absolute -right-6 -top-6 opacity-10">
         <span class="material-symbols-outlined text-8xl">cycle</span>
     </div>
@@ -170,7 +170,10 @@
 </section>
 <!-- OKR do Ciclo Atual -->
 <section class="space-y-4">
-<h3 class="text-lg font-headline italic">OKR do Ciclo Atual</h3>
+    <div class="flex justify-between items-baseline">
+        <h3 class="text-lg font-headline italic">OKR do Ciclo Atual</h3>
+        <button onclick="window.app.openQuarterlyModal()" class="text-[10px] bg-surface-container-high px-3 py-1 rounded-full uppercase tracking-widest font-bold text-primary hover:bg-primary/10 transition-colors">Revisão de Ciclo</button>
+    </div>
 <div class="bg-surface-container-low p-6 rounded-xl space-y-6">
 <div class="space-y-2">
 <div class="flex justify-between text-sm font-medium">
@@ -304,10 +307,26 @@
 </div>
 <p class="text-[13px] italic font-light opacity-90">No ritmo atual, chega à meta em Dezembro de 2027</p>
 </div>
-<button class="w-full py-3 bg-white text-primary rounded-lg font-medium text-sm transition-transform active:scale-[0.98] hover:shadow-lg">
+<button onclick="alert('Módulo financeiro na próxima atualização.')" class="w-full py-3 bg-white text-primary rounded-lg font-medium text-sm transition-transform active:scale-[0.98] hover:shadow-lg">
                         Ver simulador completo
                     </button>
 </div>
 </div>
 </section>
+<!-- Modal de Revisão Trimestral -->
+<div id="quarterly-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-md w-full p-6 shadow-xl flex flex-col max-h-[80vh]">
+        <div class="flex justify-between items-center mb-6 shrink-0">
+            <div>
+                <h3 class="font-headline text-2xl italic">Revisão de OKRs</h3>
+                <p class="text-xs text-outline mt-1">Decida o destino dos seus objetivos ativos.</p>
+            </div>
+            <button onclick="window.app.closeQuarterlyModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div id="quarterly-okrs-list" class="space-y-4 overflow-y-auto no-scrollbar flex-1 mb-6">
+                 </div>
+        <button onclick="window.app.processQuarterlyReview()" class="w-full shrink-0 bg-primary text-on-primary py-3 rounded-lg font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">Salvar Novo Ciclo</button>
+    </div>
+</div>
+
 </main>

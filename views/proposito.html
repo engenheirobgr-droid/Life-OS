@@ -63,7 +63,7 @@
 <div id="roda-sliders" class="w-full max-w-[200px] flex flex-col gap-3"></div>
 
 </div>
-<button onclick="alert('Reavaliação da Roda da Vida em breve')" class="mt-8 bg-primary text-on-primary px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2 w-fit transition-all hover:shadow-lg active:scale-95">
+<button onclick="window.app.resetWheelOfLife()" class="mt-8 bg-primary text-on-primary px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2 w-fit transition-all hover:shadow-lg active:scale-95">
                     Reavaliação
                 </button>
 </div>
@@ -183,48 +183,49 @@
 <div>
 <div class="flex justify-between items-center mb-1">
 <span class="text-xs font-label uppercase tracking-widest">Emoção Positiva</span>
-<span class="text-xs font-bold text-primary">85%</span>
+<span id="perma-text-p" class="text-xs font-bold text-primary">85%</span>
 </div>
 <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div class="h-full bg-primary w-[85%]"></div>
+<div id="perma-bar-p" class="h-full bg-primary w-[85%] transition-all duration-500"></div>
 </div>
 </div>
 <div>
 <div class="flex justify-between items-center mb-1">
 <span class="text-xs font-label uppercase tracking-widest">Engajamento (Flow)</span>
-<span class="text-xs font-bold text-primary">70%</span>
+<span id="perma-text-e" class="text-xs font-bold text-primary">70%</span>
 </div>
 <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div class="h-full bg-primary w-[70%]"></div>
+<div id="perma-bar-e" class="h-full bg-primary w-[70%] transition-all duration-500"></div>
 </div>
 </div>
 <div>
 <div class="flex justify-between items-center mb-1">
 <span class="text-xs font-label uppercase tracking-widest">Relacionamentos</span>
-<span class="text-xs font-bold text-primary">92%</span>
+<span id="perma-text-r" class="text-xs font-bold text-primary">92%</span>
 </div>
 <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div class="h-full bg-primary w-[92%]"></div>
+<div id="perma-bar-r" class="h-full bg-primary w-[92%] transition-all duration-500"></div>
 </div>
 </div>
 <div>
 <div class="flex justify-between items-center mb-1">
 <span class="text-xs font-label uppercase tracking-widest">Significado</span>
-<span class="text-xs font-bold text-primary">60%</span>
+<span id="perma-text-m" class="text-xs font-bold text-primary">60%</span>
 </div>
 <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div class="h-full bg-primary w-[60%]"></div>
+<div id="perma-bar-m" class="h-full bg-primary w-[60%] transition-all duration-500"></div>
 </div>
 </div>
 <div>
 <div class="flex justify-between items-center mb-1">
 <span class="text-xs font-label uppercase tracking-widest">Realização</span>
-<span class="text-xs font-bold text-primary">75%</span>
+<span id="perma-text-a" class="text-xs font-bold text-primary">75%</span>
 </div>
 <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div class="h-full bg-primary w-[75%]"></div>
+<div id="perma-bar-a" class="h-full bg-primary w-[75%] transition-all duration-500"></div>
 </div>
 </div>
+<button onclick="window.app.openPermaModal()" class="w-full mt-4 bg-primary/10 text-primary hover:bg-primary/20 px-6 py-3 rounded-lg font-medium transition-all active:scale-95">Reavaliar PERMA</button>
 </div>
 </div>
 <!-- Visão de Vida Card -->
@@ -478,3 +479,42 @@
         // Initialize
         updateUI();
     </script>
+
+    <!-- Modal Reavaliação PERMA -->
+    <div id="perma-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-surface-container border border-outline-variant/10 rounded-xl max-w-sm w-full p-6 shadow-xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-headline text-2xl italic">Reavaliar PERMA</h3>
+                <button onclick="window.app.closePermaModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest"><label for="p-slider">E - Emoção Positiva</label><span id="val-p">85</span></div>
+                    <input type="range" id="p-slider" min="0" max="100" value="85" class="w-full accent-primary" oninput="document.getElementById('val-p').textContent = this.value">
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest"><label for="e-slider">E - Engajamento</label><span id="val-e">70</span></div>
+                    <input type="range" id="e-slider" min="0" max="100" value="70" class="w-full accent-primary" oninput="document.getElementById('val-e').textContent = this.value">
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest"><label for="r-slider">R - Relacionamentos</label><span id="val-r">92</span></div>
+                    <input type="range" id="r-slider" min="0" max="100" value="92" class="w-full accent-primary" oninput="document.getElementById('val-r').textContent = this.value">
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest"><label for="m-slider">M - Significado</label><span id="val-m">60</span></div>
+                    <input type="range" id="m-slider" min="0" max="100" value="60" class="w-full accent-primary" oninput="document.getElementById('val-m').textContent = this.value">
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest"><label for="a-slider">A - Realização</label><span id="val-a">75</span></div>
+                    <input type="range" id="a-slider" min="0" max="100" value="75" class="w-full accent-primary" oninput="document.getElementById('val-a').textContent = this.value">
+                </div>
+            </div>
+
+            <button onclick="window.app.savePerma()" class="w-full mt-8 bg-primary text-on-primary py-3 rounded-lg font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">
+                Salvar Avaliação
+            </button>
+        </div>
+    </div>

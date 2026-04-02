@@ -87,9 +87,48 @@ const app = {
         }
     },
 
+    showNotification: function(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-surface-container-lowest border-l-4 border-primary text-on-surface px-6 py-4 rounded shadow-2xl z-[100] text-sm font-medium transition-all transform translate-y-0 opacity-100 flex items-center gap-3';
+        toast.innerHTML = `<span class="material-symbols-outlined text-primary">notifications_active</span> ${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('-translate-y-10', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    },
+
+    checkAlerts: function() {
+        const state = window.sistemaVidaState;
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        // 1. Inatividade / Boas-vindas
+        if (state.lastAccess) {
+            const diffDays = Math.floor((today - new Date(state.lastAccess)) / (1000 * 60 * 60 * 24));
+            if (diffDays >= 2) {
+                setTimeout(() => this.showNotification("Bom ter você de volta à sua jornada!"), 1000);
+            }
+        }
+        state.lastAccess = todayStr;
+        this.saveState();
+
+        // 2. Alerta de Revisão Semanal (Segunda-feira)
+        this.needsReview = false;
+        if (today.getDay() === 1) { 
+            const reviews = Object.keys(state.reviews || {});
+            const hasRecent = reviews.some(dateStr => {
+                const diff = (today - new Date(dateStr)) / (1000 * 60 * 60 * 24);
+                return diff <= 3;
+            });
+            this.needsReview = !hasRecent;
+        }
+    },
+
     init: async function() {
         console.log("Sistema Vida OS inicializando...");
         await this.loadState();
+        this.checkAlerts();
         if (!window.sistemaVidaState.onboardingComplete) {
             this.navigate('onboarding');
         } else {
@@ -172,6 +211,42 @@ const app = {
         }
     },
 
+    openPermaModal: function() {
+        if (!window.sistemaVidaState.perma) window.sistemaVidaState.perma = {P:85, E:70, R:92, M:60, A:75};
+        document.getElementById('p-slider').value = window.sistemaVidaState.perma.P;
+        document.getElementById('val-p').textContent = window.sistemaVidaState.perma.P;
+        document.getElementById('e-slider').value = window.sistemaVidaState.perma.E;
+        document.getElementById('val-e').textContent = window.sistemaVidaState.perma.E;
+        document.getElementById('r-slider').value = window.sistemaVidaState.perma.R;
+        document.getElementById('val-r').textContent = window.sistemaVidaState.perma.R;
+        document.getElementById('m-slider').value = window.sistemaVidaState.perma.M;
+        document.getElementById('val-m').textContent = window.sistemaVidaState.perma.M;
+        document.getElementById('a-slider').value = window.sistemaVidaState.perma.A;
+        document.getElementById('val-a').textContent = window.sistemaVidaState.perma.A;
+        document.getElementById('perma-modal').classList.remove('hidden');
+        document.getElementById('perma-modal').classList.add('flex');
+    },
+
+    closePermaModal: function() {
+        document.getElementById('perma-modal').classList.add('hidden');
+        document.getElementById('perma-modal').classList.remove('flex');
+    },
+
+    savePerma: function() {
+        window.sistemaVidaState.perma = {
+            P: parseInt(document.getElementById('p-slider').value),
+            E: parseInt(document.getElementById('e-slider').value),
+            R: parseInt(document.getElementById('r-slider').value),
+            M: parseInt(document.getElementById('m-slider').value),
+            A: parseInt(document.getElementById('a-slider').value)
+        };
+        this.saveState();
+        this.closePermaModal();
+        if (this.currentView === 'proposito' && this.render.proposito) {
+            this.render.proposito();
+        }
+    },
+
     openReviewModal: function() {
         document.getElementById('review-form').reset();
         document.getElementById('review-modal').classList.remove('hidden');
@@ -207,6 +282,91 @@ const app = {
             }, 1000);
         } else {
             this.closeReviewModal();
+        }
+    },
+
+    openQuarterlyModal: function() {
+        const state = window.sistemaVidaState;
+        const listContainer = document.getElementById('quarterly-okrs-list');
+        if (!listContainer) return;
+        
+        const activeOkrs = state.entities.okrs.filter(o => o.status === 'active');
+        
+        if (activeOkrs.length === 0) {
+            listContainer.innerHTML = '<p class="text-sm text-outline italic text-center py-8">Nenhum OKR ativo no momento.</p>';
+        } else {
+            let html = '';
+            activeOkrs.forEach(okr => {
+                html += `
+                <div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant/20" data-okr-id="${okr.id}">
+                    <p class="text-sm font-medium mb-3">${okr.title}</p>
+                    <div class="flex flex-col gap-2">
+                        <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="action_${okr.id}" value="continuar" checked class="accent-primary"> Continuar no próximo ciclo</label>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="action_${okr.id}" value="concluir" class="accent-primary"> Marcar como Concluído</label>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer text-error"><input type="radio" name="action_${okr.id}" value="arquivar" class="accent-error"> Arquivar / Abandonar</label>
+                    </div>
+                </div>`;
+            });
+            listContainer.innerHTML = html;
+        }
+        
+        document.getElementById('quarterly-modal').classList.remove('hidden');
+        document.getElementById('quarterly-modal').classList.add('flex');
+    },
+
+    closeQuarterlyModal: function() {
+        document.getElementById('quarterly-modal').classList.add('hidden');
+        document.getElementById('quarterly-modal').classList.remove('flex');
+    },
+
+    processQuarterlyReview: function() {
+        const state = window.sistemaVidaState;
+        const items = document.querySelectorAll('#quarterly-okrs-list > div[data-okr-id]');
+        
+        items.forEach(item => {
+            const id = item.getAttribute('data-okr-id');
+            const action = item.querySelector(`input[name="action_${id}"]:checked`).value;
+            const okr = state.entities.okrs.find(o => o.id === id);
+            
+            if (okr) {
+                if (action === 'concluir') {
+                    okr.status = 'done';
+                    okr.progress = 100;
+                } else if (action === 'arquivar') {
+                    okr.status = 'abandoned';
+                }
+            }
+        });
+        
+        this.saveState();
+        this.closeQuarterlyModal();
+        this.showNotification("Ciclo atualizado! Seus OKRs foram processados.");
+        if (this.render.painel) this.render.painel();
+        if (this.render.planos) this.render.planos();
+    },
+
+    resetWheelOfLife: function() {
+        const confirmReset = confirm("Isto iniciará um novo ciclo da Roda da Vida, zerando as notas atuais para reavaliação. Deseja continuar?");
+        if (confirmReset) {
+            const state = window.sistemaVidaState;
+            // Salva snapshot (simplificado para histórico)
+            if (!state.history) state.history = {};
+            state.history['roda_' + Date.now()] = JSON.parse(JSON.stringify(state.dimensions));
+            
+            // Zera as notas
+            for (const dim in state.dimensions) {
+                state.dimensions[dim].score = 1; 
+            }
+            
+            this.saveState();
+            this.showNotification("Roda da Vida zerada. Ajuste os sliders para o seu estado atual.");
+            if (this.render.proposito) this.render.proposito();
+            
+            // Rola a página suavemente para os sliders
+            setTimeout(() => {
+                const sliders = document.getElementById('roda-sliders');
+                if (sliders) sliders.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
         }
     },
 
@@ -334,13 +494,77 @@ const app = {
                     });
                     polygon.setAttribute('points', pts.join(' '));
                     const avg = (values.reduce((a, b) => a + b, 0) / 5).toFixed(1);
-                    scoreText.textContent = `Score PERMA: ${avg}`;
                 }
             }
+            const rb = document.getElementById('review-banner'); if (rb) { rb.style.display = app.needsReview ? 'flex' : 'none'; rb.classList.remove('hidden'); }
         },
 
         hoje: function() {
             const state = window.sistemaVidaState;
+
+            const dateEl = document.getElementById('data-hoje');
+            if (dateEl) {
+                const now = new Date();
+                const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+                dateEl.textContent = now.toLocaleDateString('pt-BR', opts);
+            }
+
+            const streakEl = document.getElementById('streak-count');
+            if (streakEl) {
+                const logs = window.sistemaVidaState.dailyLogs || {};
+                let streak = 0;
+                const check = new Date();
+                check.setHours(0, 0, 0, 0);
+                while (true) {
+                    const key = check.toISOString().split('T')[0];
+                    if (logs[key]) {
+                        streak++;
+                        check.setDate(check.getDate() - 1);
+                    } else {
+                        break;
+                    }
+                }
+                streakEl.textContent = `${streak} ${streak === 1 ? 'Dia' : 'Dias'} de sequência`;
+                const headerStreak = document.getElementById('header-streak');
+                if (headerStreak) headerStreak.textContent = streak + ' dias';
+            }
+
+            const heatmapEl = document.getElementById('weekly-heatmap');
+            if (heatmapEl) {
+                const logs = window.sistemaVidaState.dailyLogs || {};
+                const days = ['D','S','T','Q','Q','S','S'];
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const dayOfWeek = today.getDay(); // 0=Dom
+                let html = '';
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(today);
+                    d.setDate(today.getDate() - dayOfWeek + i);
+                    const key = d.toISOString().split('T')[0];
+                    const isToday = i === dayOfWeek;
+                    const hasDone = !!logs[key];
+                    const isFuture = d > today;
+                    let circleClass = '';
+                    let inner = '';
+                    if (isFuture) {
+                        circleClass = 'w-7 h-7 rounded-full bg-surface-container border border-outline-variant/20';
+                    } else if (hasDone) {
+                        circleClass = 'w-7 h-7 rounded-full bg-[#01696f] flex items-center justify-center';
+                        inner = `<span class="material-symbols-outlined text-white text-[12px]" style="font-variation-settings: 'wght' 700;">check</span>`;
+                    } else if (isToday) {
+                        circleClass = 'w-7 h-7 rounded-full bg-surface-container-lowest border-2 border-outline-variant/30 ring-2 ring-[#01696f]/40';
+                    } else {
+                        circleClass = 'w-7 h-7 rounded-full bg-stone-200 dark:bg-stone-800 border border-outline-variant/30';
+                    }
+                    html += `
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="${circleClass}">${inner}</div>
+                        <span class="text-[10px] text-outline font-medium">${days[i]}</span>
+                    </div>`;
+                }
+                heatmapEl.innerHTML = html;
+                heatmapEl.className = 'flex justify-between px-2';
+            }
             
             // Restore Diário
             const today = new Date().toISOString().split('T')[0];
@@ -449,13 +673,17 @@ const app = {
                     const meta = state.entities.metas.find(m => m.id === okr.metaId) || {};
                     const dimIcon = iconMap[micro.dimension] || 'stars';
                     
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const isOverdue = micro.prazo && micro.prazo < todayStr;
+                    const overdueTag = isOverdue ? '<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Atrasada</span>' : '';
+
                     html += `
                     <div class="space-y-2">
                         <div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
                             <div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
                             <div class="flex-1">
                                 <p class="text-base text-on-surface font-medium">${micro.title}</p>
-                                <span class="inline-block mt-1 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${micro.dimension}</span>
+                                <span class="inline-block mt-1 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${micro.dimension}</span>${overdueTag}
                             </div>
                             <span class="material-symbols-outlined text-outline-variant text-sm">keyboard_arrow_down</span>
                         </div>
@@ -586,6 +814,7 @@ const app = {
                         
                     entities.forEach((item, idx) => {
                         const prog = item.progress || (item.completed ? 100 : 0);
+                        let visualProg = prog;
                         
                         let trailNodes = [];
                         
@@ -645,7 +874,7 @@ const app = {
                                     <span>${prog.toFixed(0)}%</span>
                                 </div>
                                 <div class="h-1 w-full bg-surface-container-high rounded-full overflow-hidden">
-                                    <div class="h-full bg-primary rounded-full transition-all" style="width: ${prog}%"></div>
+                                    <div class="h-full bg-primary rounded-full transition-all" style="width: ${visualProg}%"></div>
                                 </div>
                                 ${entityType === 'okrs' && prog >= 95 ? '<div class="flex items-center gap-1 mt-2 text-amber-600 dark:text-amber-400 text-[11px] italic leading-tight">⚠️ Meta pode ter sido pouco desafiadora</div>' : ''}
                             </div>
@@ -770,6 +999,17 @@ const app = {
                     }
                 }
             });
+
+            // Update PERMA progress bars and text
+            if (state.perma) {
+                const mapId = { P: 'p', E: 'e', R: 'r', M: 'm', A: 'a' };
+                for (const [key, val] of Object.entries(state.perma)) {
+                    const txt = document.getElementById('perma-text-' + mapId[key]);
+                    const bar = document.getElementById('perma-bar-' + mapId[key]);
+                    if (txt) txt.textContent = val + '%';
+                    if (bar) bar.style.width = val + '%';
+                }
+            }
         }
     },
 
@@ -791,6 +1031,19 @@ const app = {
             const okr = state.entities.okrs.find(o => o.id === macro.okrId);
             if (okr) {
                 okr.progress += (micro.weight || 10) * 0.5;
+                
+                // Regra de Sucesso (Locke & Latham): 70% é o alvo ideal.
+                if (okr.progress >= 70 && !okr.rewarded70) {
+                    okr.rewarded70 = true;
+                    if (state.perma) {
+                        state.perma.A = Math.min(100, state.perma.A + 5); // Bônus de Realização
+                    }
+                    const metaLocal = state.entities.metas.find(m => m.id === okr.metaId);
+                    if (metaLocal && state.dimensions[metaLocal.dimensionName]) {
+                        state.dimensions[metaLocal.dimensionName].score = Math.min(100, state.dimensions[metaLocal.dimensionName].score + 5); // Bônus na Dimensão
+                    }
+                    console.log("🎯 OKR atingiu 70% (Alvo Ideal). Bônus de gamificação aplicado!");
+                }
                 const meta = state.entities.metas.find(m => m.id === okr.metaId);
                 if (meta) {
                     meta.progress += (micro.weight || 10) * 0.2;

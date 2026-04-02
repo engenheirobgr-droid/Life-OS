@@ -6,10 +6,10 @@
 <span class="text-sm font-label uppercase tracking-widest text-secondary font-medium">Hoje</span>
 <div class="bg-stone-200/50 dark:bg-stone-800/50 rounded-full px-3 py-1 text-xs flex items-center gap-1.5 font-bold">
 <span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
-                        12 dias
+                        <span id="header-streak">12 dias</span>
                     </div>
 </div>
-<h2 class="text-4xl font-headline font-bold italic tracking-tight text-on-background mt-1">Terça, 31 de março</h2>
+<h2 id="data-hoje" class="text-4xl font-headline font-bold italic tracking-tight text-on-background mt-1"></h2>
 </div>
 <div class="bg-surface-container-low p-5 rounded-xl flex items-center justify-between">
 <div>
@@ -27,46 +27,7 @@
 </section>
 <!-- Mini Weekly Heatmap -->
 <section class="space-y-3">
-<div class="flex justify-between px-2">
-<div class="flex flex-col items-center gap-2">
-<div class="w-7 h-7 rounded-full bg-[#01696f] flex items-center justify-center">
-<span class="material-symbols-outlined text-white text-[12px]" style="font-variation-settings: 'wght' 700;">check</span>
-</div>
-<span class="text-[10px] text-outline font-medium">S</span>
-</div>
-<div class="flex flex-col items-center gap-2">
-<div class="w-7 h-7 rounded-full bg-[#01696f] flex items-center justify-center">
-<span class="material-symbols-outlined text-white text-[12px]" style="font-variation-settings: 'wght' 700;">check</span>
-</div>
-<span class="text-[10px] text-outline font-medium">T</span>
-</div>
-<div class="flex flex-col items-center gap-2">
-<div class="w-7 h-7 rounded-full bg-[#01696f] flex items-center justify-center">
-<span class="material-symbols-outlined text-white text-[12px]" style="font-variation-settings: 'wght' 700;">check</span>
-</div>
-<span class="text-[10px] text-outline font-medium">Q</span>
-</div>
-<div class="flex flex-col items-center gap-2">
-<div class="w-7 h-7 rounded-full bg-stone-200 dark:bg-stone-800 border border-outline-variant/30"></div>
-<span class="text-[10px] text-outline font-medium">Q</span>
-</div>
-<div class="flex flex-col items-center gap-2">
-<div class="w-7 h-7 rounded-full bg-[#01696f] flex items-center justify-center">
-<span class="material-symbols-outlined text-white text-[12px]" style="font-variation-settings: 'wght' 700;">check</span>
-</div>
-<span class="text-[10px] text-outline font-medium">S</span>
-</div>
-<div class="flex flex-col items-center gap-2">
-<div class="w-7 h-7 rounded-full bg-[#01696f] flex items-center justify-center">
-<span class="material-symbols-outlined text-white text-[12px]" style="font-variation-settings: 'wght' 700;">check</span>
-</div>
-<span class="text-[10px] text-outline font-medium">S</span>
-</div>
-<div class="flex flex-col items-center gap-2">
-<div class="w-7 h-7 rounded-full bg-surface-container-lowest border-2 border-outline-variant/30 ring-2 ring-[#01696f]/40"></div>
-<span class="text-[10px] text-outline font-medium">D</span>
-</div>
-</div>
+<div id="weekly-heatmap"></div>
 </section>
 <!-- Section: Checklist do dia -->
 <section class="space-y-6">
@@ -135,7 +96,7 @@
 <div class="flex items-center justify-between pt-4">
 <div class="flex items-center gap-2 text-primary">
 <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
-<span class="text-sm font-bold">12 Dias de sequência</span>
+<span id="streak-count" class="text-sm font-bold">12 Dias de sequência</span>
 </div>
 <button id="btn-salvar-diario" onclick="window.app.saveDailyLog()" class="bg-primary text-on-primary px-6 py-2.5 rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
                         Salvar diário
