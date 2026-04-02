@@ -228,7 +228,7 @@
                     
                     <div class="flex flex-col gap-1.5">
                         <label for="crud-dimension" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dimensão</label>
-                        <select id="crud-dimension" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" required>
+                        <select id="crud-dimension" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" required onchange="window.app.updateParentList(document.getElementById('crud-type').value)">
                             <option value="Saúde">Saúde</option>
                             <option value="Mente">Mente</option>
                             <option value="Carreira">Carreira</option>
@@ -248,7 +248,7 @@
                     </div>
                 <div class="space-y-1">
                     <label class="text-[10px] font-label tracking-widest uppercase text-outline">Vincular a (Hierarquia)</label>
-                    <select id="create-parent" class="w-full bg-transparent border border-outline-variant rounded-xl p-3 text-sm outline-none cursor-pointer"></select>
+                    <select id="create-parent" class="w-full bg-transparent border border-outline-variant rounded-xl p-3 text-sm outline-none cursor-pointer" onchange="window.app.onParentChange(this.value)"></select>
                 </div>
                 </div>
 

@@ -249,45 +249,73 @@ const app = {
     },
 
     onTypeChange: function(type) {
-        const triggerContainer = document.getElementById('crud-trigger-container');
-        if (triggerContainer) triggerContainer.style.display = (type === 'habits' ? 'flex' : 'none');
+        const parentGroup = document.getElementById('parent-group');
+        const triggerGroup = document.getElementById('trigger-group');
+        const contextLabel = document.getElementById('crud-context-label');
         
-        // Controle de visibilidade do seletor de Pai
-        const parentField = document.getElementById('create-parent')?.parentElement;
-        if (parentField) {
-            parentField.style.display = (type === 'metas' || type === 'habits' ? 'none' : 'flex');
+        // Configura labels e visibilidade baseado no tipo
+        if (type === 'habits') {
+            if (parentGroup) parentGroup.classList.add('hidden');
+            if (triggerGroup) triggerGroup.classList.remove('hidden');
+            if (contextLabel) contextLabel.textContent = 'Gatilho de Execução';
+        } else if (type === 'metas') {
+            if (parentGroup) parentGroup.classList.add('hidden');
+            if (triggerGroup) triggerGroup.classList.add('hidden');
+            if (contextLabel) contextLabel.textContent = 'Por que esta meta? (Propósito)';
+        } else {
+            // OKRs, Macros, Micros
+            if (parentGroup) parentGroup.classList.remove('hidden');
+            if (triggerGroup) triggerGroup.classList.add('hidden');
+            if (contextLabel) contextLabel.textContent = 'Contexto / Indicador de Sucesso';
+            this.updateParentList(type);
         }
+    },
 
-        this.updateParentList(type);
+    onParentChange: function(parentId) {
+        const typeSelect = document.getElementById('crud-type');
+        const dimSelect = document.getElementById('crud-dimension');
+        if (!typeSelect || !dimSelect || !parentId) return;
+
+        const type = typeSelect.value;
+        let parentType = '';
+        if (type === 'okrs') parentType = 'metas';
+        if (type === 'macros') parentType = 'okrs';
+        if (type === 'micros') parentType = 'macros';
+
+        if (parentType) {
+            const parent = window.sistemaVidaState.entities[parentType].find(e => e.id === parentId);
+            if (parent && parent.dimension) {
+                // Sincroniza dimensão com o pai selecionado
+                dimSelect.value = parent.dimension;
+            }
+        }
     },
 
     updateParentList: function(type) {
         const parentSelect = document.getElementById('create-parent');
+        const dimSelect = document.getElementById('crud-dimension');
         if (!parentSelect) return;
-
-        parentSelect.innerHTML = '<option value="">Sem vínculo</option>';
-        let parentType = '';
-        if (type === 'micros') parentType = 'macros';
-        else if (type === 'macros') parentType = 'okrs';
-        else if (type === 'okrs') parentType = 'metas';
-
-        const state = window.sistemaVidaState;
-        const selectedDim = document.getElementById('crud-dimension') ? document.getElementById('crud-dimension').value : null;
         
-        if (parentType && state.entities[parentType]) {
-            // Filtra os pais para mostrar apenas os da mesma dimensão, ou mostra todos se 'Geral' for selecionado
-            const filteredParents = state.entities[parentType].filter(p => {
-                if (!selectedDim || selectedDim === 'Geral') return true;
-                return p.dimension === selectedDim || p.dimensionName === selectedDim; // Suporte a chaves legadas
+        const currentDim = dimSelect ? dimSelect.value : null;
+        parentSelect.innerHTML = '<option value="">Sem vínculo (Mestre)</option>';
+        
+        let parentType = '';
+        if (type === 'okrs') parentType = 'metas';
+        if (type === 'macros') parentType = 'okrs';
+        if (type === 'micros') parentType = 'macros';
+        
+        if (parentType && window.sistemaVidaState.entities[parentType]) {
+            // Filtragem por contexto (Dimensão)
+            const parents = window.sistemaVidaState.entities[parentType].filter(p => {
+                return !currentDim || currentDim === 'Geral' || p.dimension === currentDim || p.dimension === 'Geral';
             });
 
-            filteredParents.forEach(p => {
+            parents.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
-                opt.textContent = `[${p.progress || 0}%] ${p.title}`;
+                opt.textContent = `[${p.dimension}] ${p.title}`;
                 parentSelect.appendChild(opt);
             });
-            if(filteredParents.length === 0) parentSelect.innerHTML += '<option value="" disabled>Nenhum item compatível nesta área</option>';
         }
     },
 
@@ -310,9 +338,54 @@ const app = {
 
     saveTextEdit: function() {
         const val = document.getElementById('text-edit-input').value.trim();
-        window.sistemaVidaState.profile[this.currentTextGroup][this.currentTextKey] = val;
+        if (this.currentTextGroup && this.currentTextKey) {
+            if (!window.sistemaVidaState.profile[this.currentTextGroup]) {
+                window.sistemaVidaState.profile[this.currentTextGroup] = {};
+            }
+            window.sistemaVidaState.profile[this.currentTextGroup][this.currentTextKey] = val;
+            this.saveState();
+            this.closeTextModal();
+            if (this.currentView === 'proposito' && this.render.proposito) {
+                this.render.proposito();
+            }
+        }
+    },
+
+    openOdysseyModal: function(id) {
+        const state = window.sistemaVidaState;
+        if (!state.profile.odyssey) state.profile.odyssey = {};
+        const plan = state.profile.odyssey[id] || { title: "", desc: "", conf: 3, nrg: 3 };
+        
+        document.getElementById('odyssey-id').value = id;
+        document.getElementById('odyssey-title').value = plan.title || "";
+        document.getElementById('odyssey-desc').value = plan.desc || "";
+        document.getElementById('odyssey-conf').value = plan.conf || 3;
+        document.getElementById('odyssey-nrg').value = plan.nrg || 3;
+        
+        const modal = document.getElementById('odyssey-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    saveOdyssey: function() {
+        const id = document.getElementById('odyssey-id').value;
+        if (!window.sistemaVidaState.profile.odyssey) window.sistemaVidaState.profile.odyssey = {};
+        
+        window.sistemaVidaState.profile.odyssey[id] = {
+            title: document.getElementById('odyssey-title').value,
+            desc: document.getElementById('odyssey-desc').value,
+            conf: parseInt(document.getElementById('odyssey-conf').value) || 3,
+            nrg: parseInt(document.getElementById('odyssey-nrg').value) || 3
+        };
+        
         this.saveState();
-        this.closeTextModal();
+        const modal = document.getElementById('odyssey-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
         if (this.currentView === 'proposito' && this.render.proposito) {
             this.render.proposito();
         }
@@ -705,32 +778,46 @@ const app = {
             if (cycleVal) cycleVal.textContent = Math.round(cyclePercent) + '%';
 
             // Tarefa 3: Distribuição de Foco
-            const focusContainer = document.getElementById('focus-distribution');
-            if (focusContainer) {
-                const counts = {};
-                (state.entities.micros || []).forEach(m => {
-                    counts[m.dimension] = (counts[m.dimension] || 0) + 1;
+            const focusDist = document.getElementById('focus-distribution');
+            if (focusDist) {
+                focusDist.innerHTML = '';
+                const effort = {};
+                const itemCounts = {};
+                const dims = Object.keys(state.dimensions);
+                dims.forEach(d => {
+                    effort[d] = 0;
+                    itemCounts[d] = 0;
                 });
                 
-                const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
-                let focusHtml = '';
+                // Soma progresso (esforço real) de todas as micros
+                state.entities.micros.forEach(m => {
+                    if (effort[m.dimension] !== undefined) {
+                        effort[m.dimension] += (m.progress || 0);
+                        itemCounts[m.dimension]++;
+                    }
+                });
+
+                // Encontra o máximo esforço para normalizar barras
+                const maxEffort = Math.max(...Object.values(effort), 100); // Mínimo 100 para não estourar se tiver pouco dado
                 
-                // Dimensões padrão para garantir ordem
-                ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'].forEach(dim => {
-                    const count = counts[dim] || 0;
-                    const pct = (count / total) * 100;
-                    focusHtml += `
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-[10px] uppercase tracking-wider font-bold text-outline">
+                dims.forEach(dim => {
+                    const totalEffort = effort[dim];
+                    const pct = (totalEffort / maxEffort) * 100;
+                    const count = itemCounts[dim];
+                    
+                    const bar = document.createElement('div');
+                    bar.className = "group space-y-1";
+                    bar.innerHTML = `
+                        <div class="flex justify-between text-[10px] font-label uppercase tracking-widest text-outline group-hover:text-primary transition-colors">
                             <span>${dim}</span>
-                            <span>${count} ações</span>
+                            <span>${Math.round(totalEffort)}pts (${count} itens)</span>
                         </div>
-                        <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                            <div class="h-full bg-primary rounded-full" style="width: ${pct}%"></div>
+                        <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+                            <div class="h-full bg-primary transition-all duration-1000" style="width: ${pct}%"></div>
                         </div>
-                    </div>`;
+                    `;
+                    focusDist.appendChild(bar);
                 });
-                focusContainer.innerHTML = focusHtml;
             }
 
             // Tarefa 5: Ativar Filtros Temporais
