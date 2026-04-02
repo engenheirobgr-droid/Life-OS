@@ -504,9 +504,14 @@ const app = {
 
             const dateEl = document.getElementById('data-hoje');
             if (dateEl) {
+                // Força data atual local para evitar cache de data de ontem
                 const now = new Date();
                 const opts = { weekday: 'long', day: 'numeric', month: 'long' };
-                dateEl.textContent = now.toLocaleDateString('pt-BR', opts);
+                let dateStr = now.toLocaleDateString('pt-BR', opts);
+                // Capitaliza primeira letra (ex: Quinta-feira -> Quinta)
+                dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+                dateEl.textContent = dateStr;
+                console.log("Data 'Hoje' atualizada:", dateStr);
             }
 
             const streakEl = document.getElementById('streak-count');
@@ -1131,56 +1136,62 @@ const app = {
             return;
         }
 
+        // Helper para busca flexível de colunas
+        const getValue = (row, possibleKeys) => {
+            for (let key of possibleKeys) {
+                if (row[key] !== undefined && row[key] !== null) return row[key];
+                // Busca case-insensitive
+                const foundKey = Object.keys(row).find(k => k.toLowerCase() === key.toLowerCase());
+                if (foundKey) return row[foundKey];
+            }
+            return "";
+        };
+
         try {
             const data = await file.arrayBuffer();
             const workbook = XLSX.read(data, {type: 'array'});
             
+            console.log("Iniciando processamento das abas do Excel...");
+
             // 1. Aba: Planos -> state.entities
-            if (workbook.Sheets['Planos']) {
-                const planosArr = XLSX.utils.sheet_to_json(workbook.Sheets['Planos']);
+            const wsPlanos = workbook.Sheets['Planos'] || workbook.Sheets['Main'] || workbook.Sheets['Tarefas'];
+            if (wsPlanos) {
+                const planosArr = XLSX.utils.sheet_to_json(wsPlanos);
                 window.sistemaVidaState.entities = { metas: [], okrs: [], macros: [], micros: [] };
                 
                 planosArr.forEach(row => {
-                    let type = (row['Tipo'] || '').toLowerCase();
-                    if (type.includes('meta')) type = 'metas';
-                    else if (type.includes('okr')) type = 'okrs';
-                    else if (type.includes('macro')) type = 'macros';
-                    else if (type.includes('micro')) type = 'micros';
-                    else {
-                        if (row['Meta'] || row['metaId']) type = 'okrs';
-                        else type = 'macros'; 
-                    }
+                    let typeRaw = String(getValue(row, ['Tipo', 'Type', 'Categoria'])).toLowerCase();
+                    let type = 'macros';
+                    if (typeRaw.includes('meta')) type = 'metas';
+                    else if (typeRaw.includes('okr')) type = 'okrs';
+                    else if (typeRaw.includes('macro')) type = 'macros';
+                    else if (typeRaw.includes('micro')) type = 'micros';
+                    else if (getValue(row, ['Meta', 'metaId'])) type = 'okrs';
 
-                    // Regra de Status Crítica: Progresso
-                    let progressVal = row['Progresso'] || row['Progresso (G)'] || row['progress'] || 0;
-                    if (typeof progressVal === 'string') {
-                        progressVal = parseFloat(progressVal.replace('%', ''));
+                    let progressRaw = getValue(row, ['Progresso', 'Progresso (G)', 'progress', '%']);
+                    let progressVal = 0;
+                    if (typeof progressRaw === 'string') {
+                        progressVal = parseFloat(progressRaw.replace('%', '').replace(',', '.'));
+                    } else {
+                        progressVal = parseFloat(progressRaw) || 0;
                     }
-                    let numericProgress = (progressVal <= 1 && progressVal > 0) ? progressVal * 100 : (progressVal || 0);
+                    let numericProgress = (progressVal <= 1 && progressVal > 0) ? progressVal * 100 : progressVal;
                     let status = (numericProgress >= 100) ? 'done' : 'active';
                     
                     let obj = {
                         id: 'ent_' + Date.now() + Math.random().toString(36).substr(2, 9),
-                        title: row['Título'] || row['Nome'] || '',
-                        dimension: row['Dimensão'] || row['Área'] || row['Dimension'] || 'Geral',
+                        title: getValue(row, ['Título', 'Nome', 'Tarefa', 'Title']),
+                        dimension: getValue(row, ['Dimensão', 'Área', 'Dimension', 'Area']) || 'Geral',
                         status: status,
-                        progress: numericProgress
+                        progress: Math.min(100, Math.max(0, numericProgress))
                     };
 
-                    let context = row['Contexto / Indicador'] || row['Contexto'] || '';
-                    let prazo = row['Prazo / Ciclo'] || row['Prazo'] || row['Ciclo'] || '';
+                    let context = getValue(row, ['Contexto / Indicador', 'Contexto', 'Notes', 'Descrição']);
+                    let prazo = getValue(row, ['Prazo / Ciclo', 'Prazo', 'Ciclo', 'Deadline', 'Data']);
                     
-                    if (type === 'metas' || type === 'okrs') {
-                        obj.purpose = context;
-                        obj.prazo = prazo;
-                    } else if (type === 'macros') {
-                        obj.description = context;
-                        obj.prazo = prazo;
-                    } else if (type === 'micros') {
-                        obj.indicator = context;
-                        obj.completed = (status === 'done');
-                        obj.prazo = prazo;
-                    }
+                    if (type === 'metas' || type === 'okrs') { obj.purpose = context; obj.prazo = prazo; }
+                    else if (type === 'macros') { obj.description = context; obj.prazo = prazo; }
+                    else if (type === 'micros') { obj.indicator = context; obj.completed = (status === 'done'); obj.prazo = prazo; }
 
                     if (window.sistemaVidaState.entities[type]) {
                         window.sistemaVidaState.entities[type].push(obj);
@@ -1189,25 +1200,23 @@ const app = {
             }
 
             // 2. Aba: Propósito -> state.profile, state.dimensions
-            if (workbook.Sheets['Propósito']) {
-                const propArr = XLSX.utils.sheet_to_json(workbook.Sheets['Propósito']);
+            const wsProp = workbook.Sheets['Propósito'] || workbook.Sheets['Proposito'] || workbook.Sheets['Identidade'];
+            if (wsProp) {
+                const propArr = XLSX.utils.sheet_to_json(wsProp);
                 propArr.forEach(row => {
-                    let key = row['Chave'] || row['Dimensão'] || row['Propósito'] || '';
-                    let val = row['Valor'] || row['Score'] || row['Nota'] || '';
+                    let key = String(getValue(row, ['Chave', 'Dimensão', 'Propósito', 'Item', 'Key'])).trim();
+                    let val = getValue(row, ['Valor', 'Score', 'Nota', 'Value']);
                     
-                    if (key) {
-                        key = key.trim();
-                        key = key.charAt(0).toUpperCase() + key.slice(1);
-                    }
+                    if (!key) return;
+                    key = key.charAt(0).toUpperCase() + key.slice(1);
 
                     if (window.sistemaVidaState.dimensions[key] && !isNaN(parseFloat(val))) {
                         window.sistemaVidaState.dimensions[key].score = parseFloat(val) || 0;
-                    } 
-                    else if (key && typeof key === 'string') {
+                    } else {
                         let kLow = key.toLowerCase();
                         if (kLow.includes('missão')) window.sistemaVidaState.profile.ikigai.missao = val;
                         else if (kLow.includes('vocação')) window.sistemaVidaState.profile.ikigai.vocacao = val;
-                        else if (kLow.includes('valores')) window.sistemaVidaState.profile.values = typeof val === 'string' ? val.split(',').map(s=>s.trim()) : [val];
+                        else if (kLow.includes('valores')) window.sistemaVidaState.profile.values = typeof val === 'string' ? val.split(/[,\n]/).map(s=>s.trim()) : [val];
                         else if (kLow.includes('legado (família)')) window.sistemaVidaState.profile.legacyObj.familia = val;
                         else if (kLow.includes('legado (profissão)')) window.sistemaVidaState.profile.legacyObj.profissao = val;
                         else if (kLow.includes('legado (mundo)')) window.sistemaVidaState.profile.legacyObj.mundo = val;
@@ -1220,67 +1229,48 @@ const app = {
             }
 
             // 3. Aba: Hábitos -> state.habits
-            if (workbook.Sheets['Hábitos']) {
-                const habArr = XLSX.utils.sheet_to_json(workbook.Sheets['Hábitos']);
+            const wsHabits = workbook.Sheets['Hábitos'] || workbook.Sheets['Habitos'] || workbook.Sheets['Habits'];
+            if (wsHabits) {
+                const habArr = XLSX.utils.sheet_to_json(wsHabits);
                 window.sistemaVidaState.habits = [];
                 habArr.forEach(row => {
-                    window.sistemaVidaState.habits.push({
-                        id: 'hab_' + Date.now() + Math.random().toString(36).substr(2, 9),
-                        title: row['Título'] || row['Hábito'] || '',
-                        dimension: row['Dimensão'] || row['Área'] || 'Geral',
-                        context: row['Contexto'] || '',
-                        completed: String(row['Concluído'] || '').toLowerCase() === 'sim' || row['Concluído'] === 1 || row['Concluído'] === true
-                    });
+                    const title = getValue(row, ['Título', 'Hábito', 'Habit', 'Task']);
+                    if (title) {
+                        window.sistemaVidaState.habits.push({
+                            id: 'hab_' + Date.now() + Math.random().toString(36).substr(2, 9),
+                            title: title,
+                            dimension: getValue(row, ['Dimensão', 'Área', 'Dimension', 'Area']) || 'Geral',
+                            context: getValue(row, ['Contexto', 'Gatilho', 'Trigger']) || '',
+                            completed: String(getValue(row, ['Concluído', 'Status']) || '').toLowerCase() === 'sim' || getValue(row, ['Concluído']) === 1 || !!getValue(row, ['Concluído'])
+                        });
+                    }
                 });
             }
 
             // 4. Aba: Diário -> state.dailyLogs
-            if (workbook.Sheets['Diário']) {
-                const logArr = XLSX.utils.sheet_to_json(workbook.Sheets['Diário']);
-                window.sistemaVidaState.dailyLogs = {};
+            const wsDiario = workbook.Sheets['Diário'] || workbook.Sheets['Diario'] || workbook.Sheets['Logs'];
+            if (wsDiario) {
+                const logArr = XLSX.utils.sheet_to_json(wsDiario);
+                window.sistemaVidaState.dailyLogs = window.sistemaVidaState.dailyLogs || {};
                 logArr.forEach(row => {
-                    let dateStr = row['Data'];
-                    if (typeof dateStr === 'number') {
-                        const d = new Date(Math.round((dateStr - 25569) * 86400 * 1000));
+                    let dateRaw = getValue(row, ['Data', 'Date', 'Dia']);
+                    let dateStr = "";
+                    if (typeof dateRaw === 'number') {
+                        const d = new Date(Math.round((dateRaw - 25569) * 86400 * 1000));
                         dateStr = d.toISOString().split('T')[0];
-                    } else if (dateStr) {
-                        dateStr = String(dateStr).trim();
+                    } else if (dateRaw) {
+                        dateStr = String(dateRaw).trim();
                     }
                     
-                    if (dateStr) {
-                        window.sistemaVidaState.dailyLogs[dateStr] = {
-                            gratidao: row['Gratidão'] || '',
-                            funcionou: row['Funcionou'] || '',
-                            aprendi: row['Aprendi'] || '',
-                            shutdown: [row['Shutdown 1'] || '', row['Shutdown 2'] || '', row['Shutdown 3'] || ''],
-                            energy: parseFloat(row['Energia'] || row['Energy']) || 5
+                    if (dateStr && dateStr.length >= 10) {
+                        window.sistemaVidaState.dailyLogs[dateStr.substring(0,10)] = {
+                            gratidao: getValue(row, ['Gratidão', 'Gratidao', 'Grato']),
+                            funcionou: getValue(row, ['Funcionou', 'Vitorias', 'Wins']),
+                            aprendi: getValue(row, ['Aprendi', 'Lessons', 'Aprendizado']),
+                            shutdown: [getValue(row, ['Shutdown 1', 'S1']), getValue(row, ['Shutdown 2', 'S2']), getValue(row, ['Shutdown 3', 'S3'])],
+                            energy: parseFloat(getValue(row, ['Energia', 'Energy', 'Power'])) || 5
                         };
                     }
-                });
-            }
-
-            // 5. Aba: Revisões -> state.reviews
-            if (workbook.Sheets['Revisões']) {
-                const revArr = XLSX.utils.sheet_to_json(workbook.Sheets['Revisões']);
-                window.sistemaVidaState.reviews = {};
-                revArr.forEach(row => {
-                    let id = row['Data'] || row['ID'];
-                    if (typeof id === 'number') {
-                        const d = new Date(Math.round((id - 25569) * 86400 * 1000));
-                        id = d.toISOString().split('T')[0];
-                    } else if (!id) {
-                        id = new Date().toISOString();
-                    } else {
-                        id = String(id).trim();
-                    }
-
-                    window.sistemaVidaState.reviews[id] = {
-                        q1: row['Q1'] || row['1. Resumo'] || '',
-                        q2: row['Q2'] || row['2. Vitórias'] || '',
-                        q3: row['Q3'] || row['3. Desafios'] || '',
-                        q4: row['Q4'] || row['4. Foco'] || '',
-                        q5: row['Q5'] || row['5. Ajustes'] || ''
-                    };
                 });
             }
 
@@ -1290,8 +1280,8 @@ const app = {
             window.app.navigate('painel');
             
         } catch (error) {
-            console.error("Erro na importação:", error);
-            alert("Ocorreu um erro ao importar a planilha. Verifique o arquivo e tente novamente.");
+            console.error("Erro detalhado na importação:", error);
+            alert(`Erro na importação: ${error.message || "Formato de arquivo incompatível"}.\n\nVerifique se o Excel possui as abas: Planos, Propósito, Hábitos, Diário.`);
         }
         
         // Reset para permitir nova importação do mesmo arquivo
