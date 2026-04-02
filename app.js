@@ -20,7 +20,7 @@ const db = getFirestore(firebaseApp);
 
 window.sistemaVidaState = {
     profile: {
-        name: "Viajante",
+        name: "Bruno",
         level: 1,
         xp: 0,
         values: [],
