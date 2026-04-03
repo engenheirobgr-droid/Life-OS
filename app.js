@@ -200,35 +200,9 @@ const app = {
         this.switchView(viewName);
     },
 
-    updateNavUI: function(viewName) {
-        const nav = document.querySelector('nav');
-        if (!nav) return;
-        const btns = nav.querySelectorAll('button');
-        btns.forEach(btn => {
-            const icon = btn.querySelector('.material-symbols-outlined');
-            const isMatch = btn.getAttribute('onclick')?.includes(`'${viewName}'`);
-            if (isMatch) {
-                btn.classList.add('text-primary');
-                btn.classList.remove('text-on-surface-variant');
-                if (icon) icon.style.fontVariationSettings = "'FILL' 1";
-            } else {
-                btn.classList.remove('text-primary');
-                btn.classList.add('text-on-surface-variant');
-                if (icon) icon.style.fontVariationSettings = "'FILL' 0";
-            }
-        });
-    },
-
     setPlanosFilter: function(dim) {
         this.planosFilter = dim;
         if (this.render.planos) this.render.planos();
-    },
-
-    updateDimensionScore: function(dim, val) {
-        window.sistemaVidaState.dimensions[dim].score = parseInt(val);
-        if (this.render.proposito) this.render.proposito();
-        if (this.render.painel) this.render.painel();
-        app.saveState();
     },
 
     saveValues: function(newValuesArray) {
@@ -348,46 +322,6 @@ const app = {
             if (this.currentView === 'proposito' && this.render.proposito) {
                 this.render.proposito();
             }
-        }
-    },
-
-    openOdysseyModal: function(id) {
-        const state = window.sistemaVidaState;
-        if (!state.profile.odyssey) state.profile.odyssey = {};
-        const plan = state.profile.odyssey[id] || { title: "", desc: "", conf: 3, nrg: 3 };
-        
-        document.getElementById('odyssey-id').value = id;
-        document.getElementById('odyssey-title').value = plan.title || "";
-        document.getElementById('odyssey-desc').value = plan.desc || "";
-        document.getElementById('odyssey-conf').value = plan.conf || 3;
-        document.getElementById('odyssey-nrg').value = plan.nrg || 3;
-        
-        const modal = document.getElementById('odyssey-modal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-    },
-
-    saveOdyssey: function() {
-        const id = document.getElementById('odyssey-id').value;
-        if (!window.sistemaVidaState.profile.odyssey) window.sistemaVidaState.profile.odyssey = {};
-        
-        window.sistemaVidaState.profile.odyssey[id] = {
-            title: document.getElementById('odyssey-title').value,
-            desc: document.getElementById('odyssey-desc').value,
-            conf: parseInt(document.getElementById('odyssey-conf').value) || 3,
-            nrg: parseInt(document.getElementById('odyssey-nrg').value) || 3
-        };
-        
-        this.saveState();
-        const modal = document.getElementById('odyssey-modal');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-        if (this.currentView === 'proposito' && this.render.proposito) {
-            this.render.proposito();
         }
     },
 
@@ -1531,14 +1465,19 @@ const app = {
     deleteEntity: function(id, type) {
         if (confirm('Deseja realmente excluir este item? Esta ação não pode ser desfeita.')) {
             const state = window.sistemaVidaState;
-            const item = state.entities[type].find(e => e.id === id);
+            const list = type === 'habits' ? state.habits : state.entities[type];
+            const item = list.find(e => e.id === id);
             if (!item) return;
 
             // Guarda o ID do pai antes de remover
             const parentId = item.macroId || item.okrId || item.metaId;
 
             // Remove a entidade
-            state.entities[type] = state.entities[type].filter(e => e.id !== id);
+            if (type === 'habits') {
+                state.habits = state.habits.filter(e => e.id !== id);
+            } else {
+                state.entities[type] = state.entities[type].filter(e => e.id !== id);
+            }
 
             // Força o recálculo da cascata a partir dos irmãos sobreviventes
             if (parentId) {
@@ -1572,7 +1511,8 @@ const app = {
 
     editEntity: function(id, type) {
         const state = window.sistemaVidaState;
-        const item = state.entities[type].find(e => e.id === id);
+        const list = type === 'habits' ? state.habits : state.entities[type];
+        const item = list.find(e => e.id === id);
         if (!item) return;
 
         this.editingEntity = { id, type };

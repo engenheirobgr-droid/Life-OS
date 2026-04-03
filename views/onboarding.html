@@ -185,7 +185,7 @@
                 <button onclick="finishOnboarding()" class="w-full bg-primary text-white py-4 rounded-xl font-bold font-label uppercase tracking-widest text-sm shadow-xl shadow-primary/20 active:scale-95 transition-all">
                     Entrar no Sistema Vida
                 </button>
-                <button onclick="app.navigate('hoje')" class="text-xs font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors text-center">
+                <button onclick="skipOnboarding()" class="text-xs font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors text-center">
                     Pular Onboarding
                 </button>
             </div>
@@ -330,7 +330,7 @@
         }
 
         
-        function finishOnboarding() {
+        async function finishOnboarding() {
             const global = window.sistemaVidaState;
             global.onboardingComplete = true;
             
@@ -344,7 +344,20 @@
             global.profile.legacy = state.legacy.trim();
             
             if (window.app && typeof window.app.saveState === 'function') {
-                window.app.saveState();
+                console.log("Onboarding: Sincronizando com nuvem...");
+                await window.app.saveState();
+                console.log("Onboarding: Sincronização concluída.");
+            }
+            app.navigate('hoje');
+        }
+
+        async function skipOnboarding() {
+            const global = window.sistemaVidaState;
+            global.onboardingComplete = true;
+            if (window.app && typeof window.app.saveState === 'function') {
+                console.log("Onboarding (Skip): Sincronizando com nuvem...");
+                await window.app.saveState();
+                console.log("Onboarding (Skip): Sincronização concluída.");
             }
             app.navigate('hoje');
         }
