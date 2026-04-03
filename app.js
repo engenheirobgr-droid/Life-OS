@@ -25,7 +25,7 @@ window.sistemaVidaState = {
         xp: 0,
         values: [],
         legacy: "",
-        ikigai: { missao: "", vocacao: "" },
+        ikigai: { missao: "", vocacao: "", love: "", good: "", need: "", paid: "" },
         legacyObj: { familia: "", profissao: "", mundo: "" },
         vision: { saude: "", carreira: "", intelecto: "", quote: "" }
     },
@@ -732,6 +732,19 @@ const app = {
         painel: function() {
             const state = window.sistemaVidaState;
             
+            // Automation: Calculate dimension scores based on OKR progress
+            Object.keys(state.dimensions).forEach(dim => {
+                const associatedOkrs = state.entities.okrs.filter(o => {
+                    const meta = state.entities.metas.find(m => m.id === o.metaId);
+                    return (meta && meta.dimensionName === dim) || o.dimensionName === dim || o.dimension === dim;
+                });
+                
+                if (associatedOkrs.length > 0) {
+                    const avgProgress = associatedOkrs.reduce((acc, curr) => acc + (curr.progress || 0), 0) / associatedOkrs.length;
+                    state.dimensions[dim].score = Math.round(avgProgress);
+                }
+            });
+
             for (const [dim, data] of Object.entries(state.dimensions)) {
                 const el = document.querySelector(`[data-dimension="${dim}"]`);
                 if (el) {
@@ -789,16 +802,17 @@ const app = {
                     itemCounts[d] = 0;
                 });
                 
-                // Soma progresso (esforço real) de todas as micros
-                state.entities.micros.forEach(m => {
-                    if (effort[m.dimension] !== undefined) {
-                        effort[m.dimension] += (m.progress || 0);
-                        itemCounts[m.dimension]++;
-                    }
-                });
-
-                // Encontra o máximo esforço para normalizar barras
-                const maxEffort = Math.max(...Object.values(effort), 100); // Mínimo 100 para não estourar se tiver pouco dado
+                const addScore = (list, weight) => {
+                    (list || []).forEach(item => {
+                        const dim = item.dimension || item.dimensionName || 'Geral';
+                        if (effort[dim] !== undefined) { effort[dim] += weight; itemCounts[dim]++; }
+                    });
+                };
+                addScore(state.entities.metas, 3);
+                addScore(state.entities.okrs, 2);
+                addScore(state.entities.macros, 1);
+                addScore(state.entities.micros, 0.5);
+                const maxEffort = Math.max(...Object.values(effort), 10);
                 
                 dims.forEach(dim => {
                     const totalEffort = effort[dim];
@@ -1225,22 +1239,35 @@ const app = {
                             }
                         }
 
-                        let trailHtml = '';
-                        trailNodes.forEach((node, i) => {
-                            const isLast = i === trailNodes.length - 1;
+                        let trailHtml = `<div class="bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant mt-6">
+                            <div class="absolute left-[35px] top-4 bottom-4 w-px bg-primary/10"></div>`;
+                        
+                        [...trailNodes].reverse().forEach((node) => {
+                            let icon = 'trip_origin'; let colorClass = 'text-stone-400';
+                            if (node.label === 'Propósito') { icon = 'auto_awesome'; colorClass = 'text-primary'; }
+                            else if (node.label === 'Dimensão' || node.label === 'Área') { icon = 'stars'; colorClass = 'text-primary'; }
+                            else if (node.label === 'Meta') icon = 'flag';
+                            else if (node.label === 'OKR') icon = 'track_changes';
+                            else if (node.label === 'Macro Ação') icon = 'account_tree';
+                            
                             trailHtml += `
-                                <div class="relative ${!isLast ? 'pb-4' : ''}">
-                                    <span class="material-symbols-outlined absolute -left-[23px] top-0 text-primary bg-background text-sm z-10" style="font-variation-settings: 'FILL' 1;">trip_origin</span>
-                                    <p class="text-[9px] font-label uppercase tracking-widest text-primary mb-1">${node.label}</p>
-                                    <p class="text-xs font-medium">${node.title}</p>
+                            <div class="flex items-center gap-4 relative z-10">
+                                <span class="material-symbols-outlined ${colorClass} text-xl bg-stone-100 dark:bg-stone-900 p-0.5" style="font-variation-settings: 'FILL' 1;">${icon}</span>
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">${node.label}</span>
+                                    <span class="text-xs font-medium">${node.title}</span>
                                 </div>
-                            `;
+                            </div>`;
                         });
+                        trailHtml += `</div>`;
 
                         html += `
                         <div class="bg-surface-container-lowest p-6 rounded-lg shadow-[0_12px_40px_rgba(27,28,26,0.02)] transition-all cursor-pointer hover:bg-surface-container-low group" onclick="const p = this.querySelector('.trail-panel'); if(p){ p.classList.toggle('hidden'); p.classList.toggle('max-h-0'); }">
                             <div class="flex justify-between items-start mb-4">
                                 <div class="flex flex-col gap-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[9px] font-label uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">${resolveDim(item) || 'Geral'}</span>
+                                    </div>
                                     <h4 class="font-headline text-xl font-medium">${item.title}</h4>
                                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary-container/20 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
@@ -1309,6 +1336,11 @@ const app = {
         proposito: function() {
             const state = window.sistemaVidaState;
 
+            const topValuesContainer = document.getElementById('top-values-banner');
+            if (topValuesContainer && state.profile && state.profile.values) {
+                topValuesContainer.innerHTML = state.profile.values.map(val => `<span class="bg-primary-container text-on-primary-container px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm border border-primary/10">${val}</span>`).join('');
+            }
+
             // Render Values (Bússola)
             const valuesContainer = document.getElementById('essentials-list');
             if (valuesContainer && state.profile && state.profile.values && state.profile.values.length > 0) {
@@ -1364,6 +1396,10 @@ const app = {
             const textFields = [
                 { id: 'prop-ikigai-missao', group: 'ikigai', key: 'missao' },
                 { id: 'prop-ikigai-vocacao', group: 'ikigai', key: 'vocacao' },
+                { id: 'iki-love-txt', group: 'ikigai', key: 'love' },
+                { id: 'iki-good-txt', group: 'ikigai', key: 'good' },
+                { id: 'iki-need-txt', group: 'ikigai', key: 'need' },
+                { id: 'iki-paid-txt', group: 'ikigai', key: 'paid' },
                 { id: 'prop-legacy-familia', group: 'legacyObj', key: 'familia' },
                 { id: 'prop-legacy-profissao', group: 'legacyObj', key: 'profissao' },
                 { id: 'prop-legacy-mundo', group: 'legacyObj', key: 'mundo' },
@@ -1523,6 +1559,14 @@ const app = {
         }
     },
 
+    updateDimensionScore: function(dim, score) {
+        const state = window.sistemaVidaState;
+        if (state.dimensions && state.dimensions[dim]) {
+            state.dimensions[dim].score = parseInt(score);
+            this.saveState();
+        }
+    },
+
     editEntity: function(id, type) {
         const state = window.sistemaVidaState;
         const item = state.entities[type].find(e => e.id === id);
@@ -1664,8 +1708,11 @@ const app = {
                     let numericProgress = (progressVal <= 1 && progressVal > 0) ? progressVal * 100 : progressVal;
                     let status = (numericProgress >= 100) ? 'done' : 'active';
                     
+                    let idFromSheet = getValue(row, ['ID', 'Id', 'id', 'Código', 'Codigo']);
+                    let parentId = getValue(row, ['Pai', 'Parent', 'Pai ID', 'metaId', 'okrId', 'macroId']);
+                    
                     let obj = {
-                        id: 'ent_' + Date.now() + Math.random().toString(36).substr(2, 9),
+                        id: idFromSheet ? String(idFromSheet) : ('ent_' + Date.now() + Math.random().toString(36).substr(2, 9)),
                         title: getValue(row, ['Título', 'Nome', 'Tarefa', 'Title']),
                         dimension: getValue(row, ['Dimensão', 'Área', 'Dimension', 'Area']) || 'Geral',
                         status: status,
@@ -1678,6 +1725,12 @@ const app = {
                     if (type === 'metas' || type === 'okrs') { obj.purpose = context; obj.prazo = prazo; }
                     else if (type === 'macros') { obj.description = context; obj.prazo = prazo; }
                     else if (type === 'micros') { obj.indicator = context; obj.completed = (status === 'done'); obj.prazo = prazo; }
+
+                    if (parentId) {
+                        if (type === 'okrs') obj.metaId = String(parentId);
+                        else if (type === 'macros') obj.okrId = String(parentId);
+                        else if (type === 'micros') obj.macroId = String(parentId);
+                    }
 
                     if (window.sistemaVidaState.entities[type]) {
                         window.sistemaVidaState.entities[type].push(obj);

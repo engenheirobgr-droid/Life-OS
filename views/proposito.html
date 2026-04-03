@@ -4,6 +4,7 @@
 <p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Autoconhecimento &amp; Visão</p>
 <h2 class="font-headline text-5xl md:text-7xl italic font-bold tracking-tight text-on-background max-w-2xl">Propósito</h2>
 <div class="mt-6 h-px w-24 bg-primary"></div>
+<div id="top-values-banner" class="flex flex-wrap gap-2 mt-8 mb-8"></div>
 </section>
 <!-- Bento Grid Layout -->
 <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -137,10 +138,22 @@
 </div>
 <div class="md:w-1/2 flex justify-center">
 <div class="relative w-80 h-80 opacity-80">
-<div class="absolute inset-0 rounded-full bg-primary/10 -translate-x-12 -translate-y-12 flex items-center justify-center p-8 text-center text-[10px] font-bold uppercase text-primary">O que ama</div>
-<div class="absolute inset-0 rounded-full bg-secondary/10 translate-x-12 -translate-y-12 flex items-center justify-center p-8 text-center text-[10px] font-bold uppercase text-secondary">O que é bom</div>
-<div class="absolute inset-0 rounded-full bg-tertiary-container/10 -translate-x-12 translate-y-12 flex items-center justify-center p-8 text-center text-[10px] font-bold uppercase text-tertiary">O que o mundo precisa</div>
-<div class="absolute inset-0 rounded-full bg-outline-variant/10 translate-x-12 translate-y-12 flex items-center justify-center p-8 text-center text-[10px] font-bold uppercase text-outline">Pago para fazer</div>
+                <div class="absolute inset-0 rounded-full bg-primary/10 -translate-x-12 -translate-y-12 flex flex-col items-center justify-center p-8 text-center text-[10px] font-bold uppercase text-primary cursor-pointer hover:ring-4 hover:ring-primary/20 transition-all" onclick="window.app.openTextEdit('O que ama', 'ikigai', 'love')">
+                    O que ama
+                    <span id="iki-love-txt" class="mt-2 text-[8px] font-normal lowercase normal-case opacity-80 line-clamp-3"></span>
+                </div>
+                <div class="absolute inset-0 rounded-full bg-secondary/10 translate-x-12 -translate-y-12 flex flex-col items-center justify-center p-8 text-center text-[10px] font-bold uppercase text-secondary cursor-pointer hover:ring-4 hover:ring-primary/20 transition-all" onclick="window.app.openTextEdit('No que é bom', 'ikigai', 'good')">
+                    O que é bom
+                    <span id="iki-good-txt" class="mt-2 text-[8px] font-normal lowercase normal-case opacity-80 line-clamp-3"></span>
+                </div>
+                <div class="absolute inset-0 rounded-full bg-tertiary-container/10 -translate-x-12 translate-y-12 flex flex-col items-center justify-center p-8 text-center text-[10px] font-bold uppercase text-tertiary cursor-pointer hover:ring-4 hover:ring-primary/20 transition-all" onclick="window.app.openTextEdit('O mundo precisa', 'ikigai', 'need')">
+                    O que o mundo precisa
+                    <span id="iki-need-txt" class="mt-2 text-[8px] font-normal lowercase normal-case opacity-80 line-clamp-3"></span>
+                </div>
+                <div class="absolute inset-0 rounded-full bg-outline-variant/10 translate-x-12 translate-y-12 flex flex-col items-center justify-center p-8 text-center text-[10px] font-bold uppercase text-outline cursor-pointer hover:ring-4 hover:ring-primary/20 transition-all" onclick="window.app.openTextEdit('Pago para fazer', 'ikigai', 'paid')">
+                    Pago para fazer
+                    <span id="iki-paid-txt" class="mt-2 text-[8px] font-normal lowercase normal-case opacity-80 line-clamp-3"></span>
+                </div>
 <div class="absolute inset-0 flex items-center justify-center">
 <div class="bg-white dark:bg-stone-900 shadow-xl rounded-full w-20 h-20 flex items-center justify-center text-[10px] font-bold text-primary text-center leading-tight p-2">SENTIDO DA VIDA</div>
 </div>
