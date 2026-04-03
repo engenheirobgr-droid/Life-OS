@@ -1709,7 +1709,7 @@ const app = {
                     let status = (numericProgress >= 100) ? 'done' : 'active';
                     
                     let idFromSheet = getValue(row, ['ID', 'Id', 'id', 'Código', 'Codigo']);
-                    let parentId = getValue(row, ['Pai', 'Parent', 'Pai ID', 'metaId', 'okrId', 'macroId']);
+                    let parentId = getValue(row, ['Pai', 'Parent', 'Pai ID', 'ID_Pai', 'ID Pai', 'metaId', 'okrId', 'macroId']);
                     
                     let obj = {
                         id: idFromSheet ? String(idFromSheet) : ('ent_' + Date.now() + Math.random().toString(36).substr(2, 9)),
