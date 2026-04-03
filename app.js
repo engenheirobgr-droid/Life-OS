@@ -1209,16 +1209,18 @@ const app = {
                         trailNodes.push({ label: 'Dimensão', title: dim });
 
                         if (entityType === 'metas') {
-                            // metas are self-contained
+                            trailNodes.unshift({ label: 'Propósito (Nível 0)', title: item.purpose || 'Sem propósito definido' });
                         } else if (entityType === 'okrs') {
                             const meta = state.entities.metas.find(x => x.id === item.metaId);
                             trailNodes.unshift({ label: 'Meta', title: meta ? meta.title : 'Não vinculado' });
+                            if (meta) trailNodes.unshift({ label: 'Propósito (Nível 0)', title: meta.purpose || '-' });
                         } else if (entityType === 'macros') {
                             const okr = state.entities.okrs.find(x => x.id === item.okrId);
                             if (okr) {
                                 trailNodes.unshift({ label: 'OKR', title: okr.title });
                                 const meta = state.entities.metas.find(x => x.id === okr.metaId);
                                 trailNodes.unshift({ label: 'Meta', title: meta ? meta.title : 'Não vinculado' });
+                                if (meta) trailNodes.unshift({ label: 'Propósito (Nível 0)', title: meta.purpose || '-' });
                             } else {
                                 trailNodes.unshift({ label: 'OKR', title: 'Não vinculado' });
                             }
@@ -1231,6 +1233,7 @@ const app = {
                                     trailNodes.unshift({ label: 'OKR', title: okr.title });
                                     const meta = state.entities.metas.find(x => x.id === okr.metaId);
                                     trailNodes.unshift({ label: 'Meta', title: meta ? meta.title : 'Não vinculado' });
+                                    if (meta) trailNodes.unshift({ label: 'Propósito (Nível 0)', title: meta.purpose || '-' });
                                 } else {
                                     trailNodes.unshift({ label: 'OKR', title: 'Não vinculado' });
                                 }
@@ -1240,11 +1243,11 @@ const app = {
                         }
 
                         let trailHtml = `<div class="bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant mt-6">
-                            <div class="absolute left-[35px] top-4 bottom-4 w-px bg-primary/10"></div>`;
+                            <div class="absolute left-[34px] top-4 bottom-4 w-px bg-primary/20"></div>`;
                         
-                        [...trailNodes].reverse().forEach((node) => {
-                            let icon = 'trip_origin'; let colorClass = 'text-stone-400';
-                            if (node.label === 'Propósito') { icon = 'auto_awesome'; colorClass = 'text-primary'; }
+                        trailNodes.forEach((node) => {
+                            let icon = 'trip_origin'; let colorClass = 'text-stone-400'; let textStyle = 'text-xs font-medium';
+                            if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; textStyle = 'text-base font-headline italic'; }
                             else if (node.label === 'Dimensão' || node.label === 'Área') { icon = 'stars'; colorClass = 'text-primary'; }
                             else if (node.label === 'Meta') icon = 'flag';
                             else if (node.label === 'OKR') icon = 'track_changes';
@@ -1254,8 +1257,8 @@ const app = {
                             <div class="flex items-center gap-4 relative z-10">
                                 <span class="material-symbols-outlined ${colorClass} text-xl bg-stone-100 dark:bg-stone-900 p-0.5" style="font-variation-settings: 'FILL' 1;">${icon}</span>
                                 <div class="flex flex-col">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">${node.label}</span>
-                                    <span class="text-xs font-medium">${node.title}</span>
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold ${colorClass}">${node.label}</span>
+                                    <span class="${textStyle}">${node.title}</span>
                                 </div>
                             </div>`;
                         });
