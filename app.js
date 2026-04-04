@@ -25,7 +25,7 @@ window.sistemaVidaState = {
         xp: 0,
         values: [],
         legacy: "",
-        ikigai: { missao: "", vocacao: "", love: "", good: "", need: "", paid: "" },
+        ikigai: { missao: "", vocacao: "", love: "", good: "", need: "", paid: "", sintese: "" },
         legacyObj: { familia: "", profissao: "", mundo: "" },
         vision: { saude: "", carreira: "", intelecto: "", quote: "" }
     },
@@ -444,7 +444,7 @@ const app = {
         window.sistemaVidaState = {
             profile: { 
                 name: "Viajante", level: 1, xp: 0, values: [], legacy: "", 
-                ikigai: { missao: "", vocacao: "", paixao: "", profissao: "" }, 
+                ikigai: { missao: "", vocacao: "", paixao: "", profissao: "", sintese: "" }, 
                 legacyObj: { familia: "", profissao: "", mundo: "" } 
             },
             dimensions: {
@@ -1377,7 +1377,8 @@ const app = {
                 { id: 'prop-vision-saude', group: 'vision', key: 'saude' },
                 { id: 'prop-vision-carreira', group: 'vision', key: 'carreira' },
                 { id: 'prop-vision-intelecto', group: 'vision', key: 'intelecto' },
-                { id: 'prop-vision-quote', group: 'vision', key: 'quote' }
+                { id: 'prop-vision-quote', group: 'vision', key: 'quote' },
+                { id: 'iki-sintese-txt', group: 'ikigai', key: 'sintese' }
             ];
 
             textFields.forEach(field => {
