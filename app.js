@@ -777,6 +777,49 @@ const app = {
                     ring.style.strokeDashoffset = offset;
                 }
             });
+
+            // 1. Ativa o Gráfico de Execução (Heatmap)
+            this.renderAnnualHeatmap();
+
+            // 2. Calcula e Renderiza a Distribuição de Foco
+            const focusContainer = document.getElementById('focus-distribution');
+            if (focusContainer) {
+                const effort = {}; 
+                const dims = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
+                dims.forEach(d => effort[d] = 0);
+                
+                // Soma os pesos estratégicos
+                const addScore = (list, weight) => {
+                    (list || []).forEach(item => {
+                        const dim = item.dimension || item.dimensionName || 'Geral';
+                        if (effort[dim] !== undefined) { effort[dim] += weight; }
+                    });
+                };
+                
+                addScore(state.entities.metas, 3);
+                addScore(state.entities.okrs, 2);
+                addScore(state.entities.macros, 1);
+                addScore(state.entities.micros, 0.5);
+                
+                // Descobre o total para fazer a porcentagem
+                const total = Object.values(effort).reduce((a, b) => a + b, 0) || 1;
+                
+                let focusHtml = '';
+                dims.forEach(dim => {
+                    const score = effort[dim];
+                    const pct = (score / total) * 100;
+                    focusHtml += `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] uppercase tracking-wider font-bold text-outline">
+                            <span>${dim}</span><span>Esforço: ${score}</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                            <div class="h-full bg-primary rounded-full transition-all duration-700" style="width: ${pct}%"></div>
+                        </div>
+                    </div>`;
+                });
+                focusContainer.innerHTML = focusHtml;
+            }
         },
 
         renderAnnualHeatmap: function() {
