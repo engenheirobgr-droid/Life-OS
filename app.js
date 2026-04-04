@@ -55,6 +55,9 @@ const app = {
     },
     currentView: '',
     planosFilter: 'Todas',
+    planosStatusFilter: 'active',
+    planosHierarchyType: '',
+    planosHierarchyId: '',
     currentTextGroup: null,
     currentTextKey: null,
 
@@ -118,26 +121,29 @@ const app = {
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         
-        // 1. Inatividade / Boas-vindas
+        if (!state.purposeStartDate) state.purposeStartDate = todayStr;
+        if (!state.cycleStartDate) state.cycleStartDate = todayStr;
+        
         if (state.lastAccess) {
             const diffDays = Math.floor((today - new Date(state.lastAccess)) / (1000 * 60 * 60 * 24));
-            if (diffDays >= 2) {
-                setTimeout(() => this.showNotification("Bom ter você de volta à sua jornada!"), 1000);
-            }
+            if (diffDays >= 2) setTimeout(() => this.showNotification("Bom ter você de volta à sua jornada!"), 1000);
         }
         state.lastAccess = todayStr;
         this.saveState();
 
-        // 2. Alerta de Revisão Semanal (Segunda-feira)
         this.needsReview = false;
-        if (today.getDay() === 1) { 
+        if (today.getDay() === 0) { // Domingo
             const reviews = Object.keys(state.reviews || {});
-            const hasRecent = reviews.some(dateStr => {
-                const diff = (today - new Date(dateStr)) / (1000 * 60 * 60 * 24);
-                return diff <= 3;
-            });
+            const hasRecent = reviews.some(dateStr => (today - new Date(dateStr)) / (1000 * 60 * 60 * 24) <= 3);
             this.needsReview = !hasRecent;
+            if (this.needsReview) setTimeout(() => this.showNotification("📅 É Domingo! Dia de planear a semana e rever as suas ações."), 2500);
         }
+
+        const diffDaysCycle = Math.floor((today - new Date(state.cycleStartDate)) / (1000 * 60 * 60 * 24));
+        if (diffDaysCycle >= 84) setTimeout(() => this.showNotification("🔄 Ciclo concluído! Reavalie a Roda da Vida e o PERMA na aba Propósito."), 4000);
+
+        const diffDaysPurpose = Math.floor((today - new Date(state.purposeStartDate)) / (1000 * 60 * 60 * 24));
+        if (diffDaysPurpose >= 365 && diffDaysPurpose % 365 === 0) setTimeout(() => this.showNotification("🌟 1 ano de jornada! Hora da revisão profunda do seu Propósito e Ikigai."), 5500);
     },
 
     switchPlanosTab: function(tabId) {
@@ -516,10 +522,12 @@ const app = {
             
             if (okr) {
                 if (action === 'concluir') {
-                    okr.status = 'done';
-                    okr.progress = 100;
+                    okr.status = 'done'; okr.progress = 100;
+                    this.cascadeStatusDown(okr.id, 'okrs', 'done');
+                    this.updateCascadeProgress(okr.id, 'okrs');
                 } else if (action === 'arquivar') {
                     okr.status = 'abandoned';
+                    this.cascadeStatusDown(okr.id, 'okrs', 'abandoned');
                 }
             }
         });
@@ -1129,6 +1137,57 @@ const app = {
                 });
             }
 
+            const filterAreaId = 'planos-advanced-filters';
+            let filterArea = document.getElementById(filterAreaId);
+            if (!filterArea) {
+                const dimensionFilters = document.querySelector('.overflow-x-auto.no-scrollbar.mb-12') || document.querySelector('#tab-metas').parentNode;
+                if (dimensionFilters) {
+                    dimensionFilters.insertAdjacentHTML('afterend', `
+                        <div id="${filterAreaId}" class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 mb-6 space-y-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                                <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">account_tree</span> Raio-X Relacional:</span>
+                                <div class="flex gap-2 w-full sm:w-auto">
+                                    <select id="hier-type" onchange="app.planosHierarchyType = this.value; app.planosHierarchyId = ''; app.render.planos()" class="flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none">
+                                        <option value="">Mostrar Tudo</option>
+                                        <option value="metas">Por Meta</option>
+                                        <option value="okrs">Por OKR</option>
+                                        <option value="macros">Por Macro Ação</option>
+                                    </select>
+                                    <select id="hier-id" onchange="app.planosHierarchyId = this.value; app.render.planos()" class="hidden flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none w-full sm:max-w-[250px] truncate">
+                                        <option value="">Selecione...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 pt-3 border-t border-outline-variant/10 overflow-x-auto no-scrollbar">
+                                <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1 shrink-0"><span class="material-symbols-outlined text-[14px]">check_circle</span> Status:</span>
+                                <div class="flex gap-2 shrink-0">
+                                    <button onclick="app.planosStatusFilter='active'; app.render.planos()" id="btn-stat-active" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Ativos</button>
+                                    <button onclick="app.planosStatusFilter='done'; app.render.planos()" id="btn-stat-done" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Concluídos</button>
+                                    <button onclick="app.planosStatusFilter='all'; app.render.planos()" id="btn-stat-all" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Todos</button>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+            }
+            
+            if (document.getElementById('hier-type')) {
+                document.getElementById('hier-type').value = app.planosHierarchyType || '';
+                const hierIdSelect = document.getElementById('hier-id');
+                if (app.planosHierarchyType) {
+                    hierIdSelect.classList.remove('hidden');
+                    const list = state.entities[app.planosHierarchyType] || [];
+                    hierIdSelect.innerHTML = '<option value="">Selecione a referência...</option>' + list.map(e => `<option value="${e.id}" ${app.planosHierarchyId === e.id ? 'selected' : ''}>${e.title}</option>`).join('');
+                } else {
+                    hierIdSelect.classList.add('hidden');
+                }
+
+                const statFilter = app.planosStatusFilter || 'active';
+                document.getElementById('btn-stat-active').className = `px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${statFilter === 'active' ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:brightness-95'}`;
+                document.getElementById('btn-stat-done').className = `px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${statFilter === 'done' ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:brightness-95'}`;
+                document.getElementById('btn-stat-all').className = `px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${statFilter === 'all' ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:brightness-95'}`;
+            }
+
             const buildCards = (items, entityType) => {
                 // Determine implicit dimension hierarchically
                 const resolveDim = (item) => {
@@ -1146,7 +1205,44 @@ const app = {
                     return 'Geral';
                 };
 
-                const filtered = filter === 'Todas' ? items : items.filter(i => resolveDim(i) === filter);
+                const resolveLineage = (item, type) => {
+                    let metaId = type === 'metas' ? item.id : null;
+                    let okrId = type === 'okrs' ? item.id : null;
+                    let macroId = type === 'macros' ? item.id : null;
+                    if (type === 'micros') {
+                        macroId = item.macroId;
+                        const m = state.entities.macros.find(x => x.id === macroId);
+                        if (m) { okrId = m.okrId; const o = state.entities.okrs.find(x => x.id === okrId); if (o) metaId = o.metaId; }
+                    } else if (type === 'macros') {
+                        okrId = item.okrId;
+                        const o = state.entities.okrs.find(x => x.id === okrId);
+                        if (o) metaId = o.metaId;
+                    } else if (type === 'okrs') {
+                        metaId = item.metaId;
+                    }
+                    return { metaId, okrId, macroId };
+                };
+
+                const filteredByDim = filter === 'Todas' ? items : items.filter(i => resolveDim(i) === filter);
+                const filtered = filteredByDim.filter(i => {
+                    // Filtro 1: Status
+                    const isDone = i.progress >= 100 || i.status === 'done' || i.completed;
+                    const statFilter = app.planosStatusFilter || 'active';
+                    let passStatus = false;
+                    if (statFilter === 'active') passStatus = !isDone && i.status !== 'abandoned';
+                    else if (statFilter === 'done') passStatus = isDone;
+                    else passStatus = i.status !== 'abandoned';
+                    if (!passStatus) return false;
+
+                    // Filtro 2: Raio-X Relacional (Lineage Omnidirecional)
+                    if (app.planosHierarchyType && app.planosHierarchyId) {
+                        const lineage = resolveLineage(i, entityType);
+                        if (app.planosHierarchyType === 'metas' && lineage.metaId !== app.planosHierarchyId) return false;
+                        if (app.planosHierarchyType === 'okrs' && lineage.okrId !== app.planosHierarchyId) return false;
+                        if (app.planosHierarchyType === 'macros' && lineage.macroId !== app.planosHierarchyId) return false;
+                    }
+                    return true;
+                });
                 
                 const grouped = {};
                 filtered.forEach(item => {
@@ -1241,6 +1337,9 @@ const app = {
                                     </div>
                                     <h4 class="font-headline text-xl font-medium">${item.title}</h4>
                                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        ${prog < 100 ? `<button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary/10 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
+                                            <span class="material-symbols-outlined text-[14px]">done_all</span> Concluir
+                                        </button>` : ''}
                                         <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary-container/20 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
                                             <span class="material-symbols-outlined text-[14px]">edit</span> Editar
                                         </button>
@@ -1495,6 +1594,37 @@ const app = {
         this.saveState();
         if (this.render.hoje) this.render.hoje();
         if (this.render.planos) this.render.planos();
+    },
+
+    cascadeStatusDown: function(parentId, parentType, newStatus) {
+        const state = window.sistemaVidaState;
+        const updateChild = (child, type) => {
+            if (child.status !== 'done') {
+                child.status = newStatus;
+                if (newStatus === 'done') child.progress = 100;
+                if (type === 'micros') child.completed = (newStatus === 'done');
+                this.cascadeStatusDown(child.id, type, newStatus);
+            }
+        };
+        if (parentType === 'metas') (state.entities.okrs || []).filter(o => o.metaId === parentId).forEach(c => updateChild(c, 'okrs'));
+        else if (parentType === 'okrs') (state.entities.macros || []).filter(m => m.okrId === parentId).forEach(c => updateChild(c, 'macros'));
+        else if (parentType === 'macros') (state.entities.micros || []).filter(m => m.macroId === parentId).forEach(c => updateChild(c, 'micros'));
+    },
+
+    forceCompleteEntity: function(id, type) {
+        if (confirm('Deseja marcar este item (e todos os seus dependentes diretos) como 100% concluído?')) {
+            const state = window.sistemaVidaState;
+            const item = state.entities[type].find(e => e.id === id);
+            if (item) {
+                item.progress = 100; item.status = 'done';
+                if (type === 'micros') item.completed = true;
+                this.updateCascadeProgress(id, type); // Mantém a automação Bottom-Up
+                this.cascadeStatusDown(id, type, 'done'); // Dispara a nova Cascata Top-Down
+                this.saveState();
+                if (this.render.planos) this.render.planos();
+                if (this.render.painel) this.render.painel();
+            }
+        }
     },
 
     deleteEntity: function(id, type) {
