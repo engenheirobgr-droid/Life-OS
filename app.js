@@ -214,6 +214,23 @@ const app = {
         this.switchView(viewName);
     },
 
+    // ---> ADICIONE ESTE BLOCO AQUI <---
+    toggleTrail: function(element) {
+        const trail = element.querySelector('.trail-panel');
+        if (!trail) return;
+        const isExpanded = !trail.classList.contains('hidden');
+        if (isExpanded) {
+            trail.style.maxHeight = '0px';
+            setTimeout(() => trail.classList.add('hidden'), 300);
+        } else {
+            trail.classList.remove('hidden');
+            trail.style.maxHeight = trail.scrollHeight + 'px';
+        }
+        element.classList.toggle('ring-1');
+        element.classList.toggle('ring-primary/20');
+    },
+    // ----------------------------------
+
     setPlanosFilter: function(dim) {
         this.planosFilter = dim;
         if (this.render.planos) this.render.planos();
@@ -549,8 +566,9 @@ const app = {
         const parentId = document.getElementById('create-parent') ? document.getElementById('create-parent').value : '';
 
         const isEditing = !!this.editingEntity;
-        const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now();
-        const obj = { id, title, dimension, prazo };
+        const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
+        
+        const obj = { id: id || '', title: title || '', dimension: dimension || 'Geral', prazo: prazo || '' };
 
         const getOldItem = (eid, etype) => {
             const state = window.sistemaVidaState;
@@ -559,19 +577,19 @@ const app = {
         };
 
         if (type === 'metas' || type === 'okrs') {
-            obj.purpose = context;
+            obj.purpose = context || '';
             obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
-            if (type === 'okrs' && parentId) obj.metaId = parentId;
+            if (type === 'okrs' && parentId) obj.metaId = parentId || '';
         } else if (type === 'macros') {
-            obj.description = context;
+            obj.description = context || '';
             obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
             if (parentId) {
                 obj.okrId = parentId;
                 const okr = window.sistemaVidaState.entities.okrs.find(o => o.id === parentId);
-                if (okr) obj.metaId = okr.metaId;
+                if (okr) obj.metaId = okr.metaId || '';
             }
         } else if (type === 'micros') {
-            obj.indicator = context;
+            obj.indicator = context || '';
             const oldItem = getOldItem(id, 'micros');
             obj.status = isEditing ? (oldItem.status || 'pending') : 'pending';
             obj.completed = obj.status === 'done';
@@ -580,40 +598,30 @@ const app = {
             if (parentId) {
                 const macro = window.sistemaVidaState.entities.macros.find(m => m.id === parentId);
                 if (macro) {
-                    obj.macroId = macro.id;
-                    obj.okrId = macro.okrId;
-                    obj.metaId = macro.metaId;
+                    obj.macroId = macro.id || '';
+                    obj.okrId = macro.okrId || '';
+                    obj.metaId = macro.metaId || '';
                 }
             }
         } else if (type === 'habits') {
-            obj.context = context;
+            obj.context = context || '';
             obj.completed = isEditing ? (getOldItem(id, 'habits').completed || false) : false;
-            if (trigger) obj.trigger = trigger;
+            obj.trigger = trigger || '';
         }
 
         if (isEditing) {
             const list = type === 'habits' ? window.sistemaVidaState.habits : window.sistemaVidaState.entities[type];
             const idx = list.findIndex(e => e.id === id);
             if (idx !== -1) list[idx] = obj;
-            
-            // Re-calcula cascata se necessário após edição
-            if (['micros', 'macros', 'okrs'].includes(type)) {
-                this.updateCascadeProgress(id, type);
-            }
+            if (['micros', 'macros', 'okrs'].includes(type)) this.updateCascadeProgress(id, type);
         } else {
             if (type === 'habits') {
                 if (!window.sistemaVidaState.habits) window.sistemaVidaState.habits = [];
                 window.sistemaVidaState.habits.push(obj);
             } else {
-                if (!window.sistemaVidaState.entities[type]) {
-                    window.sistemaVidaState.entities[type] = [];
-                }
+                if (!window.sistemaVidaState.entities[type]) window.sistemaVidaState.entities[type] = [];
                 window.sistemaVidaState.entities[type].push(obj);
-
-                // Aciona a cascata para novas entidades
-                if (['micros', 'macros', 'okrs'].includes(type)) {
-                    this.updateCascadeProgress(obj.id, type);
-                }
+                if (['micros', 'macros', 'okrs'].includes(type)) this.updateCascadeProgress(obj.id, type);
             }
         }
 
@@ -621,7 +629,11 @@ const app = {
         this.closeModal();
         this.saveState();
 
-        if (this.currentView && this.render[this.currentView]) {
+        if (this.currentView === 'planos') {
+            const typeMapping = { metas: 'metas', okrs: 'okrs', macros: 'macro', micros: 'micro' };
+            this.switchPlanosTab(typeMapping[type]);
+            this.render.planos();
+        } else if (this.currentView && this.render[this.currentView]) {
             this.render[this.currentView]();
         }
     },
@@ -1083,40 +1095,58 @@ const app = {
                         
                         // Build Hierarchy Trail Nodes
                         let trailNodes = [];
-                        
-                        // Push from most specific to most general
                         if (entityType === 'micros') {
-                            trailNodes.push({ label: 'Ação', text: item.title });
-                            const macro = state.entities.macros.find(m => m.id === item.macroId);
-                            if (macro) trailNodes.push({ label: 'Macro', text: macro.title });
-                            const okr = state.entities.okrs.find(o => o.id === item.okrId);
-                            if (okr) trailNodes.push({ label: 'OKR', text: okr.title });
-                            const meta = state.entities.metas.find(m => m.id === item.metaId);
-                            if (meta) trailNodes.push({ label: 'Meta', text: meta.title });
+                            trailNodes.push({ label: 'Micro Ação', title: item.title });
+                            const macro = state.entities.macros.find(x => x.id === item.macroId);
+                            trailNodes.push({ label: 'Macro Ação', title: macro ? macro.title : '-' });
+                            const okr = macro ? state.entities.okrs.find(x => x.id === macro.okrId) : null;
+                            trailNodes.push({ label: 'OKR', title: okr ? okr.title : '-' });
+                            const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : null;
+                            trailNodes.push({ label: 'Meta', title: meta ? meta.title : '-' });
+                            trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
+                            trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '-') : '-' });
                         } else if (entityType === 'macros') {
-                            trailNodes.push({ label: 'Macro', text: item.title });
-                            const okr = state.entities.okrs.find(o => o.id === item.okrId);
-                            if (okr) trailNodes.push({ label: 'OKR', text: okr.title });
-                            const meta = state.entities.metas.find(m => m.id === item.metaId);
-                            if (meta) trailNodes.push({ label: 'Meta', text: meta.title });
+                            trailNodes.push({ label: 'Macro Ação', title: item.title });
+                            const okr = state.entities.okrs.find(x => x.id === item.okrId);
+                            trailNodes.push({ label: 'OKR', title: okr ? okr.title : '-' });
+                            const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : null;
+                            trailNodes.push({ label: 'Meta', title: meta ? meta.title : '-' });
+                            trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
+                            trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '-') : '-' });
                         } else if (entityType === 'okrs') {
-                            trailNodes.push({ label: 'OKR', text: item.title });
-                            const meta = state.entities.metas.find(m => m.id === item.metaId);
-                            if (meta) trailNodes.push({ label: 'Meta', text: meta.title });
+                            trailNodes.push({ label: 'OKR', title: item.title });
+                            const meta = state.entities.metas.find(x => x.id === item.metaId);
+                            trailNodes.push({ label: 'Meta', title: meta ? meta.title : '-' });
+                            trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
+                            trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '-') : '-' });
                         } else if (entityType === 'metas') {
-                            trailNodes.push({ label: 'Meta', text: item.title });
+                            trailNodes.push({ label: 'Meta', title: item.title });
+                            trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
+                            trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '-' });
                         }
-                        
-                        // Always include Area and Purpose at the end
-                        trailNodes.push({ label: 'Área', text: item.dimension });
-                        trailNodes.push({ label: 'Propósito', text: 'Viver em alinhamento com meus valores essenciais' });
 
-                        const trailHtml = trailNodes.map(node => `
-                            <div class="mb-3 last:mb-0">
-                                <span class="block text-[8px] uppercase tracking-widest text-outline font-bold">${node.label}</span>
-                                <span class="text-[11px] text-on-surface-variant font-medium leading-tight">${node.text}</span>
-                            </div>
-                        `).join('');
+                        let trailHtml = `<div class="bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant mt-6">
+                            <div class="absolute left-[11px] top-4 bottom-4 w-px bg-primary/10"></div>`;
+                        
+                        trailNodes.forEach((node) => {
+                            let icon = 'trip_origin'; let colorClass = 'text-stone-400'; let titleClass = 'text-xs text-on-surface-variant font-medium';
+                            if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; titleClass = 'text-base font-headline italic text-on-surface'; }
+                            else if (node.label === 'Área') { icon = 'stars'; colorClass = 'text-primary'; }
+                            else if (node.label === 'Meta') { icon = 'flag'; colorClass = 'text-stone-400'; }
+                            else if (node.label === 'OKR') { icon = 'track_changes'; colorClass = 'text-stone-400'; }
+                            else if (node.label === 'Macro Ação') { icon = 'account_tree'; colorClass = 'text-stone-400'; }
+                            else if (node.label === 'Micro Ação') { icon = 'check_circle'; colorClass = 'text-primary'; }
+                            
+                            trailHtml += `
+                            <div class="flex items-center gap-4 relative z-10">
+                                <span class="material-symbols-outlined ${colorClass} text-xl bg-stone-100 dark:bg-stone-900 p-0.5" style="font-variation-settings: 'FILL' 1;">${icon}</span>
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold ${colorClass}">${node.label}</span>
+                                    <span class="${titleClass}">${node.title}</span>
+                                </div>
+                            </div>`;
+                        });
+                        trailHtml += `</div>`;
 
                         const userValues = state.profile.values || [];
                         const isAligned = userValues.includes(item.dimension);
@@ -1247,7 +1277,7 @@ const app = {
                             <span class="text-outline font-bold">${dim}</span>
                             <span class="text-primary font-bold">${data.score}</span>
                         </div>
-                        <input type="range" min="1" max="100" value="${data.score}" class="w-full accent-primary h-1 bg-surface-container-high rounded-full appearance-none cursor-pointer" oninput="app.updateDimensionScore('${dim}', this.value); this.previousElementSibling.lastElementChild.textContent=this.value">
+                        <input type="range" min="1" max="100" value="${data.score}" class="w-full accent-primary h-1 bg-surface-container-high rounded-full appearance-none cursor-pointer" oninput="app.updateDimensionVisual('${dim}', this.value); this.previousElementSibling.lastElementChild.textContent=this.value" onchange="app.saveState()">
                     </div>`;
                 }
                 slidersContainer.innerHTML = html;
@@ -1425,28 +1455,20 @@ const app = {
         }
     },
 
-    updateDimensionScore: function(dim, score) {
-        const s = parseInt(score);
-        window.sistemaVidaState.dimensions[dim].score = s;
-        this.saveState();
-        
-        // Forçar redesenho imediato do SVG se estiver na view propósito
-        if (this.currentView === 'proposito') {
-            const polygon = document.getElementById('roda-polygon');
-            if (polygon) {
-                const axes = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
-                const angles = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => deg * Math.PI / 180);
-                
-                const pts = axes.map((d, i) => {
-                    const sc = window.sistemaVidaState.dimensions[d]?.score || 0;
-                    const r = 40 * (sc / 100);
-                    const x = 50 + r * Math.sin(angles[i]);
-                    const y = 50 - r * Math.cos(angles[i]);
-                    return `${x.toFixed(1)},${y.toFixed(1)}`;
-                });
-                
-                polygon.setAttribute('points', pts.join(' '));
-            }
+    updateDimensionVisual: function(dim, score) {
+        window.sistemaVidaState.dimensions[dim].score = parseInt(score);
+        const polygon = document.getElementById('roda-polygon');
+        if (polygon) {
+            const axes = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
+            const angles = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => deg * Math.PI / 180);
+            const pts = axes.map((d, i) => {
+                const sc = window.sistemaVidaState.dimensions[d]?.score || 0;
+                const r = 40 * (sc / 100);
+                const x = 50 + r * Math.sin(angles[i]);
+                const y = 50 - r * Math.cos(angles[i]);
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            });
+            polygon.setAttribute('points', pts.join(' '));
         }
     },
 
