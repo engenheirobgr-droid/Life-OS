@@ -12,6 +12,46 @@
 </div>
 </header>
 
+<!-- Progresso Semana: Foco & Execução -->
+<section class="bg-surface-container-low p-6 rounded-xl space-y-6 shadow-sm border border-outline-variant/10">
+    <div class="grid md:grid-cols-2 gap-8">
+        <div class="space-y-3">
+            <div class="flex justify-between items-end">
+                <div class="space-y-0.5">
+                    <span class="text-[10px] font-label uppercase tracking-widest text-outline">Foco Atual</span>
+                    <h4 class="text-xs font-bold text-on-surface">Visão Tática (Macros)</h4>
+                </div>
+                <span id="painel-foco-val" class="text-2xl font-headline italic text-primary">0%</span>
+            </div>
+            <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                <div id="painel-foco-bar" class="h-full bg-primary rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+            </div>
+        </div>
+        <div class="space-y-3">
+            <div class="flex justify-between items-end">
+                <div class="space-y-0.5">
+                    <span class="text-[10px] font-label uppercase tracking-widest text-outline">Execução</span>
+                    <h4 class="text-xs font-bold text-on-surface">Micro Ações Semanais</h4>
+                </div>
+                <span id="painel-exec-val" class="text-2xl font-headline italic text-secondary">0%</span>
+            </div>
+            <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                <div id="painel-exec-bar" class="h-full bg-secondary rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+    <div class="flex justify-between border-t border-outline-variant/10 pt-4 px-2">
+        <div class="text-center">
+            <span id="painel-concluidas-val" class="block text-2xl font-headline italic text-primary">0</span>
+            <span class="text-[9px] uppercase tracking-[0.2em] text-outline font-bold">Concluídas</span>
+        </div>
+        <div class="text-center">
+            <span id="painel-atrasadas-val" class="block text-2xl font-headline italic text-error">0</span>
+            <span class="text-[9px] uppercase tracking-[0.2em] text-outline font-bold">Atrasadas</span>
+        </div>
+    </div>
+</section>
+
 <!-- Banner Revisão Semanal -->
 <section id="review-banner" class="hidden bg-primary-container text-on-primary-container p-6 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
     <div class="absolute -right-6 -top-6 opacity-10">

@@ -687,6 +687,43 @@ const app = {
     render: {
         painel: function() {
             const state = window.sistemaVidaState;
+
+            // ---------------------------------------------------------
+            // CÁLCULO DE FOCO E EXECUÇÃO
+            // ---------------------------------------------------------
+            const micros = state.entities.micros || [];
+            const macros = state.entities.macros || [];
+            
+            // Execução: % de Micro Ações Concluídas
+            const totalMicros = micros.length;
+            const doneMicros = micros.filter(m => m.status === 'done').length;
+            const execScore = totalMicros === 0 ? 0 : Math.round((doneMicros / totalMicros) * 100);
+            
+            // Foco: % de Macro Ações Concluídas (Visão Tática)
+            const totalMacros = macros.length;
+            const doneMacros = macros.filter(m => m.status === 'done').length;
+            const focoScore = totalMacros === 0 ? 0 : Math.round((doneMacros / totalMacros) * 100);
+
+            // Atualiza a UI do Painel
+            const focoVal = document.getElementById('painel-foco-val');
+            const focoBar = document.getElementById('painel-foco-bar');
+            const execVal = document.getElementById('painel-exec-val');
+            const execBar = document.getElementById('painel-exec-bar');
+            const concluidasVal = document.getElementById('painel-concluidas-val');
+            const atrasadasVal = document.getElementById('painel-atrasadas-val');
+
+            if (focoVal) focoVal.textContent = focoScore + '%';
+            if (focoBar) focoBar.style.width = focoScore + '%';
+            if (execVal) execVal.textContent = execScore + '%';
+            if (execBar) execBar.style.width = execScore + '%';
+            if (concluidasVal) concluidasVal.textContent = doneMicros;
+            
+            if (atrasadasVal) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const delayedMicros = micros.filter(m => m.status !== 'done' && m.prazo && m.prazo < todayStr).length;
+                atrasadasVal.textContent = delayedMicros;
+            }
+            // ---------------------------------------------------------
             
             // Fix Filter Buttons Highlight
             document.querySelectorAll('header .flex.gap-2 button').forEach(btn => {
