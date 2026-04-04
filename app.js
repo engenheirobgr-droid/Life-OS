@@ -78,7 +78,21 @@ const app = {
             
             if (docSnap.exists()) {
                 console.log("Estado encontrado na Nuvem, mesclando dados...");
-                window.sistemaVidaState = { ...window.sistemaVidaState, ...docSnap.data() };
+                const cloudData = docSnap.data();
+                
+                const mergeDeep = (target, source) => {
+                    for (const key in source) {
+                        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                            if (!target[key]) target[key] = {};
+                            mergeDeep(target[key], source[key]);
+                        } else {
+                            target[key] = source[key];
+                        }
+                    }
+                    return target;
+                };
+                
+                window.sistemaVidaState = mergeDeep(window.sistemaVidaState, cloudData);
             } else {
                 console.log("Primeiro acesso. Criando documento base na Nuvem...");
                 await this.saveState();
@@ -630,10 +644,7 @@ const app = {
     saveDailyLog: function() {
         const gratidao = document.getElementById('diario-gratidao') ? document.getElementById('diario-gratidao').value : '';
         const funcionou = document.getElementById('diario-funcionou') ? document.getElementById('diario-funcionou').value : '';
-        const aprendi = document.getElementById('diario-aprendi') ? document.getElementById('diario-aprendi').value : '';
         const s1 = document.getElementById('diario-shutdown-1') ? document.getElementById('diario-shutdown-1').value : '';
-        const s2 = document.getElementById('diario-shutdown-2') ? document.getElementById('diario-shutdown-2').value : '';
-        const s3 = document.getElementById('diario-shutdown-3') ? document.getElementById('diario-shutdown-3').value : '';
 
         const today = new Date().toISOString().split('T')[0];
         
@@ -642,8 +653,7 @@ const app = {
         window.sistemaVidaState.dailyLogs[today] = { 
             gratidao, 
             funcionou, 
-            aprendi, 
-            shutdown: [s1, s2, s3], 
+            shutdown: s1, 
             energy: window.sistemaVidaState.energy 
         };
 
@@ -666,121 +676,58 @@ const app = {
         painel: function() {
             const state = window.sistemaVidaState;
             
-            // Automation: Calculate dimension scores based on OKR progress
-            Object.keys(state.dimensions).forEach(dim => {
-                const associatedOkrs = state.entities.okrs.filter(o => {
-                    const meta = state.entities.metas.find(m => m.id === o.metaId);
-                    return (meta && meta.dimensionName === dim) || o.dimensionName === dim || o.dimension === dim;
-                });
-                
-                if (associatedOkrs.length > 0) {
-                    const avgProgress = associatedOkrs.reduce((acc, curr) => acc + (curr.progress || 0), 0) / associatedOkrs.length;
-                    state.dimensions[dim].score = Math.round(avgProgress);
-                }
+            // Fix Filter Buttons Highlight
+            document.querySelectorAll('header .flex.gap-2 button').forEach(btn => {
+                const isSelected = btn.textContent.trim() === 'Semana'; // Mockup, assuming default is Semana
+                btn.className = isSelected ? 
+                    'px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95' :
+                    'px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors';
             });
 
-            for (const [dim, data] of Object.entries(state.dimensions)) {
-                const el = document.querySelector(`[data-dimension="${dim}"]`);
-                if (el) {
-                    const textEl = el.querySelector('.dim-score-text');
-                    const svgRing = el.querySelector('.dim-score-ring');
-                    if (textEl) textEl.textContent = data.score + "%";
-                    if (svgRing) {
-                        const offset = 88 - (88 * data.score / 100);
-                        svgRing.setAttribute('stroke-dashoffset', offset);
-                    }
-                }
-            }
+            // Cycle Progress Logic
+            const cycleStart = new Date(state.cycleStartDate || new Date());
+            const today = new Date();
+            const diffDays = Math.ceil((today - cycleStart) / (1000 * 60 * 60 * 24));
+            const diffWeeks = Math.ceil(diffDays / 7) || 1;
+            const cyclePercent = Math.min(100, Math.round((diffDays / 84) * 100)); // 12 weeks = 84 days
 
-            if (state.perma) {
-                const polygon = document.getElementById('perma-polygon');
-                const scoreText = document.getElementById('perma-score');
-                if (polygon && scoreText) {
-                    const values = [state.perma.P, state.perma.E, state.perma.R, state.perma.M, state.perma.A];
-                    const angles = [0, 72, 144, 216, 288].map(deg => deg * Math.PI / 180);
-                    const pts = values.map((val, i) => {
-                        const r = 40 * (val / 100);
-                        const x = 50 + r * Math.sin(angles[i]);
-                        const y = 50 - r * Math.cos(angles[i]);
-                        return `${x.toFixed(1)},${y.toFixed(1)}`;
-                    });
-                    polygon.setAttribute('points', pts.join(' '));
-                    const avg = (values.reduce((a, b) => a + b, 0) / 5).toFixed(1);
-                    if (scoreText) scoreText.textContent = `Score PERMA: ${avg}`;
-                }
-            }
-            const rb = document.getElementById('review-banner'); if (rb) { rb.style.display = app.needsReview ? 'flex' : 'none'; rb.classList.remove('hidden'); }
-
-            // Tarefa 1: Tempo de Ciclo Dinâmico
-            const diff = new Date() - new Date(state.cycleStartDate);
-            const week = Math.ceil(diff / (1000 * 60 * 60 * 24 * 7));
-            const cyclePercent = Math.min(100, Math.max(0, (week / 12) * 100)); // Base 12 semanas
-            
-            const weekText = document.getElementById('cycle-week-text');
             const cycleBar = document.getElementById('cycle-progress-bar');
             const cycleVal = document.getElementById('cycle-percent-val');
+            const cycleWeekText = document.getElementById('cycle-week-text');
             
-            if (weekText) weekText.textContent = `Semana ${week} de 12`;
             if (cycleBar) cycleBar.style.width = cyclePercent + '%';
-            if (cycleVal) cycleVal.textContent = Math.round(cyclePercent) + '%';
+            if (cycleVal) cycleVal.textContent = cyclePercent + '%';
+            if (cycleWeekText) cycleWeekText.textContent = `Semana ${diffWeeks} de 12`;
 
-            // Tarefa 3: Distribuição de Foco
-            const focusDist = document.getElementById('focus-distribution');
-            if (focusDist) {
-                focusDist.innerHTML = '';
-                const effort = {};
-                const itemCounts = {};
-                const dims = Object.keys(state.dimensions);
-                dims.forEach(d => {
-                    effort[d] = 0;
-                    itemCounts[d] = 0;
-                });
-                
-                const addScore = (list, weight) => {
-                    (list || []).forEach(item => {
-                        const dim = item.dimension || item.dimensionName || 'Geral';
-                        if (effort[dim] !== undefined) { effort[dim] += weight; itemCounts[dim]++; }
-                    });
-                };
-                addScore(state.entities.metas, 3);
-                addScore(state.entities.okrs, 2);
-                addScore(state.entities.macros, 1);
-                addScore(state.entities.micros, 0.5);
-                const maxEffort = Math.max(...Object.values(effort), 10);
-                
-                dims.forEach(dim => {
-                    const totalEffort = effort[dim];
-                    const pct = (totalEffort / maxEffort) * 100;
-                    const count = itemCounts[dim];
-                    
-                    const bar = document.createElement('div');
-                    bar.className = "group space-y-1";
-                    bar.innerHTML = `
-                        <div class="flex justify-between text-[10px] font-label uppercase tracking-widest text-outline group-hover:text-primary transition-colors">
-                            <span>${dim}</span>
-                            <span>${Math.round(totalEffort)}pts (${count} itens)</span>
+            // Dynamic OKR Rendering
+            const okrList = document.getElementById('painel-okr-list');
+            if (okrList) {
+                const activeOkrs = (state.entities.okrs || []).filter(o => o.status !== 'done' && o.status !== 'abandoned').slice(0, 3);
+                if (activeOkrs.length === 0) {
+                    okrList.innerHTML = '<p class="text-xs text-outline italic">Nenhum objetivo ativo. Defina um novo OKR para começar.</p>';
+                } else {
+                    okrList.innerHTML = activeOkrs.map(okr => `
+                        <div class="flex items-start gap-3">
+                            <div class="mt-1 w-2 h-2 rounded-full bg-primary shrink-0"></div>
+                            <div class="text-sm text-on-surface leading-relaxed">${okr.title}</div>
                         </div>
-                        <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-                            <div class="h-full bg-primary transition-all duration-1000" style="width: ${pct}%"></div>
-                        </div>
-                    `;
-                    focusDist.appendChild(bar);
-                });
+                    `).join('');
+                }
             }
 
-            // Tarefa 5: Ativar Filtros Temporais
-            const filterBtns = document.querySelectorAll('header .flex.gap-2 button');
-            const painelTitle = document.getElementById('painel-title');
-            
-            filterBtns.forEach(btn => {
-                btn.onclick = () => {
-                    filterBtns.forEach(b => b.className = "px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors");
-                    btn.className = "px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95";
-                    if (painelTitle) painelTitle.textContent = `Progresso ${btn.textContent}`;
-                };
+            // Dimension Scores Rendering
+            document.querySelectorAll('[data-dimension]').forEach(card => {
+                const dim = card.getAttribute('data-dimension');
+                const score = state.dimensions[dim]?.score || 0;
+                const text = card.querySelector('.dim-score-text');
+                const ring = card.querySelector('.dim-score-ring');
+                
+                if (text) text.textContent = score + '%';
+                if (ring) {
+                    const offset = 88 - (88 * (score / 100));
+                    ring.style.strokeDashoffset = offset;
+                }
             });
-
-            this.renderAnnualHeatmap();
         },
 
         renderAnnualHeatmap: function() {
@@ -887,10 +834,7 @@ const app = {
                 const log = state.dailyLogs[today];
                 const g = document.getElementById('diario-gratidao'); if (g) g.value = log.gratidao || '';
                 const f = document.getElementById('diario-funcionou'); if (f) f.value = log.funcionou || '';
-                const a = document.getElementById('diario-aprendi'); if (a) a.value = log.aprendi || '';
-                const s1 = document.getElementById('diario-shutdown-1'); if (s1 && log.shutdown) s1.value = log.shutdown[0] || '';
-                const s2 = document.getElementById('diario-shutdown-2'); if (s2 && log.shutdown) s2.value = log.shutdown[1] || '';
-                const s3 = document.getElementById('diario-shutdown-3'); if (s3 && log.shutdown) s3.value = log.shutdown[2] || '';
+                const s1 = document.getElementById('diario-shutdown-1'); if (s1) s1.value = log.shutdown || '';
             }
 
             // Render Habits
@@ -915,7 +859,7 @@ const app = {
                                 </div>
                             </div>
                             <div class="mt-auto">
-                                <p class="font-medium text-on-surface text-sm line-through truncate">${habit.title}</p>
+                                <p class="font-medium text-on-surface text-sm line-through">${habit.title}</p>
                                 ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight break-words line-clamp-2">Gatilho: ${habit.trigger}</p>` : ''}
                             </div>
                         </div>`;
@@ -1137,73 +1081,53 @@ const app = {
                         const prog = item.progress || (item.completed ? 100 : 0);
                         let visualProg = prog;
                         
+                        // Build Hierarchy Trail Nodes
                         let trailNodes = [];
                         
-                        // Base (Dimension)
-                        trailNodes.push({ label: 'Dimensão', title: dim });
-
-                        if (entityType === 'metas') {
-                            trailNodes.unshift({ label: 'Propósito (Nível 0)', title: item.purpose || 'Sem propósito definido' });
-                        } else if (entityType === 'okrs') {
-                            const meta = state.entities.metas.find(x => x.id === item.metaId);
-                            trailNodes.unshift({ label: 'Meta', title: meta ? meta.title : 'Não vinculado' });
-                            if (meta) trailNodes.unshift({ label: 'Propósito (Nível 0)', title: meta.purpose || '-' });
+                        // Push from most specific to most general
+                        if (entityType === 'micros') {
+                            trailNodes.push({ label: 'Ação', text: item.title });
+                            const macro = state.entities.macros.find(m => m.id === item.macroId);
+                            if (macro) trailNodes.push({ label: 'Macro', text: macro.title });
+                            const okr = state.entities.okrs.find(o => o.id === item.okrId);
+                            if (okr) trailNodes.push({ label: 'OKR', text: okr.title });
+                            const meta = state.entities.metas.find(m => m.id === item.metaId);
+                            if (meta) trailNodes.push({ label: 'Meta', text: meta.title });
                         } else if (entityType === 'macros') {
-                            const okr = state.entities.okrs.find(x => x.id === item.okrId);
-                            if (okr) {
-                                trailNodes.unshift({ label: 'OKR', title: okr.title });
-                                const meta = state.entities.metas.find(x => x.id === okr.metaId);
-                                trailNodes.unshift({ label: 'Meta', title: meta ? meta.title : 'Não vinculado' });
-                                if (meta) trailNodes.unshift({ label: 'Propósito (Nível 0)', title: meta.purpose || '-' });
-                            } else {
-                                trailNodes.unshift({ label: 'OKR', title: 'Não vinculado' });
-                            }
-                        } else if (entityType === 'micros') {
-                            const macro = state.entities.macros.find(x => x.id === item.macroId);
-                            if (macro) {
-                                trailNodes.unshift({ label: 'Macro Ação', title: macro.title });
-                                const okr = state.entities.okrs.find(x => x.id === macro.okrId);
-                                if (okr) {
-                                    trailNodes.unshift({ label: 'OKR', title: okr.title });
-                                    const meta = state.entities.metas.find(x => x.id === okr.metaId);
-                                    trailNodes.unshift({ label: 'Meta', title: meta ? meta.title : 'Não vinculado' });
-                                    if (meta) trailNodes.unshift({ label: 'Propósito (Nível 0)', title: meta.purpose || '-' });
-                                } else {
-                                    trailNodes.unshift({ label: 'OKR', title: 'Não vinculado' });
-                                }
-                            } else {
-                                trailNodes.unshift({ label: 'Macro Ação', title: 'Não vinculado' });
-                            }
+                            trailNodes.push({ label: 'Macro', text: item.title });
+                            const okr = state.entities.okrs.find(o => o.id === item.okrId);
+                            if (okr) trailNodes.push({ label: 'OKR', text: okr.title });
+                            const meta = state.entities.metas.find(m => m.id === item.metaId);
+                            if (meta) trailNodes.push({ label: 'Meta', text: meta.title });
+                        } else if (entityType === 'okrs') {
+                            trailNodes.push({ label: 'OKR', text: item.title });
+                            const meta = state.entities.metas.find(m => m.id === item.metaId);
+                            if (meta) trailNodes.push({ label: 'Meta', text: meta.title });
+                        } else if (entityType === 'metas') {
+                            trailNodes.push({ label: 'Meta', text: item.title });
                         }
-
-                        let trailHtml = `<div class="bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant mt-6">
-                            <div class="absolute left-[34px] top-4 bottom-4 w-px bg-primary/20"></div>`;
                         
-                        trailNodes.forEach((node) => {
-                            let icon = 'trip_origin'; let colorClass = 'text-stone-400'; let textStyle = 'text-xs font-medium';
-                            if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; textStyle = 'text-base font-headline italic'; }
-                            else if (node.label === 'Dimensão' || node.label === 'Área') { icon = 'stars'; colorClass = 'text-primary'; }
-                            else if (node.label === 'Meta') icon = 'flag';
-                            else if (node.label === 'OKR') icon = 'track_changes';
-                            else if (node.label === 'Macro Ação') icon = 'account_tree';
-                            
-                            trailHtml += `
-                            <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined ${colorClass} text-xl bg-stone-100 dark:bg-stone-900 p-0.5" style="font-variation-settings: 'FILL' 1;">${icon}</span>
-                                <div class="flex flex-col">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold ${colorClass}">${node.label}</span>
-                                    <span class="${textStyle}">${node.title}</span>
-                                </div>
-                            </div>`;
-                        });
-                        trailHtml += `</div>`;
+                        // Always include Area and Purpose at the end
+                        trailNodes.push({ label: 'Área', text: item.dimension });
+                        trailNodes.push({ label: 'Propósito', text: 'Viver em alinhamento com meus valores essenciais' });
+
+                        const trailHtml = trailNodes.map(node => `
+                            <div class="mb-3 last:mb-0">
+                                <span class="block text-[8px] uppercase tracking-widest text-outline font-bold">${node.label}</span>
+                                <span class="text-[11px] text-on-surface-variant font-medium leading-tight">${node.text}</span>
+                            </div>
+                        `).join('');
+
+                        const userValues = state.profile.values || [];
+                        const isAligned = userValues.includes(item.dimension);
 
                         html += `
-                        <div class="bg-surface-container-lowest p-6 rounded-lg shadow-[0_12px_40px_rgba(27,28,26,0.02)] transition-all cursor-pointer hover:bg-surface-container-low group" onclick="const p = this.querySelector('.trail-panel'); if(p){ p.classList.toggle('hidden'); p.classList.toggle('max-h-0'); }">
+                        <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
                             <div class="flex justify-between items-start mb-4">
-                                <div class="flex flex-col gap-1">
+                                <div class="space-y-1">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-[9px] font-label uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">${resolveDim(item) || 'Geral'}</span>
+                                        <span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded font-label font-bold uppercase tracking-wider">${item.dimension}</span>
+                                        ${isAligned ? '<span class="bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded border border-primary/20 font-bold">ALINHADO AOS VALORES</span>' : ''}
                                     </div>
                                     <h4 class="font-headline text-xl font-medium">${item.title}</h4>
                                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1323,7 +1247,7 @@ const app = {
                             <span class="text-outline font-bold">${dim}</span>
                             <span class="text-primary font-bold">${data.score}</span>
                         </div>
-                        <input type="range" min="1" max="100" value="${data.score}" class="w-full accent-primary h-1 bg-surface-container-high rounded-full appearance-none cursor-pointer" onchange="app.updateDimensionScore('${dim}', this.value)" oninput="this.previousElementSibling.lastElementChild.textContent=this.value">
+                        <input type="range" min="1" max="100" value="${data.score}" class="w-full accent-primary h-1 bg-surface-container-high rounded-full appearance-none cursor-pointer" oninput="app.updateDimensionScore('${dim}', this.value); this.previousElementSibling.lastElementChild.textContent=this.value">
                     </div>`;
                 }
                 slidersContainer.innerHTML = html;
@@ -1502,10 +1426,27 @@ const app = {
     },
 
     updateDimensionScore: function(dim, score) {
-        const state = window.sistemaVidaState;
-        if (state.dimensions && state.dimensions[dim]) {
-            state.dimensions[dim].score = parseInt(score);
-            this.saveState();
+        const s = parseInt(score);
+        window.sistemaVidaState.dimensions[dim].score = s;
+        this.saveState();
+        
+        // Forçar redesenho imediato do SVG se estiver na view propósito
+        if (this.currentView === 'proposito') {
+            const polygon = document.getElementById('roda-polygon');
+            if (polygon) {
+                const axes = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
+                const angles = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => deg * Math.PI / 180);
+                
+                const pts = axes.map((d, i) => {
+                    const sc = window.sistemaVidaState.dimensions[d]?.score || 0;
+                    const r = 40 * (sc / 100);
+                    const x = 50 + r * Math.sin(angles[i]);
+                    const y = 50 - r * Math.cos(angles[i]);
+                    return `${x.toFixed(1)},${y.toFixed(1)}`;
+                });
+                
+                polygon.setAttribute('points', pts.join(' '));
+            }
         }
     },
 
