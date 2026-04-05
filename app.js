@@ -420,42 +420,6 @@ const app = {
         }
     },
 
-    openPermaModal: function() {
-        if (!window.sistemaVidaState.perma) window.sistemaVidaState.perma = {P:85, E:70, R:92, M:60, A:75};
-        document.getElementById('p-slider').value = window.sistemaVidaState.perma.P;
-        document.getElementById('val-p').textContent = window.sistemaVidaState.perma.P;
-        document.getElementById('e-slider').value = window.sistemaVidaState.perma.E;
-        document.getElementById('val-e').textContent = window.sistemaVidaState.perma.E;
-        document.getElementById('r-slider').value = window.sistemaVidaState.perma.R;
-        document.getElementById('val-r').textContent = window.sistemaVidaState.perma.R;
-        document.getElementById('m-slider').value = window.sistemaVidaState.perma.M;
-        document.getElementById('val-m').textContent = window.sistemaVidaState.perma.M;
-        document.getElementById('a-slider').value = window.sistemaVidaState.perma.A;
-        document.getElementById('val-a').textContent = window.sistemaVidaState.perma.A;
-        document.getElementById('perma-modal').classList.remove('hidden');
-        document.getElementById('perma-modal').classList.add('flex');
-    },
-
-    closePermaModal: function() {
-        document.getElementById('perma-modal').classList.add('hidden');
-        document.getElementById('perma-modal').classList.remove('flex');
-    },
-
-    savePerma: function() {
-        window.sistemaVidaState.perma = {
-            P: parseInt(document.getElementById('p-slider').value),
-            E: parseInt(document.getElementById('e-slider').value),
-            R: parseInt(document.getElementById('r-slider').value),
-            M: parseInt(document.getElementById('m-slider').value),
-            A: parseInt(document.getElementById('a-slider').value)
-        };
-        this.saveState();
-        this.closePermaModal();
-        if (this.currentView && this.render[this.currentView]) {
-            this.render[this.currentView]();
-        }
-    },
-
     openReviewModal: function() {
         document.getElementById('review-form').reset();
         document.getElementById('review-modal').classList.remove('hidden');
@@ -1494,44 +1458,41 @@ const app = {
         proposito: function() {
             const state = window.sistemaVidaState;
 
-            const topValuesContainer = document.getElementById('top-values-banner');
-            if (topValuesContainer && state.profile && state.profile.values) {
-                topValuesContainer.innerHTML = state.profile.values.map(val => `<span class="bg-primary-container text-on-primary-container px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm border border-primary/10">${val}</span>`).join('');
-            }
-
-            // Render Values (Bússola)
-            const valuesContainer = document.getElementById('essentials-list');
-            if (valuesContainer && state.profile && state.profile.values && state.profile.values.length > 0) {
-                valuesContainer.innerHTML = state.profile.values.map(val => `<span class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-xs font-medium">${val}</span>`).join('');
-                const redoBtn = document.createElement('button');
-                redoBtn.className = "ml-auto text-[10px] bg-surface-container-high px-3 py-1 rounded-full uppercase font-bold text-primary hover:bg-primary/10 mt-2";
-                redoBtn.textContent = "Refazer Exercício";
-                redoBtn.onclick = () => { if(confirm("Apagar valores e refazer?")) { window.sistemaVidaState.profile.values = []; window.app.saveState(); window.app.render.proposito(); } };
-                valuesContainer.appendChild(redoBtn);
-
-                ['value-card', 'confirm-values', 'value-action-btns'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
-            } else {
-                ['value-card', 'confirm-values', 'value-action-btns'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = ''; });
-            }
-
-            // Render SVG Roda da Vida Trigonometry
-            const polygon = document.getElementById('roda-polygon');
-            if (polygon) {
-                // The order must match the SVG visual spokes: Saúde (top/0), Mente (45), Carreira (90), Finanças (135), Relac (180), Família (225), Lazer (270), Propósito (315)
-                const axes = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
-                const angles = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => deg * Math.PI / 180);
-                
-                const pts = axes.map((dim, i) => {
-                    const score = state.dimensions[dim]?.score || 0;
-                    // Max radius is ~40. Center is 50,50.
-                    const r = 40 * (score / 100);
-                    const x = 50 + r * Math.sin(angles[i]);
-                    const y = 50 - r * Math.cos(angles[i]);
-                    return `${x.toFixed(1)},${y.toFixed(1)}`;
+            // Tarefa 1: Priorizar e Blindar a Renderização do PERMA e Roda da Vida
+            try {
+                // Render PERMA bars/text (Início da função para garantir prioridade)
+                const perma = state.perma || { P: 0, E: 0, R: 0, M: 0, A: 0 };
+                const permaIds = { P: 'p', E: 'e', R: 'r', M: 'm', A: 'a' };
+                ['P', 'E', 'R', 'M', 'A'].forEach(k => {
+                    const bar = document.getElementById(`perma-bar-${permaIds[k]}`);
+                    const text = document.getElementById(`perma-text-${permaIds[k]}`);
+                    if (bar) bar.style.width = `${perma[k]}%`;
+                    if (text) text.textContent = `${perma[k]}%`;
                 });
-                
-                polygon.setAttribute('points', pts.join(' '));
+
+                // Render SVG Roda da Vida Trigonometry
+                const polygon = document.getElementById('roda-polygon');
+                if (polygon) {
+                    // The order must match the SVG visual spokes: Saúde (top/0), Mente (45), Carreira (90), Finanças (135), Relac (180), Família (225), Lazer (270), Propósito (315)
+                    const axes = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
+                    const angles = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => deg * Math.PI / 180);
+                    
+                    const pts = axes.map((dim, i) => {
+                        const score = state.dimensions[dim]?.score || 0;
+                        // Max radius is ~40. Center is 50,50.
+                        const r = 40 * (score / 100);
+                        const x = 50 + r * Math.sin(angles[i]);
+                        const y = 50 - r * Math.cos(angles[i]);
+                        return `${x.toFixed(1)},${y.toFixed(1)}`;
+                    });
+                    
+                    polygon.setAttribute('points', pts.join(' '));
+                }
+            } catch (e) {
+                console.error("Erro na renderização das barras PERMA ou Roda da Vida:", e);
             }
+
+            const topValuesContainer = document.getElementById('top-values-banner');
 
             // Render Sliders UI
             const slidersContainer = document.getElementById('roda-sliders');
@@ -2179,20 +2140,19 @@ const app = {
     openPermaModal: function() {
         const state = window.sistemaVidaState;
         const perma = state.perma || {P:0, E:0, R:0, M:0, A:0};
-        // Busca o modal independentemente de onde ele esteja no DOM
-        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
         
+        // Tarefa 2: Sincronização Total e Explícita (Sliders + Labels)
+        const keys = ['P', 'E', 'R', 'M', 'A'];
+        keys.forEach(k => {
+            const id = k.toLowerCase();
+            const slider = document.getElementById(`${id}-slider`);
+            const label = document.getElementById(`val-${id}`);
+            if (slider) slider.value = perma[k];
+            if (label) label.textContent = perma[k];
+        });
+
+        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
         if (modal) {
-            const ranges = modal.querySelectorAll('input[type="range"]');
-            const keys = ['P', 'E', 'R', 'M', 'A'];
-            ranges.forEach((range, idx) => {
-                if (idx < 5) {
-                    range.value = perma[keys[idx]];
-                    // Atualiza o display visual numérico ao lado do slider, se existir
-                    const display = range.parentElement.querySelector('span.perma-value') || range.nextElementSibling;
-                    if (display && display.tagName !== 'BUTTON') display.textContent = perma[keys[idx]] + '%';
-                }
-            });
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
@@ -2210,25 +2170,19 @@ const app = {
         const state = window.sistemaVidaState;
         if (!state.perma) state.perma = {P:0, E:0, R:0, M:0, A:0};
 
-        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
-        if (modal) {
-            const ranges = modal.querySelectorAll('input[type="range"]');
-            const keys = ['P', 'E', 'R', 'M', 'A'];
-            ranges.forEach((range, idx) => {
-                if (idx < 5) {
-                    state.perma[keys[idx]] = parseInt(range.value, 10) || 0;
-                }
-            });
-        }
+        // Salva lendo explicitamente os sliders
+        const keys = ['P', 'E', 'R', 'M', 'A'];
+        keys.forEach(k => {
+            const slider = document.getElementById(`${k.toLowerCase()}-slider`);
+            if (slider) {
+                state.perma[k] = parseInt(slider.value, 10) || 0;
+            }
+        });
 
-        // Salva os dados no cache
+        // Tarefa 3: Persistência Explícita e Atualização Padronizada
         this.saveState();
         this.closePermaModal();
-
-        // Força a re-renderização das telas para mostrar a atualização instantaneamente
-        if (this.render.painel) this.render.painel();
-        if (this.render.proposito) this.render.proposito();
-
+        this.switchView('proposito'); // Força re-render completo
         this.showNotification("Diagnóstico PERMA atualizado com sucesso!");
     },
 
