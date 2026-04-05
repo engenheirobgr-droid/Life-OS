@@ -1467,6 +1467,58 @@ const app = {
                 }
             }, 100);
 
+            // 3. Renderização de Textos do Propósito (Ikigai, Valores, Visão, Legado)
+            setTimeout(() => {
+                try {
+                    const state = window.sistemaVidaState;
+                    const profile = state.profile || {};
+                    
+                    // Valores Essenciais
+                    const valuesBanner = document.getElementById('top-values-banner');
+                    if (valuesBanner && profile.values && profile.values.length > 0) {
+                        valuesBanner.innerHTML = profile.values.map(v => `<span class="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest">${v}</span>`).join('');
+                    }
+
+                    // Função Caçadora de IDs para Textos de Exibição
+                    const safeSetText = (idBase, text) => { 
+                        const el = document.getElementById(`display-${idBase}`) 
+                                || document.getElementById(`${idBase}-display`) 
+                                || document.getElementById(`${idBase}-text`) 
+                                || document.getElementById(idBase);
+                        
+                        // Garante que não está substituindo o value de um input do modal
+                        if (el && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') {
+                            el.textContent = text || 'Não definido. Clique para editar.'; 
+                        }
+                    };
+
+                    // Ikigai
+                    const iki = profile.ikigai || {};
+                    safeSetText('ikigai-missao', iki.missao);
+                    safeSetText('ikigai-vocacao', iki.vocacao);
+                    safeSetText('ikigai-love', iki.love);
+                    safeSetText('ikigai-good', iki.good);
+                    safeSetText('ikigai-need', iki.need);
+                    safeSetText('ikigai-paid', iki.paid);
+                    safeSetText('ikigai-sintese', iki.sintese);
+
+                    // Visão e Legado
+                    const vis = profile.vision || {};
+                    safeSetText('vision-saude', vis.saude);
+                    safeSetText('vision-carreira', vis.carreira);
+                    safeSetText('vision-intelecto', vis.intelecto);
+                    safeSetText('vision-quote', vis.quote);
+
+                    const leg = profile.legacyObj || {};
+                    safeSetText('legacy-familia', leg.familia);
+                    safeSetText('legacy-profissao', leg.profissao);
+                    safeSetText('legacy-mundo', leg.mundo);
+
+                } catch(e) {
+                    console.error("Erro ao renderizar textos do Propósito:", e);
+                }
+            }, 150);
+
             // Render SVG Roda da Vida Trigonometry
             try {
                 const polygon = document.getElementById('roda-polygon');
@@ -1509,30 +1561,6 @@ const app = {
                 slidersContainer.innerHTML = html;
             }
 
-            // Map text fields
-            const textFields = [
-                { id: 'prop-ikigai-missao', group: 'ikigai', key: 'missao' },
-                { id: 'prop-ikigai-vocacao', group: 'ikigai', key: 'vocacao' },
-                { id: 'iki-love-txt', group: 'ikigai', key: 'love' },
-                { id: 'iki-good-txt', group: 'ikigai', key: 'good' },
-                { id: 'iki-need-txt', group: 'ikigai', key: 'need' },
-                { id: 'iki-paid-txt', group: 'ikigai', key: 'paid' },
-                { id: 'prop-legacy-familia', group: 'legacyObj', key: 'familia' },
-                { id: 'prop-legacy-profissao', group: 'legacyObj', key: 'profissao' },
-                { id: 'prop-legacy-mundo', group: 'legacyObj', key: 'mundo' },
-                { id: 'prop-vision-saude', group: 'vision', key: 'saude' },
-                { id: 'prop-vision-carreira', group: 'vision', key: 'carreira' },
-                { id: 'prop-vision-intelecto', group: 'vision', key: 'intelecto' },
-                { id: 'prop-vision-quote', group: 'vision', key: 'quote' },
-                { id: 'iki-sintese-txt', group: 'ikigai', key: 'sintese' }
-            ];
-
-            textFields.forEach(field => {
-                const el = document.getElementById(field.id);
-                if (el && state.profile[field.group] && state.profile[field.group][field.key]) {
-                    el.textContent = state.profile[field.group][field.key];
-                }
-            });
 
             // Injeção Dinâmica dos Odyssey Scenarios (A, B, C)
             const scenarios = ['A', 'B', 'C'];
