@@ -851,35 +851,28 @@ const app = {
                 focusContainer.innerHTML = focusHtml;
             }
 
-            // 3. Render PERMA Radar Chart
-            const perma = state.perma || { P: 0, E: 0, R: 0, M: 0, A: 0 };
-            const permaKeys = ['P', 'E', 'R', 'M', 'A'];
-            const permaAngles = [0, 72, 144, 216, 288].map(deg => (deg - 90) * Math.PI / 180);
-            const permaPts = permaKeys.map((k, i) => {
-                const score = perma[k] || 0;
-                const r = 40 * (score / 100);
-                const x = 50 + r * Math.cos(permaAngles[i]);
-                const y = 50 + r * Math.sin(permaAngles[i]);
-                return `${x.toFixed(1)},${y.toFixed(1)}`;
-            }).join(' ');
-
-            const permaPoly = document.getElementById('perma-radar-polygon');
-            if (permaPoly) permaPoly.setAttribute('points', permaPts);
-
-            const permaScoreEl = document.getElementById('perma-score');
-            if (permaScoreEl) {
-                const avg = Math.round(permaKeys.reduce((acc, k) => acc + (perma[k] || 0), 0) / 5);
-                permaScoreEl.textContent = avg + '%';
-            }
-
-            // Update PERMA bars
-            const permaIds = { P: 'p', E: 'e', R: 'r', M: 'm', A: 'a' };
-            permaKeys.forEach(k => {
-                const bar = document.getElementById(`perma-bar-${permaIds[k]}`);
-                const text = document.getElementById(`perma-text-${permaIds[k]}`);
-                if (bar) bar.style.width = `${perma[k]}%`;
-                if (text) text.textContent = `${perma[k]}%`;
-            });
+            // PERMA Dynamic SVG (Com delay seguro)
+            setTimeout(() => {
+                try {
+                    const state = window.sistemaVidaState;
+                    const perma = state.perma || {P:0, E:0, R:0, M:0, A:0};
+                    const pPoly = document.getElementById('perma-polygon');
+                    const pScore = document.getElementById('perma-score');
+                    if (pPoly && pScore) {
+                        const angles = [0, 72, 144, 216, 288].map(d => d * Math.PI / 180);
+                        const vals = [perma.P, perma.E, perma.R, perma.M, perma.A];
+                        const pts = vals.map((val, i) => {
+                            const r = 40 * (val / 100);
+                            return `${(50 + r * Math.sin(angles[i])).toFixed(1)},${(50 - r * Math.cos(angles[i])).toFixed(1)}`;
+                        });
+                        pPoly.setAttribute('points', pts.join(' '));
+                        const avg = (vals.reduce((a,b)=>a+b,0)/5).toFixed(1);
+                        pScore.textContent = `Score PERMA: ${avg}`;
+                    }
+                } catch(e) { 
+                    console.error("Erro no render PERMA Painel:", e); 
+                }
+            }, 100);
         },
 
         renderAnnualHeatmap: function() {
@@ -1458,19 +1451,24 @@ const app = {
         proposito: function() {
             const state = window.sistemaVidaState;
 
-            // Tarefa 1: Priorizar e Blindar a Renderização do PERMA e Roda da Vida
-            try {
-                // Render PERMA bars/text (Início da função para garantir prioridade)
-                const perma = state.perma || { P: 0, E: 0, R: 0, M: 0, A: 0 };
-                const permaIds = { P: 'p', E: 'e', R: 'r', M: 'm', A: 'a' };
-                ['P', 'E', 'R', 'M', 'A'].forEach(k => {
-                    const bar = document.getElementById(`perma-bar-${permaIds[k]}`);
-                    const text = document.getElementById(`perma-text-${permaIds[k]}`);
-                    if (bar) bar.style.width = `${perma[k]}%`;
-                    if (text) text.textContent = `${perma[k]}%`;
-                });
+            // 1. Blindagem do PERMA (Delay para garantir DOM)
+            setTimeout(() => {
+                try {
+                    const state = window.sistemaVidaState;
+                    const perma = state.perma || { P: 0, E: 0, R: 0, M: 0, A: 0 };
+                    ['P', 'E', 'R', 'M', 'A'].forEach(k => {
+                        const bar = document.getElementById('perma-bar-' + k.toLowerCase());
+                        const txt = document.getElementById('perma-text-' + k.toLowerCase());
+                        if (bar) bar.style.width = perma[k] + '%';
+                        if (txt) txt.textContent = perma[k] + '%';
+                    });
+                } catch(e) { 
+                    console.error("Erro no render PERMA Propósito:", e); 
+                }
+            }, 100);
 
-                // Render SVG Roda da Vida Trigonometry
+            // Render SVG Roda da Vida Trigonometry
+            try {
                 const polygon = document.getElementById('roda-polygon');
                 if (polygon) {
                     // The order must match the SVG visual spokes: Saúde (top/0), Mente (45), Carreira (90), Finanças (135), Relac (180), Família (225), Lazer (270), Propósito (315)
