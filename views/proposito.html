@@ -51,12 +51,10 @@
 <span class="absolute top-1/2 left-[-20px] -translate-y-1/2 text-[9px] font-label uppercase tracking-widest text-outline">Lazer</span>
 <span class="absolute top-[12%] left-[10%] text-[9px] font-label uppercase tracking-widest text-outline">Propósito</span>
 </div>
-<div id="roda-sliders" class="w-full max-w-[200px] flex flex-col gap-3"></div>
-
-</div>
-<button onclick="window.app.resetWheelOfLife()" class="mt-8 bg-primary text-on-primary px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2 w-fit transition-all hover:shadow-lg active:scale-95">
-                    Reavaliação
-                </button>
+<div id="roda-sliders" class="hidden"></div>
+<button onclick="window.app.openWheelModal()" class="w-full mt-6 bg-surface-container-highest hover:bg-primary/10 text-primary border border-primary/20 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 shadow-sm">
+    <span class="material-symbols-outlined text-[18px]">tune</span> Reavaliar Roda da Vida
+</button>
 </div>
 <!-- Meus Valores Card Sort Exercise -->
 <div class="md:col-span-5 bg-surface-container-low rounded-xl p-8 flex flex-col min-h-[500px]">
@@ -118,32 +116,32 @@
                 <div onclick="window.app.openTextEdit('O que amo', 'ikigai', 'love')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
                     <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">favorite</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">O que eu amo</h4>
-                    <p id="iki-love-txt" class="text-sm font-medium text-on-surface line-clamp-3">...</p>
+                    <p id="display-ikigai-love" class="text-sm font-medium text-on-surface line-clamp-3">Carregando dados...</p>
                 </div>
 
                 <div onclick="window.app.openTextEdit('No que sou bom', 'ikigai', 'good')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
                     <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">military_tech</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">No que sou bom</h4>
-                    <p id="iki-good-txt" class="text-sm font-medium text-on-surface line-clamp-3">...</p>
+                    <p id="display-ikigai-good" class="text-sm font-medium text-on-surface line-clamp-3">Carregando dados...</p>
                 </div>
                 
                 <div onclick="window.app.openTextEdit('O que o mundo precisa', 'ikigai', 'need')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
                     <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">public</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">Mundo precisa</h4>
-                    <p id="iki-need-txt" class="text-sm font-medium text-on-surface line-clamp-3">...</p>
+                    <p id="display-ikigai-need" class="text-sm font-medium text-on-surface line-clamp-3">Carregando dados...</p>
                 </div>
 
                 <div onclick="window.app.openTextEdit('Pelo que posso ser pago', 'ikigai', 'paid')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
                     <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">payments</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">Posso ser pago</h4>
-                    <p id="iki-paid-txt" class="text-sm font-medium text-on-surface line-clamp-3">...</p>
+                    <p id="display-ikigai-paid" class="text-sm font-medium text-on-surface line-clamp-3">Carregando dados...</p>
                 </div>
             </div>
 
             <div onclick="window.app.openTextEdit('Minha Razão de Viver', 'ikigai', 'sintese')" class="relative bg-primary-container text-on-primary-container p-6 rounded-2xl cursor-pointer hover:shadow-lg transition-all border border-primary/20 mt-2 active:scale-[0.98]">
                 <span class="absolute top-6 right-6 material-symbols-outlined opacity-50">edit_note</span>
                 <h4 class="text-[10px] uppercase font-bold tracking-widest mb-3 opacity-80 flex items-center gap-2"><span class="material-symbols-outlined text-[14px]">auto_awesome</span> A Síntese do Meu Ikigai</h4>
-                <p id="iki-sintese-txt" class="text-xl font-headline italic leading-relaxed">Clique para definir a frase que une os seus 4 pilares...</p>
+                <p id="display-ikigai-sintese" class="text-xl font-headline italic leading-relaxed">Carregando dados...</p>
             </div>
         </div>
 </div>
@@ -154,21 +152,21 @@
 <div>
 <p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Família &amp; Relações</p>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Família', 'legacyObj', 'familia')">
-<p id="prop-legacy-familia" class="text-on-surface font-medium italic" data-default="Ser lembrado como alguém que ouvia com o coração e cultivava raízes profundas.">Ser lembrado como alguém que ouvia com o coração e cultivava raízes profundas.</p>
+<p id="display-legacy-familia" class="text-sm text-on-surface-variant leading-relaxed">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
 <p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Profissão &amp; Obra</p>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Profissão', 'legacyObj', 'profissao')">
-<p id="prop-legacy-mundo" class="text-on-surface font-medium italic" data-default="Uma contribuição para ferramentas que democratizam a organização e o autoconhecimento.">Uma contribuição para ferramentas que democratizam a organização e o autoconhecimento.</p>
+<p id="display-legacy-profissao" class="text-sm text-on-surface-variant leading-relaxed">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
 <p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Mundo &amp; Sociedade</p>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Mundo', 'legacyObj', 'mundo')">
-<p id="prop-legacy-mundo" class="font-headline text-2xl italic" data-default="Deixar um rastro de beleza e ordem onde antes havia caos e ruído.">Deixar um rastro de beleza e ordem onde antes havia caos e ruído.</p>
+<p id="display-legacy-mundo" class="text-sm text-on-surface-variant leading-relaxed">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
@@ -235,36 +233,28 @@
 <div>
 <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Saúde &amp; Vitalidade</h4>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Saúde', 'vision', 'saude')">
-<p id="prop-vision-saude" class="text-on-surface-variant leading-relaxed text-sm italic" data-default='"Vejo-me acordando com vigor, mantendo uma rotina onde o movimento é sagrado. Meu corpo é o templo que sustenta minha mente criativa, nutrido por alimentos que vêm da terra e por um sono restaurador que limpa as preocupações do dia anterior."'>
-                                "Vejo-me acordando com vigor, mantendo uma rotina onde o movimento é sagrado. Meu corpo é o templo que sustenta minha mente criativa, nutrido por alimentos que vêm da terra e por um sono restaurador que limpa as preocupações do dia anterior."
-                            </p>
+<p id="display-vision-saude" class="text-sm text-on-surface-variant leading-relaxed">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
 <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Carreira &amp; Finanças</h4>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Carreira & Finanças', 'vision', 'carreira')">
-<p id="prop-vision-carreira" class="text-on-surface-variant leading-relaxed text-sm italic" data-default='"Lidero projetos que definem o futuro da interface humana, cercado por uma equipe que vibra na mesma frequência. Meu trabalho não é um fardo, mas uma expressão fluida do meu talento mais genuíno."'>
-                                "Lidero projetos que definem o futuro da interface humana, cercado por uma equipe que vibra na mesma frequência. Meu trabalho não é um fardo, mas uma expressão fluida do meu talento mais genuíno."
-                            </p>
+<p id="display-vision-carreira" class="text-sm text-on-surface-variant leading-relaxed">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
 <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Intelectual &amp; Espiritual</h4>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Intelecto & Espiritual', 'vision', 'intelecto')">
-<p id="prop-vision-intelecto" class="text-on-surface-variant leading-relaxed text-sm italic" data-default='"Uma mente sempre aprendiz, devorando livros que expandem horizontes. Mantenho o silêncio diário para ouvir a intuição, reconhecendo que há algo maior que conecta todos os pontos da existência."'>
-                                "Uma mente sempre aprendiz, devorando livros que expandem horizontes. Mantenho o silêncio diário para ouvir a intuição, reconhecendo que há algo maior que conecta todos os pontos da existência."
-                            </p>
+<p id="display-vision-intelecto" class="text-sm text-on-surface-variant leading-relaxed">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div class="bg-surface-container-low p-6 rounded-lg">
 <span class="material-symbols-outlined text-primary mb-2">format_quote</span>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Citação Guia', 'vision', 'quote')">
-<p id="prop-vision-quote" class="font-headline text-xl italic text-on-surface" data-default='"O propósito não é um destino, mas a luz que guia o caminhar."'>
-                                "O propósito não é um destino, mas a luz que guia o caminhar."
-                            </p>
+<p id="display-vision-quote" class="text-sm text-on-surface-variant leading-relaxed">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
@@ -283,8 +273,8 @@
 <!-- Scenario 1 -->
                 <div class="min-w-[320px] bg-surface-container-low rounded-xl p-6 flex flex-col h-full relative" onclick="window.app.openOdysseyModal('A')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-label font-bold uppercase tracking-wider">Cenário A</div>
-                <h4 id="ody-title-A" class="font-headline text-xl font-bold mb-4">A Via Consolidada</h4>
-                <p id="ody-desc-A" class="text-sm text-on-surface-variant mb-6 flex-grow italic">Foco em ascensão na carreira atual e estabilidade familiar.</p>
+                <h4 id="display-ody-title-A" class="font-headline text-xl font-bold mb-4">Carregando dados...</h4>
+                <p id="display-ody-desc-A" class="text-sm text-on-surface-variant mb-6 flex-grow italic">Carregando dados...</p>
                 <div class="space-y-4 mb-6">
                 <div class="flex justify-between items-center">
                 <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
@@ -309,8 +299,8 @@
 <!-- Scenario 2 -->
                 <div class="min-w-[320px] bg-surface-container-low rounded-xl p-6 flex flex-col h-full relative" onclick="window.app.openOdysseyModal('B')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-secondary/10 text-secondary text-[10px] font-label font-bold uppercase tracking-wider">Cenário B</div>
-                <h4 id="ody-title-B" class="font-headline text-xl font-bold mb-4">O Salto Criativo</h4>
-                <p id="ody-desc-B" class="text-sm text-on-surface-variant mb-6 flex-grow italic">Transição para trabalho solo e nomadismo digital moderado.</p>
+                <h4 id="display-ody-title-B" class="font-headline text-xl font-bold mb-4">Carregando dados...</h4>
+                <p id="display-ody-desc-B" class="text-sm text-on-surface-variant mb-6 flex-grow italic">Carregando dados...</p>
                 <div class="space-y-4 mb-6">
                 <div class="flex justify-between items-center">
                 <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
@@ -335,8 +325,8 @@
 <!-- Scenario 3 -->
                 <div class="min-w-[320px] bg-surface-container-low rounded-xl p-6 flex flex-col h-full relative" onclick="window.app.openOdysseyModal('C')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary text-[10px] font-label font-bold uppercase tracking-wider">Cenário C</div>
-                <h4 id="ody-title-C" class="font-headline text-xl font-bold mb-4">A Vida Acadêmica</h4>
-                <p id="ody-desc-C" class="text-sm text-on-surface-variant mb-6 flex-grow italic">Doutorado no exterior e foco em pesquisa fundamental.</p>
+                <h4 id="display-ody-title-C" class="font-headline text-xl font-bold mb-4">Carregando dados...</h4>
+                <p id="display-ody-desc-C" class="text-sm text-on-surface-variant mb-6 flex-grow italic">Carregando dados...</p>
                 <div class="space-y-4 mb-6">
                 <div class="flex justify-between items-center">
                 <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>

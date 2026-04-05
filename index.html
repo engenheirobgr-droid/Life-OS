@@ -508,6 +508,27 @@
         </div>
     </div>
 
+    <!-- Modal Roda da Vida -->
+    <div id="wheel-modal" class="hidden fixed inset-0 z-[130] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-outline-variant/20 flex justify-between items-center shrink-0">
+                <div>
+                    <h3 class="font-headline text-xl font-bold text-on-background">Roda da Vida</h3>
+                    <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Ajuste o seu momento atual</p>
+                </div>
+                <button onclick="window.app.closeWheelModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="p-6 overflow-y-auto no-scrollbar flex-1 space-y-6">
+                <div id="wheel-sliders-container" class="space-y-4"></div>
+            </div>
+            <div class="p-6 border-t border-outline-variant/20 bg-surface-container-lowest shrink-0">
+                <button onclick="window.app.saveWheel()" class="w-full bg-primary text-on-primary py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">
+                    Salvar Roda da Vida
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Histórico do Diário -->
     <div id="history-log-modal" class="hidden fixed inset-0 z-[125] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
