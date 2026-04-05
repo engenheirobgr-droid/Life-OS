@@ -251,7 +251,12 @@
                 state.ikigai.paid = document.getElementById('ikigai-paid').value;
                 state.legacy = document.getElementById('legacy').value;
             }
-            if (state.step < 6) { state.step++; updateUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+            if (state.step < 6) { 
+                state.step++; 
+                updateUI(); 
+                const mainContainer = document.querySelector('main');
+                if (mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
 
         const backBtnEl = document.getElementById('btn-back');

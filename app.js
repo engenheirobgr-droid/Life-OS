@@ -237,6 +237,64 @@ const app = {
     },
     // ----------------------------------
 
+    openDailyLogHistory() {
+        const modal = document.getElementById('history-log-modal');
+        const list = document.getElementById('history-log-list');
+        if (!modal || !list) return;
+
+        const state = window.sistemaVidaState;
+        const logs = state.habitsLog || [];
+        
+        // Sort by date desc
+        const sortedLogs = [...logs].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        if (sortedLogs.length === 0) {
+            list.innerHTML = '<li class="text-center py-12 text-outline italic">Nenhum registro encontrado.</li>';
+        } else {
+            list.innerHTML = sortedLogs.map(log => {
+                const dateObj = new Date(log.date);
+                const dateStr = dateObj.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+                const moodColor = log.mood >= 8 ? 'text-green-600' : log.mood >= 5 ? 'text-yellow-600' : 'text-red-600';
+                
+                return `
+                    <li class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10 shadow-sm flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="text-center min-w-[50px]">
+                                <span class="block text-lg font-bold text-primary leading-tight">${dateStr.split(' ')[0]}</span>
+                                <span class="block text-[10px] uppercase font-bold text-outline">${dateStr.split(' ')[1]}</span>
+                            </div>
+                            <div class="h-8 w-px bg-outline-variant/20"></div>
+                            <div>
+                                <p class="text-sm font-medium text-on-surface italic">"${log.focus || 'Sem foco definido'}"</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[10px] uppercase font-bold text-outline">Humor:</span>
+                                    <span class="text-xs font-bold ${moodColor}">${log.mood}/10</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <span class="material-symbols-outlined text-primary/40">history_edu</span>
+                            <span class="text-[9px] text-outline mt-1">${log.energy}% Energia</span>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    },
+
+    closeDailyLogHistory() {
+        const modal = document.getElementById('history-log-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+    },
+
     setPlanosFilter: function(dim) {
         this.planosFilter = dim;
         if (this.render.planos) this.render.planos();
@@ -828,6 +886,36 @@ const app = {
                 });
                 focusContainer.innerHTML = focusHtml;
             }
+
+            // 3. Render PERMA Radar Chart
+            const perma = state.perma || { P: 0, E: 0, R: 0, M: 0, A: 0 };
+            const permaKeys = ['P', 'E', 'R', 'M', 'A'];
+            const permaAngles = [0, 72, 144, 216, 288].map(deg => (deg - 90) * Math.PI / 180);
+            const permaPts = permaKeys.map((k, i) => {
+                const score = perma[k] || 0;
+                const r = 40 * (score / 100);
+                const x = 50 + r * Math.cos(permaAngles[i]);
+                const y = 50 + r * Math.sin(permaAngles[i]);
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(' ');
+
+            const permaPoly = document.getElementById('perma-radar-polygon');
+            if (permaPoly) permaPoly.setAttribute('points', permaPts);
+
+            const permaScoreEl = document.getElementById('perma-score');
+            if (permaScoreEl) {
+                const avg = Math.round(permaKeys.reduce((acc, k) => acc + (perma[k] || 0), 0) / 5);
+                permaScoreEl.textContent = avg + '%';
+            }
+
+            // Update PERMA bars
+            const permaIds = { P: 'p', E: 'e', R: 'r', M: 'm', A: 'a' };
+            permaKeys.forEach(k => {
+                const bar = document.getElementById(`perma-bar-${permaIds[k]}`);
+                const text = document.getElementById(`perma-text-${permaIds[k]}`);
+                if (bar) bar.style.width = `${perma[k]}%`;
+                if (text) text.textContent = `${perma[k]}%`;
+            });
         },
 
         renderAnnualHeatmap: function() {
@@ -1729,49 +1817,110 @@ const app = {
         const wb = XLSX.utils.book_new();
         const state = window.sistemaVidaState;
 
-        // 1. Dados de Perfil e Propósito
-        const perfilData = [
-            ["Chave", "Valor"],
-            ["Nome", state.profile.name || ""],
-            ["Nível", state.profile.level || 1],
-            ["XP", state.profile.xp || 0],
-            ["Missão (Ikigai)", state.profile.ikigai?.missao || ""],
-            ["Vocação (Ikigai)", state.profile.ikigai?.vocacao || ""],
-            ["Valores", (state.profile.values || []).join(", ")],
-            ["Legado (Família)", state.profile.legacyObj?.familia || ""],
-            ["Legado (Profissão)", state.profile.legacyObj?.profissao || ""],
-            ["Legado (Mundo)", state.profile.legacyObj?.mundo || ""],
-            ["Visão (Saúde)", state.profile.vision?.saude || ""],
-            ["Visão (Carreira)", state.profile.vision?.carreira || ""],
-            ["Visão (Intelecto)", state.profile.vision?.intelecto || ""],
-            ["Visão (Citação)", state.profile.vision?.quote || ""]
-        ];
-        const wsPerfil = XLSX.utils.aoa_to_sheet(perfilData);
-        XLSX.utils.book_append_sheet(wb, wsPerfil, "Perfil e Propósito");
+        // 1. Aba: Planos
+        const planosCol = ["ID", "Tipo", "Dimensão", "Título", "Contexto_Indicador", "Prazo", "Progresso", "ID_Pai"];
+        const planosData = [planosCol];
+        const types = ['metas', 'okrs', 'macros', 'micros'];
+        types.forEach(t => {
+            (state.entities[t] || []).forEach(e => {
+                const context = e.purpose || e.description || e.indicator || "";
+                const parentId = e.metaId || e.okrId || e.macroId || "";
+                planosData.push([e.id, t.slice(0, -1), e.dimension || "Geral", e.title, context, e.prazo || "", e.progress || 0, parentId]);
+            });
+        });
+        const wsPlanos = XLSX.utils.aoa_to_sheet(planosData);
+        wsPlanos['!cols'] = [{wch:15}, {wch:10}, {wch:15}, {wch:40}, {wch:40}, {wch:15}, {wch:10}, {wch:15}];
+        XLSX.utils.book_append_sheet(wb, wsPlanos, "Planos");
 
-        // 2. Dimensões (Roda da Vida)
-        const dimsData = [["Dimensão", "Score"]];
-        for (const [dim, data] of Object.entries(state.dimensions)) {
-            dimsData.push([dim, data.score]);
-        }
-        const wsDims = XLSX.utils.aoa_to_sheet(dimsData);
-        XLSX.utils.book_append_sheet(wb, wsDims, "Roda da Vida");
+        // 2. Aba: Propósito
+        const propCol = ["Categoria", "Chave", "Texto_Preenchido"];
+        const propData = [propCol];
+        
+        // Perfil / Valores
+        propData.push(["Identidade", "Valores Pessoais", (state.profile.values || []).join(", ")]);
+        
+        // Ikigai
+        const ikigaiM = { missao: "Missão", vocacao: "Vocação", love: "Paixão (O que ama)", good: "Bom em (O que é bom)", need: "O que o Mundo Precisa", paid: "Pelo que pode ser Pago", sintese: "Síntese Ikigai" };
+        Object.entries(ikigaiM).forEach(([k, label]) => {
+            propData.push(["Ikigai", label, state.profile.ikigai?.[k] || ""]);
+        });
 
-        // 3. Score PERMA
-        const permaData = [
-            ["Pilar", "Score"],
-            ["Positive Emotion (P)", state.perma?.P || 0],
-            ["Engagement (E)", state.perma?.E || 0],
-            ["Relationships (R)", state.perma?.R || 0],
-            ["Meaning (M)", state.perma?.M || 0],
-            ["Accomplishment (A)", state.perma?.A || 0]
-        ];
-        const wsPerma = XLSX.utils.aoa_to_sheet(permaData);
-        XLSX.utils.book_append_sheet(wb, wsPerma, "PERMA");
+        // Visão
+        const visionM = { saude: "Visão Saúde", carreira: "Visão Carreira", intelecto: "Visão Intelectual", quote: "Citação Inspiradora" };
+        Object.entries(visionM).forEach(([k, label]) => {
+            propData.push(["Visão", label, state.profile.vision?.[k] || ""]);
+        });
 
-        // Export
-        XLSX.writeFile(wb, "SistemaVida_Dump.xlsx");
-        console.log("Exportação Excel concluída com sucesso.");
+        // Legado
+        const legacyM = { familia: "Legado Família", profissao: "Legado Profissional", mundo: "Legado Mundo" };
+        Object.entries(legacyM).forEach(([k, label]) => {
+            propData.push(["Legado", label, state.profile.legacyObj?.[k] || ""]);
+        });
+
+        // Roda da Vida
+        Object.entries(state.dimensions || {}).forEach(([dim, data]) => {
+            propData.push(["Roda da Vida", dim, data.score || 0]);
+        });
+
+        // PERMA
+        const permaM = { P: "Emoções Positivas (P)", E: "Engajamento (E)", R: "Relacionamentos (R)", M: "Significado (M)", A: "Realização (A)" };
+        Object.entries(permaM).forEach(([k, label]) => {
+            propData.push(["PERMA", label, state.perma?.[k] || 0]);
+        });
+
+        const wsProp = XLSX.utils.aoa_to_sheet(propData);
+        wsProp['!cols'] = [{wch:15}, {wch:30}, {wch:60}];
+        XLSX.utils.book_append_sheet(wb, wsProp, "Propósito");
+
+        // 3. Aba: Hábitos
+        const habCol = ["ID", "Dimensão", "Título", "Gatilho", "Status"];
+        const habData = [habCol];
+        (state.habits || []).forEach(h => {
+            habData.push([h.id, h.dimension || "Geral", h.title, h.trigger || h.context || "", h.completed ? "Ativo" : "Inativo"]);
+        });
+        const wsHabits = XLSX.utils.aoa_to_sheet(habData);
+        wsHabits['!cols'] = [{wch:15}, {wch:15}, {wch:40}, {wch:30}, {wch:10}];
+        XLSX.utils.book_append_sheet(wb, wsHabits, "Hábitos");
+
+        // 4. Aba: Diário
+        const logCol = ["Data", "Energia", "Gratidão", "O_Que_Funcionou", "O_Que_Aprendi", "Shutdown_1", "Shutdown_2", "Shutdown_3"];
+        const logData = [logCol];
+        Object.entries(state.dailyLogs || {}).sort().forEach(([date, log]) => {
+            const row = [
+                date,
+                log.energy || 5,
+                log.gratidao || "",
+                log.funcionou || "",
+                log.aprendi || "",
+                log.shutdown?.[0] || "",
+                log.shutdown?.[1] || "",
+                log.shutdown?.[2] || ""
+            ];
+            logData.push(row);
+        });
+        const wsDiario = XLSX.utils.aoa_to_sheet(logData);
+        wsDiario['!cols'] = [{wch:12}, {wch:10}, {wch:40}, {wch:40}, {wch:40}, {wch:30}, {wch:30}, {wch:30}];
+        XLSX.utils.book_append_sheet(wb, wsDiario, "Diário");
+
+        // 5. Aba: Revisões
+        const revCol = ["Data", "O_Que_Planejei", "O_Que_Executei", "Aprendizado", "Ajuste", "Intencao_Proxima"];
+        const revData = [revCol];
+        Object.entries(state.reviews || {}).sort().forEach(([date, rev]) => {
+            revData.push([
+                date,
+                rev.q1 || "",
+                rev.q2 || "",
+                rev.q3 || "",
+                rev.q4 || "",
+                rev.q5 || ""
+            ]);
+        });
+        const wsRevisoes = XLSX.utils.aoa_to_sheet(revData);
+        wsRevisoes['!cols'] = [{wch:12}, {wch:40}, {wch:40}, {wch:40}, {wch:40}, {wch:40}];
+        XLSX.utils.book_append_sheet(wb, wsRevisoes, "Revisões");
+
+        XLSX.writeFile(wb, "SISTEMA_VIDA_PADRAO_OURO.xlsx");
+        console.log("Exportação Excel Padrão Ouro concluída.");
     },
 
     importFromExcel: async function(event) {
@@ -1856,9 +2005,8 @@ const app = {
             }
 
             // 2. Aba: Propósito -> state.profile, state.dimensions
-            const wsProp = workbook.Sheets['Propósito'] || workbook.Sheets['Proposito'] || workbook.Sheets['Identidade'];
+            const wsProp = workbook.Sheets['Propósito'] || workbook.Sheets['Proposito'];
             if (wsProp) {
-                // Safe checks para garantir a estrutura aninhada antes de popular
                 if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
                 if (!window.sistemaVidaState.profile.ikigai) window.sistemaVidaState.profile.ikigai = {};
                 if (!window.sistemaVidaState.profile.legacyObj) window.sistemaVidaState.profile.legacyObj = {};
@@ -1866,87 +2014,134 @@ const app = {
 
                 const propArr = XLSX.utils.sheet_to_json(wsProp);
                 propArr.forEach(row => {
-                    let key = String(getValue(row, ['Chave', 'Dimensão', 'Propósito', 'Item', 'Key'])).trim();
-                    let val = getValue(row, ['Valor', 'Score', 'Nota', 'Value']);
+                    const cat = String(getValue(row, ['Categoria', 'Category', 'Tab'])).toLowerCase();
+                    const keyOriginal = String(getValue(row, ['Chave', 'Dimensão', 'Item', 'Propósito', 'Key']));
+                    const key = keyOriginal.toLowerCase();
+                    const val = getValue(row, ['Texto_Preenchido', 'Valor', 'Score', 'Value']);
                     
                     if (!key) return;
-                    key = key.charAt(0).toUpperCase() + key.slice(1);
 
-                    if (window.sistemaVidaState.dimensions[key] && !isNaN(parseFloat(val))) {
-                        window.sistemaVidaState.dimensions[key].score = parseFloat(val) || 0;
-                    } else {
-                        let kLow = key.toLowerCase();
-                        if (kLow.includes('missão')) window.sistemaVidaState.profile.ikigai.missao = val;
-                        else if (kLow.includes('vocação')) window.sistemaVidaState.profile.ikigai.vocacao = val;
-                        else if (kLow.includes('valores')) window.sistemaVidaState.profile.values = typeof val === 'string' ? val.split(/[,\n]/).map(s=>s.trim()) : [val];
-                        else if (kLow.includes('legado (família)')) window.sistemaVidaState.profile.legacyObj.familia = val;
-                        else if (kLow.includes('legado (profissão)')) window.sistemaVidaState.profile.legacyObj.profissao = val;
-                        else if (kLow.includes('legado (mundo)')) window.sistemaVidaState.profile.legacyObj.mundo = val;
-                        else if (kLow.includes('saúde') && kLow.includes('visão')) window.sistemaVidaState.profile.vision.saude = val;
-                        else if (kLow.includes('carreira') && kLow.includes('visão')) window.sistemaVidaState.profile.vision.carreira = val;
-                        else if (kLow.includes('intelecto') && kLow.includes('visão')) window.sistemaVidaState.profile.vision.intelecto = val;
-                        else if (kLow.includes('citação')) window.sistemaVidaState.profile.vision.quote = val;
+                    // Mapeamento robusto Padrão Ouro
+                    if (cat.includes('perma')) {
+                        const permaKey = keyOriginal.charAt(0).toUpperCase(); // P, E, R, M, A
+                        if (window.sistemaVidaState.perma[permaKey] !== undefined) {
+                            window.sistemaVidaState.perma[permaKey] = parseFloat(val) || 0;
+                        }
+                    } else if (cat.includes('roda') || cat.includes('dimensão')) {
+                        const dimKey = keyOriginal.trim();
+                        if (window.sistemaVidaState.dimensions[dimKey]) {
+                            window.sistemaVidaState.dimensions[dimKey].score = parseFloat(val) || 0;
+                        }
+                    } else if (cat.includes('ikigai')) {
+                        if (key.includes('missão')) window.sistemaVidaState.profile.ikigai.missao = val;
+                        else if (key.includes('vocação')) window.sistemaVidaState.profile.ikigai.vocacao = val;
+                        else if (key.includes('paixão') || key.includes('ama')) window.sistemaVidaState.profile.ikigai.love = val;
+                        else if (key.includes('bom')) window.sistemaVidaState.profile.ikigai.good = val;
+                        else if (key.includes('precisa')) window.sistemaVidaState.profile.ikigai.need = val;
+                        else if (key.includes('pago')) window.sistemaVidaState.profile.ikigai.paid = val;
+                        else if (key.includes('síntese')) window.sistemaVidaState.profile.ikigai.sintese = val;
+                    } else if (cat.includes('visão')) {
+                        if (key.includes('saúde')) window.sistemaVidaState.profile.vision.saude = val;
+                        else if (key.includes('carreira')) window.sistemaVidaState.profile.vision.carreira = val;
+                        else if (key.includes('intelectual')) window.sistemaVidaState.profile.vision.intelecto = val;
+                        else if (key.includes('citação')) window.sistemaVidaState.profile.vision.quote = val;
+                    } else if (cat.includes('legado')) {
+                        if (key.includes('família')) window.sistemaVidaState.profile.legacyObj.familia = val;
+                        else if (key.includes('profissão')) window.sistemaVidaState.profile.legacyObj.profissao = val;
+                        else if (key.includes('mundo')) window.sistemaVidaState.profile.legacyObj.mundo = val;
+                    } else if (cat.includes('identidade') || key.includes('valores')) {
+                        window.sistemaVidaState.profile.values = typeof val === 'string' ? val.split(/[,\n]/).map(s=>s.trim()) : [val];
                     }
                 });
             }
 
             // 3. Aba: Hábitos -> state.habits
-            const wsHabits = workbook.Sheets['Hábitos'] || workbook.Sheets['Habitos'] || workbook.Sheets['Habits'];
+            const wsHabits = workbook.Sheets['Hábitos'] || workbook.Sheets['Habitos'];
             if (wsHabits) {
                 const habArr = XLSX.utils.sheet_to_json(wsHabits);
                 window.sistemaVidaState.habits = [];
                 habArr.forEach(row => {
-                    const title = getValue(row, ['Título', 'Hábito', 'Habit', 'Task']);
+                    const title = getValue(row, ['Título', 'Hábito', 'Title']);
                     if (title) {
                         window.sistemaVidaState.habits.push({
-                            id: 'hab_' + Date.now() + Math.random().toString(36).substr(2, 9),
+                            id: getValue(row, ['ID', 'Id']) || ('hab_' + Date.now() + Math.random().toString(36).substr(2, 9)),
                             title: title,
-                            dimension: getValue(row, ['Dimensão', 'Área', 'Dimension', 'Area']) || 'Geral',
-                            context: getValue(row, ['Contexto', 'Gatilho', 'Trigger']) || '',
-                            completed: String(getValue(row, ['Concluído', 'Status']) || '').toLowerCase() === 'sim' || getValue(row, ['Concluído']) === 1 || !!getValue(row, ['Concluído'])
+                            dimension: getValue(row, ['Dimensão', 'Área', 'Dimension']) || 'Geral',
+                            trigger: getValue(row, ['Gatilho', 'Trigger', 'Contexto']) || '',
+                            completed: String(getValue(row, ['Status', 'Concluído']) || '').toLowerCase().includes('sim') || String(getValue(row, ['Status', 'Concluído']) || '').toLowerCase().includes('ativo')
                         });
                     }
                 });
             }
 
             // 4. Aba: Diário -> state.dailyLogs
-            const wsDiario = workbook.Sheets['Diário'] || workbook.Sheets['Diario'] || workbook.Sheets['Logs'];
+            const wsDiario = workbook.Sheets['Diário'] || workbook.Sheets['Diario'];
             if (wsDiario) {
                 const logArr = XLSX.utils.sheet_to_json(wsDiario);
                 window.sistemaVidaState.dailyLogs = window.sistemaVidaState.dailyLogs || {};
                 logArr.forEach(row => {
-                    let dateRaw = getValue(row, ['Data', 'Date', 'Dia']);
+                    let dateRaw = getValue(row, ['Data', 'Date']);
                     let dateStr = "";
                     if (typeof dateRaw === 'number') {
                         const d = new Date(Math.round((dateRaw - 25569) * 86400 * 1000));
                         dateStr = d.toISOString().split('T')[0];
                     } else if (dateRaw) {
-                        dateStr = String(dateRaw).trim();
+                        dateStr = String(dateRaw).trim().substring(0, 10);
                     }
                     
                     if (dateStr && dateStr.length >= 10) {
-                        window.sistemaVidaState.dailyLogs[dateStr.substring(0,10)] = {
-                            gratidao: getValue(row, ['Gratidão', 'Gratidao', 'Grato']),
-                            funcionou: getValue(row, ['Funcionou', 'Vitorias', 'Wins']),
-                            aprendi: getValue(row, ['Aprendi', 'Lessons', 'Aprendizado']),
-                            shutdown: [getValue(row, ['Shutdown 1', 'S1']), getValue(row, ['Shutdown 2', 'S2']), getValue(row, ['Shutdown 3', 'S3'])],
-                            energy: parseFloat(getValue(row, ['Energia', 'Energy', 'Power'])) || 5
+                        window.sistemaVidaState.dailyLogs[dateStr] = {
+                            energy: parseFloat(getValue(row, ['Energia', 'Energy'])) || 5,
+                            gratidao: getValue(row, ['Gratidão', 'Gratidao']),
+                            funcionou: getValue(row, ['O_Que_Funcionou', 'Funcionou']),
+                            aprendi: getValue(row, ['O_Que_Aprendi', 'Aprendi']),
+                            shutdown: [
+                                getValue(row, ['Shutdown_1', 'Shutdown 1']),
+                                getValue(row, ['Shutdown_2', 'Shutdown 2']),
+                                getValue(row, ['Shutdown_3', 'Shutdown 3'])
+                            ]
                         };
                     }
                 });
             }
 
-            // Finalização do Fluxo
+            // 5. Aba: Revisões -> state.reviews
+            const wsReviews = workbook.Sheets['Revisões'] || workbook.Sheets['Revisoes'];
+            if (wsReviews) {
+                const revArr = XLSX.utils.sheet_to_json(wsReviews);
+                window.sistemaVidaState.reviews = window.sistemaVidaState.reviews || {};
+                revArr.forEach(row => {
+                    let dateRaw = getValue(row, ['Data', 'Date']);
+                    let dateStr = "";
+                    if (typeof dateRaw === 'number') {
+                        const d = new Date(Math.round((dateRaw - 25569) * 86400 * 1000));
+                        dateStr = d.toISOString().split('T')[0];
+                    } else if (dateRaw) {
+                        dateStr = String(dateRaw).trim().substring(0, 10);
+                    }
+
+                    if (dateStr && dateStr.length >= 10) {
+                        window.sistemaVidaState.reviews[dateStr] = {
+                            q1: getValue(row, ['O_Que_Planejei', 'Planejado']),
+                            q2: getValue(row, ['O_Que_Executei', 'Executado']),
+                            q3: getValue(row, ['Aprendizado', 'Aprendi']),
+                            q4: getValue(row, ['Ajuste']),
+                            q5: getValue(row, ['Intencao_Proxima', 'Intencao'])
+                        };
+                    }
+                });
+            }
+
+            // Finalização
             await window.app.saveState();
-            alert('Dados importados com sucesso!');
+            alert('Sistema Vida Importado com Sucesso (Padrão Ouro)!');
             window.app.switchView('painel');
             
         } catch (error) {
-            console.error("Erro detalhado na importação:", error);
-            alert(`Erro na importação: ${error.message || "Formato de arquivo incompatível"}.\n\nVerifique se o Excel possui as abas: Planos, Propósito, Hábitos, Diário.`);
+            console.error("Erro Padrão Ouro na importação:", error);
+            alert(`Erro na importação: ${error.message}`);
         }
         
-        // Reset para permitir nova importação do mesmo arquivo
         event.target.value = '';
     },
 
