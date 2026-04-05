@@ -1963,111 +1963,114 @@ const app = {
                 });
             }
 
-            // 2. Aba: Propósito -> state.profile, state.dimensions
+            // 2. Aba: Propósito
             const wsProp = workbook.Sheets['Propósito'] || workbook.Sheets['Proposito'];
             if (wsProp) {
-                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = { values: [] };
                 if (!window.sistemaVidaState.profile.ikigai) window.sistemaVidaState.profile.ikigai = {};
                 if (!window.sistemaVidaState.profile.legacyObj) window.sistemaVidaState.profile.legacyObj = {};
                 if (!window.sistemaVidaState.profile.vision) window.sistemaVidaState.profile.vision = {};
+                if (!window.sistemaVidaState.dimensions) window.sistemaVidaState.dimensions = { 'Saúde':{score:1}, 'Mente':{score:1}, 'Carreira':{score:1}, 'Finanças':{score:1}, 'Relacionamentos':{score:1}, 'Família':{score:1}, 'Lazer':{score:1}, 'Propósito':{score:1} };
+                if (!window.sistemaVidaState.perma) window.sistemaVidaState.perma = {P:0, E:0, R:0, M:0, A:0};
 
                 const propArr = XLSX.utils.sheet_to_json(wsProp);
                 propArr.forEach(row => {
-                    const cat = String(getValue(row, ['Categoria', 'Category', 'Tab'])).toLowerCase();
-                    const keyOriginal = String(getValue(row, ['Chave', 'Dimensão', 'Item', 'Propósito', 'Key']));
-                    const key = keyOriginal.toLowerCase();
-                    const val = getValue(row, ['Texto_Preenchido', 'Valor', 'Score', 'Value']);
+                    let cat = String(getValue(row, ['Categoria', 'Category']) || '').trim().toLowerCase();
+                    let key = String(getValue(row, ['Chave', 'Dimensão', 'Item']) || '').trim();
+                    let val = getValue(row, ['Texto_Preenchido', 'Texto Preenchido', 'Valor', 'Score']);
                     
-                    if (!key) return;
+                    if (!key || val === undefined || val === '') return;
+                    let kLow = key.toLowerCase();
 
-                    // Mapeamento robusto Padrão Ouro
-                    if (cat.includes('perma')) {
-                        const permaKey = keyOriginal.charAt(0).toUpperCase(); // P, E, R, M, A
-                        if (window.sistemaVidaState.perma[permaKey] !== undefined) {
-                            window.sistemaVidaState.perma[permaKey] = parseFloat(val) || 0;
-                        }
-                    } else if (cat.includes('roda') || cat.includes('dimensão')) {
-                        const dimKey = keyOriginal.trim();
-                        if (window.sistemaVidaState.dimensions[dimKey]) {
-                            window.sistemaVidaState.dimensions[dimKey].score = parseFloat(val) || 0;
-                        }
-                    } else if (cat.includes('ikigai')) {
-                        if (key.includes('missão')) window.sistemaVidaState.profile.ikigai.missao = val;
-                        else if (key.includes('vocação')) window.sistemaVidaState.profile.ikigai.vocacao = val;
-                        else if (key.includes('paixão') || key.includes('ama')) window.sistemaVidaState.profile.ikigai.love = val;
-                        else if (key.includes('bom')) window.sistemaVidaState.profile.ikigai.good = val;
-                        else if (key.includes('precisa')) window.sistemaVidaState.profile.ikigai.need = val;
-                        else if (key.includes('pago')) window.sistemaVidaState.profile.ikigai.paid = val;
-                        else if (key.includes('síntese')) window.sistemaVidaState.profile.ikigai.sintese = val;
-                    } else if (cat.includes('visão')) {
-                        if (key.includes('saúde')) window.sistemaVidaState.profile.vision.saude = val;
-                        else if (key.includes('carreira')) window.sistemaVidaState.profile.vision.carreira = val;
-                        else if (key.includes('intelectual')) window.sistemaVidaState.profile.vision.intelecto = val;
-                        else if (key.includes('citação')) window.sistemaVidaState.profile.vision.quote = val;
-                    } else if (cat.includes('legado')) {
-                        if (key.includes('família')) window.sistemaVidaState.profile.legacyObj.familia = val;
-                        else if (key.includes('profissão')) window.sistemaVidaState.profile.legacyObj.profissao = val;
-                        else if (key.includes('mundo')) window.sistemaVidaState.profile.legacyObj.mundo = val;
-                    } else if (cat.includes('identidade') || key.includes('valores')) {
+                    // Mapeamento Direcionado por Categoria
+                    if (cat.includes('roda')) {
+                        let dimKey = Object.keys(window.sistemaVidaState.dimensions).find(k => k.toLowerCase().replace(/[áàãâäéèêëíìîïóòõôöúùûüç]/g, '') === kLow.replace(/[áàãâäéèêëíìîïóòõôöúùûüç]/g, '')) || key;
+                        if (!window.sistemaVidaState.dimensions[dimKey]) window.sistemaVidaState.dimensions[dimKey] = { score: 1 };
+                        window.sistemaVidaState.dimensions[dimKey].score = parseFloat(val) || 1;
+                    } 
+                    else if (cat.includes('perma')) {
+                        let pKey = kLow.toUpperCase();
+                        if (['P','E','R','M','A'].includes(pKey)) window.sistemaVidaState.perma[pKey] = parseFloat(val) || 0;
+                    } 
+                    else if (cat.includes('ikigai')) {
+                        if (kLow.includes('miss')) window.sistemaVidaState.profile.ikigai.missao = val;
+                        else if (kLow.includes('voca')) window.sistemaVidaState.profile.ikigai.vocacao = val;
+                        else if (kLow.includes('amo')) window.sistemaVidaState.profile.ikigai.love = val;
+                        else if (kLow.includes('bom')) window.sistemaVidaState.profile.ikigai.good = val;
+                        else if (kLow.includes('precisa')) window.sistemaVidaState.profile.ikigai.need = val;
+                        else if (kLow.includes('pago')) window.sistemaVidaState.profile.ikigai.paid = val;
+                        else if (kLow.includes('sín') || kLow.includes('sin')) window.sistemaVidaState.profile.ikigai.sintese = val;
+                    } 
+                    else if (cat.includes('valor')) {
                         window.sistemaVidaState.profile.values = typeof val === 'string' ? val.split(/[,\n]/).map(s=>s.trim()) : [val];
+                    } 
+                    else if (cat.includes('vis')) {
+                        if (kLow.includes('saú') || kLow.includes('sau')) window.sistemaVidaState.profile.vision.saude = val;
+                        else if (kLow.includes('carr')) window.sistemaVidaState.profile.vision.carreira = val;
+                        else if (kLow.includes('intel')) window.sistemaVidaState.profile.vision.intelecto = val;
+                        else if (kLow.includes('cit') || kLow.includes('quote')) window.sistemaVidaState.profile.vision.quote = val;
+                    } 
+                    else if (cat.includes('legado')) {
+                        if (kLow.includes('fam')) window.sistemaVidaState.profile.legacyObj.familia = val;
+                        else if (kLow.includes('prof')) window.sistemaVidaState.profile.legacyObj.profissao = val;
+                        else if (kLow.includes('mun')) window.sistemaVidaState.profile.legacyObj.mundo = val;
                     }
                 });
             }
 
-            // 3. Aba: Hábitos -> state.habits
+            // 3. Aba: Hábitos
             const wsHabits = workbook.Sheets['Hábitos'] || workbook.Sheets['Habitos'];
             if (wsHabits) {
                 const habArr = XLSX.utils.sheet_to_json(wsHabits);
                 window.sistemaVidaState.habits = [];
                 habArr.forEach(row => {
-                    const title = getValue(row, ['Título', 'Hábito', 'Title']);
+                    const title = getValue(row, ['Título', 'Titulo', 'Hábito']);
                     if (title) {
                         window.sistemaVidaState.habits.push({
                             id: getValue(row, ['ID', 'Id']) || ('hab_' + Date.now() + Math.random().toString(36).substr(2, 9)),
                             title: title,
-                            dimension: getValue(row, ['Dimensão', 'Área', 'Dimension']) || 'Geral',
-                            trigger: getValue(row, ['Gatilho', 'Trigger', 'Contexto']) || '',
-                            completed: String(getValue(row, ['Status', 'Concluído']) || '').toLowerCase().includes('sim') || String(getValue(row, ['Status', 'Concluído']) || '').toLowerCase().includes('ativo')
+                            dimension: getValue(row, ['Dimensão', 'Dimensao', 'Área']) || 'Geral',
+                            trigger: getValue(row, ['Gatilho', 'Contexto']) || '',
+                            status: getValue(row, ['Status', 'Situação']) || 'Ativo',
+                            completed: String(getValue(row, ['Status', 'Situação']) || '').toLowerCase().includes('conclu')
                         });
                     }
                 });
             }
 
-            // 4. Aba: Diário -> state.dailyLogs
+            // 4. Aba: Diário
             const wsDiario = workbook.Sheets['Diário'] || workbook.Sheets['Diario'];
             if (wsDiario) {
                 const logArr = XLSX.utils.sheet_to_json(wsDiario);
                 window.sistemaVidaState.dailyLogs = window.sistemaVidaState.dailyLogs || {};
                 logArr.forEach(row => {
-                    let dateRaw = getValue(row, ['Data', 'Date']);
+                    let dateRaw = getValue(row, ['Data', 'Date', 'Dia']);
                     let dateStr = "";
                     if (typeof dateRaw === 'number') {
                         const d = new Date(Math.round((dateRaw - 25569) * 86400 * 1000));
                         dateStr = d.toISOString().split('T')[0];
-                    } else if (dateRaw) {
-                        dateStr = String(dateRaw).trim().substring(0, 10);
-                    }
+                    } else if (dateRaw) dateStr = String(dateRaw).trim();
                     
                     if (dateStr && dateStr.length >= 10) {
-                        window.sistemaVidaState.dailyLogs[dateStr] = {
-                            energy: parseFloat(getValue(row, ['Energia', 'Energy'])) || 5,
+                        window.sistemaVidaState.dailyLogs[dateStr.substring(0,10)] = {
                             gratidao: getValue(row, ['Gratidão', 'Gratidao']),
-                            funcionou: getValue(row, ['O_Que_Funcionou', 'Funcionou']),
-                            aprendi: getValue(row, ['O_Que_Aprendi', 'Aprendi']),
+                            funcionou: getValue(row, ['O_Que_Funcionou', 'O Que Funcionou', 'Funcionou']),
+                            aprendi: getValue(row, ['O_Que_Aprendi', 'O Que Aprendi', 'Aprendi']),
                             shutdown: [
-                                getValue(row, ['Shutdown_1', 'Shutdown 1']),
-                                getValue(row, ['Shutdown_2', 'Shutdown 2']),
+                                getValue(row, ['Shutdown_1', 'Shutdown 1']), 
+                                getValue(row, ['Shutdown_2', 'Shutdown 2']), 
                                 getValue(row, ['Shutdown_3', 'Shutdown 3'])
-                            ]
+                            ],
+                            energy: parseFloat(getValue(row, ['Energia', 'Energy'])) || 5
                         };
                     }
                 });
             }
 
-            // 5. Aba: Revisões -> state.reviews
-            const wsReviews = workbook.Sheets['Revisões'] || workbook.Sheets['Revisoes'];
-            if (wsReviews) {
-                const revArr = XLSX.utils.sheet_to_json(wsReviews);
+            // 5. Aba: Revisões
+            const wsRev = workbook.Sheets['Revisões'] || workbook.Sheets['Revisoes'];
+            if (wsRev) {
+                const revArr = XLSX.utils.sheet_to_json(wsRev);
                 window.sistemaVidaState.reviews = window.sistemaVidaState.reviews || {};
                 revArr.forEach(row => {
                     let dateRaw = getValue(row, ['Data', 'Date']);
@@ -2075,17 +2078,15 @@ const app = {
                     if (typeof dateRaw === 'number') {
                         const d = new Date(Math.round((dateRaw - 25569) * 86400 * 1000));
                         dateStr = d.toISOString().split('T')[0];
-                    } else if (dateRaw) {
-                        dateStr = String(dateRaw).trim().substring(0, 10);
-                    }
-
+                    } else if (dateRaw) dateStr = String(dateRaw).trim();
+                    
                     if (dateStr && dateStr.length >= 10) {
-                        window.sistemaVidaState.reviews[dateStr] = {
-                            q1: getValue(row, ['O_Que_Planejei', 'Planejado']),
-                            q2: getValue(row, ['O_Que_Executei', 'Executado']),
+                        window.sistemaVidaState.reviews[dateStr.substring(0,10)] = {
+                            q1: getValue(row, ['O_Que_Planejei', 'O Que Planejei']),
+                            q2: getValue(row, ['O_Que_Executei', 'O Que Executei']),
                             q3: getValue(row, ['Aprendizado', 'Aprendi']),
-                            q4: getValue(row, ['Ajuste']),
-                            q5: getValue(row, ['Intencao_Proxima', 'Intencao'])
+                            q4: getValue(row, ['Ajuste', 'Ajustes']),
+                            q5: getValue(row, ['Intencao_Proxima', 'Intencao Proxima', 'Intenção'])
                         };
                     }
                 });
