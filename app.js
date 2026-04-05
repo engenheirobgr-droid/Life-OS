@@ -533,6 +533,65 @@ const app = {
         document.getElementById('quarterly-modal').classList.remove('flex');
     },
 
+    openWheelModal: function() {
+        const state = window.sistemaVidaState;
+        const container = document.getElementById('wheel-sliders-container');
+        if (!container) return;
+        
+        const dimensions = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
+        let html = '';
+        
+        dimensions.forEach(dim => {
+            const score = (state.dimensions && state.dimensions[dim]) ? state.dimensions[dim].score : 1;
+            html += `
+            <div class="space-y-1">
+                <div class="flex justify-between text-xs font-label uppercase tracking-widest text-outline font-bold">
+                    <label>${dim}</label>
+                    <span id="val-wheel-${dim}">${score}</span>
+                </div>
+                <input type="range" id="slider-wheel-${dim}" data-dim="${dim}" min="1" max="10" value="${score}" class="w-full accent-primary" oninput="document.getElementById('val-wheel-${dim}').textContent = this.value" style="touch-action: pan-y; overscroll-behavior: contain;">
+            </div>`;
+        });
+        
+        container.innerHTML = html;
+        const modal = document.getElementById('wheel-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    closeWheelModal: function() {
+        const modal = document.getElementById('wheel-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    saveWheel: function() {
+        const state = window.sistemaVidaState;
+        if (!state.dimensions) state.dimensions = {};
+        
+        const container = document.getElementById('wheel-sliders-container');
+        if (container) {
+            const ranges = container.querySelectorAll('input[type="range"]');
+            ranges.forEach(range => {
+                const dim = range.getAttribute('data-dim');
+                if (dim) {
+                    if (!state.dimensions[dim]) state.dimensions[dim] = { score: 1 };
+                    state.dimensions[dim].score = parseInt(range.value, 10);
+                }
+            });
+        }
+        
+        this.saveState();
+        this.closeWheelModal();
+        if (this.render.proposito) this.render.proposito();
+        if (this.render.painel) this.render.painel();
+        this.showNotification("Roda da Vida atualizada com sucesso!");
+    },
+
     processQuarterlyReview: function() {
         const state = window.sistemaVidaState;
         const items = document.querySelectorAll('#quarterly-okrs-list > div[data-okr-id]');
@@ -1514,6 +1573,24 @@ const app = {
                     safeSetText('legacy-profissao', leg.profissao);
                     safeSetText('legacy-mundo', leg.mundo);
 
+                    // Odyssey Scenarios
+                    const ody = profile.odyssey || {};
+                    ['A', 'B', 'C'].forEach(id => {
+                        const plan = ody[id];
+                        if (plan) {
+                            safeSetText(`ody-title-${id}`, plan.title);
+                            safeSetText(`ody-desc-${id}`, plan.desc);
+                            
+                            const confEl = document.getElementById(`ody-conf-${id}`);
+                            if (confEl) confEl.innerHTML = Array(5).fill(0).map((_, i) => 
+                                `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.conf ? 1 : 0};">star</span>`).join('');
+                            
+                            const nrgEl = document.getElementById(`ody-nrg-${id}`);
+                            if (nrgEl) nrgEl.innerHTML = Array(5).fill(0).map((_, i) => 
+                                `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.nrg ? 1 : 0};">bolt</span>`).join('');
+                        }
+                    });
+
                 } catch(e) {
                     console.error("Erro ao renderizar textos do Propósito:", e);
                 }
@@ -1562,30 +1639,6 @@ const app = {
             }
 
 
-            // Injeção Dinâmica dos Odyssey Scenarios (A, B, C)
-            const scenarios = ['A', 'B', 'C'];
-            scenarios.forEach(id => {
-                const plan = state.profile.odyssey?.[id];
-                if (plan) {
-                    const titleEl = document.getElementById(`ody-title-${id}`);
-                    const descEl = document.getElementById(`ody-desc-${id}`);
-                    const confEl = document.getElementById(`ody-conf-${id}`);
-                    const nrgEl = document.getElementById(`ody-nrg-${id}`);
-
-                    if (titleEl) titleEl.textContent = plan.title;
-                    if (descEl) descEl.textContent = plan.desc;
-                    if (confEl) {
-                        confEl.innerHTML = Array(5).fill(0).map((_, i) => 
-                            `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.conf ? 1 : 0};">star</span>`
-                        ).join('');
-                    }
-                    if (nrgEl) {
-                        nrgEl.innerHTML = Array(5).fill(0).map((_, i) => 
-                            `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.nrg ? 1 : 0};">bolt</span>`
-                        ).join('');
-                    }
-                }
-            });
         },
     },
 
