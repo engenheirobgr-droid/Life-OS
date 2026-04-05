@@ -2176,6 +2176,62 @@ const app = {
         return `<div class="p-6 mt-10 text-red-500 font-bold">Erro local de CORS: view '${viewName}' não pôde ser carregada via protocolo file. Use um servidor local.</div>`;
     },
 
+    openPermaModal: function() {
+        const state = window.sistemaVidaState;
+        const perma = state.perma || {P:0, E:0, R:0, M:0, A:0};
+        // Busca o modal independentemente de onde ele esteja no DOM
+        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
+        
+        if (modal) {
+            const ranges = modal.querySelectorAll('input[type="range"]');
+            const keys = ['P', 'E', 'R', 'M', 'A'];
+            ranges.forEach((range, idx) => {
+                if (idx < 5) {
+                    range.value = perma[keys[idx]];
+                    // Atualiza o display visual numérico ao lado do slider, se existir
+                    const display = range.parentElement.querySelector('span.perma-value') || range.nextElementSibling;
+                    if (display && display.tagName !== 'BUTTON') display.textContent = perma[keys[idx]] + '%';
+                }
+            });
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    closePermaModal: function() {
+        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    savePerma: function() {
+        const state = window.sistemaVidaState;
+        if (!state.perma) state.perma = {P:0, E:0, R:0, M:0, A:0};
+
+        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
+        if (modal) {
+            const ranges = modal.querySelectorAll('input[type="range"]');
+            const keys = ['P', 'E', 'R', 'M', 'A'];
+            ranges.forEach((range, idx) => {
+                if (idx < 5) {
+                    state.perma[keys[idx]] = parseInt(range.value, 10) || 0;
+                }
+            });
+        }
+
+        // Salva os dados no cache
+        this.saveState();
+        this.closePermaModal();
+
+        // Força a re-renderização das telas para mostrar a atualização instantaneamente
+        if (this.render.painel) this.render.painel();
+        if (this.render.proposito) this.render.proposito();
+
+        this.showNotification("Diagnóstico PERMA atualizado com sucesso!");
+    },
+
     openOdysseyModal: function(id) {
         const state = window.sistemaVidaState;
         if (!state.profile.odyssey) state.profile.odyssey = {
