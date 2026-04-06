@@ -3,14 +3,24 @@
 <section class="mb-12">
 <p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Autoconhecimento & Visão</p>
 <h2 class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Propósito</h2>
-<div class="mt-6 h-px w-24 bg-primary"></div>
-<div id="top-values-banner" class="flex flex-wrap gap-2 mt-8 empty:hidden"></div>
 </section>
+
+<!-- Meus Valores Base Section -->
+<section class="mb-12">
+    <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-headline font-bold text-on-background">Meus Valores Base</h3>
+            <span class="material-symbols-outlined text-outline">diamond</span>
+        </div>
+        <div id="top-values-banner" class="flex flex-wrap gap-2 min-h-[32px]"></div>
+    </div>
+</section>
+
 <!-- Bento Grid Layout -->
 <section class="mb-12">
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 <!-- Roda da Vida Card -->
-<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full">
+<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
 <div>
 <h3 class="font-headline text-2xl italic mb-4">Roda da Vida</h3>
 <p class="text-sm text-on-surface-variant leading-relaxed mb-6">Estado atual do equilíbrio nas 8 dimensões.</p>
@@ -103,7 +113,7 @@
 </div>
 </div>
 <!-- Ikigai Card -->
-<div class="md:col-span-2 bg-surface-container-lowest rounded-2xl p-8 border border-outline-variant/10 shadow-sm flex flex-col relative">
+<div class="md:col-span-2 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col relative">
         <div class="space-y-6 w-full">
             <div>
                 <h3 class="font-headline text-2xl italic mb-4">Meu Ikigai</h3>
@@ -269,97 +279,97 @@
 </section>
 
 <!-- Odyssey Plans Card -->
-<section class="mb-12 text-on-surface">
-<div class="md:col-span-2 pb-8">
-<div class="flex justify-between items-end mb-6">
-<div>
-<h3 class="font-headline text-2xl italic mb-4">Odyssey Plans</h3>
-<p class="text-sm text-on-surface-variant leading-relaxed">Três cenários possíveis para os próximos 5 anos.</p>
-</div>
-</div>
-<div class="flex gap-6 overflow-x-auto pb-4 -mx-6 px-6 no-scrollbar">
-<!-- Scenario 1 -->
-                <div class="min-w-[320px] bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full relative" onclick="window.app.openOdysseyModal('A')">
+<!-- Odyssey Plans Card -->
+<section class="mb-12">
+    <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
+        
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h3 class="text-xl font-headline font-bold text-on-background">Odyssey Plans</h3>
+                <p class="text-sm text-outline mt-1">Três cenários possíveis para os próximos 5 anos.</p>
+            </div>
+            <span class="material-symbols-outlined text-outline">explore_nearby</span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Scenario 1 -->
+            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openOdysseyModal('A')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-label font-bold uppercase tracking-wider">Cenário A</div>
                 <h4 id="display-ody-title-A" class="font-headline text-xl font-bold mb-4">Carregando dados...</h4>
                 <p id="display-ody-desc-A" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-                <div class="space-y-4 mb-6">
-                <div class="flex justify-between items-center">
-                <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
-                <div id="ody-conf-A" class="flex text-primary">
-                </div>
-                </div>
-                <div class="flex justify-between items-center">
-                <span class="text-[10px] font-label uppercase tracking-widest">Energia</span>
-                <div id="ody-nrg-A" class="flex text-primary">
-                </div>
-                </div>
+                <div class="space-y-4 mb-6 mt-auto">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
+                        <div id="ody-conf-A" class="flex text-primary"></div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-label uppercase tracking-widest">Energia</span>
+                        <div id="ody-nrg-A" class="flex text-primary"></div>
+                    </div>
                 </div>
                 <div class="flex gap-1">
-                <div class="h-1 flex-1 bg-primary rounded-full"></div>
-                <div class="h-1 flex-1 bg-primary rounded-full"></div>
-                <div class="h-1 flex-1 bg-primary rounded-full"></div>
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-primary rounded-full"></div>
+                    <div class="h-1 flex-1 bg-primary rounded-full"></div>
+                    <div class="h-1 flex-1 bg-primary rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
                 </div>
                 <p class="text-[10px] mt-2 font-label text-outline text-center">ANO 3 / 5</p>
-                </div>
-<!-- Scenario 2 -->
-                <div class="min-w-[320px] bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full relative" onclick="window.app.openOdysseyModal('B')">
+            </div>
+
+            <!-- Scenario 2 -->
+            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openOdysseyModal('B')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-secondary/10 text-secondary text-[10px] font-label font-bold uppercase tracking-wider">Cenário B</div>
                 <h4 id="display-ody-title-B" class="font-headline text-xl font-bold mb-4">Carregando dados...</h4>
                 <p id="display-ody-desc-B" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-                <div class="space-y-4 mb-6">
-                <div class="flex justify-between items-center">
-                <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
-                <div id="ody-conf-B" class="flex text-secondary">
-                </div>
-                </div>
-                <div class="flex justify-between items-center">
-                <span class="text-[10px] font-label uppercase tracking-widest">Energia</span>
-                <div id="ody-nrg-B" class="flex text-secondary">
-                </div>
-                </div>
+                <div class="space-y-4 mb-6 mt-auto">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
+                        <div id="ody-conf-B" class="flex text-secondary"></div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-label uppercase tracking-widest">Energia</span>
+                        <div id="ody-nrg-B" class="flex text-secondary"></div>
+                    </div>
                 </div>
                 <div class="flex gap-1">
-                <div class="h-1 flex-1 bg-secondary rounded-full"></div>
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-secondary rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
                 </div>
                 <p class="text-[10px] mt-2 font-label text-outline text-center">ANO 1 / 5</p>
-                </div>
-<!-- Scenario 3 -->
-                <div class="min-w-[320px] bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full relative" onclick="window.app.openOdysseyModal('C')">
+            </div>
+
+            <!-- Scenario 3 -->
+            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openOdysseyModal('C')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary text-[10px] font-label font-bold uppercase tracking-wider">Cenário C</div>
                 <h4 id="display-ody-title-C" class="font-headline text-xl font-bold mb-4">Carregando dados...</h4>
                 <p id="display-ody-desc-C" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-                <div class="space-y-4 mb-6">
-                <div class="flex justify-between items-center">
-                <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
-                <div id="ody-conf-C" class="flex text-tertiary">
-                </div>
-                </div>
-                <div class="flex justify-between items-center">
-                <span class="text-[10px] font-label uppercase tracking-widest">Energia</span>
-                <div id="ody-nrg-C" class="flex text-tertiary">
-                </div>
-                </div>
+                <div class="space-y-4 mb-6 mt-auto">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
+                        <div id="ody-conf-C" class="flex text-tertiary"></div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-label uppercase tracking-widest">Energia</span>
+                        <div id="ody-nrg-C" class="flex text-tertiary"></div>
+                    </div>
                 </div>
                 <div class="flex gap-1">
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
-                <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
+                    <div class="h-1 flex-1 bg-outline-variant rounded-full"></div>
                 </div>
                 <p class="text-[10px] mt-2 font-label text-outline text-center">PLANEJAMENTO</p>
-                </div>
-</div>
-</div>
-</div>
+            </div>
+        </div>
+    </div>
 </section>
+
 </main>
 
 <script>
