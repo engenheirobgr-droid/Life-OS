@@ -11,32 +11,28 @@
     </div>
     <div class="mt-6 h-px w-24 bg-primary"></div>
 </section>
-    <!-- Hero Section: Stats Cards -->
-    <section class="space-y-4">
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm flex flex-col">
-            
-            <div class="p-6 md:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                <div>
-                    <p class="text-sm font-medium text-on-surface-variant uppercase tracking-wider">Nível de Energia</p>
-                    <p class="text-xs text-outline italic">Como você se sente agora?</p>
-                </div>
-                <input type="hidden" id="daily-energy" value="0">
-                <div class="flex gap-2">
-                    <button class="energy-emoji-btn w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center text-xl transition-all active:scale-95" data-value="1">😩</button>
-                    <button class="energy-emoji-btn w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center text-xl transition-all active:scale-95" data-value="2">😐</button>
-                    <button class="energy-emoji-btn w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center text-xl transition-all active:scale-95" data-value="3">😊</button>
-                    <button class="energy-emoji-btn w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center text-xl transition-all active:scale-95" data-value="4">🚀</button>
-                    <button class="energy-emoji-btn w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center text-xl transition-all active:scale-95" data-value="5">🔥</button>
-                </div>
+    <!-- Hero Section: Stats -->
+    <section class="space-y-12">
+        <!-- Nível de Energia Card -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-6 md:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div>
+                <p class="text-sm font-medium text-on-surface-variant uppercase tracking-wider">Nível de Energia</p>
+                <p class="text-xs text-outline italic">Como você se sente agora?</p>
             </div>
-
-            <div class="h-px w-full bg-outline-variant/10"></div>
-
-            <div class="p-6 md:p-8 bg-surface-container-low/30 rounded-b-2xl">
-                <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold mb-4">Progresso da Semana</p>
-                <div id="week-days-container" class="flex justify-between w-full"></div>
+            <input type="hidden" id="daily-energy" value="0">
+            <div class="flex gap-2">
+                <button class="energy-emoji-btn w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center text-xl transition-all active:scale-95" data-value="1">😩</button>
+                <button class="energy-emoji-btn w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center text-xl transition-all active:scale-95" data-value="2">😐</button>
+                <button class="energy-emoji-btn w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center text-xl transition-all active:scale-95" data-value="3">😊</button>
+                <button class="energy-emoji-btn w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center text-xl transition-all active:scale-95" data-value="4">🚀</button>
+                <button class="energy-emoji-btn w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high flex items-center justify-center text-xl transition-all active:scale-95" data-value="5">🔥</button>
             </div>
+        </div>
 
+        <!-- Progresso da Semana (Sem Card) -->
+        <div class="px-2"> 
+            <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold mb-6">Progresso da Semana</p>
+            <div id="week-days-container" class="flex justify-between w-full"></div>
         </div>
     </section>
 <!-- Section: Checklist do dia -->
