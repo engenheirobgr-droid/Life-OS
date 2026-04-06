@@ -147,17 +147,25 @@ const app = {
     },
 
     switchPlanosTab: function(tabId) {
-        // Esconde todos os conteúdos
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        // Mostra o selecionado
-        const targetContent = document.getElementById('tab-' + tabId);
-        if (targetContent) targetContent.classList.add('active');
-        
-        // Remove estado ativo dos botões
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('text-primary'));
-        // Adiciona estado ativo no botão clicado
-        const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
-        if (activeBtn) activeBtn.classList.add('text-primary');
+      // 1. Oculta todos os conteúdos removendo 'active'
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    
+      // 2. Exibe o conteúdo da tab clicada
+      const targetContent = document.getElementById('tab-' + tabId);
+      if (targetContent) targetContent.classList.add('active');
+    
+      // 3. Remove estado ativo de TODOS os botões
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active', 'text-primary');
+        btn.classList.add('text-stone-500');
+      });
+    
+      // 4. Marca o botão da tab clicada como ativo
+      const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
+      if (activeBtn) {
+        activeBtn.classList.add('active', 'text-primary');
+        activeBtn.classList.remove('text-stone-500');
+      }
     },
 
     init: async function() {
@@ -459,44 +467,137 @@ const app = {
     },
 
     factoryReset: async function() {
-        const confirm1 = confirm("⚠️ ATENÇÃO EXTREMA ⚠️\n\nIsso apagará TODOS os seus dados salvos na nuvem (Metas, OKRs, Diários, Roda da Vida). Essa ação NÃO pode ser desfeita.\n\nTem certeza absoluta?");
-        if (!confirm1) return;
-
-        const confirm2 = prompt("Para confirmar a exclusão total, digite a palavra: ZERAR");
-        if (confirm2 !== "ZERAR") {
-            alert("Reset cancelado. Seus dados estão seguros.");
-            return;
+      const firstConfirm = window.confirm(
+        'ATENÇÃO EXTREMA: apagar TODOS os seus dados salvos na nuvem — Metas, OKRs, Diários, Roda da Vida. Essa ação NÃO pode ser desfeita. Tem certeza absoluta?'
+      );
+      if (!firstConfirm) return;
+    
+      const secondInput = window.prompt(
+        'Para confirmar a exclusão total, digite a palavra ZERAR'
+      );
+      if (secondInput !== 'ZERAR') {
+        alert('Reset cancelado. Seus dados estão seguros.');
+        return;
+      }
+    
+      // Pergunta o modo de reinício
+      const useMockup = window.confirm(
+        'Como deseja reiniciar?\n\nOK → Carregar dados de exemplo (recomendado para explorar o app)\nCancelar → Começar completamente do zero (Onboarding)'
+      );
+    
+      // ── Estado base virgem ──────────────────────────────────────────────────
+      const baseState = {
+        profile: {
+          name: 'Viajante', level: 1, xp: 0, values: [], legacy: '',
+          ikigai: { missao: '', vocacao: '', love: '', good: '', need: '', paid: '', sintese: '' },
+          legacyObj: { familia: '', profissao: '', mundo: '' },
+          vision: { saude: '', carreira: '', intelecto: '', quote: '' }
+        },
+        energy: 5,
+        dimensions: {
+          'Saúde': { score: 1 }, 'Mente': { score: 1 }, 'Carreira': { score: 1 },
+          'Finanças': { score: 1 }, 'Relacionamentos': { score: 1 },
+          'Família': { score: 1 }, 'Lazer': { score: 1 }, 'Propósito': { score: 1 }
+        },
+        perma: { P: 50, E: 50, R: 50, M: 50, A: 50 },
+        entities: { metas: [], okrs: [], macros: [], micros: [] },
+        dailyLogs: {},
+        habits: [],
+        reviews: {},
+        onboardingComplete: false
+      };
+    
+      // ── Dados de demonstração (injetados se useMockup = true) ───────────────
+      const mockupOverrides = {
+        onboardingComplete: true,
+        profile: {
+          name: 'Bruno',
+          level: 3,
+          xp: 420,
+          values: ['Liberdade', 'Integridade', 'Curiosidade', 'Impacto Social', 'Família'],
+          ikigai: {
+            love: 'Criar sistemas que ajudam pessoas a viverem com mais intenção.',
+            good: 'Desenvolvimento de software, pensamento sistêmico e design de produto.',
+            need: 'Ferramentas práticas de autogestão e produtividade com propósito.',
+            paid: 'Desenvolvimento de apps, consultoria de produto e software sob medida.',
+            sintese: 'Construir tecnologia que transforma rotinas em jornadas com sentido.'
+          },
+          legacyObj: {
+            familia: 'Ser presença constante e inspiração de integridade para minha família.',
+            profissao: 'Criar produtos que simplificam a vida de milhares de pessoas.',
+            mundo: 'Contribuir para uma cultura de autoconhecimento e intencionalidade.'
+          },
+          vision: {
+            saude: 'Energia alta e consistente. Treinar 4x por semana e dormir bem.',
+            carreira: 'Liderar meu próprio produto com autonomia e impacto real.',
+            intelecto: 'Aprender continuamente. Ler 1 livro por mês e criar com frequência.',
+            quote: 'A disciplina é a ponte entre metas e realizações. — Jim Rohn'
+          }
+        },
+        dimensions: {
+          'Saúde': { score: 7 }, 'Mente': { score: 8 }, 'Carreira': { score: 6 },
+          'Finanças': { score: 5 }, 'Relacionamentos': { score: 8 },
+          'Família': { score: 9 }, 'Lazer': { score: 4 }, 'Propósito': { score: 8 }
+        },
+        perma: { P: 72, E: 68, R: 85, M: 75, A: 60 },
+        habits: [
+          { id: 'h1', title: 'Meditação matinal', dimension: 'Mente', trigger: 'Após acordar e antes do café', completed: false, context: 'Clareza mental para o dia' },
+          { id: 'h2', title: 'Treino físico', dimension: 'Saúde', trigger: 'Segunda, quarta e sexta às 7h', completed: false, context: 'Energia e disposição' },
+          { id: 'h3', title: 'Leitura (30 min)', dimension: 'Mente', trigger: 'Antes de dormir', completed: false, context: 'Aprendizado contínuo' }
+        ],
+        entities: {
+          metas: [
+            { id: 'm1', title: 'Lançar o Sistema Vida para usuários reais', dimension: 'Carreira', purpose: 'Criar impacto real e validar o produto que estou construindo.', progress: 35, status: 'active', prazo: '2026-12-31' },
+            { id: 'm2', title: 'Construir reserva de emergência de 6 meses', dimension: 'Finanças', purpose: 'Segurança financeira para tomar decisões com liberdade.', progress: 50, status: 'active', prazo: '2026-12-31' }
+          ],
+          okrs: [
+            { id: 'o1', title: 'Ter o app funcional e testável até junho', dimension: 'Carreira', metaId: 'm1', progress: 40, status: 'active', prazo: '2026-06-30' },
+            { id: 'o2', title: 'Aumentar renda mensal em 30%', dimension: 'Finanças', metaId: 'm2', progress: 20, status: 'active', prazo: '2026-06-30' }
+          ],
+          macros: [
+            { id: 'mac1', title: 'Corrigir todos os bugs críticos do app', dimension: 'Carreira', okrId: 'o1', metaId: 'm1', description: 'App funcional sem erros bloqueantes', progress: 50, status: 'active', prazo: '2026-04-30' },
+            { id: 'mac2', title: 'Implementar autenticação de usuários', dimension: 'Carreira', okrId: 'o1', metaId: 'm1', description: 'Login real com múltiplos perfis', progress: 0, status: 'active', prazo: '2026-05-31' },
+            { id: 'mac3', title: 'Reduzir gastos fixos mensais', dimension: 'Finanças', okrId: 'o2', metaId: 'm2', description: 'Identificar e cortar despesas desnecessárias', progress: 30, status: 'active', prazo: '2026-04-30' }
+          ],
+          micros: [
+            { id: 'mic1', title: 'Corrigir bug das tabs na tela Planos', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'done', completed: true, progress: 100, prazo: '2026-04-07' },
+            { id: 'mic2', title: 'Remover hardcodes do painel.html', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'pending', completed: false, progress: 0, prazo: '2026-04-10' },
+            { id: 'mic3', title: 'Implementar render.perfil com edição de nome', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'pending', completed: false, progress: 0, prazo: '2026-04-14' },
+            { id: 'mic4', title: 'Levantar todos os gastos fixos do mês', dimension: 'Finanças', macroId: 'mac3', okrId: 'o2', metaId: 'm2', status: 'pending', completed: false, progress: 0, prazo: '2026-04-15' }
+          ]
         }
-
-        // Sobrescreve o estado global com a estrutura virgem
-        window.sistemaVidaState = {
-            profile: { 
-                name: "Viajante", level: 1, xp: 0, values: [], legacy: "", 
-                ikigai: { missao: "", vocacao: "", paixao: "", profissao: "", sintese: "" }, 
-                legacyObj: { familia: "", profissao: "", mundo: "" } 
-            },
-            dimensions: {
-                'Saúde': { score: 1 }, 'Mente': { score: 1 }, 'Carreira': { score: 1 }, 'Finanças': { score: 1 },
-                'Relacionamentos': { score: 1 }, 'Família': { score: 1 }, 'Lazer': { score: 1 }, 'Propósito': { score: 1 }
-            },
-            perma: { P: 50, E: 50, R: 50, M: 50, A: 50 },
-            entities: { metas: [], okrs: [], macros: [], micros: [] },
-            dailyLogs: {},
-            habits: [],
-            reviews: {},
-            onboardingComplete: false
-        };
-
-        // Salva no Firestore (sobrescrevendo o documento antigo) e limpa cache local
-        try {
-            await this.saveState();
-            localStorage.clear();
-            alert("Sistema Vida resetado com sucesso. Reiniciando...");
-            window.location.reload(); // Força o recarregamento da página para puxar o Onboarding
-        } catch (error) {
-            console.error("Erro ao resetar o sistema:", error);
-            alert("Houve um erro ao tentar apagar os dados da nuvem.");
+      };
+    
+      // ── Mescla estado base com mockups se escolhido ─────────────────────────
+      const mergeDeep = (target, source) => {
+        for (const key in source) {
+          if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+            if (!target[key]) target[key] = {};
+            mergeDeep(target[key], source[key]);
+          } else {
+            target[key] = source[key];
+          }
         }
+        return target;
+      };
+    
+      window.sistemaVidaState = useMockup
+        ? mergeDeep(baseState, mockupOverrides)
+        : baseState;
+    
+      try {
+        await this.saveState();
+        // NÃO usa localStorage.clear() — bloqueado em ambientes sandbox/iframe
+        this.showNotification(
+          useMockup
+            ? 'App carregado com dados de exemplo. Explore à vontade!'
+            : 'Sistema zerado. Iniciando o Onboarding...'
+        );
+        setTimeout(() => window.location.reload(), 1800);
+      } catch (error) {
+        console.error('Erro ao resetar o sistema:', error);
+        alert('Houve um erro ao tentar apagar os dados da nuvem.');
+      }
     },
 
     openQuarterlyModal: function() {
