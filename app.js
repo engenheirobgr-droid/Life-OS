@@ -995,7 +995,7 @@ const app = {
                 if (headerStreak) headerStreak.textContent = streak + ' dias';
             }
 
-            const heatmapEl = document.getElementById('weekly-heatmap');
+            const heatmapEl = document.getElementById('week-days-container');
             if (heatmapEl) {
                 const logs = window.sistemaVidaState.dailyLogs || {};
                 const days = ['D','S','T','Q','Q','S','S'];
@@ -1018,7 +1018,7 @@ const app = {
                         circleClass = 'w-7 h-7 rounded-full bg-[#01696f] flex items-center justify-center';
                         inner = `<span class="material-symbols-outlined text-white text-[12px]" style="font-variation-settings: 'wght' 700;">check</span>`;
                     } else if (isToday) {
-                        circleClass = 'w-7 h-7 rounded-full bg-surface-container-lowest border-2 border-outline-variant/30 ring-2 ring-[#01696f]/40';
+                        circleClass = 'w-7 h-7 rounded-full bg-[#01696f]/15 border-2 border-[#01696f] ring-2 ring-[#01696f]/30';
                     } else {
                         circleClass = 'w-7 h-7 rounded-full bg-stone-200 dark:bg-stone-800 border border-outline-variant/30';
                     }
@@ -1029,7 +1029,6 @@ const app = {
                     </div>`;
                 }
                 heatmapEl.innerHTML = html;
-                heatmapEl.className = 'flex justify-between px-2';
             }
             
             // Restore Diário
@@ -1090,16 +1089,22 @@ const app = {
             }
 
             
-            const energyBtns = document.querySelectorAll('.energy-btn');
-            energyBtns.forEach(btn => {
-                const val = parseInt(btn.textContent);
-                if (val === state.energy) {
-                    btn.className = "w-8 h-8 rounded-full border border-primary-container bg-primary-container text-on-primary-container flex items-center justify-center text-xs font-medium energy-btn";
+            // Energy Emojis Logic
+            const energyInput = document.getElementById('daily-energy');
+            const energyValue = state.energy || 0;
+            if (energyInput) energyInput.value = energyValue;
+
+            const emojiBtns = document.querySelectorAll('.energy-emoji-btn');
+            emojiBtns.forEach(btn => {
+                const val = parseInt(btn.getAttribute('data-value'));
+                if (val === energyValue) {
+                    btn.classList.add('bg-primary/20', 'ring-2', 'ring-primary');
                 } else {
-                    btn.className = "w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center text-xs font-medium hover:border-primary hover:text-primary transition-all energy-btn";
+                    btn.classList.remove('bg-primary/20', 'ring-2', 'ring-primary');
                 }
 
-                btn.onclick = () => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
                     state.energy = val;
                     app.render.hoje();
                 };
@@ -1213,8 +1218,10 @@ const app = {
             });
             container.innerHTML = html;
 
-            const pendingText = document.getElementById('pending-count');
-            if (pendingText) pendingText.textContent = `${pendentes} pendentes`;
+            const pendingBadge = document.getElementById('macros-pendentes-badge');
+            if (pendingBadge) {
+                pendingBadge.textContent = `${pendentes} Pendentes`;
+            }
         },
 
         planos: function() {
