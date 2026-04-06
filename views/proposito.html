@@ -1,21 +1,21 @@
-<main class="max-w-screen-xl mx-auto px-6 pt-12">
+<main class="pt-20 pb-32 px-6 max-w-5xl mx-auto">
 <!-- Header Section -->
-<section class="mb-16">
-<p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Autoconhecimento &amp; Visão</p>
-<h2 class="font-headline text-5xl md:text-7xl italic font-bold tracking-tight text-on-background max-w-2xl">Propósito</h2>
+<section class="mb-12">
+<p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Autoconhecimento & Visão</p>
+<h2 class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Propósito</h2>
 <div class="mt-6 h-px w-24 bg-primary"></div>
-<div id="top-values-banner" class="flex flex-wrap gap-2 mt-8 mb-8"></div>
+<div id="top-values-banner" class="flex flex-wrap gap-2 mt-8"></div>
 </section>
 <!-- Bento Grid Layout -->
-<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 <!-- Roda da Vida Card -->
-<div class="md:col-span-7 bg-surface-container-lowest rounded-xl p-8 flex flex-col justify-between min-h-[400px]">
+<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
 <div>
-<h3 class="font-headline text-3xl italic mb-2">Roda da Vida</h3>
-<p class="text-on-surface-variant text-sm mb-8">Estado atual do equilíbrio nas 8 dimensões.</p>
+<h3 class="font-headline text-2xl italic mb-4">Roda da Vida</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-6">Estado atual do equilíbrio nas 8 dimensões.</p>
 </div>
 <div class="flex-1 flex flex-col md:flex-row items-center justify-center py-4 gap-12">
-<div class="relative w-72 h-72 flex items-center justify-center">
+<div class="relative w-full max-w-[280px] aspect-square mx-auto flex items-center justify-center my-8">
 <!-- Background Rings -->
 <div class="absolute inset-0 border border-outline-variant/20 rounded-full scale-[0.8]"></div>
 <div class="absolute inset-0 border border-outline-variant/15 rounded-full scale-[0.6]"></div>
@@ -57,10 +57,10 @@
 </button>
 </div>
 <!-- Meus Valores Card Sort Exercise -->
-<div class="md:col-span-5 bg-surface-container-low rounded-xl p-8 flex flex-col min-h-[500px]">
+<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
 <div class="flex justify-between items-start mb-6">
 <div>
-<h3 class="font-headline text-3xl italic">Meus Valores</h3>
+<h3 class="font-headline text-2xl italic mb-4">Meus Valores</h3>
 <p class="text-xs font-label uppercase tracking-[0.1em] text-outline mt-1" id="progress-text">1 de 15</p>
 </div>
 </div>
@@ -102,39 +102,36 @@
 </div>
 </div>
 <!-- Ikigai Card -->
-<div class="md:col-span-12 bg-surface-container-lowest rounded-xl p-8 overflow-hidden relative">
-        <p class="text-on-surface-variant leading-relaxed max-w-lg mb-12">
-            O Ikigai é a interseção entre 4 perguntas: O que você ama? No que é bom? O que o mundo precisa? Pelo que o mundo te paga? Quando esses 4 círculos se encontram, você encontra o seu sentido da vida.
-        </p>
-        <div class="space-y-6 mt-12 w-full">
+<div class="md:col-span-2 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col relative">
+        <div class="space-y-6 w-full">
             <div>
-                <h3 class="font-headline text-3xl italic mb-2">Meu Ikigai</h3>
-                <p class="text-on-surface-variant text-sm mb-6">A intersecção entre paixão, missão, vocação e profissão.</p>
+                <h3 class="font-headline text-2xl italic mb-4">Meu Ikigai</h3>
+                <p class="text-sm text-on-surface-variant leading-relaxed mb-6">A intersecção entre paixão, missão, vocação e profissão.</p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-                <div onclick="window.app.openTextEdit('O que amo', 'ikigai', 'love')" class="h-full bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
+                <div onclick="window.app.openTextEdit('O que amo', 'ikigai', 'love')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
                     <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">favorite</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">O que eu amo</h4>
-                    <p id="display-ikigai-love" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+                    <p id="display-ikigai-love" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                 </div>
 
-                <div onclick="window.app.openTextEdit('No que sou bom', 'ikigai', 'good')" class="h-full bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
+                <div onclick="window.app.openTextEdit('No que sou bom', 'ikigai', 'good')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
                     <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">military_tech</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">No que sou bom</h4>
-                    <p id="display-ikigai-good" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+                    <p id="display-ikigai-good" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                 </div>
                 
-                <div onclick="window.app.openTextEdit('O que o mundo precisa', 'ikigai', 'need')" class="h-full bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
+                <div onclick="window.app.openTextEdit('O que o mundo precisa', 'ikigai', 'need')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
                     <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">public</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">Mundo precisa</h4>
-                    <p id="display-ikigai-need" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+                    <p id="display-ikigai-need" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                 </div>
 
-                <div onclick="window.app.openTextEdit('Pelo que posso ser pago', 'ikigai', 'paid')" class="h-full bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
+                <div onclick="window.app.openTextEdit('Pelo que posso ser pago', 'ikigai', 'paid')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
                     <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">payments</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">Posso ser pago</h4>
-                    <p id="display-ikigai-paid" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+                    <p id="display-ikigai-paid" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                 </div>
             </div>
 
@@ -146,36 +143,36 @@
         </div>
 </div>
 <!-- Meu Legado Card -->
-<div class="md:col-span-6 bg-[#faf9f5] border border-outline-variant/10 rounded-xl p-8 h-full">
-<h3 class="font-headline text-3xl italic mb-10">Meu Legado</h3>
+<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
+<h3 class="font-headline text-2xl italic mb-4">Meu Legado</h3>
 <div class="space-y-12">
 <div>
 <p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Família &amp; Relações</p>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Família', 'legacyObj', 'familia')">
-<p id="display-legacy-familia" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+<p id="display-legacy-familia" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
 <p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Profissão &amp; Obra</p>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Profissão', 'legacyObj', 'profissao')">
-<p id="display-legacy-profissao" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+<p id="display-legacy-profissao" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
 <p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Mundo &amp; Sociedade</p>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Mundo', 'legacyObj', 'mundo')">
-<p id="display-legacy-mundo" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+<p id="display-legacy-mundo" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 </div>
 </div>
 <!-- PERMA Card -->
-<div class="md:col-span-6 bg-surface-container-low rounded-xl p-8 h-full">
-<h3 class="font-headline text-3xl italic mb-2">Bem-estar PERMA</h3>
-<p class="text-on-surface-variant text-sm mb-8">Modelo de florescimento humano de Seligman.</p>
+<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
+<h3 class="font-headline text-2xl italic mb-4">Bem-estar PERMA</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-6">Modelo de florescimento humano de Seligman.</p>
 <div class="space-y-6">
 <div>
 <div class="flex justify-between items-center mb-1">
@@ -226,35 +223,35 @@
 </div>
 </div>
 <!-- Visão de Vida Card -->
-<div class="md:col-span-12 bg-surface-container-lowest rounded-xl p-8 md:p-12">
+<div class="md:col-span-2 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
 <div class="max-w-3xl mx-auto">
-<h3 class="font-headline text-4xl italic text-center mb-12">Visão de Vida</h3>
+<h3 class="font-headline text-2xl italic mb-4 text-center">Visão de Vida</h3>
 <div class="columns-1 md:columns-2 gap-12 space-y-8">
 <div>
 <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Saúde &amp; Vitalidade</h4>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Saúde', 'vision', 'saude')">
-<p id="display-vision-saude" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+<p id="display-vision-saude" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
 <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Carreira &amp; Finanças</h4>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Carreira & Finanças', 'vision', 'carreira')">
-<p id="display-vision-carreira" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+<p id="display-vision-carreira" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
 <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Intelectual &amp; Espiritual</h4>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Intelecto & Espiritual', 'vision', 'intelecto')">
-<p id="display-vision-intelecto" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+<p id="display-vision-intelecto" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div class="bg-surface-container-low p-6 rounded-lg">
 <span class="material-symbols-outlined text-primary mb-2">format_quote</span>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Citação Guia', 'vision', 'quote')">
-<p id="display-vision-quote" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+<p id="display-vision-quote" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
 <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
@@ -262,19 +259,19 @@
 </div>
 </div>
 <!-- Odyssey Plans Card -->
-<div class="md:col-span-12 pb-8">
+<div class="md:col-span-2 pb-8">
 <div class="flex justify-between items-end mb-6">
 <div>
-<h3 class="font-headline text-3xl italic">Odyssey Plans</h3>
-<p class="text-on-surface-variant text-sm">Três cenários possíveis para os próximos 5 anos.</p>
+<h3 class="font-headline text-2xl italic mb-4">Odyssey Plans</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed">Três cenários possíveis para os próximos 5 anos.</p>
 </div>
 </div>
 <div class="flex gap-6 overflow-x-auto pb-4 -mx-6 px-6 no-scrollbar">
 <!-- Scenario 1 -->
-                <div class="min-w-[320px] bg-surface-container-low rounded-xl p-6 flex flex-col h-full relative" onclick="window.app.openOdysseyModal('A')">
+                <div class="min-w-[320px] bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full relative" onclick="window.app.openOdysseyModal('A')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-label font-bold uppercase tracking-wider">Cenário A</div>
                 <h4 id="display-ody-title-A" class="font-headline text-xl font-bold mb-4">Carregando dados...</h4>
-                <p id="display-ody-desc-A" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+                <p id="display-ody-desc-A" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                 <div class="space-y-4 mb-6">
                 <div class="flex justify-between items-center">
                 <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
@@ -297,10 +294,10 @@
                 <p class="text-[10px] mt-2 font-label text-outline text-center">ANO 3 / 5</p>
                 </div>
 <!-- Scenario 2 -->
-                <div class="min-w-[320px] bg-surface-container-low rounded-xl p-6 flex flex-col h-full relative" onclick="window.app.openOdysseyModal('B')">
+                <div class="min-w-[320px] bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full relative" onclick="window.app.openOdysseyModal('B')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-secondary/10 text-secondary text-[10px] font-label font-bold uppercase tracking-wider">Cenário B</div>
                 <h4 id="display-ody-title-B" class="font-headline text-xl font-bold mb-4">Carregando dados...</h4>
-                <p id="display-ody-desc-B" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+                <p id="display-ody-desc-B" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                 <div class="space-y-4 mb-6">
                 <div class="flex justify-between items-center">
                 <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
@@ -323,10 +320,10 @@
                 <p class="text-[10px] mt-2 font-label text-outline text-center">ANO 1 / 5</p>
                 </div>
 <!-- Scenario 3 -->
-                <div class="min-w-[320px] bg-surface-container-low rounded-xl p-6 flex flex-col h-full relative" onclick="window.app.openOdysseyModal('C')">
+                <div class="min-w-[320px] bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full relative" onclick="window.app.openOdysseyModal('C')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary text-[10px] font-label font-bold uppercase tracking-wider">Cenário C</div>
                 <h4 id="display-ody-title-C" class="font-headline text-xl font-bold mb-4">Carregando dados...</h4>
-                <p id="display-ody-desc-C" class="text-[13px] text-on-surface-variant leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar block pr-2">Carregando dados...</p>
+                <p id="display-ody-desc-C" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                 <div class="space-y-4 mb-6">
                 <div class="flex justify-between items-center">
                 <span class="text-[10px] font-label uppercase tracking-widest">Confiança</span>
@@ -438,4 +435,3 @@
         // Initialize
         updateUI();
     </script>
-
