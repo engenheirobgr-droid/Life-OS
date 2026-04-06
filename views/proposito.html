@@ -219,18 +219,14 @@
 <!-- Bem-Estar PERMA Section -->
 <section class="mt-8">
     <div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full">
-        <div class="flex items-start justify-between mb-6">
+        <div class="flex items-start justify-between mb-4">
             <div>
                 <h3 class="text-xl font-headline font-bold text-on-background">Bem-Estar PERMA</h3>
-                <p class="text-sm text-outline mt-1">Métricas de florescimento humano.</p>
+                <p class="text-sm text-outline mt-1">O modelo PERMA (Seligman) define os cinco pilares do florescimento: Emoção Positiva, Engajamento, Relacionamentos, Significado e Realização.</p>
             </div>
             <span class="material-symbols-outlined text-outline text-2xl">psychology</span>
         </div>
-        <div id="perma-charts-container" class="space-y-6">
-            <!-- Os gráficos PERMA são gerados dinamicamente no app.js -->
-        </div>
-            <button onclick="window.app.openPermaModal()" class="w-full mt-4 bg-primary/10 text-primary hover:bg-primary/20 px-6 py-3 rounded-lg font-medium transition-all active:scale-95">Reavaliar PERMA</button>
-        </div>
+        <p class="text-xs text-on-surface-variant leading-relaxed italic opacity-70">Acompanhe seu desempenho detalhado no Painel de Evolução.</p>
     </div>
 </section>
 
@@ -454,6 +450,12 @@
             msg.className = 'text-xs text-on-surface-variant mt-4 italic leading-relaxed';
             msg.textContent = 'Seus valores essenciais foram salvos e agora servem como base para suas decisões e prioridades no Sistema Vida.';
             this.parentNode.appendChild(msg);
+
+            // Fecha o modal após um pequeno delay para o feedback
+            setTimeout(() => {
+                const modal = document.getElementById('values-selection-tool');
+                if (modal) modal.classList.add('hidden');
+            }, 800);
         });
         
         // Initialize

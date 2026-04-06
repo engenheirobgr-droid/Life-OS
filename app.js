@@ -97,6 +97,13 @@ const app = {
     // ------------------------------------------------------------------------
     // Cloud Persistence Engine
     // ------------------------------------------------------------------------
+    saveValues: function(values) {
+        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+        window.sistemaVidaState.profile.values = values;
+        this.saveState();
+        this.renderCurrentView();
+    },
+
     saveState: async function() {
         try {
             const stateRef = doc(db, "users", "meu-sistema-vida");
@@ -1259,28 +1266,43 @@ const app = {
                 focusContainer.innerHTML = focusHtml;
             }
 
-            // PERMA Dynamic SVG (Com delay seguro)
+            // 3. PERMA Bars Rendering (Detailed well-being stats)
             setTimeout(() => {
                 try {
-                    const state = window.sistemaVidaState;
-                    const perma = state.perma || {P:0, E:0, R:0, M:0, A:0};
-                    const pPoly = document.getElementById('perma-polygon');
-                    const pScore = document.getElementById('perma-score');
-                    if (pPoly && pScore) {
-                        const angles = [0, 72, 144, 216, 288].map(d => d * Math.PI / 180);
-                        const vals = [perma.P, perma.E, perma.R, perma.M, perma.A];
-                        const pts = vals.map((val, i) => {
-                            const r = 40 * (val / 100);
-                            return `${(50 + r * Math.sin(angles[i])).toFixed(1)},${(50 - r * Math.cos(angles[i])).toFixed(1)}`;
-                        });
-                        pPoly.setAttribute('points', pts.join(' '));
-                        const avg = (vals.reduce((a,b)=>a+b,0)/5).toFixed(1);
-                        pScore.textContent = `Score PERMA: ${avg}`;
-                    }
+                    const container = document.getElementById('perma-charts-container');
+                    if (!container) return;
+                    container.innerHTML = ''; // Limpa o anterior
+
+                    const permaData = [
+                        { label: 'Emoções Positivas (P)', val: state.perma?.P || 0, color: 'bg-rose-500' },
+                        { label: 'Engajamento (E)', val: state.perma?.E || 0, color: 'bg-orange-500' },
+                        { label: 'Relacionamentos (R)', val: state.perma?.R || 0, color: 'bg-emerald-500' },
+                        { label: 'Significado (M)', val: state.perma?.M || 0, color: 'bg-sky-500' },
+                        { label: 'Realização (A)', val: state.perma?.A || 0, color: 'bg-violet-500' }
+                    ];
+
+                    permaData.forEach(item => {
+                        const score = Number(item.val);
+                        const normalizedVal = score > 10 ? score / 10 : score;
+                        const percentage = normalizedVal * 10;
+                        
+                        const row = document.createElement('div');
+                        row.className = 'space-y-2';
+                        row.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-on-surface-variant">${item.label}</span>
+                                <span class="text-xs font-bold text-primary">${normalizedVal.toFixed(1)}/10</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                                <div class="h-full ${item.color} transition-all duration-1000" style="width: ${percentage}%"></div>
+                            </div>
+                        `;
+                        container.appendChild(row);
+                    });
                 } catch(e) { 
-                    console.error("Erro no render PERMA Painel:", e); 
+                    console.error("Erro no render PERMA Bars (Painel):", e); 
                 }
-            }, 100);
+            }, 150);
         },
 
         renderAnnualHeatmap: function() {
@@ -1874,44 +1896,7 @@ const app = {
         proposito: function() {
             const state = window.sistemaVidaState;
 
-            // 1. Renderização do PERMA (Barras de Progresso Modernas)
-            setTimeout(() => {
-                try {
-                    const container = document.getElementById('perma-charts-container');
-                    if (!container) return;
-                    container.innerHTML = ''; // Limpa o anterior
-
-                    const permaData = [
-                        { label: 'Emoções Positivas (P)', val: state.perma?.P || 0, color: 'bg-rose-500' },
-                        { label: 'Engajamento (E)', val: state.perma?.E || 0, color: 'bg-orange-500' },
-                        { label: 'Relacionamentos (R)', val: state.perma?.R || 0, color: 'bg-emerald-500' },
-                        { label: 'Significado (M)', val: state.perma?.M || 0, color: 'bg-sky-500' },
-                        { label: 'Realização (A)', val: state.perma?.A || 0, color: 'bg-violet-500' }
-                    ];
-
-                    permaData.forEach(item => {
-                        const score = Number(item.val);
-                        // Ajuste se os dados estiverem em escala 0-100
-                        const normalizedVal = score > 10 ? score / 10 : score;
-                        const percentage = normalizedVal * 10;
-                        
-                        const row = document.createElement('div');
-                        row.className = 'space-y-2';
-                        row.innerHTML = `
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm font-medium text-on-surface-variant">${item.label}</span>
-                                <span class="text-sm font-bold text-primary">${normalizedVal.toFixed(1)}/10</span>
-                            </div>
-                            <div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
-                                <div class="h-full ${item.color} transition-all duration-1000" style="width: ${percentage}%"></div>
-                            </div>
-                        `;
-                        container.appendChild(row);
-                    });
-                } catch(e) { 
-                    console.error("Erro no render PERMA Propósito:", e); 
-                }
-            }, 100);
+            // 1. O PERMA agora é renderizado no Painel.
 
             // 3. Renderização de Textos do Propósito (Ikigai, Valores, Visão, Legado)
             setTimeout(() => {
