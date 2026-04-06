@@ -206,11 +206,9 @@
 </div>
 </section>
 
-<!-- Wellbeing & Vision Block -->
-<section class="mt-16 space-y-8">
-<!-- PERMA Card -->
-
-<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full">
+<!-- Bem-Estar PERMA Section -->
+<section class="mt-16">
+    <div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full">
         <div class="flex items-start justify-between mb-6">
             <div>
                 <h3 class="text-xl font-headline font-bold text-on-background">Bem-Estar PERMA</h3>
@@ -218,91 +216,94 @@
             </div>
             <span class="material-symbols-outlined text-outline text-2xl">psychology</span>
         </div>
-<div class="space-y-6">
-<div>
-<div class="flex justify-between items-center mb-1">
-<span class="text-xs font-label uppercase tracking-widest">Emoção Positiva</span>
-<span id="perma-text-p" class="text-xs font-bold text-primary">85%</span>
-</div>
-<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div id="perma-bar-p" class="h-full bg-primary w-[85%] transition-all duration-500"></div>
-</div>
-</div>
-<div>
-<div class="flex justify-between items-center mb-1">
-<span class="text-xs font-label uppercase tracking-widest">Engajamento (Flow)</span>
-<span id="perma-text-e" class="text-xs font-bold text-primary">70%</span>
-</div>
-<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div id="perma-bar-e" class="h-full bg-primary w-[70%] transition-all duration-500"></div>
-</div>
-</div>
-<div>
-<div class="flex justify-between items-center mb-1">
-<span class="text-xs font-label uppercase tracking-widest">Relacionamentos</span>
-<span id="perma-text-r" class="text-xs font-bold text-primary">92%</span>
-</div>
-<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div id="perma-bar-r" class="h-full bg-primary w-[92%] transition-all duration-500"></div>
-</div>
-</div>
-<div>
-<div class="flex justify-between items-center mb-1">
-<span class="text-xs font-label uppercase tracking-widest">Significado</span>
-<span id="perma-text-m" class="text-xs font-bold text-primary">60%</span>
-</div>
-<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div id="perma-bar-m" class="h-full bg-primary w-[60%] transition-all duration-500"></div>
-</div>
-</div>
-<div>
-<div class="flex justify-between items-center mb-1">
-<span class="text-xs font-label uppercase tracking-widest">Realização</span>
-<span id="perma-text-a" class="text-xs font-bold text-primary">75%</span>
-</div>
-<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div id="perma-bar-a" class="h-full bg-primary w-[75%] transition-all duration-500"></div>
-</div>
-</div>
-<button onclick="window.app.openPermaModal()" class="w-full mt-4 bg-primary/10 text-primary hover:bg-primary/20 px-6 py-3 rounded-lg font-medium transition-all active:scale-95">Reavaliar PERMA</button>
-</div>
-</div>
-<!-- Visão de Vida Card -->
-<div class="md:col-span-2 bg-surface-container-lowest rounded-2xl p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
-<div class="max-w-3xl mx-auto">
-<h3 class="font-headline text-2xl italic mb-6 text-center">Visão de Vida</h3>
-<div class="columns-1 md:columns-2 gap-12 space-y-8">
-<div>
-<h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Saúde &amp; Vitalidade</h4>
-<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Saúde', 'vision', 'saude')">
-<p id="display-vision-saude" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
-</div>
-</div>
-<div>
-<h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Carreira &amp; Finanças</h4>
-<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Carreira & Finanças', 'vision', 'carreira')">
-<p id="display-vision-carreira" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
-</div>
-</div>
-<div>
-<h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Intelectual &amp; Espiritual</h4>
-<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Intelecto & Espiritual', 'vision', 'intelecto')">
-<p id="display-vision-intelecto" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
-</div>
-</div>
-<div class="bg-surface-container-low p-6 rounded-lg">
-<span class="material-symbols-outlined text-primary mb-2">format_quote</span>
-<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Citação Guia', 'vision', 'quote')">
-<p id="display-vision-quote" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
-</div>
-</div>
-</div>
-</div>
-</div>
+        <div class="space-y-6">
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-label uppercase tracking-widest">Emoção Positiva</span>
+                    <span id="perma-text-p" class="text-xs font-bold text-primary">85%</span>
+                </div>
+                <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+                    <div id="perma-bar-p" class="h-full bg-primary w-[85%] transition-all duration-500"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-label uppercase tracking-widest">Engajamento (Flow)</span>
+                    <span id="perma-text-e" class="text-xs font-bold text-primary">70%</span>
+                </div>
+                <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+                    <div id="perma-bar-e" class="h-full bg-primary w-[70%] transition-all duration-500"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-label uppercase tracking-widest">Relacionamentos</span>
+                    <span id="perma-text-r" class="text-xs font-bold text-primary">92%</span>
+                </div>
+                <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+                    <div id="perma-bar-r" class="h-full bg-primary w-[92%] transition-all duration-500"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-label uppercase tracking-widest">Significado</span>
+                    <span id="perma-text-m" class="text-xs font-bold text-primary">60%</span>
+                </div>
+                <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+                    <div id="perma-bar-m" class="h-full bg-primary w-[60%] transition-all duration-500"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-label uppercase tracking-widest">Realização</span>
+                    <span id="perma-text-a" class="text-xs font-bold text-primary">75%</span>
+                </div>
+                <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+                    <div id="perma-bar-a" class="h-full bg-primary w-[75%] transition-all duration-500"></div>
+                </div>
+            </div>
+            <button onclick="window.app.openPermaModal()" class="w-full mt-4 bg-primary/10 text-primary hover:bg-primary/20 px-6 py-3 rounded-lg font-medium transition-all active:scale-95">Reavaliar PERMA</button>
+        </div>
+    </div>
+</section>
+
+<!-- Visão de Vida Section -->
+<section class="mt-16">
+    <div class="md:col-span-2 bg-surface-container-lowest rounded-2xl p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
+        <div class="max-w-3xl mx-auto">
+            <h3 class="font-headline text-2xl italic mb-6 text-center">Visão de Vida</h3>
+            <div class="columns-1 md:columns-2 gap-12 space-y-8">
+                <div>
+                    <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Saúde &amp; Vitalidade</h4>
+                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Saúde', 'vision', 'saude')">
+                        <p id="display-vision-saude" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                        <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Carreira &amp; Finanças</h4>
+                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Carreira & Finanças', 'vision', 'carreira')">
+                        <p id="display-vision-carreira" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                        <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Intelectual &amp; Espiritual</h4>
+                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Intelecto & Espiritual', 'vision', 'intelecto')">
+                        <p id="display-vision-intelecto" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                        <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+                    </div>
+                </div>
+                <div class="bg-surface-container-low p-6 rounded-lg">
+                    <span class="material-symbols-outlined text-primary mb-2">format_quote</span>
+                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Citação Guia', 'vision', 'quote')">
+                        <p id="display-vision-quote" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                        <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </section>
 
 <!-- Odyssey Plans Card -->
