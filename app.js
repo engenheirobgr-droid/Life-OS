@@ -54,6 +54,7 @@ const app = {
         viewsPath: 'views/',
     },
     currentView: '',
+    painelFilter: 'semana',
     planosFilter: 'Todas',
     planosStatusFilter: 'active',
     planosHierarchyType: '',
@@ -375,6 +376,31 @@ const app = {
     setPlanosFilter: function(dim) {
         this.planosFilter = dim;
         if (this.render.planos) this.render.planos();
+    },
+
+    setPainelFilter: function(filter) {
+        this.painelFilter = filter;
+        if (this.render.painel) this.render.painel();
+    },
+
+    isDateInCurrentWeek: function(dateStr) {
+        if (!dateStr) return false;
+        const date = new Date(dateStr + "T00:00:00");
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0,0,0,0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23,59,59,999);
+        return date >= startOfWeek && date <= endOfWeek;
+    },
+
+    isDateInCurrentMonth: function(dateStr) {
+        if (!dateStr) return false;
+        const date = new Date(dateStr + "T00:00:00");
+        const now = new Date();
+        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
     },
 
     saveValues: function(newValuesArray) {
@@ -946,12 +972,22 @@ const app = {
     render: {
         painel: function() {
             const state = window.sistemaVidaState;
+            const filter = app.painelFilter || 'semana';
 
             // ---------------------------------------------------------
             // CÁLCULO DE FOCO E EXECUÇÃO
             // ---------------------------------------------------------
-            const micros = state.entities.micros || [];
-            const macros = state.entities.macros || [];
+            let micros = state.entities.micros || [];
+            let macros = state.entities.macros || [];
+            
+            // Filtro Temporal
+            if (filter === 'semana') {
+                micros = micros.filter(m => app.isDateInCurrentWeek(m.prazo));
+                macros = macros.filter(m => app.isDateInCurrentWeek(m.prazo));
+            } else if (filter === 'mes') {
+                micros = micros.filter(m => app.isDateInCurrentMonth(m.prazo));
+                macros = macros.filter(m => app.isDateInCurrentMonth(m.prazo));
+            }
             
             // Execução: % de Micro Ações Concluídas
             const totalMicros = micros.length;
@@ -986,7 +1022,8 @@ const app = {
             
             // Fix Filter Buttons Highlight
             document.querySelectorAll('header .flex.gap-2 button').forEach(btn => {
-                const isSelected = btn.textContent.trim() === 'Semana'; // Mockup, assuming default is Semana
+                const btnType = btn.getAttribute('data-painel-filter');
+                const isSelected = btnType === filter;
                 btn.className = isSelected ? 
                     'px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95' :
                     'px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors';
@@ -1676,7 +1713,7 @@ const app = {
             const state = window.sistemaVidaState;
             const nomeDisplay = document.getElementById('perfil-nome-display');
             if (nomeDisplay && state.profile) {
-                nomeDisplay.textContent = state.profile.name;
+                nomeDisplay.textContent = state.profile.name || "Seu Nome";
             }
         },
 
@@ -2477,6 +2514,46 @@ const app = {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         if (this.render.proposito) this.render.proposito();
+    },
+
+    openProfileModal: function() {
+        const state = window.sistemaVidaState;
+        const nameInput = document.getElementById('profile-name-input');
+        if (nameInput) {
+            nameInput.value = state.profile.name || "";
+        }
+        
+        const modal = document.getElementById('profile-edit-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    closeProfileModal: function() {
+        const modal = document.getElementById('profile-edit-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    saveProfile: function() {
+        const nameInput = document.getElementById('profile-name-input');
+        if (nameInput) {
+            window.sistemaVidaState.profile.name = nameInput.value.trim();
+        }
+        
+        this.saveState();
+        
+        const modal = document.getElementById('profile-edit-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        
+        if (this.render.perfil) this.render.perfil();
+        this.showNotification("Perfil atualizado com sucesso!");
     }
 };
 
