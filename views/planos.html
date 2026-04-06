@@ -60,24 +60,4 @@
 </button>
 </main>
 
-
-<script>
-    function toggleTrail(element) {
-        const trail = element.querySelector('.trail-panel');
-        if (!trail) return;
-        
-        const isExpanded = !trail.classList.contains('hidden');
-        
-        // Close others in same section optionally, but here we just toggle
-        if (isExpanded) {
-            trail.style.maxHeight = '0px';
-            setTimeout(() => trail.classList.add('hidden'), 300);
-        } else {
-            trail.classList.remove('hidden');
-            trail.style.maxHeight = trail.scrollHeight + 'px';
-        }
-        
-        element.classList.toggle('ring-1');
-        element.classList.toggle('ring-primary/20');
-    }
-</script>
+

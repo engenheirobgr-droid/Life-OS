@@ -13,7 +13,7 @@
                 <h3 class="text-xl font-headline font-bold text-on-background">Meus Valores Base</h3>
                 <p class="text-sm text-outline mt-1">Os princípios inegociáveis que guiam as suas decisões.</p>
             </div>
-            <span class="material-symbols-outlined text-outline text-2xl">diamond</span>
+            <button onclick="document.getElementById('values-selection-tool').classList.remove('hidden'); document.getElementById('values-selection-tool').scrollIntoView({behavior: 'smooth'})" class="material-symbols-outlined text-outline text-2xl hover:text-primary transition-colors cursor-pointer" title="Editar Valores">edit</button>
         </div>
         <div id="top-values-banner" class="flex flex-wrap gap-2 min-h-[32px]"></div>
     </div>
@@ -76,7 +76,7 @@
 </section>
 
 <!-- Meus Valores (Ferramenta de Seleção) -->
-<section class="mt-8">
+<section id="values-selection-tool" class="mt-8">
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-10 border border-outline-variant/10 shadow-lg flex flex-col max-w-2xl mx-auto">
         <div class="flex justify-between items-center mb-10">
             <div>

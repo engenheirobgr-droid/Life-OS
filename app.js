@@ -54,6 +54,36 @@ const app = {
         containerId: 'app-content',
         viewsPath: 'views/',
     },
+
+    showToast: function(message, type = 'success') {
+        const container = document.getElementById('global-toast-container');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        const isSuccess = type === 'success';
+        const icon = isSuccess ? 'check_circle' : 'error';
+        const bgColor = isSuccess ? 'bg-surface-container-highest' : 'bg-error';
+        const textColor = isSuccess ? 'text-primary' : 'text-white';
+        
+        toast.className = `flex items-center gap-3 px-5 py-3 rounded-2xl shadow-lg transform transition-all duration-300 translate-y-8 opacity-0 \${bgColor} border border-outline-variant/10`;
+        toast.innerHTML = `
+            <span class="material-symbols-outlined \${textColor} text-xl">\${icon}</span>
+            <p class="text-sm font-medium text-on-surface">\${message}</p>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Animar entrada
+        setTimeout(() => {
+            toast.classList.remove('translate-y-8', 'opacity-0');
+        }, 10);
+        
+        // Remover após 3 segundos
+        setTimeout(() => {
+            toast.classList.add('translate-y-8', 'opacity-0');
+            setTimeout(() => toast.remove(), 3000);
+        }, 3000);
+    },
     currentView: '',
     painelFilter: 'semana',
     planosFilter: 'Todas',
@@ -72,6 +102,7 @@ const app = {
             const stateRef = doc(db, "users", "meu-sistema-vida");
             await setDoc(stateRef, window.sistemaVidaState);
             console.log("Sincronização com Nuvem: Concluída.");
+            if (this.showToast) this.showToast('Progresso guardado com sucesso.', 'success');
         } catch (error) {
             console.error("Erro ao salvar o estado no Firestore:", error);
         }
@@ -747,7 +778,7 @@ const app = {
                     <label>${dim}</label>
                     <span id="val-wheel-${dim}">${score}</span>
                 </div>
-                <input type="range" id="slider-wheel-${dim}" data-dim="${dim}" min="1" max="10" value="${score}" class="w-full accent-primary" oninput="document.getElementById('val-wheel-${dim}').textContent = this.value" style="touch-action: pan-y; overscroll-behavior: contain;">
+                <input type="range" id="slider-wheel-${dim}" data-dim="${dim}" min="1" max="100" value="${score}" class="w-full accent-primary" oninput="document.getElementById('val-wheel-${dim}').textContent = this.value" style="touch-action: pan-y; overscroll-behavior: contain;">
             </div>`;
         });
         
@@ -1681,7 +1712,15 @@ const app = {
                 });
 
                 if (Object.keys(grouped).length === 0) {
-                    return `<div class="p-8 text-center text-stone-400 italic">Nenhum plano encontrado para '${filter}'.</div>`;
+                    const emptyIcon = (entityType === 'metas' || entityType === 'okrs') ? 'flag' : 'task_alt';
+                    return `
+                    <div class="bg-surface-container-lowest rounded-2xl p-8 border border-outline-variant/10 border-dashed text-center flex flex-col items-center justify-center">
+                        <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-4">
+                            <span class="material-symbols-outlined text-outline text-3xl">${emptyIcon}</span>
+                        </div>
+                        <h4 class="font-headline text-lg font-bold text-on-background">Nenhum registo encontrado</h4>
+                        <p class="text-sm text-outline mt-2 max-w-sm">Ainda não tem planos definidos nesta categoria. Clique no botão de adicionar (+) para começar a planear.</p>
+                    </div>`;
                 }
 
                 let html = '';
@@ -1857,6 +1896,16 @@ const app = {
                     const state = window.sistemaVidaState;
                     const profile = state.profile || {};
                     
+                    // Controle de visibilidade da ferramenta de valores
+                    const valuesTool = document.getElementById('values-selection-tool');
+                    if (valuesTool) {
+                        if (profile.values && profile.values.length > 0) {
+                            valuesTool.classList.add('hidden');
+                        } else {
+                            valuesTool.classList.remove('hidden');
+                        }
+                    }
+
                     // Valores Essenciais
                     const valuesBanner = document.getElementById('top-values-banner');
                     if (valuesBanner && profile.values && profile.values.length > 0) {
