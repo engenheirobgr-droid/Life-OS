@@ -226,52 +226,9 @@
             </div>
             <span class="material-symbols-outlined text-outline text-2xl">psychology</span>
         </div>
-        <div class="space-y-6">
-            <div>
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-label uppercase tracking-widest">Emoção Positiva</span>
-                    <span id="perma-text-p" class="text-xs font-bold text-primary">85%</span>
-                </div>
-                <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-                    <div id="perma-bar-p" class="h-full bg-primary w-[85%] transition-all duration-500"></div>
-                </div>
-            </div>
-            <div>
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-label uppercase tracking-widest">Engajamento (Flow)</span>
-                    <span id="perma-text-e" class="text-xs font-bold text-primary">70%</span>
-                </div>
-                <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-                    <div id="perma-bar-e" class="h-full bg-primary w-[70%] transition-all duration-500"></div>
-                </div>
-            </div>
-            <div>
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-label uppercase tracking-widest">Relacionamentos</span>
-                    <span id="perma-text-r" class="text-xs font-bold text-primary">92%</span>
-                </div>
-                <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-                    <div id="perma-bar-r" class="h-full bg-primary w-[92%] transition-all duration-500"></div>
-                </div>
-            </div>
-            <div>
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-label uppercase tracking-widest">Significado</span>
-                    <span id="perma-text-m" class="text-xs font-bold text-primary">60%</span>
-                </div>
-                <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-                    <div id="perma-bar-m" class="h-full bg-primary w-[60%] transition-all duration-500"></div>
-                </div>
-            </div>
-            <div>
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-label uppercase tracking-widest">Realização</span>
-                    <span id="perma-text-a" class="text-xs font-bold text-primary">75%</span>
-                </div>
-                <div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
-                    <div id="perma-bar-a" class="h-full bg-primary w-[75%] transition-all duration-500"></div>
-                </div>
-            </div>
+        <div id="perma-charts-container" class="space-y-6">
+            <!-- Os gráficos PERMA são gerados dinamicamente no app.js -->
+        </div>
             <button onclick="window.app.openPermaModal()" class="w-full mt-4 bg-primary/10 text-primary hover:bg-primary/20 px-6 py-3 rounded-lg font-medium transition-all active:scale-95">Reavaliar PERMA</button>
         </div>
     </div>

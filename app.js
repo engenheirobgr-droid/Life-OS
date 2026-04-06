@@ -1874,16 +1874,39 @@ const app = {
         proposito: function() {
             const state = window.sistemaVidaState;
 
-            // 1. Blindagem do PERMA (Delay para garantir DOM)
+            // 1. Renderização do PERMA (Barras de Progresso Modernas)
             setTimeout(() => {
                 try {
-                    const state = window.sistemaVidaState;
-                    const perma = state.perma || { P: 0, E: 0, R: 0, M: 0, A: 0 };
-                    ['P', 'E', 'R', 'M', 'A'].forEach(k => {
-                        const bar = document.getElementById('perma-bar-' + k.toLowerCase());
-                        const txt = document.getElementById('perma-text-' + k.toLowerCase());
-                        if (bar) bar.style.width = perma[k] + '%';
-                        if (txt) txt.textContent = perma[k] + '%';
+                    const container = document.getElementById('perma-charts-container');
+                    if (!container) return;
+                    container.innerHTML = ''; // Limpa o anterior
+
+                    const permaData = [
+                        { label: 'Emoções Positivas (P)', val: state.perma?.P || 0, color: 'bg-rose-500' },
+                        { label: 'Engajamento (E)', val: state.perma?.E || 0, color: 'bg-orange-500' },
+                        { label: 'Relacionamentos (R)', val: state.perma?.R || 0, color: 'bg-emerald-500' },
+                        { label: 'Significado (M)', val: state.perma?.M || 0, color: 'bg-sky-500' },
+                        { label: 'Realização (A)', val: state.perma?.A || 0, color: 'bg-violet-500' }
+                    ];
+
+                    permaData.forEach(item => {
+                        const score = Number(item.val);
+                        // Ajuste se os dados estiverem em escala 0-100
+                        const normalizedVal = score > 10 ? score / 10 : score;
+                        const percentage = normalizedVal * 10;
+                        
+                        const row = document.createElement('div');
+                        row.className = 'space-y-2';
+                        row.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-on-surface-variant">${item.label}</span>
+                                <span class="text-sm font-bold text-primary">${normalizedVal.toFixed(1)}/10</span>
+                            </div>
+                            <div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
+                                <div class="h-full ${item.color} transition-all duration-1000" style="width: ${percentage}%"></div>
+                            </div>
+                        `;
+                        container.appendChild(row);
                     });
                 } catch(e) { 
                     console.error("Erro no render PERMA Propósito:", e); 
