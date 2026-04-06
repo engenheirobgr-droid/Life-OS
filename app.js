@@ -45,7 +45,8 @@ window.sistemaVidaState = {
     habits: [],
     dailyLogs: {},
     reviews: {},
-    cycleStartDate: new Date(new Date().setDate(new Date().getDate() - 21)).toISOString()
+    cycleStartDate: new Date(new Date().setDate(new Date().getDate() - 21)).toISOString(),
+    onboardingComplete: false
 };
 
 const app = {
@@ -61,6 +62,7 @@ const app = {
     planosHierarchyId: '',
     currentTextGroup: null,
     currentTextKey: null,
+    onboardingStep: 0,
 
     // ------------------------------------------------------------------------
     // Cloud Persistence Engine
@@ -967,9 +969,118 @@ const app = {
     },
 
     // ------------------------------------------------------------------------
+    // Onboarding Experience Logic
+    // ------------------------------------------------------------------------
+    onboardingGoTo: function(step) {
+        const steps = document.querySelectorAll('.onboarding-step');
+        if (steps.length === 0) return;
+
+        steps.forEach((s, idx) => {
+            s.classList.remove('step-active');
+            if (idx < step) s.classList.add('step-hidden-left');
+            else if (idx > step) s.classList.add('step-hidden-right');
+            else {
+                s.classList.remove('step-hidden-left', 'step-hidden-right');
+                s.classList.add('step-active');
+            }
+        });
+        this.onboardingStep = step;
+        
+        // Atualiza barra de progresso
+        const progress = ((step) / (steps.length - 1)) * 100;
+        const bar = document.getElementById('onboarding-progress-bar');
+        if (bar) bar.style.width = `${progress}%`;
+        
+        const indicator = document.getElementById('onboarding-step-indicator');
+        if (indicator) indicator.textContent = `${step + 1}/6`;
+
+        // Renderização especial do resumo
+        if (step === 5) {
+            const state = window.sistemaVidaState;
+            const nameEl = document.getElementById('conclusao-nome');
+            const valuesEl = document.getElementById('conclusao-valores');
+            if (nameEl) nameEl.textContent = state.profile.name;
+            if (valuesEl) valuesEl.textContent = (state.profile.values || []).join(', ');
+        }
+    },
+
+    onboardingSaveCurrentStep: function() {
+        const state = window.sistemaVidaState;
+        if (this.onboardingStep === 1) {
+            const nameInput = document.getElementById('onboarding-nome');
+            if (nameInput) state.profile.name = nameInput.value.trim() || "Viajante";
+        } else if (this.onboardingStep === 2) {
+            // Valores da Roda já são atualizados em tempo real via onboardingUpdateSlider
+        } else if (this.onboardingStep === 3) {
+            // Valores já salvos em tempo real via onboardingToggleValor
+        } else if (this.onboardingStep === 4) {
+            const purposeInput = document.getElementById('onboarding-proposito');
+            if (purposeInput) state.profile.purpose = purposeInput.value.trim();
+        }
+        this.saveState();
+    },
+
+    onboardingNext: function() {
+        this.onboardingSaveCurrentStep();
+        if (this.onboardingStep < 5) {
+            this.onboardingGoTo(this.onboardingStep + 1);
+        }
+    },
+
+    onboardingBack: function() {
+        if (this.onboardingStep > 0) {
+            this.onboardingGoTo(this.onboardingStep - 1);
+        }
+    },
+
+    onboardingComplete: function() {
+        this.onboardingSaveCurrentStep();
+        window.sistemaVidaState.onboardingComplete = true;
+        this.saveState();
+        this.navigate('painel');
+    },
+
+    onboardingUpdateSlider: function(dim, val) {
+        if (window.sistemaVidaState.dimensions[dim]) {
+            window.sistemaVidaState.dimensions[dim].score = parseInt(val);
+            const valEl = document.getElementById(`slider-val-${dim}`);
+            if (valEl) valEl.textContent = val;
+        }
+    },
+
+    onboardingToggleValor: function(btn) {
+        const valor = btn.getAttribute('data-valor');
+        const state = window.sistemaVidaState.profile;
+        if (!state.values) state.values = [];
+        
+        const idx = state.values.indexOf(valor);
+        if (idx > -1) {
+            state.values.splice(idx, 1);
+            btn.classList.remove('selected');
+        } else {
+            if (state.values.length < 5) {
+                state.values.push(valor);
+                btn.classList.add('selected');
+            } else {
+                this.showNotification("Selecione até 5 valores principais.");
+            }
+        }
+        
+        // Atualiza preview interativo no UI
+        const previewEl = document.getElementById('onboarding-valores-preview');
+        if (previewEl) {
+            previewEl.textContent = state.values.length > 0 ? state.values.join(' • ') : "Selecione seus valores...";
+        }
+    },
+
+    // ------------------------------------------------------------------------
     // Rendering Engine (Data Binding)
     // ------------------------------------------------------------------------
     render: {
+        onboarding: function() {
+            // Inicializa o primeiro passo
+            app.onboardingGoTo(0);
+        },
         painel: function() {
             const state = window.sistemaVidaState;
             const filter = app.painelFilter || 'semana';
