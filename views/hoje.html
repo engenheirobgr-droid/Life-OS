@@ -99,10 +99,73 @@
 </div>
 </section>
 </main>
-<!-- FAB -->
-<button onclick="window.app.openCreateModal()" class="fixed bottom-28 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-xl flex items-center justify-center z-50 hover:scale-105 active:scale-90 transition-transform">
-<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'wght' 500;">add</span>
-</button>
+<!-- FABs -->
+<div class="fixed bottom-28 right-6 z-50 flex flex-col gap-4">
+    <!-- Diário Flash Button -->
+    <button onclick="window.app.openDiarioModal()" 
+        class="w-14 h-14 bg-secondary text-on-secondary rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-90 transition-transform"
+        title="Diário Flash">
+        <span class="material-symbols-outlined text-2xl">history_edu</span>
+    </button>
+    
+    <!-- Primary Add Button -->
+    <button onclick="window.app.openCreateModal()" 
+        class="w-14 h-14 bg-primary text-on-primary rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-90 transition-transform">
+        <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'wght' 500;">add</span>
+    </button>
+</div>
+
+<!-- Modal Diário Flash -->
+<div id="diario-flash-modal" class="hidden fixed inset-0 z-[140] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl flex flex-col overflow-hidden">
+        <div class="p-6 border-b border-outline-variant/20 flex justify-between items-center">
+            <div>
+                <h3 class="font-headline text-xl font-bold text-on-background">Diário Flash</h3>
+                <p class="text-[10px] text-outline uppercase tracking-widest font-bold mt-1">Reflexão Instantânea</p>
+            </div>
+            <button onclick="window.app.closeDiarioModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-6">
+            <!-- Micro Ação Select -->
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold uppercase text-outline tracking-wider">Ação em foco</label>
+                <select id="flash-micro-select" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Qual foi a Micro Ação?</option>
+                </select>
+            </div>
+
+            <!-- Emotion Picker -->
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold uppercase text-outline tracking-wider">Como me sinto agora?</label>
+                <div class="flex justify-between bg-surface-container-low p-2 rounded-xl">
+                    <input type="hidden" id="flash-emotion-input" value="neutral">
+                    <button type="button" onclick="document.getElementById('flash-emotion-input').value='angry'; this.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('bg-white', 'shadow-sm')); this.classList.add('bg-white', 'shadow-sm')" 
+                        class="w-10 h-10 rounded-lg flex items-center justify-center text-xl hover:bg-white/50 transition-all">😡</button>
+                    <button type="button" onclick="document.getElementById('flash-emotion-input').value='neutral'; this.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('bg-white', 'shadow-sm')); this.classList.add('bg-white', 'shadow-sm')" 
+                        class="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-white shadow-sm transition-all">😐</button>
+                    <button type="button" onclick="document.getElementById('flash-emotion-input').value='happy'; this.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('bg-white', 'shadow-sm')); this.classList.add('bg-white', 'shadow-sm')" 
+                        class="w-10 h-10 rounded-lg flex items-center justify-center text-xl hover:bg-white/50 transition-all">😊</button>
+                    <button type="button" onclick="document.getElementById('flash-emotion-input').value='fire'; this.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('bg-white', 'shadow-sm')); this.classList.add('bg-white', 'shadow-sm')" 
+                        class="w-10 h-10 rounded-lg flex items-center justify-center text-xl hover:bg-white/50 transition-all">🔥</button>
+                </div>
+            </div>
+
+            <!-- Gratidão -->
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold uppercase text-outline tracking-wider">Gratidão do momento</label>
+                <textarea id="flash-gratidao" rows="3" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none" placeholder="Pelo que sou grato agora?"></textarea>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-outline-variant/20 bg-surface-container-low/30 flex gap-3">
+            <button onclick="window.app.closeDiarioModal()" class="flex-1 px-4 py-3 rounded-xl font-bold text-sm text-outline hover:bg-surface-container-highest transition-all">Cancelar</button>
+            <button onclick="window.app.saveDiarioFlash()" class="flex-1 bg-primary text-on-primary px-4 py-3 rounded-xl font-bold text-sm shadow-md hover:shadow-lg active:scale-95 transition-all">Salvar Flash</button>
+        </div>
+    </div>
+</div>
 
 <!-- Progress Thread (Decorative background element) -->
 <div class="fixed left-4 top-0 bottom-0 w-[1px] bg-primary/10 -z-10 pointer-events-none hidden lg:block"></div>

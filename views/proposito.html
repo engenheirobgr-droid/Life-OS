@@ -19,11 +19,9 @@
     </div>
 </section>
 
-<!-- Bento Grid Layout -->
+<!-- Roda da Vida Section -->
 <section class="mt-16">
-<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-<!-- Roda da Vida Card -->
-<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
+    <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
         <div class="flex items-start justify-between mb-6">
             <div>
                 <h3 class="text-xl font-headline font-bold text-on-background">Roda da Vida</h3>
@@ -31,137 +29,146 @@
             </div>
             <span class="material-symbols-outlined text-outline text-2xl">pie_chart</span>
         </div>
-<div class="flex-1 flex flex-col md:flex-row items-center justify-center py-4 gap-12">
-<div class="relative w-full max-w-[280px] aspect-square mx-auto flex items-center justify-center my-8">
-<!-- Background Rings -->
-<div class="absolute inset-0 border border-outline-variant/20 rounded-full scale-[0.8]"></div>
-<div class="absolute inset-0 border border-outline-variant/15 rounded-full scale-[0.6]"></div>
-<div class="absolute inset-0 border border-outline-variant/10 rounded-full scale-[0.4]"></div>
-<div class="absolute inset-0 border border-outline-variant/5 rounded-full scale-[0.2]"></div>
+        <div class="flex-1 flex flex-col items-center justify-center py-4 gap-12">
+            <!-- Roda Container Ampliado -->
+            <div class="relative w-full max-w-[400px] aspect-square mx-auto flex items-center justify-center my-8">
+                <!-- Background Rings -->
+                <div class="absolute inset-0 border border-outline-variant/20 rounded-full scale-[0.8]"></div>
+                <div class="absolute inset-0 border border-outline-variant/15 rounded-full scale-[0.6]"></div>
+                <div class="absolute inset-0 border border-outline-variant/10 rounded-full scale-[0.4]"></div>
+                <div class="absolute inset-0 border border-outline-variant/5 rounded-full scale-[0.2]"></div>
 
-<svg class="w-full h-full transform -rotate-90 overflow-visible" viewbox="0 0 100 100">
-    <!-- Axis Lines -->
-    <g class="stroke-outline-variant/20" stroke-width="0.5">
-        <line x1="50" x2="50" y1="50" y2="10"></line> <!-- Saúde -->
-        <line x1="50" x2="78.3" y1="50" y2="21.7"></line> <!-- Mente -->
-        <line x1="50" x2="90" y1="50" y2="50"></line> <!-- Carreira -->
-        <line x1="50" x2="78.3" y1="50" y2="78.3"></line> <!-- Finanças -->
-        <line x1="50" x2="50" y1="50" y2="90"></line> <!-- Relac -->
-        <line x1="50" x2="21.7" y1="50" y2="78.3"></line> <!-- Família -->
-        <line x1="50" x2="10" y1="50" y2="50"></line> <!-- Lazer -->
-        <line x1="50" x2="21.7" y1="50" y2="21.7"></line> <!-- Propósito -->
-    </g>
-    <!-- Data Polygon (Example Values) -->
-    <polygon id="roda-polygon" class="text-primary/20 stroke-primary stroke-[1.5] fill-current" 
-        points="50,18  71.2,28.8  82,50  67.7,67.7  50,82  28.3,71.7  26,50  28.8,28.8">
-    </polygon>
-    <circle class="text-primary" cx="50" cy="50" fill="currentColor" r="1.5"></circle>
-</svg>
+                <svg class="w-full h-full transform -rotate-90 overflow-visible" viewbox="0 0 100 100">
+                    <!-- Axis Lines -->
+                    <g class="stroke-outline-variant/20" stroke-width="0.5">
+                        <line x1="50" x2="50" y1="50" y2="10"></line> <!-- Saúde -->
+                        <line x1="50" x2="78.3" y1="50" y2="21.7"></line> <!-- Mente -->
+                        <line x1="50" x2="90" y1="50" y2="50"></line> <!-- Carreira -->
+                        <line x1="50" x2="78.3" y1="50" y2="78.3"></line> <!-- Finanças -->
+                        <line x1="50" x2="50" y1="50" y2="90"></line> <!-- Relac -->
+                        <line x1="50" x2="21.7" y1="50" y2="78.3"></line> <!-- Família -->
+                        <line x1="50" x2="10" y1="50" y2="50"></line> <!-- Lazer -->
+                        <line x1="50" x2="21.7" y1="50" y2="21.7"></line> <!-- Propósito -->
+                    </g>
+                    <!-- Data Polygon (Example Values) -->
+                    <polygon id="roda-polygon" class="text-primary/20 stroke-primary stroke-[1.5] fill-current" 
+                        points="50,18  71.2,28.8  82,50  67.7,67.7  50,82  28.3,71.7  26,50  28.8,28.8">
+                    </polygon>
+                    <circle class="text-primary" cx="50" cy="50" fill="currentColor" r="1.5"></circle>
+                </svg>
 
-<!-- Labels -->
-<span class="absolute top-[-10px] left-1/2 -translate-x-1/2 text-[9px] font-label uppercase tracking-widest text-outline">Saúde</span>
-<span class="absolute top-[12%] right-[10%] text-[9px] font-label uppercase tracking-widest text-outline">Mente</span>
-<span class="absolute top-1/2 right-[-20px] -translate-y-1/2 text-[9px] font-label uppercase tracking-widest text-outline">Carreira</span>
-<span class="absolute bottom-[12%] right-[10%] text-[9px] font-label uppercase tracking-widest text-outline">Finanças</span>
-<span class="absolute bottom-[-10px] left-1/2 -translate-x-1/2 text-[9px] font-label uppercase tracking-widest text-outline text-center">Relac.</span>
-<span class="absolute bottom-[12%] left-[10%] text-[9px] font-label uppercase tracking-widest text-outline">Família</span>
-<span class="absolute top-1/2 left-[-20px] -translate-y-1/2 text-[9px] font-label uppercase tracking-widest text-outline">Lazer</span>
-<span class="absolute top-[12%] left-[10%] text-[9px] font-label uppercase tracking-widest text-outline">Propósito</span>
-</div>
-<div id="roda-sliders" class="hidden"></div>
-<button onclick="window.app.openWheelModal()" class="w-full mt-6 bg-surface-container-highest hover:bg-primary/10 text-primary border border-primary/20 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 shadow-sm">
-    <span class="material-symbols-outlined text-[18px]">tune</span> Reavaliar Roda da Vida
-</button>
-</div>
-<!-- Meus Valores Card Sort Exercise -->
-<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full">
-<div class="flex justify-between items-start mb-6">
-<div>
-<h3 class="font-headline text-2xl italic mb-6">Meus Valores</h3>
-<p class="text-xs font-label uppercase tracking-[0.1em] text-outline mt-1" id="progress-text">1 de 15</p>
-</div>
-</div>
-<!-- Card Container -->
-<div class="flex-grow flex flex-col">
-<div class="relative flex-grow flex items-center justify-center mb-8">
-<!-- Progress Bar -->
-<div class="absolute top-0 left-0 w-full h-1 bg-surface-container-high rounded-full overflow-hidden">
-<div class="h-full bg-primary transition-all duration-300" id="progress-bar" style="width: 6.66%;"></div>
-</div>
-<div class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-8 shadow-sm text-center transition-all transform active:scale-95" id="value-card">
-<span class="font-headline text-3xl italic text-on-surface" id="current-value-text">Liberdade</span>
-</div>
-</div>
-<!-- Action Buttons -->
-<div class="flex gap-4 justify-center mb-10">
-<!-- Não agora -->
-<button class="w-14 h-14 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-surface-variant transition-colors group" onclick="handleVote('skip')" title="Não agora">
-<span class="material-symbols-outlined">close</span>
-</button>
-<!-- Importante -->
-<button class="w-14 h-14 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-surface-variant transition-colors group" onclick="handleVote('important')" title="Importante">
-<span class="material-symbols-outlined">check</span>
-</button>
-<!-- Essencial -->
-<button class="w-14 h-14 rounded-full bg-primary text-on-primary flex items-center justify-center hover:shadow-lg transition-all active:scale-90" onclick="handleVote('essential')" title="Essencial">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-</button>
-</div>
-<div class="border-t border-outline-variant/10 pt-6">
-<p class="text-xs font-label uppercase tracking-widest text-outline mb-4">Meus Essenciais</p>
-<div class="flex flex-wrap gap-2 mb-6 min-h-[40px]" id="essentials-list">
-<!-- Essential values will appear here as teal chips -->
-</div>
-<button class="w-full bg-surface-container-high text-outline py-3 rounded-lg font-medium cursor-not-allowed transition-all" disabled="" id="confirm-values">
-                            Confirmar Meus Valores
-                        </button>
-</div>
-</div>
-</div>
-<!-- Ikigai Card -->
-<div class="md:col-span-2 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col relative">
-        <div class="space-y-6 w-full">
-        <div class="flex items-start justify-between mb-6">
-            <div>
-                <h3 class="text-xl font-headline font-bold text-on-background">Meu Ikigai</h3>
-                <p class="text-sm text-outline mt-1">A sua razão de ser.</p>
+                <!-- Labels -->
+                <span class="absolute top-[-20px] left-1/2 -translate-x-1/2 text-[9px] font-label uppercase tracking-widest text-outline">Saúde</span>
+                <span class="absolute top-[10%] right-[5%] text-[9px] font-label uppercase tracking-widest text-outline">Mente</span>
+                <span class="absolute top-1/2 right-[-30px] -translate-y-1/2 text-[9px] font-label uppercase tracking-widest text-outline">Carreira</span>
+                <span class="absolute bottom-[10%] right-[5%] text-[9px] font-label uppercase tracking-widest text-outline">Finanças</span>
+                <span class="absolute bottom-[-20px] left-1/2 -translate-x-1/2 text-[9px] font-label uppercase tracking-widest text-outline text-center">Relac.</span>
+                <span class="absolute bottom-[10%] left-[5%] text-[9px] font-label uppercase tracking-widest text-outline">Família</span>
+                <span class="absolute top-1/2 left-[-30px] -translate-y-1/2 text-[9px] font-label uppercase tracking-widest text-outline">Lazer</span>
+                <span class="absolute top-[10%] left-[5%] text-[9px] font-label uppercase tracking-widest text-outline">Propósito</span>
             </div>
-            <span class="material-symbols-outlined text-outline text-2xl">star</span>
+            <div id="roda-sliders" class="hidden"></div>
+            <button onclick="window.app.openWheelModal()" class="w-full mt-6 bg-surface-container-highest hover:bg-primary/10 text-primary border border-primary/20 py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 shadow-sm max-w-md mx-auto">
+                <span class="material-symbols-outlined text-[18px]">tune</span> Reavaliar Roda da Vida
+            </button>
         </div>
+    </div>
+</section>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div onclick="window.app.openTextEdit('O que amo', 'ikigai', 'love')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
-                    <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">favorite</span>
+<!-- Meus Valores (Ferramenta de Seleção) -->
+<section class="mt-16">
+    <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h3 class="text-xl font-headline font-bold text-on-background">Selecionar Meus Valores</h3>
+                <p class="text-sm text-outline mt-1 italic" id="progress-text">1 de 15</p>
+            </div>
+            <span class="material-symbols-outlined text-outline text-2xl">swatches</span>
+        </div>
+        
+        <!-- Card Container -->
+        <div class="flex-grow flex flex-col">
+            <div class="relative flex-grow flex items-center justify-center mb-8">
+                <!-- Progress Bar -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-surface-container-high rounded-full overflow-hidden">
+                    <div class="h-full bg-primary transition-all duration-300" id="progress-bar" style="width: 6.66%;"></div>
+                </div>
+                <div class="w-full max-w-md bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-8 shadow-sm text-center transition-all transform active:scale-95" id="value-card">
+                    <span class="font-headline text-3xl italic text-on-surface" id="current-value-text">Liberdade</span>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-4 justify-center mb-10">
+                <button class="w-14 h-14 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-surface-variant transition-colors group" onclick="handleVote('skip')" title="Não agora">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+                <button class="w-14 h-14 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-surface-variant transition-colors group" onclick="handleVote('important')" title="Importante">
+                    <span class="material-symbols-outlined">check</span>
+                </button>
+                <button class="w-14 h-14 rounded-full bg-primary text-on-primary flex items-center justify-center hover:shadow-lg transition-all active:scale-90" onclick="handleVote('essential')" title="Essencial">
+                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+                </button>
+            </div>
+            
+            <div class="border-t border-outline-variant/10 pt-6">
+                <p class="text-xs font-label uppercase tracking-widest text-outline mb-4">Meus Essenciais</p>
+                <div class="flex flex-wrap gap-2 mb-6 min-h-[40px]" id="essentials-list"></div>
+                <button class="w-full bg-surface-container-high text-outline py-3 rounded-lg font-medium cursor-not-allowed transition-all max-w-md mx-auto block" disabled="" id="confirm-values">
+                    Confirmar Meus Valores
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Meu Ikigai Section -->
+<section class="mt-16">
+    <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col relative">
+        <div class="space-y-6 w-full">
+            <div class="flex items-start justify-between mb-8">
+                <div>
+                    <h3 class="text-xl font-headline font-bold text-on-background">Meu Ikigai</h3>
+                    <p class="text-sm text-outline mt-1">Sua razão de ser e intersecção de propósito.</p>
+                </div>
+                <span class="material-symbols-outlined text-outline text-2xl">star</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div onclick="window.app.openTextEdit('O que amo', 'ikigai', 'love')" class="bg-surface-container-low p-6 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
+                    <span class="material-symbols-outlined text-primary mb-3 group-hover:scale-110 transition-transform">favorite</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">O que eu amo</h4>
-                    <p id="display-ikigai-love" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                    <p id="display-ikigai-love" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[150px]">Carregando dados...</p>
                 </div>
 
-                <div onclick="window.app.openTextEdit('No que sou bom', 'ikigai', 'good')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
-                    <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">military_tech</span>
+                <div onclick="window.app.openTextEdit('No que sou bom', 'ikigai', 'good')" class="bg-surface-container-low p-6 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
+                    <span class="material-symbols-outlined text-primary mb-3 group-hover:scale-110 transition-transform">military_tech</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">No que sou bom</h4>
-                    <p id="display-ikigai-good" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                    <p id="display-ikigai-good" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[150px]">Carregando dados...</p>
                 </div>
                 
-                <div onclick="window.app.openTextEdit('O que o mundo precisa', 'ikigai', 'need')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
-                    <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">public</span>
+                <div onclick="window.app.openTextEdit('O que o mundo precisa', 'ikigai', 'need')" class="bg-surface-container-low p-6 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
+                    <span class="material-symbols-outlined text-primary mb-3 group-hover:scale-110 transition-transform">public</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">Mundo precisa</h4>
-                    <p id="display-ikigai-need" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                    <p id="display-ikigai-need" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[150px]">Carregando dados...</p>
                 </div>
 
-                <div onclick="window.app.openTextEdit('Pelo que posso ser pago', 'ikigai', 'paid')" class="bg-surface-container-low p-5 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
-                    <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">payments</span>
+                <div onclick="window.app.openTextEdit('Pelo que posso ser pago', 'ikigai', 'paid')" class="bg-surface-container-low p-6 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
+                    <span class="material-symbols-outlined text-primary mb-3 group-hover:scale-110 transition-transform">payments</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">Posso ser pago</h4>
-                    <p id="display-ikigai-paid" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                    <p id="display-ikigai-paid" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[150px]">Carregando dados...</p>
                 </div>
             </div>
 
-            <div onclick="window.app.openTextEdit('Minha Razão de Viver', 'ikigai', 'sintese')" class="relative bg-primary-container text-on-primary-container p-6 rounded-2xl cursor-pointer hover:shadow-lg transition-all border border-primary/20 mt-2 active:scale-[0.98]">
+            <div onclick="window.app.openTextEdit('Minha Razão de Viver', 'ikigai', 'sintese')" class="relative bg-primary-container text-on-primary-container p-8 rounded-2xl cursor-pointer hover:shadow-lg transition-all border border-primary/20 mt-4 active:scale-[0.99]">
                 <span class="absolute top-6 right-6 material-symbols-outlined opacity-50">edit_note</span>
-                <h4 class="text-[10px] uppercase font-bold tracking-widest mb-3 opacity-80 flex items-center gap-2"><span class="material-symbols-outlined text-[14px]">auto_awesome</span> A Síntese do Meu Ikigai</h4>
-                <p id="display-ikigai-sintese" class="text-xl font-headline italic leading-relaxed">Carregando dados...</p>
+                <h4 class="text-[10px] uppercase font-bold tracking-widest mb-4 opacity-80 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[14px]">auto_awesome</span> A Síntese do Meu Ikigai
+                </h4>
+                <p id="display-ikigai-sintese" class="text-2xl font-headline italic leading-relaxed">Carregando dados...</p>
             </div>
+        </div>
     </div>
-</div>
 </section>
 <!-- Meu Legado Card -->
 <section class="mt-16">

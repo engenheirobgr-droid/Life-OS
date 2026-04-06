@@ -303,6 +303,75 @@ const app = {
         }
     },
 
+    openDiarioModal: function() {
+        const modal = document.getElementById('diario-flash-modal');
+        const selectMicros = document.getElementById('flash-micro-select');
+        if (!modal || !selectMicros) return;
+
+        // Limpa select
+        selectMicros.innerHTML = '<option value="">Qual foi a Micro Ação?</option>';
+
+        // Busca Micro Ações pendentes do estado
+        const micros = window.sistemaVidaState.entities.micros || [];
+        const pendingMicros = micros.filter(m => m.status !== 'done');
+
+        pendingMicros.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.title;
+            selectMicros.appendChild(opt);
+        });
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    },
+
+    closeDiarioModal: function() {
+        const modal = document.getElementById('diario-flash-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    saveDiarioFlash: function() {
+        const microId = document.getElementById('flash-micro-select').value;
+        const emotion = document.getElementById('flash-emotion-input')?.value || 'neutral';
+        const gratitude = document.getElementById('flash-gratidao').value.trim();
+
+        if (!gratitude) {
+            alert('Por favor, escreva um motivo de gratidão.');
+            return;
+        }
+
+        const date = new Date().toISOString().split('T')[0];
+        const state = window.sistemaVidaState;
+
+        if (!state.dailyLogs[date]) {
+            state.dailyLogs[date] = {};
+        }
+
+        // Atualiza log do dia
+        state.dailyLogs[date].flashEmotion = emotion;
+        state.dailyLogs[date].flashGratitude = gratitude;
+        state.dailyLogs[date].lastMicroActionId = microId;
+        state.dailyLogs[date].timestamp = new Date().getTime();
+
+        // Se uma micro ação foi selecionada, podemos opcionalmente marcá-la ou apenas registrar
+        // Por agora, apenas registramos no log.
+
+        this.saveState();
+        this.closeDiarioModal();
+        
+        // Notificação
+        const toast = document.getElementById('identity-toast');
+        if (toast) {
+            document.getElementById('toast-message').textContent = 'Reflexão salva com sucesso! ✨';
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+    },
+
     setPlanosFilter: function(dim) {
         this.planosFilter = dim;
         if (this.render.planos) this.render.planos();
