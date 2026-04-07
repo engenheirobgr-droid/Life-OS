@@ -101,6 +101,7 @@ const app = {
         if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
         window.sistemaVidaState.profile.values = values;
         this.saveState();
+        this.renderSidebarValues();
         this.renderCurrentView();
     },
 
@@ -136,7 +137,8 @@ const app = {
                     return target;
                 };
                 
-                window.sistemaVidaState = mergeDeep(window.sistemaVidaState, cloudData);
+            window.sistemaVidaState = mergeDeep(window.sistemaVidaState, cloudData);
+                this.renderSidebarValues();
             } else {
                 console.log("Primeiro acesso. Criando documento base na Nuvem...");
                 await this.saveState();
@@ -185,6 +187,31 @@ const app = {
 
         const diffDaysPurpose = Math.floor((today - new Date(state.purposeStartDate)) / (1000 * 60 * 60 * 24));
         if (diffDaysPurpose >= 365 && diffDaysPurpose % 365 === 0) setTimeout(() => this.showNotification("🌟 1 ano de jornada! Hora da revisão profunda do seu Propósito e Ikigai."), 5500);
+    },
+
+    renderSidebarValues: function() {
+        const state = window.sistemaVidaState;
+        const profile = state.profile || {};
+        const values = profile.values || [];
+        
+        const container = document.getElementById('sidebar-values-container');
+        if (container) {
+            if (values.length > 0) {
+                container.innerHTML = values.map(v => 
+                    `<span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic transition-all hover:bg-primary/20 cursor-default animate-fade-in">${v}</span>`
+                ).join('');
+            } else {
+                container.innerHTML = `<span class="text-[10px] text-outline italic">Defina seus valores no Propósito</span>`;
+            }
+        }
+
+        // Também atualiza o banner no Propósito se estiver visível
+        const valuesBanner = document.getElementById('top-values-banner');
+        if (valuesBanner && values.length > 0) {
+            valuesBanner.innerHTML = values.map(v => 
+                `<span class="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in">${v}</span>`
+            ).join('');
+        }
     },
 
     switchPlanosTab: function(tabId) {
@@ -1914,11 +1941,8 @@ const app = {
                         }
                     }
 
-                    // Valores Essenciais
-                    const valuesBanner = document.getElementById('top-values-banner');
-                    if (valuesBanner && profile.values && profile.values.length > 0) {
-                        valuesBanner.innerHTML = profile.values.map(v => `<span class="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest">${v}</span>`).join('');
-                    }
+                    // Valores Essenciais (Sincronizado)
+                    window.app.renderSidebarValues();
 
                     // Função Caçadora de IDs para Textos de Exibição
                     const safeSetText = (idBase, text) => { 
