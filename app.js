@@ -801,13 +801,25 @@ const app = {
         } else {
             let html = '';
             activeOkrs.forEach(okr => {
+                const pendingMicrosCount = (state.entities.micros || []).filter(m => {
+                    const macro = state.entities.macros.find(ma => ma.id === m.macroId);
+                    return m.status !== 'done' && macro && macro.okrId === okr.id;
+                }).length;
+
                 html += `
                 <div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant/20" data-okr-id="${okr.id}">
-                    <p class="text-sm font-medium mb-3">${okr.title}</p>
+                    <div class="flex justify-between items-start mb-3">
+                        <p class="text-sm font-medium pr-2">${okr.title}</p>
+                        ${pendingMicrosCount > 0 ? `<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0">${pendingMicrosCount} pendentes</span>` : ''}
+                    </div>
                     <div class="flex flex-col gap-2">
-                        <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="action_${okr.id}" value="continuar" checked class="accent-primary"> Continuar no próximo ciclo</label>
-                        <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="action_${okr.id}" value="concluir" class="accent-primary"> Marcar como Concluído</label>
-                        <label class="flex items-center gap-2 text-xs cursor-pointer text-error"><input type="radio" name="action_${okr.id}" value="arquivar" class="accent-error"> Arquivar / Abandonar</label>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="action_${okr.id}" value="continuar" checked class="accent-primary" onchange="document.getElementById('migrate-container-${okr.id}').classList.toggle('hidden', !this.checked)"> Continuar no próximo ciclo</label>
+                        <div id="migrate-container-${okr.id}" class="${pendingMicrosCount > 0 ? 'flex' : 'hidden'} items-center gap-2 ml-6 mb-1">
+                            <input type="checkbox" id="migrate_${okr.id}" ${pendingMicrosCount > 0 ? 'checked' : ''} class="w-3.5 h-3.5 rounded accent-primary">
+                            <label for="migrate_${okr.id}" class="text-[10px] text-outline font-medium">Migrar pendências para hoje</label>
+                        </div>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="action_${okr.id}" value="concluir" class="accent-primary" onchange="document.getElementById('migrate-container-${okr.id}').classList.add('hidden')"> Marcar como Concluído</label>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer text-error"><input type="radio" name="action_${okr.id}" value="arquivar" class="accent-error" onchange="document.getElementById('migrate-container-${okr.id}').classList.add('hidden')"> Arquivar / Abandonar</label>
                     </div>
                 </div>`;
             });
@@ -839,7 +851,7 @@ const app = {
                     <label>${dim}</label>
                     <span id="val-wheel-${dim}">${score}</span>
                 </div>
-                <input type="range" id="slider-wheel-${dim}" data-dim="${dim}" min="1" max="100" value="${score}" class="w-full accent-primary" oninput="document.getElementById('val-wheel-${dim}').textContent = this.value" style="touch-action: pan-y; overscroll-behavior: contain;">
+                <input type="range" id="slider-wheel-${dim}" data-dim="${dim}" min="1" max="100" value="${score}" class="w-full accent-primary" oninput="document.getElementById('val-wheel-${dim}').textContent = this.value" style="touch-action: none; overscroll-behavior: contain;">
             </div>`;
         });
         
@@ -894,6 +906,7 @@ const app = {
         items.forEach(item => {
             const id = item.getAttribute('data-okr-id');
             const action = item.querySelector(`input[name="action_${id}"]:checked`).value;
+            const migrateChecked = item.querySelector(`#migrate_${id}`)?.checked;
             const okr = state.entities.okrs.find(o => o.id === id);
             
             if (okr) {
@@ -921,10 +934,22 @@ const app = {
                         const micros = state.entities.micros.filter(mic => mic.macroId === m.id);
                         micros.forEach(mic => mic.status = 'abandoned');
                     });
+                } else if (action === 'continuar') {
+                    if (migrateChecked) {
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        const macrosIds = state.entities.macros.filter(m => m.okrId === id).map(m => m.id);
+                        state.entities.micros.forEach(micro => {
+                            if (macrosIds.includes(micro.macroId) && micro.status !== 'done') {
+                                micro.prazo = todayStr;
+                            }
+                        });
+                    }
                 }
-                // Se 'continuar', mantém 'active'
             }
         });
+        
+        // Reset do Ciclo
+        state.cycleStartDate = new Date().toISOString();
         
         // Persistir e atualizar UI
         this.saveState(false);
@@ -933,6 +958,25 @@ const app = {
         
         if (this.currentView === 'painel') this.render.painel();
         if (this.currentView === 'planos') this.render.planos();
+    },
+
+    migrateOverdueTasks: function() {
+        const state = window.sistemaVidaState;
+        const todayStr = new Date().toISOString().split('T')[0];
+        let count = 0;
+
+        (state.entities.micros || []).forEach(m => {
+            if (m.status !== 'done' && m.prazo && m.prazo < todayStr) {
+                m.prazo = todayStr;
+                count++;
+            }
+        });
+
+        if (count > 0) {
+            this.saveState(false);
+            this.showToast(`${count} tarefas migradas para hoje!`, 'success');
+            if (this.render.hoje) this.render.hoje();
+        }
     },
 
     setFocusTypeFilter: function(type) {
@@ -1172,7 +1216,7 @@ const app = {
         this.onboardingSaveCurrentStep();
         window.sistemaVidaState.onboardingComplete = true;
         this.saveState();
-        this.navigate('painel');
+        this.navigate('hoje');
     },
 
     onboardingUpdateSlider: function(dim, val) {
@@ -1326,9 +1370,10 @@ const app = {
             // 2. Calcula e Renderiza a Distribuição de Foco
             const focusContainer = document.getElementById('focus-distribution');
             if (focusContainer) {
-                const effort = {}; 
-                const dims = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
-                dims.forEach(d => effort[d] = 0);
+                const effortTotal = {}; 
+                const effortDone = {};
+                const dims = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito', 'Geral'];
+                dims.forEach(d => { effortTotal[d] = 0; effortDone[d] = 0; });
                 
                 const typeFilter = app.focusTypeFilter || 'Tudo';
                 const statusFilter = app.focusStatusFilter || 'Tudo';
@@ -1353,12 +1398,17 @@ const app = {
                     if (typeFilter !== 'Tudo' && typeFilter !== typeName) return;
                     
                     (list || []).forEach(item => {
-                        // Filtro de Status
-                        if (statusFilter === 'Pendentes' && (item.status === 'done' || item.completed)) return;
-                        if (statusFilter === 'Concluídos' && (item.status !== 'done' && !item.completed)) return;
-
+                        // Filtro de Status para o cálculo de Total
+                        // Se o filtro for 'Pendentes', mostramos o total de pendentes? 
+                        // Não, o gráfico de esforço deve mostrar Concluído vs Total do que está filtrado.
+                        
                         const dim = item.dimension || item.dimensionName || 'Geral';
-                        if (effort[dim] !== undefined) { effort[dim] += weight; }
+                        if (effortTotal[dim] !== undefined) {
+                            effortTotal[dim] += weight;
+                            if (item.status === 'done' || item.completed) {
+                                effortDone[dim] += weight;
+                            }
+                        }
                     });
                 };
                 
@@ -1367,17 +1417,17 @@ const app = {
                 addScore(state.entities.macros, 1, 'Macro');
                 addScore(state.entities.micros, 0.5, 'Micro');
                 
-                // Descobre o total para fazer a porcentagem
-                const total = Object.values(effort).reduce((a, b) => a + b, 0) || 1;
-                
                 let focusHtml = '';
                 dims.forEach(dim => {
-                    const score = effort[dim];
-                    const pct = (score / total) * 100;
+                    const total = effortTotal[dim];
+                    const done = effortDone[dim];
+                    if (total === 0) return; // Ocultar se não houver esforço nesta dimensão
+                    
+                    const pct = (done / total) * 100;
                     focusHtml += `
                     <div class="space-y-1">
                         <div class="flex justify-between text-[10px] uppercase tracking-wider font-bold text-outline">
-                            <span>${dim}</span><span>Esforço: ${score}</span>
+                            <span>${dim}</span><span>Concluído: ${done} / Total: ${total}</span>
                         </div>
                         <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
                             <div class="h-full bg-primary rounded-full transition-all duration-700" style="width: ${pct}%"></div>
@@ -1663,6 +1713,30 @@ const app = {
                     </div>`;
                 }
             });
+
+            // Se houver tarefas atrasadas, adiciona um banner/botão de resolução rápida
+            if (atrasadas > 0) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const overdueList = (state.entities.micros || []).filter(m => m.status !== 'done' && m.prazo && m.prazo < todayStr);
+                
+                if (overdueList.length > 0) {
+                    const migrationBtnHtml = `
+                    <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-4 rounded-xl mb-4 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined notranslate text-amber-600 dark:text-amber-400">warning</span>
+                            <div>
+                                <p class="text-sm font-bold text-amber-900 dark:text-amber-100">${atrasadas} tarefas em atraso</p>
+                                <p class="text-xs text-amber-700/70 dark:text-amber-400/70">Deseja migrá-las para o planejamento de hoje?</p>
+                            </div>
+                        </div>
+                        <button onclick="app.migrateOverdueTasks()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95 whitespace-nowrap">
+                            Migrar Tudo
+                        </button>
+                    </div>`;
+                    html = migrationBtnHtml + html;
+                }
+            }
+
             container.innerHTML = html;
 
             const pendingBadge = document.getElementById('macros-pendentes-badge');
