@@ -4,7 +4,7 @@
 <p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Análise & Progresso</p>
 <h2 id="painel-title" class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Painel de Evolução</h2>
 <div class="mt-6 h-px w-24 bg-primary"></div>
-    <div class="flex gap-2 overflow-x-auto hide-scrollbar mt-8">
+    <div class="mt-8 flex gap-2 overflow-x-auto no-scrollbar mb-12">
         <button data-painel-filter="semana" onclick="app.setPainelFilter('semana')" class="px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95">Semana</button>
         <button data-painel-filter="mes" onclick="app.setPainelFilter('mes')" class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Mês</button>
         <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')" class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Ciclo</button>
@@ -54,11 +54,11 @@
 <!-- Banner Revisão Semanal -->
 <section id="review-banner" class="mt-8 hidden bg-primary-container text-on-primary-container p-6 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
     <div class="absolute -right-6 -top-6 opacity-10">
-        <span class="material-symbols-outlined text-8xl">cycle</span>
+        <span class="material-symbols-outlined notranslate text-8xl">cycle</span>
     </div>
     <div class="flex items-center gap-4 relative z-10">
         <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-primary">event_available</span>
+            <span class="material-symbols-outlined notranslate text-primary">event_available</span>
         </div>
         <div>
             <h3 class="font-headline font-bold text-lg">Sua revisão semanal está disponível</h3>
@@ -81,7 +81,7 @@
 <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Saúde">
 <div class="flex justify-between items-start">
 <div class="flex flex-col gap-1">
-<span class="material-symbols-outlined text-primary text-xl">fitness_center</span>
+<span class="material-symbols-outlined notranslate text-primary text-xl">fitness_center</span>
 <span class="font-label text-[10px] uppercase tracking-wider text-outline">Saúde</span>
 </div>
 <div class="relative w-8 h-8">
@@ -97,7 +97,7 @@
 <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Mente">
 <div class="flex justify-between items-start">
 <div class="flex flex-col gap-1">
-<span class="material-symbols-outlined text-primary text-xl">psychology</span>
+<span class="material-symbols-outlined notranslate text-primary text-xl">psychology</span>
 <span class="font-label text-[10px] uppercase tracking-wider text-outline">Mente</span>
 </div>
 <div class="relative w-8 h-8">
@@ -113,7 +113,7 @@
 <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Carreira">
 <div class="flex justify-between items-start">
 <div class="flex flex-col gap-1">
-<span class="material-symbols-outlined text-primary text-xl">work</span>
+<span class="material-symbols-outlined notranslate text-primary text-xl">work</span>
 <span class="font-label text-[10px] uppercase tracking-wider text-outline">Carreira</span>
 </div>
 <div class="relative w-8 h-8">
@@ -129,7 +129,7 @@
 <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Finanças">
 <div class="flex justify-between items-start">
 <div class="flex flex-col gap-1">
-<span class="material-symbols-outlined text-primary text-xl">payments</span>
+<span class="material-symbols-outlined notranslate text-primary text-xl">payments</span>
 <span class="font-label text-[10px] uppercase tracking-wider text-outline">Finanças</span>
 </div>
 <div class="relative w-8 h-8">
@@ -145,7 +145,7 @@
 <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Relacionamentos">
 <div class="flex justify-between items-start">
 <div class="flex flex-col gap-1">
-<span class="material-symbols-outlined text-primary text-xl">groups</span>
+<span class="material-symbols-outlined notranslate text-primary text-xl">groups</span>
 <span class="font-label text-[10px] uppercase tracking-wider text-outline">Relac.</span>
 </div>
 <div class="relative w-8 h-8">
@@ -161,7 +161,7 @@
 <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Família">
 <div class="flex justify-between items-start">
 <div class="flex flex-col gap-1">
-<span class="material-symbols-outlined text-primary text-xl">family_restroom</span>
+<span class="material-symbols-outlined notranslate text-primary text-xl">family_restroom</span>
 <span class="font-label text-[10px] uppercase tracking-wider text-outline">Família</span>
 </div>
 <div class="relative w-8 h-8">
@@ -177,7 +177,7 @@
 <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Lazer">
 <div class="flex justify-between items-start">
 <div class="flex flex-col gap-1">
-<span class="material-symbols-outlined text-primary text-xl">sports_esports</span>
+<span class="material-symbols-outlined notranslate text-primary text-xl">sports_esports</span>
 <span class="font-label text-[10px] uppercase tracking-wider text-outline">Lazer</span>
 </div>
 <div class="relative w-8 h-8">
@@ -193,7 +193,7 @@
 <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Propósito">
 <div class="flex justify-between items-start">
 <div class="flex flex-col gap-1">
-<span class="material-symbols-outlined text-primary text-xl">auto_awesome</span>
+<span class="material-symbols-outlined notranslate text-primary text-xl">auto_awesome</span>
 <span class="font-label text-[10px] uppercase tracking-wider text-outline">Propósito</span>
 </div>
 <div class="relative w-8 h-8">
@@ -215,7 +215,7 @@
                 <h3 class="text-xl font-headline font-bold text-on-background tracking-tight">Índice de Bem-Estar (PERMA)</h3>
                 <p class="text-sm text-outline mt-1 font-label uppercase tracking-widest">Sua performance de florescimento humano.</p>
             </div>
-            <span class="material-symbols-outlined text-outline text-2xl">psychology</span>
+            <span class="material-symbols-outlined notranslate text-outline text-2xl">psychology</span>
         </div>
         <div id="perma-charts-container" class="space-y-6">
             <!-- Renderizado dinamicamente pelo app.js -->
@@ -319,7 +319,7 @@
   <h3 class="font-headline text-2xl italic mb-6">Meta Financeira</h3>
   <div class="bg-primary text-on-primary p-8 rounded-2xl relative overflow-hidden shadow-sm">
     <div class="absolute -right-10 -bottom-10 opacity-10">
-      <span class="material-symbols-outlined text-9xl">payments</span>
+      <span class="material-symbols-outlined notranslate text-9xl">payments</span>
     </div>
     <div class="relative z-10 space-y-4">
       <div class="space-y-1">
@@ -335,7 +335,7 @@
         e simulador — será lançado em uma próxima versão do Sistema Vida.
       </p>
       <div class="flex items-center gap-2 pt-2 opacity-60">
-        <span class="material-symbols-outlined text-base">schedule</span>
+        <span class="material-symbols-outlined notranslate text-base">schedule</span>
         <span class="text-xs font-label uppercase tracking-widest">Próxima atualização</span>
       </div>
     </div>
@@ -350,7 +350,7 @@
                 <h3 class="font-headline text-2xl italic">Revisão de OKRs</h3>
                 <p class="text-xs text-outline mt-1">Decida o destino dos seus objetivos ativos.</p>
             </div>
-            <button onclick="window.app.closeQuarterlyModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90"><span class="material-symbols-outlined">close</span></button>
+            <button onclick="window.app.closeQuarterlyModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90"><span class="material-symbols-outlined notranslate">close</span></button>
         </div>
         <div id="quarterly-okrs-list" class="space-y-4 overflow-y-auto no-scrollbar flex-1 mb-6">
                  </div>

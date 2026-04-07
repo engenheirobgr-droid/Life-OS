@@ -68,7 +68,7 @@ const app = {
         
         toast.className = `flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl transform transition-all duration-500 translate-y-8 opacity-0 ${bgColor} border border-outline-variant/10 ring-4 ${ringColor}`;
         toast.innerHTML = `
-            <span class="material-symbols-outlined ${textColor} text-xl">${icon}</span>
+            <span class="material-symbols-outlined notranslate ${textColor} text-xl">${icon}</span>
             <p class="text-sm font-semibold text-on-surface">${message}</p>
         `;
         
@@ -101,17 +101,17 @@ const app = {
     saveValues: function(values) {
         if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
         window.sistemaVidaState.profile.values = values;
-        this.saveState();
+        this.saveState(false);
         this.renderSidebarValues();
         this.renderCurrentView();
     },
 
-    saveState: async function(silent = false) {
+    saveState: async function(silent = true) {
         try {
             const stateRef = doc(db, "users", "meu-sistema-vida");
             await setDoc(stateRef, window.sistemaVidaState);
             console.log("Sincronização com Nuvem: Concluída.");
-            if (!silent && this.showToast) this.showToast('Progresso guardado com sucesso.', 'success');
+            if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
         } catch (error) {
             console.error("Erro ao salvar o estado no Firestore:", error);
         }
@@ -151,6 +151,21 @@ const app = {
 
     showNotification: function(msg) {
         this.showToast(msg, 'success');
+    },
+
+    proposito: function() {
+        const state = window.sistemaVidaState;
+        
+        // Limpa o banner antes de renderizar para evitar duplicidade
+        const valuesBanner = document.getElementById('top-values-banner');
+        if (valuesBanner) valuesBanner.innerHTML = '';
+        
+        this.renderSidebarValues();
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        if (!state.purposeStartDate) state.purposeStartDate = todayStr;
+        if (!state.cycleStartDate) state.cycleStartDate = todayStr;
     },
 
     checkAlerts: function() {
@@ -343,7 +358,7 @@ const app = {
                             </div>
                         </div>
                         <div class="flex flex-col items-end">
-                            <span class="material-symbols-outlined text-primary/40">history_edu</span>
+                            <span class="material-symbols-outlined notranslate text-primary/40">history_edu</span>
                             <span class="text-[9px] text-outline mt-1">${log.energy}% Energia</span>
                         </div>
                     </li>
@@ -422,16 +437,9 @@ const app = {
         // Se uma micro ação foi selecionada, podemos opcionalmente marcá-la ou apenas registrar
         // Por agora, apenas registramos no log.
 
-        this.saveState();
+        this.saveState(false);
         this.closeDiarioModal();
-        
-        // Notificação
-        const toast = document.getElementById('identity-toast');
-        if (toast) {
-            document.getElementById('toast-message').textContent = 'Reflexão salva com sucesso! ✨';
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 3000);
-        }
+        // Oculta o toast manual anterior para usar a lógica unificada do saveState
     },
 
     setPlanosFilter: function(dim) {
@@ -765,7 +773,7 @@ const app = {
         : baseState;
     
       try {
-        await this.saveState();
+        await this.saveState(false);
         // NÃO usa localStorage.clear() — bloqueado em ambientes sandbox/iframe
         this.showNotification(
           useMockup
@@ -865,11 +873,10 @@ const app = {
             });
         }
         
-        this.saveState(true);
+        this.saveState(false);
         this.closeWheelModal();
         if (this.render.proposito) this.render.proposito();
         if (this.render.painel) this.render.painel();
-        this.showNotification("Roda da Vida atualizada com sucesso!");
     },
 
     processQuarterlyReview: function() {
@@ -913,7 +920,7 @@ const app = {
                 state.dimensions[dim].score = 1; 
             }
             
-            this.saveState();
+            this.saveState(false);
             this.showNotification("Roda da Vida zerada. Ajuste os sliders para o seu estado atual.");
             if (this.render.proposito) this.render.proposito();
             
@@ -1020,7 +1027,7 @@ const app = {
         const habit = state.habits.find(h => h.id === habitId);
         if (habit) {
             habit.completed = !habit.completed;
-            this.saveState();
+            this.saveState(false);
             if (habit.completed && typeof showIdentityToast === 'function') {
                 showIdentityToast(habit.dimension);
             }
@@ -1439,7 +1446,7 @@ const app = {
                         circleClass = 'w-7 h-7 rounded-full bg-surface-container border border-outline-variant/20';
                     } else if (hasDone) {
                         circleClass = 'w-7 h-7 rounded-full bg-[#01696f] flex items-center justify-center';
-                        inner = `<span class="material-symbols-outlined text-white text-[12px]" style="font-variation-settings: 'wght' 700;">check</span>`;
+                        inner = `<span class="material-symbols-outlined notranslate text-white text-[12px]" style="font-variation-settings: 'wght' 700;">check</span>`;
                     } else if (isToday) {
                         circleClass = 'w-7 h-7 rounded-full bg-[#01696f]/15 border-2 border-[#01696f] ring-2 ring-[#01696f]/30';
                     } else {
@@ -1480,12 +1487,12 @@ const app = {
                     habitsHtml += `
                     <div class="cursor-pointer min-w-[180px] max-w-[220px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between h-36 transition-all hover:shadow-md relative group ${isDone ? 'opacity-50' : ''}" onclick="window.app.toggleHabit('${habit.id}')">
                         <div class="flex justify-between items-start mb-2">
-                            <span class="material-symbols-outlined text-primary text-2xl">${icon}</span>
+                            <span class="material-symbols-outlined notranslate text-primary text-2xl">${icon}</span>
                             <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-primary transition-all p-1" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
-                                <span class="material-symbols-outlined text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-error transition-all p-1" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')">delete</span>
+                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-primary transition-all p-1" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
+                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-error transition-all p-1" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')">delete</span>
                                 <div class="w-6 h-6 rounded-full ${isDone ? 'bg-primary' : 'border-2 border-outline-variant'} flex items-center justify-center shrink-0">
-                                    ${isDone ? '<span class="material-symbols-outlined text-white text-[12px]" style="font-variation-settings: \'wght\' 700;">check</span>' : ''}
+                                    ${isDone ? '<span class="material-symbols-outlined notranslate text-white text-[12px]" style="font-variation-settings: \'wght\' 700;">check</span>' : ''}
                                 </div>
                             </div>
                         </div>
@@ -1548,7 +1555,7 @@ const app = {
                     html += `
                     <div class="bg-surface-container-low/50 p-4 rounded-xl flex items-center gap-4 opacity-60">
                         <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                            <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'wght' 700;">check</span>
+                            <span class="material-symbols-outlined notranslate text-white text-sm" style="font-variation-settings: 'wght' 700;">check</span>
                         </div>
                         <div class="flex-1">
                             <p class="text-base text-on-surface font-medium line-through">${micro.title}</p>
@@ -1574,14 +1581,14 @@ const app = {
                                 <p class="text-base text-on-surface font-medium">${micro.title}</p>
                                 <span class="inline-block mt-1 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${micro.dimension}</span>${overdueTag}
                             </div>
-                            <span class="material-symbols-outlined text-outline-variant text-sm">keyboard_arrow_down</span>
+                            <span class="material-symbols-outlined notranslate text-outline-variant text-sm">keyboard_arrow_down</span>
                         </div>
                         
                         <div class="hidden bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant" id="trail-${idx}">
                             <div class="absolute left-[11px] top-4 bottom-4 w-px bg-primary/10"></div>
                             
                             <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5">check_circle</span>
+                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5">check_circle</span>
                                 <div class="flex flex-col">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Micro Ação</span>
                                     <span class="text-sm font-medium">${micro.title}</span>
@@ -1589,7 +1596,7 @@ const app = {
                             </div>
                             
                             <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5">account_tree</span>
+                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5">account_tree</span>
                                 <div class="flex flex-col">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Macro Ação</span>
                                     <span class="text-xs">${macro.title || '-'}</span>
@@ -1597,7 +1604,7 @@ const app = {
                             </div>
                             
                             <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5">track_changes</span>
+                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5">track_changes</span>
                                 <div class="flex flex-col">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">OKR</span>
                                     <span class="text-xs">${okr.title || '-'}</span>
@@ -1605,7 +1612,7 @@ const app = {
                             </div>
                             
                             <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5">flag</span>
+                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5">flag</span>
                                 <div class="flex flex-col">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Meta</span>
                                     <span class="text-xs text-on-surface-variant font-medium">${meta.title || '-'}</span>
@@ -1613,7 +1620,7 @@ const app = {
                             </div>
                             
                             <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5">${dimIcon}</span>
+                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5">${dimIcon}</span>
                                 <div class="flex flex-col">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Área</span>
                                     <span class="text-xs">${micro.dimension}</span>
@@ -1621,7 +1628,7 @@ const app = {
                             </div>
                             
                             <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
                                 <div class="flex flex-col">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold text-primary">Propósito (Nível 0)</span>
                                     <span class="text-base font-headline italic">${meta.purpose || '-'}</span>
@@ -1671,7 +1678,7 @@ const app = {
                     dimensionFilters.insertAdjacentHTML('afterend', `
                         <div id="${filterAreaId}" class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 mb-6 space-y-4">
                             <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                                <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">account_tree</span> Raio-X Relacional:</span>
+                                <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[14px]">account_tree</span> Raio-X Relacional:</span>
                                 <div class="flex gap-2 w-full sm:w-auto">
                                     <select id="hier-type" onchange="app.planosHierarchyType = this.value; app.planosHierarchyId = ''; app.render.planos()" class="flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none">
                                         <option value="">Mostrar Tudo</option>
@@ -1685,7 +1692,7 @@ const app = {
                                 </div>
                             </div>
                             <div class="flex items-center gap-3 pt-3 border-t border-outline-variant/10 overflow-x-auto no-scrollbar">
-                                <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1 shrink-0"><span class="material-symbols-outlined text-[14px]">check_circle</span> Status:</span>
+                                <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1 shrink-0"><span class="material-symbols-outlined notranslate text-[14px]">check_circle</span> Status:</span>
                                 <div class="flex gap-2 shrink-0">
                                     <button onclick="app.planosStatusFilter='active'; app.render.planos()" id="btn-stat-active" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Ativos</button>
                                     <button onclick="app.planosStatusFilter='done'; app.render.planos()" id="btn-stat-done" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Concluídos</button>
@@ -1782,7 +1789,7 @@ const app = {
                     return `
                     <div class="bg-surface-container-lowest rounded-2xl p-8 border border-outline-variant/10 border-dashed text-center flex flex-col items-center justify-center">
                         <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-4">
-                            <span class="material-symbols-outlined text-outline text-3xl">${emptyIcon}</span>
+                            <span class="material-symbols-outlined notranslate text-outline text-3xl">${emptyIcon}</span>
                         </div>
                         <h4 class="font-headline text-lg font-bold text-on-background">Nenhum registo encontrado</h4>
                         <p class="text-sm text-outline mt-2 max-w-sm">Ainda não tem planos definidos nesta categoria. Clique no botão de adicionar (+) para começar a planear.</p>
@@ -1849,7 +1856,7 @@ const app = {
                             
                             trailHtml += `
                             <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined ${colorClass} text-xl bg-stone-100 dark:bg-stone-900 p-0.5" style="font-variation-settings: 'FILL' 1;">${icon}</span>
+                                <span class="material-symbols-outlined notranslate ${colorClass} text-xl bg-stone-100 dark:bg-stone-900 p-0.5" style="font-variation-settings: 'FILL' 1;">${icon}</span>
                                 <div class="flex flex-col">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold ${colorClass}">${node.label}</span>
                                     <span class="${titleClass}">${node.title}</span>
@@ -1872,20 +1879,20 @@ const app = {
                                     <h4 class="font-headline text-xl font-medium">${item.title}</h4>
                                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         ${prog < 100 ? `<button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary/10 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
-                                            <span class="material-symbols-outlined text-[14px]">done_all</span> Concluir
+                                            <span class="material-symbols-outlined notranslate text-[14px]">done_all</span> Concluir
                                         </button>` : ''}
                                         <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary-container/20 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
-                                            <span class="material-symbols-outlined text-[14px]">edit</span> Editar
+                                            <span class="material-symbols-outlined notranslate text-[14px]">edit</span> Editar
                                         </button>
                                         <button onclick="event.stopPropagation(); app.deleteEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-error-container/20 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-error transition-colors">
-                                            <span class="material-symbols-outlined text-[14px]">delete</span> Excluir
+                                            <span class="material-symbols-outlined notranslate text-[14px]">delete</span> Excluir
                                         </button>
                                     </div>
                                 </div>
                                 <span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">${prog >= 100 ? 'Concluído' : 'Ativo'}</span>
                             </div>
                             <div class="flex items-center gap-2 text-stone-400 text-xs mb-6">
-                                <span class="material-symbols-outlined text-sm">event</span>
+                                <span class="material-symbols-outlined notranslate text-sm">event</span>
                                 <span>No ciclo</span>
                             </div>
                             <div class="space-y-2">
@@ -2006,11 +2013,11 @@ const app = {
                             
                             const confEl = document.getElementById(`ody-conf-${id}`);
                             if (confEl) confEl.innerHTML = Array(5).fill(0).map((_, i) => 
-                                `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.conf ? 1 : 0};">star</span>`).join('');
+                                `<span class="material-symbols-outlined notranslate text-sm" style="font-variation-settings: 'FILL' ${i < plan.conf ? 1 : 0};">star</span>`).join('');
                             
                             const nrgEl = document.getElementById(`ody-nrg-${id}`);
                             if (nrgEl) nrgEl.innerHTML = Array(5).fill(0).map((_, i) => 
-                                `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' ${i < plan.nrg ? 1 : 0};">bolt</span>`).join('');
+                                `<span class="material-symbols-outlined notranslate text-sm" style="font-variation-settings: 'FILL' ${i < plan.nrg ? 1 : 0};">bolt</span>`).join('');
                         }
                     });
 
@@ -2171,7 +2178,7 @@ const app = {
                 if (type === 'micros') item.completed = true;
                 this.updateCascadeProgress(id, type); // Mantém a automação Bottom-Up
                 this.cascadeStatusDown(id, type, 'done'); // Dispara a nova Cascata Top-Down
-                this.saveState();
+                this.saveState(false);
                 if (this.render.planos) this.render.planos();
                 if (this.render.painel) this.render.painel();
             }
@@ -2586,7 +2593,7 @@ const app = {
             }
 
             // Finalização
-            await window.app.saveState();
+            await window.app.saveState(false);
             alert('Sistema Vida Importado com Sucesso (Padrão Ouro)!');
             window.app.switchView('painel');
             
@@ -2600,7 +2607,7 @@ const app = {
 
     updateNavUI: function(activeView) {
         document.querySelectorAll('nav button').forEach(btn => {
-            const icon = btn.querySelector('.material-symbols-outlined');
+            const icon = btn.querySelector('.material-symbols-outlined notranslate');
             const view = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
             
             if (view === activeView) {

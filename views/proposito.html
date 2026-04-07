@@ -13,7 +13,7 @@
                 <h3 class="text-xl font-headline font-bold text-on-background">Meus Valores Base</h3>
                 <p class="text-sm text-outline mt-1">Os princípios inegociáveis que guiam as suas decisões.</p>
             </div>
-            <button onclick="document.getElementById('values-selection-tool').classList.remove('hidden'); document.getElementById('values-selection-tool').scrollIntoView({behavior: 'smooth'})" class="material-symbols-outlined text-outline text-2xl hover:text-primary transition-colors cursor-pointer" title="Editar Valores">edit</button>
+            <button onclick="document.getElementById('values-selection-tool').classList.remove('hidden'); document.getElementById('values-selection-tool').scrollIntoView({behavior: 'smooth'})" class="material-symbols-outlined notranslate text-outline text-2xl hover:text-primary transition-colors cursor-pointer" title="Editar Valores">edit</button>
         </div>
         <div id="top-values-banner" class="flex flex-wrap gap-2 min-h-[32px]"></div>
     </div>
@@ -27,7 +27,7 @@
                 <h3 class="text-xl font-headline font-bold text-on-background">Roda da Vida</h3>
                 <p class="text-sm text-outline mt-1">Estado atual do equilíbrio nas 8 dimensões.</p>
             </div>
-            <span class="material-symbols-outlined text-outline text-2xl">pie_chart</span>
+            <span class="material-symbols-outlined notranslate text-outline text-2xl">pie_chart</span>
         </div>
         <div class="flex-1 flex flex-col items-center justify-center py-4 gap-12">
             <!-- Roda Container Ampliado -->
@@ -69,7 +69,7 @@
             </div>
             <div id="roda-sliders" class="hidden"></div>
             <button onclick="window.app.openWheelModal()" class="w-full mt-6 bg-surface-container-highest hover:bg-primary/10 text-primary border border-primary/20 py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 shadow-sm max-w-md mx-auto">
-                <span class="material-symbols-outlined text-[18px]">tune</span> Reavaliar Roda da Vida
+                <span class="material-symbols-outlined notranslate text-[18px]">tune</span> Reavaliar Roda da Vida
             </button>
         </div>
     </div>
@@ -85,7 +85,7 @@
             </div>
             <div class="flex items-center gap-1.5 opacity-40">
                 <span class="text-sm font-headline font-bold tracking-[0.2em]">S</span>
-                <span class="material-symbols-outlined text-xl">watch</span>
+                <span class="material-symbols-outlined notranslate text-xl">watch</span>
                 <span class="text-sm font-headline font-bold tracking-[0.2em]">ES</span>
             </div>
         </div>
@@ -106,13 +106,13 @@
             <!-- Action Buttons -->
             <div class="flex gap-6 justify-center mb-12">
                 <button class="w-16 h-16 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-error/10 hover:text-error hover:border-error/30 transition-all active:scale-90 group" onclick="handleVote('skip')" title="Descartar">
-                    <span class="material-symbols-outlined text-2xl">close</span>
+                    <span class="material-symbols-outlined notranslate text-2xl">close</span>
                 </button>
                 <button class="w-16 h-16 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30 transition-all active:scale-90 group" onclick="handleVote('important')" title="Relevante">
-                    <span class="material-symbols-outlined text-2xl">check</span>
+                    <span class="material-symbols-outlined notranslate text-2xl">check</span>
                 </button>
                 <button class="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md hover:shadow-xl hover:bg-primary/90 transition-all active:scale-90" onclick="handleVote('essential')" title="Essencial">
-                    <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">star</span>
+                    <span class="material-symbols-outlined notranslate text-2xl" style="font-variation-settings: 'FILL' 1;">star</span>
                 </button>
             </div>
             
@@ -141,39 +141,39 @@
                     <h3 class="text-xl font-headline font-bold text-on-background">Meu Ikigai</h3>
                     <p class="text-sm text-outline mt-1">Sua razão de ser e intersecção de propósito.</p>
                 </div>
-                <span class="material-symbols-outlined text-outline text-2xl">star</span>
+                <span class="material-symbols-outlined notranslate text-outline text-2xl">star</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div onclick="window.app.openTextEdit('O que amo', 'ikigai', 'love')" class="bg-surface-container-low p-6 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
-                    <span class="material-symbols-outlined text-primary mb-3 group-hover:scale-110 transition-transform">favorite</span>
+                    <span class="material-symbols-outlined notranslate text-primary mb-3 group-hover:scale-110 transition-transform">favorite</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">O que eu amo</h4>
                     <p id="display-ikigai-love" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[150px]">Carregando dados...</p>
                 </div>
 
                 <div onclick="window.app.openTextEdit('No que sou bom', 'ikigai', 'good')" class="bg-surface-container-low p-6 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
-                    <span class="material-symbols-outlined text-primary mb-3 group-hover:scale-110 transition-transform">military_tech</span>
+                    <span class="material-symbols-outlined notranslate text-primary mb-3 group-hover:scale-110 transition-transform">military_tech</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">No que sou bom</h4>
                     <p id="display-ikigai-good" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[150px]">Carregando dados...</p>
                 </div>
                 
                 <div onclick="window.app.openTextEdit('O que o mundo precisa', 'ikigai', 'need')" class="bg-surface-container-low p-6 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
-                    <span class="material-symbols-outlined text-primary mb-3 group-hover:scale-110 transition-transform">public</span>
+                    <span class="material-symbols-outlined notranslate text-primary mb-3 group-hover:scale-110 transition-transform">public</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">Mundo precisa</h4>
                     <p id="display-ikigai-need" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[150px]">Carregando dados...</p>
                 </div>
 
                 <div onclick="window.app.openTextEdit('Pelo que posso ser pago', 'ikigai', 'paid')" class="bg-surface-container-low p-6 rounded-2xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all group">
-                    <span class="material-symbols-outlined text-primary mb-3 group-hover:scale-110 transition-transform">payments</span>
+                    <span class="material-symbols-outlined notranslate text-primary mb-3 group-hover:scale-110 transition-transform">payments</span>
                     <h4 class="text-[10px] uppercase font-bold text-outline tracking-wider mb-2">Posso ser pago</h4>
                     <p id="display-ikigai-paid" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[150px]">Carregando dados...</p>
                 </div>
             </div>
 
             <div onclick="window.app.openTextEdit('Minha Razão de Viver', 'ikigai', 'sintese')" class="relative bg-primary-container text-on-primary-container p-8 rounded-2xl cursor-pointer hover:shadow-lg transition-all border border-primary/20 mt-4 active:scale-[0.99]">
-                <span class="absolute top-6 right-6 material-symbols-outlined opacity-50">edit_note</span>
+                <span class="absolute top-6 right-6 material-symbols-outlined notranslate opacity-50">edit_note</span>
                 <h4 class="text-[10px] uppercase font-bold tracking-widest mb-4 opacity-80 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[14px]">auto_awesome</span> A Síntese do Meu Ikigai
+                    <span class="material-symbols-outlined notranslate text-[14px]">auto_awesome</span> A Síntese do Meu Ikigai
                 </h4>
                 <p id="display-ikigai-sintese" class="text-2xl font-headline italic leading-relaxed">Carregando dados...</p>
             </div>
@@ -188,28 +188,28 @@
                 <h3 class="text-xl font-headline font-bold text-on-background">Meu Legado</h3>
                 <p class="text-sm text-outline mt-1">A marca que deseja deixar no mundo.</p>
             </div>
-            <span class="material-symbols-outlined text-outline text-2xl">history_edu</span>
+            <span class="material-symbols-outlined notranslate text-outline text-2xl">history_edu</span>
         </div>
 <div class="space-y-12">
 <div>
 <p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Família &amp; Relações</p>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Família', 'legacyObj', 'familia')">
 <p id="display-legacy-familia" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+<span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
 <p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Profissão &amp; Obra</p>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Profissão', 'legacyObj', 'profissao')">
 <p id="display-legacy-profissao" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+<span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
 <p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Mundo &amp; Sociedade</p>
 <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Mundo', 'legacyObj', 'mundo')">
 <p id="display-legacy-mundo" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-<span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+<span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 </div>
@@ -227,28 +227,28 @@
                     <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Saúde &amp; Vitalidade</h4>
                     <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Saúde', 'vision', 'saude')">
                         <p id="display-vision-saude" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-                        <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+                        <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
                     </div>
                 </div>
                 <div>
                     <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Carreira &amp; Finanças</h4>
                     <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Carreira & Finanças', 'vision', 'carreira')">
                         <p id="display-vision-carreira" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-                        <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+                        <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
                     </div>
                 </div>
                 <div>
                     <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Intelectual &amp; Espiritual</h4>
                     <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Intelecto & Espiritual', 'vision', 'intelecto')">
                         <p id="display-vision-intelecto" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-                        <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+                        <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
                     </div>
                 </div>
                 <div class="bg-surface-container-low p-6 rounded-lg">
-                    <span class="material-symbols-outlined text-primary mb-2">format_quote</span>
+                    <span class="material-symbols-outlined notranslate text-primary mb-2">format_quote</span>
                     <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Citação Guia', 'vision', 'quote')">
                         <p id="display-vision-quote" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-                        <span class="material-symbols-outlined text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+                        <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
                     </div>
                 </div>
             </div>
@@ -265,7 +265,7 @@
                 <h3 class="text-xl font-headline font-bold text-on-background">Odyssey Plans</h3>
                 <p class="text-sm text-outline mt-1">Três cenários possíveis para os próximos 5 anos.</p>
             </div>
-            <span class="material-symbols-outlined text-outline text-2xl">explore_nearby</span>
+            <span class="material-symbols-outlined notranslate text-outline text-2xl">explore_nearby</span>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
