@@ -91,6 +91,8 @@ const app = {
     planosStatusFilter: 'active',
     planosHierarchyType: '',
     planosHierarchyId: '',
+    focusTypeFilter: 'Tudo',
+    focusStatusFilter: 'Tudo',
     currentTextGroup: null,
     currentTextKey: null,
     onboardingStep: 0,
@@ -881,8 +883,14 @@ const app = {
 
     processQuarterlyReview: function() {
         const state = window.sistemaVidaState;
-        const items = document.querySelectorAll('#quarterly-okrs-list > div[data-okr-id]');
+        // Motor de revisão: busca todos os cartões de OKR no modal
+        const items = document.querySelectorAll('#quarterly-okrs-list div[data-okr-id]');
         
+        if (items.length === 0) {
+            this.closeQuarterlyModal();
+            return;
+        }
+
         items.forEach(item => {
             const id = item.getAttribute('data-okr-id');
             const action = item.querySelector(`input[name="action_${id}"]:checked`).value;
@@ -890,21 +898,51 @@ const app = {
             
             if (okr) {
                 if (action === 'concluir') {
-                    okr.status = 'done'; okr.progress = 100;
-                    this.cascadeStatusDown(okr.id, 'okrs', 'done');
-                    this.updateCascadeProgress(okr.id, 'okrs');
+                    okr.status = 'done'; 
+                    okr.progress = 100;
+                    // Opcional: Cascata para fechar macros/micros pendentes deste OKR
+                    const macros = state.entities.macros.filter(m => m.okrId === id);
+                    macros.forEach(m => {
+                        m.status = 'done';
+                        m.progress = 100;
+                        const micros = state.entities.micros.filter(mic => mic.macroId === m.id);
+                        micros.forEach(mic => {
+                            mic.status = 'done';
+                            mic.completed = true;
+                            mic.progress = 100;
+                        });
+                    });
                 } else if (action === 'arquivar') {
                     okr.status = 'abandoned';
-                    this.cascadeStatusDown(okr.id, 'okrs', 'abandoned');
+                    // Cascata para abandonar macros/micros pendentes deste OKR
+                    const macros = state.entities.macros.filter(m => m.okrId === id);
+                    macros.forEach(m => {
+                        m.status = 'abandoned';
+                        const micros = state.entities.micros.filter(mic => mic.macroId === m.id);
+                        micros.forEach(mic => mic.status = 'abandoned');
+                    });
                 }
+                // Se 'continuar', mantém 'active'
             }
         });
         
-        this.saveState();
+        // Persistir e atualizar UI
+        this.saveState(false);
         this.closeQuarterlyModal();
-        this.showNotification("Ciclo atualizado! Seus OKRs foram processados.");
+        this.showToast("Ciclo atualizado! Seus OKRs foram processados conforme sua revisão.", "success");
+        
+        if (this.currentView === 'painel') this.render.painel();
+        if (this.currentView === 'planos') this.render.planos();
+    },
+
+    setFocusTypeFilter: function(type) {
+        this.focusTypeFilter = type;
         if (this.render.painel) this.render.painel();
-        if (this.render.planos) this.render.planos();
+    },
+
+    setFocusStatusFilter: function(status) {
+        this.focusStatusFilter = status;
+        if (this.render.painel) this.render.painel();
     },
 
     resetWheelOfLife: function() {
@@ -1292,18 +1330,42 @@ const app = {
                 const dims = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
                 dims.forEach(d => effort[d] = 0);
                 
+                const typeFilter = app.focusTypeFilter || 'Tudo';
+                const statusFilter = app.focusStatusFilter || 'Tudo';
+
+                // Atualiza botões de filtro na UI
+                document.querySelectorAll('[data-focus-type]').forEach(btn => {
+                    const t = btn.getAttribute('data-focus-type');
+                    btn.className = t === typeFilter ? 
+                        "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all" :
+                        "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                });
+
+                document.querySelectorAll('[data-focus-status]').forEach(btn => {
+                    const s = btn.getAttribute('data-focus-status');
+                    btn.className = s === statusFilter ? 
+                        "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all" :
+                        "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                });
+
                 // Soma os pesos estratégicos
-                const addScore = (list, weight) => {
+                const addScore = (list, weight, typeName) => {
+                    if (typeFilter !== 'Tudo' && typeFilter !== typeName) return;
+                    
                     (list || []).forEach(item => {
+                        // Filtro de Status
+                        if (statusFilter === 'Pendentes' && (item.status === 'done' || item.completed)) return;
+                        if (statusFilter === 'Concluídos' && (item.status !== 'done' && !item.completed)) return;
+
                         const dim = item.dimension || item.dimensionName || 'Geral';
                         if (effort[dim] !== undefined) { effort[dim] += weight; }
                     });
                 };
                 
-                addScore(state.entities.metas, 3);
-                addScore(state.entities.okrs, 2);
-                addScore(state.entities.macros, 1);
-                addScore(state.entities.micros, 0.5);
+                addScore(state.entities.metas, 3, 'Metas');
+                addScore(state.entities.okrs, 2, 'OKRs');
+                addScore(state.entities.macros, 1, 'Macro');
+                addScore(state.entities.micros, 0.5, 'Micro');
                 
                 // Descobre o total para fazer a porcentagem
                 const total = Object.values(effort).reduce((a, b) => a + b, 0) || 1;

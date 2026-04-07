@@ -248,9 +248,31 @@
 
 <!-- Distribuição de Foco -->
 <section class="mt-8 space-y-4">
-    <div class="space-y-1 mb-6">
-        <h3 class="font-headline text-2xl italic">Distribuição de Foco</h3>
-        <p class="text-sm text-on-surface-variant leading-relaxed">Esforço por Dimensão</p>
+    <div class="space-y-4 mb-6">
+        <div class="flex justify-between items-end">
+            <div class="space-y-1">
+                <h3 class="font-headline text-2xl italic">Distribuição de Foco</h3>
+                <p class="text-sm text-on-surface-variant leading-relaxed">Esforço por Dimensão</p>
+            </div>
+        </div>
+        
+        <!-- Filtros de Distribuição -->
+        <div class="space-y-3">
+            <div class="flex flex-wrap gap-2">
+                <span class="text-[9px] uppercase tracking-widest text-outline font-bold self-center mr-2">Tipo:</span>
+                <button data-focus-type="Tudo" onclick="app.setFocusTypeFilter('Tudo')" class="px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all">Tudo</button>
+                <button data-focus-type="Metas" onclick="app.setFocusTypeFilter('Metas')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Metas</button>
+                <button data-focus-type="OKRs" onclick="app.setFocusTypeFilter('OKRs')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">OKRs</button>
+                <button data-focus-type="Macro" onclick="app.setFocusTypeFilter('Macro')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Macros</button>
+                <button data-focus-type="Micro" onclick="app.setFocusTypeFilter('Micro')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Micros</button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <span class="text-[9px] uppercase tracking-widest text-outline font-bold self-center mr-2">Status:</span>
+                <button data-focus-status="Tudo" onclick="app.setFocusStatusFilter('Tudo')" class="px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all">Tudo</button>
+                <button data-focus-status="Pendentes" onclick="app.setFocusStatusFilter('Pendentes')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Pendentes</button>
+                <button data-focus-status="Concluídos" onclick="app.setFocusStatusFilter('Concluídos')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Concluídos</button>
+            </div>
+        </div>
     </div>
     <div id="focus-distribution" class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-4">
         <!-- Renderizado pelo app.js -->
