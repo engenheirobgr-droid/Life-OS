@@ -64,11 +64,12 @@ const app = {
         const icon = isSuccess ? 'check_circle' : 'error';
         const bgColor = isSuccess ? 'bg-surface-container-highest' : 'bg-error';
         const textColor = isSuccess ? 'text-primary' : 'text-white';
+        const ringColor = isSuccess ? 'ring-primary/20' : 'ring-error/20';
         
-        toast.className = `flex items-center gap-3 px-5 py-3 rounded-2xl shadow-lg transform transition-all duration-300 translate-y-8 opacity-0 \${bgColor} border border-outline-variant/10`;
+        toast.className = `flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl transform transition-all duration-500 translate-y-8 opacity-0 ${bgColor} border border-outline-variant/10 ring-4 ${ringColor}`;
         toast.innerHTML = `
-            <span class="material-symbols-outlined \${textColor} text-xl">\${icon}</span>
-            <p class="text-sm font-medium text-on-surface">\${message}</p>
+            <span class="material-symbols-outlined ${textColor} text-xl">${icon}</span>
+            <p class="text-sm font-semibold text-on-surface">${message}</p>
         `;
         
         container.appendChild(toast);
@@ -78,11 +79,11 @@ const app = {
             toast.classList.remove('translate-y-8', 'opacity-0');
         }, 10);
         
-        // Remover após 3 segundos
+        // Remover após 3.5 segundos
         setTimeout(() => {
-            toast.classList.add('translate-y-8', 'opacity-0');
-            setTimeout(() => toast.remove(), 3000);
-        }, 3000);
+            toast.classList.add('translate-y-4', 'opacity-0');
+            setTimeout(() => toast.remove(), 500);
+        }, 3500);
     },
     currentView: '',
     painelFilter: 'semana',
@@ -105,12 +106,12 @@ const app = {
         this.renderCurrentView();
     },
 
-    saveState: async function() {
+    saveState: async function(silent = false) {
         try {
             const stateRef = doc(db, "users", "meu-sistema-vida");
             await setDoc(stateRef, window.sistemaVidaState);
             console.log("Sincronização com Nuvem: Concluída.");
-            if (this.showToast) this.showToast('Progresso guardado com sucesso.', 'success');
+            if (!silent && this.showToast) this.showToast('Progresso guardado com sucesso.', 'success');
         } catch (error) {
             console.error("Erro ao salvar o estado no Firestore:", error);
         }
@@ -141,7 +142,7 @@ const app = {
                 this.renderSidebarValues();
             } else {
                 console.log("Primeiro acesso. Criando documento base na Nuvem...");
-                await this.saveState();
+                await this.saveState(true);
             }
         } catch (error) {
             console.error("Erro ao carregar o estado do Firestore:", error);
@@ -149,14 +150,7 @@ const app = {
     },
 
     showNotification: function(msg) {
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-surface-container-lowest border-l-4 border-primary text-on-surface px-6 py-4 rounded shadow-2xl z-[100] text-sm font-medium transition-all transform translate-y-0 opacity-100 flex items-center gap-3';
-        toast.innerHTML = `<span class="material-symbols-outlined text-primary">notifications_active</span> ${msg}`;
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.classList.add('-translate-y-10', 'opacity-0');
-            setTimeout(() => toast.remove(), 300);
-        }, 4000);
+        this.showToast(msg, 'success');
     },
 
     checkAlerts: function() {
@@ -172,7 +166,7 @@ const app = {
             if (diffDays >= 2) setTimeout(() => this.showNotification("Bom ter você de volta à sua jornada!"), 1000);
         }
         state.lastAccess = todayStr;
-        this.saveState();
+        this.saveState(true);
 
         this.needsReview = false;
         if (today.getDay() === 0) { // Domingo
@@ -473,7 +467,7 @@ const app = {
     saveValues: function(newValuesArray) {
         window.sistemaVidaState.profile.values = newValuesArray;
         if (this.render.proposito) this.render.proposito();
-        app.saveState();
+        app.saveState(true);
     },
 
     openCreateModal: function(type = 'metas') {
@@ -488,24 +482,33 @@ const app = {
     },
 
     onTypeChange: function(type) {
-        const parentGroup = document.getElementById('parent-group');
-        const triggerGroup = document.getElementById('trigger-group');
+        const parentGroup = document.getElementById('crud-parent-group');
+        const triggerGroup = document.getElementById('crud-trigger-container');
+        const dimensionGroup = document.getElementById('crud-dimension-group');
         const contextLabel = document.getElementById('crud-context-label');
         
-        // Configura labels e visibilidade baseado no tipo
+        // Esconde tudo por padrão para resetar estado visual
+        if (parentGroup) parentGroup.classList.add('hidden');
+        if (triggerGroup) triggerGroup.classList.add('hidden');
+        if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
+
+        // Configura baseado no tipo
         if (type === 'habits') {
-            if (parentGroup) parentGroup.classList.add('hidden');
-            if (triggerGroup) triggerGroup.classList.remove('hidden');
+            if (triggerGroup) {
+                triggerGroup.classList.remove('hidden');
+                triggerGroup.classList.add('flex');
+            }
             if (contextLabel) contextLabel.textContent = 'Gatilho de Execução';
         } else if (type === 'metas') {
-            if (parentGroup) parentGroup.classList.add('hidden');
-            if (triggerGroup) triggerGroup.classList.add('hidden');
             if (contextLabel) contextLabel.textContent = 'Por que esta meta? (Propósito)';
-        } else {
-            // OKRs, Macros, Micros
+        } else if (type === 'okrs') {
             if (parentGroup) parentGroup.classList.remove('hidden');
-            if (triggerGroup) triggerGroup.classList.add('hidden');
-            if (contextLabel) contextLabel.textContent = 'Contexto / Indicador de Sucesso';
+            if (contextLabel) contextLabel.textContent = 'Indicador de Sucesso / Métrica';
+            this.updateParentList(type);
+        } else {
+            // Macros, Micros
+            if (parentGroup) parentGroup.classList.remove('hidden');
+            if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
             this.updateParentList(type);
         }
     },
@@ -559,8 +562,22 @@ const app = {
     },
 
     closeModal: function() {
-        document.getElementById('crud-modal').classList.add('hidden');
-        document.getElementById('crud-form').reset();
+        const modal = document.getElementById('crud-modal');
+        const form = document.getElementById('crud-form');
+        if (modal) modal.classList.add('hidden');
+        if (form) {
+            form.reset();
+            // Reset de campos extras não limpos pelo reset() standard
+            const parentSelect = document.getElementById('create-parent');
+            if (parentSelect) parentSelect.innerHTML = '';
+            
+            const triggerContainer = document.getElementById('crud-trigger-container');
+            if (triggerContainer) {
+                triggerContainer.classList.add('hidden');
+                triggerContainer.classList.remove('flex');
+            }
+        }
+        this.editingEntity = null;
     },
 
     openTextEdit: function(title, group, key) {
@@ -582,7 +599,7 @@ const app = {
                 window.sistemaVidaState.profile[this.currentTextGroup] = {};
             }
             window.sistemaVidaState.profile[this.currentTextGroup][this.currentTextKey] = val;
-            this.saveState();
+            this.saveState(true);
             this.closeTextModal();
             if (this.currentView === 'proposito' && this.render.proposito) {
                 this.render.proposito();
@@ -613,7 +630,7 @@ const app = {
 
         window.sistemaVidaState.reviews[key] = { q1, q2, q3, q4, q5 };
         
-        this.saveState();
+        this.saveState(true);
 
         const btn = document.getElementById('btn-save-review');
         if (btn) {
@@ -848,7 +865,7 @@ const app = {
             });
         }
         
-        this.saveState();
+        this.saveState(true);
         this.closeWheelModal();
         if (this.render.proposito) this.render.proposito();
         if (this.render.painel) this.render.painel();
@@ -909,7 +926,15 @@ const app = {
     },
 
     saveNewEntity: function() {
-        const title = document.getElementById('crud-title').value;
+        const titleInput = document.getElementById('crud-title');
+        const title = titleInput ? titleInput.value.trim() : '';
+        
+        if (!title) {
+            if (this.showToast) this.showToast('Por favor, insira um título.', 'error');
+            else alert('Por favor, insira um título.');
+            return;
+        }
+
         const type = document.getElementById('crud-type').value;
         const dimension = document.getElementById('crud-dimension').value;
         const context = document.getElementById('crud-context').value;
@@ -979,7 +1004,7 @@ const app = {
 
         this.editingEntity = null;
         this.closeModal();
-        this.saveState();
+        this.saveState(false); // Feedback ativo para criação/edição manual
 
         if (this.currentView === 'planos') {
             const typeMapping = { metas: 'metas', okrs: 'okrs', macros: 'macro', micros: 'micro' };
@@ -1021,7 +1046,7 @@ const app = {
             energy: window.sistemaVidaState.energy 
         };
 
-        this.saveState();
+        this.saveState(true);
 
         const btn = document.getElementById('btn-salvar-diario');
         if (btn) {
@@ -1450,33 +1475,25 @@ const app = {
                 let habitsHtml = '';
                 state.habits.forEach(habit => {
                     const icon = habitIconMap[habit.dimension] || 'stars';
-                    if (habit.completed) {
-                        habitsHtml += `
-                        <div onclick="window.app.toggleHabit('${habit.id}')" class="cursor-pointer min-w-[160px] max-w-[200px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between h-32 opacity-50 transition-all hover:scale-[0.98]">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="material-symbols-outlined text-primary text-2xl">${icon}</span>
-                                <div class="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-                                    <span class="material-symbols-outlined text-white text-[10px]" style="font-variation-settings: 'wght' 700;">check</span>
+                    const isDone = habit.completed;
+                    
+                    habitsHtml += `
+                    <div class="cursor-pointer min-w-[180px] max-w-[220px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between h-36 transition-all hover:shadow-md relative group ${isDone ? 'opacity-50' : ''}" onclick="window.app.toggleHabit('${habit.id}')">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="material-symbols-outlined text-primary text-2xl">${icon}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-primary transition-all p-1" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
+                                <span class="material-symbols-outlined text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-error transition-all p-1" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')">delete</span>
+                                <div class="w-6 h-6 rounded-full ${isDone ? 'bg-primary' : 'border-2 border-outline-variant'} flex items-center justify-center shrink-0">
+                                    ${isDone ? '<span class="material-symbols-outlined text-white text-[12px]" style="font-variation-settings: \'wght\' 700;">check</span>' : ''}
                                 </div>
                             </div>
-                            <div class="mt-auto">
-                                <p class="font-medium text-on-surface text-sm line-through">${habit.title}</p>
-                                ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight break-words line-clamp-2">Gatilho: ${habit.trigger}</p>` : ''}
-                            </div>
-                        </div>`;
-                    } else {
-                        habitsHtml += `
-                        <div onclick="window.app.toggleHabit('${habit.id}')" class="cursor-pointer min-w-[160px] max-w-[200px] bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent hover:border-primary-container transition-all flex flex-col justify-between h-32 active:scale-95">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="material-symbols-outlined text-primary text-2xl">${icon}</span>
-                                <div class="w-5 h-5 rounded-full border-2 border-outline-variant shrink-0"></div>
-                            </div>
-                            <div class="mt-auto">
-                                <p class="font-medium text-on-surface text-sm truncate">${habit.title}</p>
-                                ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight break-words line-clamp-2">Gatilho: ${habit.trigger}</p>` : ''}
-                            </div>
-                        </div>`;
-                    }
+                        </div>
+                        <div class="mt-auto">
+                            <p class="font-medium text-on-surface text-sm ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
+                            ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight break-words line-clamp-2">Gatilho: ${habit.trigger}</p>` : ''}
+                        </div>
+                    </div>`;
                 });
                 
                 if (state.habits.length === 0) {
@@ -2162,41 +2179,30 @@ const app = {
     },
 
     deleteEntity: function(id, type) {
-        if (confirm('Deseja realmente excluir este item? Esta ação não pode ser desfeita.')) {
-            const state = window.sistemaVidaState;
-            const list = type === 'habits' ? state.habits : state.entities[type];
-            const item = list.find(e => e.id === id);
-            if (!item) return;
-
-            // Guarda o ID do pai antes de remover
+        const state = window.sistemaVidaState;
+        const list = type === 'habits' ? state.habits : state.entities[type];
+        const item = list.find(e => e.id === id);
+        
+        if (item && confirm(`Deseja realmente excluir "${item.title}"?`)) {
+            // Guarda o ID do pai antes de remover para cascata
             const parentId = item.macroId || item.okrId || item.metaId;
 
-            // Remove a entidade
             if (type === 'habits') {
                 state.habits = state.habits.filter(e => e.id !== id);
             } else {
                 state.entities[type] = state.entities[type].filter(e => e.id !== id);
             }
 
-            // Força o recálculo da cascata a partir dos irmãos sobreviventes
+            // Recálculo da cascata
             if (parentId) {
-                const sibling = state.entities[type].find(e => (e.macroId === parentId || e.okrId === parentId || e.metaId === parentId));
-                if (sibling) {
-                    this.updateCascadeProgress(sibling.id, type);
-                } else {
-                    // Se não restarem irmãos, o pai deve ser zerado
-                    const parentType = type === 'micros' ? 'macros' : (type === 'macros' ? 'okrs' : 'metas');
-                    const parent = state.entities[parentType]?.find(p => p.id === parentId);
-                    if (parent) {
-                        parent.progress = 0;
-                        this.updateCascadeProgress(parent.id, parentType);
-                    }
-                }
+                const parentType = type === 'micros' ? 'macros' : (type === 'macros' ? 'okrs' : 'metas');
+                this.updateCascadeProgress(parentId, parentType);
             }
 
-            this.saveState();
-            if (this.render.planos) this.render.planos();
-            if (this.render.hoje) this.render.hoje();
+            this.saveState(true); // Silencioso (rotina administrativa)
+            if (this.showToast) this.showToast('Item removido com sucesso.', 'success');
+            
+            this.switchView(this.currentView); // Refresh
         }
     },
 
@@ -2666,7 +2672,7 @@ const app = {
         });
 
         // Tarefa 3: Persistência Explícita e Atualização Padronizada
-        this.saveState();
+        this.saveState(true);
         this.closePermaModal();
         this.switchView('proposito'); // Força re-render completo
         this.showNotification("Diagnóstico PERMA atualizado com sucesso!");
@@ -2733,10 +2739,15 @@ const app = {
     saveProfile: function() {
         const nameInput = document.getElementById('profile-name-input');
         if (nameInput) {
-            window.sistemaVidaState.profile.name = nameInput.value.trim();
+            const newName = nameInput.value.trim();
+            window.sistemaVidaState.profile.name = newName;
+            
+            // Sync UI displays
+            const dashName = document.getElementById('perfil-nome-display');
+            if (dashName) dashName.textContent = newName;
         }
         
-        this.saveState();
+        this.saveState(true);
         
         const modal = document.getElementById('profile-edit-modal');
         if (modal) {
@@ -2744,8 +2755,9 @@ const app = {
             modal.classList.remove('flex');
         }
         
+        this.renderSidebarValues(); // Sync any changes to values or name
         if (this.render.perfil) this.render.perfil();
-        this.showNotification("Perfil atualizado com sucesso!");
+        this.showToast("Perfil atualizado com sucesso!", "success");
     }
 };
 
