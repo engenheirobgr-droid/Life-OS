@@ -232,8 +232,8 @@ const app = {
           return;
         }
 
-        // Risco 3: inicioDate já passou mas ainda não foi iniciada (janela aberta, não começou)
-        if (inicio && inicio < today && diasAteVencer <= 3) {
+        // Risco 3: inicioDate já passou e ainda está pendente (não iniciada)
+        if (inicio && inicio < today && m.status !== 'in_progress' && diasAteVencer <= 3) {
           alerts.push({ id: m.id, title: m.title, tipo: 'risco', dias: diasAteVencer });
           return;
         }
@@ -587,7 +587,7 @@ const app = {
             this.updateParentList(type);
         }
 
-        // Alterna campo de prazo vs. agendamento
+        // Alterna campo de prazo padrão vs. janela real (macro/micro)
         const deadlineGroup = document.getElementById('prazo-deadline-group');
         const agendamentoGroup = document.getElementById('prazo-agendamento-group');
         const usaAgendamento = ['macros', 'micros'].includes(type);
@@ -595,32 +595,13 @@ const app = {
         if (deadlineGroup) deadlineGroup.classList.toggle('hidden', usaAgendamento);
         if (agendamentoGroup) agendamentoGroup.classList.toggle('hidden', !usaAgendamento);
 
-        // Pre-seleciona o mês corrente nos selects
+        // Defaults para datas reais no modal (macro/micro)
         if (usaAgendamento) {
-            const mesAtual = new Date().getMonth() + 1;
-            const mesSelect = document.getElementById('crud-mes');
-            if (mesSelect) mesSelect.value = String(mesAtual);
-
-            // Default de início = semana anterior ao prazo (semana 1 como fallback)
-            const inicioSelect = document.getElementById('crud-inicio-semana');
-            const prazSemana = document.getElementById('crud-semana');
-            if (inicioSelect && prazSemana) {
-                const semanaVal = parseInt(prazSemana.value) || 2;
-                inicioSelect.value = String(Math.max(1, semanaVal - 1));
-            }
-        }
-
-        // Listener dinâmico: ao mudar semana de prazo, ajusta início automaticamente
-        const prazSemanaEl = document.getElementById('crud-semana');
-        if (prazSemanaEl && !prazSemanaEl._listenerAdded) {
-            prazSemanaEl.addEventListener('change', () => {
-                const inicioEl = document.getElementById('crud-inicio-semana');
-                if (inicioEl) {
-                    const val = parseInt(prazSemanaEl.value) || 2;
-                    inicioEl.value = String(Math.max(1, val - 1));
-                }
-            });
-            prazSemanaEl._listenerAdded = true;
+            const hoje = new Date().toISOString().split('T')[0];
+            const inicioInput = document.getElementById('crud-inicio-date');
+            const prazoInput = document.getElementById('crud-prazo-date');
+            if (inicioInput && !inicioInput.value) inicioInput.value = hoje;
+            if (prazoInput && !prazoInput.value) prazoInput.value = hoje;
         }
     },
 
@@ -1158,28 +1139,13 @@ const app = {
         
         const usaAgendamento = ['macros', 'micros'].includes(type);
         let prazo = '';
-        let agendamento = null;
+        let inicioDate = '';
 
         if (usaAgendamento) {
-            const ciclo  = parseInt(document.getElementById('crud-ciclo')?.value  || '1');
-            const mes    = parseInt(document.getElementById('crud-mes')?.value    || String(new Date().getMonth() + 1));
-            const semana = parseInt(document.getElementById('crud-semana')?.value || '1');
-            const inicio = parseInt(document.getElementById('crud-inicio-semana')?.value || '1');
-
-            // Converte para data real — índice de mês zero-based tratado corretamente
-            const ano = new Date().getFullYear();
-            const ultimoDiaMes = new Date(ano, mes, 0).getDate(); // mes sem -1 retorna último dia do mês desejado
-            const diaBase = (semana - 1) * 7 + 7;
-            const diaPrazo = Math.min(diaBase, ultimoDiaMes);
-            prazo = `${ano}-${String(mes).padStart(2,'0')}-${String(diaPrazo).padStart(2,'0')}`;
-
-            // Data de início (semana de início no mesmo mês)
-            const diaInicioBase = (inicio - 1) * 7 + 1;
-            const diaInicio = Math.min(diaInicioBase, ultimoDiaMes);
-            const inicioDate = `${ano}-${String(mes).padStart(2,'0')}-${String(diaInicio).padStart(2,'0')}`;
-
-            agendamento = { ciclo, mes, semana, inicio, inicioDate };
-
+            inicioDate = document.getElementById('crud-inicio-date')?.value || '';
+            prazo = document.getElementById('crud-prazo-date')?.value || '';
+            if (!inicioDate && prazo) inicioDate = prazo; // fallback retrô
+            if (!prazo && inicioDate) prazo = inicioDate; // consistência mínima
         } else {
             prazo = document.getElementById('create-prazo')?.value || '';
         }
@@ -1190,8 +1156,7 @@ const app = {
         const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
         
         const obj = { id: id || '', title: title || '', dimension: dimension || 'Geral', prazo: prazo || '' };
-        if (agendamento) obj.agendamento = agendamento;
-        if (agendamento) obj.inicioDate = agendamento.inicioDate;
+        if (usaAgendamento && inicioDate) obj.inicioDate = inicioDate;
 
         const getOldItem = (eid, etype) => {
             const state = window.sistemaVidaState;
@@ -1212,6 +1177,19 @@ const app = {
                 if (okr) obj.metaId = okr.metaId || '';
             }
         } else if (type === 'micros') {
+            if (obj.inicioDate && obj.prazo) {
+                const start = new Date(obj.inicioDate + 'T00:00:00');
+                const end = new Date(obj.prazo + 'T00:00:00');
+                if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
+                    app.showToast('Datas inválidas para Micro Ação. Verifique início e prazo.', 'error');
+                    return;
+                }
+                const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+                if (diffDays > 7) {
+                    app.showToast('Uma Micro Ação não pode durar mais de 7 dias. Divida-a em partes menores ou classifique como Macro Ação.', 'error');
+                    return;
+                }
+            }
             obj.indicator = context || '';
             const oldItem = getOldItem(id, 'micros');
             obj.status = isEditing ? (oldItem.status || 'pending') : 'pending';
@@ -1876,7 +1854,7 @@ const app = {
 
             // Progresso semanal — apenas Micro Ações com janela ativa nesta semana
             const weekMicros = state.entities.micros.filter(m =>
-              app.isDateInCurrentWeek(m.inicioDate) || app.isDateInCurrentWeek(m.prazo)
+              app.isDateInCurrentWeek(m.inicioDate || m.prazo) || app.isDateInCurrentWeek(m.prazo)
             );
             const weekDone = weekMicros.filter(m => m.status === 'done').length;
             const weekProgress = weekMicros.length > 0
@@ -2150,8 +2128,16 @@ const app = {
                     const dimIcon = iconMap[micro.dimension] || 'stars';
                     
                     const todayStr = new Date().toISOString().split('T')[0];
+                    const startDate = micro.inicioDate || micro.prazo || '';
+                    const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
                     const overdueTag = isOverdue ? '<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Atrasada</span>' : '';
+                    const statusTag = micro.status === 'in_progress'
+                        ? '<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Em Andamento</span>'
+                        : '';
+                    const startBtn = shouldStart
+                        ? `<button onclick="event.stopPropagation(); app.startMicroAction('${micro.id}');" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
+                        : '';
 
                     html += `
                     <div class="space-y-2">
@@ -2159,9 +2145,12 @@ const app = {
                             <div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
                             <div class="flex-1">
                                 <p class="text-base text-on-surface font-medium">${micro.title}</p>
-                                <span class="inline-block mt-1 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${micro.dimension}</span>${overdueTag}
+                                <span class="inline-block mt-1 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${micro.dimension}</span>${statusTag}${overdueTag}
                             </div>
-                            <span class="material-symbols-outlined notranslate text-outline-variant text-sm">keyboard_arrow_down</span>
+                            <div class="flex items-center gap-2 shrink-0">
+                                ${startBtn}
+                                <span class="material-symbols-outlined notranslate text-outline-variant text-sm">keyboard_arrow_down</span>
+                            </div>
                         </div>
                         
                         <div class="hidden bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant" id="trail-${idx}">
@@ -2780,7 +2769,7 @@ const app = {
         let rowsHTML = '';
         ['metas', 'okrs', 'macros'].forEach(tipo => {
           const lista = (state.entities[tipo] || [])
-            .filter(e => e.status === 'active' || e.status === 'pending' || !e.status);
+            .filter(e => e.status === 'active' || e.status === 'pending' || e.status === 'in_progress' || !e.status);
 
           lista.forEach(entity => {
             // Datas com fallback e blindagem contra strings vazias
@@ -2939,6 +2928,18 @@ const app = {
         else if (this.currentView === 'planos' && this.render.planos) this.render.planos();
     },
 
+    startMicroAction: function(id) {
+        const state = window.sistemaVidaState;
+        const micro = state.entities.micros.find(m => m.id === id);
+        if (!micro || micro.status === 'done') return;
+        micro.status = 'in_progress';
+        micro.completed = false;
+        if (!micro.progress || micro.progress < 1) micro.progress = 1;
+        this.saveState(true);
+        if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        if (this.currentView === 'painel' && this.render.painel) this.render.painel();
+    },
+
     cascadeStatusDown: function(parentId, parentType, newStatus) {
         const state = window.sistemaVidaState;
         const updateChild = (child, type) => {
@@ -3033,15 +3034,13 @@ const app = {
         document.getElementById('crud-type').value = type;
         document.getElementById('crud-dimension').value = item.dimension || 'Geral';
         document.getElementById('create-prazo').value = item.prazo || '';
+        const inicioInput = document.getElementById('crud-inicio-date');
+        const prazoInput = document.getElementById('crud-prazo-date');
+        if (inicioInput) inicioInput.value = item.inicioDate || item.agendamento?.inicioDate || item.prazo || '';
+        if (prazoInput) prazoInput.value = item.prazo || '';
         document.getElementById('crud-context').value = item.purpose || item.description || item.indicator || '';
         
-        // Pre-preenche agendamento se existir (Task 3)
-        if (item.agendamento) {
-            if (document.getElementById('crud-ciclo')) document.getElementById('crud-ciclo').value = item.agendamento.ciclo || '';
-            if (document.getElementById('crud-mes')) document.getElementById('crud-mes').value = item.agendamento.mes || '';
-            if (document.getElementById('crud-semana')) document.getElementById('crud-semana').value = item.agendamento.semana || '';
-            if (document.getElementById('crud-inicio-semana')) document.getElementById('crud-inicio-semana').value = item.agendamento.inicio || '';
-        }
+        // Compatibilidade retrô: agendamento antigo migra visualmente para datas reais
         
         if (type === 'habits') {
             document.getElementById('crud-trigger').value = item.trigger || '';

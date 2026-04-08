@@ -364,55 +364,19 @@
 
                     <div id="prazo-agendamento-group" class="hidden flex flex-col gap-2">
                         <label class="text-xs font-bold uppercase tracking-widest text-outline">
-                            Agendamento
+                            Janela de Execução
                         </label>
-                        <div class="flex gap-2">
-                            <select id="crud-ciclo" class="flex-1 bg-surface-container border border-outline-variant/30
-                                       rounded-xl px-3 py-2 text-sm text-on-surface">
-                                <option value="1">Ciclo 1</option>
-                                <option value="2">Ciclo 2</option>
-                                <option value="3">Ciclo 3</option>
-                                <option value="4">Ciclo 4</option>
-                            </select>
-
-                            <select id="crud-mes" class="flex-1 bg-surface-container border border-outline-variant/30
-                                       rounded-xl px-3 py-2 text-sm text-on-surface">
-                                <option value="1">Jan</option>
-                                <option value="2">Fev</option>
-                                <option value="3">Mar</option>
-                                <option value="4">Abr</option>
-                                <option value="5">Mai</option>
-                                <option value="6">Jun</option>
-                                <option value="7">Jul</option>
-                                <option value="8">Ago</option>
-                                <option value="9">Set</option>
-                                <option value="10">Out</option>
-                                <option value="11">Nov</option>
-                                <option value="12">Dez</option>
-                            </select>
-
-                            <select id="crud-semana" class="flex-1 bg-surface-container border border-outline-variant/30
-                                       rounded-xl px-3 py-2 text-sm text-on-surface">
-                                <option value="1">Sem 1</option>
-                                <option value="2">Sem 2</option>
-                                <option value="3">Sem 3</option>
-                                <option value="4">Sem 4</option>
-                                <option value="5">Sem 5</option>
-                            </select>
-                        </div>
-
-                        <!-- Semana de início (default: semana anterior ao prazo) -->
-                        <div class="flex gap-2 items-center mt-1">
-                            <label class="text-xs text-outline whitespace-nowrap">Iniciar na:</label>
-                            <select id="crud-inicio-semana" class="flex-1 bg-surface-container border border-outline-variant/30
-                                       rounded-xl px-3 py-2 text-sm text-on-surface">
-                                <option value="1">Sem 1</option>
-                                <option value="2">Sem 2</option>
-                                <option value="3">Sem 3</option>
-                                <option value="4">Sem 4</option>
-                                <option value="5">Sem 5</option>
-                            </select>
-                            <span class="text-xs text-outline">do mesmo mês</span>
+                        <div class="flex flex-col sm:grid sm:grid-cols-2 gap-2">
+                            <div class="flex flex-col gap-1.5">
+                                <label for="crud-inicio-date" class="text-xs text-outline font-bold uppercase tracking-widest">Início</label>
+                                <input type="date" id="crud-inicio-date"
+                                    class="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface">
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label for="crud-prazo-date" class="text-xs text-outline font-bold uppercase tracking-widest">Prazo</label>
+                                <input type="date" id="crud-prazo-date"
+                                    class="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface">
+                            </div>
                         </div>
                     </div>
                     <div id="crud-parent-group" class="space-y-1">
