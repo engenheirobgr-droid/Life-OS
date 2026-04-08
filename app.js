@@ -397,6 +397,9 @@ const app = {
                 const [dia, de, mes] = dateStr.split(' ');
                 
                 const energyColor = log.energy >= 4 ? 'text-green-600' : log.energy >= 3 ? 'text-yellow-600' : 'text-red-600';
+                const gratidaoBlock = log.gratidao ? `<p class="text-[11px] text-on-surface-variant mt-2">Gratidão: ${log.gratidao}</p>` : '';
+                const funcionouBlock = log.funcionou ? `<p class="text-[11px] text-on-surface-variant mt-1">Funcionou: ${log.funcionou}</p>` : '';
+                const shutdownBlock = log.shutdown ? `<p class="text-[11px] text-on-surface-variant mt-1">Shutdown: ${log.shutdown}</p>` : '';
                 
                 return `
                     <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10 shadow-sm flex items-center justify-between mb-3">
@@ -412,6 +415,9 @@ const app = {
                                     <span class="text-[10px] uppercase font-bold text-outline">Energia:</span>
                                     <span class="text-xs font-bold ${energyColor}">${log.energy || 0}/5</span>
                                 </div>
+                                ${gratidaoBlock}
+                                ${funcionouBlock}
+                                ${shutdownBlock}
                             </div>
                         </div>
                         <div class="flex flex-col items-end">
@@ -2097,24 +2103,14 @@ const app = {
 
             let html = '';
             let pendentes = 0;
-            const todayStr = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
             
-            // Filtro aplicado: Pendentes e Prazo <= Hoje (ou sem prazo)
+            // Filtro "Para Hoje": pendentes/in_progress cuja data de início já chegou
             const todayMicros = (state.entities.micros || []).filter(m => {
                 if (m.status === 'done') return false;
-
-                // Entidades Novas: Se a data de início já chegou, mostra no Hoje. 
-                // Vai continuar a mostrar mesmo que atrase, até que seja concluída.
-                if (m.inicioDate && m.prazo) {
-                    return todayStr >= m.inicioDate; 
-                }
-
-                // Entidades antigas: Mostra se o prazo for hoje ou já passou (atrasada)
-                if (m.prazo) {
-                    return m.prazo <= todayStr;
-                }
-
-                return false;
+                const startDate = m.inicioDate || m.prazo || todayStr; // fallback retrô
+                return startDate <= todayStr;
             });
 
             todayMicros.forEach((micro, idx) => {
@@ -2136,7 +2132,6 @@ const app = {
                     const meta = state.entities.metas.find(m => m.id === okr.metaId) || {};
                     const dimIcon = iconMap[micro.dimension] || 'stars';
                     
-                    const todayStr = new Date().toISOString().split('T')[0];
                     const startDate = micro.inicioDate || micro.prazo || '';
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
@@ -2145,7 +2140,7 @@ const app = {
                         ? '<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Em Andamento</span>'
                         : '';
                     const startBtn = shouldStart
-                        ? `<button onclick="event.stopPropagation(); app.startMicroAction('${micro.id}');" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
+                        ? `<button onclick="event.stopPropagation(); app.startEntity('${micro.id}', 'micros');" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
                         : '';
 
                     html += `
@@ -2225,7 +2220,8 @@ const app = {
 
             // Se houver tarefas atrasadas, adiciona um banner/botão de resolução rápida
             if (atrasadas > 0) {
-                const todayStr = new Date().toISOString().split('T')[0];
+                const nowOverdue = new Date();
+                const todayStr = new Date(nowOverdue.getTime() - (nowOverdue.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
                 const overdueList = (state.entities.micros || []).filter(m => m.status !== 'done' && m.prazo && m.prazo < todayStr);
                 
                 if (overdueList.length > 0) {
@@ -2486,6 +2482,9 @@ const app = {
                                     </div>
                                     <h4 class="font-headline text-xl font-medium truncate">${item.title}</h4>
                                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        ${item.status === 'pending' ? `<button onclick="event.stopPropagation(); app.startEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-amber-500/30 hover:bg-amber-500/10 rounded flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 transition-colors">
+                                            <span class="material-symbols-outlined notranslate text-[14px]">play_arrow</span> Iniciar
+                                        </button>` : ''}
                                         ${prog < 100 ? `<button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary/10 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
                                             <span class="material-symbols-outlined notranslate text-[14px]">done_all</span> Concluir
                                         </button>` : ''}
@@ -2937,16 +2936,22 @@ const app = {
         else if (this.currentView === 'planos' && this.render.planos) this.render.planos();
     },
 
-    startMicroAction: function(id) {
+    startEntity: function(id, type) {
         const state = window.sistemaVidaState;
-        const micro = state.entities.micros.find(m => m.id === id);
-        if (!micro || micro.status === 'done') return;
-        micro.status = 'in_progress';
-        micro.completed = false;
-        if (!micro.progress || micro.progress < 1) micro.progress = 1;
-        this.saveState(true);
+        const list = (state.entities && state.entities[type]) || [];
+        const entity = list.find(e => e.id === id);
+        if (!entity || entity.status === 'done') return;
+        entity.status = 'in_progress';
+        if (!entity.progress || entity.progress < 1) entity.progress = 1;
+        if (type === 'micros') entity.completed = false;
+        this.saveState(false);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
+        if (this.currentView === 'planos' && this.render.planos) this.render.planos();
+    },
+
+    startMicroAction: function(id) {
+        this.startEntity(id, 'micros');
     },
 
     cascadeStatusDown: function(parentId, parentType, newStatus) {
