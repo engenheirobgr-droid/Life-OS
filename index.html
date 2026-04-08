@@ -438,6 +438,47 @@
                     <p class="text-[10px] text-outline mt-0.5">Ancore este novo hábito a uma ação que você já faz todos
                         os dias.</p>
                 </div>
+
+                <!-- Custom Habit Controls -->
+                <div id="crud-habit-controls" class="flex-col gap-4" style="display: none;">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-track-mode" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de Acompanhamento</label>
+                            <select id="habit-track-mode" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" onchange="window.app.onHabitModeChange(this.value)">
+                                <option value="boolean">Check (Feito / Não Feito)</option>
+                                <option value="numeric">Quantidade (Nº de páginas, copos)</option>
+                                <option value="timer">Tempo (Minutos por dia)</option>
+                            </select>
+                        </div>
+                        <div id="habit-target-container" class="flex-col gap-1.5" style="display: none;">
+                            <label for="habit-target" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Meta Diária (Alvo)</label>
+                            <input type="number" id="habit-target" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" value="1" min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-frequency" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Frequência</label>
+                            <select id="habit-frequency" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" onchange="window.app.onHabitFreqChange(this.value)">
+                                <option value="daily">Todos os dias</option>
+                                <option value="specific">Dias Específicos</option>
+                            </select>
+                        </div>
+                        <div id="habit-days-container" class="flex-col gap-1.5" style="display: none;">
+                            <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dias da Semana</label>
+                            <select id="habit-days" multiple class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm px-4 text-on-surface h-20">
+                                <option value="0">Domingo</option>
+                                <option value="1">Segunda</option>
+                                <option value="2">Terça</option>
+                                <option value="3">Quarta</option>
+                                <option value="4">Quinta</option>
+                                <option value="5">Sexta</option>
+                                <option value="6">Sábado</option>
+                            </select>
+                            <p class="text-[10px] text-outline">Segure Ctrl (ou Cmd) para selecionar vários.</p>
+                        </div>
+                    </div>
+                </div>
             </form>
 
             <div

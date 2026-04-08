@@ -200,6 +200,53 @@ const app = {
         if (diffDaysPurpose >= 365 && diffDaysPurpose % 365 === 0) setTimeout(() => this.showNotification("🌟 1 ano de jornada! Hora da revisão profunda do seu Propósito e Ikigai."), 5500);
     },
 
+    getRiskAlerts: function() {
+      const state = window.sistemaVidaState;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T');
+      const alerts = [];
+
+      state.entities.micros.forEach(m => {
+        if (m.status === 'done') return; // ignora concluídas
+
+        const hasPrazo = m.prazo && m.prazo.trim() !== '';
+        const hasInicio = m.inicioDate && m.inicioDate.trim() !== '';
+
+        if (!hasPrazo) return; // sem prazo, sem risco calculável
+
+        const prazo = new Date(m.prazo + 'T00:00:00');
+        const inicio = hasInicio ? new Date(m.inicioDate + 'T00:00:00') : null;
+
+        const diasAteVencer = Math.floor((prazo - today) / (1000 * 60 * 60 * 24));
+
+        // Risco 1: prazo já passou (atrasada)
+        if (diasAteVencer < 0) {
+          alerts.push({ id: m.id, title: m.title, tipo: 'overdue', dias: Math.abs(diasAteVencer) });
+          return;
+        }
+
+        // Risco 2: vence hoje
+        if (diasAteVencer === 0) {
+          alerts.push({ id: m.id, title: m.title, tipo: 'hoje', dias: 0 });
+          return;
+        }
+
+        // Risco 3: inicioDate já passou mas ainda não foi iniciada (janela aberta, não começou)
+        if (inicio && inicio < today && diasAteVencer <= 3) {
+          alerts.push({ id: m.id, title: m.title, tipo: 'risco', dias: diasAteVencer });
+          return;
+        }
+
+        // Risco 4: vence em até 2 dias e ainda não tem inicioDate
+        if (!inicio && diasAteVencer <= 2) {
+          alerts.push({ id: m.id, title: m.title, tipo: 'urgente', dias: diasAteVencer });
+        }
+      });
+
+      return alerts;
+    },
+
     renderSidebarValues: function() {
         const state = window.sistemaVidaState;
         const profile = state.profile || {};
@@ -435,13 +482,16 @@ const app = {
         state.dailyLogs[date].flashGratitude = gratitude;
         state.dailyLogs[date].lastMicroActionId = microId;
         state.dailyLogs[date].timestamp = new Date().getTime();
-
-        // Se uma micro ação foi selecionada, podemos opcionalmente marcá-la ou apenas registrar
-        // Por agora, apenas registramos no log.
-
-        this.saveState(false);
+        // Dispara completeMicroAction apenas se o checkbox estiver marcado
+        const markDone = document.getElementById('flash-mark-done')?.checked;
+        if (microId && markDone) {
+            this.completeMicroAction(microId);
+            setTimeout(() => this.showToast('Diário e Ação concluídos!', 'success'), 500);
+        } else {
+            this.saveState(false);
+            this.showToast('Diário Flash salvo com sucesso!', 'success');
+        }
         this.closeDiarioModal();
-        // Oculta o toast manual anterior para usar a lógica unificada do saveState
     },
 
     setPlanosFilter: function(dim) {
@@ -496,10 +546,15 @@ const app = {
         const triggerGroup = document.getElementById('crud-trigger-container');
         const dimensionGroup = document.getElementById('crud-dimension-group');
         const contextLabel = document.getElementById('crud-context-label');
+        const habitControls = document.getElementById('crud-habit-controls');
         
         // Esconde tudo por padrão para resetar estado visual
         if (parentGroup) parentGroup.classList.add('hidden');
         if (triggerGroup) triggerGroup.classList.add('hidden');
+        if (habitControls) {
+            habitControls.classList.add('hidden');
+            habitControls.classList.remove('flex');
+        }
         if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
 
         // Configura baseado no tipo
@@ -507,6 +562,16 @@ const app = {
             if (triggerGroup) {
                 triggerGroup.classList.remove('hidden');
                 triggerGroup.classList.add('flex');
+            }
+            if (habitControls) {
+                habitControls.classList.remove('hidden');
+                habitControls.classList.add('flex');
+                
+                // Força atualização da visibilidade dos sub-campos baseando nos valores dos selects
+                const modeInput = document.getElementById('habit-track-mode');
+                if (modeInput) this.onHabitModeChange(modeInput.value);
+                const freqInput = document.getElementById('habit-frequency');
+                if (freqInput) this.onHabitFreqChange(freqInput.value);
             }
             if (contextLabel) contextLabel.textContent = 'Gatilho de Execução';
         } else if (type === 'metas') {
@@ -556,6 +621,30 @@ const app = {
                 }
             });
             prazSemanaEl._listenerAdded = true;
+        }
+    },
+
+    onHabitModeChange: function(mode) {
+        const targetContainer = document.getElementById('habit-target-container');
+        if (!targetContainer) return;
+        if (mode === 'numeric' || mode === 'timer') {
+            targetContainer.classList.remove('hidden');
+            targetContainer.classList.add('flex');
+        } else {
+            targetContainer.classList.add('hidden');
+            targetContainer.classList.remove('flex');
+        }
+    },
+
+    onHabitFreqChange: function(freq) {
+        const daysContainer = document.getElementById('habit-days-container');
+        if (!daysContainer) return;
+        if (freq === 'specific') {
+            daysContainer.classList.remove('hidden');
+            daysContainer.classList.add('flex');
+        } else {
+            daysContainer.classList.add('hidden');
+            daysContainer.classList.remove('flex');
         }
     },
 
@@ -1139,6 +1228,16 @@ const app = {
             obj.context = context || '';
             obj.completed = isEditing ? (getOldItem(id, 'habits').completed || false) : false;
             obj.trigger = trigger || '';
+            obj.trackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
+            obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
+            obj.frequency = document.getElementById('habit-frequency') ? document.getElementById('habit-frequency').value : 'daily';
+            const daysSelect = document.getElementById('habit-days');
+            if (daysSelect && obj.frequency === 'specific') {
+                obj.specificDays = Array.from(daysSelect.selectedOptions).map(o => o.value);
+            } else {
+                obj.specificDays = [];
+            }
+            obj.logs = isEditing ? (getOldItem(id, 'habits').logs || {}) : {};
         }
 
         if (isEditing) {
@@ -1341,12 +1440,22 @@ const app = {
         }
     },
 
-    toggleHabit: function(habitId) {
+    updateHabitLog: function(habitId, dateStr, value) {
         const state = window.sistemaVidaState;
         const habit = state.habits.find(h => h.id === habitId);
         if (habit) {
-            habit.completed = !habit.completed;
-            this.saveState(false);
+            if (!habit.logs) habit.logs = {};
+            habit.logs[dateStr] = value;
+            
+            // Legacy sync
+            if (dateStr === new Date().toISOString().split('T')[0]) {
+                 const target = habit.targetValue || 1;
+                 const mode = habit.trackMode || 'boolean';
+                 if (mode === 'boolean') habit.completed = value > 0;
+                 else habit.completed = value >= target;
+            }
+
+            this.saveState(true);
             if (habit.completed && typeof showIdentityToast === 'function') {
                 showIdentityToast(habit.dimension);
             }
@@ -1371,6 +1480,9 @@ const app = {
             shutdown: s1, 
             energy: window.sistemaVidaState.energy 
         };
+
+        const focoInput = document.getElementById('diario-foco');
+        if (focoInput) window.sistemaVidaState.dailyLogs[today].focus = focoInput.value.trim();
 
         this.saveState(true);
 
@@ -1756,6 +1868,20 @@ const app = {
                 if (headerStreak) headerStreak.textContent = streak + ' dias';
             }
 
+            // Progresso semanal — apenas Micro Ações com janela ativa nesta semana
+            const weekMicros = state.entities.micros.filter(m =>
+              app.isDateInCurrentWeek(m.inicioDate) || app.isDateInCurrentWeek(m.prazo)
+            );
+            const weekDone = weekMicros.filter(m => m.status === 'done').length;
+            const weekProgress = weekMicros.length > 0
+              ? Math.round((weekDone / weekMicros.length) * 100)
+              : 0;
+
+            const weekBar = document.getElementById('week-progress-bar');
+            const weekVal = document.getElementById('week-progress-val');
+            if (weekBar) weekBar.style.width = weekProgress + '%';
+            if (weekVal) weekVal.textContent = weekProgress + '%';
+
             const heatmapEl = document.getElementById('week-days-container');
             if (heatmapEl) {
                 const logs = window.sistemaVidaState.dailyLogs || {};
@@ -1792,10 +1918,53 @@ const app = {
                 heatmapEl.innerHTML = html;
             }
             
+            // Alertas de Risco de Início
+            const riskContainer = document.getElementById('risk-alerts-container');
+            if (riskContainer) {
+              const alerts = window.app.getRiskAlerts();
+              if (alerts.length === 0) {
+                riskContainer.classList.add('hidden');
+                riskContainer.innerHTML = '';
+              } else {
+                riskContainer.classList.remove('hidden');
+                const alertConfig = {
+                  overdue: { icon: 'warning', color: 'bg-error/10 border-error/30 text-error', label: 'Atrasada' },
+                  hoje:    { icon: 'schedule', color: 'bg-warning/10 border-warning/30 text-warning', label: 'Vence hoje' },
+                  risco:   { icon: 'timelapse', color: 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400', label: 'Em risco' },
+                  urgente: { icon: 'priority_high', color: 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400', label: 'Urgente' },
+                };
+                riskContainer.innerHTML = alerts.map(a => {
+                  const cfg = alertConfig[a.tipo] || alertConfig.risco;
+                  const diasLabel = a.tipo === 'overdue'
+                    ? `${a.dias} dia${a.dias !== 1 ? 's' : ''} em atraso`
+                    : a.tipo === 'hoje'
+                    ? 'Vence hoje'
+                    : `${a.dias} dia${a.dias !== 1 ? 's' : ''} restante${a.dias !== 1 ? 's' : ''}`;
+                  return `
+                    <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border ${cfg.color} text-sm">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span class="material-symbols-outlined notranslate text-base shrink-0"
+                              style="font-variation-settings:'FILL' 1">${cfg.icon}</span>
+                        <span class="font-medium truncate">${a.title}</span>
+                      </div>
+                      <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[10px] font-bold uppercase tracking-wider opacity-80">${diasLabel}</span>
+                        <button onclick="window.app.completeMicroAction('${a.id}')"
+                                class="text-[10px] font-bold uppercase tracking-wider underline opacity-70 hover:opacity-100 transition-opacity">
+                          Concluir
+                        </button>
+                      </div>
+                    </div>`;
+                }).join('');
+              }
+            }
+
             // Restore Diário
             const today = new Date().toISOString().split('T')[0];
             if (state.dailyLogs && state.dailyLogs[today]) {
                 const log = state.dailyLogs[today];
+                const focoInput = document.getElementById('diario-foco');
+                if (focoInput && log.focus) focoInput.value = log.focus;
                 const g = document.getElementById('diario-gratidao'); if (g) g.value = log.gratidao || '';
                 const f = document.getElementById('diario-funcionou'); if (f) f.value = log.funcionou || '';
                 const s1 = document.getElementById('diario-shutdown-1'); if (s1) s1.value = log.shutdown || '';
@@ -1810,26 +1979,87 @@ const app = {
                     'Lazer': 'sports_esports', 'Propósito': 'auto_awesome'
                 };
                 
+                const todayStr = new Date().toISOString().split('T')[0];
+                const dayIndex = new Date().getDay().toString(); // 0(Sun) to 6(Sat)
+                
                 let habitsHtml = '';
                 state.habits.forEach(habit => {
+                    // Check if frequency allows showing today
+                    if (habit.frequency === 'specific' && habit.specificDays && habit.specificDays.length > 0) {
+                        if (!habit.specificDays.includes(dayIndex)) return; // skip for today
+                    }
+
                     const icon = habitIconMap[habit.dimension] || 'stars';
-                    const isDone = habit.completed;
+                    const target = habit.targetValue || 1;
+                    const mode = habit.trackMode || 'boolean';
+                    const logs = habit.logs || {};
+                    let currentVal = logs[todayStr] || 0;
+                    if (habit.completed && !logs[todayStr]) {
+                        currentVal = 1; // legacy conversion
+                    }
+                    
+                    let isDone = false;
+                    if (mode === 'boolean') isDone = currentVal > 0;
+                    else isDone = currentVal >= target;
+
+                    // UI for mode
+                    let controlHtml = '';
+                    if (mode === 'boolean') {
+                        controlHtml = `
+                        <div class="w-7 h-7 rounded-full ${isDone ? 'bg-primary' : 'border-2 border-outline-variant hover:border-primary'} flex items-center justify-center shrink-0 cursor-pointer transition-colors" onclick="event.stopPropagation(); window.app.updateHabitLog('${habit.id}', '${todayStr}', ${isDone ? 0 : 1})">
+                            ${isDone ? '<span class="material-symbols-outlined notranslate text-white text-[16px]" style="font-variation-settings: \\\'wght\\\' 700;">check</span>' : ''}
+                        </div>`;
+                    } else if (mode === 'numeric' || mode === 'timer') {
+                        controlHtml = `
+                        <div class="flex items-center gap-1 bg-surface-container rounded-lg p-1 shrink-0" onclick="event.stopPropagation()">
+                            <button class="w-6 h-6 flex justify-center items-center rounded-md hover:bg-outline-variant/20 text-on-surface" onclick="window.app.updateHabitLog('${habit.id}', '${todayStr}', Math.max(0, ${currentVal} - 1))">-</button>
+                            <span class="text-xs font-semibold text-primary w-6 text-center">${currentVal}</span>
+                            <button class="w-6 h-6 flex justify-center items-center rounded-md hover:bg-outline-variant/20 text-on-surface" onclick="window.app.updateHabitLog('${habit.id}', '${todayStr}', ${currentVal} + 1)">+</button>
+                        </div>
+                        `;
+                    }
+
+                    // Week progress strip
+                    let weekHtml = '<div class="flex gap-1 mt-3">';
+                    for (let i = 6; i >= 0; i--) {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        const ds = d.toISOString().split('T')[0];
+                        const val = logs[ds] || 0;
+                        let dDone = false;
+                        if (mode === 'boolean') dDone = val > 0;
+                        else dDone = val >= target;
+                        
+                        weekHtml += `<div class="flex-1 h-1.5 rounded-full ${dDone ? 'bg-primary' : 'bg-surface-container-high'}" title="${ds}"></div>`;
+                    }
+                    weekHtml += '</div>';
+
+                    // Track progress line
+                    let progressText = '';
+                    if (mode === 'numeric') progressText = `${currentVal}/${target}`;
+                    if (mode === 'timer') progressText = `${currentVal}m/${target}m`;
                     
                     habitsHtml += `
-                    <div class="cursor-pointer min-w-[180px] max-w-[220px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between h-36 transition-all hover:shadow-md relative group ${isDone ? 'opacity-50' : ''}" onclick="window.app.toggleHabit('${habit.id}')">
+                    <div class="min-w-[240px] max-w-[280px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''}">
                         <div class="flex justify-between items-start mb-2">
-                            <span class="material-symbols-outlined notranslate text-primary text-2xl">${icon}</span>
                             <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-primary transition-all p-1" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
-                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-error transition-all p-1" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')">delete</span>
-                                <div class="w-6 h-6 rounded-full ${isDone ? 'bg-primary' : 'border-2 border-outline-variant'} flex items-center justify-center shrink-0">
-                                    ${isDone ? '<span class="material-symbols-outlined notranslate text-white text-[12px]" style="font-variation-settings: \'wght\' 700;">check</span>' : ''}
-                                </div>
+                                <span class="material-symbols-outlined notranslate text-primary text-2xl">${icon}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-primary transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
+                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-error transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')">delete</span>
+                                ${controlHtml}
                             </div>
                         </div>
                         <div class="mt-auto">
-                            <p class="font-medium text-on-surface text-sm ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
-                            ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight break-words line-clamp-2">Gatilho: ${habit.trigger}</p>` : ''}
+                            <div class="flex justify-between items-end">
+                                <div class="overflow-hidden pr-2">
+                                    <p class="font-medium text-on-surface text-sm ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
+                                    ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight truncate">Gatilho: ${habit.trigger}</p>` : ''}
+                                </div>
+                                ${progressText ? `<span class="text-xs font-bold text-primary shrink-0">${progressText}</span>` : ''}
+                            </div>
+                            ${weekHtml}
                         </div>
                     </div>`;
                 });
@@ -2695,9 +2925,11 @@ const app = {
             }
         }
         
-        this.saveState();
-        if (this.render.hoje) this.render.hoje();
-        if (this.render.planos) this.render.planos();
+        this.saveState(false);
+        // Re-render inteligente: respeita a view atual
+        if (this.currentView === 'painel' && this.render.painel) this.render.painel();
+        else if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        else if (this.currentView === 'planos' && this.render.planos) this.render.planos();
     },
 
     cascadeStatusDown: function(parentId, parentType, newStatus) {
@@ -2806,6 +3038,14 @@ const app = {
         
         if (type === 'habits') {
             document.getElementById('crud-trigger').value = item.trigger || '';
+            if (document.getElementById('habit-track-mode')) document.getElementById('habit-track-mode').value = item.trackMode || 'boolean';
+            if (document.getElementById('habit-target')) document.getElementById('habit-target').value = item.targetValue || 1;
+            if (document.getElementById('habit-frequency')) document.getElementById('habit-frequency').value = item.frequency || 'daily';
+            if (document.getElementById('habit-days') && item.specificDays) {
+                Array.from(document.getElementById('habit-days').options).forEach(opt => {
+                    opt.selected = item.specificDays.includes(opt.value);
+                });
+            }
         }
 
         this.onTypeChange(type);
