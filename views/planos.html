@@ -38,6 +38,35 @@
     <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Lazer</button>
     <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Propósito</button>
 </div>
+<!-- Advanced Filters (Raio-X Relacional & Status) -->
+<div id="planos-advanced-filters" class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 mb-12 space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+        <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined notranslate text-[14px]">account_tree</span> Raio-X Relacional:
+        </span>
+        <div class="flex gap-2 w-full sm:w-auto">
+            <select id="hier-type" onchange="window.app.planosHierarchyType = this.value; window.app.planosHierarchyId = ''; window.app.render.planos()" class="flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none">
+                <option value="">Mostrar Tudo</option>
+                <option value="metas">Por Meta</option>
+                <option value="okrs">Por OKR</option>
+                <option value="macros">Por Macro Ação</option>
+            </select>
+            <select id="hier-id" onchange="window.app.planosHierarchyId = this.value; window.app.render.planos()" class="hidden flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none w-full sm:max-w-[250px] truncate">
+                <option value="">Selecione...</option>
+            </select>
+        </div>
+    </div>
+    <div class="flex items-center gap-3 pt-3 border-t border-outline-variant/10 overflow-x-auto no-scrollbar">
+        <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1 shrink-0">
+            <span class="material-symbols-outlined notranslate text-[14px]">check_circle</span> Status:
+        </span>
+        <div class="flex gap-2 shrink-0">
+            <button onclick="window.app.planosStatusFilter='active'; window.app.render.planos()" id="btn-stat-active" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Ativos</button>
+            <button onclick="window.app.planosStatusFilter='done'; window.app.render.planos()" id="btn-stat-done" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Concluídos</button>
+            <button onclick="window.app.planosStatusFilter='all'; window.app.render.planos()" id="btn-stat-all" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Todos</button>
+        </div>
+    </div>
+</div>
 <!-- Tab: Metas -->
 <section class="mt-8 tab-content active space-y-12" id="tab-metas">
 <div id="metas-container" class="space-y-12"></div>

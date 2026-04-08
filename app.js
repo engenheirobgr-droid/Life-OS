@@ -1730,79 +1730,145 @@ const app = {
             this.renderAnnualHeatmap();
 
             // 2. Calcula e Renderiza a Distribuição de Foco
-            const focusContainer = document.getElementById('focus-distribution');
-            if (focusContainer) {
-                const effortTotal = {}; 
-                const effortDone = {};
-                const dims = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito', 'Geral'];
-                dims.forEach(d => { effortTotal[d] = 0; effortDone[d] = 0; });
+            this.renderFocusDistribution('focus-distribution');
+        },
+
+        renderFocusDistribution: function(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const state = window.sistemaVidaState;
+            const effortTotal = {}; 
+            const effortDone = {};
+            const dims = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito', 'Geral'];
+            dims.forEach(d => { effortTotal[d] = 0; effortDone[d] = 0; });
+            
+            const typeFilter = app.focusTypeFilter || 'Tudo';
+
+            // Atualiza botões de filtro na UI (se existirem na página atual)
+            document.querySelectorAll('[data-focus-type]').forEach(btn => {
+                const t = btn.getAttribute('data-focus-type');
+                btn.className = t === typeFilter ? 
+                    "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all" :
+                    "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+            });
+
+            // Soma os pesos estratégicos
+            const addScore = (list, weight, typeName) => {
+                if (typeFilter !== 'Tudo' && typeFilter !== typeName) return;
                 
-                const typeFilter = app.focusTypeFilter || 'Tudo';
-                const statusFilter = app.focusStatusFilter || 'Tudo';
-
-                // Atualiza botões de filtro na UI
-                document.querySelectorAll('[data-focus-type]').forEach(btn => {
-                    const t = btn.getAttribute('data-focus-type');
-                    btn.className = t === typeFilter ? 
-                        "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all" :
-                        "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
-                });
-
-                document.querySelectorAll('[data-focus-status]').forEach(btn => {
-                    const s = btn.getAttribute('data-focus-status');
-                    btn.className = s === statusFilter ? 
-                        "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all" :
-                        "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
-                });
-
-                // Soma os pesos estratégicos
-                const addScore = (list, weight, typeName) => {
-                    if (typeFilter !== 'Tudo' && typeFilter !== typeName) return;
-                    
-                    (list || []).forEach(item => {
-                        // Filtro de Status para o cálculo de Total
-                        // Se o filtro for 'Pendentes', mostramos o total de pendentes? 
-                        // Não, o gráfico de esforço deve mostrar Concluído vs Total do que está filtrado.
-                        
-                        const dim = item.dimension || item.dimensionName || 'Geral';
-                        if (effortTotal[dim] !== undefined) {
-                            effortTotal[dim] += weight;
-                            if (item.status === 'done' || item.completed) {
-                                effortDone[dim] += weight;
-                            }
+                (list || []).forEach(item => {
+                    const dim = item.dimension || item.dimensionName || 'Geral';
+                    if (effortTotal[dim] !== undefined) {
+                        effortTotal[dim] += weight;
+                        if (item.status === 'done' || item.completed) {
+                            effortDone[dim] += weight;
                         }
-                    });
-                };
+                    }
+                });
+            };
+            
+            addScore(state.entities.metas, 3, 'Metas');
+            addScore(state.entities.okrs, 2, 'OKRs');
+            addScore(state.entities.macros, 1, 'Macros');
+            addScore(state.entities.micros, 0.5, 'Micros');
+            
+            let focusHtml = '';
+            dims.forEach(dim => {
+                if (dim === 'Geral') return; 
+                const total = effortTotal[dim] || 0;
+                const done = effortDone[dim] || 0;
                 
-                addScore(state.entities.metas, 3, 'Metas');
-                addScore(state.entities.okrs, 2, 'OKRs');
-                addScore(state.entities.macros, 1, 'Macro');
-                addScore(state.entities.micros, 0.5, 'Micro');
-                
-                let focusHtml = '';
-                dims.forEach(dim => {
-                    if (dim === 'Geral') return; // Esconde 'Geral' para focar na Roda da Vida
-                    const total = effortTotal[dim] || 0;
-                    const done = effortDone[dim] || 0;
-                    
-                    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-                    focusHtml += `
-                    <div class="space-y-1.5">
-                        <div class="flex justify-between items-end">
-                            <span class="text-[10px] uppercase tracking-widest font-bold text-outline">${dim}</span>
-                            <div class="flex items-baseline gap-1">
-                                <span class="text-xs font-bold ${pct > 0 ? 'text-primary' : 'text-outline-variant'}">${pct}%</span>
-                                <span class="text-[9px] text-outline">(${done}/${total})</span>
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                focusHtml += `
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-end">
+                        <span class="text-[10px] uppercase tracking-widest font-bold text-outline">${dim}</span>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-xs font-bold ${pct > 0 ? 'text-primary' : 'text-outline-variant'}">${pct}%</span>
+                            <span class="text-[9px] text-outline">(${done}/${total})</span>
+                        </div>
+                    </div>
+                    <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                        <div class="h-full ${pct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${pct > 0 ? pct : 100}%"></div>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = focusHtml;
+        },
+
+        foco: function() {
+            const state = window.sistemaVidaState;
+            this.renderSidebarValues();
+            
+            // 1. Distribuição de Foco
+            this.renderFocusDistribution('foco-distribution');
+
+            // 2. Progresso Semanal
+            const weekMicros = state.entities.micros.filter(m =>
+              app.isDateInCurrentWeek(m.inicioDate || m.prazo) || app.isDateInCurrentWeek(m.prazo)
+            );
+            const weekDone = weekMicros.filter(m => m.status === 'done').length;
+            const weekProgress = weekMicros.length > 0 ? Math.round((weekDone / weekMicros.length) * 100) : 0;
+            
+            const weekBar = document.getElementById('foco-week-bar');
+            const weekVal = document.getElementById('foco-week-val');
+            if (weekBar) weekBar.style.width = weekProgress + '%';
+            if (weekVal) weekVal.textContent = weekProgress + '%';
+
+            // 3. Cycle Progress
+            const cycleDone = state.entities.micros.filter(m => m.status === 'done').length;
+            const cycleDoneEl = document.getElementById('cycle-micros-done');
+            if (cycleDoneEl) cycleDoneEl.textContent = cycleDone;
+
+            // 4. Micros Management List
+            const listContainer = document.getElementById('micros-management-list');
+            if (listContainer) {
+                const dimFilter = document.getElementById('todo-dimension-filter')?.value || 'Tudo';
+                const statusFilter = document.getElementById('todo-status-filter')?.value || 'active';
+
+                let filtered = state.entities.micros.filter(m => {
+                    const matchDim = dimFilter === 'Tudo' || m.dimension === dimFilter;
+                    const matchStatus = statusFilter === 'all' || 
+                                       (statusFilter === 'active' && m.status !== 'done') ||
+                                       (statusFilter === 'done' && m.status === 'done');
+                    return matchDim && matchStatus;
+                });
+
+                // Ordenar por prazo
+                filtered.sort((a,b) => (a.prazo || '9999').localeCompare(b.prazo || '9999'));
+
+                listContainer.innerHTML = filtered.map(m => `
+                    <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded-full">
+                                ${m.dimension}
+                            </span>
+                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="window.app.editEntity('${m.id}', 'micros')" class="p-1 hover:text-primary"><span class="material-symbols-outlined notranslate text-sm">edit</span></button>
+                                <button onclick="window.app.deleteEntity('${m.id}', 'micros')" class="p-1 hover:text-error"><span class="material-symbols-outlined notranslate text-sm">delete</span></button>
                             </div>
                         </div>
-                        <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                            <div class="h-full ${pct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${pct > 0 ? pct : 100}%"></div>
+                        <h3 class="font-bold text-on-surface mb-1 line-clamp-2">${m.title}</h3>
+                        <p class="text-xs text-outline mb-4 line-clamp-1">${m.macroId ? (state.entities.macros.find(ma => ma.id === m.macroId)?.title || '') : 'Sem Macro'}</p>
+                        
+                        <div class="pt-4 border-t border-outline-variant/10 flex justify-between items-center">
+                            <div class="flex items-center gap-2 text-outline">
+                                <span class="material-symbols-outlined notranslate text-xs">event</span>
+                                <span class="text-[10px] font-bold uppercase">${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>
+                            </div>
+                            ${m.status === 'done' ? 
+                                `<span class="text-[10px] font-bold uppercase text-green-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">check_circle</span> Concluída</span>` :
+                                `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
+                            }
                         </div>
-                    </div>`;
-                });
-                focusContainer.innerHTML = focusHtml;
-            }
+                    </div>
+                `).join('');
 
+                if (filtered.length === 0) {
+                    listContainer.innerHTML = '<div class="col-span-full py-12 text-center text-outline italic">Nenhuma micro ação encontrada com estes filtros.</div>';
+                }
+            }
         },
 
         renderAnnualHeatmap: function() {
@@ -2281,39 +2347,10 @@ const app = {
                 });
             }
 
+            // Configure buttons and selects in already existing HTML
             const filterAreaId = 'planos-advanced-filters';
-            let filterArea = document.getElementById(filterAreaId);
-            if (!filterArea) {
-                const dimensionFilters = document.querySelector('.overflow-x-auto.no-scrollbar.mb-12') || document.querySelector('#tab-metas').parentNode;
-                if (dimensionFilters) {
-                    dimensionFilters.insertAdjacentHTML('afterend', `
-                        <div id="${filterAreaId}" class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 mb-6 space-y-4">
-                            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                                <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[14px]">account_tree</span> Raio-X Relacional:</span>
-                                <div class="flex gap-2 w-full sm:w-auto">
-                                    <select id="hier-type" onchange="app.planosHierarchyType = this.value; app.planosHierarchyId = ''; app.render.planos()" class="flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none">
-                                        <option value="">Mostrar Tudo</option>
-                                        <option value="metas">Por Meta</option>
-                                        <option value="okrs">Por OKR</option>
-                                        <option value="macros">Por Macro Ação</option>
-                                    </select>
-                                    <select id="hier-id" onchange="app.planosHierarchyId = this.value; app.render.planos()" class="hidden flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none w-full sm:max-w-[250px] truncate">
-                                        <option value="">Selecione...</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3 pt-3 border-t border-outline-variant/10 overflow-x-auto no-scrollbar">
-                                <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1 shrink-0"><span class="material-symbols-outlined notranslate text-[14px]">check_circle</span> Status:</span>
-                                <div class="flex gap-2 shrink-0">
-                                    <button onclick="app.planosStatusFilter='active'; app.render.planos()" id="btn-stat-active" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Ativos</button>
-                                    <button onclick="app.planosStatusFilter='done'; app.render.planos()" id="btn-stat-done" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Concluídos</button>
-                                    <button onclick="app.planosStatusFilter='all'; app.render.planos()" id="btn-stat-all" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Todos</button>
-                                </div>
-                            </div>
-                        </div>
-                    `);
-                }
-            }
+            const filterArea = document.getElementById(filterAreaId);
+            if (!filterArea) return; // Wait for view to be ready
             
             if (document.getElementById('hier-type')) {
                 document.getElementById('hier-type').value = app.planosHierarchyType || '';
@@ -2637,30 +2674,35 @@ const app = {
                         }
                     };
 
-                    // Ikigai
+                    // Ikigai (Consolidado com os 5 blocos da View)
                     const iki = profile.ikigai || {};
-                    safeSetText('ikigai-missao', iki.missao);
-                    safeSetText('ikigai-vocacao', iki.vocacao);
-                    safeSetText('ikigai-love', iki.love);
-                    safeSetText('ikigai-good', iki.good);
-                    safeSetText('ikigai-need', iki.need);
-                    safeSetText('ikigai-paid', iki.paid);
-                    safeSetText('ikigai-sintese', iki.sintese);
+                    safeSetText('ikigai-love', iki.love, "O que você ama fazer?");
+                    safeSetText('ikigai-good', iki.good, "No que você é genuinamente bom?");
+                    safeSetText('ikigai-need', iki.need, "O que o mundo precisa de você?");
+                    safeSetText('ikigai-paid', iki.paid, "O que gera valor e sustento?");
+                    safeSetText('ikigai-sintese', iki.sintese, "Clique para escrever sua missão de vida sintetizada...");
 
                     // Visão e Legado
                     const vis = profile.vision || {};
-                    safeSetText('vision-saude', vis.saude);
-                    safeSetText('vision-carreira', vis.carreira);
-                    safeSetText('vision-intelecto', vis.intelecto);
-                    safeSetText('vision-quote', vis.quote);
+                    safeSetText('vision-saude', vis.saude, "Sua visão de saúde em 10 anos...");
+                    safeSetText('vision-carreira', vis.carreira, "Seu ápice profissional e financeiro...");
+                    safeSetText('vision-intelecto', vis.intelecto, "Sabedoria e espiritualidade...");
+                    safeSetText('vision-quote', vis.quote, "Uma frase que te inspira todos os dias...");
 
                     const leg = profile.legacyObj || {};
-                    safeSetText('legacy-familia', leg.familia);
-                    safeSetText('legacy-profissao', leg.profissao);
-                    safeSetText('legacy-mundo', leg.mundo);
+                    safeSetText('legacy-familia', leg.familia, "Como quer ser lembrado pela família?");
+                    safeSetText('legacy-profissao', leg.profissao, "Sua contribuição profissional...");
+                    safeSetText('legacy-mundo', leg.mundo, "A marca que quer deixar na sociedade...");
 
-                    // Odyssey Scenarios
-                    const ody = profile.odyssey || {};
+                } catch(e) {
+                    console.error("Erro ao renderizar textos do Propósito:", e);
+                }
+            }, 150);
+
+            // 4. Bind Odyssey Plans specifically
+            setTimeout(() => {
+                try {
+                    const ody = state.profile?.odyssey || {};
                     ['A', 'B', 'C'].forEach(id => {
                         const plan = ody[id];
                         if (plan) {
@@ -2676,11 +2718,10 @@ const app = {
                                 `<span class="material-symbols-outlined notranslate text-sm" style="font-variation-settings: 'FILL' ${i < plan.nrg ? 1 : 0};">bolt</span>`).join('');
                         }
                     });
-
                 } catch(e) {
-                    console.error("Erro ao renderizar textos do Propósito:", e);
+                    console.error("Erro ao renderizar Odyssey Plans:", e);
                 }
-            }, 150);
+            }, 200);
 
             // Render SVG Roda da Vida Trigonometry
             try {
@@ -2764,11 +2805,12 @@ const app = {
         headerHTML += '</div></div>';
 
         // ── Linha de "hoje" ────────────────────────────────────────
-        const todayPct = ((today - startDate) / (endDate - startDate)) * 100;
+        const todayPct = Math.min(100, Math.max(0, ((today - startDate) / (endDate - startDate)) * 100));
         const todayLine = `
-          <div class="absolute top-0 bottom-0 w-px bg-primary/60 z-10 pointer-events-none"
-               style="left: calc(192px + (100% - 192px) * ${(todayPct / 100).toFixed(4)})"
+          <div class="absolute top-0 bottom-0 w-px bg-primary z-10 pointer-events-none"
+               style="left: calc(192px + (100% - 192px) * ${(todayPct / 100).toFixed(4)}); box-shadow: 0 0 10px var(--md-sys-color-primary);"
                title="Hoje">
+               <div class="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full"></div>
           </div>`;
 
         // ── Entidades ──────────────────────────────────────────────
@@ -2784,7 +2826,7 @@ const app = {
         let rowsHTML = '';
         ['metas', 'okrs', 'macros'].forEach(tipo => {
           const lista = (state.entities[tipo] || [])
-            .filter(e => e.status === 'active' || e.status === 'pending' || e.status === 'in_progress' || !e.status);
+            .filter(e => e.status !== 'abandoned'); // Inclui ativos e concluídos, exclui abandonados
 
           lista.forEach(entity => {
             // Datas com fallback e blindagem contra strings vazias
