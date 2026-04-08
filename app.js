@@ -377,38 +377,45 @@ const app = {
         if (!modal || !list) return;
 
         const state = window.sistemaVidaState;
-        const logs = state.habitsLog || [];
         
-        // Sort by date desc
-        const sortedLogs = [...logs].sort((a, b) => new Date(b.date) - new Date(a.date));
+        // Pega no objeto dailyLogs e transforma num array para podermos listar e ordenar
+        const logsObj = state.dailyLogs || {};
+        const logsArray = Object.keys(logsObj).map(dateKey => {
+            return { date: dateKey, ...logsObj[dateKey] };
+        });
+        
+        // Ordena pela data (mais recente primeiro)
+        const sortedLogs = logsArray.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         if (sortedLogs.length === 0) {
-            list.innerHTML = '<div class="text-center py-12 text-outline italic">Nenhum registro encontrado.</div>';
+            list.innerHTML = '<div class="text-center py-12 text-outline italic">Nenhum registo encontrado.</div>';
         } else {
             list.innerHTML = sortedLogs.map(log => {
-                const dateObj = new Date(log.date);
-                const dateStr = dateObj.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
-                const moodColor = log.mood >= 8 ? 'text-green-600' : log.mood >= 5 ? 'text-yellow-600' : 'text-red-600';
+                // Adiciona T12:00:00 para evitar que o fuso horário mude o dia no toLocaleDateString
+                const dateObj = new Date(log.date + "T12:00:00");
+                const dateStr = dateObj.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
+                const [dia, de, mes] = dateStr.split(' ');
+                
+                const energyColor = log.energy >= 4 ? 'text-green-600' : log.energy >= 3 ? 'text-yellow-600' : 'text-red-600';
                 
                 return `
-                    <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10 shadow-sm flex items-center justify-between">
+                    <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10 shadow-sm flex items-center justify-between mb-3">
                         <div class="flex items-center gap-4">
                             <div class="text-center min-w-[50px]">
-                                <span class="block text-lg font-bold text-primary leading-tight">${dateStr.split(' ')[0]}</span>
-                                <span class="block text-[10px] uppercase font-bold text-outline">${dateStr.split(' ')[1]}</span>
+                                <span class="block text-lg font-bold text-primary leading-tight">${dia}</span>
+                                <span class="block text-[10px] uppercase font-bold text-outline">${mes ? mes.replace('.','') : ''}</span>
                             </div>
                             <div class="h-8 w-px bg-outline-variant/20"></div>
                             <div>
-                                <p class="text-sm font-medium text-on-surface italic">"${log.focus || 'Sem foco definido'}"</p>
+                                <p class="text-sm font-medium text-on-surface italic">"${log.focus || 'Sem intenção definida'}"</p>
                                 <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-[10px] uppercase font-bold text-outline">Humor:</span>
-                                    <span class="text-xs font-bold ${moodColor}">${log.mood}/10</span>
+                                    <span class="text-[10px] uppercase font-bold text-outline">Energia:</span>
+                                    <span class="text-xs font-bold ${energyColor}">${log.energy || 0}/5</span>
                                 </div>
                             </div>
                         </div>
                         <div class="flex flex-col items-end">
                             <span class="material-symbols-outlined notranslate text-primary/40">history_edu</span>
-                            <span class="text-[9px] text-outline mt-1">${log.energy}% Energia</span>
                         </div>
                     </div>
                 `;
@@ -1450,7 +1457,9 @@ const app = {
         const funcionou = document.getElementById('diario-funcionou') ? document.getElementById('diario-funcionou').value : '';
         const s1 = document.getElementById('diario-shutdown-1') ? document.getElementById('diario-shutdown-1').value : '';
 
-        const today = new Date().toISOString().split('T')[0];
+        // Ajuste de Fuso Horário para a data local real
+        const d = new Date();
+        const today = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
         
         if (!window.sistemaVidaState.dailyLogs) window.sistemaVidaState.dailyLogs = {};
         
@@ -1458,7 +1467,7 @@ const app = {
             gratidao, 
             funcionou, 
             shutdown: s1, 
-            energy: window.sistemaVidaState.energy 
+            energy: window.sistemaVidaState.energy || 0 
         };
 
         const focoInput = document.getElementById('diario-foco');
