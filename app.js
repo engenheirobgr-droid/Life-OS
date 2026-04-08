@@ -2102,11 +2102,23 @@ const app = {
             const now = new Date();
             const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
             
-            // Filtro "Para Hoje": pendentes/in_progress cuja data de início já chegou
+            // Filtro "Para Hoje": pendentes/in_progress dentro da janela [inicio, prazo]
             const todayMicros = (state.entities.micros || []).filter(m => {
                 if (m.status === 'done') return false;
-                const startDate = m.inicioDate || m.prazo || todayStr; // fallback retrô
-                return startDate <= todayStr;
+                
+                // Normalização para meia-noite local para comparação precisa
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                
+                const inicioStr = m.inicioDate || m.prazo;
+                const prazoStr = m.prazo;
+                
+                if (!prazoStr) return false; // Sem prazo, sem janela
+
+                const start = new Date(inicioStr + 'T00:00:00');
+                const end = new Date(prazoStr + 'T00:00:00');
+
+                return start <= today && end >= today;
             });
 
             todayMicros.forEach((micro, idx) => {
@@ -2153,54 +2165,54 @@ const app = {
                             </div>
                         </div>
                         
-                        <div class="hidden bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant" id="trail-${idx}">
-                            <div class="absolute left-[11px] top-4 bottom-4 w-px bg-primary/10"></div>
+                        <div class="hidden bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant overflow-hidden" id="trail-${idx}">
+                            <div class="absolute left-[12px] top-4 bottom-4 w-px bg-primary/10"></div>
                             
-                            <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5">check_circle</span>
-                                <div class="flex flex-col">
+                            <div class="flex items-center gap-4 relative z-10 min-w-0">
+                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low">check_circle</span>
+                                <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Micro Ação</span>
-                                    <span class="text-sm font-medium">${micro.title}</span>
+                                    <span class="text-sm font-medium truncate">${micro.title}</span>
                                 </div>
                             </div>
                             
-                            <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5">account_tree</span>
-                                <div class="flex flex-col">
+                            <div class="flex items-center gap-4 relative z-10 min-w-0">
+                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low">account_tree</span>
+                                <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Macro Ação</span>
-                                    <span class="text-xs">${macro.title || '-'}</span>
+                                    <span class="text-xs truncate">${macro.title || '-'}</span>
                                 </div>
                             </div>
                             
-                            <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5">track_changes</span>
-                                <div class="flex flex-col">
+                            <div class="flex items-center gap-4 relative z-10 min-w-0">
+                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low">track_changes</span>
+                                <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">OKR</span>
-                                    <span class="text-xs">${okr.title || '-'}</span>
+                                    <span class="text-xs truncate">${okr.title || '-'}</span>
                                 </div>
                             </div>
                             
-                            <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5">flag</span>
-                                <div class="flex flex-col">
+                            <div class="flex items-center gap-4 relative z-10 min-w-0">
+                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low">flag</span>
+                                <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Meta</span>
-                                    <span class="text-xs text-on-surface-variant font-medium">${meta.title || '-'}</span>
+                                    <span class="text-xs text-on-surface-variant font-medium truncate">${meta.title || '-'}</span>
                                 </div>
                             </div>
                             
-                            <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5">${dimIcon}</span>
-                                <div class="flex flex-col">
+                            <div class="flex items-center gap-4 relative z-10 min-w-0">
+                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low">${dimIcon}</span>
+                                <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Área</span>
-                                    <span class="text-xs">${micro.dimension}</span>
+                                    <span class="text-xs truncate">${micro.dimension}</span>
                                 </div>
                             </div>
                             
-                            <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
-                                <div class="flex flex-col">
+                            <div class="flex items-center gap-4 relative z-10 min-w-0">
+                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                                <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold text-primary">Propósito (Nível 0)</span>
-                                    <span class="text-base font-headline italic">${meta.purpose || '-'}</span>
+                                    <span class="text-base font-headline italic truncate">${meta.purpose || '-'}</span>
                                 </div>
                             </div>
 
@@ -2441,8 +2453,8 @@ const app = {
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '-' });
                         }
 
-                        let trailHtml = `<div class="bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant mt-6">
-                            <div class="absolute left-[11px] top-4 bottom-4 w-px bg-primary/10"></div>`;
+                        let trailHtml = `<div class="bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant mt-6 overflow-hidden">
+                            <div class="absolute left-[12px] top-4 bottom-4 w-px bg-primary/10"></div>`;
                         
                         trailNodes.forEach((node) => {
                             let icon = 'trip_origin'; let colorClass = 'text-stone-400'; let titleClass = 'text-xs text-on-surface-variant font-medium';
@@ -2454,11 +2466,11 @@ const app = {
                             else if (node.label === 'Micro Ação') { icon = 'check_circle'; colorClass = 'text-primary'; }
                             
                             trailHtml += `
-                            <div class="flex items-center gap-4 relative z-10">
-                                <span class="material-symbols-outlined notranslate ${colorClass} text-xl bg-stone-100 dark:bg-stone-900 p-0.5" style="font-variation-settings: 'FILL' 1;">${icon}</span>
-                                <div class="flex flex-col">
+                            <div class="flex items-center gap-4 relative z-10 min-w-0">
+                                <span class="material-symbols-outlined notranslate ${colorClass} text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low" style="font-variation-settings: 'FILL' 1;">${icon}</span>
+                                <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold ${colorClass}">${node.label}</span>
-                                    <span class="${titleClass}">${node.title}</span>
+                                    <span class="${titleClass} truncate">${node.title}</span>
                                 </div>
                             </div>`;
                         });
