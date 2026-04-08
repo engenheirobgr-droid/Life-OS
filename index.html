@@ -155,9 +155,14 @@
         }
 
         /* Abas de Planos */
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         /* Previne scroll acidental ao arrastar sliders (mobile) */
         input[type="range"] {
             touch-action: pan-y;
@@ -190,7 +195,8 @@
             <div class="px-4 mb-10 flex items-center gap-3">
                 <div
                     class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                    <span class="material-symbols-outlined notranslate text-white text-2xl">temp_preferences_custom</span>
+                    <span
+                        class="material-symbols-outlined notranslate text-white text-2xl">temp_preferences_custom</span>
                 </div>
                 <div>
                     <h1 class="font-headline font-bold text-xl tracking-tight leading-none text-on-background">Life OS
@@ -203,9 +209,12 @@
             <div class="mb-10 px-4">
                 <h2 class="text-[10px] font-bold text-outline uppercase tracking-[0.2em] mb-3">Meus Valores</h2>
                 <div id="sidebar-values-container" class="flex flex-wrap gap-2">
-                    <span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic opacity-50">v1</span>
-                    <span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic opacity-50">v2</span>
-                    <span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic opacity-50">v3</span>
+                    <span
+                        class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic opacity-50">v1</span>
+                    <span
+                        class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic opacity-50">v2</span>
+                    <span
+                        class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic opacity-50">v3</span>
                 </div>
             </div>
 
@@ -358,8 +367,7 @@
                             Agendamento
                         </label>
                         <div class="flex gap-2">
-                            <select id="crud-ciclo"
-                                class="flex-1 bg-surface-container border border-outline-variant/30
+                            <select id="crud-ciclo" class="flex-1 bg-surface-container border border-outline-variant/30
                                        rounded-xl px-3 py-2 text-sm text-on-surface">
                                 <option value="1">Ciclo 1</option>
                                 <option value="2">Ciclo 2</option>
@@ -367,8 +375,7 @@
                                 <option value="4">Ciclo 4</option>
                             </select>
 
-                            <select id="crud-mes"
-                                class="flex-1 bg-surface-container border border-outline-variant/30
+                            <select id="crud-mes" class="flex-1 bg-surface-container border border-outline-variant/30
                                        rounded-xl px-3 py-2 text-sm text-on-surface">
                                 <option value="1">Jan</option>
                                 <option value="2">Fev</option>
@@ -384,8 +391,7 @@
                                 <option value="12">Dez</option>
                             </select>
 
-                            <select id="crud-semana"
-                                class="flex-1 bg-surface-container border border-outline-variant/30
+                            <select id="crud-semana" class="flex-1 bg-surface-container border border-outline-variant/30
                                        rounded-xl px-3 py-2 text-sm text-on-surface">
                                 <option value="1">Sem 1</option>
                                 <option value="2">Sem 2</option>
@@ -398,8 +404,7 @@
                         <!-- Semana de início (default: semana anterior ao prazo) -->
                         <div class="flex gap-2 items-center mt-1">
                             <label class="text-xs text-outline whitespace-nowrap">Iniciar na:</label>
-                            <select id="crud-inicio-semana"
-                                class="flex-1 bg-surface-container border border-outline-variant/30
+                            <select id="crud-inicio-semana" class="flex-1 bg-surface-container border border-outline-variant/30
                                        rounded-xl px-3 py-2 text-sm text-on-surface">
                                 <option value="1">Sem 1</option>
                                 <option value="2">Sem 2</option>
@@ -443,30 +448,43 @@
                 <div id="crud-habit-controls" class="flex-col gap-4" style="display: none;">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
-                            <label for="habit-track-mode" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de Acompanhamento</label>
-                            <select id="habit-track-mode" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" onchange="window.app.onHabitModeChange(this.value)">
+                            <label for="habit-track-mode"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de
+                                Acompanhamento</label>
+                            <select id="habit-track-mode"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                onchange="window.app.onHabitModeChange(this.value)">
                                 <option value="boolean">Check (Feito / Não Feito)</option>
                                 <option value="numeric">Quantidade (Nº de páginas, copos)</option>
                                 <option value="timer">Tempo (Minutos por dia)</option>
                             </select>
                         </div>
                         <div id="habit-target-container" class="flex-col gap-1.5" style="display: none;">
-                            <label for="habit-target" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Meta Diária (Alvo)</label>
-                            <input type="number" id="habit-target" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" value="1" min="1">
+                            <label for="habit-target"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Meta Diária
+                                (Alvo)</label>
+                            <input type="number" id="habit-target"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                value="1" min="1">
                         </div>
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
-                            <label for="habit-frequency" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Frequência</label>
-                            <select id="habit-frequency" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" onchange="window.app.onHabitFreqChange(this.value)">
+                            <label for="habit-frequency"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Frequência</label>
+                            <select id="habit-frequency"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                onchange="window.app.onHabitFreqChange(this.value)">
                                 <option value="daily">Todos os dias</option>
                                 <option value="specific">Dias Específicos</option>
                             </select>
                         </div>
                         <div id="habit-days-container" class="flex-col gap-1.5" style="display: none;">
-                            <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dias da Semana</label>
-                            <select id="habit-days" multiple class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm px-4 text-on-surface h-20">
+                            <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dias da
+                                Semana</label>
+                            <select id="habit-days" multiple
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm px-4 text-on-surface h-20">
                                 <option value="0">Domingo</option>
                                 <option value="1">Segunda</option>
                                 <option value="2">Terça</option>
@@ -567,11 +585,14 @@
                 </div>
             </form>
 
-               <div class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30 rounded-b-2xl shrink-0">
-                <button type="button" onclick="window.app.closeReviewModal()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
+            <div
+                class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30 rounded-b-2xl shrink-0">
+                <button type="button" onclick="window.app.closeReviewModal()"
+                    class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
                     Cancelar
                 </button>
-                <button type="button" id="btn-save-review" onclick="window.app.saveReview()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
+                <button type="button" id="btn-save-review" onclick="window.app.saveReview()"
+                    class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
                     Salvar Revisão
                 </button>
             </div>
@@ -579,59 +600,85 @@
     </div>
 
     <!-- Modal Reavaliação PERMA (Migrado) -->
-    <div id="perma-modal" class="fixed inset-0 bg-black/60 z-[130] hidden items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-sm w-full p-8 shadow-xl">
+    <div id="perma-modal"
+        class="fixed inset-0 bg-black/60 z-[130] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div
+            class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-sm w-full p-8 shadow-xl">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="font-headline text-2xl italic font-bold">Reavaliar PERMA</h3>
-                <button onclick="window.app.closePermaModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90">
+                <button onclick="window.app.closePermaModal()"
+                    class="text-outline hover:text-on-surface transform transition-transform active:scale-90">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            
+
             <div class="space-y-5">
                 <div class="space-y-1">
-                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label for="p-slider">P - Emoção Positiva</label><span id="val-p" class="text-primary">85</span></div>
-                    <input type="range" id="p-slider" min="0" max="100" value="85" class="w-full accent-primary" oninput="document.getElementById('val-p').textContent = this.value" style="touch-action: pan-y; overscroll-behavior: contain;">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
+                            for="p-slider">P - Emoção Positiva</label><span id="val-p" class="text-primary">85</span>
+                    </div>
+                    <input type="range" id="p-slider" min="0" max="100" value="85" class="w-full accent-primary"
+                        oninput="document.getElementById('val-p').textContent = this.value"
+                        style="touch-action: pan-y; overscroll-behavior: contain;">
                 </div>
                 <div class="space-y-1">
-                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label for="e-slider">E - Engajamento</label><span id="val-e" class="text-primary">70</span></div>
-                    <input type="range" id="e-slider" min="0" max="100" value="70" class="w-full accent-primary" oninput="document.getElementById('val-e').textContent = this.value" style="touch-action: pan-y; overscroll-behavior: contain;">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
+                            for="e-slider">E - Engajamento</label><span id="val-e" class="text-primary">70</span></div>
+                    <input type="range" id="e-slider" min="0" max="100" value="70" class="w-full accent-primary"
+                        oninput="document.getElementById('val-e').textContent = this.value"
+                        style="touch-action: pan-y; overscroll-behavior: contain;">
                 </div>
                 <div class="space-y-1">
-                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label for="r-slider">R - Relacionamentos</label><span id="val-r" class="text-primary">92</span></div>
-                    <input type="range" id="r-slider" min="0" max="100" value="92" class="w-full accent-primary" oninput="document.getElementById('val-r').textContent = this.value" style="touch-action: pan-y; overscroll-behavior: contain;">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
+                            for="r-slider">R - Relacionamentos</label><span id="val-r" class="text-primary">92</span>
+                    </div>
+                    <input type="range" id="r-slider" min="0" max="100" value="92" class="w-full accent-primary"
+                        oninput="document.getElementById('val-r').textContent = this.value"
+                        style="touch-action: pan-y; overscroll-behavior: contain;">
                 </div>
                 <div class="space-y-1">
-                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label for="m-slider">M - Significado</label><span id="val-m" class="text-primary">60</span></div>
-                    <input type="range" id="m-slider" min="0" max="100" value="60" class="w-full accent-primary" oninput="document.getElementById('val-m').textContent = this.value" style="touch-action: pan-y; overscroll-behavior: contain;">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
+                            for="m-slider">M - Significado</label><span id="val-m" class="text-primary">60</span></div>
+                    <input type="range" id="m-slider" min="0" max="100" value="60" class="w-full accent-primary"
+                        oninput="document.getElementById('val-m').textContent = this.value"
+                        style="touch-action: pan-y; overscroll-behavior: contain;">
                 </div>
                 <div class="space-y-1">
-                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label for="a-slider">A - Realização</label><span id="val-a" class="text-primary">75</span></div>
-                    <input type="range" id="a-slider" min="0" max="100" value="75" class="w-full accent-primary" oninput="document.getElementById('val-a').textContent = this.value" style="touch-action: pan-y; overscroll-behavior: contain;">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
+                            for="a-slider">A - Realização</label><span id="val-a" class="text-primary">75</span></div>
+                    <input type="range" id="a-slider" min="0" max="100" value="75" class="w-full accent-primary"
+                        oninput="document.getElementById('val-a').textContent = this.value"
+                        style="touch-action: pan-y; overscroll-behavior: contain;">
                 </div>
             </div>
 
-            <button onclick="window.app.savePerma()" class="w-full mt-8 bg-primary text-on-primary py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">
+            <button onclick="window.app.savePerma()"
+                class="w-full mt-8 bg-primary text-on-primary py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">
                 Salvar Avaliação
             </button>
         </div>
     </div>
 
     <!-- Modal Roda da Vida -->
-    <div id="wheel-modal" class="hidden fixed inset-0 z-[130] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+    <div id="wheel-modal"
+        class="hidden fixed inset-0 z-[130] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
         <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-outline-variant/20 flex justify-between items-center shrink-0">
                 <div>
                     <h3 class="font-headline text-xl font-bold text-on-background">Roda da Vida</h3>
-                    <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Ajuste o seu momento atual</p>
+                    <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Ajuste o seu momento atual
+                    </p>
                 </div>
-                <button onclick="window.app.closeWheelModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90"><span class="material-symbols-outlined">close</span></button>
+                <button onclick="window.app.closeWheelModal()"
+                    class="text-outline hover:text-on-surface transform transition-transform active:scale-90"><span
+                        class="material-symbols-outlined">close</span></button>
             </div>
             <div class="p-6 overflow-y-auto no-scrollbar flex-1 space-y-6">
                 <div id="wheel-sliders-container" class="space-y-4"></div>
             </div>
             <div class="p-6 border-t border-outline-variant/20 bg-surface-container-lowest shrink-0">
-                <button onclick="window.app.saveWheel()" class="w-full bg-primary text-on-primary py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">
+                <button onclick="window.app.saveWheel()"
+                    class="w-full bg-primary text-on-primary py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">
                     Salvar Roda da Vida
                 </button>
             </div>
@@ -639,19 +686,22 @@
     </div>
 
     <!-- Modal Histórico do Diário -->
-    <div id="history-log-modal" class="hidden fixed inset-0 z-[125] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="history-log-modal"
+        class="hidden fixed inset-0 z-[125] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-outline-variant/20 flex flex-col">
                 <h3 class="font-headline text-xl font-bold text-on-background">Diário de Bordo</h3>
                 <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Histórico de Reflexões</p>
             </div>
-            
+
             <div id="history-log-list" class="p-6 flex flex-col gap-4 overflow-y-auto no-scrollbar flex-1">
                 <!-- Cards injectados via JS -->
             </div>
-            
-            <div class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30 rounded-b-2xl shrink-0">
-                <button type="button" onclick="window.app.closeDailyLogHistory()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
+
+            <div
+                class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30 rounded-b-2xl shrink-0">
+                <button type="button" onclick="window.app.closeDailyLogHistory()"
+                    class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
                     Fechar
                 </button>
             </div>
@@ -696,13 +746,16 @@
     </div>
 
     <!-- Modal Gerir Entidade (Review Próximo Nível) -->
-    <div id="review-entity-modal" class="fixed inset-0 bg-black/60 z-[150] hidden items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-md w-full shadow-2xl flex flex-col overflow-hidden">
+    <div id="review-entity-modal"
+        class="fixed inset-0 bg-black/60 z-[150] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div
+            class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-md w-full shadow-2xl flex flex-col overflow-hidden">
             <div class="p-6 border-b border-outline-variant/10 bg-surface-container-low/30">
                 <h3 id="review-entity-title" class="font-headline text-xl font-bold text-on-surface">Gerir Entidade</h3>
-                <p class="text-[10px] text-outline uppercase tracking-widest font-bold mt-1">Review de Fluxo e Hierarquia</p>
+                <p class="text-[10px] text-outline uppercase tracking-widest font-bold mt-1">Review de Fluxo e
+                    Hierarquia</p>
             </div>
-            
+
             <div class="p-6 space-y-8 overflow-y-auto max-h-[70vh] no-scrollbar">
                 <!-- Promoção -->
                 <div id="promote-section" class="space-y-3">
@@ -710,10 +763,13 @@
                         <span class="material-symbols-outlined notranslate text-lg">upgrade</span>
                         <h4 class="text-xs font-bold uppercase tracking-wider">Promover para Nível Superior</h4>
                     </div>
-                    <p class="text-xs text-outline leading-relaxed">Eleve esta intenção para o próximo patamar na sua hierarquia estratégica.</p>
-                    <button id="btn-promote-entity" onclick="window.app.promoteEntity()" class="w-full py-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-sm font-bold border border-primary/20 transition-all flex items-center justify-center gap-2 group">
+                    <p class="text-xs text-outline leading-relaxed">Eleve esta intenção para o próximo patamar na sua
+                        hierarquia estratégica.</p>
+                    <button id="btn-promote-entity" onclick="window.app.promoteEntity()"
+                        class="w-full py-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-sm font-bold border border-primary/20 transition-all flex items-center justify-center gap-2 group">
                         <span id="promote-label">Promover</span>
-                        <span class="material-symbols-outlined notranslate text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        <span
+                            class="material-symbols-outlined notranslate text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
                     </button>
                 </div>
 
@@ -723,21 +779,26 @@
                         <span class="material-symbols-outlined notranslate text-lg">rebase_edit</span>
                         <h4 class="text-xs font-bold uppercase tracking-wider">Mudar para Mesma Hierarquia</h4>
                     </div>
-                    <p class="text-xs text-outline leading-relaxed">Mova esta entidade para uma referência (pai) diferente no mesmo nível.</p>
+                    <p class="text-xs text-outline leading-relaxed">Mova esta entidade para uma referência (pai)
+                        diferente no mesmo nível.</p>
                     <div class="space-y-2">
-                        <label id="reassign-parent-label" class="text-[10px] font-bold text-outline-variant uppercase">Pai Atual</label>
-                        <select id="reassign-parent-select" class="w-full p-3 bg-surface-container-high border border-outline-variant/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 shadow-inner">
+                        <label id="reassign-parent-label"
+                            class="text-[10px] font-bold text-outline-variant uppercase">Pai Atual</label>
+                        <select id="reassign-parent-select"
+                            class="w-full p-3 bg-surface-container-high border border-outline-variant/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 shadow-inner">
                             <!-- Options via JS -->
                         </select>
                     </div>
-                    <button id="btn-save-reassign" onclick="window.app.reassignEntity()" class="w-full py-3 bg-secondary/10 hover:bg-secondary/20 text-secondary rounded-xl text-sm font-bold border border-secondary/20 transition-all">
+                    <button id="btn-save-reassign" onclick="window.app.reassignEntity()"
+                        class="w-full py-3 bg-secondary/10 hover:bg-secondary/20 text-secondary rounded-xl text-sm font-bold border border-secondary/20 transition-all">
                         Salvar Nova Referência
                     </button>
                 </div>
 
                 <!-- Exclusão -->
                 <div class="pt-4 border-t border-outline-variant/10">
-                    <button id="btn-delete-review" onclick="window.app.deleteEntityFromReview()" class="w-full py-2.5 text-error hover:bg-error/10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                    <button id="btn-delete-review" onclick="window.app.deleteEntityFromReview()"
+                        class="w-full py-2.5 text-error hover:bg-error/10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined notranslate text-lg">delete</span>
                         Excluir Permanentemente
                     </button>
@@ -745,7 +806,8 @@
             </div>
 
             <div class="p-4 bg-surface-container-low/50 flex justify-end px-6">
-                <button onclick="document.getElementById('review-entity-modal').classList.add('hidden')" class="px-6 py-2.5 text-sm font-bold text-outline hover:text-on-surface transition-colors">
+                <button onclick="document.getElementById('review-entity-modal').classList.add('hidden')"
+                    class="px-6 py-2.5 text-sm font-bold text-outline hover:text-on-surface transition-colors">
                     Fechar
                 </button>
             </div>
@@ -770,7 +832,9 @@
             });
         }
     </script>
-    <div id="global-toast-container" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[150] flex flex-col items-center gap-2 pointer-events-none transition-all"></div>
+    <div id="global-toast-container"
+        class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[150] flex flex-col items-center gap-2 pointer-events-none transition-all">
+    </div>
 </body>
 
 </html>
