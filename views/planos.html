@@ -18,6 +18,7 @@
 <button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="okrs" onclick="window.app.switchPlanosTab('okrs')">OKRs</button>
 <button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="macro" onclick="window.app.switchPlanosTab('macro')">Macro</button>
 <button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="micro" onclick="window.app.switchPlanosTab('micro')">Micro</button>
+<button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="timeline" onclick="window.app.switchPlanosTab('timeline'); window.app.renderTimeline();">Timeline</button>
 </nav>
 <!-- Page Introduction -->
 <header class="mb-12">
@@ -52,6 +53,11 @@
 <!-- Tab: Micro -->
 <section class="mt-8 tab-content" id="tab-micro">
 <div id="micro-container" class="space-y-12"></div>
+</section>
+
+<section class="mt-8 tab-content" id="tab-timeline">
+<div id="timeline-container" class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm overflow-x-auto">
+</div>
 </section>
 
 <!-- FAB -->

@@ -521,6 +521,42 @@ const app = {
             if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
             this.updateParentList(type);
         }
+
+        // Alterna campo de prazo vs. agendamento
+        const deadlineGroup = document.getElementById('prazo-deadline-group');
+        const agendamentoGroup = document.getElementById('prazo-agendamento-group');
+        const usaAgendamento = ['macros', 'micros'].includes(type);
+
+        if (deadlineGroup) deadlineGroup.classList.toggle('hidden', usaAgendamento);
+        if (agendamentoGroup) agendamentoGroup.classList.toggle('hidden', !usaAgendamento);
+
+        // Pre-seleciona o mês corrente nos selects
+        if (usaAgendamento) {
+            const mesAtual = new Date().getMonth() + 1;
+            const mesSelect = document.getElementById('crud-mes');
+            if (mesSelect) mesSelect.value = String(mesAtual);
+
+            // Default de início = semana anterior ao prazo (semana 1 como fallback)
+            const inicioSelect = document.getElementById('crud-inicio-semana');
+            const prazSemana = document.getElementById('crud-semana');
+            if (inicioSelect && prazSemana) {
+                const semanaVal = parseInt(prazSemana.value) || 2;
+                inicioSelect.value = String(Math.max(1, semanaVal - 1));
+            }
+        }
+
+        // Listener dinâmico: ao mudar semana de prazo, ajusta início automaticamente
+        const prazSemanaEl = document.getElementById('crud-semana');
+        if (prazSemanaEl && !prazSemanaEl._listenerAdded) {
+            prazSemanaEl.addEventListener('change', () => {
+                const inicioEl = document.getElementById('crud-inicio-semana');
+                if (inicioEl) {
+                    const val = parseInt(prazSemanaEl.value) || 2;
+                    inicioEl.value = String(Math.max(1, val - 1));
+                }
+            });
+            prazSemanaEl._listenerAdded = true;
+        }
     },
 
     onParentChange: function(parentId) {
@@ -1028,13 +1064,43 @@ const app = {
         const dimension = document.getElementById('crud-dimension').value;
         const context = document.getElementById('crud-context').value;
         const trigger = (type === 'habits' && document.getElementById('crud-trigger')) ? document.getElementById('crud-trigger').value.trim() : '';
-        const prazo = document.getElementById('create-prazo') ? document.getElementById('create-prazo').value : '';
+        
+        const usaAgendamento = ['macros', 'micros'].includes(type);
+        let prazo = '';
+        let agendamento = null;
+
+        if (usaAgendamento) {
+            const ciclo  = parseInt(document.getElementById('crud-ciclo')?.value  || '1');
+            const mes    = parseInt(document.getElementById('crud-mes')?.value    || String(new Date().getMonth() + 1));
+            const semana = parseInt(document.getElementById('crud-semana')?.value || '1');
+            const inicio = parseInt(document.getElementById('crud-inicio-semana')?.value || '1');
+
+            // Converte para data real — índice de mês zero-based tratado corretamente
+            const ano = new Date().getFullYear();
+            const ultimoDiaMes = new Date(ano, mes, 0).getDate(); // mes sem -1 retorna último dia do mês desejado
+            const diaBase = (semana - 1) * 7 + 7;
+            const diaPrazo = Math.min(diaBase, ultimoDiaMes);
+            prazo = `${ano}-${String(mes).padStart(2,'0')}-${String(diaPrazo).padStart(2,'0')}`;
+
+            // Data de início (semana de início no mesmo mês)
+            const diaInicioBase = (inicio - 1) * 7 + 1;
+            const diaInicio = Math.min(diaInicioBase, ultimoDiaMes);
+            const inicioDate = `${ano}-${String(mes).padStart(2,'0')}-${String(diaInicio).padStart(2,'0')}`;
+
+            agendamento = { ciclo, mes, semana, inicio, inicioDate };
+
+        } else {
+            prazo = document.getElementById('create-prazo')?.value || '';
+        }
+
         const parentId = document.getElementById('create-parent') ? document.getElementById('create-parent').value : '';
 
         const isEditing = !!this.editingEntity;
         const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
         
         const obj = { id: id || '', title: title || '', dimension: dimension || 'Geral', prazo: prazo || '' };
+        if (agendamento) obj.agendamento = agendamento;
+        if (agendamento) obj.inicioDate = agendamento.inicioDate;
 
         const getOldItem = (eid, etype) => {
             const state = window.sistemaVidaState;
@@ -1101,6 +1167,177 @@ const app = {
             this.render.planos();
         } else if (this.currentView && this.render[this.currentView]) {
             this.render[this.currentView]();
+        }
+    },
+
+    // ------------------------------------------------------------------------
+    // Review Próximo Nível (Promotion & Reassignment)
+    // ------------------------------------------------------------------------
+    openEntityReview: function(id, type) {
+        const state = window.sistemaVidaState;
+        const list = type === 'habits' ? state.habits : state.entities[type];
+        const entity = (list || []).find(e => e.id === id);
+        
+        if (!entity) return;
+
+        this.currentReviewEntity = entity;
+        this.currentReviewType = type;
+
+        const modal = document.getElementById('review-entity-modal');
+        const title = document.getElementById('review-entity-title');
+        const promoteSection = document.getElementById('promote-section');
+        const promoteLabel = document.getElementById('promote-label');
+        const reassignSection = document.getElementById('reassign-section');
+        const parentSelect = document.getElementById('reassign-parent-select');
+        const parentLabel = document.getElementById('reassign-parent-label');
+
+        // Configuração de Título
+        const typeLabels = { metas: 'Meta', okrs: 'OKR', macros: 'Macro Ação', micros: 'Micro Ação' };
+        title.textContent = `Gerir ${typeLabels[type] || 'Entidade'}: ${entity.title}`;
+
+        // Configuração de Promoção
+        if (type === 'metas') {
+            promoteSection.classList.add('hidden');
+        } else {
+            promoteSection.classList.remove('hidden');
+            const nextLevel = { okrs: 'Meta', macros: 'OKR', micros: 'Macro Ação' };
+            promoteLabel.textContent = `Promover para ${nextLevel[type]}`;
+        }
+
+        // Configuração de Reatribuição (Mesma Hierarquia)
+        if (type === 'metas') {
+            reassignSection.classList.add('hidden');
+        } else {
+            reassignSection.classList.remove('hidden');
+            let potentialParents = [];
+            let currentParentId = '';
+            let parentTypeLabel = '';
+
+            if (type === 'okrs') {
+                potentialParents = state.entities.metas;
+                currentParentId = entity.metaId;
+                parentTypeLabel = 'Selecionar Nova Meta';
+            } else if (type === 'macros') {
+                potentialParents = state.entities.okrs;
+                currentParentId = entity.okrId;
+                parentTypeLabel = 'Selecionar Novo OKR';
+            } else if (type === 'micros') {
+                potentialParents = state.entities.macros;
+                currentParentId = entity.macroId;
+                parentTypeLabel = 'Selecionar Nova Macro';
+            }
+
+            parentLabel.textContent = parentTypeLabel;
+            parentSelect.innerHTML = potentialParents.map(p => 
+                `<option value="${p.id}" ${p.id === currentParentId ? 'selected' : ''}>${p.title}</option>`
+            ).join('');
+            
+            if (potentialParents.length === 0) {
+                parentSelect.innerHTML = '<option value="">Nenhum pai disponível</option>';
+            }
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    },
+
+    promoteEntity: function() {
+        const entity = this.currentReviewEntity;
+        const type = this.currentReviewType;
+        if (!entity || type === 'metas') return;
+
+        const state = window.sistemaVidaState;
+        const confirmPromote = confirm(`Deseja promover "${entity.title}" para o próximo nível? Isto criará uma nova entidade superior e removerá a atual.`);
+        if (!confirmPromote) return;
+
+        let newType = '';
+        let newObj = { ...entity, id: 'ent_' + Date.now() + '_promoted' };
+        
+        // Remove IDs de hierarquia que podem não fazer sentido no novo nível
+        if (type === 'micros') {
+            newType = 'macros';
+            delete newObj.status;
+            delete newObj.completed;
+            newObj.description = entity.indicator || '';
+            newObj.progress = 0;
+            // Mantém metaId e okrId
+        } else if (type === 'macros') {
+            newType = 'okrs';
+            newObj.purpose = entity.description || '';
+            newObj.progress = entity.progress || 0;
+            // Mantém metaId
+        } else if (type === 'okrs') {
+            newType = 'metas';
+            newObj.purpose = entity.purpose || '';
+            newObj.progress = entity.progress || 0;
+            delete newObj.metaId;
+        }
+
+        // Adiciona ao novo nível
+        if (!state.entities[newType]) state.entities[newType] = [];
+        state.entities[newType].push(newObj);
+
+        // Remove do nível antigo
+        const oldList = state.entities[type];
+        const idx = oldList.findIndex(e => e.id === entity.id);
+        if (idx !== -1) oldList.splice(idx, 1);
+
+        this.saveState(true);
+        document.getElementById('review-entity-modal').classList.add('hidden');
+        this.showToast(`Entidade promovida para ${newType.toUpperCase()}!`, 'success');
+
+        if (this.currentView && this.render[this.currentView]) {
+            this.render[this.currentView]();
+        }
+    },
+
+    reassignEntity: function() {
+        const entity = this.currentReviewEntity;
+        const type = this.currentReviewType;
+        const newParentId = document.getElementById('reassign-parent-select').value;
+        if (!entity || !newParentId) return;
+
+        const state = window.sistemaVidaState;
+        
+        if (type === 'okrs') {
+            entity.metaId = newParentId;
+        } else if (type === 'macros') {
+            entity.okrId = newParentId;
+            const okr = state.entities.okrs.find(o => o.id === newParentId);
+            if (okr) entity.metaId = okr.metaId;
+        } else if (type === 'micros') {
+            entity.macroId = newParentId;
+            const macro = state.entities.macros.find(m => m.id === newParentId);
+            if (macro) {
+                entity.okrId = macro.okrId;
+                entity.metaId = macro.metaId;
+            }
+        }
+
+        this.saveState(true);
+        document.getElementById('review-entity-modal').classList.add('hidden');
+        this.showToast('Hierarquia atualizada com sucesso!', 'success');
+
+        if (this.currentView && this.render[this.currentView]) {
+            this.render[this.currentView]();
+        }
+    },
+
+    deleteEntityFromReview: function() {
+        const entity = this.currentReviewEntity;
+        const type = this.currentReviewType;
+        if (!entity) return;
+
+        if (confirm(`Tem certeza que deseja excluir "${entity.title}"?`)) {
+            const list = type === 'habits' ? window.sistemaVidaState.habits : window.sistemaVidaState.entities[type];
+            const idx = list.findIndex(e => e.id === entity.id);
+            if (idx !== -1) {
+                list.splice(idx, 1);
+                this.saveState(true);
+                document.getElementById('review-entity-modal').classList.add('hidden');
+                this.showToast('Entidade excluída.', 'success');
+                if (this.currentView && this.render[this.currentView]) this.render[this.currentView]();
+            }
         }
     },
 
@@ -1255,6 +1492,25 @@ const app = {
     // ------------------------------------------------------------------------
     // Rendering Engine (Data Binding)
     // ------------------------------------------------------------------------
+    formatPrazoDisplay: function(entity) {
+        if (entity.agendamento) {
+            const { ciclo, mes, semana, inicio } = entity.agendamento;
+            let text = "";
+            if (ciclo) text += `Ciclo ${ciclo}`;
+            if (mes) text += (text ? " • " : "") + `Mês ${mes}`;
+            if (semana) text += (text ? " • " : "") + `Sem. ${semana}`;
+            if (inicio) text += (text ? " • " : "") + `Início: Sem. ${inicio}`;
+            
+            return `
+                <div class="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                    <span class="material-symbols-outlined notranslate text-[12px]">calendar_today</span>
+                    <span>${text}</span>
+                </div>
+            `;
+        }
+        return `<span>${entity.prazo || 'Sem prazo'}</span>`;
+    },
+
     render: {
         onboarding: function() {
             // Inicializa o primeiro passo
@@ -1621,9 +1877,21 @@ const app = {
             const todayStr = new Date().toISOString().split('T')[0];
             
             // Filtro aplicado: Pendentes e Prazo <= Hoje (ou sem prazo)
-            const todayMicros = (state.entities.micros || []).filter(m => 
-                (m.status !== 'done' && (!m.prazo || m.prazo <= todayStr))
-            );
+            const todayMicros = (state.entities.micros || []).filter(m => {
+                if (m.status === 'done') return false;
+
+                // Entidades novas: usa inicioDate e prazo como janela
+                if (m.inicioDate && m.prazo) {
+                    return todayStr >= m.inicioDate && todayStr <= m.prazo;
+                }
+
+                // Entidades antigas (só prazo): mostra se vence hoje ou está atrasada
+                if (m.prazo) {
+                    return m.prazo <= todayStr;
+                }
+
+                return false;
+            });
 
             todayMicros.forEach((micro, idx) => {
                 if (micro.completed) {
@@ -1708,6 +1976,12 @@ const app = {
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold text-primary">Propósito (Nível 0)</span>
                                     <span class="text-base font-headline italic">${meta.purpose || '-'}</span>
                                 </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-outline-variant/10 flex justify-end">
+                                <button onclick="event.stopPropagation(); app.openEntityReview('${micro.id}', 'micros')" class="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-bold transition-all shadow-sm">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">settings_accessibility</span> Gerir Micro Ação
+                                </button>
                             </div>
                         </div>
                     </div>`;
@@ -1980,6 +2254,9 @@ const app = {
                                         ${prog < 100 ? `<button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary/10 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
                                             <span class="material-symbols-outlined notranslate text-[14px]">done_all</span> Concluir
                                         </button>` : ''}
+                                        <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')" class="p-1 px-2 border border-primary text-primary hover:bg-primary/10 rounded flex items-center gap-1 text-[10px] font-bold transition-all shadow-sm">
+                                            <span class="material-symbols-outlined notranslate text-[14px]">settings_accessibility</span> Gerir
+                                        </button>
                                         <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary-container/20 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
                                             <span class="material-symbols-outlined notranslate text-[14px]">edit</span> Editar
                                         </button>
@@ -1992,7 +2269,7 @@ const app = {
                             </div>
                             <div class="flex items-center gap-2 text-stone-400 text-xs mb-6">
                                 <span class="material-symbols-outlined notranslate text-sm">event</span>
-                                <span>No ciclo</span>
+                                ${app.formatPrazoDisplay(item)}
                             </div>
                             <div class="space-y-2">
                                 <div class="flex justify-between text-[10px] font-label text-stone-500 uppercase">
@@ -2210,6 +2487,137 @@ const app = {
         },
     },
 
+    renderTimeline: function() {
+        const container = document.getElementById('timeline-container');
+        if (!container) return;
+
+        const state = window.sistemaVidaState;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // ── Janela de 6 meses ──────────────────────────────────────
+        const startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const endDate   = new Date(today.getFullYear(), today.getMonth() + 5, 0);
+        const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+
+        // ── Cabeçalho de meses ─────────────────────────────────────
+        const meses = ['Jan','Fev','Mar','Abr','Mai','Jun',
+                       'Jul','Ago','Set','Out','Nov','Dez'];
+        let headerHTML = '<div class="flex border-b border-outline-variant/20 bg-surface-container">';
+        headerHTML += '<div class="w-48 shrink-0 px-4 py-2 text-xs font-bold uppercase tracking-widest text-outline border-r border-outline-variant/20">Entidade</div>';
+        headerHTML += '<div class="flex-1 relative flex">';
+
+        // Gera célula por mês na janela
+        let cursor = new Date(startDate);
+        while (cursor <= endDate) {
+          const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+          const widthPct = (daysInMonth / totalDays) * 100;
+          headerHTML += `
+            <div class="text-center text-xs font-bold uppercase tracking-widest
+                        text-outline py-2 border-r border-outline-variant/10"
+                 style="width:${widthPct.toFixed(2)}%">
+              ${meses[cursor.getMonth()]}
+            </div>`;
+          cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+        }
+        headerHTML += '</div></div>';
+
+        // ── Linha de "hoje" ────────────────────────────────────────
+        const todayPct = ((today - startDate) / (endDate - startDate)) * 100;
+        const todayLine = `
+          <div class="absolute top-0 bottom-0 w-px bg-primary/60 z-10 pointer-events-none"
+               style="left: calc(192px + (100% - 192px) * ${(todayPct / 100).toFixed(4)})"
+               title="Hoje">
+          </div>`;
+
+        // ── Entidades ──────────────────────────────────────────────
+        const colorMap = {
+          metas:  'bg-stone-400 text-white',
+          okrs:   'bg-primary/60 text-white',
+          macros: 'bg-primary text-on-primary',
+        };
+        const labelMap = {
+          metas: 'Meta', okrs: 'OKR', macros: 'Macro'
+        };
+
+        let rowsHTML = '';
+        ['metas', 'okrs', 'macros'].forEach(tipo => {
+          const lista = (state.entities[tipo] || [])
+            .filter(e => e.status === 'active' || e.status === 'pending' || !e.status);
+
+          lista.forEach(entity => {
+            // Datas com fallback e blindagem contra strings vazias
+            let taskStart = (entity.inicioDate && entity.inicioDate.trim() !== '')
+              ? new Date(entity.inicioDate + 'T00:00:00')
+              : ((entity.prazo && entity.prazo.trim() !== '') ? new Date(entity.prazo + 'T00:00:00') : new Date(today));
+            
+            let taskEnd = (entity.prazo && entity.prazo.trim() !== '')
+              ? new Date(entity.prazo + 'T00:00:00')
+              : new Date(today);
+
+            if (isNaN(taskStart.getTime()) || isNaN(taskEnd.getTime())) return;
+            if (taskEnd < startDate || taskStart > endDate) return; // fora da janela
+
+            // Clamp nos limites da janela
+            if (taskStart < startDate) taskStart = new Date(startDate);
+            if (taskEnd > endDate)     taskEnd   = new Date(endDate);
+
+            const leftPct  = ((taskStart - startDate) / (endDate - startDate)) * 100;
+            const widthPct = Math.max(0.5, ((taskEnd - taskStart) / (endDate - startDate)) * 100);
+            const color    = colorMap[tipo] || 'bg-primary text-white';
+            const isOverdue = taskEnd < today && entity.status !== 'done';
+
+            rowsHTML += `
+              <div class="flex items-center border-b border-outline-variant/10
+                          hover:bg-surface-container transition-colors group">
+
+                <div class="w-48 shrink-0 px-4 py-3 border-r border-outline-variant/20">
+                  <span class="text-xs font-bold uppercase tracking-widest
+                               text-outline mr-1">${labelMap[tipo]}</span>
+                  <span class="text-xs text-on-surface leading-tight line-clamp-1"
+                        title="${entity.title}">${entity.title}</span>
+                </div>
+
+                <div class="flex-1 relative h-10 py-1.5">
+                  <div class="absolute h-full rounded-full flex items-center px-2
+                              overflow-hidden cursor-default transition-all
+                              group-hover:opacity-90 ${color}
+                              ${isOverdue ? 'opacity-60 ring-1 ring-red-400' : ''}"
+                       style="left:${leftPct.toFixed(2)}%; width:${widthPct.toFixed(2)}%"
+                       title="${entity.title} | ${entity.prazo || ''}">
+                    <span class="text-xs font-semibold truncate leading-none">
+                      ${entity.title}
+                    </span>
+                  </div>
+                </div>
+
+              </div>`;
+          });
+        });
+
+        // ── Estado vazio ───────────────────────────────────────────
+        if (!rowsHTML) {
+          rowsHTML = `
+            <div class="flex flex-col items-center justify-center py-16 text-outline">
+              <span class="material-symbols-outlined notranslate text-4xl mb-3">
+                calendar_today
+              </span>
+              <p class="text-sm italic">
+                Nenhuma entidade com datas definidas encontrada.
+              </p>
+            </div>`;
+        }
+
+        container.innerHTML = `
+          <div class="relative min-w-[600px]">
+            ${headerHTML}
+            <div class="relative">
+              ${todayLine}
+              ${rowsHTML}
+            </div>
+          </div>`;
+    },
+
     updateCascadeProgress: function(entityId, type) {
         const state = window.sistemaVidaState;
         
@@ -2387,6 +2795,14 @@ const app = {
         document.getElementById('crud-dimension').value = item.dimension || 'Geral';
         document.getElementById('create-prazo').value = item.prazo || '';
         document.getElementById('crud-context').value = item.purpose || item.description || item.indicator || '';
+        
+        // Pre-preenche agendamento se existir (Task 3)
+        if (item.agendamento) {
+            if (document.getElementById('crud-ciclo')) document.getElementById('crud-ciclo').value = item.agendamento.ciclo || '';
+            if (document.getElementById('crud-mes')) document.getElementById('crud-mes').value = item.agendamento.mes || '';
+            if (document.getElementById('crud-semana')) document.getElementById('crud-semana').value = item.agendamento.semana || '';
+            if (document.getElementById('crud-inicio-semana')) document.getElementById('crud-inicio-semana').value = item.agendamento.inicio || '';
+        }
         
         if (type === 'habits') {
             document.getElementById('crud-trigger').value = item.trigger || '';

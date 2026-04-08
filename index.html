@@ -346,11 +346,69 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="flex flex-col gap-1.5">
+                    <div id="prazo-deadline-group" class="flex flex-col gap-1.5">
                         <label for="create-prazo"
                             class="text-xs font-label uppercase tracking-widest text-outline font-bold">Prazo</label>
                         <input type="date" id="create-prazo"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                    </div>
+
+                    <div id="prazo-agendamento-group" class="hidden flex flex-col gap-2">
+                        <label class="text-xs font-bold uppercase tracking-widest text-outline">
+                            Agendamento
+                        </label>
+                        <div class="flex gap-2">
+                            <select id="crud-ciclo"
+                                class="flex-1 bg-surface-container border border-outline-variant/30
+                                       rounded-xl px-3 py-2 text-sm text-on-surface">
+                                <option value="1">Ciclo 1</option>
+                                <option value="2">Ciclo 2</option>
+                                <option value="3">Ciclo 3</option>
+                                <option value="4">Ciclo 4</option>
+                            </select>
+
+                            <select id="crud-mes"
+                                class="flex-1 bg-surface-container border border-outline-variant/30
+                                       rounded-xl px-3 py-2 text-sm text-on-surface">
+                                <option value="1">Jan</option>
+                                <option value="2">Fev</option>
+                                <option value="3">Mar</option>
+                                <option value="4">Abr</option>
+                                <option value="5">Mai</option>
+                                <option value="6">Jun</option>
+                                <option value="7">Jul</option>
+                                <option value="8">Ago</option>
+                                <option value="9">Set</option>
+                                <option value="10">Out</option>
+                                <option value="11">Nov</option>
+                                <option value="12">Dez</option>
+                            </select>
+
+                            <select id="crud-semana"
+                                class="flex-1 bg-surface-container border border-outline-variant/30
+                                       rounded-xl px-3 py-2 text-sm text-on-surface">
+                                <option value="1">Sem 1</option>
+                                <option value="2">Sem 2</option>
+                                <option value="3">Sem 3</option>
+                                <option value="4">Sem 4</option>
+                                <option value="5">Sem 5</option>
+                            </select>
+                        </div>
+
+                        <!-- Semana de início (default: semana anterior ao prazo) -->
+                        <div class="flex gap-2 items-center mt-1">
+                            <label class="text-xs text-outline whitespace-nowrap">Iniciar na:</label>
+                            <select id="crud-inicio-semana"
+                                class="flex-1 bg-surface-container border border-outline-variant/30
+                                       rounded-xl px-3 py-2 text-sm text-on-surface">
+                                <option value="1">Sem 1</option>
+                                <option value="2">Sem 2</option>
+                                <option value="3">Sem 3</option>
+                                <option value="4">Sem 4</option>
+                                <option value="5">Sem 5</option>
+                            </select>
+                            <span class="text-xs text-outline">do mesmo mês</span>
+                        </div>
                     </div>
                     <div id="crud-parent-group" class="space-y-1">
                         <label class="text-[10px] font-label tracking-widest uppercase text-outline">Vincular a
@@ -595,6 +653,64 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Gerir Entidade (Review Próximo Nível) -->
+    <div id="review-entity-modal" class="fixed inset-0 bg-black/60 z-[150] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-md w-full shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-outline-variant/10 bg-surface-container-low/30">
+                <h3 id="review-entity-title" class="font-headline text-xl font-bold text-on-surface">Gerir Entidade</h3>
+                <p class="text-[10px] text-outline uppercase tracking-widest font-bold mt-1">Review de Fluxo e Hierarquia</p>
+            </div>
+            
+            <div class="p-6 space-y-8 overflow-y-auto max-h-[70vh] no-scrollbar">
+                <!-- Promoção -->
+                <div id="promote-section" class="space-y-3">
+                    <div class="flex items-center gap-2 text-primary">
+                        <span class="material-symbols-outlined notranslate text-lg">upgrade</span>
+                        <h4 class="text-xs font-bold uppercase tracking-wider">Promover para Nível Superior</h4>
+                    </div>
+                    <p class="text-xs text-outline leading-relaxed">Eleve esta intenção para o próximo patamar na sua hierarquia estratégica.</p>
+                    <button id="btn-promote-entity" onclick="window.app.promoteEntity()" class="w-full py-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-sm font-bold border border-primary/20 transition-all flex items-center justify-center gap-2 group">
+                        <span id="promote-label">Promover</span>
+                        <span class="material-symbols-outlined notranslate text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                    </button>
+                </div>
+
+                <!-- Reatribuição (Mesma Hierarquia) -->
+                <div id="reassign-section" class="space-y-3">
+                    <div class="flex items-center gap-2 text-secondary">
+                        <span class="material-symbols-outlined notranslate text-lg">rebase_edit</span>
+                        <h4 class="text-xs font-bold uppercase tracking-wider">Mudar para Mesma Hierarquia</h4>
+                    </div>
+                    <p class="text-xs text-outline leading-relaxed">Mova esta entidade para uma referência (pai) diferente no mesmo nível.</p>
+                    <div class="space-y-2">
+                        <label id="reassign-parent-label" class="text-[10px] font-bold text-outline-variant uppercase">Pai Atual</label>
+                        <select id="reassign-parent-select" class="w-full p-3 bg-surface-container-high border border-outline-variant/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 shadow-inner">
+                            <!-- Options via JS -->
+                        </select>
+                    </div>
+                    <button id="btn-save-reassign" onclick="window.app.reassignEntity()" class="w-full py-3 bg-secondary/10 hover:bg-secondary/20 text-secondary rounded-xl text-sm font-bold border border-secondary/20 transition-all">
+                        Salvar Nova Referência
+                    </button>
+                </div>
+
+                <!-- Exclusão -->
+                <div class="pt-4 border-t border-outline-variant/10">
+                    <button id="btn-delete-review" onclick="window.app.deleteEntityFromReview()" class="w-full py-2.5 text-error hover:bg-error/10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined notranslate text-lg">delete</span>
+                        Excluir Permanentemente
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4 bg-surface-container-low/50 flex justify-end px-6">
+                <button onclick="document.getElementById('review-entity-modal').classList.add('hidden')" class="px-6 py-2.5 text-sm font-bold text-outline hover:text-on-surface transition-colors">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- SPA Logic entry -->
     <script type="module" src="app.js"></script>
