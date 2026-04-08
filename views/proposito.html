@@ -131,13 +131,13 @@
             
             <!-- Action Buttons -->
             <div class="flex gap-6 justify-center mb-12">
-                <button class="w-16 h-16 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-error/10 hover:text-error hover:border-error/30 transition-all active:scale-90 group" onclick="handleVote('skip')" title="Descartar">
+                <button class="w-16 h-16 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-error/10 hover:text-error hover:border-error/30 transition-all active:scale-90 group" onclick="window.handleVote('skip')" title="Descartar">
                     <span class="material-symbols-outlined notranslate text-2xl">close</span>
                 </button>
-                <button class="w-16 h-16 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30 transition-all active:scale-90 group" onclick="handleVote('important')" title="Relevante">
+                <button class="w-16 h-16 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30 transition-all active:scale-90 group" onclick="window.handleVote('important')" title="Relevante">
                     <span class="material-symbols-outlined notranslate text-2xl">check</span>
                 </button>
-                <button class="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md hover:shadow-xl hover:bg-primary/90 transition-all active:scale-90" onclick="handleVote('essential')" title="Essencial">
+                <button class="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md hover:shadow-xl hover:bg-primary/90 transition-all active:scale-90" onclick="window.handleVote('essential')" title="Essencial">
                     <span class="material-symbols-outlined notranslate text-2xl" style="font-variation-settings: 'FILL' 1;">star</span>
                 </button>
             </div>
@@ -376,6 +376,7 @@
 </main>
 
 <script>
+(function() {
         const valuesList = [
             "Liberdade", "Integridade", "Curiosidade", "Impacto Social", "Estética",
             "Família", "Aventura", "Sabedoria", "Comprometimento", "Coragem",
@@ -401,7 +402,7 @@
                 if (valueText) valueText.textContent = "Concluído!";
                 if (progressText) progressText.textContent = "15 de 15";
                 if (progressBar) progressBar.style.width = "100%";
-                document.querySelectorAll('button[onclick^="handleVote"]').forEach(btn => btn.disabled = true);
+                document.querySelectorAll('button[onclick^="window.handleVote"]').forEach(btn => btn.disabled = true);
             }
             
             // Update counter
@@ -428,7 +429,7 @@
             }
         }
         
-        function handleVote(type) {
+        window.handleVote = function(type) {
             if (currentIndex >= valuesList.length) return;
             
             const card = document.getElementById('value-card');
@@ -447,31 +448,35 @@
             }, 150);
         }
 
-        document.getElementById('confirm-values').addEventListener('click', function() {
-            if (this.disabled) return;
-            this.textContent = '✓ Valores Confirmados';
-            this.classList.remove('bg-primary');
-            this.classList.add('bg-green-600', 'text-white');
-            this.setAttribute('data-confirmed', 'true');
-            this.disabled = true;
-            
-            if (window.app && window.app.saveValues) {
-                window.app.saveValues(essentialValues);
-            }
-            
-            const msg = document.createElement('p');
-            msg.className = 'text-xs text-on-surface-variant mt-4 italic leading-relaxed';
-            msg.textContent = 'Seus valores essenciais foram salvos e agora servem como base para suas decisões e prioridades no Sistema Vida.';
-            this.parentNode.appendChild(msg);
+        const confirmBtn = document.getElementById('confirm-values');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function() {
+                if (this.disabled) return;
+                this.textContent = '✓ Valores Confirmados';
+                this.classList.remove('bg-primary');
+                this.classList.add('bg-green-600', 'text-white');
+                this.setAttribute('data-confirmed', 'true');
+                this.disabled = true;
+                
+                if (window.app && window.app.saveValues) {
+                    window.app.saveValues(essentialValues);
+                }
+                
+                const msg = document.createElement('p');
+                msg.className = 'text-xs text-on-surface-variant mt-4 italic leading-relaxed';
+                msg.textContent = 'Seus valores essenciais foram salvos e agora servem como base para suas decisões e prioridades no Sistema Vida.';
+                this.parentNode.appendChild(msg);
 
-            // Fecha o modal após um pequeno delay para o feedback
-            setTimeout(() => {
-                const modal = document.getElementById('values-selection-tool');
-                if (modal) modal.classList.add('hidden');
-            }, 800);
-        });
+                // Fecha o modal após um pequeno delay para o feedback
+                setTimeout(() => {
+                    const modal = document.getElementById('values-selection-tool');
+                    if (modal) modal.classList.add('hidden');
+                }, 800);
+            });
+        }
         
         // Initialize
         updateUI();
-    </script>
+})();
+</script>
 

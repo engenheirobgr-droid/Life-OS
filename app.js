@@ -1440,17 +1440,15 @@ const app = {
             if (!habit.logs) habit.logs = {};
             habit.logs[dateStr] = value;
             
-            // Legacy sync
-            if (dateStr === new Date().toISOString().split('T')[0]) {
-                 const target = habit.targetValue || 1;
-                 const mode = habit.trackMode || 'boolean';
-                 if (mode === 'boolean') habit.completed = value > 0;
-                 else habit.completed = value >= target;
-            }
-
+            // Legacy sync removed to avoid hybrid state contradictions
+            // Derive completion dynamically from log values during render cycle.
             this.saveState(true);
-            if (habit.completed && typeof showIdentityToast === 'function') {
-                showIdentityToast(habit.dimension);
+
+            // Toast feedback based on new value
+            const target = habit.targetValue || 1;
+            const isDone = (habit.trackMode || 'boolean') === 'boolean' ? value > 0 : value >= target;
+            if (isDone && typeof showIdentityToast === 'function') {
+                showIdentityToast(habit.title, habit.dimension);
             }
             if (this.currentView === 'hoje' && this.render.hoje) {
                 this.render.hoje();
@@ -1470,6 +1468,7 @@ const app = {
         if (!window.sistemaVidaState.dailyLogs) window.sistemaVidaState.dailyLogs = {};
         
         window.sistemaVidaState.dailyLogs[today] = { 
+            ...window.sistemaVidaState.dailyLogs[today],
             gratidao, 
             funcionou, 
             shutdown: s1, 
@@ -1993,9 +1992,6 @@ const app = {
                     const mode = habit.trackMode || 'boolean';
                     const logs = habit.logs || {};
                     let currentVal = logs[todayStr] || 0;
-                    if (habit.completed && !logs[todayStr]) {
-                        currentVal = 1; // legacy conversion
-                    }
                     
                     let isDone = false;
                     if (mode === 'boolean') isDone = currentVal > 0;
@@ -2219,27 +2215,26 @@ const app = {
             });
 
             // Se houver tarefas atrasadas, adiciona um banner/botão de resolução rápida
-            if (atrasadas > 0) {
-                const nowOverdue = new Date();
-                const todayStr = new Date(nowOverdue.getTime() - (nowOverdue.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-                const overdueList = (state.entities.micros || []).filter(m => m.status !== 'done' && m.prazo && m.prazo < todayStr);
-                
-                if (overdueList.length > 0) {
-                    const migrationBtnHtml = `
-                    <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-4 rounded-xl mb-4 flex items-center justify-between gap-4">
-                        <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined notranslate text-amber-600 dark:text-amber-400">warning</span>
-                            <div>
-                                <p class="text-sm font-bold text-amber-900 dark:text-amber-100">${atrasadas} tarefas em atraso</p>
-                                <p class="text-xs text-amber-700/70 dark:text-amber-400/70">Deseja migrá-las para o planejamento de hoje?</p>
-                            </div>
+            const nowOverdue = new Date();
+            const localTodayStr = new Date(nowOverdue.getTime() - (nowOverdue.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            const overdueList = (state.entities.micros || []).filter(m => m.status !== 'done' && m.prazo && m.prazo < localTodayStr);
+            const atrasadasCount = overdueList.length;
+
+            if (atrasadasCount > 0) {
+                const migrationBtnHtml = `
+                <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-4 rounded-xl mb-4 flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined notranslate text-amber-600 dark:text-amber-400">warning</span>
+                        <div>
+                            <p class="text-sm font-bold text-amber-900 dark:text-amber-100">${atrasadasCount} tarefas em atraso</p>
+                            <p class="text-xs text-amber-700/70 dark:text-amber-400/70">Deseja migrá-las para o planejamento de hoje?</p>
                         </div>
-                        <button onclick="app.migrateOverdueTasks()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95 whitespace-nowrap">
-                            Migrar Tudo
-                        </button>
-                    </div>`;
-                    html = migrationBtnHtml + html;
-                }
+                    </div>
+                    <button onclick="app.migrateOverdueTasks()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95 whitespace-nowrap">
+                        Migrar Tudo
+                    </button>
+                </div>`;
+                html = migrationBtnHtml + html;
             }
 
             container.innerHTML = html;
@@ -2862,7 +2857,13 @@ const app = {
                 const avg = siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length;
                 const macro = state.entities.macros.find(m => m.id === micro.macroId);
                 if (macro) {
-                    macro.progress = Math.round(avg);
+                    if (avg >= 99) {
+                        macro.progress = 100;
+                        macro.status = 'done';
+                    } else {
+                        macro.progress = Math.round(avg);
+                        if (macro.status === 'done') macro.status = 'active';
+                    }
                     this.updateCascadeProgress(macro.id, 'macros');
                 }
             }
@@ -2873,7 +2874,13 @@ const app = {
                 const avg = siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length;
                 const okr = state.entities.okrs.find(o => o.id === macro.okrId);
                 if (okr) {
-                    okr.progress = Math.round(avg);
+                    if (avg >= 99) {
+                        okr.progress = 100;
+                        okr.status = 'done';
+                    } else {
+                        okr.progress = Math.round(avg);
+                        if (okr.status === 'done') okr.status = 'active';
+                    }
                     this.updateCascadeProgress(okr.id, 'okrs');
                 }
             }
@@ -2884,7 +2891,13 @@ const app = {
                 const avg = siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length;
                 const meta = state.entities.metas.find(m => m.id === okr.metaId);
                 if (meta) {
-                    meta.progress = Math.round(avg);
+                    if (avg >= 99) {
+                        meta.progress = 100;
+                        meta.status = 'done';
+                    } else {
+                        meta.progress = Math.round(avg);
+                        if (meta.status === 'done') meta.status = 'active';
+                    }
                 }
             }
         }
