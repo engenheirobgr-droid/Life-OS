@@ -383,7 +383,7 @@ const app = {
         const sortedLogs = [...logs].sort((a, b) => new Date(b.date) - new Date(a.date));
 
         if (sortedLogs.length === 0) {
-            list.innerHTML = '<li class="text-center py-12 text-outline italic">Nenhum registro encontrado.</li>';
+            list.innerHTML = '<div class="text-center py-12 text-outline italic">Nenhum registro encontrado.</div>';
         } else {
             list.innerHTML = sortedLogs.map(log => {
                 const dateObj = new Date(log.date);
@@ -391,7 +391,7 @@ const app = {
                 const moodColor = log.mood >= 8 ? 'text-green-600' : log.mood >= 5 ? 'text-yellow-600' : 'text-red-600';
                 
                 return `
-                    <li class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10 shadow-sm flex items-center justify-between">
+                    <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10 shadow-sm flex items-center justify-between">
                         <div class="flex items-center gap-4">
                             <div class="text-center min-w-[50px]">
                                 <span class="block text-lg font-bold text-primary leading-tight">${dateStr.split(' ')[0]}</span>
@@ -410,7 +410,7 @@ const app = {
                             <span class="material-symbols-outlined notranslate text-primary/40">history_edu</span>
                             <span class="text-[9px] text-outline mt-1">${log.energy}% Energia</span>
                         </div>
-                    </li>
+                    </div>
                 `;
             }).join('');
         }
@@ -1076,13 +1076,15 @@ const app = {
         // Reset do Ciclo
         state.cycleStartDate = new Date().toISOString();
         
-        // Persistir e atualizar UI
-        this.saveState(false);
+        // Persistir e atualizar UI com delay para garantir animação
+        this.saveState(true);
         this.closeQuarterlyModal();
-        this.showToast("Ciclo atualizado! Seus OKRs foram processados conforme sua revisão.", "success");
         
-        if (this.currentView === 'painel') this.render.painel();
-        if (this.currentView === 'planos') this.render.planos();
+        setTimeout(() => {
+            this.showToast("Revisão processada com sucesso!", "success");
+            if (this.currentView === 'painel') this.render.painel();
+            if (this.currentView === 'planos') this.render.planos();
+        }, 300);
     },
 
     migrateOverdueTasks: function() {
@@ -1787,18 +1789,22 @@ const app = {
                 
                 let focusHtml = '';
                 dims.forEach(dim => {
-                    const total = effortTotal[dim];
-                    const done = effortDone[dim];
-                    if (total === 0) return; // Ocultar se não houver esforço nesta dimensão
+                    if (dim === 'Geral') return; // Esconde 'Geral' para focar na Roda da Vida
+                    const total = effortTotal[dim] || 0;
+                    const done = effortDone[dim] || 0;
                     
-                    const pct = (done / total) * 100;
+                    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
                     focusHtml += `
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-[10px] uppercase tracking-wider font-bold text-outline">
-                            <span>${dim}</span><span>Concluído: ${done} / Total: ${total}</span>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-end">
+                            <span class="text-[10px] uppercase tracking-widest font-bold text-outline">${dim}</span>
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-xs font-bold ${pct > 0 ? 'text-primary' : 'text-outline-variant'}">${pct}%</span>
+                                <span class="text-[9px] text-outline">(${done}/${total})</span>
+                            </div>
                         </div>
                         <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                            <div class="h-full bg-primary rounded-full transition-all duration-700" style="width: ${pct}%"></div>
+                            <div class="h-full ${pct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${pct > 0 ? pct : 100}%"></div>
                         </div>
                     </div>`;
                 });
