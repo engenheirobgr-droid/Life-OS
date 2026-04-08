@@ -2116,12 +2116,13 @@ const app = {
             const todayMicros = (state.entities.micros || []).filter(m => {
                 if (m.status === 'done') return false;
 
-                // Entidades novas: usa inicioDate e prazo como janela
+                // Entidades Novas: Se a data de início já chegou, mostra no Hoje. 
+                // Vai continuar a mostrar mesmo que atrase, até que seja concluída.
                 if (m.inicioDate && m.prazo) {
-                    return todayStr >= m.inicioDate && todayStr <= m.prazo;
+                    return todayStr >= m.inicioDate; 
                 }
 
-                // Entidades antigas (só prazo): mostra se vence hoje ou está atrasada
+                // Entidades antigas: Mostra se o prazo for hoje ou já passou (atrasada)
                 if (m.prazo) {
                     return m.prazo <= todayStr;
                 }
@@ -2479,13 +2480,13 @@ const app = {
 
                         html += `
                         <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="space-y-1">
+                            <div class="flex justify-between items-start mb-4 gap-3">
+                                <div class="space-y-1 flex-1 min-w-0">
                                     <div class="flex items-center gap-2">
-                                        <span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded font-label font-bold uppercase tracking-wider">${item.dimension}</span>
-                                        ${isAligned ? '<span class="bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded border border-primary/20 font-bold">ALINHADO AOS VALORES</span>' : ''}
+                                        <span class="shrink-0 bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded font-label font-bold uppercase tracking-wider">${item.dimension}</span>
+                                        ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded border border-primary/20 font-bold">ALINHADO</span>' : ''}
                                     </div>
-                                    <h4 class="font-headline text-xl font-medium">${item.title}</h4>
+                                    <h4 class="font-headline text-xl font-medium truncate">${item.title}</h4>
                                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         ${prog < 100 ? `<button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary/10 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
                                             <span class="material-symbols-outlined notranslate text-[14px]">done_all</span> Concluir
@@ -2501,7 +2502,7 @@ const app = {
                                         </button>
                                     </div>
                                 </div>
-                                <span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">${prog >= 100 ? 'Concluído' : 'Ativo'}</span>
+                                <span class="shrink-0 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">${prog >= 100 ? 'Concluído' : 'Ativo'}</span>
                             </div>
                             <div class="flex items-center gap-2 text-stone-400 text-xs mb-6">
                                 <span class="material-symbols-outlined notranslate text-sm">event</span>
