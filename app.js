@@ -2930,10 +2930,10 @@ const app = {
         }
         
         this.saveState(false);
-        // Re-render inteligente: respeita a view atual
+        
+        if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        if (this.currentView === 'planos' && this.render.planos) this.render.planos();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
-        else if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
-        else if (this.currentView === 'planos' && this.render.planos) this.render.planos();
     },
 
     startEntity: function(id, type) {
