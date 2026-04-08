@@ -1,327 +1,393 @@
 <main class="pt-20 pb-32 px-6 max-w-7xl mx-auto">
-<!-- Greeting & Time Filter -->
-<header class="mb-12">
-<p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Análise & Progresso</p>
-<h2 id="painel-title" class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Painel de Evolução</h2>
-<div class="mt-6 h-px w-24 bg-primary"></div>
-    <div class="mt-8 flex gap-2 overflow-x-auto no-scrollbar mb-6">
-        <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')" class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Ciclo</button>
-        <button data-painel-filter="mes" onclick="app.setPainelFilter('mes')" class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Mês</button>
-        <button data-painel-filter="semana" onclick="app.setPainelFilter('semana')" class="px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95">Semana</button>
-    </div>
-</header>
+    <!-- Greeting & Time Filter -->
+    <header class="mb-12">
+        <p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Análise & Progresso</p>
+        <h2 id="painel-title"
+            class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Painel de
+            Evolução</h2>
+        <div class="mt-6 h-px w-24 bg-primary"></div>
+        <div class="mt-8 flex gap-2 overflow-x-auto no-scrollbar mb-6">
+            <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')"
+                class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Ciclo</button>
+            <button data-painel-filter="mes" onclick="app.setPainelFilter('mes')"
+                class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Mês</button>
+            <button data-painel-filter="semana" onclick="app.setPainelFilter('semana')"
+                class="px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95">Semana</button>
+        </div>
+    </header>
 
-<!-- Progresso Semana: Foco & Execução -->
-<section class="mt-8 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
-    <div class="grid md:grid-cols-2 gap-8">
-        <div class="space-y-3">
-            <div class="flex justify-between items-end">
-                <div class="space-y-0.5">
-                    <span class="text-[10px] font-label uppercase tracking-widest text-outline">Foco Atual</span>
-                    <h4 class="text-xs font-bold text-on-surface">Visão Tática (Macros)</h4>
+    <!-- Progresso Semana: Foco & Execução -->
+    <section
+        class="mt-8 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="space-y-3">
+                <div class="flex justify-between items-end">
+                    <div class="space-y-0.5">
+                        <span class="text-[10px] font-label uppercase tracking-widest text-outline">Foco Atual</span>
+                        <h4 class="text-xs font-bold text-on-surface">Visão Tática (Macros)</h4>
+                    </div>
+                    <span id="painel-foco-val" class="text-2xl font-headline italic text-primary">0%</span>
                 </div>
-                <span id="painel-foco-val" class="text-2xl font-headline italic text-primary">0%</span>
-            </div>
-            <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                <div id="painel-foco-bar" class="h-full bg-primary rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
-            </div>
-        </div>
-        <div class="space-y-3">
-            <div class="flex justify-between items-end">
-                <div class="space-y-0.5">
-                    <span class="text-[10px] font-label uppercase tracking-widest text-outline">Execução</span>
-                    <h4 class="text-xs font-bold text-on-surface">Micro Ações Semanais</h4>
+                <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                    <div id="painel-foco-bar"
+                        class="h-full bg-primary rounded-full transition-all duration-700 ease-out" style="width: 0%">
+                    </div>
                 </div>
-                <span id="painel-exec-val" class="text-2xl font-headline italic text-secondary">0%</span>
             </div>
-            <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                <div id="painel-exec-bar" class="h-full bg-secondary rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
-            </div>
-        </div>
-    </div>
-    <div class="flex justify-between border-t border-outline-variant/10 pt-4 px-2">
-        <div class="text-center">
-            <span id="painel-concluidas-val" class="block text-2xl font-headline italic text-primary">0</span>
-            <span class="text-[9px] uppercase tracking-[0.2em] text-outline font-bold">Concluídas</span>
-        </div>
-        <div class="text-center">
-            <span id="painel-atrasadas-val" class="block text-2xl font-headline italic text-error">0</span>
-            <span class="text-[9px] uppercase tracking-[0.2em] text-outline font-bold">Atrasadas</span>
-        </div>
-    </div>
-</section>
-
-<!-- Banner Revisão Semanal -->
-<section id="review-banner" class="mt-8 hidden bg-primary-container text-on-primary-container p-6 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
-    <div class="absolute -right-6 -top-6 opacity-10">
-        <span class="material-symbols-outlined notranslate text-8xl">cycle</span>
-    </div>
-    <div class="flex items-center gap-4 relative z-10">
-        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined notranslate text-primary">event_available</span>
-        </div>
-        <div>
-            <h3 class="font-headline font-bold text-lg">Sua revisão semanal está disponível</h3>
-            <p class="text-sm opacity-80">Feche o ciclo atual e prepare-se para a próxima jornada.</p>
-        </div>
-    </div>
-    <button onclick="window.app.openReviewModal()" class="relative z-10 w-full md:w-auto px-6 py-2.5 bg-primary text-on-primary font-bold text-sm rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all whitespace-nowrap">
-        Fazer Revisão
-    </button>
-</section>
-
-<!-- Progresso por Área -->
-<section class="mt-8 space-y-4">
-<div class="space-y-1 mb-6">
-<h3 class="font-headline text-2xl italic">Gestão de Áreas (O que eu faço)</h3>
-<p class="text-sm text-on-surface-variant leading-relaxed">Progresso de Execução por Dimensão</p>
-</div>
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-<!-- Card 1: Saúde -->
-<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Saúde">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<span class="material-symbols-outlined notranslate text-primary text-xl">fitness_center</span>
-<span class="font-label text-[10px] uppercase tracking-wider text-outline">Saúde</span>
-</div>
-<div class="relative w-8 h-8">
-<svg class="w-full h-full transform -rotate-90">
-<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
-<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2"></circle>
-</svg>
-</div>
-</div>
-<div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
-</div>
-<!-- Card 2: Mente -->
-<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Mente">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<span class="material-symbols-outlined notranslate text-primary text-xl">psychology</span>
-<span class="font-label text-[10px] uppercase tracking-wider text-outline">Mente</span>
-</div>
-<div class="relative w-8 h-8">
-<svg class="w-full h-full transform -rotate-90">
-<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
-<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2"></circle>
-</svg>
-</div>
-</div>
-<div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
-</div>
-<!-- Card 3: Carreira -->
-<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Carreira">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<span class="material-symbols-outlined notranslate text-primary text-xl">work</span>
-<span class="font-label text-[10px] uppercase tracking-wider text-outline">Carreira</span>
-</div>
-<div class="relative w-8 h-8">
-<svg class="w-full h-full transform -rotate-90">
-<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
-<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2"></circle>
-</svg>
-</div>
-</div>
-<div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
-</div>
-<!-- Card 4: Finanças -->
-<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Finanças">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<span class="material-symbols-outlined notranslate text-primary text-xl">payments</span>
-<span class="font-label text-[10px] uppercase tracking-wider text-outline">Finanças</span>
-</div>
-<div class="relative w-8 h-8">
-<svg class="w-full h-full transform -rotate-90">
-<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
-<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2"></circle>
-</svg>
-</div>
-</div>
-<div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
-</div>
-<!-- Card 5: Relacionamentos -->
-<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Relacionamentos">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<span class="material-symbols-outlined notranslate text-primary text-xl">groups</span>
-<span class="font-label text-[10px] uppercase tracking-wider text-outline">Relac.</span>
-</div>
-<div class="relative w-8 h-8">
-<svg class="w-full h-full transform -rotate-90">
-<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
-<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2"></circle>
-</svg>
-</div>
-</div>
-<div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
-</div>
-<!-- Card 6: Família -->
-<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Família">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<span class="material-symbols-outlined notranslate text-primary text-xl">family_restroom</span>
-<span class="font-label text-[10px] uppercase tracking-wider text-outline">Família</span>
-</div>
-<div class="relative w-8 h-8">
-<svg class="w-full h-full transform -rotate-90">
-<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
-<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2"></circle>
-</svg>
-</div>
-</div>
-<div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
-</div>
-<!-- Card 7: Lazer -->
-<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Lazer">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<span class="material-symbols-outlined notranslate text-primary text-xl">sports_esports</span>
-<span class="font-label text-[10px] uppercase tracking-wider text-outline">Lazer</span>
-</div>
-<div class="relative w-8 h-8">
-<svg class="w-full h-full transform -rotate-90">
-<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
-<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2"></circle>
-</svg>
-</div>
-</div>
-<div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
-</div>
-<!-- Card 8: Propósito -->
-<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md" data-dimension="Propósito">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<span class="material-symbols-outlined notranslate text-primary text-xl">auto_awesome</span>
-<span class="font-label text-[10px] uppercase tracking-wider text-outline">Propósito</span>
-</div>
-<div class="relative w-8 h-8">
-<svg class="w-full h-full transform -rotate-90">
-<circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-width="2"></circle>
-<circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2"></circle>
-</svg>
-</div>
-</div>
-<div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
-</div>
-</section>
-
-<!-- OKR do Ciclo Atual -->
-<section class="mt-8 space-y-4">
-    <div class="flex justify-between items-baseline mb-6">
-        <h3 class="font-headline text-2xl italic">OKR do Ciclo Atual</h3>
-        <button onclick="window.app.openQuarterlyModal()" class="text-[10px] bg-surface-container-high px-3 py-1 rounded-full uppercase tracking-widest font-bold text-primary hover:bg-primary/10 transition-colors">Revisão de Ciclo</button>
-    </div>
-<div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
-<div class="space-y-2">
-<div class="flex justify-between text-sm font-medium">
-<span class="text-on-surface">Tempo de Ciclo</span>
-<span id="cycle-percent-val" class="text-primary">--%</span>
-</div>
-<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-<div id="cycle-progress-bar" class="h-full bg-primary rounded-full transition-all duration-500" style="width: 0%"></div>
-</div>
-<p id="cycle-week-text" class="text-[11px] text-on-surface-variant uppercase tracking-widest text-center pt-1">Carregando ciclo...</p>
-</div>
-<div id="painel-okr-list" class="space-y-3">
-    <!-- Renderizado dinamicamente pelo app.js -->
-</div>
-</div>
-</section>
-<!-- Execução -->
-<section class="mt-8 space-y-4">
-<div class="flex justify-between items-baseline mb-6">
-<h3 class="font-headline text-2xl italic">Execução</h3>
-<span id="painel-exec-days" class="text-sm font-medium text-primary"></span>
-</div>
-<div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm">
-<div id="annual-heatmap" class="grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto p-2 no-scrollbar">
-    <!-- Gerado dinamicamente pelo app.js -->
-</div>
-<div class="flex justify-between mt-4 text-[10px] text-outline uppercase tracking-widest">
-<span>Início do Mês</span>
-<span>Hoje</span>
-</div>
-</div>
-</section>
-
-<!-- Distribuição de Foco -->
-<section class="mt-8 space-y-4">
-    <div class="space-y-4 mb-6">
-        <div class="flex justify-between items-end">
-            <div class="space-y-1">
-                <h3 class="font-headline text-2xl italic">Distribuição de Foco</h3>
-                <p class="text-sm text-on-surface-variant leading-relaxed">Esforço por Dimensão</p>
+            <div class="space-y-3">
+                <div class="flex justify-between items-end">
+                    <div class="space-y-0.5">
+                        <span class="text-[10px] font-label uppercase tracking-widest text-outline">Execução</span>
+                        <h4 class="text-xs font-bold text-on-surface">Micro Ações Semanais</h4>
+                    </div>
+                    <span id="painel-exec-val" class="text-2xl font-headline italic text-secondary">0%</span>
+                </div>
+                <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                    <div id="painel-exec-bar"
+                        class="h-full bg-secondary rounded-full transition-all duration-700 ease-out" style="width: 0%">
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <!-- Filtros de Distribuição -->
-        <div class="space-y-3">
-            <div class="flex flex-wrap gap-2">
-                <span class="text-[9px] uppercase tracking-widest text-outline font-bold self-center mr-2">Tipo:</span>
-                <button data-focus-type="Tudo" onclick="app.setFocusTypeFilter('Tudo')" class="px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all">Tudo</button>
-                <button data-focus-type="Metas" onclick="app.setFocusTypeFilter('Metas')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Metas</button>
-                <button data-focus-type="OKRs" onclick="app.setFocusTypeFilter('OKRs')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">OKRs</button>
-                <button data-focus-type="Macro" onclick="app.setFocusTypeFilter('Macro')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Macros</button>
-                <button data-focus-type="Micro" onclick="app.setFocusTypeFilter('Micro')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Micros</button>
+        <div class="flex justify-between border-t border-outline-variant/10 pt-4 px-2">
+            <div class="text-center">
+                <span id="painel-concluidas-val" class="block text-2xl font-headline italic text-primary">0</span>
+                <span class="text-[9px] uppercase tracking-[0.2em] text-outline font-bold">Concluídas</span>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <span class="text-[9px] uppercase tracking-widest text-outline font-bold self-center mr-2">Status:</span>
-                <button data-focus-status="Tudo" onclick="app.setFocusStatusFilter('Tudo')" class="px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all">Tudo</button>
-                <button data-focus-status="Pendentes" onclick="app.setFocusStatusFilter('Pendentes')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Pendentes</button>
-                <button data-focus-status="Concluídos" onclick="app.setFocusStatusFilter('Concluídos')" class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Concluídos</button>
+            <div class="text-center">
+                <span id="painel-atrasadas-val" class="block text-2xl font-headline italic text-error">0</span>
+                <span class="text-[9px] uppercase tracking-[0.2em] text-outline font-bold">Atrasadas</span>
             </div>
         </div>
-    </div>
-    <div id="focus-distribution" class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-4">
-        <!-- Renderizado pelo app.js -->
-    </div>
-</section>
+    </section>
 
-
-<!-- Meta Financeira -->
-<section class="mt-8 space-y-4">
-  <h3 class="font-headline text-2xl italic mb-6">Meta Financeira</h3>
-  <div class="bg-primary text-on-primary p-8 rounded-2xl relative overflow-hidden shadow-sm">
-    <div class="absolute -right-10 -bottom-10 opacity-10">
-      <span class="material-symbols-outlined notranslate text-9xl">payments</span>
-    </div>
-    <div class="relative z-10 space-y-4">
-      <div class="space-y-1">
-        <span class="font-label text-10px uppercase tracking-widest opacity-70">
-          Módulo em Desenvolvimento
-        </span>
-        <div class="text-2xl font-headline tracking-tight">
-          Em breve
+    <!-- Banner Revisão Semanal -->
+    <section id="review-banner"
+        class="mt-8 hidden bg-primary-container text-on-primary-container p-6 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
+        <div class="absolute -right-6 -top-6 opacity-10">
+            <span class="material-symbols-outlined notranslate text-8xl">cycle</span>
         </div>
-      </div>
-      <p class="text-sm font-light opacity-80 leading-relaxed">
-        O módulo financeiro — com patrimônio líquido, metas de investimento
-        e simulador — será lançado em uma próxima versão do Sistema Vida.
-      </p>
-      <div class="flex items-center gap-2 pt-2 opacity-60">
-        <span class="material-symbols-outlined notranslate text-base">schedule</span>
-        <span class="text-xs font-label uppercase tracking-widest">Próxima atualização</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Modal de Revisão Trimestral -->
-<div id="quarterly-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
-    <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-md w-full p-6 shadow-xl flex flex-col max-h-[80vh]">
-        <div class="flex justify-between items-center mb-6 shrink-0">
+        <div class="flex items-center gap-4 relative z-10">
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-primary">event_available</span>
+            </div>
             <div>
-                <h3 class="font-headline text-2xl italic">Revisão de OKRs</h3>
-                <p class="text-xs text-outline mt-1">Decida o destino dos seus objetivos ativos.</p>
+                <h3 class="font-headline font-bold text-lg">Sua revisão semanal está disponível</h3>
+                <p class="text-sm opacity-80">Feche o ciclo atual e prepare-se para a próxima jornada.</p>
             </div>
-            <button onclick="window.app.closeQuarterlyModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90"><span class="material-symbols-outlined notranslate">close</span></button>
         </div>
-        <div id="quarterly-okrs-list" class="space-y-4 overflow-y-auto no-scrollbar flex-1 mb-6">
-                 </div>
-        <button onclick="window.app.processQuarterlyReview()" class="w-full shrink-0 bg-primary text-on-primary py-3 rounded-lg font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">Salvar Novo Ciclo</button>
+        <button onclick="window.app.openReviewModal()"
+            class="relative z-10 w-full md:w-auto px-6 py-2.5 bg-primary text-on-primary font-bold text-sm rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all whitespace-nowrap">
+            Fazer Revisão
+        </button>
+    </section>
+
+    <!-- Progresso por Área -->
+    <section class="mt-8 space-y-4">
+        <div class="space-y-1 mb-6">
+            <h3 class="font-headline text-2xl italic">Gestão de Áreas (O que eu faço)</h3>
+            <p class="text-sm text-on-surface-variant leading-relaxed">Progresso de Execução por Dimensão</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Card 1: Saúde -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md"
+                data-dimension="Saúde">
+                <div class="flex justify-between items-start">
+                    <div class="flex flex-col gap-1">
+                        <span class="material-symbols-outlined notranslate text-primary text-xl">fitness_center</span>
+                        <span class="font-label text-[10px] uppercase tracking-wider text-outline">Saúde</span>
+                    </div>
+                    <div class="relative w-8 h-8">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-width="2"></circle>
+                            <circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2">
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
+            </div>
+            <!-- Card 2: Mente -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md"
+                data-dimension="Mente">
+                <div class="flex justify-between items-start">
+                    <div class="flex flex-col gap-1">
+                        <span class="material-symbols-outlined notranslate text-primary text-xl">psychology</span>
+                        <span class="font-label text-[10px] uppercase tracking-wider text-outline">Mente</span>
+                    </div>
+                    <div class="relative w-8 h-8">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-width="2"></circle>
+                            <circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2">
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
+            </div>
+            <!-- Card 3: Carreira -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md"
+                data-dimension="Carreira">
+                <div class="flex justify-between items-start">
+                    <div class="flex flex-col gap-1">
+                        <span class="material-symbols-outlined notranslate text-primary text-xl">work</span>
+                        <span class="font-label text-[10px] uppercase tracking-wider text-outline">Carreira</span>
+                    </div>
+                    <div class="relative w-8 h-8">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-width="2"></circle>
+                            <circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2">
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
+            </div>
+            <!-- Card 4: Finanças -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md"
+                data-dimension="Finanças">
+                <div class="flex justify-between items-start">
+                    <div class="flex flex-col gap-1">
+                        <span class="material-symbols-outlined notranslate text-primary text-xl">payments</span>
+                        <span class="font-label text-[10px] uppercase tracking-wider text-outline">Finanças</span>
+                    </div>
+                    <div class="relative w-8 h-8">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-width="2"></circle>
+                            <circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2">
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
+            </div>
+            <!-- Card 5: Relacionamentos -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md"
+                data-dimension="Relacionamentos">
+                <div class="flex justify-between items-start">
+                    <div class="flex flex-col gap-1">
+                        <span class="material-symbols-outlined notranslate text-primary text-xl">groups</span>
+                        <span class="font-label text-[10px] uppercase tracking-wider text-outline">Relac.</span>
+                    </div>
+                    <div class="relative w-8 h-8">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-width="2"></circle>
+                            <circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2">
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
+            </div>
+            <!-- Card 6: Família -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md"
+                data-dimension="Família">
+                <div class="flex justify-between items-start">
+                    <div class="flex flex-col gap-1">
+                        <span class="material-symbols-outlined notranslate text-primary text-xl">family_restroom</span>
+                        <span class="font-label text-[10px] uppercase tracking-wider text-outline">Família</span>
+                    </div>
+                    <div class="relative w-8 h-8">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-width="2"></circle>
+                            <circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2">
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
+            </div>
+            <!-- Card 7: Lazer -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md"
+                data-dimension="Lazer">
+                <div class="flex justify-between items-start">
+                    <div class="flex flex-col gap-1">
+                        <span class="material-symbols-outlined notranslate text-primary text-xl">sports_esports</span>
+                        <span class="font-label text-[10px] uppercase tracking-wider text-outline">Lazer</span>
+                    </div>
+                    <div class="relative w-8 h-8">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-width="2"></circle>
+                            <circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2">
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
+            </div>
+            <!-- Card 8: Propósito -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm space-y-4 transition-all hover:shadow-md"
+                data-dimension="Propósito">
+                <div class="flex justify-between items-start">
+                    <div class="flex flex-col gap-1">
+                        <span class="material-symbols-outlined notranslate text-primary text-xl">auto_awesome</span>
+                        <span class="font-label text-[10px] uppercase tracking-wider text-outline">Propósito</span>
+                    </div>
+                    <div class="relative w-8 h-8">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle class="text-surface-container-high" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-width="2"></circle>
+                            <circle class="text-primary dim-score-ring" cx="16" cy="16" fill="transparent" r="14"
+                                stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="88" stroke-width="2">
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-headline tracking-tight dim-score-text">–</div>
+            </div>
+    </section>
+
+    <!-- OKR do Ciclo Atual -->
+    <section class="mt-8 space-y-4">
+        <div class="flex justify-between items-baseline mb-6">
+            <h3 class="font-headline text-2xl italic">OKR do Ciclo Atual</h3>
+            <button onclick="window.app.openQuarterlyModal()"
+                class="text-[10px] bg-surface-container-high px-3 py-1 rounded-full uppercase tracking-widest font-bold text-primary hover:bg-primary/10 transition-colors">Revisão
+                de Ciclo</button>
+        </div>
+        <div
+            class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm font-medium">
+                    <span class="text-on-surface">Tempo de Ciclo</span>
+                    <span id="cycle-percent-val" class="text-primary">--%</span>
+                </div>
+                <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                    <div id="cycle-progress-bar" class="h-full bg-primary rounded-full transition-all duration-500"
+                        style="width: 0%"></div>
+                </div>
+                <p id="cycle-week-text"
+                    class="text-[11px] text-on-surface-variant uppercase tracking-widest text-center pt-1">Carregando
+                    ciclo...</p>
+            </div>
+            <div id="painel-okr-list" class="space-y-3">
+                <!-- Renderizado dinamicamente pelo app.js -->
+            </div>
+        </div>
+    </section>
+    <!-- Execução -->
+    <section class="mt-8 space-y-4">
+        <div class="flex justify-between items-baseline mb-6">
+            <h3 class="font-headline text-2xl italic">Execução</h3>
+            <span id="painel-exec-days" class="text-sm font-medium text-primary"></span>
+        </div>
+        <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm">
+            <div id="annual-heatmap" class="grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto p-2 no-scrollbar">
+                <!-- Gerado dinamicamente pelo app.js -->
+            </div>
+            <div class="flex justify-between mt-4 text-[10px] text-outline uppercase tracking-widest">
+                <span>Início do Mês</span>
+                <span>Hoje</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Distribuição de Foco -->
+    <section class="mt-8 space-y-4">
+        <div class="space-y-4 mb-6">
+            <div class="flex justify-between items-end">
+                <div class="space-y-1">
+                    <h3 class="font-headline text-2xl italic">Distribuição de Foco</h3>
+                    <p class="text-sm text-on-surface-variant leading-relaxed">Esforço por Dimensão</p>
+                </div>
+            </div>
+
+            <!-- Filtros de Distribuição -->
+            <div class="space-y-3">
+                <div class="flex flex-wrap gap-2">
+                    <span
+                        class="text-[9px] uppercase tracking-widest text-outline font-bold self-center mr-2">Tipo:</span>
+                    <button data-focus-type="Tudo" onclick="app.setFocusTypeFilter('Tudo')"
+                        class="px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all">Tudo</button>
+                    <button data-focus-type="Metas" onclick="app.setFocusTypeFilter('Metas')"
+                        class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Metas</button>
+                    <button data-focus-type="OKRs" onclick="app.setFocusTypeFilter('OKRs')"
+                        class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">OKRs</button>
+                    <button data-focus-type="Macro" onclick="app.setFocusTypeFilter('Macro')"
+                        class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Macros</button>
+                    <button data-focus-type="Micro" onclick="app.setFocusTypeFilter('Micro')"
+                        class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Micros</button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <span
+                        class="text-[9px] uppercase tracking-widest text-outline font-bold self-center mr-2">Status:</span>
+                    <button data-focus-status="Tudo" onclick="app.setFocusStatusFilter('Tudo')"
+                        class="px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all">Tudo</button>
+                    <button data-focus-status="Pendentes" onclick="app.setFocusStatusFilter('Pendentes')"
+                        class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Pendentes</button>
+                    <button data-focus-status="Concluídos" onclick="app.setFocusStatusFilter('Concluídos')"
+                        class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Concluídos</button>
+                </div>
+            </div>
+        </div>
+        <div id="focus-distribution"
+            class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-4">
+            <!-- Renderizado pelo app.js -->
+        </div>
+    </section>
+
+
+    <!-- Meta Financeira -->
+    <section class="mt-8 space-y-4">
+        <h3 class="font-headline text-2xl italic mb-6">Meta Financeira</h3>
+        <div class="bg-primary text-on-primary p-8 rounded-2xl relative overflow-hidden shadow-sm">
+            <div class="absolute -right-10 -bottom-10 opacity-10">
+                <span class="material-symbols-outlined notranslate text-9xl">payments</span>
+            </div>
+            <div class="relative z-10 space-y-4">
+                <div class="space-y-1">
+                    <span class="font-label text-10px uppercase tracking-widest opacity-70">
+                        Módulo em Desenvolvimento
+                    </span>
+                    <div class="text-2xl font-headline tracking-tight">
+                        Em breve
+                    </div>
+                </div>
+                <p class="text-sm font-light opacity-80 leading-relaxed">
+                    O módulo financeiro — com patrimônio líquido, metas de investimento
+                    e simulador — será lançado em uma próxima versão do Sistema Vida.
+                </p>
+                <div class="flex items-center gap-2 pt-2 opacity-60">
+                    <span class="material-symbols-outlined notranslate text-base">schedule</span>
+                    <span class="text-xs font-label uppercase tracking-widest">Próxima atualização</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal de Revisão Trimestral -->
+    <div id="quarterly-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div
+            class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-md w-full p-6 shadow-xl flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center mb-6 shrink-0">
+                <div>
+                    <h3 class="font-headline text-2xl italic">Revisão de OKRs</h3>
+                    <p class="text-xs text-outline mt-1">Decida o destino dos seus objetivos ativos.</p>
+                </div>
+                <button onclick="window.app.closeQuarterlyModal()"
+                    class="text-outline hover:text-on-surface transform transition-transform active:scale-90"><span
+                        class="material-symbols-outlined notranslate">close</span></button>
+            </div>
+            <div id="quarterly-okrs-list" class="space-y-4 overflow-y-auto no-scrollbar flex-1 mb-6">
+            </div>
+            <button onclick="window.app.processQuarterlyReview()"
+                class="w-full shrink-0 bg-primary text-on-primary py-3 rounded-lg font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">Salvar
+                Novo Ciclo</button>
+        </div>
     </div>
-</div>
 
 </main>
