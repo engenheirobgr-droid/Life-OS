@@ -2525,7 +2525,7 @@ const app = {
                                         ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded border border-primary/20 font-bold">ALINHADO</span>' : ''}
                                     </div>
                                     <h4 class="font-headline text-xl font-medium truncate">${item.title}</h4>
-                                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div class="flex flex-wrap items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         ${item.status === 'pending' ? `<button onclick="event.stopPropagation(); app.startEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-amber-500/30 hover:bg-amber-500/10 rounded flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 transition-colors">
                                             <span class="material-symbols-outlined notranslate text-[14px]">play_arrow</span> Iniciar
                                         </button>` : ''}
@@ -2543,7 +2543,7 @@ const app = {
                                         </button>
                                     </div>
                                 </div>
-                                <span class="shrink-0 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">${prog >= 100 ? 'Concluído' : 'Ativo'}</span>
+                                ${prog >= 100 ? `<span class="shrink-0 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Concluído</span>` : (item.status === 'in_progress' ? `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0">Em Andamento</span>` : `<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Ativo</span>`)}
                             </div>
                             <div class="flex items-center gap-2 text-stone-400 text-xs mb-6">
                                 <span class="material-symbols-outlined notranslate text-sm">event</span>
@@ -2813,23 +2813,10 @@ const app = {
                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full"></div>
           </div>`;
 
-        // ── Entidades ──────────────────────────────────────────────
-        const colorMap = {
-          metas:  'bg-stone-400 text-white',
-          okrs:   'bg-primary/60 text-white',
-          macros: 'bg-primary text-on-primary',
-        };
-        const labelMap = {
-          metas: 'Meta', okrs: 'OKR', macros: 'Macro'
-        };
-
+        // ── Entidades (Hierarquia e Filtros) ───────────────────────
         let rowsHTML = '';
-        ['metas', 'okrs', 'macros'].forEach(tipo => {
-          const lista = (state.entities[tipo] || [])
-            .filter(e => e.status !== 'abandoned'); // Inclui ativos e concluídos, exclui abandonados
 
-          lista.forEach(entity => {
-            // Datas com fallback e blindagem contra strings vazias
+        const renderRow = (entity, tipo, marginClass) => {
             let taskStart = (entity.inicioDate && entity.inicioDate.trim() !== '')
               ? new Date(entity.inicioDate + 'T00:00:00')
               : ((entity.prazo && entity.prazo.trim() !== '') ? new Date(entity.prazo + 'T00:00:00') : new Date(today));
@@ -2841,41 +2828,50 @@ const app = {
             if (isNaN(taskStart.getTime()) || isNaN(taskEnd.getTime())) return;
             if (taskEnd < startDate || taskStart > endDate) return; // fora da janela
 
-            // Clamp nos limites da janela
             if (taskStart < startDate) taskStart = new Date(startDate);
             if (taskEnd > endDate)     taskEnd   = new Date(endDate);
 
             const leftPct  = ((taskStart - startDate) / (endDate - startDate)) * 100;
             const widthPct = Math.max(0.5, ((taskEnd - taskStart) / (endDate - startDate)) * 100);
-            const color    = colorMap[tipo] || 'bg-primary text-white';
+            
+            const colorMap = { metas: 'bg-stone-500 text-white', okrs: 'bg-primary/80 text-white', macros: 'bg-primary text-on-primary', micros: 'bg-surface-variant text-on-surface-variant' };
+            const labelMap = { metas: 'Meta', okrs: 'OKR', macros: 'Macro', micros: 'Micro' };
+            const color = colorMap[tipo] || 'bg-primary text-white';
             const isOverdue = taskEnd < today && entity.status !== 'done';
 
             rowsHTML += `
-              <div class="flex items-center border-b border-outline-variant/10
-                          hover:bg-surface-container transition-colors group">
-
-                <div class="w-48 shrink-0 px-4 py-3 border-r border-outline-variant/20">
-                  <span class="text-xs font-bold uppercase tracking-widest
-                               text-outline mr-1">${labelMap[tipo]}</span>
-                  <span class="text-xs text-on-surface leading-tight line-clamp-1"
-                        title="${entity.title}">${entity.title}</span>
-                </div>
-
-                <div class="flex-1 relative h-10 py-1.5">
-                  <div class="absolute h-full rounded-full flex items-center px-2
-                              overflow-hidden cursor-default transition-all
-                              group-hover:opacity-90 ${color}
-                              ${isOverdue ? 'opacity-60 ring-1 ring-red-400' : ''}"
-                       style="left:${leftPct.toFixed(2)}%; width:${widthPct.toFixed(2)}%"
-                       title="${entity.title} | ${entity.prazo || ''}">
-                    <span class="text-xs font-semibold truncate leading-none">
-                      ${entity.title}
-                    </span>
+              <div class="flex items-center border-b border-outline-variant/10 hover:bg-surface-container transition-colors group">
+                <div class="w-48 shrink-0 px-4 py-3 border-r border-outline-variant/20 flex flex-col justify-center overflow-hidden">
+                  <div class="${marginClass} flex items-center gap-1">
+                      <span class="text-[9px] font-bold uppercase tracking-widest text-outline shrink-0">${labelMap[tipo]}</span>
+                      <span class="text-xs text-on-surface leading-tight truncate" title="${entity.title}">${entity.title}</span>
                   </div>
                 </div>
-
+                <div class="flex-1 relative h-10 py-1.5">
+                  <div class="absolute h-full rounded-full flex items-center px-2 overflow-hidden cursor-default transition-all group-hover:opacity-90 ${color} ${isOverdue ? 'opacity-60 ring-1 ring-red-400' : ''}" style="left:${leftPct.toFixed(2)}%; width:${widthPct.toFixed(2)}%" title="${entity.title} | ${entity.prazo || ''}">
+                    <span class="text-[10px] font-semibold truncate leading-none">${entity.title}</span>
+                  </div>
+                </div>
               </div>`;
-          });
+        };
+
+        const currentFilter = window.app.planosFilter || 'Todas';
+        const activeMetas = (state.entities.metas || []).filter(m => m.status !== 'abandoned' && (currentFilter === 'Todas' || m.dimensionName === currentFilter));
+        
+        activeMetas.forEach(meta => {
+            renderRow(meta, 'metas', 'ml-0');
+            const okrs = (state.entities.okrs || []).filter(o => o.status !== 'abandoned' && o.metaId === meta.id);
+            okrs.forEach(okr => {
+                renderRow(okr, 'okrs', 'ml-4 border-l-2 border-outline-variant/20 pl-2');
+                const macros = (state.entities.macros || []).filter(m => m.status !== 'abandoned' && m.okrId === okr.id);
+                macros.forEach(macro => {
+                    renderRow(macro, 'macros', 'ml-8 border-l-2 border-outline-variant/20 pl-2');
+                    const micros = (state.entities.micros || []).filter(m => m.status !== 'abandoned' && m.macroId === macro.id);
+                    micros.forEach(micro => {
+                        renderRow(micro, 'micros', 'ml-12 border-l-2 border-outline-variant/20 pl-2');
+                    });
+                });
+            });
         });
 
         // ── Estado vazio ───────────────────────────────────────────
@@ -2907,8 +2903,9 @@ const app = {
         if (type === 'micros') {
             const micro = state.entities.micros.find(m => m.id === entityId);
             if (micro && micro.macroId) {
-                const siblings = state.entities.micros.filter(m => m.macroId === micro.macroId);
-                const avg = siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length;
+                const siblings = state.entities.micros.filter(m => m.macroId === micro.macroId && m.status !== 'abandoned');
+                console.log("Calculando progresso:", micro.macroId, "| Filhos (Micros) encontrados:", siblings.length);
+                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
                 const macro = state.entities.macros.find(m => m.id === micro.macroId);
                 if (macro) {
                     if (avg >= 99) {
@@ -2924,8 +2921,9 @@ const app = {
         } else if (type === 'macros') {
             const macro = state.entities.macros.find(m => m.id === entityId);
             if (macro && macro.okrId) {
-                const siblings = state.entities.macros.filter(m => m.okrId === macro.okrId);
-                const avg = siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length;
+                const siblings = state.entities.macros.filter(m => m.okrId === macro.okrId && m.status !== 'abandoned');
+                console.log("Calculando progresso:", macro.okrId, "| Filhos (Macros) encontrados:", siblings.length);
+                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
                 const okr = state.entities.okrs.find(o => o.id === macro.okrId);
                 if (okr) {
                     if (avg >= 99) {
@@ -2941,8 +2939,9 @@ const app = {
         } else if (type === 'okrs') {
             const okr = state.entities.okrs.find(o => o.id === entityId);
             if (okr && okr.metaId) {
-                const siblings = state.entities.okrs.filter(o => o.metaId === okr.metaId);
-                const avg = siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length;
+                const siblings = state.entities.okrs.filter(o => o.metaId === okr.metaId && o.status !== 'abandoned');
+                console.log("Calculando progresso:", okr.metaId, "| Filhos (OKRs) encontrados:", siblings.length);
+                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
                 const meta = state.entities.metas.find(m => m.id === okr.metaId);
                 if (meta) {
                     if (avg >= 99) {
@@ -2996,8 +2995,8 @@ const app = {
             }
         }
         
+        this.saveState(true);
         this.saveState(false);
-        
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'planos' && this.render.planos) this.render.planos();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
@@ -3011,6 +3010,7 @@ const app = {
         entity.status = 'in_progress';
         if (!entity.progress || entity.progress < 1) entity.progress = 1;
         if (type === 'micros') entity.completed = false;
+        this.saveState(true);
         this.saveState(false);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
