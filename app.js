@@ -27,7 +27,8 @@ window.sistemaVidaState = {
         legacy: "",
         ikigai: { missao: "", vocacao: "", love: "", good: "", need: "", paid: "", sintese: "" },
         legacyObj: { familia: "", profissao: "", mundo: "" },
-        vision: { saude: "", carreira: "", intelecto: "", quote: "" }
+        vision: { saude: "", carreira: "", intelecto: "", quote: "" },
+        odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" }
     },
     energy: 5,
     dimensions: {
@@ -401,6 +402,19 @@ const app = {
                 const funcionouBlock = log.funcionou ? `<p class="text-[11px] text-on-surface-variant mt-1">Funcionou: ${log.funcionou}</p>` : '';
                 const shutdownBlock = log.shutdown ? `<p class="text-[11px] text-on-surface-variant mt-1">Shutdown: ${log.shutdown}</p>` : '';
                 
+                // Seção Flash Reflexão
+                let flashBlock = '';
+                if (log.flashGratitude) {
+                    const emotionMap = { 'angry': '😡', 'neutral': '😐', 'happy': '😊', 'fire': '🔥' };
+                    const emotionEmoji = emotionMap[log.flashEmotion] || '✨';
+                    flashBlock = `
+                        <div class="mt-3 p-2.5 bg-secondary/5 rounded-lg border border-secondary/10">
+                            <p class="text-[9px] uppercase font-bold text-secondary tracking-wider mb-1">Flash Reflexão ${emotionEmoji}</p>
+                            <p class="text-[11px] text-on-surface-variant italic">"${log.flashGratitude}"</p>
+                        </div>
+                    `;
+                }
+                
                 return `
                     <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10 shadow-sm flex items-center justify-between mb-3">
                         <div class="flex items-center gap-4">
@@ -418,6 +432,7 @@ const app = {
                                 ${gratidaoBlock}
                                 ${funcionouBlock}
                                 ${shutdownBlock}
+                                ${flashBlock}
                             </div>
                         </div>
                         <div class="flex flex-col items-end">
@@ -486,15 +501,14 @@ const app = {
         const date = new Date().toISOString().split('T')[0];
         const state = window.sistemaVidaState;
 
-        if (!state.dailyLogs[date]) {
-            state.dailyLogs[date] = {};
-        }
-
-        // Atualiza log do dia
-        state.dailyLogs[date].flashEmotion = emotion;
-        state.dailyLogs[date].flashGratitude = gratitude;
-        state.dailyLogs[date].lastMicroActionId = microId;
-        state.dailyLogs[date].timestamp = new Date().getTime();
+        // Atualiza log do dia sem apagar outros campos (ex: intenção/energy/gratidão do diário de sono)
+        state.dailyLogs[date] = {
+            ...state.dailyLogs[date],
+            flashEmotion: emotion,
+            flashGratitude: gratitude,
+            lastMicroActionId: microId,
+            timestamp: new Date().getTime()
+        };
         // Dispara completeMicroAction apenas se o checkbox estiver marcado
         const markDone = document.getElementById('flash-mark-done')?.checked;
         if (microId && markDone) {
@@ -799,7 +813,8 @@ const app = {
           name: 'Viajante', level: 1, xp: 0, values: [], legacy: '',
           ikigai: { missao: '', vocacao: '', love: '', good: '', need: '', paid: '', sintese: '' },
           legacyObj: { familia: '', profissao: '', mundo: '' },
-          vision: { saude: '', carreira: '', intelecto: '', quote: '' }
+          vision: { saude: '', carreira: '', intelecto: '', quote: '' },
+          odyssey: { cenarioA: '', cenarioB: '', cenarioC: '' }
         },
         energy: 5,
         dimensions: {
@@ -1758,7 +1773,7 @@ const app = {
                 if (typeFilter !== 'Tudo' && typeFilter !== typeName) return;
                 
                 (list || []).forEach(item => {
-                    const dim = item.dimension || item.dimensionName || 'Geral';
+                    const dim = item.dimension || 'Geral';
                     if (effortTotal[dim] !== undefined) {
                         effortTotal[dim] += weight;
                         if (item.status === 'done' || item.completed) {
@@ -1768,10 +1783,10 @@ const app = {
                 });
             };
             
-            addScore(state.entities.metas, 3, 'Metas');
-            addScore(state.entities.okrs, 2, 'OKRs');
-            addScore(state.entities.macros, 1, 'Macros');
-            addScore(state.entities.micros, 0.5, 'Micros');
+            addScore(state.entities.metas, 6, 'Metas');
+            addScore(state.entities.okrs, 4, 'OKRs');
+            addScore(state.entities.macros, 2, 'Macros');
+            addScore(state.entities.micros, 1, 'Micros');
             
             let focusHtml = '';
             dims.forEach(dim => {
@@ -1816,8 +1831,10 @@ const app = {
             if (weekBar) weekBar.style.width = weekProgress + '%';
             if (weekVal) weekVal.textContent = weekProgress + '%';
 
-            // 3. Cycle Progress
-            const cycleDone = state.entities.micros.filter(m => m.status === 'done').length;
+            // 3. Cycle Progress (Filtrado por data >= cycleStartDate)
+            const cycleDone = state.entities.micros.filter(m => 
+                m.status === 'done' && (m.prazo || m.completedDate) >= state.cycleStartDate
+            ).length;
             const cycleDoneEl = document.getElementById('cycle-micros-done');
             if (cycleDoneEl) cycleDoneEl.textContent = cycleDone;
 
@@ -2032,6 +2049,25 @@ const app = {
                 const g = document.getElementById('diario-gratidao'); if (g) g.value = log.gratidao || '';
                 const f = document.getElementById('diario-funcionou'); if (f) f.value = log.funcionou || '';
                 const s1 = document.getElementById('diario-shutdown-1'); if (s1) s1.value = log.shutdown || '';
+            }
+
+            // Indicador de Diário Flash (Raio Amarelo)
+            const flashBtn = document.getElementById('btn-open-flash');
+            if (flashBtn) {
+                const hasFlash = state.dailyLogs && state.dailyLogs[today] && state.dailyLogs[today].flashGratitude;
+                if (hasFlash) {
+                    flashBtn.classList.add('ring-4', 'ring-secondary/30');
+                    if (!flashBtn.querySelector('.flash-indicator')) {
+                        const badge = document.createElement('span');
+                        badge.className = 'flash-indicator absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400 text-[12px] shadow-sm animate-pulse border-2 border-white dark:border-stone-900';
+                        badge.innerHTML = '⚡';
+                        flashBtn.style.position = 'relative';
+                        flashBtn.appendChild(badge);
+                    }
+                } else {
+                    flashBtn.classList.remove('ring-4', 'ring-secondary/30');
+                    flashBtn.querySelector('.flash-indicator')?.remove();
+                }
             }
 
             // Render Habits
@@ -2375,16 +2411,16 @@ const app = {
             const buildCards = (items, entityType) => {
                 // Determine implicit dimension hierarchically
                 const resolveDim = (item) => {
-                    if (item.dimensionName) return item.dimensionName;
                     if (item.dimension) return item.dimension;
+                    if (item.dimensionName) return item.dimensionName;
                     if (entityType === 'okrs') {
                          const m = state.entities.metas.find(x => x.id === item.metaId);
-                         return m ? m.dimensionName : 'Geral';
+                         return m ? (m.dimension || m.dimensionName) : 'Geral';
                     }
                     if (entityType === 'macros') {
                          const o = state.entities.okrs.find(x => x.id === item.okrId);
                          const m = o ? state.entities.metas.find(x => x.id === o.metaId) : null;
-                         return m ? m.dimensionName : 'Geral';
+                         return m ? (m.dimension || m.dimensionName) : 'Geral';
                     }
                     return 'Geral';
                 };
@@ -2664,67 +2700,41 @@ const app = {
                     // Valores Essenciais (Sincronizado)
                     window.app.renderSidebarValues();
 
-                    // Função Caçadora de IDs para Textos de Exibição
-                    const safeSetText = (idBase, text) => { 
-                        const el = document.getElementById(`display-${idBase}`) 
-                                || document.getElementById(`${idBase}-display`) 
-                                || document.getElementById(`${idBase}-text`) 
-                                || document.getElementById(idBase);
+                    // 3. Preenchimento de Textos do Perfil (Padrao de Exibicao)
+                    try {
+                        const state = window.sistemaVidaState;
+                        const prof = state.profile || {};
                         
-                        // Garante que não está substituindo o value de um input do modal
-                        if (el && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') {
-                            el.textContent = text || 'Não definido. Clique para editar.'; 
-                        }
-                    };
+                        // Ikigai (display-id)
+                        document.getElementById('display-ikigai-love').textContent = prof.ikigai.love || "Clique para definir";
+                        document.getElementById('display-ikigai-good').textContent = prof.ikigai.good || "Clique para definir";
+                        document.getElementById('display-ikigai-need').textContent = prof.ikigai.need || "Clique para definir";
+                        document.getElementById('display-ikigai-paid').textContent = prof.ikigai.paid || "Clique para definir";
+                        document.getElementById('display-ikigai-sintese').textContent = prof.ikigai.sintese || "Clique para definir";
 
-                    // Ikigai (Consolidado com os 5 blocos da View)
-                    const iki = profile.ikigai || {};
-                    safeSetText('ikigai-love', iki.love, "O que você ama fazer?");
-                    safeSetText('ikigai-good', iki.good, "No que você é genuinamente bom?");
-                    safeSetText('ikigai-need', iki.need, "O que o mundo precisa de você?");
-                    safeSetText('ikigai-paid', iki.paid, "O que gera valor e sustento?");
-                    safeSetText('ikigai-sintese', iki.sintese, "Clique para escrever sua missão de vida sintetizada...");
+                        // Visao (display-id)
+                        document.getElementById('display-vision-saude').textContent = prof.vision.saude || "Clique para definir";
+                        document.getElementById('display-vision-carreira').textContent = prof.vision.carreira || "Clique para definir";
+                        document.getElementById('display-vision-intelecto').textContent = prof.vision.intelecto || "Clique para definir";
+                        document.getElementById('display-vision-quote').textContent = prof.vision.quote || "Clique para definir";
 
-                    // Visão e Legado
-                    const vis = profile.vision || {};
-                    safeSetText('vision-saude', vis.saude, "Sua visão de saúde em 10 anos...");
-                    safeSetText('vision-carreira', vis.carreira, "Seu ápice profissional e financeiro...");
-                    safeSetText('vision-intelecto', vis.intelecto, "Sabedoria e espiritualidade...");
-                    safeSetText('vision-quote', vis.quote, "Uma frase que te inspira todos os dias...");
+                        // Legado (display-id)
+                        document.getElementById('display-legacy-familia').textContent = prof.legacyObj.familia || "Clique para definir";
+                        document.getElementById('display-legacy-profissao').textContent = prof.legacyObj.profissao || "Clique para definir";
+                        document.getElementById('display-legacy-mundo').textContent = prof.legacyObj.mundo || "Clique para definir";
 
-                    const leg = profile.legacyObj || {};
-                    safeSetText('legacy-familia', leg.familia, "Como quer ser lembrado pela família?");
-                    safeSetText('legacy-profissao', leg.profissao, "Sua contribuição profissional...");
-                    safeSetText('legacy-mundo', leg.mundo, "A marca que quer deixar na sociedade...");
+                        // Odyssey Plan (Novas Chaves Consolidadas)
+                        document.getElementById('display-cenarioA').textContent = prof.odyssey.cenarioA || "Clique para definir";
+                        document.getElementById('display-cenarioB').textContent = prof.odyssey.cenarioB || "Clique para definir";
+                        document.getElementById('display-cenarioC').textContent = prof.odyssey.cenarioC || "Clique para definir";
 
+                    } catch(e) {
+                        console.error("Erro ao renderizar textos do Propósito:", e);
+                    }
                 } catch(e) {
                     console.error("Erro ao renderizar textos do Propósito:", e);
                 }
             }, 150);
-
-            // 4. Bind Odyssey Plans specifically
-            setTimeout(() => {
-                try {
-                    const ody = state.profile?.odyssey || {};
-                    ['A', 'B', 'C'].forEach(id => {
-                        const plan = ody[id];
-                        if (plan) {
-                            safeSetText(`ody-title-${id}`, plan.title);
-                            safeSetText(`ody-desc-${id}`, plan.desc);
-                            
-                            const confEl = document.getElementById(`ody-conf-${id}`);
-                            if (confEl) confEl.innerHTML = Array(5).fill(0).map((_, i) => 
-                                `<span class="material-symbols-outlined notranslate text-sm" style="font-variation-settings: 'FILL' ${i < plan.conf ? 1 : 0};">star</span>`).join('');
-                            
-                            const nrgEl = document.getElementById(`ody-nrg-${id}`);
-                            if (nrgEl) nrgEl.innerHTML = Array(5).fill(0).map((_, i) => 
-                                `<span class="material-symbols-outlined notranslate text-sm" style="font-variation-settings: 'FILL' ${i < plan.nrg ? 1 : 0};">bolt</span>`).join('');
-                        }
-                    });
-                } catch(e) {
-                    console.error("Erro ao renderizar Odyssey Plans:", e);
-                }
-            }, 200);
 
             // Render SVG Roda da Vida Trigonometry
             try {
@@ -2860,8 +2870,8 @@ const app = {
             // Largura mínima de 3% para garantir visibilidade visual e interação
             if (widthPct < 3) widthPct = 3;
 
-            const colorMap = { metas: 'bg-stone-600 dark:bg-stone-500', okrs: 'bg-primary/90', macros: 'bg-primary', micros: 'bg-surface-variant' };
-            const textMap = { metas: 'text-white', okrs: 'text-white', macros: 'text-primary-on-container text-white', micros: 'text-on-surface-variant' };
+            const colorMap = { metas: 'bg-stone-600 dark:bg-stone-500', okrs: 'bg-primary', macros: 'bg-primary', micros: 'bg-surface-variant' };
+            const textMap = { metas: 'text-white', okrs: 'text-white', macros: 'text-white', micros: 'text-on-surface-variant' };
             const labelMap = { metas: 'Meta', okrs: 'OKR', macros: 'Macro', micros: 'Micro' };
             
             const color = colorMap[tipo] || 'bg-primary';
@@ -2882,11 +2892,11 @@ const app = {
                 </div>
                 <!-- Área do Gráfico de Gantt -->
                 <div class="flex-1 relative h-12 py-3 flex items-center cursor-default group/bar">
-                  <div class="absolute h-6 rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${color} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60 opacity-80' : 'hover:opacity-90'}" style="left:${leftPct.toFixed(2)}%; width:${widthPct.toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
-                    <!-- Fundo de progresso overlay -->
-                    <div class="absolute top-0 bottom-0 left-0 bg-black/20 dark:bg-white/20" style="width: ${progress}%"></div>
+                  <div class="absolute h-6 rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${entity.status === 'done' ? 'bg-primary' : 'bg-primary/80 opacity-70 gantt-stripe-bg'} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60' : ''}" style="left:${leftPct.toFixed(2)}%; width:${widthPct.toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
+                    <!-- Fundo de progresso (opcional se já temos cor/opacidade fixa por status) -->
+                    <div class="absolute top-0 bottom-0 left-0 bg-black/10 dark:bg-white/10" style="width: ${progress}%"></div>
                     <div class="absolute inset-0 flex items-center px-2">
-                        <span class="text-[10px] font-bold truncate leading-none z-10 drop-shadow-sm whitespace-nowrap">${entity.title}</span>
+                        <span class="text-[10px] font-bold truncate leading-none z-10 drop-shadow-sm whitespace-nowrap block w-full text-center">${entity.title}</span>
                     </div>
                   </div>
                 </div>
