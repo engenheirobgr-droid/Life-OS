@@ -2321,6 +2321,9 @@ const app = {
             if (pendingBadge) {
                 pendingBadge.textContent = `${pendentes} Pendentes`;
             }
+
+            // Distribuição de Foco na aba Hoje
+            this.renderFocusDistribution('focus-distribution');
         },
 
         planos: function() {
@@ -2813,10 +2816,29 @@ const app = {
                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full"></div>
           </div>`;
 
-        // ── Entidades (Hierarquia e Filtros) ───────────────────────
+        // ── Filtros Globais da Aba Planos ──────────────────────────
+        const currentFilter = window.app.planosFilter || 'Todas';
+        const statFilter = window.app.planosStatusFilter || 'active';
+        const hType = window.app.planosHierarchyType || '';
+        const hId = window.app.planosHierarchyId || '';
+
+        const filterStatus = (item) => {
+            if (item.status === 'abandoned') return false;
+            if (statFilter === 'active' && item.status === 'done') return false;
+            if (statFilter === 'done' && item.status !== 'done') return false;
+            return true;
+        };
+
+        const dimColorMap = {
+            'Saúde': 'border-rose-400', 'Mente': 'border-purple-400', 'Carreira': 'border-blue-400',
+            'Finanças': 'border-emerald-400', 'Relacionamentos': 'border-pink-400', 'Família': 'border-orange-400',
+            'Lazer': 'border-sky-400', 'Propósito': 'border-amber-400', 'Geral': 'border-stone-400'
+        };
+
+        // ── Entidades (Render) ─────────────────────────────────────
         let rowsHTML = '';
 
-        const renderRow = (entity, tipo, marginClass) => {
+        const renderRow = (entity, tipo, marginClass, parentDim) => {
             let taskStart = (entity.inicioDate && entity.inicioDate.trim() !== '')
               ? new Date(entity.inicioDate + 'T00:00:00')
               : ((entity.prazo && entity.prazo.trim() !== '') ? new Date(entity.prazo + 'T00:00:00') : new Date(today));
@@ -2825,54 +2847,115 @@ const app = {
               ? new Date(entity.prazo + 'T00:00:00')
               : new Date(today);
 
-            if (isNaN(taskStart.getTime()) || isNaN(taskEnd.getTime())) return;
-            if (taskEnd < startDate || taskStart > endDate) return; // fora da janela
+            if (isNaN(taskStart.getTime())) taskStart = new Date(today);
+            if (isNaN(taskEnd.getTime())) taskEnd = new Date(today);
 
+            if (taskEnd < startDate || taskStart > endDate) return; // fora da janela
             if (taskStart < startDate) taskStart = new Date(startDate);
             if (taskEnd > endDate)     taskEnd   = new Date(endDate);
 
             const leftPct  = ((taskStart - startDate) / (endDate - startDate)) * 100;
-            const widthPct = Math.max(0.5, ((taskEnd - taskStart) / (endDate - startDate)) * 100);
+            let widthPct = ((taskEnd - taskStart) / (endDate - startDate)) * 100;
             
-            const colorMap = { metas: 'bg-stone-500 text-white', okrs: 'bg-primary/80 text-white', macros: 'bg-primary text-on-primary', micros: 'bg-surface-variant text-on-surface-variant' };
+            // Largura mínima de 3% para garantir visibilidade visual e interação
+            if (widthPct < 3) widthPct = 3;
+
+            const colorMap = { metas: 'bg-stone-600 dark:bg-stone-500', okrs: 'bg-primary/90', macros: 'bg-primary', micros: 'bg-surface-variant' };
+            const textMap = { metas: 'text-white', okrs: 'text-white', macros: 'text-primary-on-container text-white', micros: 'text-on-surface-variant' };
             const labelMap = { metas: 'Meta', okrs: 'OKR', macros: 'Macro', micros: 'Micro' };
-            const color = colorMap[tipo] || 'bg-primary text-white';
+            
+            const color = colorMap[tipo] || 'bg-primary';
+            const txtColor = textMap[tipo] || 'text-white';
+            const progress = entity.progress || (entity.status === 'done' ? 100 : 0);
             const isOverdue = taskEnd < today && entity.status !== 'done';
+            
+            const dimValue = entity.dimension || entity.dimensionName || parentDim || 'Geral';
+            const borderColor = dimColorMap[dimValue] || 'border-outline-variant/40';
 
             rowsHTML += `
-              <div class="flex items-center border-b border-outline-variant/10 hover:bg-surface-container transition-colors group">
+              <div class="flex items-center border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors group even:bg-surface-container-low/30">
                 <div class="w-48 shrink-0 px-4 py-3 border-r border-outline-variant/20 flex flex-col justify-center overflow-hidden">
-                  <div class="${marginClass} flex items-center gap-1">
-                      <span class="text-[9px] font-bold uppercase tracking-widest text-outline shrink-0">${labelMap[tipo]}</span>
-                      <span class="text-xs text-on-surface leading-tight truncate" title="${entity.title}">${entity.title}</span>
+                  <div class="${marginClass} ${borderColor} flex items-center gap-1 group-hover:opacity-100 opacity-90 transition-opacity">
+                      <span class="text-[9px] font-bold uppercase tracking-widest text-outline shrink-0 group-hover:text-primary transition-colors">${labelMap[tipo]}</span>
+                      <span class="text-xs text-on-surface leading-tight truncate font-medium group-hover:text-primary transition-colors cursor-default" title="${entity.title}">${entity.title}</span>
                   </div>
                 </div>
-                <div class="flex-1 relative h-10 py-1.5">
-                  <div class="absolute h-full rounded-full flex items-center px-2 overflow-hidden cursor-default transition-all group-hover:opacity-90 ${color} ${isOverdue ? 'opacity-60 ring-1 ring-red-400' : ''}" style="left:${leftPct.toFixed(2)}%; width:${widthPct.toFixed(2)}%" title="${entity.title} | ${entity.prazo || ''}">
-                    <span class="text-[10px] font-semibold truncate leading-none">${entity.title}</span>
+                <!-- Área do Gráfico de Gantt -->
+                <div class="flex-1 relative h-12 py-3 flex items-center cursor-default group/bar">
+                  <div class="absolute h-6 rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${color} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60 opacity-80' : 'hover:opacity-90'}" style="left:${leftPct.toFixed(2)}%; width:${widthPct.toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
+                    <!-- Fundo de progresso overlay -->
+                    <div class="absolute top-0 bottom-0 left-0 bg-black/20 dark:bg-white/20" style="width: ${progress}%"></div>
+                    <div class="absolute inset-0 flex items-center px-2">
+                        <span class="text-[10px] font-bold truncate leading-none z-10 drop-shadow-sm whitespace-nowrap">${entity.title}</span>
+                    </div>
                   </div>
                 </div>
               </div>`;
         };
 
-        const currentFilter = window.app.planosFilter || 'Todas';
-        const activeMetas = (state.entities.metas || []).filter(m => m.status !== 'abandoned' && (currentFilter === 'Todas' || m.dimensionName === currentFilter));
-        
-        activeMetas.forEach(meta => {
-            renderRow(meta, 'metas', 'ml-0');
-            const okrs = (state.entities.okrs || []).filter(o => o.status !== 'abandoned' && o.metaId === meta.id);
-            okrs.forEach(okr => {
-                renderRow(okr, 'okrs', 'ml-4 border-l-2 border-outline-variant/20 pl-2');
-                const macros = (state.entities.macros || []).filter(m => m.status !== 'abandoned' && m.okrId === okr.id);
-                macros.forEach(macro => {
-                    renderRow(macro, 'macros', 'ml-8 border-l-2 border-outline-variant/20 pl-2');
-                    const micros = (state.entities.micros || []).filter(m => m.status !== 'abandoned' && m.macroId === macro.id);
-                    micros.forEach(micro => {
-                        renderRow(micro, 'micros', 'ml-12 border-l-2 border-outline-variant/20 pl-2');
-                    });
-                });
+        const processMicros = (macroId, dim) => {
+            const micros = (state.entities.micros || []).filter(m => m.macroId === macroId && filterStatus(m));
+            micros.forEach(micro => renderRow(micro, 'micros', 'ml-12 border-l-4 pl-2', dim));
+        };
+        const processMacros = (okrId, dim) => {
+            const macros = (state.entities.macros || []).filter(m => m.okrId === okrId && filterStatus(m));
+            macros.forEach(macro => {
+                renderRow(macro, 'macros', 'ml-8 border-l-4 pl-2', dim);
+                processMicros(macro.id, dim);
             });
-        });
+        };
+        const processOkrs = (metaId, dim) => {
+            const okrs = (state.entities.okrs || []).filter(o => o.metaId === metaId && filterStatus(o));
+            okrs.forEach(okr => {
+                renderRow(okr, 'okrs', 'ml-4 border-l-4 pl-2', dim);
+                processMacros(okr.id, dim);
+            });
+        };
+
+        const processMetas = () => {
+             const metas = (state.entities.metas || []).filter(m => {
+                 if (!filterStatus(m)) return false;
+                 const dim = m.dimensionName || m.dimension || 'Geral';
+                 if (currentFilter !== 'Todas' && dim !== currentFilter) return false;
+                 return true;
+             });
+             metas.forEach(meta => {
+                 const dim = meta.dimensionName || meta.dimension || 'Geral';
+                 renderRow(meta, 'metas', 'ml-0 border-l-4 pl-2', dim);
+                 processOkrs(meta.id, dim);
+             });
+        }
+
+        // Lógica de Processamento de Árvore (Hierárquica vs. Global)
+        if (hType && hId) {
+            if (hType === 'metas') {
+                const meta = state.entities.metas.find(m => m.id === hId);
+                if (meta && filterStatus(meta)) {
+                    const dim = meta.dimensionName || meta.dimension || 'Geral';
+                    renderRow(meta, 'metas', 'ml-0 border-l-4 pl-2', dim);
+                    processOkrs(meta.id, dim);
+                }
+            } else if (hType === 'okrs') {
+                const okr = state.entities.okrs.find(o => o.id === hId);
+                if (okr && filterStatus(okr)) {
+                    renderRow(okr, 'okrs', 'ml-0 border-l-4 pl-2', 'Geral');
+                    processMacros(okr.id, 'Geral');
+                }
+            } else if (hType === 'macros') {
+                const macro = state.entities.macros.find(m => m.id === hId);
+                if (macro && filterStatus(macro)) {
+                    renderRow(macro, 'macros', 'ml-0 border-l-4 pl-2', 'Geral');
+                    processMicros(macro.id, 'Geral');
+                }
+            } else if (hType === 'micros') {
+                const micro = state.entities.micros.find(m => m.id === hId);
+                if (micro && filterStatus(micro)) {
+                    renderRow(micro, 'micros', 'ml-0 border-l-4 pl-2', 'Geral');
+                }
+            }
+        } else {
+             processMetas();
+        }
 
         // ── Estado vazio ───────────────────────────────────────────
         if (!rowsHTML) {
@@ -2882,7 +2965,7 @@ const app = {
                 calendar_today
               </span>
               <p class="text-sm italic">
-                Nenhuma entidade com datas definidas encontrada.
+                Nenhuma entidade correspondente ao seu filtro atual foi encontrada nesta janela de visualização.
               </p>
             </div>`;
         }
@@ -2890,7 +2973,7 @@ const app = {
         container.innerHTML = `
           <div class="relative min-w-[600px]">
             ${headerHTML}
-            <div class="relative">
+            <div class="relative pb-6">
               ${todayLine}
               ${rowsHTML}
             </div>
