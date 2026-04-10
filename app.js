@@ -87,7 +87,7 @@ const app = {
         }, 3500);
     },
     currentView: '',
-    painelFilter: 'semana',
+    painelFilter: 'ciclo',
     planosFilter: 'Todas',
     planosStatusFilter: 'active',
     planosHierarchyType: '',
@@ -2701,36 +2701,45 @@ const app = {
                     window.app.renderSidebarValues();
 
                     // 3. Preenchimento de Textos do Perfil (Padrao de Exibicao)
-                    try {
-                        const state = window.sistemaVidaState;
+                        // Helper para Placeholders (Standard Sênior)
+                        const renderField = (id, val, placeholder) => {
+                            const el = document.getElementById(id);
+                            if (!el) return;
+                            if (!val || val.trim() === "" || val === "Clique para definir") {
+                                el.textContent = placeholder;
+                                el.classList.remove('text-on-surface-variant');
+                                el.classList.add('text-outline', 'opacity-40');
+                            } else {
+                                el.textContent = val;
+                                el.classList.add('text-on-surface-variant');
+                                el.classList.remove('text-outline', 'opacity-40');
+                            }
+                        };
+                        
                         const prof = state.profile || {};
                         
                         // Ikigai (display-id)
-                        document.getElementById('display-ikigai-love').textContent = prof.ikigai.love || "Clique para definir";
-                        document.getElementById('display-ikigai-good').textContent = prof.ikigai.good || "Clique para definir";
-                        document.getElementById('display-ikigai-need').textContent = prof.ikigai.need || "Clique para definir";
-                        document.getElementById('display-ikigai-paid').textContent = prof.ikigai.paid || "Clique para definir";
-                        document.getElementById('display-ikigai-sintese').textContent = prof.ikigai.sintese || "Clique para definir";
+                        renderField('display-ikigai-love', prof.ikigai.love, "O que você ama fazer?");
+                        renderField('display-ikigai-good', prof.ikigai.good, "No que você é excelente?");
+                        renderField('display-ikigai-need', prof.ikigai.need, "Do que o mundo precisa?");
+                        renderField('display-ikigai-paid', prof.ikigai.paid, "Pelo que você pode ser pago?");
+                        renderField('display-ikigai-sintese', prof.ikigai.sintese, "Sua razão de ser...");
 
                         // Visao (display-id)
-                        document.getElementById('display-vision-saude').textContent = prof.vision.saude || "Clique para definir";
-                        document.getElementById('display-vision-carreira').textContent = prof.vision.carreira || "Clique para definir";
-                        document.getElementById('display-vision-intelecto').textContent = prof.vision.intelecto || "Clique para definir";
-                        document.getElementById('display-vision-quote').textContent = prof.vision.quote || "Clique para definir";
+                        renderField('display-vision-saude', prof.vision.saude, "Sua visão para o corpo e energia...");
+                        renderField('display-vision-carreira', prof.vision.carreira, "Sua visão para trabalho e sustento...");
+                        renderField('display-vision-intelecto', prof.vision.intelecto, "Sua visão para a mente e o espírito...");
+                        renderField('display-vision-quote', prof.vision.quote, "Uma frase que te define...");
 
                         // Legado (display-id)
-                        document.getElementById('display-legacy-familia').textContent = prof.legacyObj.familia || "Clique para definir";
-                        document.getElementById('display-legacy-profissao').textContent = prof.legacyObj.profissao || "Clique para definir";
-                        document.getElementById('display-legacy-mundo').textContent = prof.legacyObj.mundo || "Clique para definir";
+                        renderField('display-legacy-familia', prof.legacyObj.familia, "Como você quer ser lembrado pelos seus?");
+                        renderField('display-legacy-profissao', prof.legacyObj.profissao, "Qual obra você quer deixar no mercado?");
+                        renderField('display-legacy-mundo', prof.legacyObj.mundo, "Como sua passagem muda a sociedade?");
 
                         // Odyssey Plan (Novas Chaves Consolidadas)
-                        document.getElementById('display-cenarioA').textContent = prof.odyssey.cenarioA || "Clique para definir";
-                        document.getElementById('display-cenarioB').textContent = prof.odyssey.cenarioB || "Clique para definir";
-                        document.getElementById('display-cenarioC').textContent = prof.odyssey.cenarioC || "Clique para definir";
-
-                    } catch(e) {
-                        console.error("Erro ao renderizar textos do Propósito:", e);
-                    }
+                        renderField('display-cenarioA', prof.odyssey.cenarioA, "Cenário A: Descreva aqui sua visão de 5 anos (Vida Atual)...");
+                        renderField('display-cenarioB', prof.odyssey.cenarioB, "Cenário B: Descreva aqui sua visão de 5 anos (Plano B)...");
+                        renderField('display-cenarioC', prof.odyssey.cenarioC, "Cenário C: Descreva aqui sua visão de 5 anos (Vida Radical)...");
                 } catch(e) {
                     console.error("Erro ao renderizar textos do Propósito:", e);
                 }
