@@ -2900,6 +2900,7 @@ const app = {
         let rowsHTML = '';
 
         const renderRow = (entity, tipo, marginClass, parentDim) => {
+            if (!entity.title || entity.title.trim() === '') return;
             let taskEnd = (entity.prazo && entity.prazo.trim() !== '')
               ? new Date(entity.prazo + 'T00:00:00')
               : new Date(today);
@@ -2926,7 +2927,6 @@ const app = {
             const leftPct = ((visualStart - startDate) / totalWindowTime) * 100;
             const widthPct = ((visualEnd - visualStart) / totalWindowTime) * 100;
 
-            const colorMap = { metas: 'bg-stone-600 dark:bg-stone-500', okrs: 'bg-primary', macros: 'bg-primary', micros: 'bg-surface-variant' };
             const textMap = { metas: 'text-white', okrs: 'text-white', macros: 'text-white', micros: 'text-on-surface-variant' };
             const labelMap = { metas: 'Meta', okrs: 'OKR', macros: 'Macro', micros: 'Micro' };
             
@@ -2937,6 +2937,10 @@ const app = {
             const dimValue = entity.dimension || entity.dimensionName || parentDim || 'Geral';
             const borderColor = dimColorMap[dimValue] || 'border-outline-variant/40';
 
+            const isMicro = tipo === 'micros';
+            const barHeight = isMicro ? 'h-4' : 'h-6';
+            const barStyles = isMicro ? 'bg-secondary/50' : (entity.status === 'done' ? 'bg-primary' : 'bg-primary/80 opacity-70 gantt-stripe-bg');
+            
             rowsHTML += `
               <div class="flex items-center border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors group even:bg-surface-container-low/30">
                 <div class="w-48 shrink-0 px-4 py-3 border-r border-outline-variant/20 flex flex-col justify-center overflow-hidden">
@@ -2947,7 +2951,7 @@ const app = {
                 </div>
                 <!-- Área do Gráfico de Gantt -->
                 <div class="flex-1 relative h-12 py-3 flex items-center cursor-default group/bar">
-                  <div class="absolute h-6 rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${entity.status === 'done' ? 'bg-primary' : 'bg-primary/80 opacity-70 gantt-stripe-bg'} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60' : ''}" 
+                  <div class="absolute ${barHeight} rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${barStyles} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60' : ''}" 
                        style="left:${leftPct.toFixed(2)}%; width:${Math.max(widthPct, 1.5).toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
                     <!-- Fundo de progresso Real -->
                     <div class="absolute top-0 bottom-0 left-0 bg-black/20 dark:bg-white/10" style="width: ${progress}%"></div>
@@ -2961,7 +2965,7 @@ const app = {
 
         const processMicros = (macroId, dim) => {
             const micros = (state.entities.micros || []).filter(m => m.macroId === macroId && filterStatus(m));
-            micros.forEach(micro => renderRow(micro, 'micros', 'ml-12 border-l-4 pl-2', dim));
+            micros.forEach(micro => renderRow(micro, 'micros', 'ml-16 border-l-4 pl-2', dim));
         };
         const processMacros = (okrId, dim) => {
             const macros = (state.entities.macros || []).filter(m => m.okrId === okrId && filterStatus(m));
