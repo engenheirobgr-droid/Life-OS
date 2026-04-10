@@ -22,7 +22,7 @@
 <button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="okrs" onclick="window.app.switchPlanosTab('okrs')">OKRs</button>
 <button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="macro" onclick="window.app.switchPlanosTab('macro')">Macro</button>
 <button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="micro" onclick="window.app.switchPlanosTab('micro')">Micro</button>
-<button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="timeline" onclick="window.app.switchPlanosTab('timeline'); window.app.renderTimeline();">Timeline</button>
+<button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="timeline" onclick="window.app.switchPlanosTab('timeline')">Timeline</button>
 </nav>
 <!-- Page Introduction -->
 <header class="mb-12">
@@ -49,13 +49,13 @@
             <span class="material-symbols-outlined notranslate text-[14px]">account_tree</span> Raio-X Relacional:
         </span>
         <div class="flex gap-2 w-full sm:w-auto">
-            <select id="hier-type" onchange="window.app.planosHierarchyType = this.value; window.app.planosHierarchyId = ''; window.app.render.planos()" class="flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none">
+            <select id="hier-type" onchange="window.app.planosHierarchyType = this.value; window.app.planosHierarchyId = ''; window.app.render.planos(); window.app.renderTimeline();" class="flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none">
                 <option value="">Mostrar Tudo</option>
                 <option value="metas">Por Meta</option>
                 <option value="okrs">Por OKR</option>
                 <option value="macros">Por Macro Ação</option>
             </select>
-            <select id="hier-id" onchange="window.app.planosHierarchyId = this.value; window.app.render.planos()" class="hidden flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none w-full sm:max-w-[250px] truncate">
+            <select id="hier-id" onchange="window.app.planosHierarchyId = this.value; window.app.render.planos(); window.app.renderTimeline();" class="hidden flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none w-full sm:max-w-[250px] truncate">
                 <option value="">Selecione...</option>
             </select>
         </div>
@@ -65,9 +65,9 @@
             <span class="material-symbols-outlined notranslate text-[14px]">check_circle</span> Status:
         </span>
         <div class="flex gap-2 shrink-0">
-            <button onclick="window.app.planosStatusFilter='active'; window.app.render.planos()" id="btn-stat-active" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Ativos</button>
-            <button onclick="window.app.planosStatusFilter='done'; window.app.render.planos()" id="btn-stat-done" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Concluídos</button>
-            <button onclick="window.app.planosStatusFilter='all'; window.app.render.planos()" id="btn-stat-all" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Todos</button>
+            <button onclick="window.app.setPlanosStatusFilter('active')" id="btn-stat-active" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Ativos</button>
+            <button onclick="window.app.setPlanosStatusFilter('done')" id="btn-stat-done" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Concluídos</button>
+            <button onclick="window.app.setPlanosStatusFilter('all')" id="btn-stat-all" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Todos</button>
         </div>
     </div>
 </div>

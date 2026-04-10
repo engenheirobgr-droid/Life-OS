@@ -287,12 +287,14 @@ const app = {
         btn.classList.add('text-stone-500');
       });
     
-      // 4. Marca o botão da tab clicada como ativo
       const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
       if (activeBtn) {
         activeBtn.classList.add('active', 'text-primary');
         activeBtn.classList.remove('text-stone-500');
       }
+
+      // Reação em cadeia: Renderiza a timeline ao entrar na tab
+      if (tabId === 'timeline') this.renderTimeline();
     },
 
     init: async function() {
@@ -524,6 +526,13 @@ const app = {
     setPlanosFilter: function(dim) {
         this.planosFilter = dim;
         if (this.render.planos) this.render.planos();
+        this.renderTimeline(); // Reação em Cadeia
+    },
+
+    setPlanosStatusFilter: function(status) {
+        this.planosStatusFilter = status;
+        if (this.render.planos) this.render.planos();
+        this.renderTimeline(); // Reação em Cadeia
     },
 
     setPainelFilter: function(filter) {
@@ -1759,6 +1768,7 @@ const app = {
             dims.forEach(d => { effortTotal[d] = 0; effortDone[d] = 0; });
             
             const typeFilter = app.focusTypeFilter || 'Tudo';
+            const statusFilter = app.focusStatusFilter || 'Tudo';
 
             // Atualiza botões de filtro na UI (se existirem na página atual)
             document.querySelectorAll('[data-focus-type]').forEach(btn => {
@@ -1773,11 +1783,20 @@ const app = {
                 if (typeFilter !== 'Tudo' && typeFilter !== typeName) return;
                 
                 (list || []).forEach(item => {
+                    // Unificação Sênior: Apenas item.dimension
                     const dim = item.dimension || 'Geral';
+                    
                     if (effortTotal[dim] !== undefined) {
-                        effortTotal[dim] += weight;
-                        if (item.status === 'done' || item.completed) {
-                            effortDone[dim] += weight;
+                        const isDone = item.status === 'done' || item.completed === true;
+                        
+                        // Lógica de Filtro de Status para o Gráfico
+                        let matchStatus = true;
+                        if (statusFilter === 'Pendentes') matchStatus = !isDone;
+                        if (statusFilter === 'Concluídos') matchStatus = isDone;
+
+                        if (matchStatus) {
+                            effortTotal[dim] += weight;
+                            if (isDone) effortDone[dim] += weight;
                         }
                     }
                 });
@@ -1794,7 +1813,7 @@ const app = {
                 const total = effortTotal[dim] || 0;
                 const done = effortDone[dim] || 0;
                 
-                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                const pct = total > 0 ? Math.round((done / total) * 100) : (statusFilter === 'Concluídos' ? 100 : 0);
                 focusHtml += `
                 <div class="space-y-1.5">
                     <div class="flex justify-between items-end">
@@ -1805,7 +1824,7 @@ const app = {
                         </div>
                     </div>
                     <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                        <div class="h-full ${pct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${pct > 0 ? pct : 100}%"></div>
+                        <div class="h-full ${pct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${pct > 0 ? pct : (statusFilter === 'Concluídos' ? 100 : 0)}%"></div>
                     </div>
                 </div>`;
             });
@@ -1859,7 +1878,7 @@ const app = {
                     <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group">
                         <div class="flex justify-between items-start mb-4">
                             <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded-full">
-                                ${m.dimension}
+                                ${m.dimension || 'Geral'}
                             </span>
                             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onclick="window.app.editEntity('${m.id}', 'micros')" class="p-1 hover:text-primary"><span class="material-symbols-outlined notranslate text-sm">edit</span></button>
@@ -1867,17 +1886,20 @@ const app = {
                             </div>
                         </div>
                         <h3 class="font-bold text-on-surface mb-1 line-clamp-2">${m.title}</h3>
-                        <p class="text-xs text-outline mb-4 line-clamp-1">${m.macroId ? (state.entities.macros.find(ma => ma.id === m.macroId)?.title || '') : 'Sem Macro'}</p>
+                        <p class="text-xs text-outline mb-4 line-clamp-1">${m.macroId ? (state.entities.macros.find(ma => ma.id === m.macroId)?.title || 'Macro não encontrada') : 'Sem Macro'}</p>
                         
                         <div class="pt-4 border-t border-outline-variant/10 flex justify-between items-center">
                             <div class="flex items-center gap-2 text-outline">
                                 <span class="material-symbols-outlined notranslate text-xs">event</span>
                                 <span class="text-[10px] font-bold uppercase">${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>
                             </div>
-                            ${m.status === 'done' ? 
-                                `<span class="text-[10px] font-bold uppercase text-green-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">check_circle</span> Concluída</span>` :
-                                `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
-                            }
+                            <div class="flex items-center gap-2">
+                                ${m.status === 'in_progress' ? '<span class="text-[10px] font-bold uppercase text-amber-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">sync</span> Andamento</span>' : ''}
+                                ${m.status === 'done' ? 
+                                    `<span class="text-[10px] font-bold uppercase text-green-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">check_circle</span> Concluída</span>` :
+                                    `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
+                                }
+                            </div>
                         </div>
                     </div>
                 `).join('');
@@ -2555,8 +2577,11 @@ const app = {
                         const userValues = state.profile.values || [];
                         const isAligned = userValues.includes(item.dimension);
 
+                        const isInProgress = item.status === 'in_progress';
+                        const highlightClass = isInProgress ? 'ring-2 ring-amber-500/50 border-amber-500/50 shadow-md shadow-amber-500/10' : 'border-outline-variant/10 shadow-sm';
+
                         html += `
-                        <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
+                        <div class="bg-surface-container-lowest p-6 rounded-2xl border ${highlightClass} hover:shadow-lg transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
                             <div class="flex justify-between items-start mb-4 gap-3">
                                 <div class="space-y-1 flex-1 min-w-0">
                                     <div class="flex items-center gap-2">
@@ -2564,31 +2589,47 @@ const app = {
                                         ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded border border-primary/20 font-bold">ALINHADO</span>' : ''}
                                     </div>
                                     <h4 class="font-headline text-xl font-medium truncate">${item.title}</h4>
-                                    <div class="flex flex-wrap items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        ${item.status === 'pending' ? `<button onclick="event.stopPropagation(); app.startEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-amber-500/30 hover:bg-amber-500/10 rounded flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 transition-colors">
-                                            <span class="material-symbols-outlined notranslate text-[14px]">play_arrow</span> Iniciar
-                                        </button>` : ''}
-                                        ${prog < 100 ? `<button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary/10 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
-                                            <span class="material-symbols-outlined notranslate text-[14px]">done_all</span> Concluir
-                                        </button>` : ''}
-                                        <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')" class="p-1 px-2 border border-primary text-primary hover:bg-primary/10 rounded flex items-center gap-1 text-[10px] font-bold transition-all shadow-sm">
-                                            <span class="material-symbols-outlined notranslate text-[14px]">settings_accessibility</span> Gerir
+                                    
+                                    <!-- Ações do Card Refatoradas -->
+                                    <div class="grid grid-cols-2 gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                                        <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')" 
+                                            class="col-span-2 p-2 bg-primary/5 border border-primary/20 text-primary hover:bg-primary/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all">
+                                            <span class="material-symbols-outlined notranslate text-base">settings_accessibility</span> Gerir Estratégia
                                         </button>
-                                        <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-primary-container/20 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-primary transition-colors">
-                                            <span class="material-symbols-outlined notranslate text-[14px]">edit</span> Editar
+                                        
+                                        <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')" 
+                                            class="p-2 border border-outline-variant/30 hover:bg-surface-container-high rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-on-surface transition-colors">
+                                            <span class="material-symbols-outlined notranslate text-base">edit</span> Editar
                                         </button>
-                                        <button onclick="event.stopPropagation(); app.deleteEntity('${item.id}', '${entityType}')" class="p-1 px-2 border border-outline-variant hover:bg-error-container/20 rounded flex items-center gap-1 text-[10px] font-bold text-outline hover:text-error transition-colors">
-                                            <span class="material-symbols-outlined notranslate text-[14px]">delete</span> Excluir
-                                        </button>
+
+                                        ${item.status === 'pending' ? `
+                                            <button onclick="event.stopPropagation(); app.startEntity('${item.id}', '${entityType}')" 
+                                                class="p-2 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-amber-700 dark:text-amber-400 transition-colors">
+                                                <span class="material-symbols-outlined notranslate text-base">play_arrow</span> Iniciar
+                                            </button>
+                                        ` : (prog < 100 ? `
+                                            <button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')" 
+                                                class="p-2 border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-green-700 dark:text-green-400 transition-colors">
+                                                <span class="material-symbols-outlined notranslate text-base">check_circle</span> Concluir
+                                            </button>
+                                        ` : `
+                                            <button onclick="event.stopPropagation(); app.deleteEntity('${item.id}', '${entityType}')" 
+                                                class="p-2 border border-outline-variant/30 hover:bg-error-container/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-error transition-colors">
+                                                <span class="material-symbols-outlined notranslate text-base">delete</span> Excluir
+                                            </button>
+                                        `)}
                                     </div>
                                 </div>
-                                ${prog >= 100 ? `<span class="shrink-0 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Concluído</span>` : (item.status === 'in_progress' ? `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0">Em Andamento</span>` : `<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Ativo</span>`)}
+                                ${prog >= 100 ? 
+                                    `<span class="shrink-0 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Concluído</span>` : 
+                                    (isInProgress ? `<span class="bg-amber-100 text-amber-700 border border-amber-500/20 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 animate-pulse">Iniciado</span>` : `<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Ativo</span>`)
+                                }
                             </div>
-                            <div class="flex items-center gap-2 text-stone-400 text-xs mb-6">
+                            <div class="flex items-center gap-2 text-stone-400 text-xs mb-6 px-1">
                                 <span class="material-symbols-outlined notranslate text-sm">event</span>
                                 ${app.formatPrazoDisplay(item)}
                             </div>
-                            <div class="space-y-2">
+                            <div class="space-y-2 px-1">
                                 <div class="flex justify-between text-[10px] font-label text-stone-500 uppercase">
                                     <span>Progresso</span>
                                     <span>${prog.toFixed(0)}%</span>
@@ -2596,7 +2637,6 @@ const app = {
                                 <div class="h-1 w-full bg-surface-container-high rounded-full overflow-hidden">
                                     <div class="h-full bg-primary rounded-full transition-all" style="width: ${visualProg}%"></div>
                                 </div>
-                                ${entityType === 'okrs' && prog >= 95 ? '<div class="flex items-center gap-1 mt-2 text-amber-600 dark:text-amber-400 text-[11px] italic leading-tight">⚠️ Meta pode ter sido pouco desafiadora</div>' : ''}
                             </div>
                             <div class="trail-panel hidden overflow-hidden transition-all duration-300 max-h-0 mt-6 border-t border-outline-variant/10 pt-4">
                                 <div class="relative pl-6 pt-1">
@@ -2858,32 +2898,36 @@ const app = {
         let rowsHTML = '';
 
         const renderRow = (entity, tipo, marginClass, parentDim) => {
-            let taskStart = (entity.inicioDate && entity.inicioDate.trim() !== '')
-              ? new Date(entity.inicioDate + 'T00:00:00')
-              : ((entity.prazo && entity.prazo.trim() !== '') ? new Date(entity.prazo + 'T00:00:00') : new Date(today));
-            
             let taskEnd = (entity.prazo && entity.prazo.trim() !== '')
               ? new Date(entity.prazo + 'T00:00:00')
               : new Date(today);
+
+            let taskStart;
+            if (entity.inicioDate && entity.inicioDate.trim() !== '') {
+                taskStart = new Date(entity.inicioDate + 'T00:00:00');
+            } else {
+                // Se o item não tiver "inicioDate", assume que começou 2 dias antes do prazo
+                taskStart = new Date(taskEnd.getTime());
+                taskStart.setDate(taskStart.getDate() - 2);
+            }
 
             if (isNaN(taskStart.getTime())) taskStart = new Date(today);
             if (isNaN(taskEnd.getTime())) taskEnd = new Date(today);
 
             if (taskEnd < startDate || taskStart > endDate) return; // fora da janela
-            if (taskStart < startDate) taskStart = new Date(startDate);
-            if (taskEnd > endDate)     taskEnd   = new Date(endDate);
-
-            const leftPct  = ((taskStart - startDate) / (endDate - startDate)) * 100;
-            let widthPct = ((taskEnd - taskStart) / (endDate - startDate)) * 100;
             
-            // Largura mínima de 3% para garantir visibilidade visual e interação
-            if (widthPct < 3) widthPct = 3;
+            // Clamping para a janela de visualização
+            const visualStart = new Date(Math.max(taskStart, startDate));
+            const visualEnd = new Date(Math.min(taskEnd, endDate));
+
+            const totalWindowTime = endDate - startDate;
+            const leftPct = ((visualStart - startDate) / totalWindowTime) * 100;
+            const widthPct = ((visualEnd - visualStart) / totalWindowTime) * 100;
 
             const colorMap = { metas: 'bg-stone-600 dark:bg-stone-500', okrs: 'bg-primary', macros: 'bg-primary', micros: 'bg-surface-variant' };
             const textMap = { metas: 'text-white', okrs: 'text-white', macros: 'text-white', micros: 'text-on-surface-variant' };
             const labelMap = { metas: 'Meta', okrs: 'OKR', macros: 'Macro', micros: 'Micro' };
             
-            const color = colorMap[tipo] || 'bg-primary';
             const txtColor = textMap[tipo] || 'text-white';
             const progress = entity.progress || (entity.status === 'done' ? 100 : 0);
             const isOverdue = taskEnd < today && entity.status !== 'done';
@@ -2901,9 +2945,10 @@ const app = {
                 </div>
                 <!-- Área do Gráfico de Gantt -->
                 <div class="flex-1 relative h-12 py-3 flex items-center cursor-default group/bar">
-                  <div class="absolute h-6 rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${entity.status === 'done' ? 'bg-primary' : 'bg-primary/80 opacity-70 gantt-stripe-bg'} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60' : ''}" style="left:${leftPct.toFixed(2)}%; width:${widthPct.toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
-                    <!-- Fundo de progresso (opcional se já temos cor/opacidade fixa por status) -->
-                    <div class="absolute top-0 bottom-0 left-0 bg-black/10 dark:bg-white/10" style="width: ${progress}%"></div>
+                  <div class="absolute h-6 rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${entity.status === 'done' ? 'bg-primary' : 'bg-primary/80 opacity-70 gantt-stripe-bg'} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60' : ''}" 
+                       style="left:${leftPct.toFixed(2)}%; width:${Math.max(widthPct, 1.5).toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
+                    <!-- Fundo de progresso Real -->
+                    <div class="absolute top-0 bottom-0 left-0 bg-black/20 dark:bg-white/10" style="width: ${progress}%"></div>
                     <div class="absolute inset-0 flex items-center px-2">
                         <span class="text-[10px] font-bold truncate leading-none z-10 drop-shadow-sm whitespace-nowrap block w-full text-center">${entity.title}</span>
                     </div>
