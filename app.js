@@ -1125,13 +1125,15 @@ const app = {
     },
 
     setFocusTypeFilter: function(type) {
-        this.focusTypeFilter = type;
-        if (this.render.painel) this.render.painel();
+      this.focusTypeFilter = type;
+      if (this.currentView === 'foco') this.render.foco();
+      if (this.currentView === 'painel') this.render.painel();
     },
 
     setFocusStatusFilter: function(status) {
-        this.focusStatusFilter = status;
-        if (this.render.painel) this.render.painel();
+      this.focusStatusFilter = status;
+      if (this.currentView === 'foco') this.render.foco();
+      if (this.currentView === 'painel') this.render.painel();
     },
 
     resetWheelOfLife: function() {
@@ -3118,6 +3120,12 @@ const app = {
         micro.completed = isCompleting;
         micro.progress = isCompleting ? 100 : 0;
 
+        if (isCompleting) {
+          micro.completedDate = new Date().toISOString().split('T');
+        } else {
+          delete micro.completedDate;
+        }
+
         // Dispara cascata
         this.updateCascadeProgress(micro.id, 'micros');
 
@@ -3147,6 +3155,7 @@ const app = {
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'planos' && this.render.planos) this.render.planos();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
+        if (this.currentView === 'foco') this.render.foco();
     },
 
     startEntity: function(id, type) {
