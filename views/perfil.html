@@ -45,7 +45,7 @@
 </div>
 </div>
 <!-- Theme -->
-<div onclick="const cur = document.documentElement.getAttribute('data-theme'); document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
+<div onclick="const root = document.documentElement; const isDark = root.classList.contains('dark'); root.classList.toggle('dark', !isDark); root.classList.toggle('light', isDark);" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined notranslate text-primary" data-icon="contrast">contrast</span>
 <div>

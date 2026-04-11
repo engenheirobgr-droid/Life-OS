@@ -101,14 +101,6 @@ const app = {
     // ------------------------------------------------------------------------
     // Cloud Persistence Engine
     // ------------------------------------------------------------------------
-    saveValues: function(values) {
-        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-        window.sistemaVidaState.profile.values = values;
-        this.saveState(false);
-        this.renderSidebarValues();
-        this.renderCurrentView();
-    },
-
     saveState: async function(silent = true) {
         try {
             const stateRef = doc(db, "users", "meu-sistema-vida");
@@ -2673,10 +2665,6 @@ const app = {
             if (nomeDisplay && state.profile) {
                 nomeDisplay.textContent = state.profile.name || "Seu Nome";
             }
-        },
-
-        onboarding: function() {
-            console.log("Onboarding renderizado. Lógica de passo-a-passo no fragmento interno.");
         },
 
         proposito: function() {
