@@ -739,6 +739,7 @@ const app = {
         const dimensionGroup = document.getElementById('crud-dimension-group');
         const contextLabel = document.getElementById('crud-context-label');
         const habitControls = document.getElementById('crud-habit-controls');
+        const metaHorizonGroup = document.getElementById('crud-meta-horizon-group');
         
         // Esconde tudo por padrão para resetar estado visual
         if (parentGroup) parentGroup.classList.add('hidden');
@@ -747,6 +748,7 @@ const app = {
             habitControls.classList.add('hidden');
             habitControls.classList.remove('flex');
         }
+        if (metaHorizonGroup) metaHorizonGroup.classList.add('hidden');
         if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
 
         // Configura baseado no tipo
@@ -767,7 +769,10 @@ const app = {
             }
             if (contextLabel) contextLabel.textContent = 'Gatilho de Execução';
         } else if (type === 'metas') {
+            if (parentGroup) parentGroup.classList.remove('hidden');
+            if (metaHorizonGroup) metaHorizonGroup.classList.remove('hidden');
             if (contextLabel) contextLabel.textContent = 'Por que esta meta? (Propósito)';
+            this.updateParentList(type);
         } else if (type === 'okrs') {
             if (parentGroup) parentGroup.classList.remove('hidden');
             if (contextLabel) contextLabel.textContent = 'Indicador de Sucesso / Métrica';
@@ -795,6 +800,32 @@ const app = {
             if (inicioInput && !inicioInput.value) inicioInput.value = hoje;
             if (prazoInput && !prazoInput.value) prazoInput.value = hoje;
         }
+    },
+
+    getMetaHorizonYears: function(meta) {
+        const explicit = Number(meta?.horizonYears);
+        if (Number.isFinite(explicit) && explicit > 0) return explicit;
+        if (!meta?.prazo) return 1;
+        const today = new Date();
+        const deadline = new Date(meta.prazo + 'T00:00:00');
+        if (isNaN(deadline.getTime())) return 1;
+        const years = (deadline - today) / (1000 * 60 * 60 * 24 * 365.25);
+        if (years > 3.5) return 5;
+        if (years > 1.5) return 2.5;
+        return 1;
+    },
+
+    getMetaParentChain: function(metaId) {
+        const chain = [];
+        const seen = new Set();
+        let currentId = metaId;
+        while (currentId && !seen.has(currentId)) {
+            seen.add(currentId);
+            chain.push(currentId);
+            const current = (window.sistemaVidaState.entities.metas || []).find(m => m.id === currentId);
+            currentId = current?.parentMetaId || '';
+        }
+        return chain;
     },
 
     onHabitModeChange: function(mode) {
@@ -828,6 +859,7 @@ const app = {
 
         const type = typeSelect.value;
         let parentType = '';
+        if (type === 'metas') parentType = 'metas';
         if (type === 'okrs') parentType = 'metas';
         if (type === 'macros') parentType = 'okrs';
         if (type === 'micros') parentType = 'macros';
@@ -844,26 +876,42 @@ const app = {
     updateParentList: function(type) {
         const parentSelect = document.getElementById('create-parent');
         const dimSelect = document.getElementById('crud-dimension');
+        const horizonSelect = document.getElementById('crud-meta-horizon');
         if (!parentSelect) return;
         
         const currentDim = dimSelect ? dimSelect.value : null;
-        parentSelect.innerHTML = '<option value="">Sem vínculo (Mestre)</option>';
+        parentSelect.innerHTML = `<option value="">${type === 'metas' ? 'Sem meta pai (Meta Raiz)' : 'Sem vínculo (Mestre)'}</option>`;
         
         let parentType = '';
+        if (type === 'metas') parentType = 'metas';
         if (type === 'okrs') parentType = 'metas';
         if (type === 'macros') parentType = 'okrs';
         if (type === 'micros') parentType = 'macros';
         
         if (parentType && window.sistemaVidaState.entities[parentType]) {
-            // Filtragem por contexto (Dimensão)
+            const childMetaHorizon = Number(horizonSelect?.value || 1);
+            const editingId = this.editingEntity?.id || '';
             const parents = window.sistemaVidaState.entities[parentType].filter(p => {
+                if (editingId && p.id === editingId) return false;
                 return !currentDim || currentDim === 'Geral' || p.dimension === currentDim || p.dimension === 'Geral';
+            }).filter(p => {
+                if (type !== 'metas') return true;
+                const parentHorizon = this.getMetaHorizonYears(p);
+                if (!(parentHorizon > childMetaHorizon)) return false;
+                if (!editingId) return true;
+                const parentChain = this.getMetaParentChain(p.id);
+                return !parentChain.includes(editingId);
             });
 
             parents.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
-                opt.textContent = `[${p.dimension}] ${p.title}`;
+                if (type === 'metas') {
+                    const h = this.getMetaHorizonYears(p);
+                    opt.textContent = `[${h}a][${p.dimension}] ${p.title}`;
+                } else {
+                    opt.textContent = `[${p.dimension}] ${p.title}`;
+                }
                 parentSelect.appendChild(opt);
             });
         }
@@ -1348,6 +1396,7 @@ const app = {
         }
 
         const parentId = document.getElementById('create-parent') ? document.getElementById('create-parent').value : '';
+        const metaHorizonYears = Number(document.getElementById('crud-meta-horizon')?.value || 1);
 
         const isEditing = !!this.editingEntity;
         const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
@@ -1364,7 +1413,30 @@ const app = {
         if (type === 'metas' || type === 'okrs') {
             obj.purpose = context || '';
             obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
-            if (type === 'okrs' && parentId) obj.metaId = parentId || '';
+            if (type === 'metas') {
+                obj.horizonYears = metaHorizonYears;
+                if (parentId) {
+                    const parentMeta = window.sistemaVidaState.entities.metas.find(m => m.id === parentId);
+                    if (!parentMeta) {
+                        app.showToast('Meta pai selecionada não encontrada.', 'error');
+                        return;
+                    }
+                    const parentChain = this.getMetaParentChain(parentMeta.id);
+                    if (isEditing && parentChain.includes(id)) {
+                        app.showToast('Não é possível criar ciclo entre metas pai e filhas.', 'error');
+                        return;
+                    }
+                    const parentHorizon = this.getMetaHorizonYears(parentMeta);
+                    if (parentHorizon <= metaHorizonYears) {
+                        app.showToast('A meta pai precisa ter horizonte maior do que a meta filha.', 'error');
+                        return;
+                    }
+                    obj.parentMetaId = parentId;
+                    obj.dimension = parentMeta.dimension || obj.dimension;
+                }
+            } else if (type === 'okrs' && parentId) {
+                obj.metaId = parentId || '';
+            }
         } else if (type === 'macros') {
             obj.description = context || '';
             obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
@@ -1421,7 +1493,7 @@ const app = {
             const list = type === 'habits' ? window.sistemaVidaState.habits : window.sistemaVidaState.entities[type];
             const idx = list.findIndex(e => e.id === id);
             if (idx !== -1) list[idx] = obj;
-            if (['micros', 'macros', 'okrs'].includes(type)) this.updateCascadeProgress(id, type);
+            if (['micros', 'macros', 'okrs', 'metas'].includes(type)) this.updateCascadeProgress(id, type);
         } else {
             if (type === 'habits') {
                 if (!window.sistemaVidaState.habits) window.sistemaVidaState.habits = [];
@@ -1429,7 +1501,7 @@ const app = {
             } else {
                 if (!window.sistemaVidaState.entities[type]) window.sistemaVidaState.entities[type] = [];
                 window.sistemaVidaState.entities[type].push(obj);
-                if (['micros', 'macros', 'okrs'].includes(type)) this.updateCascadeProgress(obj.id, type);
+                if (['micros', 'macros', 'okrs', 'metas'].includes(type)) this.updateCascadeProgress(obj.id, type);
             }
         }
 
@@ -2647,7 +2719,8 @@ const app = {
                     } else if (type === 'okrs') {
                         metaId = item.metaId;
                     }
-                    return { metaId, okrId, macroId };
+                    const metaChain = metaId ? app.getMetaParentChain(metaId) : [];
+                    return { metaId, okrId, macroId, metaChain };
                 };
 
                 const filteredByDim = filter === 'Todas' ? items : items.filter(i => resolveDim(i) === filter);
@@ -2664,7 +2737,7 @@ const app = {
                     // Filtro 2: Raio-X Relacional (Lineage Omnidirecional)
                     if (app.planosHierarchyType && app.planosHierarchyId) {
                         const lineage = resolveLineage(i, entityType);
-                        if (app.planosHierarchyType === 'metas' && lineage.metaId !== app.planosHierarchyId) return false;
+                        if (app.planosHierarchyType === 'metas' && !lineage.metaChain.includes(app.planosHierarchyId)) return false;
                         if (app.planosHierarchyType === 'okrs' && lineage.okrId !== app.planosHierarchyId) return false;
                         if (app.planosHierarchyType === 'macros' && lineage.macroId !== app.planosHierarchyId) return false;
                     }
@@ -2732,6 +2805,11 @@ const app = {
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '-') : '-' });
                         } else if (entityType === 'metas') {
                             trailNodes.push({ label: 'Meta', title: item.title });
+                            if (item.parentMetaId) {
+                                const parentMeta = state.entities.metas.find(x => x.id === item.parentMetaId);
+                                trailNodes.push({ label: 'Meta Pai', title: parentMeta ? parentMeta.title : '-' });
+                            }
+                            trailNodes.push({ label: 'Horizonte', title: `${app.getMetaHorizonYears(item)} anos` });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '-' });
                         }
@@ -2744,6 +2822,8 @@ const app = {
                             if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; titleClass = 'text-base font-headline italic text-on-surface'; }
                             else if (node.label === 'Área') { icon = 'stars'; colorClass = 'text-primary'; }
                             else if (node.label === 'Meta') { icon = 'flag'; colorClass = 'text-stone-400'; }
+                            else if (node.label === 'Meta Pai') { icon = 'outbound'; colorClass = 'text-stone-400'; }
+                            else if (node.label === 'Horizonte') { icon = 'schedule'; colorClass = 'text-primary'; }
                             else if (node.label === 'OKR') { icon = 'track_changes'; colorClass = 'text-stone-400'; }
                             else if (node.label === 'Macro Ação') { icon = 'account_tree'; colorClass = 'text-stone-400'; }
                             else if (node.label === 'Micro Ação') { icon = 'check_circle'; colorClass = 'text-primary'; }
@@ -3331,6 +3411,24 @@ const app = {
                     }
                 }
             }
+        } else if (type === 'metas') {
+            const meta = state.entities.metas.find(m => m.id === entityId);
+            if (meta && meta.parentMetaId) {
+                const siblings = state.entities.metas.filter(m => m.parentMetaId === meta.parentMetaId && m.status !== 'abandoned');
+                console.log("Calculando progresso:", meta.parentMetaId, "| Filhos (Metas) encontrados:", siblings.length);
+                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
+                const parentMeta = state.entities.metas.find(m => m.id === meta.parentMetaId);
+                if (parentMeta) {
+                    if (avg >= 99) {
+                        parentMeta.progress = 100;
+                        parentMeta.status = 'done';
+                    } else {
+                        parentMeta.progress = Math.round(avg);
+                        if (parentMeta.status === 'done') parentMeta.status = 'active';
+                    }
+                    this.updateCascadeProgress(parentMeta.id, 'metas');
+                }
+            }
         }
     },
 
@@ -3444,7 +3542,7 @@ const app = {
         
         if (item && confirm(`Deseja realmente excluir "${item.title}"?`)) {
             // Guarda o ID do pai antes de remover para cascata
-            const parentId = item.macroId || item.okrId || item.metaId;
+            const parentId = item.macroId || item.okrId || item.parentMetaId || item.metaId;
 
             if (type === 'habits') {
                 state.habits = state.habits.filter(e => e.id !== id);
@@ -3500,6 +3598,11 @@ const app = {
         document.getElementById('crud-type').value = type;
         document.getElementById('crud-dimension').value = item.dimension || 'Geral';
         document.getElementById('create-prazo').value = item.prazo || '';
+        const horizonSelect = document.getElementById('crud-meta-horizon');
+        if (horizonSelect) {
+            const horizon = Number(item.horizonYears || this.getMetaHorizonYears(item) || 1);
+            horizonSelect.value = String(horizon);
+        }
         const inicioInput = document.getElementById('crud-inicio-date');
         const prazoInput = document.getElementById('crud-prazo-date');
         if (inicioInput) inicioInput.value = item.inicioDate || item.agendamento?.inicioDate || item.prazo || '';
@@ -3525,7 +3628,9 @@ const app = {
         // Seta o pai após popular a lista
         const parentSelect = document.getElementById('create-parent');
         if (parentSelect) {
-            const parentId = item.metaId || item.okrId || item.macroId || '';
+            const parentId = type === 'metas'
+                ? (item.parentMetaId || '')
+                : (item.metaId || item.okrId || item.macroId || '');
             parentSelect.value = parentId;
         }
     },
