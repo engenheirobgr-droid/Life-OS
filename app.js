@@ -46,6 +46,10 @@ window.sistemaVidaState = {
     habits: [],
     dailyLogs: {},
     reviews: {},
+    settings: {
+        notificationsEnabled: false,
+        theme: 'auto'
+    },
     cycleStartDate: new Date(new Date(new Date().setDate(new Date().getDate() - 21)).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0],
     onboardingComplete: false
 };
@@ -57,6 +61,87 @@ const app = {
     },
     getLocalDateKey: function(date = new Date()) {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    },
+    ensureSettingsState: function() {
+        if (!window.sistemaVidaState.settings) {
+            window.sistemaVidaState.settings = { notificationsEnabled: false, theme: 'auto' };
+        }
+        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+        if (typeof window.sistemaVidaState.settings.notificationsEnabled !== 'boolean') {
+            window.sistemaVidaState.settings.notificationsEnabled = false;
+        }
+        if (!window.sistemaVidaState.settings.theme) {
+            window.sistemaVidaState.settings.theme = 'auto';
+        }
+        if (typeof window.sistemaVidaState.profile.avatarUrl !== 'string') {
+            window.sistemaVidaState.profile.avatarUrl = '';
+        }
+    },
+    applyThemePreference: function() {
+        this.ensureSettingsState();
+        const pref = window.sistemaVidaState.settings.theme || 'auto';
+        const root = document.documentElement;
+        const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const useDark = pref === 'dark' || (pref === 'auto' && systemDark);
+        root.classList.toggle('dark', useDark);
+        root.classList.toggle('light', !useDark);
+    },
+    setThemePreference: function(theme) {
+        this.ensureSettingsState();
+        const next = ['light', 'dark', 'auto'].includes(theme) ? theme : 'auto';
+        window.sistemaVidaState.settings.theme = next;
+        this.applyThemePreference();
+        this.saveState(true);
+        this.showToast(`Tema aplicado: ${next === 'auto' ? 'Automatico' : (next === 'dark' ? 'Escuro' : 'Claro')}.`, 'success');
+        if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+    },
+    toggleDailyNotifications: async function() {
+        this.ensureSettingsState();
+        const enabled = !window.sistemaVidaState.settings.notificationsEnabled;
+        if (enabled && typeof Notification !== 'undefined') {
+            try {
+                if (Notification.permission === 'default') {
+                    const result = await Notification.requestPermission();
+                    if (result !== 'granted') {
+                        this.showToast('Permissao de notificacoes nao concedida no navegador.', 'error');
+                        return;
+                    }
+                } else if (Notification.permission === 'denied') {
+                    this.showToast('Notificacoes bloqueadas no navegador. Ative nas permissoes do site.', 'error');
+                    return;
+                }
+            } catch (_) {
+                this.showToast('Nao foi possivel solicitar a permissao de notificacoes.', 'error');
+                return;
+            }
+        }
+        window.sistemaVidaState.settings.notificationsEnabled = enabled;
+        this.saveState(true);
+        if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+        this.showToast(enabled ? 'Notificacoes diarias ativadas.' : 'Notificacoes diarias desativadas.', 'success');
+    },
+    openAvatarPicker: function() {
+        const input = document.getElementById('profile-photo-input');
+        if (input) input.click();
+    },
+    onProfilePhotoSelected: function(event) {
+        const file = event?.target?.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            this.showToast('Selecione um arquivo de imagem valido.', 'error');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            this.ensureSettingsState();
+            window.sistemaVidaState.profile.avatarUrl = typeof reader.result === 'string' ? reader.result : '';
+            this.saveState(true);
+            if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+            this.showToast('Foto de perfil atualizada!', 'success');
+        };
+        reader.onerror = () => this.showToast('Falha ao ler a imagem selecionada.', 'error');
+        reader.readAsDataURL(file);
+        event.target.value = '';
     },
 
     showToast: function(message, type = 'success') {
@@ -295,6 +380,8 @@ const app = {
     init: async function() {
         console.log("Sistema Vida OS inicializando...");
         await this.loadState();
+        this.ensureSettingsState();
+        this.applyThemePreference();
         this.checkAlerts();
         if (!window.sistemaVidaState.onboardingComplete) {
             this.switchView('onboarding');
@@ -1754,75 +1841,92 @@ const app = {
             // 2. Calcula e Renderiza a Distribuição de Foco
             this.renderFocusDistribution('focus-distribution');
         },
-
         renderFocusDistribution: function(containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
 
             const state = window.sistemaVidaState;
-            const effortTotal = {}; 
-            const effortDone = {};
-            const dims = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito', 'Geral'];
-            dims.forEach(d => { effortTotal[d] = 0; effortDone[d] = 0; });
-            
-            const typeFilter = app.focusTypeFilter || 'Tudo';
+            const dims = ['Saude', 'Mente', 'Carreira', 'Financas', 'Relacionamentos', 'Familia', 'Lazer', 'Proposito', 'Geral'];
+            const mapDim = {
+                Saude: 'Saude',
+                Mente: 'Mente',
+                Carreira: 'Carreira',
+                Financas: 'Financas',
+                Relacionamentos: 'Relacionamentos',
+                Familia: 'Familia',
+                Lazer: 'Lazer',
+                Proposito: 'Proposito'
+            };
+            const effortByDim = {};
+            const countByDim = {};
+            dims.forEach(d => { effortByDim[d] = 0; countByDim[d] = 0; });
+
+            const typeMap = { Macro: 'Macros', Micro: 'Micros' };
+            const typeFilter = typeMap[app.focusTypeFilter] || app.focusTypeFilter || 'Tudo';
             const statusFilter = app.focusStatusFilter || 'Tudo';
 
-            // Atualiza botões de filtro na UI (se existirem na página atual)
             document.querySelectorAll('[data-focus-type]').forEach(btn => {
-                const t = btn.getAttribute('data-focus-type');
-                btn.className = t === typeFilter ? 
-                    "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all" :
-                    "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                const raw = btn.getAttribute('data-focus-type');
+                const t = typeMap[raw] || raw;
+                btn.className = t === typeFilter
+                    ? "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
+                    : "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
             });
 
-            // Soma os pesos estratégicos
+            document.querySelectorAll('[data-focus-status]').forEach(btn => {
+                const s = btn.getAttribute('data-focus-status');
+                btn.className = s === statusFilter
+                    ? "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
+                    : "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+            });
+
             const addScore = (list, weight, typeName) => {
                 if (typeFilter !== 'Tudo' && typeFilter !== typeName) return;
-                
                 (list || []).forEach(item => {
-                    // Unificação Sênior: Apenas item.dimension
-                    const dim = item.dimension || 'Geral';
-                    
-                    if (effortTotal[dim] !== undefined) {
-                        const isDone = item.status === 'done' || item.completed === true;
-                        
-                        // Lógica de Filtro de Status para o Gráfico
-                        let matchStatus = true;
-                        if (statusFilter === 'Pendentes') matchStatus = !isDone;
-                        if (statusFilter === 'Concluídos') matchStatus = isDone;
-
-                        if (matchStatus) {
-                            effortTotal[dim] += weight;
-                            if (isDone) effortDone[dim] += weight;
-                        }
-                    }
+                    const dimRaw = (item.dimension || 'Geral').toString();
+                    const low = dimRaw.toLowerCase();
+                    let dim = 'Geral';
+                    if (low.includes('sa')) dim = 'Saude';
+                    else if (low.includes('ment')) dim = 'Mente';
+                    else if (low.includes('carr')) dim = 'Carreira';
+                    else if (low.includes('fin')) dim = 'Financas';
+                    else if (low.includes('relac')) dim = 'Relacionamentos';
+                    else if (low.includes('fam')) dim = 'Familia';
+                    else if (low.includes('laz')) dim = 'Lazer';
+                    else if (low.includes('prop')) dim = 'Proposito';
+                    const isDone = item.status === 'done' || item.completed === true;
+                    const isDoneFilter = String(statusFilter).toLowerCase().includes('conclu');
+                    const matchStatus = statusFilter === 'Pendentes' ? !isDone : (isDoneFilter ? isDone : true);
+                    if (!matchStatus) return;
+                    effortByDim[dim] += weight;
+                    countByDim[dim] += 1;
                 });
             };
-            
+
             addScore(state.entities.metas, 6, 'Metas');
             addScore(state.entities.okrs, 4, 'OKRs');
             addScore(state.entities.macros, 2, 'Macros');
             addScore(state.entities.micros, 1, 'Micros');
-            
+
+            const totalEffort = dims.reduce((acc, d) => acc + (d === 'Geral' ? 0 : effortByDim[d]), 0);
+
             let focusHtml = '';
             dims.forEach(dim => {
-                if (dim === 'Geral') return; 
-                const total = effortTotal[dim] || 0;
-                const done = effortDone[dim] || 0;
-                
-                const pct = total > 0 ? Math.round((done / total) * 100) : (statusFilter === 'Concluídos' ? 100 : 0);
+                if (dim === 'Geral') return;
+                const dimEffort = effortByDim[dim] || 0;
+                const dimCount = countByDim[dim] || 0;
+                const pct = totalEffort > 0 ? Math.round((dimEffort / totalEffort) * 100) : 0;
                 focusHtml += `
                 <div class="space-y-1.5">
                     <div class="flex justify-between items-end">
-                        <span class="text-[10px] uppercase tracking-widest font-bold text-outline">${dim}</span>
+                        <span class="text-[10px] uppercase tracking-widest font-bold text-outline">${mapDim[dim]}</span>
                         <div class="flex items-baseline gap-1">
                             <span class="text-xs font-bold ${pct > 0 ? 'text-primary' : 'text-outline-variant'}">${pct}%</span>
-                            <span class="text-[9px] text-outline">(${done}/${total})</span>
+                            <span class="text-[9px] text-outline">(${dimCount} item${dimCount !== 1 ? 's' : ''})</span>
                         </div>
                     </div>
                     <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                        <div class="h-full ${pct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${pct > 0 ? pct : (statusFilter === 'Concluídos' ? 100 : 0)}%"></div>
+                        <div class="h-full ${pct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${pct}%"></div>
                     </div>
                 </div>`;
             });
@@ -2587,7 +2691,7 @@ const app = {
                         const highlightClass = isInProgress ? 'ring-2 ring-amber-500/50 border-amber-500/50 shadow-md shadow-amber-500/10' : 'border-outline-variant/10 shadow-sm';
 
                         html += `
-                        <div class="bg-surface-container-lowest p-6 rounded-2xl border ${highlightClass} hover:shadow-lg transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
+                        <div class="bg-gradient-to-b from-surface-container-lowest to-surface p-6 rounded-2xl border ${highlightClass} hover:shadow-lg hover:-translate-y-0.5 transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
                             <div class="flex justify-between items-start mb-4 gap-3">
                                 <div class="space-y-1 flex-1 min-w-0">
                                     <div class="flex items-center gap-2">
@@ -2597,9 +2701,9 @@ const app = {
                                     <h4 class="font-headline text-xl font-medium truncate">${item.title}</h4>
                                     
                                     <!-- Ações do Card Refatoradas -->
-                                    <div class="grid grid-cols-2 gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                                    <div class="grid grid-cols-2 gap-2 mt-4">
                                         <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')" 
-                                            class="col-span-2 p-2 bg-primary/5 border border-primary/20 text-primary hover:bg-primary/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all">
+                                            class="col-span-2 p-2.5 bg-primary/10 border border-primary/25 text-primary hover:bg-primary/15 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all">
                                             <span class="material-symbols-outlined notranslate text-base">settings_accessibility</span> Gerir Estratégia
                                         </button>
                                         
@@ -2677,6 +2781,23 @@ const app = {
             if (nomeDisplay && state.profile) {
                 nomeDisplay.textContent = state.profile.name || "Seu Nome";
             }
+            app.ensureSettingsState();
+
+            const profileImg = document.getElementById('profile-avatar-image');
+            if (profileImg) {
+                profileImg.src = state.profile.avatarUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDE4p8AoYVsz6pEXUcgS6BkD6ZMnpFej1qRvtAnjsOWWGCk7xJhzaMTg6eRpIrmf1nkexNBtrYL3KbuHY6ZwSPi-Kdj4ivoosw4MlhSqGkDRZeaWiu0ULKlO9WJofnhhFK3dg6DTg4IQBS1fYuInfMqPQH2xU1CoJ_kNGEuGwa-nEMQzBHm4jSNxfxVSNi8W5QYdVVAzvIMm62lcyjTcDnQkk9xlvlKrssjp1lApdoTVkjnhRL8luZ5XJaaZ8Tgexi6luLt5O1w6g';
+            }
+
+            const notifKnob = document.getElementById('notif-toggle-knob');
+            const notifTrack = document.getElementById('notif-toggle-track');
+            if (notifTrack && notifKnob) {
+                const on = !!state.settings.notificationsEnabled;
+                notifTrack.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${on ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
+                notifKnob.className = `w-3 h-3 rounded-full absolute transition-all ${on ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
+            }
+
+            const themeSelect = document.getElementById('theme-select');
+            if (themeSelect) themeSelect.value = state.settings.theme || 'auto';
         },
 
         proposito: function() {
@@ -2901,21 +3022,33 @@ const app = {
 
         const renderRow = (entity, tipo, marginClass, parentDim) => {
             if (!entity.title || entity.title.trim() === '') return;
-            let taskEnd = (entity.prazo && entity.prazo.trim() !== '')
-              ? new Date(entity.prazo + 'T00:00:00')
-              : new Date(today);
+            const durationFallbackByType = { metas: 60, okrs: 45, macros: 21, micros: 5 };
+            const fallbackDays = durationFallbackByType[tipo] || 7;
+            const hasPrazo = entity.prazo && entity.prazo.trim() !== '';
+            const hasInicio = entity.inicioDate && entity.inicioDate.trim() !== '';
 
-            let taskStart;
-            if (entity.inicioDate && entity.inicioDate.trim() !== '') {
-                taskStart = new Date(entity.inicioDate + 'T00:00:00');
-            } else {
-                // Se o item não tiver "inicioDate", assume que começou 2 dias antes do prazo
+            let taskStart = hasInicio ? new Date(entity.inicioDate + 'T00:00:00') : null;
+            let taskEnd = hasPrazo ? new Date(entity.prazo + 'T00:00:00') : null;
+
+            if (!taskStart && taskEnd) {
                 taskStart = new Date(taskEnd.getTime());
-                taskStart.setDate(taskStart.getDate() - 2);
+                taskStart.setDate(taskStart.getDate() - (fallbackDays - 1));
+            } else if (taskStart && !taskEnd) {
+                taskEnd = new Date(taskStart.getTime());
+                taskEnd.setDate(taskEnd.getDate() + (fallbackDays - 1));
+            } else if (!taskStart && !taskEnd) {
+                taskEnd = new Date(today);
+                taskStart = new Date(today);
+                taskStart.setDate(taskStart.getDate() - (fallbackDays - 1));
             }
 
             if (isNaN(taskStart.getTime())) taskStart = new Date(today);
             if (isNaN(taskEnd.getTime())) taskEnd = new Date(today);
+            if (taskEnd < taskStart) {
+                const swap = taskStart;
+                taskStart = taskEnd;
+                taskEnd = swap;
+            }
 
             if (taskEnd < startDate || taskStart > endDate) return; // fora da janela
             
@@ -2925,7 +3058,8 @@ const app = {
 
             const totalWindowTime = endDate - startDate;
             const leftPct = ((visualStart - startDate) / totalWindowTime) * 100;
-            const widthPct = ((visualEnd - visualStart) / totalWindowTime) * 100;
+            const oneDayMs = 1000 * 60 * 60 * 24;
+            const widthPct = (((visualEnd - visualStart) + oneDayMs) / totalWindowTime) * 100;
 
             const textMap = { metas: 'text-white', okrs: 'text-white', macros: 'text-white', micros: 'text-on-surface-variant' };
             const labelMap = { metas: 'Meta', okrs: 'OKR', macros: 'Macro', micros: 'Micro' };
@@ -2939,7 +3073,10 @@ const app = {
 
             const isMicro = tipo === 'micros';
             const barHeight = isMicro ? 'h-4' : 'h-6';
-            const barStyles = isMicro ? 'bg-secondary/50' : (entity.status === 'done' ? 'bg-primary' : 'bg-primary/80 opacity-70 gantt-stripe-bg');
+            const barStyles = isMicro ? 'bg-secondary/60' : (entity.status === 'done' ? 'bg-primary' : 'bg-primary/85 opacity-80 gantt-stripe-bg');
+            const minWidthPctByType = { metas: 6, okrs: 5, macros: 4, micros: 3 };
+            const visualWidth = Math.max(widthPct, minWidthPctByType[tipo] || 3);
+            const showInlineTitle = visualWidth >= 8;
             
             rowsHTML += `
               <div class="flex items-center border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors group even:bg-surface-container-low/30">
@@ -2952,11 +3089,11 @@ const app = {
                 <!-- Área do Gráfico de Gantt -->
                 <div class="flex-1 relative h-12 py-3 flex items-center cursor-default group/bar">
                   <div class="absolute ${barHeight} rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${barStyles} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60' : ''}" 
-                       style="left:${leftPct.toFixed(2)}%; width:${Math.max(widthPct, 1.5).toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
+                       style="left:${leftPct.toFixed(2)}%; width:${visualWidth.toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
                     <!-- Fundo de progresso Real -->
                     <div class="absolute top-0 bottom-0 left-0 bg-black/20 dark:bg-white/10" style="width: ${progress}%"></div>
                     <div class="absolute inset-0 flex items-center px-2">
-                        <span class="text-[10px] font-bold truncate leading-none z-10 drop-shadow-sm whitespace-nowrap block w-full text-center">${entity.title}</span>
+                        <span class="text-[10px] font-bold truncate leading-none z-10 drop-shadow-sm whitespace-nowrap block ${showInlineTitle ? 'w-full text-center' : 'w-0 h-0 overflow-hidden'}">${showInlineTitle ? entity.title : ''}</span>
                     </div>
                   </div>
                 </div>
@@ -3814,3 +3951,4 @@ window.app = app;
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
+
