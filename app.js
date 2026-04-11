@@ -28,7 +28,8 @@ window.sistemaVidaState = {
         ikigai: { missao: "", vocacao: "", love: "", good: "", need: "", paid: "", sintese: "" },
         legacyObj: { familia: "", profissao: "", mundo: "" },
         vision: { saude: "", carreira: "", intelecto: "", quote: "" },
-        odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" }
+        odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" },
+        odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" }
     },
     energy: 5,
     dimensions: {
@@ -76,6 +77,23 @@ const app = {
         if (typeof window.sistemaVidaState.profile.avatarUrl !== 'string') {
             window.sistemaVidaState.profile.avatarUrl = '';
         }
+        if (!window.sistemaVidaState.profile.odysseyImages) {
+            window.sistemaVidaState.profile.odysseyImages = { cenarioA: "", cenarioB: "", cenarioC: "" };
+        }
+        try {
+            if (!window.sistemaVidaState.profile.avatarUrl) {
+                const cached = localStorage.getItem('lifeos_profile_avatar') || '';
+                if (cached) window.sistemaVidaState.profile.avatarUrl = cached;
+            }
+            const cachedOdyssey = localStorage.getItem('lifeos_odyssey_images');
+            if (cachedOdyssey) {
+                const parsed = JSON.parse(cachedOdyssey);
+                window.sistemaVidaState.profile.odysseyImages = {
+                    ...window.sistemaVidaState.profile.odysseyImages,
+                    ...parsed
+                };
+            }
+        } catch (_) {}
     },
     applyThemePreference: function() {
         this.ensureSettingsState();
@@ -135,6 +153,7 @@ const app = {
         reader.onload = () => {
             this.ensureSettingsState();
             window.sistemaVidaState.profile.avatarUrl = typeof reader.result === 'string' ? reader.result : '';
+            try { localStorage.setItem('lifeos_profile_avatar', window.sistemaVidaState.profile.avatarUrl); } catch (_) {}
             this.saveState(true);
             if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
             this.showToast('Foto de perfil atualizada!', 'success');
@@ -142,6 +161,38 @@ const app = {
         reader.onerror = () => this.showToast('Falha ao ler a imagem selecionada.', 'error');
         reader.readAsDataURL(file);
         event.target.value = '';
+    },
+    openOdysseyImagePicker: function(cenarioKey) {
+        this.ensureSettingsState();
+        const input = document.getElementById('odyssey-image-input');
+        if (!input) return;
+        input.setAttribute('data-cenario-key', cenarioKey || '');
+        input.click();
+    },
+    onOdysseyImageSelected: function(event) {
+        this.ensureSettingsState();
+        const input = event?.target;
+        const key = input?.getAttribute('data-cenario-key') || '';
+        const file = input?.files?.[0];
+        if (!key || !file) return;
+        if (!file.type.startsWith('image/')) {
+            this.showToast('Selecione um arquivo de imagem valido para o cenario.', 'error');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            const current = window.sistemaVidaState.profile.odysseyImages || {};
+            window.sistemaVidaState.profile.odysseyImages = { ...current, [key]: String(reader.result || '') };
+            try {
+                localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
+            } catch (_) {}
+            this.saveState(true);
+            if (this.render.proposito) this.render.proposito();
+            this.showToast('Imagem do cenario atualizada!', 'success');
+        };
+        reader.onerror = () => this.showToast('Falha ao ler a imagem selecionada.', 'error');
+        reader.readAsDataURL(file);
+        input.value = '';
     },
 
     showToast: function(message, type = 'success') {
@@ -437,6 +488,29 @@ const app = {
     // Alias para compatibilidade com as chamadas do index.html
     navigate: function(viewName) {
         this.switchView(viewName);
+    },
+
+    openTimelineEntity: function(entityId, entityType) {
+        if (!entityId || !entityType) return;
+        this.planosHierarchyType = entityType;
+        this.planosHierarchyId = entityId;
+        this.navigate('planos');
+
+        setTimeout(() => {
+            const tabMap = { metas: 'metas', okrs: 'okrs', macros: 'macro', micros: 'micro' };
+            const targetTab = tabMap[entityType] || 'metas';
+            this.switchPlanosTab(targetTab);
+            if (this.render.planos) this.render.planos();
+
+            const card = document.querySelector(`[data-entity-type="${entityType}"][data-entity-id="${entityId}"]`);
+            if (card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const trail = card.querySelector('.trail-panel');
+                if (trail && trail.classList.contains('hidden')) this.toggleTrail(card);
+                card.classList.add('ring-2', 'ring-primary/40');
+                setTimeout(() => card.classList.remove('ring-2', 'ring-primary/40'), 1600);
+            }
+        }, 350);
     },
 
     // ---> ADICIONE ESTE BLOCO AQUI <---
@@ -905,7 +979,8 @@ const app = {
           ikigai: { missao: '', vocacao: '', love: '', good: '', need: '', paid: '', sintese: '' },
           legacyObj: { familia: '', profissao: '', mundo: '' },
           vision: { saude: '', carreira: '', intelecto: '', quote: '' },
-          odyssey: { cenarioA: '', cenarioB: '', cenarioC: '' }
+          odyssey: { cenarioA: '', cenarioB: '', cenarioC: '' },
+          odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' }
         },
         energy: 5,
         dimensions: {
@@ -1918,10 +1993,10 @@ const app = {
                 const pct = totalEffort > 0 ? Math.round((dimEffort / totalEffort) * 100) : 0;
                 focusHtml += `
                 <div class="space-y-1.5">
-                    <div class="flex justify-between items-end">
-                        <span class="text-[10px] uppercase tracking-widest font-bold text-outline">${mapDim[dim]}</span>
+                    <div class="flex justify-between items-end gap-2">
+                        <span class="${containerId === 'focus-distribution' ? 'text-[9px]' : 'text-[10px]'} uppercase tracking-widest font-bold text-outline">${mapDim[dim]}</span>
                         <div class="flex items-baseline gap-1">
-                            <span class="text-xs font-bold ${pct > 0 ? 'text-primary' : 'text-outline-variant'}">${pct}%</span>
+                            <span class="${containerId === 'focus-distribution' ? 'text-[11px]' : 'text-xs'} font-bold ${pct > 0 ? 'text-primary' : 'text-outline-variant'}">${pct}%</span>
                             <span class="text-[9px] text-outline">(${dimCount} item${dimCount !== 1 ? 's' : ''})</span>
                         </div>
                     </div>
@@ -2691,7 +2766,7 @@ const app = {
                         const highlightClass = isInProgress ? 'ring-2 ring-amber-500/50 border-amber-500/50 shadow-md shadow-amber-500/10' : 'border-outline-variant/10 shadow-sm';
 
                         html += `
-                        <div class="bg-gradient-to-b from-surface-container-lowest to-surface p-6 rounded-2xl border ${highlightClass} hover:shadow-lg hover:-translate-y-0.5 transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
+                        <div data-entity-id="${item.id}" data-entity-type="${entityType}" class="bg-gradient-to-b from-surface-container-lowest to-surface p-6 rounded-2xl border ${highlightClass} hover:shadow-lg hover:-translate-y-0.5 transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
                             <div class="flex justify-between items-start mb-4 gap-3">
                                 <div class="space-y-1 flex-1 min-w-0">
                                     <div class="flex items-center gap-2">
@@ -2903,6 +2978,19 @@ const app = {
                         renderField('display-cenarioA', prof.odyssey.cenarioA, "Cenário A: Descreva aqui sua visão de 5 anos (Vida Atual)...");
                         renderField('display-cenarioB', prof.odyssey.cenarioB, "Cenário B: Descreva aqui sua visão de 5 anos (Plano B)...");
                         renderField('display-cenarioC', prof.odyssey.cenarioC, "Cenário C: Descreva aqui sua visão de 5 anos (Vida Radical)...");
+                        const odysseyImages = prof.odysseyImages || {};
+                        ['cenarioA', 'cenarioB', 'cenarioC'].forEach(key => {
+                            const img = document.getElementById(`odyssey-image-${key}`);
+                            if (!img) return;
+                            const src = odysseyImages[key] || '';
+                            if (src) {
+                                img.src = src;
+                                img.classList.remove('hidden');
+                            } else {
+                                img.src = '';
+                                img.classList.add('hidden');
+                            }
+                        });
                 } catch(e) {
                     console.error("Erro ao renderizar textos do Propósito:", e);
                 }
@@ -3083,7 +3171,7 @@ const app = {
                 <div class="w-48 shrink-0 px-4 py-3 border-r border-outline-variant/20 flex flex-col justify-center overflow-hidden">
                   <div class="${marginClass} ${borderColor} flex items-center gap-1 group-hover:opacity-100 opacity-90 transition-opacity">
                       <span class="text-[9px] font-bold uppercase tracking-widest text-outline shrink-0 group-hover:text-primary transition-colors">${labelMap[tipo]}</span>
-                      <span class="text-xs text-on-surface leading-tight truncate font-medium group-hover:text-primary transition-colors cursor-default" title="${entity.title}">${entity.title}</span>
+                      <button onclick="event.stopPropagation(); window.app.openTimelineEntity('${entity.id}', '${tipo}')" class="text-xs text-on-surface leading-tight truncate font-medium group-hover:text-primary transition-colors text-left hover:underline" title="Abrir em Planos">${entity.title}</button>
                   </div>
                 </div>
                 <!-- Área do Gráfico de Gantt -->
@@ -3785,8 +3873,9 @@ const app = {
 
     updateNavUI: function(activeView) {
         document.querySelectorAll('nav button').forEach(btn => {
-            const icon = btn.querySelector('.material-symbols-outlined notranslate');
+            const icon = btn.querySelector('.material-symbols-outlined.notranslate');
             const view = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            btn.setAttribute('data-active', view === activeView ? 'true' : 'false');
             
             if (view === activeView) {
                 btn.classList.add('text-primary');
