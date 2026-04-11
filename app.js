@@ -46,7 +46,7 @@ window.sistemaVidaState = {
     habits: [],
     dailyLogs: {},
     reviews: {},
-    cycleStartDate: new Date(new Date().setDate(new Date().getDate() - 21)).toISOString(),
+    cycleStartDate: new Date(new Date(new Date().setDate(new Date().getDate() - 21)).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0],
     onboardingComplete: false
 };
 
@@ -54,6 +54,9 @@ const app = {
     config: {
         containerId: 'app-content',
         viewsPath: 'views/',
+    },
+    getLocalDateKey: function(date = new Date()) {
+        return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     },
 
     showToast: function(message, type = 'success') {
@@ -492,7 +495,7 @@ const app = {
             return;
         }
 
-        const date = new Date().toISOString().split('T')[0];
+        const date = this.getLocalDateKey();
         const state = window.sistemaVidaState;
 
         // Atualiza log do dia sem apagar outros campos (ex: intenção/energy/gratidão do diário de sono)
@@ -1084,7 +1087,7 @@ const app = {
         });
         
         // Reset do Ciclo
-        state.cycleStartDate = new Date().toISOString();
+        state.cycleStartDate = this.getLocalDateKey();
         
         // Persistir e atualizar UI com delay para garantir animação
         this.saveState(true);
@@ -1099,7 +1102,7 @@ const app = {
 
     migrateOverdueTasks: function() {
         const state = window.sistemaVidaState;
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = this.getLocalDateKey();
         let count = 0;
 
         (state.entities.micros || []).forEach(m => {
@@ -1117,7 +1120,8 @@ const app = {
     },
 
     setFocusTypeFilter: function(type) {
-      this.focusTypeFilter = type;
+      const normalizedType = type === 'Macro' ? 'Macros' : (type === 'Micro' ? 'Micros' : type);
+      this.focusTypeFilter = normalizedType;
       if (this.currentView === 'foco') this.render.foco();
       if (this.currentView === 'painel') this.render.painel();
     },
@@ -1845,9 +1849,17 @@ const app = {
             if (weekVal) weekVal.textContent = weekProgress + '%';
 
             // 3. Cycle Progress (Filtrado por data >= cycleStartDate)
-            const cycleDone = state.entities.micros.filter(m => 
-                m.status === 'done' && (m.prazo || m.completedDate) >= state.cycleStartDate
-            ).length;
+            const cycleStartKey = String(state.cycleStartDate || app.getLocalDateKey()).split('T')[0];
+            const cycleStartDate = new Date(`${cycleStartKey}T00:00:00`);
+            const cycleDone = state.entities.micros.filter(m => {
+                if (m.status !== 'done') return false;
+                const ref = m.completedDate || m.prazo;
+                if (!ref) return false;
+                const refKey = String(ref).split('T')[0];
+                const refDate = new Date(`${refKey}T00:00:00`);
+                if (Number.isNaN(refDate.getTime()) || Number.isNaN(cycleStartDate.getTime())) return false;
+                return refDate >= cycleStartDate;
+            }).length;
             const cycleDoneEl = document.getElementById('cycle-micros-done');
             if (cycleDoneEl) cycleDoneEl.textContent = cycleDone;
 
@@ -2057,7 +2069,7 @@ const app = {
             }
 
             // Restore Diário
-            const today = new Date().toISOString().split('T')[0];
+            const today = app.getLocalDateKey();
             if (state.dailyLogs && state.dailyLogs[today]) {
                 const log = state.dailyLogs[today];
                 const focoInput = document.getElementById('diario-foco');
@@ -3113,7 +3125,7 @@ const app = {
         micro.progress = isCompleting ? 100 : 0;
 
         if (isCompleting) {
-          micro.completedDate = new Date().toISOString().split('T');
+          micro.completedDate = this.getLocalDateKey();
         } else {
           delete micro.completedDate;
         }
