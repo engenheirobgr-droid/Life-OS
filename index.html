@@ -292,6 +292,12 @@
                     <span class="material-symbols-outlined notranslate">assignment</span>
                     Planos
                 </button>
+                <button data-view="foco"
+                    class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
+                    onclick="app.navigate('foco')">
+                    <span class="material-symbols-outlined notranslate">timer</span>
+                    Foco
+                </button>
                 <button data-view="proposito"
                     class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
                     onclick="app.navigate('proposito')">
@@ -349,6 +355,13 @@
                 <span class="material-symbols-outlined notranslate text-outline">assignment</span>
             </div>
             <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Planos</span>
+        </button>
+        <button data-view="foco" class="nav-item-link flex flex-col items-center gap-1 transition-all"
+            onclick="app.navigate('foco')">
+            <div class="w-12 h-8 rounded-full flex items-center justify-center transition-colors">
+                <span class="material-symbols-outlined notranslate text-outline">timer</span>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Foco</span>
         </button>
         <button data-view="proposito" class="nav-item-link flex flex-col items-center gap-1 transition-all"
             onclick="app.navigate('proposito')">
