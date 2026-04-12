@@ -43,6 +43,19 @@ window.sistemaVidaState = {
         Propósito: { score: 0 }
     },
     perma: { P: 0, E: 0, R: 0, M: 0, A: 0 },
+    swls: { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} },
+    deepWork: {
+        isRunning: false,
+        isPaused: false,
+        mode: 'focus',
+        remainingSec: 5400,
+        targetSec: 5400,
+        breakSec: 1200,
+        microId: '',
+        intention: '',
+        lastTickAt: 0,
+        sessions: []
+    },
     entities: { metas: [], okrs: [], macros: [], micros: [] },
     habits: [],
     dailyLogs: {},
@@ -63,6 +76,260 @@ const app = {
     getLocalDateKey: function(date = new Date()) {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     },
+    normalizeDimensionKey: function(dimRaw) {
+        const txt = String(dimRaw || '').toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+        if (txt.includes('saud')) return 'Saúde';
+        if (txt.includes('ment') || txt.includes('pessoal')) return 'Mente';
+        if (txt.includes('carre') || txt.includes('profiss') || txt.includes('trabalh')) return 'Carreira';
+        if (txt.includes('finan')) return 'Finanças';
+        if (txt.includes('relac')) return 'Relacionamentos';
+        if (txt.includes('fam')) return 'Família';
+        if (txt.includes('lazer')) return 'Lazer';
+        if (txt.includes('propos') || txt.includes('contribu')) return 'Propósito';
+        return '';
+    },
+    normalizePermaScore: function(rawValue) {
+        let value = Number(rawValue);
+        if (!Number.isFinite(value)) value = 0;
+        if (value > 10) value = value / 10;
+        value = Math.max(0, Math.min(10, value));
+        return Math.round(value * 10) / 10;
+    },
+    normalizePermaState: function() {
+        const state = window.sistemaVidaState;
+        if (!state.perma) state.perma = { P: 0, E: 0, R: 0, M: 0, A: 0 };
+        ['P', 'E', 'R', 'M', 'A'].forEach((key) => {
+            state.perma[key] = this.normalizePermaScore(state.perma[key]);
+        });
+    },
+    normalizeKeyResultsList: function(keyResultsRaw) {
+        if (!Array.isArray(keyResultsRaw)) return [];
+        return keyResultsRaw.map((kr) => {
+            const title = String(kr?.title || '').trim();
+            const current = Number(String(kr?.current ?? 0).replace(',', '.'));
+            const target = Number(String(kr?.target ?? 0).replace(',', '.'));
+            return {
+                title,
+                current: Number.isFinite(current) ? current : 0,
+                target: Number.isFinite(target) ? target : 0
+            };
+        }).filter((kr) => kr.title);
+    },
+    normalizeEntitiesState: function() {
+        const state = window.sistemaVidaState;
+        if (!state.entities || typeof state.entities !== 'object') {
+            state.entities = { metas: [], okrs: [], macros: [], micros: [] };
+            return;
+        }
+        ['metas', 'okrs', 'macros', 'micros'].forEach((type) => {
+            if (!Array.isArray(state.entities[type])) state.entities[type] = [];
+        });
+        const clampProgress = (raw) => {
+            const n = Number(raw);
+            if (!Number.isFinite(n)) return 0;
+            return Math.max(0, Math.min(100, Math.round(n)));
+        };
+        const normalizedStatus = (rawStatus, progress, completedRaw = false) => {
+            if (completedRaw || progress >= 100 || rawStatus === 'done') return 'done';
+            if (rawStatus === 'in_progress' || rawStatus === 'active') return 'in_progress';
+            return 'pending';
+        };
+        const clampLevel = (raw) => {
+            const n = Number(raw);
+            if (!Number.isFinite(n)) return 3;
+            return Math.max(1, Math.min(5, Math.round(n)));
+        };
+
+        state.entities.metas = state.entities.metas.map((meta) => {
+            const progress = clampProgress(meta?.progress);
+            const status = normalizedStatus(meta?.status, progress, meta?.completed);
+            return {
+                ...meta,
+                id: String(meta?.id || ''),
+                title: String(meta?.title || '').trim(),
+                dimension: String(meta?.dimension || ''),
+                progress: status === 'done' ? 100 : progress,
+                status,
+                completed: status === 'done',
+                successCriteria: String(meta?.successCriteria || ''),
+                challengeLevel: clampLevel(meta?.challengeLevel),
+                commitmentLevel: clampLevel(meta?.commitmentLevel)
+            };
+        }).filter((meta) => meta.id && meta.title);
+
+        state.entities.okrs = state.entities.okrs.map((okr) => {
+            const keyResults = this.normalizeKeyResultsList(okr?.keyResults);
+            let progress = clampProgress(okr?.progress);
+            if (!Number.isFinite(Number(okr?.progress)) && keyResults.length) {
+                const krProgress = this.computeKeyResultsProgress(keyResults);
+                progress = krProgress === null ? 0 : krProgress;
+            }
+            const status = normalizedStatus(okr?.status, progress, okr?.completed);
+            return {
+                ...okr,
+                id: String(okr?.id || ''),
+                title: String(okr?.title || '').trim(),
+                dimension: String(okr?.dimension || ''),
+                progress: status === 'done' ? 100 : progress,
+                status,
+                completed: status === 'done',
+                successCriteria: String(okr?.successCriteria || ''),
+                challengeLevel: clampLevel(okr?.challengeLevel),
+                commitmentLevel: clampLevel(okr?.commitmentLevel),
+                keyResults
+            };
+        }).filter((okr) => okr.id && okr.title);
+
+        state.entities.macros = state.entities.macros.map((macro) => {
+            const progress = clampProgress(macro?.progress);
+            const status = normalizedStatus(macro?.status, progress, macro?.completed);
+            return {
+                ...macro,
+                id: String(macro?.id || ''),
+                title: String(macro?.title || '').trim(),
+                dimension: String(macro?.dimension || ''),
+                progress: status === 'done' ? 100 : progress,
+                status,
+                completed: status === 'done'
+            };
+        }).filter((macro) => macro.id && macro.title);
+
+        state.entities.micros = state.entities.micros.map((micro) => {
+            const progress = clampProgress(micro?.progress);
+            const status = normalizedStatus(micro?.status, progress, micro?.completed);
+            return {
+                ...micro,
+                id: String(micro?.id || ''),
+                title: String(micro?.title || '').trim(),
+                dimension: String(micro?.dimension || ''),
+                progress: status === 'done' ? 100 : progress,
+                status,
+                completed: status === 'done'
+            };
+        }).filter((micro) => micro.id && micro.title);
+    },
+    normalizeSwlsAnswer: function(rawValue) {
+        let value = Number(rawValue);
+        if (!Number.isFinite(value)) value = 4;
+        value = Math.round(value);
+        return Math.max(1, Math.min(7, value));
+    },
+    normalizeSwlsState: function() {
+        const state = window.sistemaVidaState;
+        if (!state.swls || typeof state.swls !== 'object') {
+            state.swls = { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
+        }
+        if (!Array.isArray(state.swls.answers)) state.swls.answers = [4, 4, 4, 4, 4];
+        const normalizedAnswers = [];
+        for (let i = 0; i < 5; i++) {
+            normalizedAnswers.push(this.normalizeSwlsAnswer(state.swls.answers[i]));
+        }
+        state.swls.answers = normalizedAnswers;
+        state.swls.lastScore = Number(state.swls.lastScore);
+        if (!Number.isFinite(state.swls.lastScore) || state.swls.lastScore < 5 || state.swls.lastScore > 35) {
+            state.swls.lastScore = normalizedAnswers.reduce((sum, n) => sum + n, 0);
+        }
+        if (typeof state.swls.lastDate !== 'string') state.swls.lastDate = "";
+        if (!state.swls.history || typeof state.swls.history !== 'object') state.swls.history = {};
+        const normalizedHistory = {};
+        Object.entries(state.swls.history).forEach(([dateKey, item]) => {
+            const key = String(dateKey || '');
+            if (!key) return;
+            const answers = Array.isArray(item?.answers) ? item.answers.slice(0, 5).map((a) => this.normalizeSwlsAnswer(a)) : [...normalizedAnswers];
+            while (answers.length < 5) answers.push(4);
+            let score = Number(item?.score);
+            if (!Number.isFinite(score) || score < 5 || score > 35) {
+                score = answers.reduce((sum, n) => sum + n, 0);
+            }
+            normalizedHistory[key] = { score: Math.round(score), answers };
+        });
+        state.swls.history = normalizedHistory;
+    },
+    getSwlsBand: function(score) {
+        const val = Number(score) || 0;
+        if (val >= 31) return 'Extremamente satisfeito';
+        if (val >= 26) return 'Satisfeito';
+        if (val >= 21) return 'Levemente satisfeito';
+        if (val === 20) return 'Neutro';
+        if (val >= 15) return 'Levemente insatisfeito';
+        if (val >= 10) return 'Insatisfeito';
+        return 'Extremamente insatisfeito';
+    },
+    normalizeDailyLogsState: function() {
+        const state = window.sistemaVidaState;
+        if (!state.dailyLogs || typeof state.dailyLogs !== 'object') return;
+        Object.entries(state.dailyLogs).forEach(([date, log]) => {
+            if (!log || typeof log !== 'object') return;
+            if (typeof log.shutdown === 'string') {
+                state.dailyLogs[date] = { ...log, shutdown: [log.shutdown] };
+            }
+        });
+    },
+    normalizeDeepWorkState: function() {
+        const state = window.sistemaVidaState;
+        if (!state.deepWork || typeof state.deepWork !== 'object') {
+            state.deepWork = {
+                isRunning: false,
+                isPaused: false,
+                mode: 'focus',
+                remainingSec: 5400,
+                targetSec: 5400,
+                breakSec: 1200,
+                microId: '',
+                intention: '',
+                lastTickAt: 0,
+                sessions: []
+            };
+        }
+        const dw = state.deepWork;
+        dw.isRunning = !!dw.isRunning;
+        dw.isPaused = !!dw.isPaused;
+        dw.mode = ['focus', 'break'].includes(dw.mode) ? dw.mode : 'focus';
+        dw.targetSec = Math.max(300, Math.round(Number(dw.targetSec) || 5400));
+        dw.breakSec = Math.max(60, Math.round(Number(dw.breakSec) || 1200));
+        dw.remainingSec = Math.max(0, Math.round(Number(dw.remainingSec) || dw.targetSec));
+        dw.microId = String(dw.microId || '');
+        dw.intention = String(dw.intention || '');
+        dw.lastTickAt = Math.max(0, Math.round(Number(dw.lastTickAt) || 0));
+        if (!Array.isArray(dw.sessions)) dw.sessions = [];
+        dw.sessions = dw.sessions.map((session) => {
+            const focusSecRaw = Number(session?.focusSec);
+            const focusSec = Number.isFinite(focusSecRaw) ? Math.max(60, Math.round(focusSecRaw)) : 3600;
+            const endedAtTsRaw = String(session?.endedAtTs || '');
+            const endedAtDate = endedAtTsRaw ? new Date(endedAtTsRaw) : null;
+            const endedAtTs = endedAtDate && !Number.isNaN(endedAtDate.getTime())
+                ? endedAtDate.toISOString()
+                : new Date().toISOString();
+            const endedAt = String(session?.endedAt || this.getLocalDateKey(new Date(endedAtTs)));
+            return {
+                endedAt: endedAt.split('T')[0],
+                endedAtTs,
+                focusSec,
+                mode: 'focus',
+                microId: String(session?.microId || ''),
+                intention: String(session?.intention || '')
+            };
+        }).slice(0, 200);
+    },
+    formatClock: function(totalSec) {
+        const safe = Math.max(0, Math.round(Number(totalSec) || 0));
+        const mm = String(Math.floor(safe / 60)).padStart(2, '0');
+        const ss = String(safe % 60).padStart(2, '0');
+        return `${mm}:${ss}`;
+    },
+    formatDateTimeLocal: function(raw) {
+        const dt = raw ? new Date(raw) : null;
+        if (!dt || Number.isNaN(dt.getTime())) return '';
+        return dt.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    },
     ensureSettingsState: function() {
         if (!window.sistemaVidaState.settings) {
             window.sistemaVidaState.settings = { notificationsEnabled: false, theme: 'auto' };
@@ -79,6 +346,19 @@ const app = {
         }
         if (!window.sistemaVidaState.profile.odysseyImages) {
             window.sistemaVidaState.profile.odysseyImages = { cenarioA: "", cenarioB: "", cenarioC: "" };
+        }
+        if (!window.sistemaVidaState.perma) {
+            window.sistemaVidaState.perma = { P: 0, E: 0, R: 0, M: 0, A: 0 };
+        }
+        if (!window.sistemaVidaState.swls) {
+            window.sistemaVidaState.swls = { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
+        }
+        if (!window.sistemaVidaState.deepWork) {
+            window.sistemaVidaState.deepWork = {
+                isRunning: false, isPaused: false, mode: 'focus',
+                remainingSec: 5400, targetSec: 5400, breakSec: 1200,
+                microId: '', intention: '', lastTickAt: 0, sessions: []
+            };
         }
         try {
             const cachedTheme = localStorage.getItem('lifeos_theme_pref');
@@ -102,6 +382,11 @@ const app = {
                 };
             }
         } catch (_) {}
+        this.normalizePermaState();
+        this.normalizeEntitiesState();
+        this.normalizeSwlsState();
+        this.normalizeDailyLogsState();
+        this.normalizeDeepWorkState();
     },
     applyThemePreference: function() {
         this.ensureSettingsState();
@@ -395,6 +680,11 @@ const app = {
             }
         } catch (_) {}
         this.ensureSettingsState();
+        this.normalizePermaState();
+        this.normalizeEntitiesState();
+        this.normalizeSwlsState();
+        this.normalizeDailyLogsState();
+        this.normalizeDeepWorkState();
         this.renderSidebarValues();
     },
 
@@ -451,7 +741,6 @@ const app = {
       const state = window.sistemaVidaState;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().split('T');
       const alerts = [];
 
       state.entities.micros.forEach(m => {
@@ -549,6 +838,7 @@ const app = {
         this.ensureSettingsState();
         this.applyThemePreference();
         this.checkAlerts();
+        this.ensureDeepWorkTicking();
         if (!window.sistemaVidaState.onboardingComplete) {
             this.switchView('onboarding');
         } else {
@@ -684,7 +974,8 @@ const app = {
                 const energyColor = log.energy >= 4 ? 'text-green-600' : log.energy >= 3 ? 'text-yellow-600' : 'text-red-600';
                 const gratidaoBlock = log.gratidao ? `<p class="text-[11px] text-on-surface-variant mt-2">Gratidão: ${log.gratidao}</p>` : '';
                 const funcionouBlock = log.funcionou ? `<p class="text-[11px] text-on-surface-variant mt-1">Funcionou: ${log.funcionou}</p>` : '';
-                const shutdownBlock = log.shutdown ? `<p class="text-[11px] text-on-surface-variant mt-1">Shutdown: ${log.shutdown}</p>` : '';
+                const shutdownText = Array.isArray(log.shutdown) ? (log.shutdown[0] || '') : (log.shutdown || '');
+                const shutdownBlock = shutdownText ? `<p class="text-[11px] text-on-surface-variant mt-1">Shutdown: ${shutdownText}</p>` : '';
                 
                 // Seção Flash Reflexão
                 let flashBlock = '';
@@ -853,6 +1144,15 @@ const app = {
         const modalTitle = document.getElementById('modal-title');
         if (modalTitle) modalTitle.textContent = 'Novo Item';
 
+        const successCriteriaInput = document.getElementById('crud-success-criteria');
+        const challengeInput = document.getElementById('crud-challenge-level');
+        const commitmentInput = document.getElementById('crud-commitment-level');
+        const keyResultsInput = document.getElementById('crud-key-results');
+        if (successCriteriaInput) successCriteriaInput.value = '';
+        if (challengeInput) challengeInput.value = '3';
+        if (commitmentInput) commitmentInput.value = '3';
+        if (keyResultsInput) keyResultsInput.value = '';
+
         document.getElementById('crud-type').value = type;
         this.onTypeChange(type);
         document.getElementById('crud-modal').classList.remove('hidden');
@@ -873,6 +1173,9 @@ const app = {
         const rewardInput = document.getElementById('habit-reward');
         const habitControls = document.getElementById('crud-habit-controls');
         const metaHorizonGroup = document.getElementById('crud-meta-horizon-group');
+        const successCriteriaGroup = document.getElementById('crud-success-criteria-group');
+        const goalRigorGroup = document.getElementById('crud-goal-rigor-group');
+        const keyResultsGroup = document.getElementById('crud-key-results-group');
         const setGroupVisible = (el, visible, displayMode = 'flex') => {
             if (!el) return;
             el.classList.toggle('hidden', !visible);
@@ -886,6 +1189,9 @@ const app = {
         setGroupVisible(habitControls, false);
         setGroupVisible(habitIdentityGroup, false);
         setGroupVisible(habitStepsChecklistWrap, false);
+        setGroupVisible(successCriteriaGroup, false);
+        setGroupVisible(goalRigorGroup, false);
+        setGroupVisible(keyResultsGroup, false);
         if (metaHorizonGroup) metaHorizonGroup.classList.add('hidden');
         if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
         if (contextGroup) contextGroup.classList.remove('hidden');
@@ -919,10 +1225,15 @@ const app = {
         } else if (type === 'metas') {
             if (parentGroup) parentGroup.classList.remove('hidden');
             if (metaHorizonGroup) metaHorizonGroup.classList.remove('hidden');
+            setGroupVisible(successCriteriaGroup, true);
+            setGroupVisible(goalRigorGroup, true, 'grid');
             if (contextLabel) contextLabel.textContent = 'Por que esta meta? (Propósito)';
             this.updateParentList(type);
         } else if (type === 'okrs') {
             if (parentGroup) parentGroup.classList.remove('hidden');
+            setGroupVisible(successCriteriaGroup, true);
+            setGroupVisible(goalRigorGroup, true, 'grid');
+            setGroupVisible(keyResultsGroup, true);
             if (contextLabel) contextLabel.textContent = 'Indicador de Sucesso / Métrica';
             this.updateParentList(type);
         } else {
@@ -1002,6 +1313,41 @@ const app = {
             daysContainer.classList.remove('flex');
             daysContainer.style.display = 'none';
         }
+    },
+
+    parseKeyResultsText: function(textRaw) {
+        const lines = String(textRaw || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        return this.normalizeKeyResultsList(lines.map((line) => {
+            const parts = line.split('|').map(p => p.trim());
+            return {
+                title: parts[0] || '',
+                current: parts[1] || 0,
+                target: parts[2] || 0
+            };
+        }));
+    },
+
+    serializeKeyResultsText: function(keyResults) {
+        if (!Array.isArray(keyResults) || keyResults.length === 0) return '';
+        return keyResults.map((kr) => {
+            const title = String(kr?.title || '').trim();
+            const current = Number(kr?.current || 0);
+            const target = Number(kr?.target || 0);
+            return `${title} | ${current} | ${target}`;
+        }).join('\n');
+    },
+
+    computeKeyResultsProgress: function(keyResults) {
+        if (!Array.isArray(keyResults) || keyResults.length === 0) return null;
+        const valid = keyResults.filter(kr => Number(kr?.target) > 0);
+        if (valid.length === 0) return null;
+        const sumPct = valid.reduce((acc, kr) => {
+            const current = Number(kr.current || 0);
+            const target = Number(kr.target || 0);
+            const pct = Math.max(0, Math.min(100, (current / target) * 100));
+            return acc + pct;
+        }, 0);
+        return Math.round(sumPct / valid.length);
     },
 
     onParentChange: function(parentId) {
@@ -1201,7 +1547,13 @@ const app = {
           'Finanças': { score: 1 }, 'Relacionamentos': { score: 1 },
           'Família': { score: 1 }, 'Lazer': { score: 1 }, 'Propósito': { score: 1 }
         },
-        perma: { P: 50, E: 50, R: 50, M: 50, A: 50 },
+        perma: { P: 5, E: 5, R: 5, M: 5, A: 5 },
+        swls: { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} },
+        deepWork: {
+          isRunning: false, isPaused: false, mode: 'focus',
+          remainingSec: 5400, targetSec: 5400, breakSec: 1200,
+          microId: '', intention: '', lastTickAt: 0, sessions: []
+        },
         entities: { metas: [], okrs: [], macros: [], micros: [] },
         dailyLogs: {},
         habits: [],
@@ -1241,7 +1593,25 @@ const app = {
           'Finanças': { score: 5 }, 'Relacionamentos': { score: 8 },
           'Família': { score: 9 }, 'Lazer': { score: 4 }, 'Propósito': { score: 8 }
         },
-        perma: { P: 72, E: 68, R: 85, M: 75, A: 60 },
+        perma: { P: 7.2, E: 6.8, R: 8.5, M: 7.5, A: 6 },
+        swls: {
+          answers: [6, 5, 6, 5, 5],
+          lastScore: 27,
+          lastDate: '2026-04-01',
+          history: {
+            '2026-03-01': { score: 24, answers: [5, 4, 5, 5, 5] },
+            '2026-04-01': { score: 27, answers: [6, 5, 6, 5, 5] }
+          }
+        },
+        deepWork: {
+          isRunning: false, isPaused: false, mode: 'focus',
+          remainingSec: 5400, targetSec: 5400, breakSec: 1200,
+          microId: '', intention: '', lastTickAt: 0,
+          sessions: [
+            { endedAt: '2026-04-06', focusSec: 3600, mode: 'focus', microId: 'mic2', intention: 'Remover hardcodes do painel' },
+            { endedAt: '2026-04-08', focusSec: 5400, mode: 'focus', microId: 'mic3', intention: 'Refinar render do perfil' }
+          ]
+        },
         habits: [
           { id: 'h1', title: 'Meditação matinal', dimension: 'Mente', trigger: 'Após acordar e antes do café', completed: false, context: 'Clareza mental para o dia' },
           { id: 'h2', title: 'Treino físico', dimension: 'Saúde', trigger: 'Segunda, quarta e sexta às 7h', completed: false, context: 'Energia e disposição' },
@@ -1614,6 +1984,10 @@ const app = {
 
         const parentId = document.getElementById('create-parent') ? document.getElementById('create-parent').value : '';
         const metaHorizonYears = Number(document.getElementById('crud-meta-horizon')?.value || 1);
+        const successCriteria = (document.getElementById('crud-success-criteria')?.value || '').trim();
+        const challengeLevel = Number(document.getElementById('crud-challenge-level')?.value || 3);
+        const commitmentLevel = Number(document.getElementById('crud-commitment-level')?.value || 3);
+        const keyResults = this.parseKeyResultsText(document.getElementById('crud-key-results')?.value || '');
 
         const isEditing = !!this.editingEntity;
         const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
@@ -1629,6 +2003,9 @@ const app = {
 
         if (type === 'metas' || type === 'okrs') {
             obj.purpose = context || '';
+            obj.successCriteria = successCriteria;
+            obj.challengeLevel = Math.max(1, Math.min(5, Math.round(challengeLevel || 3)));
+            obj.commitmentLevel = Math.max(1, Math.min(5, Math.round(commitmentLevel || 3)));
             obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
             if (type === 'metas') {
                 obj.horizonYears = metaHorizonYears;
@@ -1651,8 +2028,13 @@ const app = {
                     obj.parentMetaId = parentId;
                     obj.dimension = parentMeta.dimension || obj.dimension;
                 }
-            } else if (type === 'okrs' && parentId) {
-                obj.metaId = parentId || '';
+            } else if (type === 'okrs') {
+                if (parentId) obj.metaId = parentId || '';
+                obj.keyResults = keyResults;
+                const oldItem = getOldItem(id, 'okrs');
+                obj.rewarded70 = !!oldItem.rewarded70;
+                const krProgress = this.computeKeyResultsProgress(obj.keyResults);
+                if (krProgress !== null) obj.progress = krProgress;
             }
         } else if (type === 'macros') {
             obj.description = context || '';
@@ -2034,7 +2416,7 @@ const app = {
             ...window.sistemaVidaState.dailyLogs[today],
             gratidao, 
             funcionou, 
-            shutdown: s1, 
+            shutdown: [s1], 
             energy: window.sistemaVidaState.energy || 0 
         };
 
@@ -2419,6 +2801,7 @@ const app = {
 
         foco: function() {
             const state = window.sistemaVidaState;
+            app.normalizeDeepWorkState();
             this.renderSidebarValues();
             
             // 1. Distribuição de Foco
@@ -2450,6 +2833,7 @@ const app = {
             }).length;
             const cycleDoneEl = document.getElementById('cycle-micros-done');
             if (cycleDoneEl) cycleDoneEl.textContent = cycleDone;
+            this.renderDeepWorkPanel();
 
             // 4. Micros Management List
             const listContainer = document.getElementById('micros-management-list');
@@ -2666,7 +3050,9 @@ const app = {
                 if (focoInput && log.focus) focoInput.value = log.focus;
                 const g = document.getElementById('diario-gratidao'); if (g) g.value = log.gratidao || '';
                 const f = document.getElementById('diario-funcionou'); if (f) f.value = log.funcionou || '';
-                const s1 = document.getElementById('diario-shutdown-1'); if (s1) s1.value = log.shutdown || '';
+                const s1 = document.getElementById('diario-shutdown-1');
+                const shutdown = Array.isArray(log.shutdown) ? (log.shutdown[0] || '') : (log.shutdown || '');
+                if (s1) s1.value = shutdown;
             }
 
             // Indicador de Diário Flash (Raio Amarelo)
@@ -3146,6 +3532,12 @@ const app = {
                     entities.forEach((item, idx) => {
                         const prog = item.progress || (item.completed ? 100 : 0);
                         let visualProg = prog;
+                        const hasKrs = entityType === 'okrs' && Array.isArray(item.keyResults) && item.keyResults.length > 0;
+                        const subMetaText = entityType === 'okrs'
+                            ? (hasKrs ? `${item.keyResults.length} KRs • ${item.challengeLevel || 3}/5 desafio` : `Sem KRs • ${item.challengeLevel || 3}/5 desafio`)
+                            : (entityType === 'metas'
+                                ? `Comprometimento ${item.commitmentLevel || 3}/5`
+                                : '');
                         
                         // Build Hierarchy Trail Nodes
                         let trailNodes = [];
@@ -3172,6 +3564,12 @@ const app = {
                             const meta = state.entities.metas.find(x => x.id === item.metaId);
                             trailNodes.push({ label: 'Meta', title: meta ? meta.title : '-' });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
+                            trailNodes.push({ label: 'Critério de Sucesso', title: item.successCriteria || '-' });
+                            trailNodes.push({ label: 'Desafio', title: `${item.challengeLevel || 3}/5` });
+                            trailNodes.push({ label: 'Comprometimento', title: `${item.commitmentLevel || 3}/5` });
+                            if (Array.isArray(item.keyResults) && item.keyResults.length > 0) {
+                                trailNodes.push({ label: 'Key Results', title: `${item.keyResults.length} indicadores` });
+                            }
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '-') : '-' });
                         } else if (entityType === 'metas') {
                             trailNodes.push({ label: 'Meta', title: item.title });
@@ -3181,6 +3579,9 @@ const app = {
                             }
                             trailNodes.push({ label: 'Horizonte', title: `${app.getMetaHorizonYears(item)} anos` });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
+                            trailNodes.push({ label: 'Critério de Sucesso', title: item.successCriteria || '-' });
+                            trailNodes.push({ label: 'Desafio', title: `${item.challengeLevel || 3}/5` });
+                            trailNodes.push({ label: 'Comprometimento', title: `${item.commitmentLevel || 3}/5` });
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '-' });
                         }
 
@@ -3197,6 +3598,10 @@ const app = {
                             else if (node.label === 'OKR') { icon = 'track_changes'; colorClass = 'text-stone-400'; }
                             else if (node.label === 'Macro Ação') { icon = 'account_tree'; colorClass = 'text-stone-400'; }
                             else if (node.label === 'Micro Ação') { icon = 'check_circle'; colorClass = 'text-primary'; }
+                            else if (node.label === 'Critério de Sucesso') { icon = 'rule'; colorClass = 'text-primary'; }
+                            else if (node.label === 'Desafio') { icon = 'military_tech'; colorClass = 'text-primary'; }
+                            else if (node.label === 'Comprometimento') { icon = 'verified'; colorClass = 'text-primary'; }
+                            else if (node.label === 'Key Results') { icon = 'query_stats'; colorClass = 'text-primary'; }
                             
                             trailHtml += `
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
@@ -3253,6 +3658,7 @@ const app = {
                                         ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold">ALINHADO</span>' : ''}
                                     </div>
                                     <h4 class="font-headline text-lg md:text-xl font-semibold leading-tight line-clamp-2">${item.title}</h4>
+                                    ${subMetaText ? `<p class="text-[11px] text-outline">${subMetaText}</p>` : ''}
                                 </div>
                                 <div class="flex flex-col items-end gap-2 shrink-0">
                                     ${statusChip}
@@ -3369,8 +3775,7 @@ const app = {
                     ];
 
                     permaData.forEach(item => {
-                        const score = Number(item.val);
-                        const normalizedVal = score > 10 ? score / 10 : score;
+                        const normalizedVal = app.normalizePermaScore(item.val);
                         const percentage = normalizedVal * 10;
                         const row = document.createElement('div');
                         row.className = 'space-y-2';
@@ -3389,6 +3794,55 @@ const app = {
                     console.error('Erro ao renderizar barras PERMA em Propósito:', e);
                 }
             }, 150);
+
+            // 2. Renderização SWLS (score + histórico)
+            setTimeout(() => {
+                try {
+                    this.normalizeSwlsState();
+                    const swls = state.swls || { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
+                    const scoreEl = document.getElementById('swls-score');
+                    const bandEl = document.getElementById('swls-band');
+                    const dateEl = document.getElementById('swls-last-date');
+                    const historyEl = document.getElementById('swls-history-list');
+                    const insightEl = document.getElementById('swls-perma-insight');
+                    const score = Number(swls.lastScore) || 0;
+                    const permaVals = ['P', 'E', 'R', 'M', 'A'].map((k) => this.normalizePermaScore(state.perma?.[k]));
+                    const permaAvg = permaVals.reduce((sum, n) => sum + n, 0) / permaVals.length;
+                    const swlsEq10 = Math.round((score / 35) * 100) / 10;
+                    const delta = Math.abs(permaAvg - swlsEq10);
+
+                    if (scoreEl) scoreEl.textContent = `${score}/35`;
+                    if (bandEl) bandEl.textContent = this.getSwlsBand(score);
+                    if (dateEl) dateEl.textContent = swls.lastDate ? `Última avaliação: ${swls.lastDate}` : '';
+                    if (insightEl) {
+                        let insight = `PERMA médio ${permaAvg.toFixed(1)}/10 e SWLS equivalente ${swlsEq10.toFixed(1)}/10: leitura coerente.`;
+                        if (delta >= 2) {
+                            if (swlsEq10 > permaAvg) insight = `SWLS (${swlsEq10.toFixed(1)}/10) está acima do PERMA médio (${permaAvg.toFixed(1)}/10): investigue dimensões específicas do PERMA com notas baixas.`;
+                            else insight = `PERMA médio (${permaAvg.toFixed(1)}/10) está acima do SWLS (${swlsEq10.toFixed(1)}/10): vale revisar satisfação global e expectativas de vida.`;
+                        }
+                        insightEl.textContent = insight;
+                    }
+
+                    if (historyEl) {
+                        const entries = Object.entries(swls.history || {})
+                            .sort((a, b) => b[0].localeCompare(a[0]))
+                            .slice(0, 5);
+                        if (entries.length === 0) {
+                            historyEl.innerHTML = '<p class="text-xs text-outline italic">Sem histórico disponível.</p>';
+                        } else {
+                            historyEl.innerHTML = entries.map(([date, item]) => {
+                                const val = Number(item?.score) || 0;
+                                return `<div class="flex items-center justify-between text-xs border border-outline-variant/10 rounded-lg px-3 py-2">
+                                    <span class="text-outline">${date}</span>
+                                    <span class="font-bold text-primary">${val}/35</span>
+                                </div>`;
+                            }).join('');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Erro ao renderizar SWLS em Propósito:', e);
+                }
+            }, 170);
 
             // 3. Renderização de Textos do Propósito (Ikigai, Valores, Visão, Legado)
             setTimeout(() => {
@@ -3778,11 +4232,14 @@ const app = {
                 const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
                 const okr = state.entities.okrs.find(o => o.id === macro.okrId);
                 if (okr) {
-                    if (avg >= 99) {
+                    const krProgress = this.computeKeyResultsProgress(okr.keyResults);
+                    const hasKrs = krProgress !== null;
+                    const finalProgress = hasKrs ? Math.round((krProgress * 0.7) + (avg * 0.3)) : Math.round(avg);
+                    if (finalProgress >= 99) {
                         okr.progress = 100;
                         okr.status = 'done';
                     } else {
-                        okr.progress = Math.round(avg);
+                        okr.progress = finalProgress;
                         if (okr.status === 'done') okr.status = 'active';
                     }
                     this.updateCascadeProgress(okr.id, 'okrs');
@@ -3859,11 +4316,12 @@ const app = {
                     if (okr.progress >= 70 && !okr.rewarded70) {
                         okr.rewarded70 = true;
                         if (state.perma) {
-                            state.perma.A = Math.min(100, state.perma.A + 5); 
+                            state.perma.A = this.normalizePermaScore((state.perma.A || 0) + 0.5);
                         }
                         const metaLocal = state.entities.metas.find(m => m.id === okr.metaId);
-                        if (metaLocal && state.dimensions[metaLocal.dimensionName]) {
-                            state.dimensions[metaLocal.dimensionName].score = Math.min(100, state.dimensions[metaLocal.dimensionName].score + 5);
+                        const bonusDim = this.normalizeDimensionKey(metaLocal?.dimension || metaLocal?.dimensionName);
+                        if (bonusDim && state.dimensions[bonusDim]) {
+                            state.dimensions[bonusDim].score = Math.min(100, state.dimensions[bonusDim].score + 5);
                         }
                         if (this.showNotification) this.showNotification("🎯 OKR atingiu 70% (Alvo Ideal). Bônus de realização aplicado!");
                     }
@@ -3871,7 +4329,6 @@ const app = {
             }
         }
         
-        this.saveState(true);
         this.saveState(false);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'planos' && this.render.planos) this.render.planos();
@@ -3887,7 +4344,6 @@ const app = {
         entity.status = 'in_progress';
         if (!entity.progress || entity.progress < 1) entity.progress = 1;
         if (type === 'micros') entity.completed = false;
-        this.saveState(true);
         this.saveState(false);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
@@ -4033,6 +4489,14 @@ const app = {
         if (inicioInput) inicioInput.value = item.inicioDate || item.agendamento?.inicioDate || item.prazo || '';
         if (prazoInput) prazoInput.value = item.prazo || '';
         document.getElementById('crud-context').value = item.purpose || item.description || item.indicator || '';
+        const successCriteriaInput = document.getElementById('crud-success-criteria');
+        if (successCriteriaInput) successCriteriaInput.value = item.successCriteria || '';
+        const challengeInput = document.getElementById('crud-challenge-level');
+        if (challengeInput) challengeInput.value = String(item.challengeLevel || 3);
+        const commitmentInput = document.getElementById('crud-commitment-level');
+        if (commitmentInput) commitmentInput.value = String(item.commitmentLevel || 3);
+        const keyResultsInput = document.getElementById('crud-key-results');
+        if (keyResultsInput) keyResultsInput.value = this.serializeKeyResultsText(item.keyResults);
         
         // Compatibilidade retrô: agendamento antigo migra visualmente para datas reais
         
@@ -4080,18 +4544,22 @@ const app = {
         const state = window.sistemaVidaState;
 
         // 1. Aba: Planos
-        const planosCol = ["ID", "Tipo", "Dimensão", "Título", "Contexto_Indicador", "Prazo", "Progresso", "ID_Pai"];
+        const planosCol = ["ID", "Tipo", "Dimensão", "Título", "Contexto_Indicador", "Prazo", "Progresso", "ID_Pai", "Critério_Sucesso", "Desafio", "Comprometimento", "Key_Results"];
         const planosData = [planosCol];
         const types = ['metas', 'okrs', 'macros', 'micros'];
         types.forEach(t => {
             (state.entities[t] || []).forEach(e => {
                 const context = e.purpose || e.description || e.indicator || "";
                 const parentId = e.metaId || e.okrId || e.macroId || "";
-                planosData.push([e.id, t.slice(0, -1), e.dimension || "Geral", e.title, context, e.prazo || "", e.progress || 0, parentId]);
+                const keyResultsText = this.serializeKeyResultsText(e.keyResults);
+                planosData.push([
+                    e.id, t.slice(0, -1), e.dimension || "Geral", e.title, context, e.prazo || "", e.progress || 0, parentId,
+                    e.successCriteria || "", e.challengeLevel || "", e.commitmentLevel || "", keyResultsText
+                ]);
             });
         });
         const wsPlanos = XLSX.utils.aoa_to_sheet(planosData);
-        wsPlanos['!cols'] = [{wch:15}, {wch:10}, {wch:15}, {wch:40}, {wch:40}, {wch:15}, {wch:10}, {wch:15}];
+        wsPlanos['!cols'] = [{wch:15}, {wch:10}, {wch:15}, {wch:40}, {wch:40}, {wch:15}, {wch:10}, {wch:15}, {wch:30}, {wch:12}, {wch:16}, {wch:42}];
         XLSX.utils.book_append_sheet(wb, wsPlanos, "Planos");
 
         // 2. Aba: Propósito
@@ -4129,6 +4597,14 @@ const app = {
         Object.entries(permaM).forEach(([k, label]) => {
             propData.push(["PERMA", label, state.perma?.[k] || 0]);
         });
+        
+        // SWLS
+        const swls = state.swls || { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
+        propData.push(["SWLS", "Score", swls.lastScore || 0]);
+        propData.push(["SWLS", "Data", swls.lastDate || ""]);
+        (swls.answers || []).slice(0, 5).forEach((answer, idx) => {
+            propData.push(["SWLS", `Q${idx + 1}`, answer]);
+        });
 
         const wsProp = XLSX.utils.aoa_to_sheet(propData);
         wsProp['!cols'] = [{wch:15}, {wch:30}, {wch:60}];
@@ -4156,15 +4632,18 @@ const app = {
         const logCol = ["Data", "Energia", "Gratidão", "O_Que_Funcionou", "O_Que_Aprendi", "Shutdown_1", "Shutdown_2", "Shutdown_3"];
         const logData = [logCol];
         Object.entries(state.dailyLogs || {}).sort().forEach(([date, log]) => {
+            const shutdown = Array.isArray(log.shutdown)
+                ? log.shutdown
+                : (typeof log.shutdown === 'string' ? [log.shutdown] : []);
             const row = [
                 date,
                 log.energy || 5,
                 log.gratidao || "",
                 log.funcionou || "",
                 log.aprendi || "",
-                log.shutdown?.[0] || "",
-                log.shutdown?.[1] || "",
-                log.shutdown?.[2] || ""
+                shutdown[0] || "",
+                shutdown[1] || "",
+                shutdown[2] || ""
             ];
             logData.push(row);
         });
@@ -4254,11 +4733,26 @@ const app = {
                         status: status,
                         progress: Math.min(100, Math.max(0, numericProgress))
                     };
+                    const successCriteria = String(getValue(row, ['Critério_Sucesso', 'Critério de Sucesso', 'Success Criteria']) || '').trim();
+                    const challengeLevel = Number(getValue(row, ['Desafio', 'Challenge', 'Challenge Level']) || 0);
+                    const commitmentLevel = Number(getValue(row, ['Comprometimento', 'Commitment', 'Commitment Level']) || 0);
+                    const keyResultsText = String(getValue(row, ['Key_Results', 'Key Results', 'KRs']) || '');
 
                     let context = getValue(row, ['Contexto / Indicador', 'Contexto', 'Notes', 'Descrição']);
                     let prazo = getValue(row, ['Prazo / Ciclo', 'Prazo', 'Ciclo', 'Deadline', 'Data']);
                     
-                    if (type === 'metas' || type === 'okrs') { obj.purpose = context; obj.prazo = prazo; }
+                    if (type === 'metas' || type === 'okrs') {
+                        obj.purpose = context;
+                        obj.prazo = prazo;
+                        if (successCriteria) obj.successCriteria = successCriteria;
+                        if (challengeLevel >= 1 && challengeLevel <= 5) obj.challengeLevel = Math.round(challengeLevel);
+                        if (commitmentLevel >= 1 && commitmentLevel <= 5) obj.commitmentLevel = Math.round(commitmentLevel);
+                        if (type === 'okrs') {
+                            obj.keyResults = this.parseKeyResultsText(keyResultsText);
+                            const krProgress = this.computeKeyResultsProgress(obj.keyResults);
+                            if (krProgress !== null) obj.progress = krProgress;
+                        }
+                    }
                     else if (type === 'macros') { obj.description = context; obj.prazo = prazo; }
                     else if (type === 'micros') { obj.indicator = context; obj.completed = (status === 'done'); obj.prazo = prazo; }
 
@@ -4283,6 +4777,7 @@ const app = {
                 if (!window.sistemaVidaState.profile.vision) window.sistemaVidaState.profile.vision = {};
                 if (!window.sistemaVidaState.dimensions) window.sistemaVidaState.dimensions = { 'Saúde':{score:1}, 'Mente':{score:1}, 'Carreira':{score:1}, 'Finanças':{score:1}, 'Relacionamentos':{score:1}, 'Família':{score:1}, 'Lazer':{score:1}, 'Propósito':{score:1} };
                 if (!window.sistemaVidaState.perma) window.sistemaVidaState.perma = {P:0, E:0, R:0, M:0, A:0};
+                if (!window.sistemaVidaState.swls) window.sistemaVidaState.swls = { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
 
                 const propArr = XLSX.utils.sheet_to_json(wsProp);
                 propArr.forEach(row => {
@@ -4301,8 +4796,19 @@ const app = {
                     } 
                     else if (cat.includes('perma')) {
                         let pKey = kLow.toUpperCase();
-                        if (['P','E','R','M','A'].includes(pKey)) window.sistemaVidaState.perma[pKey] = parseFloat(val) || 0;
+                        if (['P','E','R','M','A'].includes(pKey)) window.sistemaVidaState.perma[pKey] = this.normalizePermaScore(val);
                     } 
+                    else if (cat.includes('swls')) {
+                        const score = Number(window.sistemaVidaState.swls.lastScore) || 0;
+                        if (kLow === 'score') {
+                            window.sistemaVidaState.swls.lastScore = Math.max(5, Math.min(35, Math.round(Number(val) || score || 20)));
+                        } else if (kLow === 'data') {
+                            window.sistemaVidaState.swls.lastDate = String(val || '');
+                        } else if (/^q[1-5]$/.test(kLow)) {
+                            const idx = Number(kLow.replace('q', '')) - 1;
+                            window.sistemaVidaState.swls.answers[idx] = this.normalizeSwlsAnswer(val);
+                        }
+                    }
                     else if (cat.includes('ikigai')) {
                         if (kLow.includes('miss')) window.sistemaVidaState.profile.ikigai.missao = val;
                         else if (kLow.includes('voca')) window.sistemaVidaState.profile.ikigai.vocacao = val;
@@ -4327,6 +4833,12 @@ const app = {
                         else if (kLow.includes('mun')) window.sistemaVidaState.profile.legacyObj.mundo = val;
                     }
                 });
+                this.normalizeSwlsState();
+                const swlsState = window.sistemaVidaState.swls;
+                if (swlsState.lastDate) {
+                    if (!swlsState.history || typeof swlsState.history !== 'object') swlsState.history = {};
+                    swlsState.history[swlsState.lastDate] = { score: swlsState.lastScore, answers: [...swlsState.answers] };
+                }
             }
 
             // 3. Aba: Hábitos
@@ -4406,6 +4918,11 @@ const app = {
             }
 
             // Finalização
+            this.normalizeSwlsState();
+            this.normalizePermaState();
+            this.normalizeEntitiesState();
+            this.normalizeDailyLogsState();
+            this.normalizeDeepWorkState();
             await window.app.saveState(false);
             alert('Sistema Vida Importado com Sucesso (Padrão Ouro)!');
             window.app.switchView('painel');
@@ -4450,6 +4967,271 @@ const app = {
         return `<div class="p-6 mt-10 text-red-500 font-bold">Erro local de CORS: view '${viewName}' não pôde ser carregada via protocolo file. Use um servidor local.</div>`;
     },
 
+    ensureDeepWorkTicking: function() {
+        this.normalizeDeepWorkState();
+        const dw = window.sistemaVidaState.deepWork;
+        if (!dw.isRunning || dw.isPaused) {
+            this.stopDeepWorkTicking();
+            return;
+        }
+        if (this._deepWorkTimerId) return;
+        this._deepWorkTimerId = setInterval(() => this.tickDeepWork(), 1000);
+    },
+
+    stopDeepWorkTicking: function() {
+        if (this._deepWorkTimerId) {
+            clearInterval(this._deepWorkTimerId);
+            this._deepWorkTimerId = null;
+        }
+    },
+
+    tickDeepWork: function() {
+        this.normalizeDeepWorkState();
+        const dw = window.sistemaVidaState.deepWork;
+        if (!dw.isRunning || dw.isPaused) {
+            this.stopDeepWorkTicking();
+            return;
+        }
+        const nowMs = Date.now();
+        const last = Number(dw.lastTickAt) || nowMs;
+        const elapsed = Math.max(1, Math.floor((nowMs - last) / 1000));
+        dw.lastTickAt = nowMs;
+        dw.remainingSec = Math.max(0, dw.remainingSec - elapsed);
+
+        if (dw.remainingSec <= 0) {
+            this.onDeepWorkCountdownEnd();
+        } else if (this.currentView === 'foco') {
+            this.renderDeepWorkPanel();
+        }
+    },
+
+    onDeepWorkCountdownEnd: function() {
+        this.normalizeDeepWorkState();
+        const state = window.sistemaVidaState;
+        const dw = state.deepWork;
+        if (dw.mode === 'focus') {
+            const focusSec = dw.targetSec;
+            const dateKey = this.getLocalDateKey();
+            dw.sessions.unshift({
+                endedAt: dateKey,
+                endedAtTs: new Date().toISOString(),
+                focusSec: focusSec,
+                mode: 'focus',
+                microId: dw.microId || '',
+                intention: dw.intention || ''
+            });
+            dw.sessions = dw.sessions.slice(0, 50);
+            dw.mode = 'break';
+            dw.remainingSec = dw.breakSec;
+            dw.lastTickAt = Date.now();
+            if (this.showNotification) this.showNotification('Bloco de foco concluído. Iniciando pausa de 20 minutos.');
+            this.saveState(true);
+            this.ensureDeepWorkTicking();
+            if (this.currentView === 'foco') this.renderDeepWorkPanel();
+            return;
+        }
+
+        dw.isRunning = false;
+        dw.isPaused = false;
+        dw.mode = 'focus';
+        dw.remainingSec = dw.targetSec;
+        dw.lastTickAt = 0;
+        this.stopDeepWorkTicking();
+        this.saveState(true);
+        if (this.showNotification) this.showNotification('Pausa concluída. Você está pronto para o próximo bloco.');
+        if (this.currentView === 'foco') this.renderDeepWorkPanel();
+    },
+
+    renderDeepWorkPanel: function() {
+        this.normalizeDeepWorkState();
+        const state = window.sistemaVidaState;
+        const dw = state.deepWork;
+
+        const statusEl = document.getElementById('deep-work-status');
+        const timerEl = document.getElementById('deep-work-timer');
+        const phaseEl = document.getElementById('deep-work-phase');
+        const summaryEl = document.getElementById('deep-work-week-summary');
+        const historyEl = document.getElementById('deep-work-history');
+        const presetEl = document.getElementById('deep-work-preset');
+        const microEl = document.getElementById('deep-work-micro');
+        const intentionEl = document.getElementById('deep-work-intention');
+
+        if (presetEl && !dw.isRunning) {
+            const presetMin = Math.max(5, Math.round((dw.targetSec || 5400) / 60));
+            presetEl.value = String(presetMin);
+        }
+        if (microEl) {
+            const micros = (state.entities.micros || []).filter(m => m.status !== 'done');
+            const selected = dw.microId || '';
+            microEl.innerHTML = '<option value="">Sem vínculo</option>' + micros.map(m => `<option value="${m.id}" ${m.id === selected ? 'selected' : ''}>${m.title}</option>`).join('');
+        }
+        if (intentionEl && !intentionEl.value && dw.intention) intentionEl.value = dw.intention;
+
+        if (statusEl) {
+            if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
+            else if (dw.isPaused) statusEl.textContent = 'Sessão pausada';
+            else statusEl.textContent = dw.mode === 'focus' ? 'Foco profundo em andamento' : 'Pausa de recuperação';
+        }
+        if (timerEl) timerEl.textContent = this.formatClock(dw.remainingSec);
+        if (phaseEl) phaseEl.textContent = dw.mode === 'focus' ? 'Foco' : 'Pausa';
+
+        if (summaryEl) {
+            const today = new Date();
+            const weekStart = new Date(today);
+            weekStart.setHours(0, 0, 0, 0);
+            weekStart.setDate(today.getDate() - today.getDay());
+            const sessions = (dw.sessions || []).filter(s => {
+                const dt = new Date(`${s.endedAt || ''}T00:00:00`);
+                return !Number.isNaN(dt.getTime()) && dt >= weekStart;
+            });
+            const totalSec = sessions.reduce((sum, s) => sum + (Number(s.focusSec) || 0), 0);
+            const hours = Math.floor(totalSec / 3600);
+            const mins = Math.floor((totalSec % 3600) / 60);
+            summaryEl.textContent = `${sessions.length} sessões, ${hours}h${String(mins).padStart(2, '0')} de foco profundo.`;
+        }
+
+        if (historyEl) {
+            const rows = (dw.sessions || []).slice(0, 5);
+            if (rows.length === 0) {
+                historyEl.innerHTML = '<p class="text-xs text-outline italic">Nenhuma sessão registrada.</p>';
+            } else {
+                historyEl.innerHTML = rows.map((s) => {
+                    const mins = Math.max(1, Math.round((Number(s.focusSec) || 0) / 60));
+                    const micro = (state.entities.micros || []).find(m => m.id === s.microId);
+                    const microLabel = micro?.title || 'Sem vínculo';
+                    const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
+                    return `<div class="flex items-center justify-between text-xs border border-outline-variant/10 rounded-lg px-3 py-2">
+                        <div class="min-w-0">
+                            <p class="font-medium text-on-surface truncate">${microLabel}</p>
+                            <p class="text-outline truncate">${dateLabel}</p>
+                        </div>
+                        <span class="font-bold text-primary shrink-0">${mins} min</span>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        this.ensureDeepWorkTicking();
+    },
+
+    startDeepWorkSession: function() {
+        this.normalizeDeepWorkState();
+        const state = window.sistemaVidaState;
+        const dw = state.deepWork;
+        if (dw.isRunning && !dw.isPaused) return;
+
+        const presetEl = document.getElementById('deep-work-preset');
+        const microEl = document.getElementById('deep-work-micro');
+        const intentionEl = document.getElementById('deep-work-intention');
+        const minutes = Math.max(5, Math.round(Number(presetEl?.value || 90)));
+        const chosenMicro = microEl?.value || '';
+        const intention = (intentionEl?.value || '').trim();
+
+        if (!dw.isRunning || dw.mode !== 'focus') {
+            dw.targetSec = minutes * 60;
+            dw.remainingSec = dw.targetSec;
+            dw.mode = 'focus';
+        }
+        dw.microId = chosenMicro;
+        dw.intention = intention;
+        dw.isRunning = true;
+        dw.isPaused = false;
+        dw.lastTickAt = Date.now();
+
+        if (chosenMicro) {
+            const micro = (state.entities.micros || []).find(m => m.id === chosenMicro);
+            if (micro && micro.status !== 'done') {
+                micro.status = 'in_progress';
+                if (!micro.progress || micro.progress < 1) micro.progress = 1;
+                micro.completed = false;
+            }
+        }
+
+        this.ensureDeepWorkTicking();
+        this.renderDeepWorkPanel();
+        this.saveState(true);
+    },
+
+    toggleDeepWorkPause: function() {
+        this.normalizeDeepWorkState();
+        const dw = window.sistemaVidaState.deepWork;
+        if (!dw.isRunning) return;
+        dw.isPaused = !dw.isPaused;
+        dw.lastTickAt = Date.now();
+        if (dw.isPaused) this.stopDeepWorkTicking();
+        else this.ensureDeepWorkTicking();
+        this.renderDeepWorkPanel();
+        this.saveState(true);
+    },
+
+    resetDeepWorkSession: function() {
+        this.normalizeDeepWorkState();
+        const dw = window.sistemaVidaState.deepWork;
+        dw.isRunning = false;
+        dw.isPaused = false;
+        dw.mode = 'focus';
+        dw.remainingSec = dw.targetSec || 5400;
+        dw.lastTickAt = 0;
+        this.stopDeepWorkTicking();
+        this.renderDeepWorkPanel();
+        this.saveState(true);
+    },
+
+    finishDeepWorkNow: function() {
+        this.normalizeDeepWorkState();
+        const dw = window.sistemaVidaState.deepWork;
+        if (!dw.isRunning) return;
+        dw.remainingSec = 0;
+        this.onDeepWorkCountdownEnd();
+    },
+
+    openSwlsModal: function() {
+        this.normalizeSwlsState();
+        const swls = window.sistemaVidaState.swls;
+        for (let i = 1; i <= 5; i++) {
+            const slider = document.getElementById(`swls-q${i}`);
+            const valueEl = document.getElementById(`swls-q${i}-val`);
+            const answer = this.normalizeSwlsAnswer(swls.answers[i - 1]);
+            if (slider) slider.value = String(answer);
+            if (valueEl) valueEl.textContent = String(answer);
+        }
+        const modal = document.getElementById('swls-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    closeSwlsModal: function() {
+        const modal = document.getElementById('swls-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    saveSwls: function() {
+        this.normalizeSwlsState();
+        const state = window.sistemaVidaState;
+        const answers = [];
+        for (let i = 1; i <= 5; i++) {
+            const slider = document.getElementById(`swls-q${i}`);
+            answers.push(this.normalizeSwlsAnswer(slider ? slider.value : 4));
+        }
+        const score = answers.reduce((sum, n) => sum + n, 0);
+        const dateKey = this.getLocalDateKey();
+        state.swls.answers = answers;
+        state.swls.lastScore = score;
+        state.swls.lastDate = dateKey;
+        if (!state.swls.history || typeof state.swls.history !== 'object') state.swls.history = {};
+        state.swls.history[dateKey] = { score, answers: [...answers] };
+
+        this.saveState(true);
+        this.closeSwlsModal();
+        if (this.currentView === 'proposito' && this.render.proposito) this.render.proposito();
+        this.showNotification(`SWLS atualizado: ${score}/35 (${this.getSwlsBand(score)}).`);
+    },
+
     openPermaModal: function() {
         const state = window.sistemaVidaState;
         const perma = state.perma || {P:0, E:0, R:0, M:0, A:0};
@@ -4460,8 +5242,9 @@ const app = {
             const id = k.toLowerCase();
             const slider = document.getElementById(`${id}-slider`);
             const label = document.getElementById(`val-${id}`);
-            if (slider) slider.value = perma[k];
-            if (label) label.textContent = perma[k];
+            const normalized = this.normalizePermaScore(perma[k]);
+            if (slider) slider.value = String(normalized);
+            if (label) label.textContent = normalized.toFixed(1);
         });
 
         const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
@@ -4488,7 +5271,7 @@ const app = {
         keys.forEach(k => {
             const slider = document.getElementById(`${k.toLowerCase()}-slider`);
             if (slider) {
-                state.perma[k] = parseInt(slider.value, 10) || 0;
+                state.perma[k] = this.normalizePermaScore(slider.value);
             }
         });
 

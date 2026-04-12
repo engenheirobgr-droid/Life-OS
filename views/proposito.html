@@ -101,6 +101,41 @@
     </div>
 </section>
 
+<!-- SWLS (Satisfaction With Life Scale) -->
+<section class="mt-8">
+    <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
+        <div class="flex items-start justify-between mb-6">
+            <div>
+                <h3 class="text-xl font-headline font-bold text-on-background tracking-tight">Satisfação com a Vida (SWLS)</h3>
+                <p class="text-sm text-outline mt-1">Diagnóstico cognitivo global complementar ao PERMA.</p>
+            </div>
+            <span class="material-symbols-outlined notranslate text-outline text-2xl">monitoring</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+            <div class="bg-surface-container-low p-5 rounded-xl border border-outline-variant/10">
+                <p class="text-[10px] font-label uppercase tracking-widest text-outline">Pontuação Atual</p>
+                <p id="swls-score" class="text-3xl font-headline italic text-primary mt-2">0/35</p>
+                <p id="swls-band" class="text-sm text-on-surface-variant mt-2">Sem avaliação</p>
+                <p id="swls-last-date" class="text-[11px] text-outline mt-3"></p>
+            </div>
+            <div class="bg-surface-container-low p-5 rounded-xl border border-outline-variant/10">
+                <p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Histórico Recente</p>
+                <div id="swls-history-list" class="space-y-2 text-sm text-on-surface-variant"></div>
+            </div>
+        </div>
+        <div class="mt-6 flex justify-center">
+            <button onclick="window.app.openSwlsModal()"
+                class="px-6 py-2 bg-primary text-on-primary rounded-full text-xs font-bold shadow-md hover:shadow-lg active:scale-95 transition-all">
+                <span class="flex items-center gap-2"><span class="material-symbols-outlined notranslate text-sm">edit_note</span> Avaliar SWLS</span>
+            </button>
+        </div>
+        <div class="mt-4 bg-surface-container-low rounded-xl border border-outline-variant/10 px-4 py-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Leitura integrada PERMA + SWLS</p>
+            <p id="swls-perma-insight" class="text-xs text-on-surface-variant">Sem dados suficientes para análise integrada.</p>
+        </div>
+    </div>
+</section>
+
 <!-- Meus Valores (Ferramenta de Seleção) -->
 <section id="values-selection-tool" class="mt-8">
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-10 border border-outline-variant/10 shadow-lg flex flex-col max-w-2xl mx-auto">
