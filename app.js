@@ -2042,8 +2042,16 @@ const app = {
                     else if (low.includes('laz')) dim = 'Lazer';
                     else if (low.includes('prop')) dim = 'Proposito';
                     const isDone = item.status === 'done' || item.completed === true;
-                    const isDoneFilter = String(statusFilter).toLowerCase().includes('conclu');
-                    const matchStatus = statusFilter === 'Pendentes' ? !isDone : (isDoneFilter ? isDone : true);
+                    const normalizedStatusFilter = String(statusFilter)
+                        .toLowerCase()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '');
+                    const isInProgress = item.status === 'in_progress';
+                    const matchStatus =
+                        normalizedStatusFilter === 'pendentes' ? (!isDone && !isInProgress) :
+                        normalizedStatusFilter === 'em andamento' || normalizedStatusFilter === 'em_andamento' ? isInProgress :
+                        normalizedStatusFilter.includes('conclu') ? isDone :
+                        true;
                     if (!matchStatus) return;
                     effortByDim[dim] += weight;
                     countByDim[dim] += 1;
@@ -2122,8 +2130,10 @@ const app = {
 
                 let filtered = state.entities.micros.filter(m => {
                     const matchDim = dimFilter === 'Tudo' || m.dimension === dimFilter;
-                    const matchStatus = statusFilter === 'all' || 
-                                       (statusFilter === 'active' && m.status !== 'done') ||
+                    const matchStatus = statusFilter === 'all' ||
+                                       (statusFilter === 'active' && m.status !== 'done') || // legado
+                                       (statusFilter === 'pending' && m.status !== 'done' && m.status !== 'in_progress') ||
+                                       (statusFilter === 'in_progress' && m.status === 'in_progress') ||
                                        (statusFilter === 'done' && m.status === 'done');
                     return matchDim && matchStatus;
                 });
@@ -2682,9 +2692,19 @@ const app = {
                 }
 
                 const statFilter = app.planosStatusFilter || 'active';
-                document.getElementById('btn-stat-active').className = `px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${statFilter === 'active' ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:brightness-95'}`;
-                document.getElementById('btn-stat-done').className = `px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${statFilter === 'done' ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:brightness-95'}`;
-                document.getElementById('btn-stat-all').className = `px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${statFilter === 'all' ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:brightness-95'}`;
+                const base = 'px-4 py-1.5 rounded-full text-xs font-bold transition-colors';
+                const on = 'bg-primary text-on-primary';
+                const off = 'bg-surface-container-high text-on-surface-variant hover:brightness-95';
+                const btnPending = document.getElementById('btn-stat-pending');
+                const btnInProgress = document.getElementById('btn-stat-in-progress');
+                const btnDone = document.getElementById('btn-stat-done');
+                const btnAll = document.getElementById('btn-stat-all');
+                const btnActive = document.getElementById('btn-stat-active'); // legado
+                if (btnPending) btnPending.className = `${base} ${statFilter === 'pending' ? on : off}`;
+                if (btnInProgress) btnInProgress.className = `${base} ${statFilter === 'in_progress' ? on : off}`;
+                if (btnDone) btnDone.className = `${base} ${statFilter === 'done' ? on : off}`;
+                if (btnAll) btnAll.className = `${base} ${statFilter === 'all' ? on : off}`;
+                if (btnActive) btnActive.className = `${base} ${statFilter === 'active' ? on : off}`;
             }
 
             const buildCards = (items, entityType) => {
@@ -2729,7 +2749,9 @@ const app = {
                     const isDone = i.progress >= 100 || i.status === 'done' || i.completed;
                     const statFilter = app.planosStatusFilter || 'active';
                     let passStatus = false;
-                    if (statFilter === 'active') passStatus = !isDone && i.status !== 'abandoned';
+                    if (statFilter === 'active') passStatus = !isDone && i.status !== 'abandoned'; // legado
+                    else if (statFilter === 'pending') passStatus = !isDone && i.status !== 'abandoned' && i.status !== 'in_progress';
+                    else if (statFilter === 'in_progress') passStatus = i.status === 'in_progress';
                     else if (statFilter === 'done') passStatus = isDone;
                     else passStatus = i.status !== 'abandoned';
                     if (!passStatus) return false;
@@ -3174,7 +3196,9 @@ const app = {
 
         const filterStatus = (item) => {
             if (item.status === 'abandoned') return false;
-            if (statFilter === 'active' && item.status === 'done') return false;
+            if (statFilter === 'active' && item.status === 'done') return false; // legado
+            if (statFilter === 'pending' && (item.status === 'done' || item.status === 'in_progress')) return false;
+            if (statFilter === 'in_progress' && item.status !== 'in_progress') return false;
             if (statFilter === 'done' && item.status !== 'done') return false;
             return true;
         };
