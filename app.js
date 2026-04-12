@@ -85,6 +85,10 @@ const app = {
             if (cachedTheme && ['light', 'dark', 'auto'].includes(cachedTheme)) {
                 window.sistemaVidaState.settings.theme = cachedTheme;
             }
+            const cachedNotif = localStorage.getItem('lifeos_notif_enabled');
+            if (cachedNotif === '1' || cachedNotif === '0') {
+                window.sistemaVidaState.settings.notificationsEnabled = cachedNotif === '1';
+            }
             if (!window.sistemaVidaState.profile.avatarUrl) {
                 const cached = localStorage.getItem('lifeos_profile_avatar') || '';
                 if (cached) window.sistemaVidaState.profile.avatarUrl = cached;
@@ -148,6 +152,7 @@ const app = {
             }
         }
         window.sistemaVidaState.settings.notificationsEnabled = enabled;
+        try { localStorage.setItem('lifeos_notif_enabled', enabled ? '1' : '0'); } catch (_) {}
         this.saveState(true);
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
         this.showToast(enabled ? 'Notificações diárias ativadas.' : 'Notificações diárias desativadas.', 'success');
@@ -156,6 +161,30 @@ const app = {
         const input = document.getElementById('profile-photo-input');
         if (input) input.click();
     },
+    fileToOptimizedDataUrl: function(file, maxSide = 1024, quality = 0.82) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const w = img.width || 1;
+                    const h = img.height || 1;
+                    const scale = Math.min(1, maxSide / Math.max(w, h));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(w * scale));
+                    canvas.height = Math.max(1, Math.round(h * scale));
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return reject(new Error('Canvas indisponível'));
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = reject;
+                img.src = String(reader.result || '');
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    },
     onProfilePhotoSelected: function(event) {
         const file = event?.target?.files?.[0];
         if (!file) return;
@@ -163,18 +192,18 @@ const app = {
             this.showToast('Selecione um arquivo de imagem válido.', 'error');
             return;
         }
-        const reader = new FileReader();
-        reader.onload = () => {
+        this.fileToOptimizedDataUrl(file, 640, 0.85).then((dataUrl) => {
             this.ensureSettingsState();
-            window.sistemaVidaState.profile.avatarUrl = typeof reader.result === 'string' ? reader.result : '';
-            try { localStorage.setItem('lifeos_profile_avatar', window.sistemaVidaState.profile.avatarUrl); } catch (_) {}
+            window.sistemaVidaState.profile.avatarUrl = dataUrl;
+            try { localStorage.setItem('lifeos_profile_avatar', dataUrl); } catch (_) {}
             this.saveState(true);
             if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
             this.showToast('Foto de perfil atualizada!', 'success');
-        };
-        reader.onerror = () => this.showToast('Falha ao ler a imagem selecionada.', 'error');
-        reader.readAsDataURL(file);
-        event.target.value = '';
+        }).catch(() => {
+            this.showToast('Falha ao ler a imagem selecionada.', 'error');
+        }).finally(() => {
+            event.target.value = '';
+        });
     },
     openOdysseyImagePicker: function(cenarioKey) {
         this.ensureSettingsState();
@@ -193,20 +222,20 @@ const app = {
             this.showToast('Selecione um arquivo de imagem válido para o cenário.', 'error');
             return;
         }
-        const reader = new FileReader();
-        reader.onload = () => {
+        this.fileToOptimizedDataUrl(file, 1280, 0.82).then((dataUrl) => {
             const current = window.sistemaVidaState.profile.odysseyImages || {};
-            window.sistemaVidaState.profile.odysseyImages = { ...current, [key]: String(reader.result || '') };
+            window.sistemaVidaState.profile.odysseyImages = { ...current, [key]: dataUrl };
             try {
                 localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
             } catch (_) {}
             this.saveState(true);
             if (this.render.proposito) this.render.proposito();
             this.showToast('Imagem do cenário atualizada!', 'success');
-        };
-        reader.onerror = () => this.showToast('Falha ao ler a imagem selecionada.', 'error');
-        reader.readAsDataURL(file);
-        input.value = '';
+        }).catch(() => {
+            this.showToast('Falha ao ler a imagem selecionada.', 'error');
+        }).finally(() => {
+            input.value = '';
+        });
     },
 
     showToast: function(message, type = 'success') {
@@ -255,40 +284,54 @@ const app = {
     // ------------------------------------------------------------------------
     // Cloud Persistence Engine
     // ------------------------------------------------------------------------
+    mergeDeep: function(target, source) {
+        if (!source || typeof source !== 'object') return target;
+        for (const key in source) {
+            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                if (!target[key]) target[key] = {};
+                this.mergeDeep(target[key], source[key]);
+            } else {
+                target[key] = source[key];
+            }
+        }
+        return target;
+    },
+
     saveState: async function(silent = true) {
+        const state = window.sistemaVidaState;
+        state._lastUpdatedAt = Date.now();
+        try {
+            localStorage.setItem('lifeos_state_backup', JSON.stringify(state));
+        } catch (backupErr) {
+            console.warn('Falha ao gravar backup local do estado:', backupErr);
+        }
         try {
             const stateRef = doc(db, "users", "meu-sistema-vida");
-            await setDoc(stateRef, window.sistemaVidaState);
+            await setDoc(stateRef, state);
             console.log("Sincronização com Nuvem: Concluída.");
             if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
         } catch (error) {
             console.error("Erro ao salvar o estado no Firestore:", error);
+            if (!silent && this.showToast) {
+                this.showToast('Salvo localmente. Falha na sincronização com nuvem.', 'error');
+            }
         }
     },
 
     loadState: async function() {
+        let cloudData = null;
+        let localData = null;
         try {
+            const rawLocal = localStorage.getItem('lifeos_state_backup');
+            if (rawLocal) {
+                try { localData = JSON.parse(rawLocal); } catch (_) { localData = null; }
+            }
             const stateRef = doc(db, "users", "meu-sistema-vida");
             const docSnap = await getDoc(stateRef);
             
             if (docSnap.exists()) {
                 console.log("Estado encontrado na Nuvem, mesclando dados...");
-                const cloudData = docSnap.data();
-                
-                const mergeDeep = (target, source) => {
-                    for (const key in source) {
-                        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                            if (!target[key]) target[key] = {};
-                            mergeDeep(target[key], source[key]);
-                        } else {
-                            target[key] = source[key];
-                        }
-                    }
-                    return target;
-                };
-                
-            window.sistemaVidaState = mergeDeep(window.sistemaVidaState, cloudData);
-                this.renderSidebarValues();
+                cloudData = docSnap.data();
             } else {
                 console.log("Primeiro acesso. Criando documento base na Nuvem...");
                 await this.saveState(true);
@@ -296,6 +339,15 @@ const app = {
         } catch (error) {
             console.error("Erro ao carregar o estado do Firestore:", error);
         }
+
+        const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
+        const localTs = Number(localData?._lastUpdatedAt || 0);
+        const preferred = localTs >= cloudTs ? localData : cloudData;
+        const fallback = localTs >= cloudTs ? cloudData : localData;
+        if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
+        if (fallback) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, fallback);
+        this.ensureSettingsState();
+        this.renderSidebarValues();
     },
 
     showNotification: function(msg) {
@@ -2560,7 +2612,7 @@ const app = {
                     'Lazer': 'sports_esports', 'Propósito': 'auto_awesome'
                 };
                 
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = app.getLocalDateKey();
                 const dayIndex = new Date().getDay().toString(); // 0(Sun) to 6(Sat)
                 
                 let habitsHtml = '';
@@ -2613,7 +2665,7 @@ const app = {
                     for (let i = 6; i >= 0; i--) {
                         const d = new Date();
                         d.setDate(d.getDate() - i);
-                        const ds = d.toISOString().split('T')[0];
+                        const ds = app.getLocalDateKey(d);
                         const val = logs[ds] || 0;
                         const dayStepMap = stepLogs[ds] || {};
                         let dDone = false;
@@ -2639,7 +2691,7 @@ const app = {
                             ${steps.map((step, idx) => {
                                 const done = !!(todayStepMap[idx] || todayStepMap[String(idx)]);
                                 return `
-                                <button onclick="window.app.toggleHabitStepLog('${habit.id}', '${todayStr}', ${idx})"
+                                <button onclick="event.stopPropagation(); window.app.toggleHabitStepLog('${habit.id}', '${todayStr}', ${idx})"
                                     class="w-full text-left flex items-center gap-2 text-[10px] rounded-md px-1 py-0.5 ${done ? 'text-primary' : 'text-outline hover:text-on-surface'} transition-colors">
                                     <span class="w-3.5 h-3.5 rounded-sm border ${done ? 'bg-primary border-primary' : 'border-outline-variant'} flex items-center justify-center shrink-0">
                                         ${done ? '<span class="material-symbols-outlined notranslate text-white text-[10px]">check</span>' : ''}
@@ -2651,7 +2703,7 @@ const app = {
                     }
                     
                     habitsHtml += `
-                    <div class="min-w-[240px] max-w-[280px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''}">
+                    <div onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer">
                         <div class="flex justify-between items-start mb-2">
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined notranslate text-primary text-2xl">${icon}</span>
