@@ -297,7 +297,7 @@
     </section>
 
     <!-- Distribuição de Foco -->
-    <section class="mt-8 space-y-4">
+    <section id="painel-focus-distribution-section" class="mt-8 space-y-4">
         <div class="space-y-4 mb-6">
             <div class="flex justify-between items-end">
                 <div class="space-y-1">
@@ -386,7 +386,7 @@
             </div>
             <div id="quarterly-okrs-list" class="space-y-4 overflow-y-auto no-scrollbar flex-1 mb-6">
             </div>
-            <button onclick="window.app.processQuarterlyReview()"
+            <button id="quarterly-save-btn" onclick="window.app.processQuarterlyReview()"
                 class="w-full shrink-0 bg-primary text-on-primary py-3 rounded-lg font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">Salvar
                 Novo Ciclo</button>
         </div>

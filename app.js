@@ -523,6 +523,17 @@ const app = {
         }, 350);
     },
 
+    openFocusDetails: function() {
+        this.navigate('painel');
+        setTimeout(() => {
+            const section = document.getElementById('painel-focus-distribution-section');
+            if (!section) return;
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            section.classList.add('ring-2', 'ring-primary/30');
+            setTimeout(() => section.classList.remove('ring-2', 'ring-primary/30'), 1400);
+        }, 420);
+    },
+
     // ---> ADICIONE ESTE BLOCO AQUI <---
     toggleTrail: function(element) {
         const trail = element.querySelector('.trail-panel');
@@ -748,6 +759,7 @@ const app = {
         const triggerGroup = document.getElementById('crud-trigger-container');
         const habitIdentityGroup = document.getElementById('crud-habit-identity');
         const dimensionGroup = document.getElementById('crud-dimension-group');
+        const contextGroup = document.getElementById('crud-context-group');
         const contextLabel = document.getElementById('crud-context-label');
         const contextInput = document.getElementById('crud-context');
         const triggerInput = document.getElementById('crud-trigger');
@@ -769,6 +781,7 @@ const app = {
         }
         if (metaHorizonGroup) metaHorizonGroup.classList.add('hidden');
         if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
+        if (contextGroup) contextGroup.classList.remove('hidden');
         if (contextInput) contextInput.required = true;
         if (triggerInput) triggerInput.required = false;
         if (routineInput) routineInput.required = false;
@@ -794,7 +807,7 @@ const app = {
                 const freqInput = document.getElementById('habit-frequency');
                 if (freqInput) this.onHabitFreqChange(freqInput.value);
             }
-            if (contextLabel) contextLabel.textContent = 'Observação do Hábito';
+            if (contextGroup) contextGroup.classList.add('hidden');
             if (contextInput) contextInput.required = false;
             if (triggerInput) triggerInput.required = true;
             if (routineInput) routineInput.required = true;
@@ -1171,7 +1184,13 @@ const app = {
     openQuarterlyModal: function() {
         const state = window.sistemaVidaState;
         const listContainer = document.getElementById('quarterly-okrs-list');
+        const saveBtn = document.getElementById('quarterly-save-btn');
         if (!listContainer) return;
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Salvar Novo Ciclo';
+            saveBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        }
         
         const activeOkrs = state.entities.okrs.filter(o => o.status === 'active');
         
@@ -1274,14 +1293,25 @@ const app = {
 
     processQuarterlyReview: function() {
         const state = window.sistemaVidaState;
+        const saveBtn = document.getElementById('quarterly-save-btn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Processando...';
+            saveBtn.classList.add('opacity-60', 'cursor-not-allowed');
+        }
         // Motor de revisão: busca todos os cartões de OKR no modal
         const items = document.querySelectorAll('#quarterly-okrs-list div[data-okr-id]');
         
         if (items.length === 0) {
+            state.cycleStartDate = this.getLocalDateKey();
+            this.saveState(true);
             this.closeQuarterlyModal();
+            this.showToast('Novo ciclo iniciado. Nenhum OKR ativo para revisar.', 'success');
+            if (this.currentView === 'painel') this.render.painel();
             return;
         }
 
+        let processed = 0;
         items.forEach(item => {
             const id = item.getAttribute('data-okr-id');
             const action = item.querySelector(`input[name="action_${id}"]:checked`).value;
@@ -1324,6 +1354,7 @@ const app = {
                         });
                     }
                 }
+                processed++;
             }
         });
         
@@ -1335,7 +1366,7 @@ const app = {
         this.closeQuarterlyModal();
         
         setTimeout(() => {
-            this.showToast("Revisão processada com sucesso!", "success");
+            this.showToast(`Novo ciclo iniciado com sucesso (${processed} OKR${processed === 1 ? '' : 's'} processado${processed === 1 ? '' : 's'}).`, "success");
             if (this.currentView === 'painel') this.render.painel();
             if (this.currentView === 'planos') this.render.planos();
         }, 300);
@@ -1523,10 +1554,10 @@ const app = {
                 }
             }
         } else if (type === 'habits') {
-            obj.context = context || '';
+            obj.context = '';
             obj.completed = isEditing ? (getOldItem(id, 'habits').completed || false) : false;
             obj.trigger = trigger || '';
-            obj.routine = (document.getElementById('habit-routine') ? document.getElementById('habit-routine').value.trim() : '') || context || title;
+            obj.routine = (document.getElementById('habit-routine') ? document.getElementById('habit-routine').value.trim() : '') || title;
             obj.reward = document.getElementById('habit-reward') ? document.getElementById('habit-reward').value.trim() : '';
             obj.trackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
             obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
