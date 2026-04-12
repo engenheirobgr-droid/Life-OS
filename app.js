@@ -107,12 +107,19 @@ const app = {
         this.ensureSettingsState();
         const pref = window.sistemaVidaState.settings.theme || 'auto';
         const root = document.documentElement;
-        const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const useDark = pref === 'dark' || (pref === 'auto' && systemDark);
+        const hour = new Date().getHours();
+        const isNightByHour = hour < 6 || hour >= 18;
+        const useDark = pref === 'dark' || (pref === 'auto' && isNightByHour);
         root.classList.toggle('dark', useDark);
         root.classList.toggle('light', !useDark);
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) themeMeta.setAttribute('content', useDark ? '#0b1220' : '#01696f');
+        if (!this._themeAutoTickBound) {
+            this._themeAutoTickBound = true;
+            setInterval(() => {
+                if ((window.sistemaVidaState.settings?.theme || 'auto') === 'auto') this.applyThemePreference();
+            }, 5 * 60 * 1000);
+        }
         if (!this._themeMediaBound && window.matchMedia) {
             this._themeMediaBound = true;
             const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -284,6 +291,26 @@ const app = {
     // ------------------------------------------------------------------------
     // Cloud Persistence Engine
     // ------------------------------------------------------------------------
+    getPersistableState: function(mode = 'full') {
+        const raw = window.sistemaVidaState || {};
+        const snapshot = JSON.parse(JSON.stringify(raw));
+        if (mode === 'cloud') {
+            if (snapshot.profile) {
+                delete snapshot.profile.avatarUrl;
+                delete snapshot.profile.odysseyImages;
+            }
+            snapshot._persistenceMode = 'cloud_slim';
+        }
+        if (mode === 'core') {
+            if (snapshot.profile) {
+                delete snapshot.profile.avatarUrl;
+                delete snapshot.profile.odysseyImages;
+            }
+            snapshot._persistenceMode = 'core_local';
+        }
+        return snapshot;
+    },
+
     mergeDeep: function(target, source) {
         if (!source || typeof source !== 'object') return target;
         for (const key in source) {
@@ -300,14 +327,20 @@ const app = {
     saveState: async function(silent = true) {
         const state = window.sistemaVidaState;
         state._lastUpdatedAt = Date.now();
+        const fullSnapshot = this.getPersistableState('full');
+        const coreSnapshot = this.getPersistableState('core');
         try {
-            localStorage.setItem('lifeos_state_backup', JSON.stringify(state));
+            localStorage.setItem('lifeos_state_backup', JSON.stringify(fullSnapshot));
         } catch (backupErr) {
             console.warn('Falha ao gravar backup local do estado:', backupErr);
+            try {
+                localStorage.setItem('lifeos_state_backup_core', JSON.stringify(coreSnapshot));
+            } catch (_) {}
         }
         try {
             const stateRef = doc(db, "users", "meu-sistema-vida");
-            await setDoc(stateRef, state);
+            const cloudSnapshot = this.getPersistableState('cloud');
+            await setDoc(stateRef, cloudSnapshot);
             console.log("Sincronização com Nuvem: Concluída.");
             if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
         } catch (error) {
@@ -323,8 +356,11 @@ const app = {
         let localData = null;
         try {
             const rawLocal = localStorage.getItem('lifeos_state_backup');
+            const rawCore = localStorage.getItem('lifeos_state_backup_core');
             if (rawLocal) {
                 try { localData = JSON.parse(rawLocal); } catch (_) { localData = null; }
+            } else if (rawCore) {
+                try { localData = JSON.parse(rawCore); } catch (_) { localData = null; }
             }
             const stateRef = doc(db, "users", "meu-sistema-vida");
             const docSnap = await getDoc(stateRef);
@@ -346,6 +382,18 @@ const app = {
         const fallback = localTs >= cloudTs ? cloudData : localData;
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
         if (fallback) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, fallback);
+        try {
+            const cachedAvatar = localStorage.getItem('lifeos_profile_avatar');
+            if (cachedAvatar) window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
+            const cachedOdyssey = localStorage.getItem('lifeos_odyssey_images');
+            if (cachedOdyssey) {
+                const parsed = JSON.parse(cachedOdyssey);
+                window.sistemaVidaState.profile.odysseyImages = {
+                    ...(window.sistemaVidaState.profile.odysseyImages || {}),
+                    ...parsed
+                };
+            }
+        } catch (_) {}
         this.ensureSettingsState();
         this.renderSidebarValues();
     },
@@ -815,6 +863,7 @@ const app = {
         const parentGroup = document.getElementById('crud-parent-group');
         const triggerGroup = document.getElementById('crud-trigger-container');
         const habitIdentityGroup = document.getElementById('crud-habit-identity');
+        const habitStepsChecklistWrap = document.getElementById('habit-steps-checklist-wrap');
         const dimensionGroup = document.getElementById('crud-dimension-group');
         const contextGroup = document.getElementById('crud-context-group');
         const contextLabel = document.getElementById('crud-context-label');
@@ -836,6 +885,7 @@ const app = {
         setGroupVisible(triggerGroup, false);
         setGroupVisible(habitControls, false);
         setGroupVisible(habitIdentityGroup, false);
+        setGroupVisible(habitStepsChecklistWrap, false);
         if (metaHorizonGroup) metaHorizonGroup.classList.add('hidden');
         if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
         if (contextGroup) contextGroup.classList.remove('hidden');
@@ -849,6 +899,7 @@ const app = {
             setGroupVisible(triggerGroup, true);
             setGroupVisible(habitIdentityGroup, true);
             setGroupVisible(habitControls, true);
+            setGroupVisible(habitStepsChecklistWrap, !!this.editingEntity && this.editingEntity.type === 'habits');
             if (habitControls) {
                 // Força atualização da visibilidade dos sub-campos baseando nos valores dos selects
                 const modeInput = document.getElementById('habit-track-mode');
@@ -861,6 +912,10 @@ const app = {
             if (triggerInput) triggerInput.required = true;
             if (routineInput) routineInput.required = true;
             if (rewardInput) rewardInput.required = true;
+            if (!this.editingEntity || this.editingEntity.type !== 'habits') {
+                const checklist = document.getElementById('habit-steps-checklist');
+                if (checklist) checklist.innerHTML = '<p class="text-[10px] text-outline px-1">Salve o hábito para usar checklist diário.</p>';
+            }
         } else if (type === 'metas') {
             if (parentGroup) parentGroup.classList.remove('hidden');
             if (metaHorizonGroup) metaHorizonGroup.classList.remove('hidden');
@@ -1912,6 +1967,7 @@ const app = {
             habit.logs[dateStr] = allDone ? 1 : 0;
         }
         this.saveState(true);
+        this.renderHabitStepsChecklist(habitId);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
     },
 
@@ -1931,7 +1987,36 @@ const app = {
             if ((habit.trackMode || 'boolean') === 'boolean') habit.logs[dateStr] = 1;
         }
         this.saveState(true);
+        this.renderHabitStepsChecklist(habitId);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+    },
+
+    renderHabitStepsChecklist: function(habitId) {
+        const wrap = document.getElementById('habit-steps-checklist-wrap');
+        const container = document.getElementById('habit-steps-checklist');
+        if (!wrap || !container) return;
+        const habit = (window.sistemaVidaState.habits || []).find(h => h.id === habitId);
+        if (!habit || !Array.isArray(habit.steps) || habit.steps.length === 0) {
+            wrap.classList.add('hidden');
+            container.innerHTML = '';
+            return;
+        }
+        wrap.classList.remove('hidden');
+        wrap.classList.add('flex');
+        const today = this.getLocalDateKey();
+        const map = (habit.stepLogs || {})[today] || {};
+        const esc = (txt) => String(txt || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        container.innerHTML = habit.steps.map((step, idx) => {
+            const done = !!(map[idx] || map[String(idx)]);
+            return `
+            <button onclick="event.stopPropagation(); window.app.toggleHabitStepLog('${habit.id}', '${today}', ${idx})"
+                class="w-full text-left flex items-center gap-2 text-[11px] rounded-md px-2 py-1 ${done ? 'text-primary bg-primary/5' : 'text-on-surface hover:bg-surface-container-high'} transition-colors">
+                <span class="w-3.5 h-3.5 rounded-sm border ${done ? 'bg-primary border-primary' : 'border-outline-variant'} flex items-center justify-center shrink-0">
+                    ${done ? '<span class="material-symbols-outlined notranslate text-white text-[10px]">check</span>' : ''}
+                </span>
+                <span class="${done ? 'line-through' : ''} truncate">${esc(step)}</span>
+            </button>`;
+        }).join('');
     },
 
     saveDailyLog: function() {
@@ -2633,7 +2718,6 @@ const app = {
                     const todayStepMap = stepLogs[todayStr] || {};
                     const todayStepsDone = hasSteps ? steps.reduce((acc, _, idx) => acc + (todayStepMap[idx] || todayStepMap[String(idx)] ? 1 : 0), 0) : 0;
                     const allStepsDone = hasSteps && todayStepsDone === steps.length;
-                    const esc = (txt) => String(txt || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     
                     let isDone = false;
                     if (mode === 'boolean') isDone = currentVal > 0;
@@ -2684,23 +2768,6 @@ const app = {
                     if (mode === 'numeric') progressText = `${currentVal}/${target}`;
                     if (mode === 'timer') progressText = `${currentVal}m/${target}m`;
                     if (hasSteps) progressText = `${todayStepsDone}/${steps.length} passos`;
-                    let stepsHtml = '';
-                    if (hasSteps) {
-                        stepsHtml = `
-                        <div class="mt-2 space-y-1 max-h-24 overflow-y-auto pr-1 no-scrollbar" onclick="event.stopPropagation()">
-                            ${steps.map((step, idx) => {
-                                const done = !!(todayStepMap[idx] || todayStepMap[String(idx)]);
-                                return `
-                                <button onclick="event.stopPropagation(); window.app.toggleHabitStepLog('${habit.id}', '${todayStr}', ${idx})"
-                                    class="w-full text-left flex items-center gap-2 text-[10px] rounded-md px-1 py-0.5 ${done ? 'text-primary' : 'text-outline hover:text-on-surface'} transition-colors">
-                                    <span class="w-3.5 h-3.5 rounded-sm border ${done ? 'bg-primary border-primary' : 'border-outline-variant'} flex items-center justify-center shrink-0">
-                                        ${done ? '<span class="material-symbols-outlined notranslate text-white text-[10px]">check</span>' : ''}
-                                    </span>
-                                    <span class="${done ? 'line-through' : ''} truncate">${esc(step)}</span>
-                                </button>`;
-                            }).join('')}
-                        </div>`;
-                    }
                     
                     habitsHtml += `
                     <div onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer">
@@ -2721,7 +2788,6 @@ const app = {
                                     ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight truncate">Gatilho: ${habit.trigger}</p>` : ''}
                                     ${habit.routine ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Rotina: ${habit.routine}</p>` : ''}
                                     ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight truncate">Recompensa: ${habit.reward}</p>` : ''}
-                                    ${stepsHtml}
                                 </div>
                                 ${progressText ? `<span class="text-xs font-bold text-primary shrink-0">${progressText}</span>` : ''}
                             </div>
@@ -3989,6 +4055,7 @@ const app = {
         }
 
         this.onTypeChange(type);
+        if (type === 'habits') this.renderHabitStepsChecklist(id);
         
         // Seta o pai após popular a lista
         const parentSelect = document.getElementById('create-parent');
