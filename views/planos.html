@@ -65,7 +65,8 @@
             <span class="material-symbols-outlined notranslate text-[14px]">check_circle</span> Status:
         </span>
         <div class="flex gap-2 shrink-0">
-            <button onclick="window.app.setPlanosStatusFilter('active')" id="btn-stat-active" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Ativos</button>
+            <button onclick="window.app.setPlanosStatusFilter('pending')" id="btn-stat-pending" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Pendentes</button>
+            <button onclick="window.app.setPlanosStatusFilter('in_progress')" id="btn-stat-in-progress" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Andamento</button>
             <button onclick="window.app.setPlanosStatusFilter('done')" id="btn-stat-done" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Concluídos</button>
             <button onclick="window.app.setPlanosStatusFilter('all')" id="btn-stat-all" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Todos</button>
         </div>
@@ -98,5 +99,4 @@
 <span class="material-symbols-outlined notranslate text-2xl" style="font-variation-settings: 'wght' 500;">add</span>
 </button>
 </main>
-
 
