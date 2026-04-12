@@ -767,18 +767,18 @@ const app = {
         const rewardInput = document.getElementById('habit-reward');
         const habitControls = document.getElementById('crud-habit-controls');
         const metaHorizonGroup = document.getElementById('crud-meta-horizon-group');
+        const setGroupVisible = (el, visible, displayMode = 'flex') => {
+            if (!el) return;
+            el.classList.toggle('hidden', !visible);
+            el.classList.toggle('flex', visible && displayMode === 'flex');
+            el.style.display = visible ? displayMode : 'none';
+        };
         
         // Esconde tudo por padrão para resetar estado visual
         if (parentGroup) parentGroup.classList.add('hidden');
-        if (triggerGroup) triggerGroup.classList.add('hidden');
-        if (habitControls) {
-            habitControls.classList.add('hidden');
-            habitControls.classList.remove('flex');
-        }
-        if (habitIdentityGroup) {
-            habitIdentityGroup.classList.add('hidden');
-            habitIdentityGroup.classList.remove('flex');
-        }
+        setGroupVisible(triggerGroup, false);
+        setGroupVisible(habitControls, false);
+        setGroupVisible(habitIdentityGroup, false);
         if (metaHorizonGroup) metaHorizonGroup.classList.add('hidden');
         if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
         if (contextGroup) contextGroup.classList.remove('hidden');
@@ -789,18 +789,10 @@ const app = {
 
         // Configura baseado no tipo
         if (type === 'habits') {
-            if (triggerGroup) {
-                triggerGroup.classList.remove('hidden');
-                triggerGroup.classList.add('flex');
-            }
-            if (habitIdentityGroup) {
-                habitIdentityGroup.classList.remove('hidden');
-                habitIdentityGroup.classList.add('flex');
-            }
+            setGroupVisible(triggerGroup, true);
+            setGroupVisible(habitIdentityGroup, true);
+            setGroupVisible(habitControls, true);
             if (habitControls) {
-                habitControls.classList.remove('hidden');
-                habitControls.classList.add('flex');
-                
                 // Força atualização da visibilidade dos sub-campos baseando nos valores dos selects
                 const modeInput = document.getElementById('habit-track-mode');
                 if (modeInput) this.onHabitModeChange(modeInput.value);
@@ -878,9 +870,11 @@ const app = {
         if (mode === 'numeric' || mode === 'timer') {
             targetContainer.classList.remove('hidden');
             targetContainer.classList.add('flex');
+            targetContainer.style.display = 'flex';
         } else {
             targetContainer.classList.add('hidden');
             targetContainer.classList.remove('flex');
+            targetContainer.style.display = 'none';
         }
     },
 
@@ -890,9 +884,11 @@ const app = {
         if (freq === 'specific') {
             daysContainer.classList.remove('hidden');
             daysContainer.classList.add('flex');
+            daysContainer.style.display = 'flex';
         } else {
             daysContainer.classList.add('hidden');
             daysContainer.classList.remove('flex');
+            daysContainer.style.display = 'none';
         }
     },
 
@@ -975,6 +971,19 @@ const app = {
             if (triggerContainer) {
                 triggerContainer.classList.add('hidden');
                 triggerContainer.classList.remove('flex');
+                triggerContainer.style.display = 'none';
+            }
+            const habitIdentityGroup = document.getElementById('crud-habit-identity');
+            if (habitIdentityGroup) {
+                habitIdentityGroup.classList.add('hidden');
+                habitIdentityGroup.classList.remove('flex');
+                habitIdentityGroup.style.display = 'none';
+            }
+            const habitControls = document.getElementById('crud-habit-controls');
+            if (habitControls) {
+                habitControls.classList.add('hidden');
+                habitControls.classList.remove('flex');
+                habitControls.style.display = 'none';
             }
         }
         this.editingEntity = null;
@@ -1291,7 +1300,7 @@ const app = {
         if (this.render.painel) this.render.painel();
     },
 
-    processQuarterlyReview: function() {
+    processQuarterlyReview: async function() {
         const state = window.sistemaVidaState;
         const saveBtn = document.getElementById('quarterly-save-btn');
         if (saveBtn) {
@@ -1299,30 +1308,37 @@ const app = {
             saveBtn.textContent = 'Processando...';
             saveBtn.classList.add('opacity-60', 'cursor-not-allowed');
         }
-        // Motor de revisão: busca todos os cartões de OKR no modal
-        const items = document.querySelectorAll('#quarterly-okrs-list div[data-okr-id]');
-        
-        if (items.length === 0) {
-            state.cycleStartDate = this.getLocalDateKey();
-            this.saveState(true);
-            this.closeQuarterlyModal();
-            this.showToast('Novo ciclo iniciado. Nenhum OKR ativo para revisar.', 'success');
-            if (this.currentView === 'painel') this.render.painel();
-            return;
-        }
+        try {
+            // Motor de revisão: busca todos os cartões de OKR no modal
+            const items = document.querySelectorAll('#quarterly-okrs-list div[data-okr-id]');
+            if (items.length === 0) {
+                state.cycleStartDate = this.getLocalDateKey();
+                await this.saveState(true);
+                this.closeQuarterlyModal();
+                this.showToast('Novo ciclo iniciado. Nenhum OKR ativo para revisar.', 'success');
+                if (this.currentView === 'painel') this.render.painel();
+                return;
+            }
 
-        let processed = 0;
-        items.forEach(item => {
-            const id = item.getAttribute('data-okr-id');
-            const action = item.querySelector(`input[name="action_${id}"]:checked`).value;
-            const migrateChecked = item.querySelector(`#migrate_${id}`)?.checked;
-            const okr = state.entities.okrs.find(o => o.id === id);
-            
-            if (okr) {
+            let processed = 0;
+            let concluded = 0;
+            let archived = 0;
+            let carried = 0;
+            let migrated = 0;
+            const todayStr = this.getLocalDateKey();
+
+            items.forEach(item => {
+                const id = item.getAttribute('data-okr-id');
+                const selectedAction = item.querySelector(`input[name="action_${id}"]:checked`);
+                const action = selectedAction ? selectedAction.value : 'continuar';
+                const migrateChecked = !!item.querySelector(`#migrate_${id}`)?.checked;
+                const okr = state.entities.okrs.find(o => o.id === id);
+                if (!okr) return;
+
                 if (action === 'concluir') {
-                    okr.status = 'done'; 
+                    okr.status = 'done';
                     okr.progress = 100;
-                    // Opcional: Cascata para fechar macros/micros pendentes deste OKR
+                    concluded++;
                     const macros = state.entities.macros.filter(m => m.okrId === id);
                     macros.forEach(m => {
                         m.status = 'done';
@@ -1336,40 +1352,49 @@ const app = {
                     });
                 } else if (action === 'arquivar') {
                     okr.status = 'abandoned';
-                    // Cascata para abandonar macros/micros pendentes deste OKR
+                    archived++;
                     const macros = state.entities.macros.filter(m => m.okrId === id);
                     macros.forEach(m => {
                         m.status = 'abandoned';
                         const micros = state.entities.micros.filter(mic => mic.macroId === m.id);
-                        micros.forEach(mic => mic.status = 'abandoned');
+                        micros.forEach(mic => { if (mic.status !== 'done') mic.status = 'abandoned'; });
                     });
-                } else if (action === 'continuar') {
+                } else {
+                    carried++;
                     if (migrateChecked) {
-                        const todayStr = new Date().toISOString().split('T')[0];
                         const macrosIds = state.entities.macros.filter(m => m.okrId === id).map(m => m.id);
                         state.entities.micros.forEach(micro => {
-                            if (macrosIds.includes(micro.macroId) && micro.status !== 'done') {
+                            if (macrosIds.includes(micro.macroId) && micro.status !== 'done' && micro.prazo !== todayStr) {
                                 micro.prazo = todayStr;
+                                migrated++;
                             }
                         });
                     }
                 }
                 processed++;
-            }
-        });
-        
-        // Reset do Ciclo
-        state.cycleStartDate = this.getLocalDateKey();
-        
-        // Persistir e atualizar UI com delay para garantir animação
-        this.saveState(true);
-        this.closeQuarterlyModal();
-        
-        setTimeout(() => {
-            this.showToast(`Novo ciclo iniciado com sucesso (${processed} OKR${processed === 1 ? '' : 's'} processado${processed === 1 ? '' : 's'}).`, "success");
+            });
+
+            // Reset do ciclo para a data atual
+            state.cycleStartDate = this.getLocalDateKey();
+            await this.saveState(true);
+            this.closeQuarterlyModal();
+
+            const summary = `${processed} OKRs: ${concluded} concluídos, ${archived} arquivados, ${carried} continuados` + (migrated ? `, ${migrated} micros migradas` : '');
+            this.showToast(`Novo ciclo iniciado com sucesso. ${summary}.`, 'success');
             if (this.currentView === 'painel') this.render.painel();
             if (this.currentView === 'planos') this.render.planos();
-        }, 300);
+            if (this.currentView === 'hoje') this.render.hoje();
+        } catch (error) {
+            console.error('Erro ao processar revisão de ciclo:', error);
+            this.showToast('Falha ao processar a revisão de ciclo. Tente novamente.', 'error');
+        } finally {
+            const modalOpen = !!document.getElementById('quarterly-modal') && !document.getElementById('quarterly-modal').classList.contains('hidden');
+            if (saveBtn && modalOpen) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Salvar Novo Ciclo';
+                saveBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+            }
+        }
     },
 
     migrateOverdueTasks: function() {
