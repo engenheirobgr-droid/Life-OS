@@ -1176,6 +1176,7 @@ const app = {
         const successCriteriaGroup = document.getElementById('crud-success-criteria-group');
         const goalRigorGroup = document.getElementById('crud-goal-rigor-group');
         const keyResultsGroup = document.getElementById('crud-key-results-group');
+        const successCriteriaLabel = document.querySelector('label[for="crud-success-criteria"]');
         const setGroupVisible = (el, visible, displayMode = 'flex') => {
             if (!el) return;
             el.classList.toggle('hidden', !visible);
@@ -1227,6 +1228,7 @@ const app = {
             if (metaHorizonGroup) metaHorizonGroup.classList.remove('hidden');
             setGroupVisible(successCriteriaGroup, true);
             setGroupVisible(goalRigorGroup, true, 'grid');
+            if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério de Sucesso';
             if (contextLabel) contextLabel.textContent = 'Por que esta meta? (Propósito)';
             this.updateParentList(type);
         } else if (type === 'okrs') {
@@ -1234,11 +1236,14 @@ const app = {
             setGroupVisible(successCriteriaGroup, true);
             setGroupVisible(goalRigorGroup, true, 'grid');
             setGroupVisible(keyResultsGroup, true);
-            if (contextLabel) contextLabel.textContent = 'Indicador de Sucesso / Métrica';
+            if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério / Meta do OKR';
+            if (contextGroup) contextGroup.classList.add('hidden');
+            if (contextInput) contextInput.required = false;
             this.updateParentList(type);
         } else {
             // Macros, Micros
             if (parentGroup) parentGroup.classList.remove('hidden');
+            if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério de Sucesso';
             if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
             this.updateParentList(type);
         }
@@ -1285,6 +1290,69 @@ const app = {
             currentId = current?.parentMetaId || '';
         }
         return chain;
+    },
+    getDayDiffFromNow: function(targetDateStr) {
+        if (!targetDateStr) return null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const target = new Date(String(targetDateStr) + 'T00:00:00');
+        if (Number.isNaN(target.getTime())) return null;
+        return Math.floor((target - today) / (1000 * 60 * 60 * 24));
+    },
+    getDayDiffBetween: function(startDateStr, endDateStr) {
+        if (!startDateStr || !endDateStr) return null;
+        const start = new Date(String(startDateStr) + 'T00:00:00');
+        const end = new Date(String(endDateStr) + 'T00:00:00');
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+        return Math.floor((end - start) / (1000 * 60 * 60 * 24));
+    },
+    validateEntityTimeWindow: function(type, { prazo = '', inicioDate = '', metaHorizonYears = 1 } = {}) {
+        const normalizedType = String(type || '');
+        const hasPrazo = !!String(prazo || '').trim();
+        if (['metas', 'okrs', 'macros', 'micros'].includes(normalizedType) && !hasPrazo) {
+            return { ok: false, message: 'Defina um prazo para respeitar a janela temporal deste tipo.' };
+        }
+
+        if (normalizedType === 'metas') {
+            const days = this.getDayDiffFromNow(prazo);
+            if (days === null || days < 1) return { ok: false, message: 'Meta precisa de um prazo futuro válido.' };
+            const bands = {
+                '1': { min: 180, max: 639, label: '1 ano' },
+                '2.5': { min: 640, max: 1369, label: '2,5 anos' },
+                '5': { min: 1370, max: 2555, label: '5 anos' }
+            };
+            const key = String(Number(metaHorizonYears) === 2.5 ? 2.5 : (Number(metaHorizonYears) === 5 ? 5 : 1));
+            const rule = bands[key] || bands['1'];
+            if (days < rule.min || days > rule.max) {
+                return { ok: false, message: `Para meta de ${rule.label}, ajuste o prazo para a janela esperada desse horizonte.` };
+            }
+            return { ok: true };
+        }
+
+        if (normalizedType === 'okrs') {
+            const days = this.getDayDiffFromNow(prazo);
+            if (days === null || days < 1) return { ok: false, message: 'OKR precisa de um prazo futuro válido.' };
+            if (days > 92) return { ok: false, message: 'OKR deve ficar dentro de até 3 meses (máx. 92 dias).' };
+            return { ok: true };
+        }
+
+        if (normalizedType === 'macros') {
+            const startRef = String(inicioDate || this.getLocalDateKey());
+            const days = this.getDayDiffBetween(startRef, prazo);
+            if (days === null || days < 0) return { ok: false, message: 'Macro Ação precisa de início e prazo válidos.' };
+            if (days > 31) return { ok: false, message: 'Macro Ação deve ficar dentro de 1 mês (máx. 31 dias).' };
+            return { ok: true };
+        }
+
+        if (normalizedType === 'micros') {
+            const startRef = String(inicioDate || this.getLocalDateKey());
+            const days = this.getDayDiffBetween(startRef, prazo);
+            if (days === null || days < 0) return { ok: false, message: 'Micro Ação precisa de início e prazo válidos.' };
+            if (days > 7) return { ok: false, message: 'Micro Ação deve ficar dentro de 1 semana (máx. 7 dias).' };
+            return { ok: true };
+        }
+
+        return { ok: true };
     },
 
     onHabitModeChange: function(mode) {
@@ -1991,6 +2059,11 @@ const app = {
 
         const isEditing = !!this.editingEntity;
         const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
+        const windowValidation = this.validateEntityTimeWindow(type, { prazo, inicioDate, metaHorizonYears });
+        if (!windowValidation.ok) {
+            app.showToast(windowValidation.message, 'error');
+            return;
+        }
         
         const obj = { id: id || '', title: title || '', dimension: dimension || 'Geral', prazo: prazo || '' };
         if (usaAgendamento && inicioDate) obj.inicioDate = inicioDate;
@@ -2030,6 +2103,13 @@ const app = {
                 }
             } else if (type === 'okrs') {
                 if (parentId) obj.metaId = parentId || '';
+                const okrCriterion = successCriteria || context || '';
+                if (!okrCriterion.trim()) {
+                    app.showToast('Defina o Critério / Meta do OKR para salvar.', 'error');
+                    return;
+                }
+                obj.successCriteria = okrCriterion;
+                obj.purpose = okrCriterion;
                 obj.keyResults = keyResults;
                 const oldItem = getOldItem(id, 'okrs');
                 obj.rewarded70 = !!oldItem.rewarded70;
@@ -4490,7 +4570,7 @@ const app = {
         if (prazoInput) prazoInput.value = item.prazo || '';
         document.getElementById('crud-context').value = item.purpose || item.description || item.indicator || '';
         const successCriteriaInput = document.getElementById('crud-success-criteria');
-        if (successCriteriaInput) successCriteriaInput.value = item.successCriteria || '';
+        if (successCriteriaInput) successCriteriaInput.value = item.successCriteria || item.purpose || '';
         const challengeInput = document.getElementById('crud-challenge-level');
         if (challengeInput) challengeInput.value = String(item.challengeLevel || 3);
         const commitmentInput = document.getElementById('crud-commitment-level');
@@ -4748,6 +4828,11 @@ const app = {
                         if (challengeLevel >= 1 && challengeLevel <= 5) obj.challengeLevel = Math.round(challengeLevel);
                         if (commitmentLevel >= 1 && commitmentLevel <= 5) obj.commitmentLevel = Math.round(commitmentLevel);
                         if (type === 'okrs') {
+                            const okrCriterion = String(successCriteria || context || '').trim();
+                            if (okrCriterion) {
+                                obj.successCriteria = okrCriterion;
+                                obj.purpose = okrCriterion;
+                            }
                             obj.keyResults = this.parseKeyResultsText(keyResultsText);
                             const krProgress = this.computeKeyResultsProgress(obj.keyResults);
                             if (krProgress !== null) obj.progress = krProgress;
