@@ -2149,18 +2149,17 @@ const app = {
                 const pendingPct = s.total > 0 ? Math.max(0, 100 - donePct - inProgressPct) : 0;
                 return `
                 <div class="rounded-xl bg-surface-container-lowest border border-outline-variant/10 p-3">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="w-24 text-[10px] uppercase tracking-widest font-bold text-outline">${dimLabels[dim]}</span>
-                        <span class="text-[10px] font-bold text-primary">F${focusPct}% (${s.focusItems})</span>
-                        <div class="flex-1 min-w-[110px] h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
-                            <div class="h-full ${focusPct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${focusPct}%"></div>
-                        </div>
-                        <span class="text-[10px] text-outline">C${donePct} A${inProgressPct} P${pendingPct}</span>
-                        <div class="flex-1 min-w-[110px] h-1.5 bg-surface-container-highest rounded-full overflow-hidden flex">
-                            <div class="h-full bg-emerald-500 transition-all duration-700" style="width:${donePct}%"></div>
-                            <div class="h-full bg-amber-500 transition-all duration-700" style="width:${inProgressPct}%"></div>
-                            <div class="h-full bg-slate-300 dark:bg-slate-600 transition-all duration-700" style="width:${pendingPct}%"></div>
-                        </div>
+                    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-2">
+                        <span class="text-[10px] uppercase tracking-widest font-bold text-outline">${dimLabels[dim]}</span>
+                        <span class="text-[10px] font-bold text-primary">Foco ${focusPct}% (${s.focusItems})</span>
+                        <span class="text-[10px] text-emerald-600 font-semibold">C ${donePct}%</span>
+                        <span class="text-[10px] text-amber-600 font-semibold">A ${inProgressPct}%</span>
+                        <span class="text-[10px] text-outline font-semibold">P ${pendingPct}%</span>
+                    </div>
+                    <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden flex">
+                        <div class="h-full bg-emerald-500 transition-all duration-700" style="width:${donePct}%"></div>
+                        <div class="h-full bg-amber-500 transition-all duration-700" style="width:${inProgressPct}%"></div>
+                        <div class="h-full bg-slate-300 dark:bg-slate-600 transition-all duration-700" style="width:${pendingPct}%"></div>
                     </div>
                 </div>`;
             };
