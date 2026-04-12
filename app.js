@@ -233,6 +233,7 @@ const app = {
     planosHierarchyId: '',
     focusTypeFilter: 'Tudo',
     focusStatusFilter: 'Tudo',
+    focusDistributionViewMode: '',
     currentTextGroup: null,
     currentTextKey: null,
     onboardingStep: 0,
@@ -1340,6 +1341,16 @@ const app = {
       this.focusStatusFilter = status;
       if (this.currentView === 'foco') this.render.foco();
       if (this.currentView === 'painel') this.render.painel();
+      if (this.currentView === 'hoje') this.render.hoje();
+    },
+
+    setFocusDistributionViewMode: function(mode) {
+      const next = mode === 'one_line' ? 'one_line' : 'two_line';
+      this.focusDistributionViewMode = next;
+      try { localStorage.setItem('lifeos_focus_distribution_view_mode', next); } catch (_) {}
+      if (this.currentView === 'foco') this.render.foco();
+      if (this.currentView === 'painel') this.render.painel();
+      if (this.currentView === 'hoje') this.render.hoje();
     },
 
     resetWheelOfLife: function() {
@@ -1992,9 +2003,17 @@ const app = {
             const container = document.getElementById(containerId);
             if (!container) return;
 
+            if (!app.focusDistributionViewMode) {
+                try {
+                    app.focusDistributionViewMode = localStorage.getItem('lifeos_focus_distribution_view_mode') || 'two_line';
+                } catch (_) {
+                    app.focusDistributionViewMode = 'two_line';
+                }
+            }
+
             const state = window.sistemaVidaState;
-            const dims = ['Saude', 'Mente', 'Carreira', 'Financas', 'Relacionamentos', 'Familia', 'Lazer', 'Proposito', 'Geral'];
-            const mapDim = {
+            const dimKeys = ['Saude', 'Mente', 'Carreira', 'Financas', 'Relacionamentos', 'Familia', 'Lazer', 'Proposito'];
+            const dimLabels = {
                 Saude: 'Saude',
                 Mente: 'Mente',
                 Carreira: 'Carreira',
@@ -2004,13 +2023,43 @@ const app = {
                 Lazer: 'Lazer',
                 Proposito: 'Proposito'
             };
-            const effortByDim = {};
-            const countByDim = {};
-            dims.forEach(d => { effortByDim[d] = 0; countByDim[d] = 0; });
-
             const typeMap = { Macro: 'Macros', Micro: 'Micros' };
             const typeFilter = typeMap[app.focusTypeFilter] || app.focusTypeFilter || 'Tudo';
             const statusFilter = app.focusStatusFilter || 'Tudo';
+            const mode = app.focusDistributionViewMode === 'one_line' ? 'one_line' : 'two_line';
+
+            const normalizeText = (value) => String(value || '')
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
+
+            const normalizeDim = (dimRaw) => {
+                const low = normalizeText(dimRaw || 'Geral');
+                if (low.includes('sa')) return 'Saude';
+                if (low.includes('ment')) return 'Mente';
+                if (low.includes('carr')) return 'Carreira';
+                if (low.includes('fin')) return 'Financas';
+                if (low.includes('relac')) return 'Relacionamentos';
+                if (low.includes('fam')) return 'Familia';
+                if (low.includes('laz')) return 'Lazer';
+                if (low.includes('prop')) return 'Proposito';
+                return 'Geral';
+            };
+
+            const statusFilterNorm = normalizeText(statusFilter);
+            const matchesStatusFilter = (item) => {
+                const isDone = item.status === 'done' || item.completed === true;
+                const isInProgress = item.status === 'in_progress';
+                if (statusFilterNorm === 'pendentes') return !isDone && !isInProgress;
+                if (statusFilterNorm === 'em andamento' || statusFilterNorm === 'em_andamento') return isInProgress;
+                if (statusFilterNorm.includes('conclu')) return isDone;
+                return true;
+            };
+
+            const stats = {};
+            dimKeys.forEach(d => {
+                stats[d] = { focusEffort: 0, focusItems: 0, total: 0, done: 0, inProgress: 0, pending: 0 };
+            });
 
             document.querySelectorAll('[data-focus-type]').forEach(btn => {
                 const raw = btn.getAttribute('data-focus-type');
@@ -2027,65 +2076,96 @@ const app = {
                     : "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
             });
 
-            const addScore = (list, weight, typeName) => {
+            document.querySelectorAll('[data-focus-view-mode]').forEach(btn => {
+                const btnMode = btn.getAttribute('data-focus-view-mode');
+                btn.className = btnMode === mode
+                    ? "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
+                    : "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+            });
+
+            const lists = [
+                { typeName: 'Metas', list: state.entities.metas, weight: 6 },
+                { typeName: 'OKRs', list: state.entities.okrs, weight: 4 },
+                { typeName: 'Macros', list: state.entities.macros, weight: 2 },
+                { typeName: 'Micros', list: state.entities.micros, weight: 1 }
+            ];
+
+            lists.forEach(({ typeName, list, weight }) => {
                 if (typeFilter !== 'Tudo' && typeFilter !== typeName) return;
                 (list || []).forEach(item => {
-                    const dimRaw = (item.dimension || 'Geral').toString();
-                    const low = dimRaw.toLowerCase();
-                    let dim = 'Geral';
-                    if (low.includes('sa')) dim = 'Saude';
-                    else if (low.includes('ment')) dim = 'Mente';
-                    else if (low.includes('carr')) dim = 'Carreira';
-                    else if (low.includes('fin')) dim = 'Financas';
-                    else if (low.includes('relac')) dim = 'Relacionamentos';
-                    else if (low.includes('fam')) dim = 'Familia';
-                    else if (low.includes('laz')) dim = 'Lazer';
-                    else if (low.includes('prop')) dim = 'Proposito';
+                    const dim = normalizeDim(item.dimension || 'Geral');
+                    if (!stats[dim]) return;
                     const isDone = item.status === 'done' || item.completed === true;
-                    const normalizedStatusFilter = String(statusFilter)
-                        .toLowerCase()
-                        .normalize('NFD')
-                        .replace(/[\u0300-\u036f]/g, '');
                     const isInProgress = item.status === 'in_progress';
-                    const matchStatus =
-                        normalizedStatusFilter === 'pendentes' ? (!isDone && !isInProgress) :
-                        normalizedStatusFilter === 'em andamento' || normalizedStatusFilter === 'em_andamento' ? isInProgress :
-                        normalizedStatusFilter.includes('conclu') ? isDone :
-                        true;
-                    if (!matchStatus) return;
-                    effortByDim[dim] += weight;
-                    countByDim[dim] += 1;
+                    stats[dim].total += 1;
+                    if (isDone) stats[dim].done += 1;
+                    else if (isInProgress) stats[dim].inProgress += 1;
+                    else stats[dim].pending += 1;
+
+                    if (matchesStatusFilter(item)) {
+                        stats[dim].focusEffort += weight;
+                        stats[dim].focusItems += 1;
+                    }
                 });
-            };
+            });
 
-            addScore(state.entities.metas, 6, 'Metas');
-            addScore(state.entities.okrs, 4, 'OKRs');
-            addScore(state.entities.macros, 2, 'Macros');
-            addScore(state.entities.micros, 1, 'Micros');
+            const totalFocusEffort = dimKeys.reduce((sum, d) => sum + stats[d].focusEffort, 0);
 
-            const totalEffort = dims.reduce((acc, d) => acc + (d === 'Geral' ? 0 : effortByDim[d]), 0);
-
-            let focusHtml = '';
-            dims.forEach(dim => {
-                if (dim === 'Geral') return;
-                const dimEffort = effortByDim[dim] || 0;
-                const dimCount = countByDim[dim] || 0;
-                const pct = totalEffort > 0 ? Math.round((dimEffort / totalEffort) * 100) : 0;
-                focusHtml += `
-                <div class="space-y-1.5">
+            const renderTwoLine = (dim) => {
+                const s = stats[dim];
+                const focusPct = totalFocusEffort > 0 ? Math.round((s.focusEffort / totalFocusEffort) * 100) : 0;
+                const donePct = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0;
+                const inProgressPct = s.total > 0 ? Math.round((s.inProgress / s.total) * 100) : 0;
+                const pendingPct = s.total > 0 ? Math.max(0, 100 - donePct - inProgressPct) : 0;
+                return `
+                <div class="space-y-1.5 rounded-xl bg-surface-container-lowest border border-outline-variant/10 p-3">
                     <div class="flex justify-between items-end gap-2">
-                        <span class="${containerId === 'focus-distribution' ? 'text-[9px]' : 'text-[10px]'} uppercase tracking-widest font-bold text-outline">${mapDim[dim]}</span>
+                        <span class="${containerId === 'focus-distribution' ? 'text-[9px]' : 'text-[10px]'} uppercase tracking-widest font-bold text-outline">${dimLabels[dim]}</span>
                         <div class="flex items-baseline gap-1">
-                            <span class="${containerId === 'focus-distribution' ? 'text-[11px]' : 'text-xs'} font-bold ${pct > 0 ? 'text-primary' : 'text-outline-variant'}">${pct}%</span>
-                            <span class="text-[9px] text-outline">(${dimCount} item${dimCount !== 1 ? 's' : ''})</span>
+                            <span class="${containerId === 'focus-distribution' ? 'text-[11px]' : 'text-xs'} font-bold ${focusPct > 0 ? 'text-primary' : 'text-outline-variant'}">Foco ${focusPct}%</span>
+                            <span class="text-[9px] text-outline">(${s.focusItems} item${s.focusItems !== 1 ? 's' : ''})</span>
                         </div>
                     </div>
                     <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                        <div class="h-full ${pct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${pct}%"></div>
+                        <div class="h-full ${focusPct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${focusPct}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="text-[10px] text-outline">Conclusao ${donePct}% (${s.done}/${s.total || 0})</span>
+                        <span class="text-[10px] text-outline">C ${s.done} | A ${s.inProgress} | P ${s.pending}</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden flex">
+                        <div class="h-full bg-emerald-500 transition-all duration-700" style="width:${donePct}%"></div>
+                        <div class="h-full bg-amber-500 transition-all duration-700" style="width:${inProgressPct}%"></div>
+                        <div class="h-full bg-slate-300 dark:bg-slate-600 transition-all duration-700" style="width:${pendingPct}%"></div>
                     </div>
                 </div>`;
-            });
-            container.innerHTML = focusHtml;
+            };
+
+            const renderOneLine = (dim) => {
+                const s = stats[dim];
+                const focusPct = totalFocusEffort > 0 ? Math.round((s.focusEffort / totalFocusEffort) * 100) : 0;
+                const donePct = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0;
+                const inProgressPct = s.total > 0 ? Math.round((s.inProgress / s.total) * 100) : 0;
+                const pendingPct = s.total > 0 ? Math.max(0, 100 - donePct - inProgressPct) : 0;
+                return `
+                <div class="rounded-xl bg-surface-container-lowest border border-outline-variant/10 p-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="w-24 text-[10px] uppercase tracking-widest font-bold text-outline">${dimLabels[dim]}</span>
+                        <span class="text-[10px] font-bold text-primary">F${focusPct}% (${s.focusItems})</span>
+                        <div class="flex-1 min-w-[110px] h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+                            <div class="h-full ${focusPct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${focusPct}%"></div>
+                        </div>
+                        <span class="text-[10px] text-outline">C${donePct} A${inProgressPct} P${pendingPct}</span>
+                        <div class="flex-1 min-w-[110px] h-1.5 bg-surface-container-highest rounded-full overflow-hidden flex">
+                            <div class="h-full bg-emerald-500 transition-all duration-700" style="width:${donePct}%"></div>
+                            <div class="h-full bg-amber-500 transition-all duration-700" style="width:${inProgressPct}%"></div>
+                            <div class="h-full bg-slate-300 dark:bg-slate-600 transition-all duration-700" style="width:${pendingPct}%"></div>
+                        </div>
+                    </div>
+                </div>`;
+            };
+
+            container.innerHTML = dimKeys.map(dim => mode === 'one_line' ? renderOneLine(dim) : renderTwoLine(dim)).join('');
         },
 
         foco: function() {

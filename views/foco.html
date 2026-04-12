@@ -36,8 +36,13 @@
                 <button onclick="window.app.setFocusStatusFilter('Em Andamento')" data-focus-status="Em Andamento" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">Em Andamento</button>
                 <button onclick="window.app.setFocusStatusFilter('Concluídos')" data-focus-status="Concluídos" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">Concluídos</button>
             </div>
+            <div class="flex flex-wrap gap-2 items-center">
+                <span class="text-[9px] uppercase tracking-widest text-outline font-bold mr-1">Visual:</span>
+                <button onclick="window.app.setFocusDistributionViewMode('one_line')" data-focus-view-mode="one_line" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">1 Linha</button>
+                <button onclick="window.app.setFocusDistributionViewMode('two_line')" data-focus-view-mode="two_line" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">2 Linhas</button>
+            </div>
             
-            <div id="foco-distribution" class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+            <div id="foco-distribution" class="space-y-2">
                 <!-- Dinamicamente preenchido -->
             </div>
         </div>

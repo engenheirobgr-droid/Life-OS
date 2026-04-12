@@ -334,6 +334,14 @@
                     <button data-focus-status="Concluídos" onclick="app.setFocusStatusFilter('Concluídos')"
                         class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Concluídos</button>
                 </div>
+                <div class="flex flex-wrap gap-2">
+                    <span
+                        class="text-[9px] uppercase tracking-widest text-outline font-bold self-center mr-2">Visual:</span>
+                    <button data-focus-view-mode="one_line" onclick="app.setFocusDistributionViewMode('one_line')"
+                        class="px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">1 Linha</button>
+                    <button data-focus-view-mode="two_line" onclick="app.setFocusDistributionViewMode('two_line')"
+                        class="px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all">2 Linhas</button>
+                </div>
             </div>
         </div>
         <div id="focus-distribution"
