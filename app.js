@@ -233,7 +233,7 @@ const app = {
     planosHierarchyId: '',
     focusTypeFilter: 'Tudo',
     focusStatusFilter: 'Tudo',
-    focusDistributionViewMode: '',
+    focusDistributionViewMode: 'one_line',
     currentTextGroup: null,
     currentTextKey: null,
     onboardingStep: 0,
@@ -1345,7 +1345,7 @@ const app = {
     },
 
     setFocusDistributionViewMode: function(mode) {
-      const next = mode === 'one_line' ? 'one_line' : 'two_line';
+      const next = 'one_line';
       this.focusDistributionViewMode = next;
       try { localStorage.setItem('lifeos_focus_distribution_view_mode', next); } catch (_) {}
       if (this.currentView === 'foco') this.render.foco();
@@ -2003,14 +2003,6 @@ const app = {
             const container = document.getElementById(containerId);
             if (!container) return;
 
-            if (!app.focusDistributionViewMode) {
-                try {
-                    app.focusDistributionViewMode = localStorage.getItem('lifeos_focus_distribution_view_mode') || 'two_line';
-                } catch (_) {
-                    app.focusDistributionViewMode = 'two_line';
-                }
-            }
-
             const state = window.sistemaVidaState;
             const dimKeys = ['Saude', 'Mente', 'Carreira', 'Financas', 'Relacionamentos', 'Familia', 'Lazer', 'Proposito'];
             const dimLabels = {
@@ -2026,7 +2018,6 @@ const app = {
             const typeMap = { Macro: 'Macros', Micro: 'Micros' };
             const typeFilter = typeMap[app.focusTypeFilter] || app.focusTypeFilter || 'Tudo';
             const statusFilter = app.focusStatusFilter || 'Tudo';
-            const mode = app.focusDistributionViewMode === 'one_line' ? 'one_line' : 'two_line';
 
             const normalizeText = (value) => String(value || '')
                 .toLowerCase()
@@ -2076,13 +2067,6 @@ const app = {
                     : "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
             });
 
-            document.querySelectorAll('[data-focus-view-mode]').forEach(btn => {
-                const btnMode = btn.getAttribute('data-focus-view-mode');
-                btn.className = btnMode === mode
-                    ? "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
-                    : "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
-            });
-
             const lists = [
                 { typeName: 'Metas', list: state.entities.metas, weight: 6 },
                 { typeName: 'OKRs', list: state.entities.okrs, weight: 4 },
@@ -2093,6 +2077,7 @@ const app = {
             lists.forEach(({ typeName, list, weight }) => {
                 if (typeFilter !== 'Tudo' && typeFilter !== typeName) return;
                 (list || []).forEach(item => {
+                    if (!matchesStatusFilter(item)) return;
                     const dim = normalizeDim(item.dimension || 'Geral');
                     if (!stats[dim]) return;
                     const isDone = item.status === 'done' || item.completed === true;
@@ -2101,45 +2086,12 @@ const app = {
                     if (isDone) stats[dim].done += 1;
                     else if (isInProgress) stats[dim].inProgress += 1;
                     else stats[dim].pending += 1;
-
-                    if (matchesStatusFilter(item)) {
-                        stats[dim].focusEffort += weight;
-                        stats[dim].focusItems += 1;
-                    }
+                    stats[dim].focusEffort += weight;
+                    stats[dim].focusItems += 1;
                 });
             });
 
             const totalFocusEffort = dimKeys.reduce((sum, d) => sum + stats[d].focusEffort, 0);
-
-            const renderTwoLine = (dim) => {
-                const s = stats[dim];
-                const focusPct = totalFocusEffort > 0 ? Math.round((s.focusEffort / totalFocusEffort) * 100) : 0;
-                const donePct = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0;
-                const inProgressPct = s.total > 0 ? Math.round((s.inProgress / s.total) * 100) : 0;
-                const pendingPct = s.total > 0 ? Math.max(0, 100 - donePct - inProgressPct) : 0;
-                return `
-                <div class="space-y-1.5 rounded-xl bg-surface-container-lowest border border-outline-variant/10 p-3">
-                    <div class="flex justify-between items-end gap-2">
-                        <span class="${containerId === 'focus-distribution' ? 'text-[9px]' : 'text-[10px]'} uppercase tracking-widest font-bold text-outline">${dimLabels[dim]}</span>
-                        <div class="flex items-baseline gap-1">
-                            <span class="${containerId === 'focus-distribution' ? 'text-[11px]' : 'text-xs'} font-bold ${focusPct > 0 ? 'text-primary' : 'text-outline-variant'}">Foco ${focusPct}%</span>
-                            <span class="text-[9px] text-outline">(${s.focusItems} item${s.focusItems !== 1 ? 's' : ''})</span>
-                        </div>
-                    </div>
-                    <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                        <div class="h-full ${focusPct > 0 ? 'bg-primary' : 'bg-outline-variant/30'} rounded-full transition-all duration-700" style="width: ${focusPct}%"></div>
-                    </div>
-                    <div class="flex justify-between items-center gap-2">
-                        <span class="text-[10px] text-outline">Conclusao ${donePct}% (${s.done}/${s.total || 0})</span>
-                        <span class="text-[10px] text-outline">C ${s.done} | A ${s.inProgress} | P ${s.pending}</span>
-                    </div>
-                    <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden flex">
-                        <div class="h-full bg-emerald-500 transition-all duration-700" style="width:${donePct}%"></div>
-                        <div class="h-full bg-amber-500 transition-all duration-700" style="width:${inProgressPct}%"></div>
-                        <div class="h-full bg-slate-300 dark:bg-slate-600 transition-all duration-700" style="width:${pendingPct}%"></div>
-                    </div>
-                </div>`;
-            };
 
             const renderOneLine = (dim) => {
                 const s = stats[dim];
@@ -2166,7 +2118,7 @@ const app = {
                 </div>`;
             };
 
-            container.innerHTML = dimKeys.map(dim => mode === 'one_line' ? renderOneLine(dim) : renderTwoLine(dim)).join('');
+            container.innerHTML = dimKeys.map(dim => renderOneLine(dim)).join('');
         },
 
         foco: function() {
