@@ -119,7 +119,7 @@ const app = {
         window.sistemaVidaState.settings.theme = next;
         this.applyThemePreference();
         this.saveState(true);
-        this.showToast(`Tema aplicado: ${next === 'auto' ? 'Automatico' : (next === 'dark' ? 'Escuro' : 'Claro')}.`, 'success');
+        this.showToast(`Tema aplicado: ${next === 'auto' ? 'Automático' : (next === 'dark' ? 'Escuro' : 'Claro')}.`, 'success');
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
     },
     toggleDailyNotifications: async function() {
@@ -130,22 +130,22 @@ const app = {
                 if (Notification.permission === 'default') {
                     const result = await Notification.requestPermission();
                     if (result !== 'granted') {
-                        this.showToast('Permissao de notificacoes nao concedida no navegador.', 'error');
+                        this.showToast('Permissão de notificações não concedida no navegador.', 'error');
                         return;
                     }
                 } else if (Notification.permission === 'denied') {
-                    this.showToast('Notificacoes bloqueadas no navegador. Ative nas permissoes do site.', 'error');
+                    this.showToast('Notificações bloqueadas no navegador. Ative nas permissões do site.', 'error');
                     return;
                 }
             } catch (_) {
-                this.showToast('Nao foi possivel solicitar a permissao de notificacoes.', 'error');
+                this.showToast('Não foi possível solicitar a permissão de notificações.', 'error');
                 return;
             }
         }
         window.sistemaVidaState.settings.notificationsEnabled = enabled;
         this.saveState(true);
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
-        this.showToast(enabled ? 'Notificacoes diarias ativadas.' : 'Notificacoes diarias desativadas.', 'success');
+        this.showToast(enabled ? 'Notificações diárias ativadas.' : 'Notificações diárias desativadas.', 'success');
     },
     openAvatarPicker: function() {
         const input = document.getElementById('profile-photo-input');
@@ -155,7 +155,7 @@ const app = {
         const file = event?.target?.files?.[0];
         if (!file) return;
         if (!file.type.startsWith('image/')) {
-            this.showToast('Selecione um arquivo de imagem valido.', 'error');
+            this.showToast('Selecione um arquivo de imagem válido.', 'error');
             return;
         }
         const reader = new FileReader();
@@ -185,7 +185,7 @@ const app = {
         const file = input?.files?.[0];
         if (!key || !file) return;
         if (!file.type.startsWith('image/')) {
-            this.showToast('Selecione um arquivo de imagem valido para o cenario.', 'error');
+            this.showToast('Selecione um arquivo de imagem válido para o cenário.', 'error');
             return;
         }
         const reader = new FileReader();
@@ -197,7 +197,7 @@ const app = {
             } catch (_) {}
             this.saveState(true);
             if (this.render.proposito) this.render.proposito();
-            this.showToast('Imagem do cenario atualizada!', 'success');
+            this.showToast('Imagem do cenário atualizada!', 'success');
         };
         reader.onerror = () => this.showToast('Falha ao ler a imagem selecionada.', 'error');
         reader.readAsDataURL(file);
@@ -332,7 +332,7 @@ const app = {
             const reviews = Object.keys(state.reviews || {});
             const hasRecent = reviews.some(dateStr => (today - new Date(dateStr)) / (1000 * 60 * 60 * 24) <= 3);
             this.needsReview = !hasRecent;
-            if (this.needsReview) setTimeout(() => this.showNotification("📅 É Domingo! Dia de planear a semana e rever as suas ações."), 2500);
+            if (this.needsReview) setTimeout(() => this.showNotification("📅 É domingo! Dia de planejar a semana e revisar suas ações."), 2500);
         }
 
         const diffDaysCycle = Math.floor((today - new Date(state.cycleStartDate)) / (1000 * 60 * 60 * 24));
@@ -568,7 +568,7 @@ const app = {
         const sortedLogs = logsArray.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         if (sortedLogs.length === 0) {
-            list.innerHTML = '<div class="text-center py-12 text-outline italic">Nenhum registo encontrado.</div>';
+            list.innerHTML = '<div class="text-center py-12 text-outline italic">Nenhum registro encontrado.</div>';
         } else {
             list.innerHTML = sortedLogs.map(log => {
                 // Adiciona T12:00:00 para evitar que o fuso horário mude o dia no toLocaleDateString
@@ -1415,7 +1415,7 @@ const app = {
     },
 
     resetWheelOfLife: function() {
-        const confirmReset = confirm("Isto iniciará um novo ciclo da Roda da Vida, zerando as notas atuais para reavaliação. Deseja continuar?");
+        const confirmReset = confirm("Isso iniciará um novo ciclo da Roda da Vida, zerando as notas atuais para reavaliação. Deseja continuar?");
         if (confirmReset) {
             const state = window.sistemaVidaState;
             // Salva snapshot (simplificado para histórico)
@@ -1457,7 +1457,7 @@ const app = {
             const routineVal = document.getElementById('habit-routine') ? document.getElementById('habit-routine').value.trim() : '';
             const rewardVal = document.getElementById('habit-reward') ? document.getElementById('habit-reward').value.trim() : '';
             if (!trigger || !routineVal || !rewardVal) {
-                this.showToast('Para habitos, preencha gatilho, rotina e recompensa do dia.', 'error');
+                this.showToast('Para hábitos, preencha gatilho, rotina e recompensa do dia.', 'error');
                 return;
             }
         }
@@ -2886,8 +2886,8 @@ const app = {
                         <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-4">
                             <span class="material-symbols-outlined notranslate text-outline text-3xl">${emptyIcon}</span>
                         </div>
-                        <h4 class="font-headline text-lg font-bold text-on-background">Nenhum registo encontrado</h4>
-                        <p class="text-sm text-outline mt-2 max-w-sm">Ainda não tem planos definidos nesta categoria. Clique no botão de adicionar (+) para começar a planear.</p>
+                        <h4 class="font-headline text-lg font-bold text-on-background">Nenhum registro encontrado</h4>
+                        <p class="text-sm text-outline mt-2 max-w-sm">Você ainda não tem planos definidos nesta categoria. Clique no botão de adicionar (+) para começar a planejar.</p>
                     </div>`;
                 }
 
@@ -2977,7 +2977,7 @@ const app = {
                             ? 'ring-2 ring-amber-500/40 border-amber-500/40 shadow-md shadow-amber-500/10'
                             : (isDone ? 'border-emerald-500/30 shadow-md shadow-emerald-500/10' : 'border-outline-variant/20 shadow-sm');
                         const statusChip = isDone
-                            ? '<span class="shrink-0 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Concluido</span>'
+                            ? '<span class="shrink-0 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Concluído</span>'
                             : (isInProgress
                                 ? '<span class="shrink-0 bg-amber-100 text-amber-700 border border-amber-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Andamento</span>'
                                 : '<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Pendente</span>');
