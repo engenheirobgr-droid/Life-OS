@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!DOCTYPE html>
 <html lang="pt-br" class="light">
 
@@ -180,6 +180,48 @@
         input[type="range"] {
             touch-action: pan-y;
             overscroll-behavior: contain;
+        }
+
+        /* Dark Theme Harmonization */
+        html.dark {
+            color-scheme: dark;
+        }
+
+        html.dark body {
+            background: #0b1220 !important;
+            color: #e5e7eb !important;
+        }
+
+        html.dark [class*="bg-background"] { background-color: #0b1220 !important; }
+        html.dark [class*="bg-surface"] { background-color: #0f172a !important; }
+        html.dark [class*="bg-surface-container-lowest"] { background-color: #111827 !important; }
+        html.dark [class*="bg-surface-container-low"] { background-color: #1a2332 !important; }
+        html.dark [class*="bg-surface-container"] { background-color: #1f2937 !important; }
+        html.dark [class*="bg-surface-container-high"] { background-color: #243244 !important; }
+        html.dark [class*="bg-surface-container-highest"] { background-color: #334155 !important; }
+        html.dark [class*="text-on-surface"], html.dark [class*="text-on-background"] { color: #e2e8f0 !important; }
+        html.dark [class*="text-outline"], html.dark [class*="text-on-surface-variant"] { color: #94a3b8 !important; }
+        html.dark [class*="border-outline-variant"] { border-color: rgba(148, 163, 184, 0.28) !important; }
+        html.dark input,
+        html.dark textarea,
+        html.dark select {
+            color: #e2e8f0 !important;
+        }
+        html.dark input::placeholder,
+        html.dark textarea::placeholder {
+            color: #94a3b8 !important;
+        }
+        html.dark .bg-white,
+        html.dark .bg-white\/70 {
+            background-color: #111827 !important;
+        }
+        html.dark .text-stone-500,
+        html.dark .text-stone-400 {
+            color: #94a3b8 !important;
+        }
+        html.dark .gantt-stripe-bg {
+            opacity: 0.45;
+            filter: saturate(0.85);
         }
     </style>
 </head>
@@ -424,13 +466,28 @@
 
                 <div id="crud-trigger-container" class="flex-col gap-1.5" style="display: none;">
                     <label for="crud-trigger"
-                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Gatilho
-                        (Opcional)</label>
+                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Gatilho</label>
                     <input type="text" id="crud-trigger"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
                         placeholder="Ex: Depois de escovar os dentes, eu farei...">
-                    <p class="text-[10px] text-outline mt-0.5">Ancore este novo hábito a uma ação que você já faz todos
-                        os dias.</p>
+                    <p class="text-[10px] text-outline mt-0.5">Ancore este novo habito a uma acao que voce ja faz todos os dias.</p>
+                </div>
+
+                <div id="crud-habit-identity" class="hidden flex-col gap-3">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-routine"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Rotina do Habito</label>
+                        <input type="text" id="habit-routine"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: Ler 10 paginas apos o cafe">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-reward"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Recompensa do Dia</label>
+                        <input type="text" id="habit-reward"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: 20 minutos de lazer sem culpa">
+                    </div>
                 </div>
 
                 <!-- Custom Habit Controls -->
@@ -827,3 +884,4 @@
 </body>
 
 </html>
+

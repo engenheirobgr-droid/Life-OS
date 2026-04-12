@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Sistema Vida - Core OS
  * Vanilla JS Single Page Application Controller with Data Binding
  */
@@ -103,6 +103,15 @@ const app = {
         const useDark = pref === 'dark' || (pref === 'auto' && systemDark);
         root.classList.toggle('dark', useDark);
         root.classList.toggle('light', !useDark);
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeMeta) themeMeta.setAttribute('content', useDark ? '#0b1220' : '#01696f');
+        if (!this._themeMediaBound && window.matchMedia) {
+            this._themeMediaBound = true;
+            const mq = window.matchMedia('(prefers-color-scheme: dark)');
+            mq.addEventListener('change', () => {
+                if ((window.sistemaVidaState.settings?.theme || 'auto') === 'auto') this.applyThemePreference();
+            });
+        }
     },
     setThemePreference: function(theme) {
         this.ensureSettingsState();
@@ -737,8 +746,13 @@ const app = {
     onTypeChange: function(type) {
         const parentGroup = document.getElementById('crud-parent-group');
         const triggerGroup = document.getElementById('crud-trigger-container');
+        const habitIdentityGroup = document.getElementById('crud-habit-identity');
         const dimensionGroup = document.getElementById('crud-dimension-group');
         const contextLabel = document.getElementById('crud-context-label');
+        const contextInput = document.getElementById('crud-context');
+        const triggerInput = document.getElementById('crud-trigger');
+        const routineInput = document.getElementById('habit-routine');
+        const rewardInput = document.getElementById('habit-reward');
         const habitControls = document.getElementById('crud-habit-controls');
         const metaHorizonGroup = document.getElementById('crud-meta-horizon-group');
         
@@ -749,14 +763,26 @@ const app = {
             habitControls.classList.add('hidden');
             habitControls.classList.remove('flex');
         }
+        if (habitIdentityGroup) {
+            habitIdentityGroup.classList.add('hidden');
+            habitIdentityGroup.classList.remove('flex');
+        }
         if (metaHorizonGroup) metaHorizonGroup.classList.add('hidden');
         if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
+        if (contextInput) contextInput.required = true;
+        if (triggerInput) triggerInput.required = false;
+        if (routineInput) routineInput.required = false;
+        if (rewardInput) rewardInput.required = false;
 
         // Configura baseado no tipo
         if (type === 'habits') {
             if (triggerGroup) {
                 triggerGroup.classList.remove('hidden');
                 triggerGroup.classList.add('flex');
+            }
+            if (habitIdentityGroup) {
+                habitIdentityGroup.classList.remove('hidden');
+                habitIdentityGroup.classList.add('flex');
             }
             if (habitControls) {
                 habitControls.classList.remove('hidden');
@@ -768,7 +794,11 @@ const app = {
                 const freqInput = document.getElementById('habit-frequency');
                 if (freqInput) this.onHabitFreqChange(freqInput.value);
             }
-            if (contextLabel) contextLabel.textContent = 'Gatilho de Execução';
+            if (contextLabel) contextLabel.textContent = 'Observação do Hábito';
+            if (contextInput) contextInput.required = false;
+            if (triggerInput) triggerInput.required = true;
+            if (routineInput) routineInput.required = true;
+            if (rewardInput) rewardInput.required = true;
         } else if (type === 'metas') {
             if (parentGroup) parentGroup.classList.remove('hidden');
             if (metaHorizonGroup) metaHorizonGroup.classList.remove('hidden');
@@ -1392,6 +1422,14 @@ const app = {
         const dimension = document.getElementById('crud-dimension').value;
         const context = document.getElementById('crud-context').value;
         const trigger = (type === 'habits' && document.getElementById('crud-trigger')) ? document.getElementById('crud-trigger').value.trim() : '';
+        if (type === 'habits') {
+            const routineVal = document.getElementById('habit-routine') ? document.getElementById('habit-routine').value.trim() : '';
+            const rewardVal = document.getElementById('habit-reward') ? document.getElementById('habit-reward').value.trim() : '';
+            if (!trigger || !routineVal || !rewardVal) {
+                this.showToast('Para habitos, preencha gatilho, rotina e recompensa do dia.', 'error');
+                return;
+            }
+        }
         
         const usaAgendamento = ['macros', 'micros'].includes(type);
         let prazo = '';
@@ -1488,6 +1526,8 @@ const app = {
             obj.context = context || '';
             obj.completed = isEditing ? (getOldItem(id, 'habits').completed || false) : false;
             obj.trigger = trigger || '';
+            obj.routine = (document.getElementById('habit-routine') ? document.getElementById('habit-routine').value.trim() : '') || context || title;
+            obj.reward = document.getElementById('habit-reward') ? document.getElementById('habit-reward').value.trim() : '';
             obj.trackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
             obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
             obj.frequency = document.getElementById('habit-frequency') ? document.getElementById('habit-frequency').value : 'daily';
@@ -2475,6 +2515,8 @@ const app = {
                                 <div class="overflow-hidden pr-2">
                                     <p class="font-medium text-on-surface text-sm ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
                                     ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight truncate">Gatilho: ${habit.trigger}</p>` : ''}
+                                    ${habit.routine ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Rotina: ${habit.routine}</p>` : ''}
+                                    ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight truncate">Recompensa: ${habit.reward}</p>` : ''}
                                 </div>
                                 ${progressText ? `<span class="text-xs font-bold text-primary shrink-0">${progressText}</span>` : ''}
                             </div>
@@ -2898,67 +2940,84 @@ const app = {
                         const isAligned = userValues.includes(item.dimension);
 
                         const isInProgress = item.status === 'in_progress';
-                        const highlightClass = isInProgress ? 'ring-2 ring-amber-500/50 border-amber-500/50 shadow-md shadow-amber-500/10' : 'border-outline-variant/10 shadow-sm';
+                        const isDone = prog >= 100 || item.status === 'done' || item.completed;
+                        const isPending = item.status === 'pending';
+                        const highlightClass = isInProgress
+                            ? 'ring-2 ring-amber-500/40 border-amber-500/40 shadow-md shadow-amber-500/10'
+                            : (isDone ? 'border-emerald-500/30 shadow-md shadow-emerald-500/10' : 'border-outline-variant/20 shadow-sm');
+                        const statusChip = isDone
+                            ? '<span class="shrink-0 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Concluido</span>'
+                            : (isInProgress
+                                ? '<span class="shrink-0 bg-amber-100 text-amber-700 border border-amber-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Andamento</span>'
+                                : '<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Pendente</span>');
+                        const actionButton = isPending
+                            ? `
+                                <button onclick="event.stopPropagation(); app.startEntity('${item.id}', '${entityType}')"
+                                    class="p-2.5 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-amber-700 dark:text-amber-400 transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-base">play_arrow</span> Iniciar
+                                </button>
+                            `
+                            : (isDone
+                                ? `
+                                <button onclick="event.stopPropagation(); app.deleteEntity('${item.id}', '${entityType}')"
+                                    class="p-2.5 border border-outline-variant/30 hover:bg-error-container/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-error transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-base">delete</span> Excluir
+                                </button>
+                                `
+                                : `
+                                <button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')"
+                                    class="p-2.5 border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-green-700 dark:text-green-400 transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-base">check_circle</span> Concluir
+                                </button>
+                                `);
 
                         html += `
-                        <div data-entity-id="${item.id}" data-entity-type="${entityType}" class="bg-gradient-to-b from-surface-container-lowest to-surface p-6 rounded-2xl border ${highlightClass} hover:shadow-lg hover:-translate-y-0.5 transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
-                            <div class="flex justify-between items-start mb-4 gap-3">
-                                <div class="space-y-1 flex-1 min-w-0">
-                                    <div class="flex items-center gap-2">
-                                        <span class="shrink-0 bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded font-label font-bold uppercase tracking-wider">${item.dimension}</span>
-                                        ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded border border-primary/20 font-bold">ALINHADO</span>' : ''}
+                        <div data-entity-id="${item.id}" data-entity-type="${entityType}" class="bg-surface-container-lowest p-4 md:p-5 rounded-2xl border ${highlightClass} hover:shadow-lg transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
+                            <div class="flex items-start justify-between gap-3 mb-3">
+                                <div class="space-y-1.5 flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="shrink-0 bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-label font-bold uppercase tracking-wider">${item.dimension || 'Geral'}</span>
+                                        ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold">ALINHADO</span>' : ''}
                                     </div>
-                                    <h4 class="font-headline text-xl font-medium truncate">${item.title}</h4>
-                                    
-                                    <!-- Ações do Card Refatoradas -->
-                                    <div class="grid grid-cols-2 gap-2 mt-4">
-                                        <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')" 
-                                            class="col-span-2 p-2.5 bg-primary/10 border border-primary/25 text-primary hover:bg-primary/15 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all">
-                                            <span class="material-symbols-outlined notranslate text-base">settings_accessibility</span> Gerir Estratégia
-                                        </button>
-                                        
-                                        <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')" 
-                                            class="p-2 border border-outline-variant/30 hover:bg-surface-container-high rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-on-surface transition-colors">
-                                            <span class="material-symbols-outlined notranslate text-base">edit</span> Editar
-                                        </button>
-
-                                        ${item.status === 'pending' ? `
-                                            <button onclick="event.stopPropagation(); app.startEntity('${item.id}', '${entityType}')" 
-                                                class="p-2 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-amber-700 dark:text-amber-400 transition-colors">
-                                                <span class="material-symbols-outlined notranslate text-base">play_arrow</span> Iniciar
-                                            </button>
-                                        ` : (prog < 100 ? `
-                                            <button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')" 
-                                                class="p-2 border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-green-700 dark:text-green-400 transition-colors">
-                                                <span class="material-symbols-outlined notranslate text-base">check_circle</span> Concluir
-                                            </button>
-                                        ` : `
-                                            <button onclick="event.stopPropagation(); app.deleteEntity('${item.id}', '${entityType}')" 
-                                                class="p-2 border border-outline-variant/30 hover:bg-error-container/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-error transition-colors">
-                                                <span class="material-symbols-outlined notranslate text-base">delete</span> Excluir
-                                            </button>
-                                        `)}
-                                    </div>
+                                    <h4 class="font-headline text-lg md:text-xl font-semibold leading-tight line-clamp-2">${item.title}</h4>
                                 </div>
-                                ${prog >= 100 ? 
-                                    `<span class="shrink-0 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Concluído</span>` : 
-                                    (isInProgress ? `<span class="bg-amber-100 text-amber-700 border border-amber-500/20 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 animate-pulse">Iniciado</span>` : `<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Ativo</span>`)
-                                }
+                                <div class="flex flex-col items-end gap-2 shrink-0">
+                                    ${statusChip}
+                                    <span class="material-symbols-outlined notranslate text-outline text-lg transition-transform group-hover:translate-x-0.5">chevron_right</span>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2 text-stone-400 text-xs mb-6 px-1">
-                                <span class="material-symbols-outlined notranslate text-sm">event</span>
-                                ${app.formatPrazoDisplay(item)}
+
+                            <div class="flex items-center justify-between gap-3 mb-3">
+                                <div class="flex items-center gap-2 text-outline text-xs min-w-0">
+                                    <span class="material-symbols-outlined notranslate text-sm shrink-0">event</span>
+                                    <span class="truncate">${app.formatPrazoDisplay(item)}</span>
+                                </div>
+                                <span class="text-[10px] font-label uppercase tracking-wider text-outline shrink-0">Trilha estrategica</span>
                             </div>
-                            <div class="space-y-2 px-1">
-                                <div class="flex justify-between text-[10px] font-label text-stone-500 uppercase">
+
+                            <div class="space-y-1.5 mb-4">
+                                <div class="flex justify-between items-center text-[10px] font-label uppercase tracking-wider text-stone-500">
                                     <span>Progresso</span>
                                     <span>${prog.toFixed(0)}%</span>
                                 </div>
-                                <div class="h-1 w-full bg-surface-container-high rounded-full overflow-hidden">
+                                <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
                                     <div class="h-full bg-primary rounded-full transition-all" style="width: ${visualProg}%"></div>
                                 </div>
                             </div>
-                            <div class="trail-panel hidden overflow-hidden transition-all duration-300 max-h-0 mt-6 border-t border-outline-variant/10 pt-4">
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')"
+                                    class="col-span-2 p-2.5 bg-primary/10 border border-primary/25 text-primary hover:bg-primary/15 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all">
+                                    <span class="material-symbols-outlined notranslate text-base">settings_accessibility</span> Gerir Estrategia
+                                </button>
+                                <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')"
+                                    class="p-2.5 border border-outline-variant/30 hover:bg-surface-container-high rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-on-surface transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-base">edit</span> Editar
+                                </button>
+                                ${actionButton}
+                            </div>
+
+                            <div class="trail-panel hidden overflow-hidden transition-all duration-300 max-h-0 mt-5 border-t border-outline-variant/10 pt-4">
                                 <div class="relative pl-6 pt-1">
                                     <div class="absolute left-[7px] top-2 bottom-2 w-px bg-primary/20"></div>
                                     ${trailHtml}
@@ -3670,6 +3729,10 @@ const app = {
         
         if (type === 'habits') {
             document.getElementById('crud-trigger').value = item.trigger || '';
+            const routineInput = document.getElementById('habit-routine');
+            if (routineInput) routineInput.value = item.routine || item.context || item.title || '';
+            const rewardInput = document.getElementById('habit-reward');
+            if (rewardInput) rewardInput.value = item.reward || '';
             if (document.getElementById('habit-track-mode')) document.getElementById('habit-track-mode').value = item.trackMode || 'boolean';
             if (document.getElementById('habit-target')) document.getElementById('habit-target').value = item.targetValue || 1;
             if (document.getElementById('habit-frequency')) document.getElementById('habit-frequency').value = item.frequency || 'daily';
@@ -3760,13 +3823,21 @@ const app = {
         XLSX.utils.book_append_sheet(wb, wsProp, "Propósito");
 
         // 3. Aba: Hábitos
-        const habCol = ["ID", "Dimensão", "Título", "Gatilho", "Status"];
+        const habCol = ["ID", "Dimensão", "Título", "Gatilho", "Rotina", "Recompensa", "Status"];
         const habData = [habCol];
         (state.habits || []).forEach(h => {
-            habData.push([h.id, h.dimension || "Geral", h.title, h.trigger || h.context || "", h.completed ? "Ativo" : "Inativo"]);
+            habData.push([
+                h.id,
+                h.dimension || "Geral",
+                h.title,
+                h.trigger || "",
+                h.routine || h.context || "",
+                h.reward || "",
+                h.completed ? "Ativo" : "Inativo"
+            ]);
         });
         const wsHabits = XLSX.utils.aoa_to_sheet(habData);
-        wsHabits['!cols'] = [{wch:15}, {wch:15}, {wch:40}, {wch:30}, {wch:10}];
+        wsHabits['!cols'] = [{wch:15}, {wch:15}, {wch:32}, {wch:26}, {wch:32}, {wch:24}, {wch:10}];
         XLSX.utils.book_append_sheet(wb, wsHabits, "Hábitos");
 
         // 4. Aba: Diário
@@ -3959,6 +4030,8 @@ const app = {
                             title: title,
                             dimension: getValue(row, ['Dimensão', 'Dimensao', 'Área']) || 'Geral',
                             trigger: getValue(row, ['Gatilho', 'Contexto']) || '',
+                            routine: getValue(row, ['Rotina', 'Rotina do Habito', 'Ação']) || '',
+                            reward: getValue(row, ['Recompensa', 'Recompensa do Dia']) || '',
                             status: getValue(row, ['Status', 'Situação']) || 'Ativo',
                             completed: String(getValue(row, ['Status', 'Situação']) || '').toLowerCase().includes('conclu')
                         });
@@ -4202,4 +4275,5 @@ window.app = app;
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
+
 
