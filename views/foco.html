@@ -6,63 +6,13 @@
                 Foco <span class="text-primary italic">&</span> Execução
             </h1>
             <p class="text-on-surface-variant font-medium max-w-lg">
-                Gerencie suas Micro Ações e acompanhe a distribuição do seu esforço tático pelas dimensões da vida.
+                Escolha uma micro ação de Planos, entre em um bloco de foco e registre o avanço no caminho certo.
             </p>
         </div>
         <div class="flex items-center gap-4">
             <div id="top-values-banner" class="flex flex-wrap gap-2"></div>
         </div>
     </header>
-
-    <!-- Stats & Focus Distribution -->
-    <section class="order-3 grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 min-w-0">
-        <div class="lg:col-span-2 bg-surface-container-lowest p-5 md:p-8 rounded-2xl border border-outline-variant/10 shadow-sm space-y-6 min-w-0">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0">
-                <h2 class="text-lg font-bold flex items-center gap-2 min-w-0">
-                    <span class="material-symbols-outlined notranslate text-primary">pie_chart</span>
-                    Distribuição de Esforço
-                </h2>
-                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 w-full sm:w-auto">
-                    <button onclick="window.app.focusTypeFilter='Tudo'; window.app.render.foco()" data-focus-type="Tudo" class="shrink-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">Tudo</button>
-                    <button onclick="window.app.focusTypeFilter='Metas'; window.app.render.foco()" data-focus-type="Metas" class="shrink-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">Metas</button>
-                    <button onclick="window.app.focusTypeFilter='OKRs'; window.app.render.foco()" data-focus-type="OKRs" class="shrink-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">OKRs</button>
-                    <button onclick="window.app.focusTypeFilter='Macros'; window.app.render.foco()" data-focus-type="Macros" class="shrink-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">Macros</button>
-                </div>
-            </div>
-            <div class="flex gap-2 items-center overflow-x-auto no-scrollbar pb-1">
-                <span class="shrink-0 text-[9px] uppercase tracking-widest text-outline font-bold mr-1">Status:</span>
-                <button onclick="window.app.setFocusStatusFilter('Tudo')" data-focus-status="Tudo" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">Tudo</button>
-                <button onclick="window.app.setFocusStatusFilter('Pendentes')" data-focus-status="Pendentes" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">Pendentes</button>
-                <button onclick="window.app.setFocusStatusFilter('Em Andamento')" data-focus-status="Em Andamento" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">Em Andamento</button>
-                <button onclick="window.app.setFocusStatusFilter('Concluídos')" data-focus-status="Concluídos" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">Concluídos</button>
-            </div>
-            <div id="foco-distribution" class="space-y-2">
-                <!-- Dinamicamente preenchido -->
-            </div>
-        </div>
-
-        <div class="bg-primary/5 p-5 md:p-8 rounded-2xl border border-primary/10 flex flex-col justify-between min-w-0">
-            <div class="space-y-4">
-                <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
-                    <span class="material-symbols-outlined notranslate text-primary text-2xl">bolt</span>
-                </div>
-                <h3 class="text-xl font-bold">Impulso do Ciclo</h3>
-                <p class="text-sm text-on-surface-variant leading-relaxed">
-                    Você concluiu <span id="cycle-micros-done" class="font-bold text-primary">0</span> micro ações este ciclo. 
-                    Mantenha a constância para atingir seus OKRs.
-                </p>
-            </div>
-            <div class="pt-6">
-                <div class="flex justify-between items-end mb-2">
-                    <span class="text-xs font-bold text-outline uppercase tracking-widest">Progresso Semanal</span>
-                    <span id="foco-week-val" class="text-2xl font-display font-bold text-primary">0%</span>
-                </div>
-                <div class="h-3 w-full bg-primary/10 rounded-full overflow-hidden">
-                    <div id="foco-week-bar" class="h-full bg-primary transition-all duration-1000" style="width: 0%"></div>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- Deep Work Engine -->
     <section id="deep-work-panel" class="order-2 bg-surface-container-lowest p-5 md:p-8 rounded-2xl border border-outline-variant/10 shadow-sm space-y-6 min-w-0">
@@ -77,6 +27,7 @@
             <div class="text-left md:text-right">
                 <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Status</p>
                 <p id="deep-work-status" class="text-sm font-bold text-primary">Pronto para iniciar</p>
+                <p id="deep-work-step" class="text-xs text-on-surface-variant mt-1">Escolha uma micro ação</p>
             </div>
         </div>
 
@@ -92,8 +43,8 @@
                 </div>
                 <div class="space-y-1">
                     <label for="deep-work-micro" class="text-[10px] uppercase tracking-widest font-bold text-outline">Micro ação</label>
-                    <select id="deep-work-micro" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none border border-outline-variant/30">
-                        <option value="">Sem vínculo</option>
+                    <select id="deep-work-micro" onchange="window.app.selectDeepWorkMicro(this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none border border-outline-variant/30">
+                        <option value="">Selecione uma micro</option>
                     </select>
                 </div>
                 <div class="space-y-1">
@@ -110,10 +61,10 @@
         </div>
 
         <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-            <button onclick="window.app.startDeepWorkSession()" class="px-3 md:px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-widest">Iniciar</button>
-            <button onclick="window.app.toggleDeepWorkPause()" class="px-3 md:px-4 py-2 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface text-xs font-bold uppercase tracking-widest">Pausar/Retomar</button>
-            <button onclick="window.app.resetDeepWorkSession()" class="px-3 md:px-4 py-2 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface text-xs font-bold uppercase tracking-widest">Resetar</button>
-            <button onclick="window.app.finishDeepWorkNow()" class="px-3 md:px-4 py-2 rounded-lg bg-secondary-container text-on-secondary-container text-xs font-bold uppercase tracking-widest">Finalizar</button>
+            <button id="deep-work-start-btn" onclick="window.app.startDeepWorkSession()" class="px-3 md:px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-widest">Iniciar</button>
+            <button id="deep-work-pause-btn" onclick="window.app.toggleDeepWorkPause()" class="px-3 md:px-4 py-2 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface text-xs font-bold uppercase tracking-widest">Pausar</button>
+            <button id="deep-work-reset-btn" onclick="window.app.resetDeepWorkSession()" class="px-3 md:px-4 py-2 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface text-xs font-bold uppercase tracking-widest">Resetar</button>
+            <button id="deep-work-finish-btn" onclick="window.app.finishDeepWorkNow()" class="px-3 md:px-4 py-2 rounded-lg bg-secondary-container text-on-secondary-container text-xs font-bold uppercase tracking-widest">Finalizar</button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -135,8 +86,8 @@
                 <span class="material-symbols-outlined notranslate text-primary">checklist</span>
                 Gerenciador de Micros
             </h2>
-            <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar w-full md:w-auto">
-                <select id="todo-dimension-filter" onchange="window.app.render.foco()" class="shrink-0 min-w-44 bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-4 py-2 outline-none border border-outline-variant/30">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto">
+                <select id="todo-dimension-filter" onchange="window.app.render.foco()" class="w-full min-w-0 bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-4 py-2 outline-none border border-outline-variant/30">
                     <option value="Tudo">Todas Dimensões</option>
                     <option value="Saúde">Saúde</option>
                     <option value="Mente">Mente</option>
@@ -147,13 +98,13 @@
                     <option value="Lazer">Lazer</option>
                     <option value="Propósito">Propósito</option>
                 </select>
-                <select id="todo-status-filter" onchange="window.app.render.foco()" class="shrink-0 min-w-40 bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-4 py-2 outline-none border border-outline-variant/30">
+                <select id="todo-status-filter" onchange="window.app.render.foco()" class="w-full min-w-0 bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-4 py-2 outline-none border border-outline-variant/30">
+                    <option value="all" selected>Todas</option>
                     <option value="pending">Pendentes</option>
                     <option value="in_progress">Em Andamento</option>
                     <option value="done">Concluídas</option>
-                    <option value="all">Todas</option>
                 </select>
-                <button onclick="window.app.openCreateModal('micros')" class="shrink-0 bg-primary text-on-primary px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:shadow-lg transition-all flex items-center gap-2">
+                <button onclick="window.app.openCreateModal('micros')" class="w-full min-w-0 bg-primary text-on-primary px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:shadow-lg transition-all flex items-center justify-center gap-2">
                     <span class="material-symbols-outlined notranslate text-sm">add</span> Nova Micro
                 </button>
             </div>

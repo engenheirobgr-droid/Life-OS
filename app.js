@@ -2917,43 +2917,14 @@ const app = {
             const state = window.sistemaVidaState;
             app.normalizeDeepWorkState();
             this.renderSidebarValues();
-            
-            // 1. Distribuição de Foco
-            this.renderFocusDistribution('foco-distribution');
 
-            // 2. Progresso Semanal
-            const weekMicros = state.entities.micros.filter(m =>
-              app.isDateInCurrentWeek(m.inicioDate || m.prazo) || app.isDateInCurrentWeek(m.prazo)
-            );
-            const weekDone = weekMicros.filter(m => m.status === 'done').length;
-            const weekProgress = weekMicros.length > 0 ? Math.round((weekDone / weekMicros.length) * 100) : 0;
-            
-            const weekBar = document.getElementById('foco-week-bar');
-            const weekVal = document.getElementById('foco-week-val');
-            if (weekBar) weekBar.style.width = weekProgress + '%';
-            if (weekVal) weekVal.textContent = weekProgress + '%';
-
-            // 3. Cycle Progress (Filtrado por data >= cycleStartDate)
-            const cycleStartKey = String(state.cycleStartDate || app.getLocalDateKey()).split('T')[0];
-            const cycleStartDate = new Date(`${cycleStartKey}T00:00:00`);
-            const cycleDone = state.entities.micros.filter(m => {
-                if (m.status !== 'done') return false;
-                const ref = m.completedDate || m.prazo;
-                if (!ref) return false;
-                const refKey = String(ref).split('T')[0];
-                const refDate = new Date(`${refKey}T00:00:00`);
-                if (Number.isNaN(refDate.getTime()) || Number.isNaN(cycleStartDate.getTime())) return false;
-                return refDate >= cycleStartDate;
-            }).length;
-            const cycleDoneEl = document.getElementById('cycle-micros-done');
-            if (cycleDoneEl) cycleDoneEl.textContent = cycleDone;
             this.renderDeepWorkPanel();
 
-            // 4. Micros Management List
+            // Micros Management List
             const listContainer = document.getElementById('micros-management-list');
             if (listContainer) {
                 const dimFilter = document.getElementById('todo-dimension-filter')?.value || 'Tudo';
-                const statusFilter = document.getElementById('todo-status-filter')?.value || 'active';
+                const statusFilter = document.getElementById('todo-status-filter')?.value || 'all';
 
                 let filtered = state.entities.micros.filter(m => {
                     const matchDim = dimFilter === 'Tudo' || m.dimension === dimFilter;
@@ -5195,6 +5166,7 @@ const app = {
         const dw = state.deepWork;
 
         const statusEl = document.getElementById('deep-work-status');
+        const stepEl = document.getElementById('deep-work-step');
         const timerEl = document.getElementById('deep-work-timer');
         const phaseEl = document.getElementById('deep-work-phase');
         const summaryEl = document.getElementById('deep-work-week-summary');
@@ -5202,6 +5174,10 @@ const app = {
         const presetEl = document.getElementById('deep-work-preset');
         const microEl = document.getElementById('deep-work-micro');
         const intentionEl = document.getElementById('deep-work-intention');
+        const startBtn = document.getElementById('deep-work-start-btn');
+        const pauseBtn = document.getElementById('deep-work-pause-btn');
+        const resetBtn = document.getElementById('deep-work-reset-btn');
+        const finishBtn = document.getElementById('deep-work-finish-btn');
 
         if (presetEl && !dw.isRunning) {
             const presetMin = Math.max(5, Math.round((dw.targetSec || 5400) / 60));
@@ -5209,8 +5185,12 @@ const app = {
         }
         if (microEl) {
             const micros = (state.entities.micros || []).filter(m => m.status !== 'done');
-            const selected = dw.microId || '';
-            microEl.innerHTML = '<option value="">Sem vínculo</option>' + micros.map(m => {
+            let selected = dw.microId || '';
+            if (selected && !micros.some(m => m.id === selected)) {
+                dw.microId = '';
+                selected = '';
+            }
+            microEl.innerHTML = '<option value="">Selecione uma micro</option>' + micros.map(m => {
                 const ctx = this.getMicroPlanContext(m);
                 const label = `${m.title} - ${ctx.parentLabel}`;
                 return `<option value="${this.escapeHtml(m.id)}" ${m.id === selected ? 'selected' : ''}>${this.escapeHtml(label)}</option>`;
@@ -5218,13 +5198,45 @@ const app = {
         }
         if (intentionEl && !intentionEl.value && dw.intention) intentionEl.value = dw.intention;
 
+        const hasSelectedMicro = !!(dw.microId || microEl?.value);
         if (statusEl) {
-            if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
+            if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Escolha uma micro ação';
+            else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
             else if (dw.isPaused) statusEl.textContent = 'Sessão pausada';
             else statusEl.textContent = dw.mode === 'focus' ? 'Foco profundo em andamento' : 'Pausa de recuperação';
         }
+        if (stepEl) {
+            if (!dw.isRunning && !hasSelectedMicro) stepEl.textContent = 'Passo 1 de 3: selecione a micro';
+            else if (!dw.isRunning) stepEl.textContent = 'Passo 2 de 3: inicie o bloco';
+            else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
+            else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3 de 3: executando foco' : 'Pausa estruturada';
+        }
         if (timerEl) timerEl.textContent = this.formatClock(dw.remainingSec);
         if (phaseEl) phaseEl.textContent = dw.mode === 'focus' ? 'Foco' : 'Pausa';
+
+        const baseBtn = 'px-3 md:px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50';
+        const primaryBtn = `${baseBtn} bg-primary text-on-primary shadow-sm`;
+        const neutralBtn = `${baseBtn} bg-surface-container-high border border-outline-variant/20 text-on-surface`;
+        const activeBtn = `${baseBtn} bg-primary/10 border border-primary/30 text-primary ring-2 ring-primary/20`;
+        const finishBtnClass = `${baseBtn} bg-secondary-container text-on-secondary-container`;
+        if (startBtn) {
+            startBtn.textContent = dw.isRunning ? (dw.isPaused ? 'Em pausa' : 'Em foco') : 'Iniciar';
+            startBtn.className = dw.isRunning && dw.mode === 'focus' ? activeBtn : primaryBtn;
+            startBtn.disabled = dw.isRunning;
+        }
+        if (pauseBtn) {
+            pauseBtn.textContent = dw.isPaused ? 'Retomar' : 'Pausar';
+            pauseBtn.className = dw.isPaused ? activeBtn : neutralBtn;
+            pauseBtn.disabled = !dw.isRunning;
+        }
+        if (resetBtn) {
+            resetBtn.className = neutralBtn;
+            resetBtn.disabled = !dw.isRunning && !hasSelectedMicro;
+        }
+        if (finishBtn) {
+            finishBtn.className = dw.isRunning ? activeBtn : finishBtnClass;
+            finishBtn.disabled = !dw.isRunning;
+        }
 
         if (summaryEl) {
             const today = new Date();
@@ -5279,6 +5291,10 @@ const app = {
         const minutes = Math.max(5, Math.round(Number(presetEl?.value || 90)));
         const chosenMicro = microEl?.value || '';
         const intention = (intentionEl?.value || '').trim();
+        if (!chosenMicro) {
+            this.showToast('Selecione uma micro ação de Planos para iniciar o foco.', 'error');
+            return;
+        }
 
         if (!dw.isRunning || dw.mode !== 'focus') {
             dw.targetSec = minutes * 60;
@@ -5324,6 +5340,25 @@ const app = {
         this.startDeepWorkSession();
         const panel = document.getElementById('deep-work-panel');
         if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+
+    selectDeepWorkMicro: function(microId) {
+        this.normalizeDeepWorkState();
+        const state = window.sistemaVidaState;
+        const dw = state.deepWork;
+        if (dw.isRunning) return;
+        const micro = (state.entities.micros || []).find(m => m.id === microId);
+        dw.microId = micro ? micro.id : '';
+        if (micro) {
+            dw.intention = micro.title || '';
+            const intentionEl = document.getElementById('deep-work-intention');
+            if (intentionEl) intentionEl.value = dw.intention;
+        } else {
+            dw.intention = '';
+            const intentionEl = document.getElementById('deep-work-intention');
+            if (intentionEl) intentionEl.value = '';
+        }
+        this.renderDeepWorkPanel();
     },
 
     toggleDeepWorkPause: function() {
