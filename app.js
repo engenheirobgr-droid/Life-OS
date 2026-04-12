@@ -2156,10 +2156,12 @@ const app = {
                         <span class="text-[10px] text-amber-600 font-semibold">A ${inProgressPct}%</span>
                         <span class="text-[10px] text-outline font-semibold">P ${pendingPct}%</span>
                     </div>
-                    <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden flex">
-                        <div class="h-full bg-emerald-500 transition-all duration-700" style="width:${donePct}%"></div>
-                        <div class="h-full bg-amber-500 transition-all duration-700" style="width:${inProgressPct}%"></div>
-                        <div class="h-full bg-slate-300 dark:bg-slate-600 transition-all duration-700" style="width:${pendingPct}%"></div>
+                    <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                        <div class="h-full transition-all duration-700 flex" style="width:${focusPct}%">
+                            <div class="h-full bg-emerald-500" style="width:${donePct}%"></div>
+                            <div class="h-full bg-amber-500" style="width:${inProgressPct}%"></div>
+                            <div class="h-full bg-slate-300 dark:bg-slate-600" style="width:${pendingPct}%"></div>
+                        </div>
                     </div>
                 </div>`;
             };
