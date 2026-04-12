@@ -319,6 +319,21 @@ const app = {
         const ss = String(safe % 60).padStart(2, '0');
         return `${mm}:${ss}`;
     },
+    formatDurationHuman: function(totalSec) {
+        const safe = Math.max(0, Math.round(Number(totalSec) || 0));
+        const hours = Math.floor(safe / 3600);
+        const mins = Math.floor((safe % 3600) / 60);
+        if (hours > 0) return `${hours}h${String(mins).padStart(2, '0')}`;
+        return `${mins} min`;
+    },
+    escapeHtml: function(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    },
     formatDateTimeLocal: function(raw) {
         const dt = raw ? new Date(raw) : null;
         if (!dt || Number.isNaN(dt.getTime())) return '';
@@ -329,6 +344,25 @@ const app = {
             hour: '2-digit',
             minute: '2-digit'
         });
+    },
+    getMicroPlanContext: function(micro) {
+        const state = window.sistemaVidaState || {};
+        const entities = state.entities || { metas: [], okrs: [], macros: [], micros: [] };
+        const macro = (entities.macros || []).find(m => m.id === micro?.macroId);
+        const okr = macro
+            ? (entities.okrs || []).find(o => o.id === macro.okrId)
+            : (entities.okrs || []).find(o => o.id === micro?.okrId);
+        const meta = okr
+            ? (entities.metas || []).find(m => m.id === okr.metaId)
+            : (entities.metas || []).find(m => m.id === micro?.metaId);
+        const parts = [meta?.title, okr?.title, macro?.title].filter(Boolean);
+        return {
+            meta,
+            okr,
+            macro,
+            path: parts.length ? parts.join(' > ') : 'Sem trilha em Planos',
+            parentLabel: macro?.title || okr?.title || meta?.title || 'Sem vínculo em Planos'
+        };
     },
     ensureSettingsState: function() {
         if (!window.sistemaVidaState.settings) {
@@ -2934,35 +2968,52 @@ const app = {
                 // Ordenar por prazo
                 filtered.sort((a,b) => (a.prazo || '9999').localeCompare(b.prazo || '9999'));
 
-                listContainer.innerHTML = filtered.map(m => `
+                listContainer.innerHTML = filtered.map(m => {
+                    const ctx = app.getMicroPlanContext(m);
+                    const focusText = app.formatDurationHuman(m.focusSec || 0);
+                    const sessionCount = Number(m.focusSessions || 0);
+                    const statusText = m.status === 'done' ? 'Concluída' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
+                    return `
                     <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group min-w-0">
                         <div class="flex justify-between items-start mb-4">
                             <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded-full">
-                                ${m.dimension || 'Geral'}
+                                ${app.escapeHtml(m.dimension || 'Geral')}
                             </span>
                             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onclick="window.app.editEntity('${m.id}', 'micros')" class="p-1 hover:text-primary"><span class="material-symbols-outlined notranslate text-sm">edit</span></button>
                                 <button onclick="window.app.deleteEntity('${m.id}', 'micros')" class="p-1 hover:text-error"><span class="material-symbols-outlined notranslate text-sm">delete</span></button>
                             </div>
                         </div>
-                        <h3 class="font-bold text-on-surface mb-1 line-clamp-2">${m.title}</h3>
-                        <p class="text-xs text-outline mb-4 line-clamp-1">${m.macroId ? (state.entities.macros.find(ma => ma.id === m.macroId)?.title || 'Macro não encontrada') : 'Sem Macro'}</p>
-                        
+                        <h3 class="font-bold text-on-surface mb-1 line-clamp-2">${app.escapeHtml(m.title)}</h3>
+                        <p class="text-xs text-outline mb-3 line-clamp-2">${app.escapeHtml(ctx.path)}</p>
+                        <div class="grid grid-cols-2 gap-2 mb-4 text-[10px]">
+                            <div class="rounded-lg bg-surface-container-low px-3 py-2">
+                                <span class="block uppercase tracking-widest text-outline font-bold">Foco</span>
+                                <span class="font-bold text-primary">${focusText}</span>
+                            </div>
+                            <div class="rounded-lg bg-surface-container-low px-3 py-2">
+                                <span class="block uppercase tracking-widest text-outline font-bold">Sessões</span>
+                                <span class="font-bold text-on-surface">${sessionCount}</span>
+                            </div>
+                        </div>
+
                         <div class="pt-4 border-t border-outline-variant/10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                             <div class="flex items-center gap-2 text-outline">
                                 <span class="material-symbols-outlined notranslate text-xs">event</span>
                                 <span class="text-[10px] font-bold uppercase">${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>
+                                <span class="text-[10px] font-bold uppercase">${statusText}</span>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                ${m.status === 'in_progress' ? '<span class="text-[10px] font-bold uppercase text-amber-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">sync</span> Andamento</span>' : ''}
-                                ${m.status === 'done' ? 
+                                ${m.status !== 'done' ? `<button onclick="window.app.startDeepWorkForMicro('${m.id}')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">Focar</button>` : ''}
+                                ${m.status === 'done' ?
                                     `<span class="text-[10px] font-bold uppercase text-green-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">check_circle</span> Concluída</span>` :
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
                                 }
                             </div>
                         </div>
                     </div>
-                `).join('');
+                `;
+                }).join('');
 
                 if (filtered.length === 0) {
                     listContainer.innerHTML = '<div class="col-span-full py-12 text-center text-outline italic">Nenhuma micro ação encontrada com estes filtros.</div>';
@@ -5099,6 +5150,15 @@ const app = {
             const focusSec = Number.isFinite(manualFocusSec) && manualFocusSec > 0 ? manualFocusSec : dw.targetSec;
             delete dw.completedFocusSec;
             const dateKey = this.getLocalDateKey();
+            const linkedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
+            if (linkedMicro && linkedMicro.status !== 'done') {
+                linkedMicro.status = 'in_progress';
+                linkedMicro.completed = false;
+                linkedMicro.progress = Math.max(Number(linkedMicro.progress) || 0, 1);
+                linkedMicro.focusSec = Math.max(0, Number(linkedMicro.focusSec) || 0) + focusSec;
+                linkedMicro.focusSessions = Math.max(0, Number(linkedMicro.focusSessions) || 0) + 1;
+                linkedMicro.lastFocusDate = dateKey;
+            }
             dw.sessions.unshift({
                 endedAt: dateKey,
                 endedAtTs: new Date().toISOString(),
@@ -5114,7 +5174,7 @@ const app = {
             if (this.showNotification) this.showNotification('Bloco de foco concluído. Iniciando pausa de 20 minutos.');
             this.saveState(true);
             this.ensureDeepWorkTicking();
-            if (this.currentView === 'foco') this.renderDeepWorkPanel();
+            if (this.currentView === 'foco' && this.render.foco) this.render.foco();
             return;
         }
 
@@ -5150,7 +5210,11 @@ const app = {
         if (microEl) {
             const micros = (state.entities.micros || []).filter(m => m.status !== 'done');
             const selected = dw.microId || '';
-            microEl.innerHTML = '<option value="">Sem vínculo</option>' + micros.map(m => `<option value="${m.id}" ${m.id === selected ? 'selected' : ''}>${m.title}</option>`).join('');
+            microEl.innerHTML = '<option value="">Sem vínculo</option>' + micros.map(m => {
+                const ctx = this.getMicroPlanContext(m);
+                const label = `${m.title} - ${ctx.parentLabel}`;
+                return `<option value="${this.escapeHtml(m.id)}" ${m.id === selected ? 'selected' : ''}>${this.escapeHtml(label)}</option>`;
+            }).join('');
         }
         if (intentionEl && !intentionEl.value && dw.intention) intentionEl.value = dw.intention;
 
@@ -5186,11 +5250,13 @@ const app = {
                     const mins = Math.max(1, Math.round((Number(s.focusSec) || 0) / 60));
                     const micro = (state.entities.micros || []).find(m => m.id === s.microId);
                     const microLabel = micro?.title || 'Sem vínculo';
+                    const ctx = micro ? this.getMicroPlanContext(micro) : null;
                     const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
                     return `<div class="flex items-center justify-between text-xs border border-outline-variant/10 rounded-lg px-3 py-2">
                         <div class="min-w-0">
-                            <p class="font-medium text-on-surface truncate">${microLabel}</p>
-                            <p class="text-outline truncate">${dateLabel}</p>
+                            <p class="font-medium text-on-surface truncate">${this.escapeHtml(microLabel)}</p>
+                            <p class="text-outline truncate">${this.escapeHtml(ctx ? ctx.path : dateLabel)}</p>
+                            <p class="text-outline/80 truncate">${this.escapeHtml(dateLabel)}</p>
                         </div>
                         <span class="font-bold text-primary shrink-0">${mins} min</span>
                     </div>`;
@@ -5235,8 +5301,29 @@ const app = {
         }
 
         this.ensureDeepWorkTicking();
-        this.renderDeepWorkPanel();
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+        else this.renderDeepWorkPanel();
         this.saveState(true);
+    },
+    startDeepWorkForMicro: function(microId) {
+        this.normalizeDeepWorkState();
+        const state = window.sistemaVidaState;
+        const micro = (state.entities.micros || []).find(m => m.id === microId);
+        if (!micro || micro.status === 'done') return;
+        const dw = state.deepWork;
+        if (dw.isRunning) {
+            this.showToast('Já existe um bloco de foco em andamento.', 'error');
+            return;
+        }
+        dw.microId = micro.id;
+        dw.intention = micro.title || '';
+        const microEl = document.getElementById('deep-work-micro');
+        const intentionEl = document.getElementById('deep-work-intention');
+        if (microEl) microEl.value = micro.id;
+        if (intentionEl) intentionEl.value = micro.title || '';
+        this.startDeepWorkSession();
+        const panel = document.getElementById('deep-work-panel');
+        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
 
     toggleDeepWorkPause: function() {
