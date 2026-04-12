@@ -2814,15 +2814,15 @@ const app = {
                 const raw = btn.getAttribute('data-focus-type');
                 const t = typeMap[raw] || raw;
                 btn.className = t === typeFilter
-                    ? "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
-                    : "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                    ? "shrink-0 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
+                    : "shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
             });
 
             document.querySelectorAll('[data-focus-status]').forEach(btn => {
                 const s = btn.getAttribute('data-focus-status');
                 btn.className = s === statusFilter
-                    ? "px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
-                    : "px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                    ? "shrink-0 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
+                    : "shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
             });
 
             const lists = [
@@ -2858,8 +2858,8 @@ const app = {
                 const inProgressPct = s.total > 0 ? Math.round((s.inProgress / s.total) * 100) : 0;
                 const pendingPct = s.total > 0 ? Math.max(0, 100 - donePct - inProgressPct) : 0;
                 return `
-                <div class="rounded-xl bg-surface-container-lowest border border-outline-variant/10 p-3">
-                    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-2">
+                <div class="rounded-xl bg-surface-container-lowest border border-outline-variant/10 p-3 min-w-0">
+                    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-2 min-w-0">
                         <span class="text-[10px] uppercase tracking-widest font-bold text-outline">${dimLabels[dim]}</span>
                         <span class="text-[10px] font-bold text-primary">Foco ${focusPct}% (${s.focusItems})</span>
                         <span class="text-[10px] text-emerald-600 font-semibold">C ${donePct}%</span>
@@ -2935,7 +2935,7 @@ const app = {
                 filtered.sort((a,b) => (a.prazo || '9999').localeCompare(b.prazo || '9999'));
 
                 listContainer.innerHTML = filtered.map(m => `
-                    <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group">
+                    <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group min-w-0">
                         <div class="flex justify-between items-start mb-4">
                             <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded-full">
                                 ${m.dimension || 'Geral'}
@@ -2948,12 +2948,12 @@ const app = {
                         <h3 class="font-bold text-on-surface mb-1 line-clamp-2">${m.title}</h3>
                         <p class="text-xs text-outline mb-4 line-clamp-1">${m.macroId ? (state.entities.macros.find(ma => ma.id === m.macroId)?.title || 'Macro não encontrada') : 'Sem Macro'}</p>
                         
-                        <div class="pt-4 border-t border-outline-variant/10 flex justify-between items-center">
+                        <div class="pt-4 border-t border-outline-variant/10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                             <div class="flex items-center gap-2 text-outline">
                                 <span class="material-symbols-outlined notranslate text-xs">event</span>
                                 <span class="text-[10px] font-bold uppercase">${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>
                             </div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
                                 ${m.status === 'in_progress' ? '<span class="text-[10px] font-bold uppercase text-amber-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">sync</span> Andamento</span>' : ''}
                                 ${m.status === 'done' ? 
                                     `<span class="text-[10px] font-bold uppercase text-green-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">check_circle</span> Concluída</span>` :
@@ -5095,7 +5095,9 @@ const app = {
         const state = window.sistemaVidaState;
         const dw = state.deepWork;
         if (dw.mode === 'focus') {
-            const focusSec = dw.targetSec;
+            const manualFocusSec = Number(dw.completedFocusSec);
+            const focusSec = Number.isFinite(manualFocusSec) && manualFocusSec > 0 ? manualFocusSec : dw.targetSec;
+            delete dw.completedFocusSec;
             const dateKey = this.getLocalDateKey();
             dw.sessions.unshift({
                 endedAt: dateKey,
@@ -5266,6 +5268,9 @@ const app = {
         this.normalizeDeepWorkState();
         const dw = window.sistemaVidaState.deepWork;
         if (!dw.isRunning) return;
+        if (dw.mode === 'focus') {
+            dw.completedFocusSec = Math.max(60, Math.round((Number(dw.targetSec) || 0) - (Number(dw.remainingSec) || 0)));
+        }
         dw.remainingSec = 0;
         this.onDeepWorkCountdownEnd();
     },
