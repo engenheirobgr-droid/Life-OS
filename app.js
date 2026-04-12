@@ -2987,7 +2987,11 @@ const app = {
                 }).join('');
 
                 if (filtered.length === 0) {
-                    listContainer.innerHTML = '<div class="col-span-full py-12 text-center text-outline italic">Nenhuma micro ação encontrada com estes filtros.</div>';
+                    listContainer.innerHTML = `<div class="col-span-full rounded-2xl border border-dashed border-outline-variant/30 bg-surface-container-lowest p-8 text-center">
+                        <span class="material-symbols-outlined notranslate text-3xl text-outline mb-2">checklist</span>
+                        <p class="font-bold text-on-surface">Nenhuma micro ação encontrada.</p>
+                        <p class="text-sm text-on-surface-variant mt-1">Crie uma micro em Planos ou ajuste os filtros para montar sua fila de execução.</p>
+                    </div>`;
                 }
             }
         },
@@ -3373,8 +3377,10 @@ const app = {
                         ? '<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Em Andamento</span>'
                         : '';
                     const startBtn = shouldStart
-                        ? `<button onclick="event.stopPropagation(); app.startEntity('${micro.id}', 'micros');" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
-                        : '';
+                        ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
+                        : (micro.status === 'in_progress'
+                            ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', false);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors">Gerenciar</button>`
+                            : '');
 
                     html += `
                     <div class="space-y-2">
@@ -3730,7 +3736,14 @@ const app = {
                             : (isInProgress
                                 ? '<span class="shrink-0 bg-amber-100 text-amber-700 border border-amber-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Andamento</span>'
                                 : '<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Pendente</span>');
-                        const actionButton = isPending
+                        const actionButton = entityType === 'micros' && !isDone
+                            ? `
+                                <button onclick="event.stopPropagation(); app.openMicroInFocus('${item.id}', ${isPending ? 'true' : 'false'})"
+                                    class="p-2.5 border ${isPending ? 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary'} rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-base">${isPending ? 'play_arrow' : 'timer'}</span> ${isPending ? 'Iniciar' : 'Gerenciar'}
+                                </button>
+                            `
+                            : (isPending
                             ? `
                                 <button onclick="event.stopPropagation(); app.startEntity('${item.id}', '${entityType}')"
                                     class="p-2.5 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-amber-700 dark:text-amber-400 transition-colors">
@@ -3749,7 +3762,7 @@ const app = {
                                     class="p-2.5 border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-green-700 dark:text-green-400 transition-colors">
                                     <span class="material-symbols-outlined notranslate text-base">check_circle</span> Concluir
                                 </button>
-                                `);
+                                `));
 
                         html += `
                         <div data-entity-id="${item.id}" data-entity-type="${entityType}" class="bg-surface-container-lowest p-4 md:p-5 rounded-2xl border ${highlightClass} hover:shadow-lg transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
@@ -5340,6 +5353,33 @@ const app = {
         this.startDeepWorkSession();
         const panel = document.getElementById('deep-work-panel');
         if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+
+    openMicroInFocus: function(microId, autoStart = false) {
+        this.normalizeDeepWorkState();
+        const state = window.sistemaVidaState;
+        const micro = (state.entities.micros || []).find(m => m.id === microId);
+        if (!micro || micro.status === 'done') return;
+        const dw = state.deepWork;
+        if (dw.isRunning && dw.microId && dw.microId !== micro.id) {
+            this.showToast('Finalize ou pause o bloco atual antes de trocar de micro ação.', 'error');
+            this.navigate('foco');
+            return;
+        }
+
+        dw.microId = micro.id;
+        dw.intention = micro.title || '';
+        this.navigate('foco');
+        setTimeout(() => {
+            const microEl = document.getElementById('deep-work-micro');
+            const intentionEl = document.getElementById('deep-work-intention');
+            if (microEl) microEl.value = micro.id;
+            if (intentionEl) intentionEl.value = micro.title || '';
+            if (autoStart && !dw.isRunning) this.startDeepWorkSession();
+            else this.renderDeepWorkPanel();
+            const panel = document.getElementById('deep-work-panel');
+            if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 350);
     },
 
     selectDeepWorkMicro: function(microId) {
