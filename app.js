@@ -81,6 +81,10 @@ const app = {
             window.sistemaVidaState.profile.odysseyImages = { cenarioA: "", cenarioB: "", cenarioC: "" };
         }
         try {
+            const cachedTheme = localStorage.getItem('lifeos_theme_pref');
+            if (cachedTheme && ['light', 'dark', 'auto'].includes(cachedTheme)) {
+                window.sistemaVidaState.settings.theme = cachedTheme;
+            }
             if (!window.sistemaVidaState.profile.avatarUrl) {
                 const cached = localStorage.getItem('lifeos_profile_avatar') || '';
                 if (cached) window.sistemaVidaState.profile.avatarUrl = cached;
@@ -117,6 +121,7 @@ const app = {
         this.ensureSettingsState();
         const next = ['light', 'dark', 'auto'].includes(theme) ? theme : 'auto';
         window.sistemaVidaState.settings.theme = next;
+        try { localStorage.setItem('lifeos_theme_pref', next); } catch (_) {}
         this.applyThemePreference();
         this.saveState(true);
         this.showToast(`Tema aplicado: ${next === 'auto' ? 'Automático' : (next === 'dark' ? 'Escuro' : 'Claro')}.`, 'success');
@@ -237,7 +242,7 @@ const app = {
     currentView: '',
     painelFilter: 'ciclo',
     planosFilter: 'Todas',
-    planosStatusFilter: 'active',
+    planosStatusFilter: 'all',
     planosHierarchyType: '',
     planosHierarchyId: '',
     focusTypeFilter: 'Tudo',
@@ -1584,6 +1589,8 @@ const app = {
             obj.trigger = trigger || '';
             obj.routine = (document.getElementById('habit-routine') ? document.getElementById('habit-routine').value.trim() : '') || title;
             obj.reward = document.getElementById('habit-reward') ? document.getElementById('habit-reward').value.trim() : '';
+            const stepsRaw = document.getElementById('habit-steps') ? document.getElementById('habit-steps').value : '';
+            obj.steps = stepsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
             obj.trackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
             obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
             obj.frequency = document.getElementById('habit-frequency') ? document.getElementById('habit-frequency').value : 'daily';
@@ -1594,6 +1601,18 @@ const app = {
                 obj.specificDays = [];
             }
             obj.logs = isEditing ? (getOldItem(id, 'habits').logs || {}) : {};
+            obj.stepLogs = isEditing ? (getOldItem(id, 'habits').stepLogs || {}) : {};
+            if (!obj.steps.length) obj.stepLogs = {};
+            else {
+                Object.keys(obj.stepLogs || {}).forEach(dateKey => {
+                    const dayMap = obj.stepLogs[dateKey] || {};
+                    const cleaned = {};
+                    obj.steps.forEach((_, idx) => {
+                        if (dayMap[idx] || dayMap[String(idx)]) cleaned[idx] = true;
+                    });
+                    obj.stepLogs[dateKey] = cleaned;
+                });
+            }
         }
 
         if (isEditing) {
@@ -1802,6 +1821,13 @@ const app = {
         if (habit) {
             if (!habit.logs) habit.logs = {};
             habit.logs[dateStr] = value;
+            if (Array.isArray(habit.steps) && habit.steps.length > 0) {
+                if (!habit.stepLogs) habit.stepLogs = {};
+                const markAll = value > 0;
+                const map = {};
+                if (markAll) habit.steps.forEach((_, idx) => { map[idx] = true; });
+                habit.stepLogs[dateStr] = map;
+            }
             
             // Legacy sync removed to avoid hybrid state contradictions
             // Derive completion dynamically from log values during render cycle.
@@ -1817,6 +1843,43 @@ const app = {
                 this.render.hoje();
             }
         }
+    },
+
+    toggleHabitStepLog: function(habitId, dateStr, stepIndex) {
+        const state = window.sistemaVidaState;
+        const habit = (state.habits || []).find(h => h.id === habitId);
+        if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return;
+        if (!habit.stepLogs) habit.stepLogs = {};
+        if (!habit.stepLogs[dateStr]) habit.stepLogs[dateStr] = {};
+        const current = !!(habit.stepLogs[dateStr][stepIndex] || habit.stepLogs[dateStr][String(stepIndex)]);
+        habit.stepLogs[dateStr][stepIndex] = !current;
+        const doneCount = habit.steps.reduce((acc, _, idx) => acc + (habit.stepLogs[dateStr][idx] ? 1 : 0), 0);
+        const allDone = doneCount === habit.steps.length;
+        if (!habit.logs) habit.logs = {};
+        if ((habit.trackMode || 'boolean') === 'boolean') {
+            habit.logs[dateStr] = allDone ? 1 : 0;
+        }
+        this.saveState(true);
+        if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+    },
+
+    toggleHabitAllSteps: function(habitId, dateStr, currentlyDone) {
+        const state = window.sistemaVidaState;
+        const habit = (state.habits || []).find(h => h.id === habitId);
+        if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return;
+        if (!habit.stepLogs) habit.stepLogs = {};
+        if (!habit.logs) habit.logs = {};
+        if (currentlyDone) {
+            habit.stepLogs[dateStr] = {};
+            if ((habit.trackMode || 'boolean') === 'boolean') habit.logs[dateStr] = 0;
+        } else {
+            const all = {};
+            habit.steps.forEach((_, idx) => { all[idx] = true; });
+            habit.stepLogs[dateStr] = all;
+            if ((habit.trackMode || 'boolean') === 'boolean') habit.logs[dateStr] = 1;
+        }
+        this.saveState(true);
+        if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
     },
 
     saveDailyLog: function() {
@@ -2512,16 +2575,27 @@ const app = {
                     const mode = habit.trackMode || 'boolean';
                     const logs = habit.logs || {};
                     let currentVal = logs[todayStr] || 0;
+                    const steps = Array.isArray(habit.steps) ? habit.steps.filter(Boolean) : [];
+                    const hasSteps = steps.length > 0;
+                    const stepLogs = habit.stepLogs || {};
+                    const todayStepMap = stepLogs[todayStr] || {};
+                    const todayStepsDone = hasSteps ? steps.reduce((acc, _, idx) => acc + (todayStepMap[idx] || todayStepMap[String(idx)] ? 1 : 0), 0) : 0;
+                    const allStepsDone = hasSteps && todayStepsDone === steps.length;
+                    const esc = (txt) => String(txt || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     
                     let isDone = false;
                     if (mode === 'boolean') isDone = currentVal > 0;
                     else isDone = currentVal >= target;
+                    if (hasSteps) isDone = allStepsDone;
 
                     // UI for mode
                     let controlHtml = '';
                     if (mode === 'boolean') {
+                        const actionClick = hasSteps
+                            ? `window.app.toggleHabitAllSteps('${habit.id}', '${todayStr}', ${allStepsDone ? 'true' : 'false'})`
+                            : `window.app.updateHabitLog('${habit.id}', '${todayStr}', ${isDone ? 0 : 1})`;
                         controlHtml = `
-                        <div class="w-7 h-7 rounded-full ${isDone ? 'bg-primary' : 'border-2 border-outline-variant hover:border-primary'} flex items-center justify-center shrink-0 cursor-pointer transition-colors" onclick="event.stopPropagation(); window.app.updateHabitLog('${habit.id}', '${todayStr}', ${isDone ? 0 : 1})">
+                        <div class="w-7 h-7 rounded-full ${isDone ? 'bg-primary' : 'border-2 border-outline-variant hover:border-primary'} flex items-center justify-center shrink-0 cursor-pointer transition-colors" onclick="event.stopPropagation(); ${actionClick}">
                             ${isDone ? '<span class="material-symbols-outlined notranslate text-white text-[16px]" style="font-variation-settings: \\\'wght\\\' 700;">check</span>' : ''}
                         </div>`;
                     } else if (mode === 'numeric' || mode === 'timer') {
@@ -2541,8 +2615,12 @@ const app = {
                         d.setDate(d.getDate() - i);
                         const ds = d.toISOString().split('T')[0];
                         const val = logs[ds] || 0;
+                        const dayStepMap = stepLogs[ds] || {};
                         let dDone = false;
-                        if (mode === 'boolean') dDone = val > 0;
+                        if (hasSteps) {
+                            const dCount = steps.reduce((acc, _, idx) => acc + (dayStepMap[idx] || dayStepMap[String(idx)] ? 1 : 0), 0);
+                            dDone = dCount === steps.length;
+                        } else if (mode === 'boolean') dDone = val > 0;
                         else dDone = val >= target;
                         
                         weekHtml += `<div class="flex-1 h-1.5 rounded-full ${dDone ? 'bg-primary' : 'bg-surface-container-high'}" title="${ds}"></div>`;
@@ -2553,6 +2631,24 @@ const app = {
                     let progressText = '';
                     if (mode === 'numeric') progressText = `${currentVal}/${target}`;
                     if (mode === 'timer') progressText = `${currentVal}m/${target}m`;
+                    if (hasSteps) progressText = `${todayStepsDone}/${steps.length} passos`;
+                    let stepsHtml = '';
+                    if (hasSteps) {
+                        stepsHtml = `
+                        <div class="mt-2 space-y-1 max-h-24 overflow-y-auto pr-1 no-scrollbar" onclick="event.stopPropagation()">
+                            ${steps.map((step, idx) => {
+                                const done = !!(todayStepMap[idx] || todayStepMap[String(idx)]);
+                                return `
+                                <button onclick="window.app.toggleHabitStepLog('${habit.id}', '${todayStr}', ${idx})"
+                                    class="w-full text-left flex items-center gap-2 text-[10px] rounded-md px-1 py-0.5 ${done ? 'text-primary' : 'text-outline hover:text-on-surface'} transition-colors">
+                                    <span class="w-3.5 h-3.5 rounded-sm border ${done ? 'bg-primary border-primary' : 'border-outline-variant'} flex items-center justify-center shrink-0">
+                                        ${done ? '<span class="material-symbols-outlined notranslate text-white text-[10px]">check</span>' : ''}
+                                    </span>
+                                    <span class="${done ? 'line-through' : ''} truncate">${esc(step)}</span>
+                                </button>`;
+                            }).join('')}
+                        </div>`;
+                    }
                     
                     habitsHtml += `
                     <div class="min-w-[240px] max-w-[280px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''}">
@@ -2573,6 +2669,7 @@ const app = {
                                     ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight truncate">Gatilho: ${habit.trigger}</p>` : ''}
                                     ${habit.routine ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Rotina: ${habit.routine}</p>` : ''}
                                     ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight truncate">Recompensa: ${habit.reward}</p>` : ''}
+                                    ${stepsHtml}
                                 </div>
                                 ${progressText ? `<span class="text-xs font-bold text-primary shrink-0">${progressText}</span>` : ''}
                             </div>
@@ -2822,7 +2919,8 @@ const app = {
                     hierIdSelect.classList.add('hidden');
                 }
 
-                const statFilter = app.planosStatusFilter || 'active';
+                const statFilterRaw = app.planosStatusFilter || 'all';
+                const statFilter = statFilterRaw === 'active' ? 'all' : statFilterRaw;
                 const base = 'px-4 py-1.5 rounded-full text-xs font-bold transition-colors';
                 const on = 'bg-primary text-on-primary';
                 const off = 'bg-surface-container-high text-on-surface-variant hover:brightness-95';
@@ -2878,7 +2976,8 @@ const app = {
                 const filtered = filteredByDim.filter(i => {
                     // Filtro 1: Status
                     const isDone = i.progress >= 100 || i.status === 'done' || i.completed;
-                    const statFilter = app.planosStatusFilter || 'active';
+                    const statFilterRaw = app.planosStatusFilter || 'all';
+                    const statFilter = statFilterRaw === 'active' ? 'all' : statFilterRaw;
                     let passStatus = false;
                     if (statFilter === 'active') passStatus = !isDone && i.status !== 'abandoned'; // legado
                     else if (statFilter === 'pending') passStatus = !isDone && i.status !== 'abandoned' && i.status !== 'in_progress';
@@ -3061,14 +3160,18 @@ const app = {
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-2">
+                            <div class="grid grid-cols-3 gap-2">
                                 <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')"
-                                    class="col-span-2 p-2.5 bg-primary/10 border border-primary/25 text-primary hover:bg-primary/15 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all">
+                                    class="col-span-3 p-2.5 bg-primary/10 border border-primary/25 text-primary hover:bg-primary/15 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all">
                                     <span class="material-symbols-outlined notranslate text-base">settings_accessibility</span> Gerir Estrategia
                                 </button>
                                 <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')"
                                     class="p-2.5 border border-outline-variant/30 hover:bg-surface-container-high rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-on-surface transition-colors">
                                     <span class="material-symbols-outlined notranslate text-base">edit</span> Editar
+                                </button>
+                                <button onclick="event.stopPropagation(); app.duplicateEntity('${item.id}', '${entityType}')"
+                                    class="p-2.5 border border-outline-variant/30 hover:bg-surface-container-high rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-on-surface transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-base">content_copy</span> Duplicar
                                 </button>
                                 ${actionButton}
                             </div>
@@ -3338,7 +3441,8 @@ const app = {
 
         // ── Filtros Globais da Aba Planos ──────────────────────────
         const currentFilter = window.app.planosFilter || 'Todas';
-        const statFilter = window.app.planosStatusFilter || 'active';
+        const statFilterRaw = window.app.planosStatusFilter || 'all';
+        const statFilter = statFilterRaw === 'active' ? 'all' : statFilterRaw;
         const hType = window.app.planosHierarchyType || '';
         const hId = window.app.planosHierarchyId || '';
 
@@ -3707,6 +3811,37 @@ const app = {
         }
     },
 
+    duplicateEntity: function(id, type) {
+        const state = window.sistemaVidaState;
+        const list = type === 'habits' ? (state.habits || []) : ((state.entities && state.entities[type]) || []);
+        const source = list.find(e => e.id === id);
+        if (!source) return;
+        const clone = JSON.parse(JSON.stringify(source));
+        clone.id = 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
+        clone.title = `${source.title} (cópia)`;
+
+        if (type === 'micros') {
+            clone.status = 'pending';
+            clone.completed = false;
+            clone.progress = 0;
+            delete clone.completedDate;
+        } else if (type === 'macros' || type === 'okrs' || type === 'metas') {
+            if (clone.status === 'abandoned') clone.status = 'pending';
+            if (!Number.isFinite(Number(clone.progress))) clone.progress = 0;
+        } else if (type === 'habits') {
+            clone.completed = false;
+            clone.logs = {};
+            clone.stepLogs = {};
+        }
+
+        list.push(clone);
+        this.saveState(true);
+        this.showToast('Card duplicado com sucesso.', 'success');
+        if (this.currentView === 'planos' && this.render.planos) this.render.planos();
+        if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        if (this.currentView === 'painel' && this.render.painel) this.render.painel();
+    },
+
     deleteEntity: function(id, type) {
         const state = window.sistemaVidaState;
         const list = type === 'habits' ? state.habits : state.entities[type];
@@ -3789,6 +3924,8 @@ const app = {
             if (routineInput) routineInput.value = item.routine || item.context || item.title || '';
             const rewardInput = document.getElementById('habit-reward');
             if (rewardInput) rewardInput.value = item.reward || '';
+            const stepsInput = document.getElementById('habit-steps');
+            if (stepsInput) stepsInput.value = Array.isArray(item.steps) ? item.steps.join('\n') : '';
             if (document.getElementById('habit-track-mode')) document.getElementById('habit-track-mode').value = item.trackMode || 'boolean';
             if (document.getElementById('habit-target')) document.getElementById('habit-target').value = item.targetValue || 1;
             if (document.getElementById('habit-frequency')) document.getElementById('habit-frequency').value = item.frequency || 'daily';

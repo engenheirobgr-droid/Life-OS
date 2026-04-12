@@ -362,12 +362,12 @@
     <!-- CRUD Modal Universal -->
     <div id="crud-modal"
         class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-outline-variant/20">
                 <h3 id="modal-title" class="font-headline text-xl font-bold text-on-background">Novo Item</h3>
             </div>
 
-            <form id="crud-form" onsubmit="event.preventDefault()" class="p-6 flex flex-col gap-4">
+            <form id="crud-form" onsubmit="event.preventDefault()" class="p-6 flex flex-col gap-4 overflow-y-auto no-scrollbar">
                 <div class="flex flex-col gap-1.5">
                     <label for="crud-title"
                         class="text-xs font-label uppercase tracking-widest text-outline font-bold">Título</label>
@@ -487,6 +487,13 @@
                         <input type="text" id="habit-reward"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
                             placeholder="Ex: 20 minutos de lazer sem culpa">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-steps"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Passos da Rotina (Opcional)</label>
+                        <textarea id="habit-steps" rows="3"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface placeholder-outline-variant resize-none"
+                            placeholder="Um passo por linha. Ex:&#10;1) Separar roupa&#10;2) Calçar tênis&#10;3) Caminhar 20 minutos"></textarea>
                     </div>
                 </div>
 
