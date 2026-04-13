@@ -365,10 +365,10 @@ const app = {
         };
     },
     getPlanMicros: function(options = {}) {
-        this.normalizeEntitiesState();
         const state = window.sistemaVidaState || {};
         const sources = [
             state.entities?.micros,
+            state.entities?.micro,
             state.micros,
             state.microActions,
             state.microacoes,
@@ -388,9 +388,10 @@ const app = {
                 if (!item) return;
                 const title = String(item.title || item.nome || item.name || item.tarefa || '').trim();
                 if (!title) return;
-                const id = String(item.id || item.uid || item.key || `${title}-${item.prazo || ''}`).trim();
+                const id = String(item.id || item.uid || item.key || item._id || `${title}-${item.prazo || item.inicioDate || ''}`).trim();
                 if (!id || byId.has(id)) return;
                 const status = normalizeStatus(item);
+                if (!item.id && state.entities && Array.isArray(state.entities.micros)) item.id = id;
                 byId.set(id, {
                     ...item,
                     id,
@@ -2964,7 +2965,6 @@ const app = {
 
         foco: function() {
             const state = window.sistemaVidaState;
-            app.normalizeEntitiesState();
             app.normalizeDeepWorkState();
             this.renderSidebarValues();
 
