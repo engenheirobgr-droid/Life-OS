@@ -325,7 +325,7 @@ const app = {
         this.normalizeDeepWorkState();
         const state = window.sistemaVidaState;
         const dw = state.deepWork;
-        if (!dw.isRunning || dw.mode !== 'focus' || !dw.microId) return false;
+        if (!dw.isRunning || !dw.microId) return false;
         const micro = (state.entities?.micros || []).find(m => m.id === dw.microId);
         if (!micro || micro.status === 'done') return false;
         let changed = false;
@@ -3026,6 +3026,11 @@ const app = {
                     const focusText = app.formatDurationHuman(m.focusSec || 0);
                     const sessionCount = Number(m.focusSessions || 0);
                     const statusText = m.status === 'done' ? 'Concluída' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
+                    const isTimerMicro = state.deepWork?.isRunning && state.deepWork?.microId === m.id;
+                    const actionLabel = (m.status === 'in_progress' || isTimerMicro) ? 'Gerenciar' : 'Focar';
+                    const actionHandler = (m.status === 'in_progress' || isTimerMicro)
+                        ? `window.app.openMicroInFocus('${m.id}', false)`
+                        : `window.app.startDeepWorkForMicro('${m.id}')`;
                     return `
                     <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group min-w-0">
                         <div class="flex justify-between items-start mb-4">
@@ -3057,7 +3062,7 @@ const app = {
                                 <span class="text-[10px] font-bold uppercase">${statusText}</span>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                ${m.status !== 'done' ? `<button onclick="window.app.startDeepWorkForMicro('${m.id}')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">Focar</button>` : ''}
+                                ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">${actionLabel}</button>` : ''}
                                 ${m.status === 'done' ?
                                     `<span class="text-[10px] font-bold uppercase text-green-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">check_circle</span> Concluída</span>` :
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`

@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v10';
+const CACHE_NAME = 'sistema-vida-v11';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260413-foco-layout-sync',
+    './app.js?v=20260413-foco-manager-active',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
