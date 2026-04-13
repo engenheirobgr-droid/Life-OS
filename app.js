@@ -374,6 +374,11 @@ const app = {
             state.microacoes,
             state.todos
         ];
+        console.log('[getPlanMicros] sources:', {
+            'entities.micros': state.entities?.micros,
+            'entities.micro': state.entities?.micro,
+            'state.micros': state.micros
+        });
         const normalizeStatus = (item) => {
             const raw = String(item?.status || '').toLowerCase();
             const progress = Number(item?.progress || 0);
@@ -404,13 +409,16 @@ const app = {
             });
         });
         const micros = Array.from(byId.values());
+        console.log('[getPlanMicros] found micros:', micros.length, micros);
         if (state.entities && Array.isArray(state.entities.micros)) {
             const existingIds = new Set(state.entities.micros.map(m => String(m.id || '')));
             micros.forEach((micro) => {
                 if (!existingIds.has(micro.id)) state.entities.micros.push(micro);
             });
         }
-        return options.includeDone ? micros : micros.filter(m => m.status !== 'done');
+        const result = options.includeDone ? micros : micros.filter(m => m.status !== 'done');
+        console.log('[getPlanMicros] returning:', result.length, result);
+        return result;
     },
     ensureSettingsState: function() {
         if (!window.sistemaVidaState.settings) {
