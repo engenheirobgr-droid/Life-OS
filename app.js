@@ -202,8 +202,8 @@ const app = {
             return {
                 ...micro,
                 id: String(micro?.id || ''),
-                title: String(micro?.title || '').trim(),
-                dimension: String(micro?.dimension || ''),
+                title: String(micro?.title || micro?.nome || micro?.name || micro?.tarefa || '').trim(),
+                dimension: String(micro?.dimension || micro?.dimensao || micro?.area || ''),
                 progress: status === 'done' ? 100 : progress,
                 status,
                 completed: status === 'done'
@@ -363,6 +363,53 @@ const app = {
             path: parts.length ? parts.join(' > ') : 'Sem trilha em Planos',
             parentLabel: macro?.title || okr?.title || meta?.title || 'Sem vínculo em Planos'
         };
+    },
+    getPlanMicros: function(options = {}) {
+        this.normalizeEntitiesState();
+        const state = window.sistemaVidaState || {};
+        const sources = [
+            state.entities?.micros,
+            state.micros,
+            state.microActions,
+            state.microacoes,
+            state.todos
+        ];
+        const normalizeStatus = (item) => {
+            const raw = String(item?.status || '').toLowerCase();
+            const progress = Number(item?.progress || 0);
+            if (item?.completed === true || progress >= 100 || raw.includes('done') || raw.includes('conclu')) return 'done';
+            if (raw.includes('progress') || raw.includes('andamento') || raw.includes('active')) return 'in_progress';
+            return 'pending';
+        };
+        const byId = new Map();
+        sources.forEach((source) => {
+            if (!Array.isArray(source)) return;
+            source.forEach((item) => {
+                if (!item) return;
+                const title = String(item.title || item.nome || item.name || item.tarefa || '').trim();
+                if (!title) return;
+                const id = String(item.id || item.uid || item.key || `${title}-${item.prazo || ''}`).trim();
+                if (!id || byId.has(id)) return;
+                const status = normalizeStatus(item);
+                byId.set(id, {
+                    ...item,
+                    id,
+                    title,
+                    dimension: String(item.dimension || item.dimensao || item.area || 'Geral'),
+                    status,
+                    completed: status === 'done',
+                    progress: status === 'done' ? 100 : Math.max(0, Math.min(100, Number(item.progress || 0)))
+                });
+            });
+        });
+        const micros = Array.from(byId.values());
+        if (state.entities && Array.isArray(state.entities.micros)) {
+            const existingIds = new Set(state.entities.micros.map(m => String(m.id || '')));
+            micros.forEach((micro) => {
+                if (!existingIds.has(micro.id)) state.entities.micros.push(micro);
+            });
+        }
+        return options.includeDone ? micros : micros.filter(m => m.status !== 'done');
     },
     ensureSettingsState: function() {
         if (!window.sistemaVidaState.settings) {
@@ -595,6 +642,8 @@ const app = {
         }, 3500);
     },
     currentView: '',
+    pendingFocusMicroId: '',
+    pendingFocusAutoStart: false,
     painelFilter: 'ciclo',
     planosFilter: 'Todas',
     planosStatusFilter: 'all',
@@ -2915,6 +2964,7 @@ const app = {
 
         foco: function() {
             const state = window.sistemaVidaState;
+            app.normalizeEntitiesState();
             app.normalizeDeepWorkState();
             this.renderSidebarValues();
 
@@ -2926,7 +2976,7 @@ const app = {
                 const dimFilter = document.getElementById('todo-dimension-filter')?.value || 'Tudo';
                 const statusFilter = document.getElementById('todo-status-filter')?.value || 'all';
 
-                let filtered = state.entities.micros.filter(m => {
+                let filtered = app.getPlanMicros({ includeDone: true }).filter(m => {
                     const matchDim = dimFilter === 'Tudo' || m.dimension === dimFilter;
                     const matchStatus = statusFilter === 'all' ||
                                        (statusFilter === 'active' && m.status !== 'done') || // legado
@@ -2992,6 +3042,26 @@ const app = {
                         <p class="font-bold text-on-surface">Nenhuma micro ação encontrada.</p>
                         <p class="text-sm text-on-surface-variant mt-1">Crie uma micro em Planos ou ajuste os filtros para montar sua fila de execução.</p>
                     </div>`;
+                }
+            }
+
+            if (app.pendingFocusMicroId) {
+                const pendingId = app.pendingFocusMicroId;
+                const autoStart = !!app.pendingFocusAutoStart;
+                app.pendingFocusMicroId = '';
+                app.pendingFocusAutoStart = false;
+                const micro = app.getPlanMicros({ includeDone: false }).find(m => m.id === pendingId);
+                if (micro) {
+                    state.deepWork.microId = micro.id;
+                    state.deepWork.intention = micro.title || '';
+                    const microEl = document.getElementById('deep-work-micro');
+                    const intentionEl = document.getElementById('deep-work-intention');
+                    if (microEl) microEl.value = micro.id;
+                    if (intentionEl) intentionEl.value = micro.title || '';
+                    if (autoStart && !state.deepWork.isRunning) app.startDeepWorkSession();
+                    else app.renderDeepWorkPanel();
+                    const panel = document.getElementById('deep-work-panel');
+                    if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
         },
@@ -5197,7 +5267,7 @@ const app = {
             presetEl.value = String(presetMin);
         }
         if (microEl) {
-            const micros = (state.entities.micros || []).filter(m => m.status !== 'done');
+            const micros = this.getPlanMicros({ includeDone: false });
             let selected = dw.microId || '';
             if (selected && !micros.some(m => m.id === selected)) {
                 dw.microId = '';
@@ -5337,7 +5407,7 @@ const app = {
     startDeepWorkForMicro: function(microId) {
         this.normalizeDeepWorkState();
         const state = window.sistemaVidaState;
-        const micro = (state.entities.micros || []).find(m => m.id === microId);
+        const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
         if (!micro || micro.status === 'done') return;
         const dw = state.deepWork;
         if (dw.isRunning) {
@@ -5358,7 +5428,7 @@ const app = {
     openMicroInFocus: function(microId, autoStart = false) {
         this.normalizeDeepWorkState();
         const state = window.sistemaVidaState;
-        const micro = (state.entities.micros || []).find(m => m.id === microId);
+        const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
         if (!micro || micro.status === 'done') return;
         const dw = state.deepWork;
         if (dw.isRunning && dw.microId && dw.microId !== micro.id) {
@@ -5369,17 +5439,9 @@ const app = {
 
         dw.microId = micro.id;
         dw.intention = micro.title || '';
+        this.pendingFocusMicroId = micro.id;
+        this.pendingFocusAutoStart = !!autoStart;
         this.navigate('foco');
-        setTimeout(() => {
-            const microEl = document.getElementById('deep-work-micro');
-            const intentionEl = document.getElementById('deep-work-intention');
-            if (microEl) microEl.value = micro.id;
-            if (intentionEl) intentionEl.value = micro.title || '';
-            if (autoStart && !dw.isRunning) this.startDeepWorkSession();
-            else this.renderDeepWorkPanel();
-            const panel = document.getElementById('deep-work-panel');
-            if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 350);
     },
 
     selectDeepWorkMicro: function(microId) {
@@ -5387,7 +5449,7 @@ const app = {
         const state = window.sistemaVidaState;
         const dw = state.deepWork;
         if (dw.isRunning) return;
-        const micro = (state.entities.micros || []).find(m => m.id === microId);
+        const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
         dw.microId = micro ? micro.id : '';
         if (micro) {
             dw.intention = micro.title || '';
