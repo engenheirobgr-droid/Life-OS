@@ -2966,9 +2966,9 @@ const app = {
         foco: function() {
             const state = window.sistemaVidaState;
             app.normalizeDeepWorkState();
-            this.renderSidebarValues();
+            app.renderSidebarValues();
 
-            this.renderDeepWorkPanel();
+            app.renderDeepWorkPanel();
 
             // Micros Management List
             const listContainer = document.getElementById('micros-management-list');
