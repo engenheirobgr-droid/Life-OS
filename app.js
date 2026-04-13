@@ -196,6 +196,7 @@ const app = {
             };
         }).filter((macro) => macro.id && macro.title);
 
+        const beforeCount = state.entities.micros.length;
         state.entities.micros = state.entities.micros.map((micro) => {
             const progress = clampProgress(micro?.progress);
             const status = normalizedStatus(micro?.status, progress, micro?.completed);
@@ -208,7 +209,14 @@ const app = {
                 status,
                 completed: status === 'done'
             };
-        }).filter((micro) => micro.id && micro.title);
+        }).filter((micro) => {
+            const keep = micro.id && micro.title;
+            if (!keep) console.warn('[normalizeEntitiesState] Micro removed - missing id or title:', micro);
+            return keep;
+        });
+        if (beforeCount !== state.entities.micros.length) {
+            console.log(`[normalizeEntitiesState] Micros filtered: ${beforeCount} → ${state.entities.micros.length}`);
+        }
     },
     normalizeSwlsAnswer: function(rawValue) {
         let value = Number(rawValue);
