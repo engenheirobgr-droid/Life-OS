@@ -374,11 +374,6 @@ const app = {
             state.microacoes,
             state.todos
         ];
-        console.log('[getPlanMicros] sources:', {
-            'entities.micros': state.entities?.micros,
-            'entities.micro': state.entities?.micro,
-            'state.micros': state.micros
-        });
         const normalizeStatus = (item) => {
             const raw = String(item?.status || '').toLowerCase();
             const progress = Number(item?.progress || 0);
@@ -409,16 +404,13 @@ const app = {
             });
         });
         const micros = Array.from(byId.values());
-        console.log('[getPlanMicros] found micros:', micros.length, micros);
         if (state.entities && Array.isArray(state.entities.micros)) {
             const existingIds = new Set(state.entities.micros.map(m => String(m.id || '')));
             micros.forEach((micro) => {
                 if (!existingIds.has(micro.id)) state.entities.micros.push(micro);
             });
         }
-        const result = options.includeDone ? micros : micros.filter(m => m.status !== 'done');
-        console.log('[getPlanMicros] returning:', result.length, result);
-        return result;
+        return options.includeDone ? micros : micros.filter(m => m.status !== 'done');
     },
     ensureSettingsState: function() {
         if (!window.sistemaVidaState.settings) {
@@ -756,9 +748,9 @@ const app = {
         const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
         const localTs = Number(localData?._lastUpdatedAt || 0);
         const preferred = localTs >= cloudTs ? localData : cloudData;
-        const fallback = localTs >= cloudTs ? cloudData : localData;
+        // Don't merge fallback for arrays — it overwrites newer data with older data
+        // Arrays like entities.micros should not be overwritten by stale data
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
-        if (fallback) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, fallback);
         try {
             const cachedAvatar = localStorage.getItem('lifeos_profile_avatar');
             if (cachedAvatar) window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
