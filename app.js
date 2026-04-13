@@ -321,6 +321,28 @@ const app = {
             };
         }).slice(0, 200);
     },
+    syncDeepWorkMicroStatus: function() {
+        this.normalizeDeepWorkState();
+        const state = window.sistemaVidaState;
+        const dw = state.deepWork;
+        if (!dw.isRunning || dw.mode !== 'focus' || !dw.microId) return false;
+        const micro = (state.entities?.micros || []).find(m => m.id === dw.microId);
+        if (!micro || micro.status === 'done') return false;
+        let changed = false;
+        if (micro.status !== 'in_progress') {
+            micro.status = 'in_progress';
+            changed = true;
+        }
+        if (micro.completed) {
+            micro.completed = false;
+            changed = true;
+        }
+        if (!micro.progress || micro.progress < 1) {
+            micro.progress = 1;
+            changed = true;
+        }
+        return changed;
+    },
     formatClock: function(totalSec) {
         const safe = Math.max(0, Math.round(Number(totalSec) || 0));
         const mm = String(Math.floor(safe / 60)).padStart(2, '0');
@@ -2741,6 +2763,7 @@ const app = {
         },
         painel: function() {
             const state = window.sistemaVidaState;
+            app.syncDeepWorkMicroStatus();
             const filter = app.painelFilter || 'semana';
 
             // ---------------------------------------------------------
@@ -2974,6 +2997,7 @@ const app = {
         foco: function() {
             const state = window.sistemaVidaState;
             app.normalizeDeepWorkState();
+            app.syncDeepWorkMicroStatus();
             app.renderSidebarValues();
 
             app.renderDeepWorkPanel();
@@ -3102,6 +3126,7 @@ const app = {
 
         hoje: function() {
             const state = window.sistemaVidaState;
+            app.syncDeepWorkMicroStatus();
 
             const dateEl = document.getElementById('data-hoje');
             if (dateEl) {
@@ -3450,9 +3475,9 @@ const app = {
                     const startDate = micro.inicioDate || micro.prazo || '';
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
-                    const overdueTag = isOverdue ? '<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Atrasada</span>' : '';
+                    const overdueTag = isOverdue ? '<span class="inline-flex items-center px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Atrasada</span>' : '';
                     const statusTag = micro.status === 'in_progress'
-                        ? '<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Em Andamento</span>'
+                        ? '<span class="inline-flex items-center px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Em Andamento</span>'
                         : '';
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
@@ -3462,13 +3487,15 @@ const app = {
 
                     html += `
                     <div class="space-y-2">
-                        <div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
-                            <div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
-                            <div class="flex-1">
-                                <p class="text-base text-on-surface font-medium">${micro.title}</p>
-                                <span class="inline-block mt-1 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${micro.dimension}</span>${statusTag}${overdueTag}
+                        <div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-start gap-3 sm:gap-4 group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
+                            <div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0 mt-1" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm sm:text-base text-on-surface font-medium leading-snug break-words">${micro.title}</p>
+                                <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                                    <span class="inline-flex items-center px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag max-w-full">${micro.dimension}</span>${statusTag}${overdueTag}
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2 shrink-0">
+                            <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">
                                 ${startBtn}
                                 <span class="material-symbols-outlined notranslate text-outline-variant text-sm">keyboard_arrow_down</span>
                             </div>
@@ -5447,6 +5474,13 @@ const app = {
 
         dw.microId = micro.id;
         dw.intention = micro.title || '';
+        if (autoStart && micro.status !== 'done') {
+            const sourceMicro = (state.entities?.micros || []).find(m => m.id === micro.id);
+            const targetMicro = sourceMicro || micro;
+            targetMicro.status = 'in_progress';
+            targetMicro.completed = false;
+            if (!targetMicro.progress || targetMicro.progress < 1) targetMicro.progress = 1;
+        }
         this.pendingFocusMicroId = micro.id;
         this.pendingFocusAutoStart = !!autoStart;
         this.navigate('foco');
@@ -5692,5 +5726,3 @@ window.app = app;
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
-
-
