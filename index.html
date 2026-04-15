@@ -991,13 +991,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.getRegistrations().then(regs => {
-                    const CURRENT = 'sistema-vida-v9';
-                    regs.forEach(r => {
-                        caches.keys().then(keys => keys.forEach(k => { if (k !== CURRENT) caches.delete(k); }));
-                    });
-                });
-                navigator.serviceWorker.register('sw.js')
+                navigator.serviceWorker.register('sw.js?v=20260415-auth-storage-sync')
                     .then(registration => {
                         console.log('SW registered:', registration);
                     })

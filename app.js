@@ -654,6 +654,10 @@ const app = {
                 console.warn('Falha ao sincronizar foto de perfil com Storage:', error);
             }
             await this.saveState(true);
+            if (this.lastCloudSyncOk === false) {
+                const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
+                this.showToast(`Foto salva só neste dispositivo.${reason}`, 'error');
+            }
             if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
             this.showToast('Foto de perfil atualizada!', 'success');
         }).catch(() => {
@@ -693,6 +697,10 @@ const app = {
                 console.warn('Falha ao sincronizar imagem Odyssey com Storage:', error);
             }
             await this.saveState(true);
+            if (this.lastCloudSyncOk === false) {
+                const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
+                this.showToast(`Imagem salva só neste dispositivo.${reason}`, 'error');
+            }
             if (this.render.proposito) this.render.proposito();
             this.showToast('Imagem do cenário atualizada!', 'success');
         }).catch(() => {
@@ -746,6 +754,8 @@ const app = {
     currentTextGroup: null,
     currentTextKey: null,
     onboardingStep: 0,
+    lastCloudSyncOk: null,
+    lastCloudSyncErrorCode: '',
 
     // ------------------------------------------------------------------------
     // Cloud Persistence Engine
@@ -796,6 +806,8 @@ const app = {
     saveState: async function(silent = true) {
         const state = window.sistemaVidaState;
         state._lastUpdatedAt = Date.now();
+        this.lastCloudSyncOk = null;
+        this.lastCloudSyncErrorCode = '';
         const fullSnapshot = this.getPersistableState('full');
         const coreSnapshot = this.getPersistableState('core');
         try {
@@ -822,9 +834,12 @@ const app = {
             cloudSnapshot._lastUpdatedAt = Date.now();
             await setDoc(stateRef, cloudSnapshot, { merge: true });
             console.log("Sincronização com Nuvem: Concluída.");
+            this.lastCloudSyncOk = true;
             if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
         } catch (error) {
             console.error("Erro ao salvar o estado no Firestore:", error);
+            this.lastCloudSyncOk = false;
+            this.lastCloudSyncErrorCode = String(error?.code || error?.message || '').trim();
             if (!silent && this.showToast) {
                 this.showToast('Salvo localmente. Falha na sincronização com nuvem.', 'error');
             }
