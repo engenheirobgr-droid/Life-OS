@@ -5,6 +5,8 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDXu7ddS77_deDezWQqrLd4Ww-MRVL1bgM",
@@ -17,6 +19,19 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
+const auth = getAuth(firebaseApp);
+const storage = getStorage(firebaseApp);
+const authReady = new Promise((resolve, reject) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+            unsubscribe();
+            resolve(user);
+        }
+    }, reject);
+    if (!auth.currentUser) {
+        signInAnonymously(auth).catch(reject);
+    }
+});
 
 window.sistemaVidaState = {
     profile: {
@@ -589,6 +604,37 @@ const app = {
             reader.readAsDataURL(file);
         });
     },
+    isInlineImageDataUrl: function(value) {
+        return typeof value === 'string' && value.startsWith('data:image/');
+    },
+    uploadProfileImageDataUrl: async function(dataUrl, path) {
+        if (!this.isInlineImageDataUrl(dataUrl)) return dataUrl || '';
+        await authReady;
+        const imageRef = storageRef(storage, path);
+        await uploadString(imageRef, dataUrl, 'data_url');
+        return await getDownloadURL(imageRef);
+    },
+    syncProfileImagesToCloud: async function() {
+        this.ensureSettingsState();
+        const profile = window.sistemaVidaState.profile || {};
+        let changed = false;
+        if (this.isInlineImageDataUrl(profile.avatarUrl)) {
+            profile.avatarUrl = await this.uploadProfileImageDataUrl(profile.avatarUrl, 'users/meu-sistema-vida/profile/avatar.jpg');
+            try { localStorage.setItem('lifeos_profile_avatar', profile.avatarUrl); } catch (_) {}
+            changed = true;
+        }
+        const images = profile.odysseyImages || {};
+        for (const key of ['cenarioA', 'cenarioB', 'cenarioC']) {
+            if (!this.isInlineImageDataUrl(images[key])) continue;
+            images[key] = await this.uploadProfileImageDataUrl(images[key], `users/meu-sistema-vida/odyssey/${key}.jpg`);
+            changed = true;
+        }
+        if (changed) {
+            profile.odysseyImages = images;
+            try { localStorage.setItem('lifeos_odyssey_images', JSON.stringify(images)); } catch (_) {}
+        }
+        return changed;
+    },
     onProfilePhotoSelected: function(event) {
         const file = event?.target?.files?.[0];
         if (!file) return;
@@ -596,11 +642,18 @@ const app = {
             this.showToast('Selecione um arquivo de imagem válido.', 'error');
             return;
         }
-        this.fileToOptimizedDataUrl(file, 640, 0.85).then((dataUrl) => {
+        this.fileToOptimizedDataUrl(file, 512, 0.78).then(async (dataUrl) => {
             this.ensureSettingsState();
             window.sistemaVidaState.profile.avatarUrl = dataUrl;
             try { localStorage.setItem('lifeos_profile_avatar', dataUrl); } catch (_) {}
-            this.saveState(true);
+            try {
+                const url = await this.uploadProfileImageDataUrl(dataUrl, 'users/meu-sistema-vida/profile/avatar.jpg');
+                window.sistemaVidaState.profile.avatarUrl = url;
+                try { localStorage.setItem('lifeos_profile_avatar', url); } catch (_) {}
+            } catch (error) {
+                console.warn('Falha ao sincronizar foto de perfil com Storage:', error);
+            }
+            await this.saveState(true);
             if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
             this.showToast('Foto de perfil atualizada!', 'success');
         }).catch(() => {
@@ -626,13 +679,20 @@ const app = {
             this.showToast('Selecione um arquivo de imagem válido para o cenário.', 'error');
             return;
         }
-        this.fileToOptimizedDataUrl(file, 1280, 0.82).then((dataUrl) => {
+        this.fileToOptimizedDataUrl(file, 900, 0.76).then(async (dataUrl) => {
             const current = window.sistemaVidaState.profile.odysseyImages || {};
             window.sistemaVidaState.profile.odysseyImages = { ...current, [key]: dataUrl };
             try {
                 localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
             } catch (_) {}
-            this.saveState(true);
+            try {
+                const url = await this.uploadProfileImageDataUrl(dataUrl, `users/meu-sistema-vida/odyssey/${key}.jpg`);
+                window.sistemaVidaState.profile.odysseyImages = { ...window.sistemaVidaState.profile.odysseyImages, [key]: url };
+                localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
+            } catch (error) {
+                console.warn('Falha ao sincronizar imagem Odyssey com Storage:', error);
+            }
+            await this.saveState(true);
             if (this.render.proposito) this.render.proposito();
             this.showToast('Imagem do cenário atualizada!', 'success');
         }).catch(() => {
@@ -695,8 +755,14 @@ const app = {
         const snapshot = JSON.parse(JSON.stringify(raw));
         if (mode === 'cloud') {
             if (snapshot.profile) {
-                delete snapshot.profile.avatarUrl;
-                delete snapshot.profile.odysseyImages;
+                if (this.isInlineImageDataUrl(snapshot.profile.avatarUrl)) delete snapshot.profile.avatarUrl;
+                if (snapshot.profile.odysseyImages) {
+                    Object.keys(snapshot.profile.odysseyImages).forEach((key) => {
+                        if (this.isInlineImageDataUrl(snapshot.profile.odysseyImages[key])) {
+                            delete snapshot.profile.odysseyImages[key];
+                        }
+                    });
+                }
             }
             snapshot._persistenceMode = 'cloud_slim';
         }
@@ -708,6 +774,10 @@ const app = {
             snapshot._persistenceMode = 'core_local';
         }
         return snapshot;
+    },
+
+    hasRemoteImageUrl: function(value) {
+        return typeof value === 'string' && /^https?:\/\//.test(value);
     },
 
     mergeDeep: function(target, source) {
@@ -737,9 +807,20 @@ const app = {
             } catch (_) {}
         }
         try {
+            await authReady;
+            try {
+                const imagesChanged = await this.syncProfileImagesToCloud();
+                if (imagesChanged) {
+                    const syncedLocalSnapshot = this.getPersistableState('full');
+                    localStorage.setItem('lifeos_state_backup', JSON.stringify(syncedLocalSnapshot));
+                }
+            } catch (imageError) {
+                console.warn('Falha ao preparar imagens para a nuvem:', imageError);
+            }
             const stateRef = doc(db, "users", "meu-sistema-vida");
             const cloudSnapshot = this.getPersistableState('cloud');
-            await setDoc(stateRef, cloudSnapshot);
+            cloudSnapshot._lastUpdatedAt = Date.now();
+            await setDoc(stateRef, cloudSnapshot, { merge: true });
             console.log("Sincronização com Nuvem: Concluída.");
             if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
         } catch (error) {
@@ -761,6 +842,7 @@ const app = {
             } else if (rawCore) {
                 try { localData = JSON.parse(rawCore); } catch (_) { localData = null; }
             }
+            await authReady;
             const stateRef = doc(db, "users", "meu-sistema-vida");
             const docSnap = await getDoc(stateRef);
             
@@ -783,14 +865,17 @@ const app = {
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
         try {
             const cachedAvatar = localStorage.getItem('lifeos_profile_avatar');
-            if (cachedAvatar) window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
+            if (cachedAvatar && !this.hasRemoteImageUrl(window.sistemaVidaState.profile.avatarUrl)) {
+                window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
+            }
             const cachedOdyssey = localStorage.getItem('lifeos_odyssey_images');
             if (cachedOdyssey) {
                 const parsed = JSON.parse(cachedOdyssey);
-                window.sistemaVidaState.profile.odysseyImages = {
-                    ...(window.sistemaVidaState.profile.odysseyImages || {}),
-                    ...parsed
-                };
+                const current = window.sistemaVidaState.profile.odysseyImages || {};
+                Object.keys(parsed || {}).forEach((key) => {
+                    if (!this.hasRemoteImageUrl(current[key])) current[key] = parsed[key];
+                });
+                window.sistemaVidaState.profile.odysseyImages = current;
             }
         } catch (_) {}
         this.ensureSettingsState();
