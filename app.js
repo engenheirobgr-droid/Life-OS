@@ -1053,6 +1053,22 @@ const app = {
         this.applyThemePreference();
         this.checkAlerts();
         this.ensureDeepWorkTicking();
+
+        // Auto-migra imagens base64 do localStorage para o Firebase Storage
+        const hasBase64Avatar = this.isInlineImageDataUrl(window.sistemaVidaState.profile?.avatarUrl);
+        const odysseyImgs = window.sistemaVidaState.profile?.odysseyImages || {};
+        const hasBase64Odyssey = Object.values(odysseyImgs).some(v => this.isInlineImageDataUrl(v));
+        if (hasBase64Avatar || hasBase64Odyssey) {
+            console.log("Imagens locais detectadas, sincronizando com a nuvem...");
+            authReady.then(() => {
+                this.syncProfileImagesToCloud().then(changed => {
+                    if (changed) {
+                        console.log("Imagens migradas para a nuvem com sucesso.");
+                        this.saveState(true);
+                    }
+                }).catch(e => console.warn("Falha ao migrar imagens:", e));
+            }).catch(() => {});
+        }
         if (!window.sistemaVidaState.onboardingComplete) {
             this.switchView('onboarding');
         } else {
