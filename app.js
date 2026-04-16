@@ -841,6 +841,7 @@ const app = {
         const state = window.sistemaVidaState;
         state._lastUpdatedAt = this.getSafeMonotonicTs();
         state._pendingLocalChanges = true;
+        state._lastLocalEditAt = Date.now();
         this.lastCloudSyncOk = null;
         this.lastCloudSyncErrorCode = '';
 
@@ -923,24 +924,19 @@ const app = {
             console.error("Erro ao carregar o estado do Firestore:", error);
         }
 
-        const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
-        const localTs = Number(localData?._lastUpdatedAt || 0);
         const localHasPending = !!(localData && localData._pendingLocalChanges);
-        const shouldKeepLocal = localHasPending && localTs >= cloudTs;
-        let preferred = null;
+        const localPendingAgeMs = Date.now() - Number(localData?._lastLocalEditAt || 0);
+        const shouldKeepLocal = localHasPending && localPendingAgeMs < 15000;
+        let preferred = cloudData || localData;
         if (shouldKeepLocal) preferred = localData;
-        else if (cloudData && localData) preferred = cloudTs >= localTs ? cloudData : localData;
-        else preferred = cloudData || localData;
 
-        if (shouldKeepLocal) console.log('[SYNC] Local has newer pending changes — keeping local state and retrying cloud sync.');
-        else if (cloudData && localData && localTs > cloudTs) console.warn('[SYNC] Local backup is newer than cloud — keeping local and scheduling sync.');
+        if (shouldKeepLocal) console.log('[SYNC] Local has recent pending changes — keeping local briefly before cloud reconciliation.');
+        else if (localHasPending && cloudData) console.warn('[SYNC] Local pending state stale — applying cloud source of truth.');
         else if (!cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
         else console.log('[SYNC] Using cloud state (source of truth).');
 
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
-        if (preferred === localData && cloudData && localTs > cloudTs) {
-            window.sistemaVidaState._pendingLocalChanges = true;
-        } else if (!shouldKeepLocal && window.sistemaVidaState._pendingLocalChanges) {
+        if (!shouldKeepLocal && window.sistemaVidaState._pendingLocalChanges) {
             window.sistemaVidaState._pendingLocalChanges = false;
         }
         // Always apply Firebase Storage URLs from cloud — they are authoritative for images
@@ -991,17 +987,14 @@ const app = {
             this._realtimeSyncUnsub = onSnapshot(stateRef, (docSnap) => {
                 if (!docSnap.exists()) return;
                 if (this._isSaving) return; // mid-save, skip to avoid echo
+                if (docSnap.metadata && docSnap.metadata.hasPendingWrites) return;
                 const remoteData = docSnap.data();
-                // Skip if the snapshot is from OUR own last write (same timestamp)
-                const remoteTs = Number(remoteData._lastUpdatedAt || 0);
-                const localTs = Number(window.sistemaVidaState._lastUpdatedAt || 0);
-                // Keep local only while local pending state is newer/equal than remote.
-                if (window.sistemaVidaState._pendingLocalChanges && localTs >= remoteTs) return;
-                if (remoteTs <= localTs) return; // nothing new
-                console.log('[SYNC] Real-time update received from cloud (remoteTs=' + remoteTs + ' > localTs=' + localTs + ')');
+                const pendingAgeMs = Date.now() - Number(window.sistemaVidaState?._lastLocalEditAt || 0);
+                if (window.sistemaVidaState._pendingLocalChanges && pendingAgeMs < 15000) return;
+                console.log('[SYNC] Real-time update received from cloud');
                 window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
                 if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
-                window.sistemaVidaState._lastUpdatedAt = remoteTs;
+                window.sistemaVidaState._lastUpdatedAt = Number(remoteData?._lastUpdatedAt || window.sistemaVidaState._lastUpdatedAt || Date.now());
                 // Always apply Firebase Storage image URLs
                 try {
                     const prof = remoteData.profile;
