@@ -966,7 +966,9 @@ const app = {
             if (diffDays >= 2) setTimeout(() => this.showNotification("Bom ter você de volta à sua jornada!"), 1000);
         }
         state.lastAccess = todayStr;
-        this.saveState(true);
+        // Evita sobrescrever a nuvem na inicialização com estado local potencialmente defasado.
+        // Só sincroniza aqui se já houver mudanças locais pendentes.
+        if (state._pendingLocalChanges) this.saveState(true);
 
         this.needsReview = false;
         if (today.getDay() === 0) { // Domingo
