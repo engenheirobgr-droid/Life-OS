@@ -646,6 +646,9 @@ const app = {
             this.ensureSettingsState();
             window.sistemaVidaState.profile.avatarUrl = dataUrl;
             try { localStorage.setItem('lifeos_profile_avatar', dataUrl); } catch (_) {}
+            // Feedback imediato antes do upload
+            if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+            this.showToast('Processando foto...', 'info');
             try {
                 const url = await this.uploadProfileImageDataUrl(dataUrl, 'users/meu-sistema-vida/profile/avatar.jpg');
                 window.sistemaVidaState.profile.avatarUrl = url;
@@ -657,9 +660,10 @@ const app = {
             if (this.lastCloudSyncOk === false) {
                 const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
                 this.showToast(`Foto salva só neste dispositivo.${reason}`, 'error');
+            } else {
+                if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+                this.showToast('Foto de perfil atualizada! ✓', 'success');
             }
-            if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
-            this.showToast('Foto de perfil atualizada!', 'success');
         }).catch(() => {
             this.showToast('Falha ao ler a imagem selecionada.', 'error');
         }).finally(() => {
@@ -689,6 +693,9 @@ const app = {
             try {
                 localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
             } catch (_) {}
+            // Feedback imediato: mostra a imagem (base64) antes do upload terminar
+            if (this.render.proposito) this.render.proposito();
+            this.showToast('Processando imagem...', 'info');
             try {
                 const url = await this.uploadProfileImageDataUrl(dataUrl, `users/meu-sistema-vida/odyssey/${key}.jpg`);
                 window.sistemaVidaState.profile.odysseyImages = { ...window.sistemaVidaState.profile.odysseyImages, [key]: url };
@@ -700,9 +707,10 @@ const app = {
             if (this.lastCloudSyncOk === false) {
                 const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
                 this.showToast(`Imagem salva só neste dispositivo.${reason}`, 'error');
+            } else {
+                if (this.render.proposito) this.render.proposito();
+                this.showToast('Imagem do cenário atualizada! ✓', 'success');
             }
-            if (this.render.proposito) this.render.proposito();
-            this.showToast('Imagem do cenário atualizada!', 'success');
         }).catch(() => {
             this.showToast('Falha ao ler a imagem selecionada.', 'error');
         }).finally(() => {
@@ -878,6 +886,23 @@ const app = {
         // Don't merge fallback for arrays — it overwrites newer data with older data
         // Arrays like entities.micros should not be overwritten by stale data
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
+        // Always apply Firebase Storage URLs from cloud — they are authoritative for images
+        try {
+            if (cloudData && cloudData.profile && cloudData.profile.avatarUrl && this.hasRemoteImageUrl(cloudData.profile.avatarUrl)) {
+                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                window.sistemaVidaState.profile.avatarUrl = cloudData.profile.avatarUrl;
+            }
+            if (cloudData && cloudData.profile && cloudData.profile.odysseyImages) {
+                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
+                Object.entries(cloudData.profile.odysseyImages).forEach(function(entry) {
+                    var k = entry[0], v = entry[1];
+                    if (v && typeof v === 'string' && /^https?:\/\//.test(v)) {
+                        window.sistemaVidaState.profile.odysseyImages[k] = v;
+                    }
+                });
+            }
+        } catch (_) {}
         try {
             const cachedAvatar = localStorage.getItem('lifeos_profile_avatar');
             if (cachedAvatar && !this.hasRemoteImageUrl(window.sistemaVidaState.profile.avatarUrl)) {
