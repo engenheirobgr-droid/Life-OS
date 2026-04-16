@@ -91,6 +91,12 @@ const app = {
     getLocalDateKey: function(date = new Date()) {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     },
+    withTimeout: function(promise, ms, label = 'operation') {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error(label + '_timeout')), ms))
+        ]);
+    },
     normalizeDimensionKey: function(dimRaw) {
         const txt = String(dimRaw || '').toLowerCase()
             .normalize('NFD')
@@ -829,7 +835,7 @@ const app = {
             } catch (_) {}
         }
         try {
-            await authReady;
+            await this.withTimeout(authReady, 8000, 'auth_ready');
             try {
                 const imagesChanged = await this.syncProfileImagesToCloud();
                 if (imagesChanged) {
@@ -843,7 +849,7 @@ const app = {
             const cloudSnapshot = this.getPersistableState('cloud');
             cloudSnapshot._lastUpdatedAt = Date.now();
             cloudSnapshot._pendingLocalChanges = false;
-            await setDoc(stateRef, cloudSnapshot, { merge: true });
+            await this.withTimeout(setDoc(stateRef, cloudSnapshot, { merge: true }), 10000, 'firestore_setDoc');
             console.log("Sincronização com Nuvem: Concluída.");
             this.lastCloudSyncOk = true;
             state._pendingLocalChanges = false;
@@ -874,9 +880,9 @@ const app = {
             } else if (rawCore) {
                 try { localData = JSON.parse(rawCore); } catch (_) { localData = null; }
             }
-            await authReady;
+            await this.withTimeout(authReady, 8000, 'auth_ready');
             const stateRef = doc(db, "users", "meu-sistema-vida");
-            const docSnap = await getDoc(stateRef);
+            const docSnap = await this.withTimeout(getDoc(stateRef), 10000, 'firestore_getDoc');
             
             if (docSnap.exists()) {
                 console.log("Estado encontrado na Nuvem, mesclando dados...");
@@ -950,7 +956,7 @@ const app = {
     },
     setupRealtimeSync: function() {
         if (this._realtimeSyncUnsub) return; // already active
-        authReady.then(() => {
+        this.withTimeout(authReady, 8000, 'auth_ready').then(() => {
             const stateRef = doc(db, "users", "meu-sistema-vida");
             this._realtimeSyncUnsub = onSnapshot(stateRef, (docSnap) => {
                 if (!docSnap.exists()) return;
@@ -992,7 +998,9 @@ const app = {
             }, function(err) {
                 console.warn('[SYNC] Real-time listener error:', err);
             });
-        }).catch(function() {});
+        }).catch(function(err) {
+            console.warn('[SYNC] Real-time listener skipped:', err);
+        });
     },
 
 
@@ -1144,7 +1152,11 @@ const app = {
 
     init: async function() {
         console.log("Sistema Vida OS inicializando...");
-        await this.loadState();
+        try {
+            await this.withTimeout(this.loadState(), 12000, 'loadState');
+        } catch (err) {
+            console.warn('Falha/timeout no carregamento da nuvem. Iniciando com backup local.', err);
+        }
         this.ensureSettingsState();
         this.applyThemePreference();
         this.checkAlerts();
