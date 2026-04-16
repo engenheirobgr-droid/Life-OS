@@ -893,13 +893,21 @@ const app = {
         // Use local ONLY if: (a) local has pending changes not yet in Firestore, OR (b) Firestore unreachable.
         // Never use timestamp comparison — that caused devices to overwrite each other.
         const localHasPending = !!(localData && localData._pendingLocalChanges);
-        const preferred = localHasPending ? localData : (cloudData || localData);
-        if (localHasPending) console.log('[SYNC] Local has pending changes — using local state, will retry cloud sync.');
+        const shouldKeepLocal = localHasPending && localTs >= cloudTs;
+        const preferred = shouldKeepLocal ? localData : (cloudData || localData);
+        if (shouldKeepLocal) console.log('[SYNC] Local has newer pending changes — keeping local state and retrying cloud sync.');
+        else if (localHasPending && cloudData) console.warn('[SYNC] Cloud is newer than pending local backup — applying cloud snapshot.');
         else if (!cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
         else console.log('[SYNC] Using cloud state (source of truth).');
         // Don't merge fallback for arrays — it overwrites newer data with older data
         // Arrays like entities.micros should not be overwritten by stale data
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
+        if (!shouldKeepLocal && window.sistemaVidaState._pendingLocalChanges) {
+            window.sistemaVidaState._pendingLocalChanges = false;
+            try {
+                localStorage.setItem('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')));
+            } catch (_) {}
+        }
         // Always apply Firebase Storage URLs from cloud — they are authoritative for images
         try {
             if (cloudData && cloudData.profile && cloudData.profile.avatarUrl && this.hasRemoteImageUrl(cloudData.profile.avatarUrl)) {
@@ -948,14 +956,15 @@ const app = {
                 if (!docSnap.exists()) return;
                 if (this._isSaving) return; // mid-save, skip to avoid echo
                 const remoteData = docSnap.data();
-                // Skip if we have local changes not yet confirmed in Firestore
-                if (window.sistemaVidaState._pendingLocalChanges) return;
                 // Skip if the snapshot is from OUR own last write (same timestamp)
                 const remoteTs = Number(remoteData._lastUpdatedAt || 0);
                 const localTs = Number(window.sistemaVidaState._lastUpdatedAt || 0);
+                // Keep local only while local pending state is newer/equal than remote.
+                if (window.sistemaVidaState._pendingLocalChanges && localTs >= remoteTs) return;
                 if (remoteTs <= localTs) return; // nothing new
                 console.log('[SYNC] Real-time update received from cloud (remoteTs=' + remoteTs + ' > localTs=' + localTs + ')');
                 window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
+                if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
                 // Always apply Firebase Storage image URLs
                 try {
                     const prof = remoteData.profile;

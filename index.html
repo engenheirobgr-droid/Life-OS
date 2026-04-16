@@ -985,13 +985,13 @@
 
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260416-realtime-sync"></script>
+    <script type="module" src="app.js?v=20260416-sync-reconcile"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=20260415-auth-storage-sync')
+                navigator.serviceWorker.register('sw.js?v=20260416-sync-reconcile')
                     .then(registration => {
                         console.log('SW registered:', registration);
                     })
@@ -1006,4 +1006,4 @@
     </div>
 </body>
 
-</ht
+</html>
