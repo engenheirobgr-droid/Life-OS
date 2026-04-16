@@ -886,10 +886,11 @@ const app = {
             console.error("Erro ao carregar o estado do Firestore:", error);
         }
 
-        const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
-        const localTs = Number(localData?._lastUpdatedAt || 0);
-        const localHasPending = !!(localData && localData._pendingLocalChanges);
-        const preferred = localHasPending ? localData : (localTs >= cloudTs ? localData : cloudData);
+        // Cloud is the single source of truth for cross-device sync.
+        // Local backup is only a fallback for when Firestore is unreachable (auth failure / offline).
+        // NEVER prefer local over cloud based on timestamps — this causes devices to overwrite each
+        // other's data. The cloud always has the most authoritative cross-device state.
+        const preferred = cloudData || localData;
         // Don't merge fallback for arrays — it overwrites newer data with older data
         // Arrays like entities.micros should not be overwritten by stale data
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
