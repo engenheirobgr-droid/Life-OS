@@ -91,6 +91,20 @@ const app = {
     getLocalDateKey: function(date = new Date()) {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     },
+    getSafeMonotonicTs: function() {
+        const prev = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
+        const now = Date.now();
+        return Math.max(now, prev + 1);
+    },
+    persistLocalMirror: function() {
+        try {
+            localStorage.setItem('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')));
+        } catch (_) {}
+        try {
+            const completed = !!window.sistemaVidaState?.onboardingComplete;
+            localStorage.setItem('lifeos_onboarding_complete', completed ? '1' : '0');
+        } catch (_) {}
+    },
     withTimeout: function(promise, ms, label = 'operation') {
         return Promise.race([
             promise,
@@ -493,6 +507,9 @@ const app = {
                 microId: '', intention: '', lastTickAt: 0, sessions: []
             };
         }
+        if (typeof window.sistemaVidaState.onboardingComplete !== 'boolean') {
+            window.sistemaVidaState.onboardingComplete = false;
+        }
         try {
             const cachedTheme = localStorage.getItem('lifeos_theme_pref');
             if (cachedTheme && ['light', 'dark', 'auto'].includes(cachedTheme)) {
@@ -514,6 +531,9 @@ const app = {
                     ...parsed
                 };
             }
+            const onboardingFlag = localStorage.getItem('lifeos_onboarding_complete');
+            if (onboardingFlag === '1') window.sistemaVidaState.onboardingComplete = true;
+            if (onboardingFlag === '0') window.sistemaVidaState.onboardingComplete = false;
         } catch (_) {}
         this.normalizePermaState();
         this.normalizeEntitiesState();
@@ -817,56 +837,58 @@ const app = {
         return target;
     },
 
-    saveState: async function(silent = true) {
-        const state = window.sistemaVidaState;
-        state._lastUpdatedAt = Date.now();
-        state._pendingLocalChanges = true;
-        this.lastCloudSyncOk = null;
-        this.lastCloudSyncErrorCode = '';
-        this._isSaving = true;
-        const fullSnapshot = this.getPersistableState('full');
-        const coreSnapshot = this.getPersistableState('core');
-        try {
-            localStorage.setItem('lifeos_state_backup', JSON.stringify(fullSnapshot));
-        } catch (backupErr) {
-            console.warn('Falha ao gravar backup local do estado:', backupErr);
+    saveState: function(silent = true) {
+        if (!this._saveChain) this._saveChain = Promise.resolve();
+        const runSave = async () => {
+            const state = window.sistemaVidaState;
+            state._lastUpdatedAt = this.getSafeMonotonicTs();
+            state._pendingLocalChanges = true;
+            this.lastCloudSyncOk = null;
+            this.lastCloudSyncErrorCode = '';
+            this._isSaving = true;
+            const fullSnapshot = this.getPersistableState('full');
+            const coreSnapshot = this.getPersistableState('core');
             try {
-                localStorage.setItem('lifeos_state_backup_core', JSON.stringify(coreSnapshot));
-            } catch (_) {}
-        }
-        try {
-            await this.withTimeout(authReady, 8000, 'auth_ready');
+                localStorage.setItem('lifeos_state_backup', JSON.stringify(fullSnapshot));
+            } catch (backupErr) {
+                console.warn('Falha ao gravar backup local do estado:', backupErr);
+                try {
+                    localStorage.setItem('lifeos_state_backup_core', JSON.stringify(coreSnapshot));
+                } catch (_) {}
+            }
+            this.persistLocalMirror();
             try {
-                const imagesChanged = await this.syncProfileImagesToCloud();
-                if (imagesChanged) {
-                    const syncedLocalSnapshot = this.getPersistableState('full');
-                    localStorage.setItem('lifeos_state_backup', JSON.stringify(syncedLocalSnapshot));
+                await this.withTimeout(authReady, 8000, 'auth_ready');
+                try {
+                    const imagesChanged = await this.syncProfileImagesToCloud();
+                    if (imagesChanged) this.persistLocalMirror();
+                } catch (imageError) {
+                    console.warn('Falha ao preparar imagens para a nuvem:', imageError);
                 }
-            } catch (imageError) {
-                console.warn('Falha ao preparar imagens para a nuvem:', imageError);
+                const stateRef = doc(db, "users", "meu-sistema-vida");
+                const cloudSnapshot = this.getPersistableState('cloud');
+                cloudSnapshot._lastUpdatedAt = Number(state._lastUpdatedAt || this.getSafeMonotonicTs());
+                cloudSnapshot._pendingLocalChanges = false;
+                await this.withTimeout(setDoc(stateRef, cloudSnapshot, { merge: true }), 10000, 'firestore_setDoc');
+                console.log("Sincronização com Nuvem: Concluída.");
+                this.lastCloudSyncOk = true;
+                state._pendingLocalChanges = false;
+                this.persistLocalMirror();
+                if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
+            } catch (error) {
+                console.error("Erro ao salvar o estado no Firestore:", error);
+                this.lastCloudSyncOk = false;
+                this.lastCloudSyncErrorCode = String(error?.code || error?.message || '').trim();
+                if (!silent && this.showToast) {
+                    this.showToast('Salvo localmente. Falha na sincronização com nuvem.', 'error');
+                }
+            } finally {
+                this._isSaving = false;
             }
-            const stateRef = doc(db, "users", "meu-sistema-vida");
-            const cloudSnapshot = this.getPersistableState('cloud');
-            cloudSnapshot._lastUpdatedAt = Date.now();
-            cloudSnapshot._pendingLocalChanges = false;
-            await this.withTimeout(setDoc(stateRef, cloudSnapshot, { merge: true }), 10000, 'firestore_setDoc');
-            console.log("Sincronização com Nuvem: Concluída.");
-            this.lastCloudSyncOk = true;
-            state._pendingLocalChanges = false;
-            try {
-                localStorage.setItem('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')));
-            } catch (_) {}
-            if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
-        } catch (error) {
-            console.error("Erro ao salvar o estado no Firestore:", error);
-            this.lastCloudSyncOk = false;
-            this.lastCloudSyncErrorCode = String(error?.code || error?.message || '').trim();
-            if (!silent && this.showToast) {
-                this.showToast('Salvo localmente. Falha na sincronização com nuvem.', 'error');
-            }
-        } finally {
-            this._isSaving = false;
-        }
+        };
+        const op = this._saveChain.then(runSave, runSave);
+        this._saveChain = op.catch(() => {});
+        return op;
     },
 
     loadState: async function() {
@@ -895,24 +917,25 @@ const app = {
             console.error("Erro ao carregar o estado do Firestore:", error);
         }
 
-        // Cloud is the source of truth for cross-device sync.
-        // Use local ONLY if: (a) local has pending changes not yet in Firestore, OR (b) Firestore unreachable.
-        // Never use timestamp comparison — that caused devices to overwrite each other.
+        const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
+        const localTs = Number(localData?._lastUpdatedAt || 0);
         const localHasPending = !!(localData && localData._pendingLocalChanges);
         const shouldKeepLocal = localHasPending && localTs >= cloudTs;
-        const preferred = shouldKeepLocal ? localData : (cloudData || localData);
+        let preferred = null;
+        if (shouldKeepLocal) preferred = localData;
+        else if (cloudData && localData) preferred = cloudTs >= localTs ? cloudData : localData;
+        else preferred = cloudData || localData;
+
         if (shouldKeepLocal) console.log('[SYNC] Local has newer pending changes — keeping local state and retrying cloud sync.');
-        else if (localHasPending && cloudData) console.warn('[SYNC] Cloud is newer than pending local backup — applying cloud snapshot.');
+        else if (cloudData && localData && localTs > cloudTs) console.warn('[SYNC] Local backup is newer than cloud — keeping local and scheduling sync.');
         else if (!cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
         else console.log('[SYNC] Using cloud state (source of truth).');
-        // Don't merge fallback for arrays — it overwrites newer data with older data
-        // Arrays like entities.micros should not be overwritten by stale data
+
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
-        if (!shouldKeepLocal && window.sistemaVidaState._pendingLocalChanges) {
+        if (preferred === localData && cloudData && localTs > cloudTs) {
+            window.sistemaVidaState._pendingLocalChanges = true;
+        } else if (!shouldKeepLocal && window.sistemaVidaState._pendingLocalChanges) {
             window.sistemaVidaState._pendingLocalChanges = false;
-            try {
-                localStorage.setItem('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')));
-            } catch (_) {}
         }
         // Always apply Firebase Storage URLs from cloud — they are authoritative for images
         try {
@@ -946,6 +969,7 @@ const app = {
                 window.sistemaVidaState.profile.odysseyImages = current;
             }
         } catch (_) {}
+        this.persistLocalMirror();
         this.ensureSettingsState();
         this.normalizePermaState();
         this.normalizeEntitiesState();
@@ -971,6 +995,7 @@ const app = {
                 console.log('[SYNC] Real-time update received from cloud (remoteTs=' + remoteTs + ' > localTs=' + localTs + ')');
                 window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
                 if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
+                window.sistemaVidaState._lastUpdatedAt = remoteTs;
                 // Always apply Firebase Storage image URLs
                 try {
                     const prof = remoteData.profile;
@@ -990,6 +1015,7 @@ const app = {
                 } catch (_) {}
                 app.normalizeEntitiesState();
                 app.normalizeDailyLogsState();
+                app.persistLocalMirror();
                 // Re-render active view so changes appear immediately
                 try {
                     const view = app.currentView;
@@ -2890,7 +2916,7 @@ const app = {
         }
     },
 
-    onboardingSaveCurrentStep: function() {
+    onboardingSaveCurrentStep: function(persist = true) {
         const state = window.sistemaVidaState;
         if (this.onboardingStep === 1) {
             const nameInput = document.getElementById('onboarding-nome');
@@ -2903,7 +2929,7 @@ const app = {
             const purposeInput = document.getElementById('onboarding-proposito');
             if (purposeInput) state.profile.purpose = purposeInput.value.trim();
         }
-        this.saveState();
+        if (persist) this.saveState();
     },
 
     onboardingNext: function() {
@@ -2920,7 +2946,7 @@ const app = {
     },
 
     onboardingComplete: function() {
-        this.onboardingSaveCurrentStep();
+        this.onboardingSaveCurrentStep(false);
         window.sistemaVidaState.onboardingComplete = true;
         this.saveState();
         this.navigate('hoje');

@@ -985,13 +985,13 @@
 
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260416-sync-reconcile"></script>
+    <script type="module" src="app.js?v=20260416-stability-pass"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=20260416-sync-reconcile')
+                navigator.serviceWorker.register('sw.js?v=20260416-stability-pass')
                     .then(registration => {
                         console.log('SW registered:', registration);
                     })

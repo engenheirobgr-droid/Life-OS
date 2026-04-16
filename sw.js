@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v17';
+const CACHE_NAME = 'sistema-vida-v18';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260416-sync-reconcile',
+    './app.js?v=20260416-stability-pass',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
