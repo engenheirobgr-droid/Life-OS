@@ -814,6 +814,7 @@ const app = {
     saveState: async function(silent = true) {
         const state = window.sistemaVidaState;
         state._lastUpdatedAt = Date.now();
+        state._pendingLocalChanges = true;
         this.lastCloudSyncOk = null;
         this.lastCloudSyncErrorCode = '';
         const fullSnapshot = this.getPersistableState('full');
@@ -840,9 +841,14 @@ const app = {
             const stateRef = doc(db, "users", "meu-sistema-vida");
             const cloudSnapshot = this.getPersistableState('cloud');
             cloudSnapshot._lastUpdatedAt = Date.now();
+            cloudSnapshot._pendingLocalChanges = false;
             await setDoc(stateRef, cloudSnapshot, { merge: true });
             console.log("Sincronização com Nuvem: Concluída.");
             this.lastCloudSyncOk = true;
+            state._pendingLocalChanges = false;
+            try {
+                localStorage.setItem('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')));
+            } catch (_) {}
             if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
         } catch (error) {
             console.error("Erro ao salvar o estado no Firestore:", error);
@@ -882,7 +888,8 @@ const app = {
 
         const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
         const localTs = Number(localData?._lastUpdatedAt || 0);
-        const preferred = localTs >= cloudTs ? localData : cloudData;
+        const localHasPending = !!(localData && localData._pendingLocalChanges);
+        const preferred = localHasPending ? localData : (localTs >= cloudTs ? localData : cloudData);
         // Don't merge fallback for arrays — it overwrites newer data with older data
         // Arrays like entities.micros should not be overwritten by stale data
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
