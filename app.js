@@ -21,17 +21,26 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const auth = getAuth(firebaseApp);
 const storage = getStorage(firebaseApp);
-const authReady = new Promise((resolve, reject) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (user) {
-            unsubscribe();
-            resolve(user);
+// getAuthReady() cria uma Promise fresca a cada chamada.
+// Isso evita que uma falha de auth transitória (ex: rede lenta na abertura do app)
+// deixe o authReady permanentemente rejeitado, bloqueando todos os saves futuros.
+function getAuthReady() {
+    if (auth.currentUser) return Promise.resolve(auth.currentUser);
+    return new Promise((resolve, reject) => {
+        const unsub = onAuthStateChanged(auth, (user) => {
+            if (user) { unsub(); resolve(user); }
+        }, (err) => { reject(err); });
+        // Só chama signInAnonymously se ainda não há usuário
+        if (!auth.currentUser) {
+            signInAnonymously(auth).catch((err) => {
+                // Não reject direto — o onAuthStateChanged vai tratar
+                console.warn('[AUTH] signInAnonymously falhou, aguardando onAuthStateChanged:', err);
+            });
         }
-    }, reject);
-    if (!auth.currentUser) {
-        signInAnonymously(auth).catch(reject);
-    }
-});
+    });
+}
+// authReady: mantido para compatibilidade com onSnapshot (que precisa de uma promise inicial)
+const authReady = getAuthReady();
 
 window.sistemaVidaState = {
     profile: {
@@ -880,7 +889,7 @@ const app = {
             this._isSaving = true;
             this.updateSyncBadge('syncing');
             try {
-                await this.withTimeout(authReady, 8000, 'auth_ready');
+                await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
                 try {
                     const imagesChanged = await this.syncProfileImagesToCloud();
                     if (imagesChanged) this.persistLocalMirror();
@@ -933,7 +942,7 @@ const app = {
             } else if (rawCore) {
                 try { localData = JSON.parse(rawCore); } catch (_) { localData = null; }
             }
-            await this.withTimeout(authReady, 8000, 'auth_ready');
+            await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
             const stateRef = doc(db, "users", "meu-sistema-vida");
             const docSnap = await this.withTimeout(getDoc(stateRef), 10000, 'firestore_getDoc');
             
@@ -1021,7 +1030,7 @@ const app = {
         if (this._realtimeSyncUnsub) return; // already active
         const self = this;
         const trySetup = function() {
-            self.withTimeout(authReady, 10000, 'auth_ready').then(() => {
+            self.withTimeout(getAuthReady(), 10000, 'auth_ready').then(() => {
                 const stateRef = doc(db, 'users', 'meu-sistema-vida');
                 self._realtimeSyncUnsub = onSnapshot(stateRef, (docSnap) => {
                     if (!docSnap.exists()) return;
@@ -1076,7 +1085,7 @@ const app = {
                 if (!self._periodicSyncId) {
                     self._periodicSyncId = setInterval(function() {
                         if (self._isSaving || window.sistemaVidaState?._pendingLocalChanges) return;
-                        self.withTimeout(authReady, 5000, 'auth_periodic').then(() => {
+                        self.withTimeout(getAuthReady(), 5000, 'auth_periodic').then(() => {
                             const ref = doc(db, 'users', 'meu-sistema-vida');
                             return self.withTimeout(getDoc(ref), 8000, 'periodic_getDoc');
                         }).then((snap) => {
@@ -1252,7 +1261,7 @@ const app = {
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando... SW=v22");
+        console.log("Sistema Vida OS inicializando... SW=v24");
         console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
         try {
             await this.withTimeout(this.loadState(), 12000, 'loadState');
