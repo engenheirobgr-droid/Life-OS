@@ -4,7 +4,7 @@
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
@@ -817,6 +817,7 @@ const app = {
         state._pendingLocalChanges = true;
         this.lastCloudSyncOk = null;
         this.lastCloudSyncErrorCode = '';
+        this._isSaving = true;
         const fullSnapshot = this.getPersistableState('full');
         const coreSnapshot = this.getPersistableState('core');
         try {
@@ -857,6 +858,8 @@ const app = {
             if (!silent && this.showToast) {
                 this.showToast('Salvo localmente. Falha na sincronização com nuvem.', 'error');
             }
+        } finally {
+            this._isSaving = false;
         }
     },
 
@@ -886,11 +889,14 @@ const app = {
             console.error("Erro ao carregar o estado do Firestore:", error);
         }
 
-        // Cloud is the single source of truth for cross-device sync.
-        // Local backup is only a fallback for when Firestore is unreachable (auth failure / offline).
-        // NEVER prefer local over cloud based on timestamps — this causes devices to overwrite each
-        // other's data. The cloud always has the most authoritative cross-device state.
-        const preferred = cloudData || localData;
+        // Cloud is the source of truth for cross-device sync.
+        // Use local ONLY if: (a) local has pending changes not yet in Firestore, OR (b) Firestore unreachable.
+        // Never use timestamp comparison — that caused devices to overwrite each other.
+        const localHasPending = !!(localData && localData._pendingLocalChanges);
+        const preferred = localHasPending ? localData : (cloudData || localData);
+        if (localHasPending) console.log('[SYNC] Local has pending changes — using local state, will retry cloud sync.');
+        else if (!cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
+        else console.log('[SYNC] Using cloud state (source of truth).');
         // Don't merge fallback for arrays — it overwrites newer data with older data
         // Arrays like entities.micros should not be overwritten by stale data
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
@@ -934,6 +940,52 @@ const app = {
         this.normalizeDeepWorkState();
         this.renderSidebarValues();
     },
+    setupRealtimeSync: function() {
+        if (this._realtimeSyncUnsub) return; // already active
+        authReady.then(() => {
+            const stateRef = doc(db, "users", "meu-sistema-vida");
+            this._realtimeSyncUnsub = onSnapshot(stateRef, (docSnap) => {
+                if (!docSnap.exists()) return;
+                if (this._isSaving) return; // mid-save, skip to avoid echo
+                const remoteData = docSnap.data();
+                // Skip if we have local changes not yet confirmed in Firestore
+                if (window.sistemaVidaState._pendingLocalChanges) return;
+                // Skip if the snapshot is from OUR own last write (same timestamp)
+                const remoteTs = Number(remoteData._lastUpdatedAt || 0);
+                const localTs = Number(window.sistemaVidaState._lastUpdatedAt || 0);
+                if (remoteTs <= localTs) return; // nothing new
+                console.log('[SYNC] Real-time update received from cloud (remoteTs=' + remoteTs + ' > localTs=' + localTs + ')');
+                window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
+                // Always apply Firebase Storage image URLs
+                try {
+                    const prof = remoteData.profile;
+                    if (prof && prof.avatarUrl && app.hasRemoteImageUrl(prof.avatarUrl)) {
+                        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                        window.sistemaVidaState.profile.avatarUrl = prof.avatarUrl;
+                    }
+                    if (prof && prof.odysseyImages) {
+                        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                        const cur = window.sistemaVidaState.profile.odysseyImages || {};
+                        Object.entries(prof.odysseyImages).forEach(function(e) {
+                            var k = e[0], v = e[1];
+                            if (v && typeof v === 'string' && /^https?:\/\//.test(v)) cur[k] = v;
+                        });
+                        window.sistemaVidaState.profile.odysseyImages = cur;
+                    }
+                } catch (_) {}
+                app.normalizeEntitiesState();
+                app.normalizeDailyLogsState();
+                // Re-render active view so changes appear immediately
+                try {
+                    const view = app.currentView;
+                    if (view && app.render && app.render[view]) app.render[view]();
+                } catch (_) {}
+            }, function(err) {
+                console.warn('[SYNC] Real-time listener error:', err);
+            });
+        }).catch(function() {});
+    },
+
 
     showNotification: function(msg) {
         this.showToast(msg, 'success');
@@ -1088,6 +1140,7 @@ const app = {
         this.applyThemePreference();
         this.checkAlerts();
         this.ensureDeepWorkTicking();
+        this.setupRealtimeSync(); // real-time cross-device sync
 
         // Auto-migra imagens base64 do localStorage para o Firebase Storage
         const hasBase64Avatar = this.isInlineImageDataUrl(window.sistemaVidaState.profile?.avatarUrl);

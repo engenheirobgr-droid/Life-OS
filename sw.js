@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v15';
+const CACHE_NAME = 'sistema-vida-v16';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260416-cloud-source-of-truth',
+    './app.js?v=20260416-realtime-sync',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
