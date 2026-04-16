@@ -838,25 +838,29 @@ const app = {
     },
 
     saveState: function(silent = true) {
-        if (!this._saveChain) this._saveChain = Promise.resolve();
-        const runSave = async () => {
-            const state = window.sistemaVidaState;
-            state._lastUpdatedAt = this.getSafeMonotonicTs();
-            state._pendingLocalChanges = true;
-            this.lastCloudSyncOk = null;
-            this.lastCloudSyncErrorCode = '';
-            this._isSaving = true;
-            const fullSnapshot = this.getPersistableState('full');
-            const coreSnapshot = this.getPersistableState('core');
+        const state = window.sistemaVidaState;
+        state._lastUpdatedAt = this.getSafeMonotonicTs();
+        state._pendingLocalChanges = true;
+        this.lastCloudSyncOk = null;
+        this.lastCloudSyncErrorCode = '';
+
+        // Durabilidade imediata no dispositivo para não perder progresso em refresh/reload.
+        const fullSnapshot = this.getPersistableState('full');
+        const coreSnapshot = this.getPersistableState('core');
+        try {
+            localStorage.setItem('lifeos_state_backup', JSON.stringify(fullSnapshot));
+        } catch (backupErr) {
+            console.warn('Falha ao gravar backup local do estado:', backupErr);
             try {
-                localStorage.setItem('lifeos_state_backup', JSON.stringify(fullSnapshot));
-            } catch (backupErr) {
-                console.warn('Falha ao gravar backup local do estado:', backupErr);
-                try {
-                    localStorage.setItem('lifeos_state_backup_core', JSON.stringify(coreSnapshot));
-                } catch (_) {}
-            }
-            this.persistLocalMirror();
+                localStorage.setItem('lifeos_state_backup_core', JSON.stringify(coreSnapshot));
+            } catch (_) {}
+        }
+        this.persistLocalMirror();
+
+        if (!this._saveChain) this._saveChain = Promise.resolve();
+        const enqueueTs = Number(state._lastUpdatedAt || 0);
+        const runSave = async () => {
+            this._isSaving = true;
             try {
                 await this.withTimeout(authReady, 8000, 'auth_ready');
                 try {
@@ -867,12 +871,14 @@ const app = {
                 }
                 const stateRef = doc(db, "users", "meu-sistema-vida");
                 const cloudSnapshot = this.getPersistableState('cloud');
-                cloudSnapshot._lastUpdatedAt = Number(state._lastUpdatedAt || this.getSafeMonotonicTs());
+                const cloudTs = Number(window.sistemaVidaState?._lastUpdatedAt || enqueueTs || this.getSafeMonotonicTs());
+                cloudSnapshot._lastUpdatedAt = cloudTs;
                 cloudSnapshot._pendingLocalChanges = false;
                 await this.withTimeout(setDoc(stateRef, cloudSnapshot, { merge: true }), 10000, 'firestore_setDoc');
                 console.log("Sincronização com Nuvem: Concluída.");
                 this.lastCloudSyncOk = true;
-                state._pendingLocalChanges = false;
+                const currentTs = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
+                window.sistemaVidaState._pendingLocalChanges = currentTs > cloudTs;
                 this.persistLocalMirror();
                 if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
             } catch (error) {
@@ -1182,6 +1188,17 @@ const app = {
             await this.withTimeout(this.loadState(), 12000, 'loadState');
         } catch (err) {
             console.warn('Falha/timeout no carregamento da nuvem. Iniciando com backup local.', err);
+        }
+        if (!this._localFlushBound) {
+            this._localFlushBound = true;
+            const flushLocalMirror = () => {
+                try { this.persistLocalMirror(); } catch (_) {}
+            };
+            window.addEventListener('pagehide', flushLocalMirror);
+            window.addEventListener('beforeunload', flushLocalMirror);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') flushLocalMirror();
+            });
         }
         this.ensureSettingsState();
         this.applyThemePreference();
