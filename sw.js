@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v20';
+const CACHE_NAME = 'sistema-vida-v21';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260416-sync-convergence-fix',
+    './app.js?v=20260416-live-sync-unblock',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',

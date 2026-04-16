@@ -989,8 +989,6 @@ const app = {
                 if (this._isSaving) return; // mid-save, skip to avoid echo
                 if (docSnap.metadata && docSnap.metadata.hasPendingWrites) return;
                 const remoteData = docSnap.data();
-                const pendingAgeMs = Date.now() - Number(window.sistemaVidaState?._lastLocalEditAt || 0);
-                if (window.sistemaVidaState._pendingLocalChanges && pendingAgeMs < 15000) return;
                 console.log('[SYNC] Real-time update received from cloud');
                 window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
                 if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
@@ -1061,9 +1059,6 @@ const app = {
             if (diffDays >= 2) setTimeout(() => this.showNotification("Bom ter você de volta à sua jornada!"), 1000);
         }
         state.lastAccess = todayStr;
-        // Evita sobrescrever a nuvem na inicialização com estado local potencialmente defasado.
-        // Só sincroniza aqui se já houver mudanças locais pendentes.
-        if (state._pendingLocalChanges) this.saveState(true);
 
         this.needsReview = false;
         if (today.getDay() === 0) { // Domingo

@@ -985,13 +985,13 @@
 
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260416-sync-convergence-fix"></script>
+    <script type="module" src="app.js?v=20260416-live-sync-unblock"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=20260416-sync-convergence-fix')
+                navigator.serviceWorker.register('sw.js?v=20260416-live-sync-unblock')
                     .then(registration => {
                         console.log('SW registered:', registration);
                     })
