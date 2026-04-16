@@ -317,6 +317,13 @@
                     </div>
                 </button>
             </div>
+            <!-- Sync status badge (desktop sidebar) -->
+            <div class="px-4 pb-4">
+                <div class="lifeos-sync-badge flex items-center gap-1 text-outline text-[10px] font-bold">
+                    <span class="material-symbols-outlined notranslate text-sm">cloud_sync</span>
+                    <span>Conectando…</span>
+                </div>
+            </div>
         </aside>
 
         <!-- Main Content area -->
@@ -985,7 +992,7 @@
 
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260416-sync-reconcile-v2"></script>
+    <script type="module" src="app.js?v=20260416-diag-sync"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>
@@ -994,16 +1001,4 @@
                 navigator.serviceWorker.register('sw.js?v=20260416-sync-reconcile-v2')
                     .then(registration => {
                         console.log('SW registered:', registration);
-                    })
-                    .catch(error => {
-                        console.log('SW registration failed:', error);
-                    });
-            });
-        }
-    </script>
-    <div id="global-toast-container"
-        class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[150] flex flex-col items-center gap-2 pointer-events-none transition-all">
-    </div>
-</body>
-
-</html>
+         

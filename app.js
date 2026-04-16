@@ -105,6 +105,22 @@ const app = {
             localStorage.setItem('lifeos_onboarding_complete', completed ? '1' : '0');
         } catch (_) {}
     },
+    updateSyncBadge: function(state) {
+        // state: 'ok' | 'error' | 'syncing' | 'offline'
+        const labels = {
+            ok:      { icon: 'cloud_done',    text: 'Sincronizado',     cls: 'text-green-500' },
+            error:   { icon: 'cloud_off',     text: 'Falha na nuvem',   cls: 'text-red-400' },
+            syncing: { icon: 'cloud_sync',    text: 'Sincronizando…',   cls: 'text-primary' },
+            offline: { icon: 'cloud_off',     text: 'Modo local',       cls: 'text-yellow-400' },
+        };
+        const d = labels[state] || labels['ok'];
+        document.querySelectorAll('.lifeos-sync-badge').forEach(el => {
+            el.innerHTML = '<span class="material-symbols-outlined notranslate text-sm">' + d.icon + '</span>'
+                         + '<span class="text-[10px] font-bold">' + d.text + '</span>';
+            el.className = 'lifeos-sync-badge flex items-center gap-1 ' + d.cls;
+        });
+    },
+
     withTimeout: function(promise, ms, label = 'operation') {
         return Promise.race([
             promise,
@@ -862,6 +878,7 @@ const app = {
         const enqueueTs = Number(state._lastUpdatedAt || 0);
         const runSave = async () => {
             this._isSaving = true;
+            this.updateSyncBadge('syncing');
             try {
                 await this.withTimeout(authReady, 8000, 'auth_ready');
                 try {
@@ -878,6 +895,7 @@ const app = {
                 await this.withTimeout(setDoc(stateRef, cloudSnapshot, { merge: true }), 10000, 'firestore_setDoc');
                 console.log("Sincronização com Nuvem: Concluída.");
                 this.lastCloudSyncOk = true;
+                this.updateSyncBadge('ok');
                 const currentTs = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
                 window.sistemaVidaState._pendingLocalChanges = currentTs > cloudTs;
                 this.persistLocalMirror();
@@ -886,7 +904,13 @@ const app = {
                 console.error("Erro ao salvar o estado no Firestore:", error);
                 this.lastCloudSyncOk = false;
                 this.lastCloudSyncErrorCode = String(error?.code || error?.message || '').trim();
-                if (!silent && this.showToast) {
+                this.updateSyncBadge('error');
+                // Mostra toast na primeira falha da sessão (independente de silent)
+                if (!this._shownSyncError && this.showToast) {
+                    this._shownSyncError = true;
+                    const reason = this.lastCloudSyncErrorCode ? ' (' + this.lastCloudSyncErrorCode + ')' : '';
+                    this.showToast('Sem sincronização com a nuvem' + reason + '. Dados salvos localmente.', 'error');
+                } else if (!silent && this.showToast) {
                     this.showToast('Salvo localmente. Falha na sincronização com nuvem.', 'error');
                 }
             } finally {
@@ -934,6 +958,9 @@ const app = {
         let preferred = cloudData || localData;
         if (shouldKeepLocal) preferred = localData;
 
+        const cloudTsStr = cloudData ? new Date(Number(cloudData._lastUpdatedAt||0)).toISOString() : 'n/a';
+        const localTsStr = localData ? new Date(Number(localData._lastUpdatedAt||0)).toISOString() : 'n/a';
+        console.log('[SYNC] cloudTs=' + cloudTsStr + '  localTs=' + localTsStr + '  localHasPending=' + localHasPending + '  shouldKeepLocal=' + shouldKeepLocal);
         if (shouldKeepLocal && cloudData && localHasPending) console.log('[SYNC] Keeping local pending state because it is newer/equal to cloud. Will retry cloud sync.');
         else if (shouldKeepLocal && !cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
         else if (localHasPending && cloudData) console.warn('[SYNC] Local pending state is older than cloud — applying cloud source of truth.');
@@ -992,12 +1019,14 @@ const app = {
     },
     setupRealtimeSync: function() {
         if (this._realtimeSyncUnsub) return; // already active
-        this.withTimeout(authReady, 8000, 'auth_ready').then(() => {
-            const stateRef = doc(db, "users", "meu-sistema-vida");
-            this._realtimeSyncUnsub = onSnapshot(stateRef, (docSnap) => {
-                if (!docSnap.exists()) return;
-                if (this._isSaving) return; // mid-save, skip to avoid echo
-                if (docSnap.metadata && docSnap.metadata.hasPendingWrites) return;
+        const self = this;
+        const trySetup = function() {
+            self.withTimeout(authReady, 10000, 'auth_ready').then(() => {
+                const stateRef = doc(db, 'users', 'meu-sistema-vida');
+                self._realtimeSyncUnsub = onSnapshot(stateRef, (docSnap) => {
+                    if (!docSnap.exists()) return;
+                    if (self._isSaving) return; // mid-save, skip echo
+                    if (docSnap.metadata && docSnap.metadata.hasPendingWrites) return;
                 const remoteData = docSnap.data();
                 const remoteTs = Number(remoteData?._lastUpdatedAt || 0);
                 const localTs = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
@@ -1007,6 +1036,7 @@ const app = {
                     return;
                 }
                 console.log('[SYNC] Real-time update received from cloud');
+                self.updateSyncBadge('ok');
                 window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
                 if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
                 window.sistemaVidaState._lastUpdatedAt = Number(remoteData?._lastUpdatedAt || window.sistemaVidaState._lastUpdatedAt || Date.now());
@@ -1035,12 +1065,46 @@ const app = {
                     const view = app.currentView;
                     if (view && app.render && app.render[view]) app.render[view]();
                 } catch (_) {}
-            }, function(err) {
-                console.warn('[SYNC] Real-time listener error:', err);
+                }, function(err) {
+                    console.warn('[SYNC] Real-time listener error:', err);
+                    self.updateSyncBadge('error');
+                    // Listener errored – tear down and retry in 30s
+                    self._realtimeSyncUnsub = null;
+                    setTimeout(function() { self.setupRealtimeSync(); }, 30000);
+                });
+                // ---- periodic fallback pull every 60s ----
+                if (!self._periodicSyncId) {
+                    self._periodicSyncId = setInterval(function() {
+                        if (self._isSaving || window.sistemaVidaState?._pendingLocalChanges) return;
+                        self.withTimeout(authReady, 5000, 'auth_periodic').then(() => {
+                            const ref = doc(db, 'users', 'meu-sistema-vida');
+                            return self.withTimeout(getDoc(ref), 8000, 'periodic_getDoc');
+                        }).then((snap) => {
+                            if (!snap || !snap.exists()) return;
+                            const remote = snap.data();
+                            const remoteTs = Number(remote?._lastUpdatedAt || 0);
+                            const localTs  = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
+                            if (remoteTs <= localTs) return;
+                            console.log('[SYNC] Periodic pull: applying newer cloud state (remoteTs=' + remoteTs + ')');
+                            window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remote);
+                            window.sistemaVidaState._lastUpdatedAt = remoteTs;
+                            if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
+                            app.normalizeEntitiesState();
+                            app.normalizeDailyLogsState();
+                            app.persistLocalMirror();
+                            app.updateSyncBadge('ok');
+                            try { if (app.currentView && app.render && app.render[app.currentView]) app.render[app.currentView](); } catch (_) {}
+                        }).catch((e) => { console.warn('[SYNC] Periodic pull error:', e); });
+                    }, 60000);
+                }
+            }).catch(function(err) {
+                console.warn('[SYNC] Real-time listener auth timeout, retrying in 15s:', err);
+                self.updateSyncBadge('offline');
+                // Retry after 15s
+                setTimeout(trySetup, 15000);
             });
-        }).catch(function(err) {
-            console.warn('[SYNC] Real-time listener skipped:', err);
-        });
+        }; // end trySetup
+        trySetup();
     },
 
 
@@ -1188,7 +1252,8 @@ const app = {
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando...");
+        console.log("Sistema Vida OS inicializando... SW=v22");
+        console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
         try {
             await this.withTimeout(this.loadState(), 12000, 'loadState');
         } catch (err) {
