@@ -925,13 +925,18 @@ const app = {
         }
 
         const localHasPending = !!(localData && localData._pendingLocalChanges);
-        const localPendingAgeMs = Date.now() - Number(localData?._lastLocalEditAt || 0);
-        const shouldKeepLocal = localHasPending && localPendingAgeMs < 15000;
+        const localTs = Number(localData?._lastUpdatedAt || 0);
+        const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
+        const shouldKeepLocal = !!localData && (
+            !cloudData ||
+            (localHasPending && localTs >= cloudTs)
+        );
         let preferred = cloudData || localData;
         if (shouldKeepLocal) preferred = localData;
 
-        if (shouldKeepLocal) console.log('[SYNC] Local has recent pending changes — keeping local briefly before cloud reconciliation.');
-        else if (localHasPending && cloudData) console.warn('[SYNC] Local pending state stale — applying cloud source of truth.');
+        if (shouldKeepLocal && cloudData && localHasPending) console.log('[SYNC] Keeping local pending state because it is newer/equal to cloud. Will retry cloud sync.');
+        else if (shouldKeepLocal && !cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
+        else if (localHasPending && cloudData) console.warn('[SYNC] Local pending state is older than cloud — applying cloud source of truth.');
         else if (!cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
         else console.log('[SYNC] Using cloud state (source of truth).');
 
@@ -979,6 +984,11 @@ const app = {
         this.normalizeDailyLogsState();
         this.normalizeDeepWorkState();
         this.renderSidebarValues();
+        if (window.sistemaVidaState._pendingLocalChanges) {
+            this.saveState(true).catch((err) => {
+                console.warn('[SYNC] Retry cloud sync after load failed:', err);
+            });
+        }
     },
     setupRealtimeSync: function() {
         if (this._realtimeSyncUnsub) return; // already active
@@ -989,6 +999,13 @@ const app = {
                 if (this._isSaving) return; // mid-save, skip to avoid echo
                 if (docSnap.metadata && docSnap.metadata.hasPendingWrites) return;
                 const remoteData = docSnap.data();
+                const remoteTs = Number(remoteData?._lastUpdatedAt || 0);
+                const localTs = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
+                const localPending = !!window.sistemaVidaState?._pendingLocalChanges;
+                if (localPending && localTs > remoteTs) {
+                    console.log('[SYNC] Ignoring stale remote snapshot while local pending state is newer.');
+                    return;
+                }
                 console.log('[SYNC] Real-time update received from cloud');
                 window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
                 if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
