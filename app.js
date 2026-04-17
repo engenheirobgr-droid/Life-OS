@@ -1261,7 +1261,7 @@ const app = {
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando... SW=v25 sync-badge");
+        console.log("Sistema Vida OS inicializando... SW=v26 init-hardened");
         console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
         try {
             await this.withTimeout(this.loadState(), 12000, 'loadState');
@@ -1279,27 +1279,31 @@ const app = {
                 if (document.visibilityState === 'hidden') flushLocalMirror();
             });
         }
-        this.ensureSettingsState();
-        this.applyThemePreference();
-        this.checkAlerts();
-        this.ensureDeepWorkTicking();
-        this.setupRealtimeSync(); // real-time cross-device sync
+        try { this.ensureSettingsState(); } catch (_) {}
+        try { this.applyThemePreference(); } catch (_) {}
+        try { this.checkAlerts(); } catch (_) {}
+        try { this.ensureDeepWorkTicking(); } catch (_) {}
+        try { this.setupRealtimeSync(); } catch (_) {} // real-time cross-device sync
 
         // Auto-migra imagens base64 do localStorage para o Firebase Storage
-        const hasBase64Avatar = this.isInlineImageDataUrl(window.sistemaVidaState.profile?.avatarUrl);
-        const odysseyImgs = window.sistemaVidaState.profile?.odysseyImages || {};
-        const hasBase64Odyssey = Object.values(odysseyImgs).some(v => this.isInlineImageDataUrl(v));
-        if (hasBase64Avatar || hasBase64Odyssey) {
-            console.log("Imagens locais detectadas, sincronizando com a nuvem...");
-            authReady.then(() => {
-                this.syncProfileImagesToCloud().then(changed => {
-                    if (changed) {
-                        console.log("Imagens migradas para a nuvem com sucesso.");
-                        this.saveState(true);
-                    }
-                }).catch(e => console.warn("Falha ao migrar imagens:", e));
-            }).catch(() => {});
-        }
+        try {
+            const hasBase64Avatar = this.isInlineImageDataUrl(window.sistemaVidaState.profile?.avatarUrl);
+            const odysseyImgs = window.sistemaVidaState.profile?.odysseyImages || {};
+            const hasBase64Odyssey = Object.values(odysseyImgs).some(v => this.isInlineImageDataUrl(v));
+            if (hasBase64Avatar || hasBase64Odyssey) {
+                console.log("Imagens locais detectadas, sincronizando com a nuvem...");
+                authReady.then(() => {
+                    this.syncProfileImagesToCloud().then(changed => {
+                        if (changed) {
+                            console.log("Imagens migradas para a nuvem com sucesso.");
+                            this.saveState(true);
+                        }
+                    }).catch(e => console.warn("Falha ao migrar imagens:", e));
+                }).catch(() => {});
+            }
+        } catch (_) {}
+
+        // Always navigate — even if something above threw
         if (!window.sistemaVidaState.onboardingComplete) {
             this.switchView('onboarding');
         } else {
@@ -1307,48 +1311,53 @@ const app = {
         }
 
         // Tarefa 2: Filtro Inteligente - Listener de Dimensão
-        const dimSelect = document.getElementById('crud-dimension');
-        if (dimSelect) {
-            dimSelect.addEventListener('change', () => {
-                const typeSelect = document.getElementById('crud-type');
-                if (typeSelect) this.updateParentList(typeSelect.value);
-            });
-        }
+        try {
+            const dimSelect = document.getElementById('crud-dimension');
+            if (dimSelect) {
+                dimSelect.addEventListener('change', () => {
+                    const typeSelect = document.getElementById('crud-type');
+                    if (typeSelect) this.updateParentList(typeSelect.value);
+                });
+            }
+        } catch (_) {}
     },
 
     switchView: async function(viewName) {
         if (!viewName) return;
         this.currentView = viewName;
         this.updateNavUI(viewName);
-        
+
         const container = document.getElementById(this.config.containerId);
         if (container) {
             container.style.opacity = '0';
             container.style.transition = 'opacity 0.2s ease-in-out';
         }
 
+        let html = null;
         try {
-            const response = await fetch(`${this.config.viewsPath}${viewName}.html`);
-            const html = response.ok ? await response.text() : this.getFallbackTemplate(viewName);
-            
-            setTimeout(() => {
-                if (container) {
-                    container.innerHTML = html;
-                    container.style.opacity = '1';
-                    this.executeInjectedScripts(container);
-                }
-                if (this.render[viewName]) {
-                    this.render[viewName]();
-                }
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 200);
+            // AbortController timeout so fetch never hangs forever
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 8000);
+            const response = await fetch(`${this.config.viewsPath}${viewName}.html`, { signal: ctrl.signal });
+            clearTimeout(timer);
+            html = response.ok ? await response.text() : null;
         } catch (error) {
             console.warn(`Erro ao carregar a view '${viewName}':`, error);
-            if (container) {
-                container.innerHTML = this.getFallbackTemplate(viewName);
-                container.style.opacity = '1';
-            }
+            html = null;
         }
+        if (!html) html = this.getFallbackTemplate(viewName);
+
+        setTimeout(() => {
+            if (container) {
+                container.innerHTML = html;
+                container.style.opacity = '1';
+                this.executeInjectedScripts(container);
+            }
+            if (this.render[viewName]) {
+                try { this.render[viewName](); } catch (e) { console.warn('render error:', e); }
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 200);
     },
 
     // Alias para compatibilidade com as chamadas do index.html
@@ -6076,4 +6085,5 @@ const app = {
 window.app = app;
 
 document.addEventListener("DOMContentLoaded", () => {
-    app.i
+    app.init();
+});

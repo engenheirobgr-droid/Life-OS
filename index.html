@@ -999,4 +999,13 @@
 
 
     <!-- SPA Logic entry -->
-    <scri
+    <script type="module" src="app.js?v=20260416-init-hardened"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js?v=20260416-sync-reconcile-v2')
+                    .then(registration => {
+                        console.log('SW registered:', registration);
+         
