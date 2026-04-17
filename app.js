@@ -660,7 +660,7 @@ const app = {
     },
     uploadProfileImageDataUrl: async function(dataUrl, path) {
         if (!this.isInlineImageDataUrl(dataUrl)) return dataUrl || '';
-        await authReady;
+        await getAuthReady();
         const imageRef = storageRef(storage, path);
         await uploadString(imageRef, dataUrl, 'data_url');
         return await getDownloadURL(imageRef);
@@ -891,10 +891,12 @@ const app = {
             try {
                 await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
                 try {
-                    const imagesChanged = await this.syncProfileImagesToCloud();
+                    const imagesChanged = await this.withTimeout(
+                        this.syncProfileImagesToCloud(), 12000, 'sync_images'
+                    );
                     if (imagesChanged) this.persistLocalMirror();
                 } catch (imageError) {
-                    console.warn('Falha ao preparar imagens para a nuvem:', imageError);
+                    console.warn('Falha ao preparar imagens para a nuvem (ignorado):', imageError);
                 }
                 const stateRef = doc(db, "users", "meu-sistema-vida");
                 const cloudSnapshot = this.getPersistableState('cloud');
@@ -1261,7 +1263,7 @@ const app = {
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando... SW=v26 init-hardened");
+        console.log("Sistema Vida OS inicializando... SW=v27 image-timeout");
         console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
         try {
             await this.withTimeout(this.loadState(), 12000, 'loadState');
@@ -6079,11 +6081,4 @@ const app = {
         this.renderSidebarValues(); // Sync any changes to values or name
         if (this.render.perfil) this.render.perfil();
         this.showToast("Perfil atualizado com sucesso!", "success");
-    }
-};
-
-window.app = app;
-
-document.addEventListener("DOMContentLoaded", () => {
-    app.init();
-});
+ 
