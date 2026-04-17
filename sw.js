@@ -62,4 +62,10 @@ self.addEventListener('fetch', (event) => {
                         cache.put(event.request, responseClone);
                     });
                 }
-   
+                return response;
+            })
+            .catch(() => {
+                return caches.match(event.request);
+            })
+    );
+});
