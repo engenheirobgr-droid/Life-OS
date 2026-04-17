@@ -235,7 +235,14 @@
             <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <span class="material-symbols-outlined notranslate text-white text-xl">temp_preferences_custom</span>
             </div>
-            <span class="font-headline font-bold text-lg tracking-tight text-on-background">Life OS</span>
+            <div class="flex flex-col">
+                <span class="font-headline font-bold text-lg tracking-tight text-on-background leading-none">Life OS</span>
+                <!-- Sync status badge (mobile header) -->
+                <div class="lifeos-sync-badge flex items-center gap-0.5 text-outline text-[9px] font-bold">
+                    <span class="material-symbols-outlined notranslate" style="font-size:11px">cloud_sync</span>
+                    <span>Conectando…</span>
+                </div>
+            </div>
         </div>
         <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container"
             onclick="app.navigate('perfil')">
@@ -992,13 +999,4 @@
 
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260416-auth-retry"></script>
-
-    <!-- PWA Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=20260416-sync-reconcile-v2')
-                    .then(registration => {
-                        console.log('SW registered:', registration);
-         
+    <scri

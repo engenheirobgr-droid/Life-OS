@@ -1261,7 +1261,7 @@ const app = {
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando... SW=v24");
+        console.log("Sistema Vida OS inicializando... SW=v25 sync-badge");
         console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
         try {
             await this.withTimeout(this.loadState(), 12000, 'loadState');
@@ -6076,5 +6076,4 @@ const app = {
 window.app = app;
 
 document.addEventListener("DOMContentLoaded", () => {
-    app.init();
-});
+    app.i
