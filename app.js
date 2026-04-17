@@ -1263,7 +1263,9 @@ const app = {
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando... v28");
+        console.log("Sistema Vida OS inicializando... v29");
+    // Signal dead-man's switch that the module loaded
+    document.dispatchEvent(new CustomEvent('lifeos-app-ready'));
         console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
         try {
             await this.withTimeout(this.loadState(), 12000, 'loadState');
@@ -6079,9 +6081,4 @@ const app = {
         }
         
         this.renderSidebarValues(); // Sync any changes to values or name
-        if (this.render.perfil) this.render.perfil();
-        this.showToast("Perfil atualizado com sucesso!", "success");
-    }
-};
-
-window.a
+        if (this.rend
