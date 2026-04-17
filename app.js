@@ -6081,4 +6081,13 @@ const app = {
         }
         
         this.renderSidebarValues(); // Sync any changes to values or name
-        if (this.rend
+        if (this.render.perfil) this.render.perfil();
+        this.showToast("Perfil atualizado com sucesso!", "success");
+    }
+};
+
+window.app = app;
+
+document.addEventListener("DOMContentLoaded", () => {
+    app.init();
+});
