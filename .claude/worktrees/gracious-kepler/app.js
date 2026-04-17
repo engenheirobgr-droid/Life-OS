@@ -4,9 +4,7 @@
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDXu7ddS77_deDezWQqrLd4Ww-MRVL1bgM",
@@ -19,28 +17,6 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
-const auth = getAuth(firebaseApp);
-const storage = getStorage(firebaseApp);
-// getAuthReady() cria uma Promise fresca a cada chamada.
-// Isso evita que uma falha de auth transitória (ex: rede lenta na abertura do app)
-// deixe o authReady permanentemente rejeitado, bloqueando todos os saves futuros.
-function getAuthReady() {
-    if (auth.currentUser) return Promise.resolve(auth.currentUser);
-    return new Promise((resolve, reject) => {
-        const unsub = onAuthStateChanged(auth, (user) => {
-            if (user) { unsub(); resolve(user); }
-        }, (err) => { reject(err); });
-        // Só chama signInAnonymously se ainda não há usuário
-        if (!auth.currentUser) {
-            signInAnonymously(auth).catch((err) => {
-                // Não reject direto — o onAuthStateChanged vai tratar
-                console.warn('[AUTH] signInAnonymously falhou, aguardando onAuthStateChanged:', err);
-            });
-        }
-    });
-}
-// authReady: mantido para compatibilidade com onSnapshot (que precisa de uma promise inicial)
-const authReady = getAuthReady();
 
 window.sistemaVidaState = {
     profile: {
@@ -99,42 +75,6 @@ const app = {
     },
     getLocalDateKey: function(date = new Date()) {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    },
-    getSafeMonotonicTs: function() {
-        const prev = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
-        const now = Date.now();
-        return Math.max(now, prev + 1);
-    },
-    persistLocalMirror: function() {
-        try {
-            localStorage.setItem('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')));
-        } catch (_) {}
-        try {
-            const completed = !!window.sistemaVidaState?.onboardingComplete;
-            localStorage.setItem('lifeos_onboarding_complete', completed ? '1' : '0');
-        } catch (_) {}
-    },
-    updateSyncBadge: function(state) {
-        // state: 'ok' | 'error' | 'syncing' | 'offline'
-        const labels = {
-            ok:      { icon: 'cloud_done',    text: 'Sincronizado',     cls: 'text-green-500' },
-            error:   { icon: 'cloud_off',     text: 'Falha na nuvem',   cls: 'text-red-400' },
-            syncing: { icon: 'cloud_sync',    text: 'Sincronizando…',   cls: 'text-primary' },
-            offline: { icon: 'cloud_off',     text: 'Modo local',       cls: 'text-yellow-400' },
-        };
-        const d = labels[state] || labels['ok'];
-        document.querySelectorAll('.lifeos-sync-badge').forEach(el => {
-            el.innerHTML = '<span class="material-symbols-outlined notranslate text-sm">' + d.icon + '</span>'
-                         + '<span class="text-[10px] font-bold">' + d.text + '</span>';
-            el.className = 'lifeos-sync-badge flex items-center gap-1 ' + d.cls;
-        });
-    },
-
-    withTimeout: function(promise, ms, label = 'operation') {
-        return Promise.race([
-            promise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error(label + '_timeout')), ms))
-        ]);
     },
     normalizeDimensionKey: function(dimRaw) {
         const txt = String(dimRaw || '').toLowerCase()
@@ -256,7 +196,6 @@ const app = {
             };
         }).filter((macro) => macro.id && macro.title);
 
-        const beforeCount = state.entities.micros.length;
         state.entities.micros = state.entities.micros.map((micro) => {
             const progress = clampProgress(micro?.progress);
             const status = normalizedStatus(micro?.status, progress, micro?.completed);
@@ -269,14 +208,7 @@ const app = {
                 status,
                 completed: status === 'done'
             };
-        }).filter((micro) => {
-            const keep = micro.id && micro.title;
-            if (!keep) console.warn('[normalizeEntitiesState] Micro removed - missing id or title:', micro);
-            return keep;
-        });
-        if (beforeCount !== state.entities.micros.length) {
-            console.log(`[normalizeEntitiesState] Micros filtered: ${beforeCount} → ${state.entities.micros.length}`);
-        }
+        }).filter((micro) => micro.id && micro.title);
     },
     normalizeSwlsAnswer: function(rawValue) {
         let value = Number(rawValue);
@@ -380,28 +312,6 @@ const app = {
                 intention: String(session?.intention || '')
             };
         }).slice(0, 200);
-    },
-    syncDeepWorkMicroStatus: function() {
-        this.normalizeDeepWorkState();
-        const state = window.sistemaVidaState;
-        const dw = state.deepWork;
-        if (!dw.isRunning || !dw.microId) return false;
-        const micro = (state.entities?.micros || []).find(m => m.id === dw.microId);
-        if (!micro || micro.status === 'done') return false;
-        let changed = false;
-        if (micro.status !== 'in_progress') {
-            micro.status = 'in_progress';
-            changed = true;
-        }
-        if (micro.completed) {
-            micro.completed = false;
-            changed = true;
-        }
-        if (!micro.progress || micro.progress < 1) {
-            micro.progress = 1;
-            changed = true;
-        }
-        return changed;
     },
     formatClock: function(totalSec) {
         const safe = Math.max(0, Math.round(Number(totalSec) || 0));
@@ -532,9 +442,6 @@ const app = {
                 microId: '', intention: '', lastTickAt: 0, sessions: []
             };
         }
-        if (typeof window.sistemaVidaState.onboardingComplete !== 'boolean') {
-            window.sistemaVidaState.onboardingComplete = false;
-        }
         try {
             const cachedTheme = localStorage.getItem('lifeos_theme_pref');
             if (cachedTheme && ['light', 'dark', 'auto'].includes(cachedTheme)) {
@@ -556,9 +463,6 @@ const app = {
                     ...parsed
                 };
             }
-            const onboardingFlag = localStorage.getItem('lifeos_onboarding_complete');
-            if (onboardingFlag === '1') window.sistemaVidaState.onboardingComplete = true;
-            if (onboardingFlag === '0') window.sistemaVidaState.onboardingComplete = false;
         } catch (_) {}
         this.normalizePermaState();
         this.normalizeEntitiesState();
@@ -655,37 +559,6 @@ const app = {
             reader.readAsDataURL(file);
         });
     },
-    isInlineImageDataUrl: function(value) {
-        return typeof value === 'string' && value.startsWith('data:image/');
-    },
-    uploadProfileImageDataUrl: async function(dataUrl, path) {
-        if (!this.isInlineImageDataUrl(dataUrl)) return dataUrl || '';
-        await getAuthReady();
-        const imageRef = storageRef(storage, path);
-        await uploadString(imageRef, dataUrl, 'data_url');
-        return await getDownloadURL(imageRef);
-    },
-    syncProfileImagesToCloud: async function() {
-        this.ensureSettingsState();
-        const profile = window.sistemaVidaState.profile || {};
-        let changed = false;
-        if (this.isInlineImageDataUrl(profile.avatarUrl)) {
-            profile.avatarUrl = await this.uploadProfileImageDataUrl(profile.avatarUrl, 'users/meu-sistema-vida/profile/avatar.jpg');
-            try { localStorage.setItem('lifeos_profile_avatar', profile.avatarUrl); } catch (_) {}
-            changed = true;
-        }
-        const images = profile.odysseyImages || {};
-        for (const key of ['cenarioA', 'cenarioB', 'cenarioC']) {
-            if (!this.isInlineImageDataUrl(images[key])) continue;
-            images[key] = await this.uploadProfileImageDataUrl(images[key], `users/meu-sistema-vida/odyssey/${key}.jpg`);
-            changed = true;
-        }
-        if (changed) {
-            profile.odysseyImages = images;
-            try { localStorage.setItem('lifeos_odyssey_images', JSON.stringify(images)); } catch (_) {}
-        }
-        return changed;
-    },
     onProfilePhotoSelected: function(event) {
         const file = event?.target?.files?.[0];
         if (!file) return;
@@ -693,28 +566,13 @@ const app = {
             this.showToast('Selecione um arquivo de imagem válido.', 'error');
             return;
         }
-        this.fileToOptimizedDataUrl(file, 512, 0.78).then(async (dataUrl) => {
+        this.fileToOptimizedDataUrl(file, 640, 0.85).then((dataUrl) => {
             this.ensureSettingsState();
             window.sistemaVidaState.profile.avatarUrl = dataUrl;
             try { localStorage.setItem('lifeos_profile_avatar', dataUrl); } catch (_) {}
-            // Feedback imediato antes do upload
+            this.saveState(true);
             if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
-            this.showToast('Processando foto...', 'info');
-            try {
-                const url = await this.uploadProfileImageDataUrl(dataUrl, 'users/meu-sistema-vida/profile/avatar.jpg');
-                window.sistemaVidaState.profile.avatarUrl = url;
-                try { localStorage.setItem('lifeos_profile_avatar', url); } catch (_) {}
-            } catch (error) {
-                console.warn('Falha ao sincronizar foto de perfil com Storage:', error);
-            }
-            await this.saveState(true);
-            if (this.lastCloudSyncOk === false) {
-                const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
-                this.showToast(`Foto salva só neste dispositivo.${reason}`, 'error');
-            } else {
-                if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
-                this.showToast('Foto de perfil atualizada! ✓', 'success');
-            }
+            this.showToast('Foto de perfil atualizada!', 'success');
         }).catch(() => {
             this.showToast('Falha ao ler a imagem selecionada.', 'error');
         }).finally(() => {
@@ -738,30 +596,15 @@ const app = {
             this.showToast('Selecione um arquivo de imagem válido para o cenário.', 'error');
             return;
         }
-        this.fileToOptimizedDataUrl(file, 900, 0.76).then(async (dataUrl) => {
+        this.fileToOptimizedDataUrl(file, 1280, 0.82).then((dataUrl) => {
             const current = window.sistemaVidaState.profile.odysseyImages || {};
             window.sistemaVidaState.profile.odysseyImages = { ...current, [key]: dataUrl };
             try {
                 localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
             } catch (_) {}
-            // Feedback imediato: mostra a imagem (base64) antes do upload terminar
+            this.saveState(true);
             if (this.render.proposito) this.render.proposito();
-            this.showToast('Processando imagem...', 'info');
-            try {
-                const url = await this.uploadProfileImageDataUrl(dataUrl, `users/meu-sistema-vida/odyssey/${key}.jpg`);
-                window.sistemaVidaState.profile.odysseyImages = { ...window.sistemaVidaState.profile.odysseyImages, [key]: url };
-                localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
-            } catch (error) {
-                console.warn('Falha ao sincronizar imagem Odyssey com Storage:', error);
-            }
-            await this.saveState(true);
-            if (this.lastCloudSyncOk === false) {
-                const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
-                this.showToast(`Imagem salva só neste dispositivo.${reason}`, 'error');
-            } else {
-                if (this.render.proposito) this.render.proposito();
-                this.showToast('Imagem do cenário atualizada! ✓', 'success');
-            }
+            this.showToast('Imagem do cenário atualizada!', 'success');
         }).catch(() => {
             this.showToast('Falha ao ler a imagem selecionada.', 'error');
         }).finally(() => {
@@ -813,8 +656,6 @@ const app = {
     currentTextGroup: null,
     currentTextKey: null,
     onboardingStep: 0,
-    lastCloudSyncOk: null,
-    lastCloudSyncErrorCode: '',
 
     // ------------------------------------------------------------------------
     // Cloud Persistence Engine
@@ -824,14 +665,8 @@ const app = {
         const snapshot = JSON.parse(JSON.stringify(raw));
         if (mode === 'cloud') {
             if (snapshot.profile) {
-                if (this.isInlineImageDataUrl(snapshot.profile.avatarUrl)) delete snapshot.profile.avatarUrl;
-                if (snapshot.profile.odysseyImages) {
-                    Object.keys(snapshot.profile.odysseyImages).forEach((key) => {
-                        if (this.isInlineImageDataUrl(snapshot.profile.odysseyImages[key])) {
-                            delete snapshot.profile.odysseyImages[key];
-                        }
-                    });
-                }
+                delete snapshot.profile.avatarUrl;
+                delete snapshot.profile.odysseyImages;
             }
             snapshot._persistenceMode = 'cloud_slim';
         }
@@ -843,10 +678,6 @@ const app = {
             snapshot._persistenceMode = 'core_local';
         }
         return snapshot;
-    },
-
-    hasRemoteImageUrl: function(value) {
-        return typeof value === 'string' && /^https?:\/\//.test(value);
     },
 
     mergeDeep: function(target, source) {
@@ -862,15 +693,9 @@ const app = {
         return target;
     },
 
-    saveState: function(silent = true) {
+    saveState: async function(silent = true) {
         const state = window.sistemaVidaState;
-        state._lastUpdatedAt = this.getSafeMonotonicTs();
-        state._pendingLocalChanges = true;
-        state._lastLocalEditAt = Date.now();
-        this.lastCloudSyncOk = null;
-        this.lastCloudSyncErrorCode = '';
-
-        // Durabilidade imediata no dispositivo para não perder progresso em refresh/reload.
+        state._lastUpdatedAt = Date.now();
         const fullSnapshot = this.getPersistableState('full');
         const coreSnapshot = this.getPersistableState('core');
         try {
@@ -881,56 +706,18 @@ const app = {
                 localStorage.setItem('lifeos_state_backup_core', JSON.stringify(coreSnapshot));
             } catch (_) {}
         }
-        this.persistLocalMirror();
-
-        if (!this._saveChain) this._saveChain = Promise.resolve();
-        const enqueueTs = Number(state._lastUpdatedAt || 0);
-        const runSave = async () => {
-            this._isSaving = true;
-            this.updateSyncBadge('syncing');
-            try {
-                await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
-                try {
-                    const imagesChanged = await this.withTimeout(
-                        this.syncProfileImagesToCloud(), 12000, 'sync_images'
-                    );
-                    if (imagesChanged) this.persistLocalMirror();
-                } catch (imageError) {
-                    console.warn('Falha ao preparar imagens para a nuvem (ignorado):', imageError);
-                }
-                const stateRef = doc(db, "users", "meu-sistema-vida");
-                const cloudSnapshot = this.getPersistableState('cloud');
-                const cloudTs = Number(window.sistemaVidaState?._lastUpdatedAt || enqueueTs || this.getSafeMonotonicTs());
-                cloudSnapshot._lastUpdatedAt = cloudTs;
-                cloudSnapshot._pendingLocalChanges = false;
-                await this.withTimeout(setDoc(stateRef, cloudSnapshot, { merge: true }), 10000, 'firestore_setDoc');
-                console.log("Sincronização com Nuvem: Concluída.");
-                this.lastCloudSyncOk = true;
-                this.updateSyncBadge('ok');
-                const currentTs = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
-                window.sistemaVidaState._pendingLocalChanges = currentTs > cloudTs;
-                this.persistLocalMirror();
-                if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
-            } catch (error) {
-                console.error("Erro ao salvar o estado no Firestore:", error);
-                this.lastCloudSyncOk = false;
-                this.lastCloudSyncErrorCode = String(error?.code || error?.message || '').trim();
-                this.updateSyncBadge('error');
-                // Mostra toast na primeira falha da sessão (independente de silent)
-                if (!this._shownSyncError && this.showToast) {
-                    this._shownSyncError = true;
-                    const reason = this.lastCloudSyncErrorCode ? ' (' + this.lastCloudSyncErrorCode + ')' : '';
-                    this.showToast('Sem sincronização com a nuvem' + reason + '. Dados salvos localmente.', 'error');
-                } else if (!silent && this.showToast) {
-                    this.showToast('Salvo localmente. Falha na sincronização com nuvem.', 'error');
-                }
-            } finally {
-                this._isSaving = false;
+        try {
+            const stateRef = doc(db, "users", "meu-sistema-vida");
+            const cloudSnapshot = this.getPersistableState('cloud');
+            await setDoc(stateRef, cloudSnapshot);
+            console.log("Sincronização com Nuvem: Concluída.");
+            if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
+        } catch (error) {
+            console.error("Erro ao salvar o estado no Firestore:", error);
+            if (!silent && this.showToast) {
+                this.showToast('Salvo localmente. Falha na sincronização com nuvem.', 'error');
             }
-        };
-        const op = this._saveChain.then(runSave, runSave);
-        this._saveChain = op.catch(() => {});
-        return op;
+        }
     },
 
     loadState: async function() {
@@ -944,9 +731,8 @@ const app = {
             } else if (rawCore) {
                 try { localData = JSON.parse(rawCore); } catch (_) { localData = null; }
             }
-            await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
             const stateRef = doc(db, "users", "meu-sistema-vida");
-            const docSnap = await this.withTimeout(getDoc(stateRef), 10000, 'firestore_getDoc');
+            const docSnap = await getDoc(stateRef);
             
             if (docSnap.exists()) {
                 console.log("Estado encontrado na Nuvem, mesclando dados...");
@@ -959,62 +745,24 @@ const app = {
             console.error("Erro ao carregar o estado do Firestore:", error);
         }
 
-        const localHasPending = !!(localData && localData._pendingLocalChanges);
-        const localTs = Number(localData?._lastUpdatedAt || 0);
         const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
-        const shouldKeepLocal = !!localData && (
-            !cloudData ||
-            (localHasPending && localTs >= cloudTs)
-        );
-        let preferred = cloudData || localData;
-        if (shouldKeepLocal) preferred = localData;
-
-        const cloudTsStr = cloudData ? new Date(Number(cloudData._lastUpdatedAt||0)).toISOString() : 'n/a';
-        const localTsStr = localData ? new Date(Number(localData._lastUpdatedAt||0)).toISOString() : 'n/a';
-        console.log('[SYNC] cloudTs=' + cloudTsStr + '  localTs=' + localTsStr + '  localHasPending=' + localHasPending + '  shouldKeepLocal=' + shouldKeepLocal);
-        if (shouldKeepLocal && cloudData && localHasPending) console.log('[SYNC] Keeping local pending state because it is newer/equal to cloud. Will retry cloud sync.');
-        else if (shouldKeepLocal && !cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
-        else if (localHasPending && cloudData) console.warn('[SYNC] Local pending state is older than cloud — applying cloud source of truth.');
-        else if (!cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
-        else console.log('[SYNC] Using cloud state (source of truth).');
-
+        const localTs = Number(localData?._lastUpdatedAt || 0);
+        const preferred = localTs >= cloudTs ? localData : cloudData;
+        const fallback = localTs >= cloudTs ? cloudData : localData;
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
-        if (!shouldKeepLocal && window.sistemaVidaState._pendingLocalChanges) {
-            window.sistemaVidaState._pendingLocalChanges = false;
-        }
-        // Always apply Firebase Storage URLs from cloud — they are authoritative for images
-        try {
-            if (cloudData && cloudData.profile && cloudData.profile.avatarUrl && this.hasRemoteImageUrl(cloudData.profile.avatarUrl)) {
-                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                window.sistemaVidaState.profile.avatarUrl = cloudData.profile.avatarUrl;
-            }
-            if (cloudData && cloudData.profile && cloudData.profile.odysseyImages) {
-                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
-                Object.entries(cloudData.profile.odysseyImages).forEach(function(entry) {
-                    var k = entry[0], v = entry[1];
-                    if (v && typeof v === 'string' && /^https?:\/\//.test(v)) {
-                        window.sistemaVidaState.profile.odysseyImages[k] = v;
-                    }
-                });
-            }
-        } catch (_) {}
+        if (fallback) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, fallback);
         try {
             const cachedAvatar = localStorage.getItem('lifeos_profile_avatar');
-            if (cachedAvatar && !this.hasRemoteImageUrl(window.sistemaVidaState.profile.avatarUrl)) {
-                window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
-            }
+            if (cachedAvatar) window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
             const cachedOdyssey = localStorage.getItem('lifeos_odyssey_images');
             if (cachedOdyssey) {
                 const parsed = JSON.parse(cachedOdyssey);
-                const current = window.sistemaVidaState.profile.odysseyImages || {};
-                Object.keys(parsed || {}).forEach((key) => {
-                    if (!this.hasRemoteImageUrl(current[key])) current[key] = parsed[key];
-                });
-                window.sistemaVidaState.profile.odysseyImages = current;
+                window.sistemaVidaState.profile.odysseyImages = {
+                    ...(window.sistemaVidaState.profile.odysseyImages || {}),
+                    ...parsed
+                };
             }
         } catch (_) {}
-        this.persistLocalMirror();
         this.ensureSettingsState();
         this.normalizePermaState();
         this.normalizeEntitiesState();
@@ -1022,102 +770,7 @@ const app = {
         this.normalizeDailyLogsState();
         this.normalizeDeepWorkState();
         this.renderSidebarValues();
-        if (window.sistemaVidaState._pendingLocalChanges) {
-            this.saveState(true).catch((err) => {
-                console.warn('[SYNC] Retry cloud sync after load failed:', err);
-            });
-        }
     },
-    setupRealtimeSync: function() {
-        if (this._realtimeSyncUnsub) return; // already active
-        const self = this;
-        const trySetup = function() {
-            self.withTimeout(getAuthReady(), 10000, 'auth_ready').then(() => {
-                const stateRef = doc(db, 'users', 'meu-sistema-vida');
-                self._realtimeSyncUnsub = onSnapshot(stateRef, (docSnap) => {
-                    if (!docSnap.exists()) return;
-                    if (self._isSaving) return; // mid-save, skip echo
-                    if (docSnap.metadata && docSnap.metadata.hasPendingWrites) return;
-                const remoteData = docSnap.data();
-                const remoteTs = Number(remoteData?._lastUpdatedAt || 0);
-                const localTs = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
-                const localPending = !!window.sistemaVidaState?._pendingLocalChanges;
-                if (localPending && localTs > remoteTs) {
-                    console.log('[SYNC] Ignoring stale remote snapshot while local pending state is newer.');
-                    return;
-                }
-                console.log('[SYNC] Real-time update received from cloud');
-                self.updateSyncBadge('ok');
-                window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
-                if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
-                window.sistemaVidaState._lastUpdatedAt = Number(remoteData?._lastUpdatedAt || window.sistemaVidaState._lastUpdatedAt || Date.now());
-                // Always apply Firebase Storage image URLs
-                try {
-                    const prof = remoteData.profile;
-                    if (prof && prof.avatarUrl && app.hasRemoteImageUrl(prof.avatarUrl)) {
-                        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                        window.sistemaVidaState.profile.avatarUrl = prof.avatarUrl;
-                    }
-                    if (prof && prof.odysseyImages) {
-                        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                        const cur = window.sistemaVidaState.profile.odysseyImages || {};
-                        Object.entries(prof.odysseyImages).forEach(function(e) {
-                            var k = e[0], v = e[1];
-                            if (v && typeof v === 'string' && /^https?:\/\//.test(v)) cur[k] = v;
-                        });
-                        window.sistemaVidaState.profile.odysseyImages = cur;
-                    }
-                } catch (_) {}
-                app.normalizeEntitiesState();
-                app.normalizeDailyLogsState();
-                app.persistLocalMirror();
-                // Re-render active view so changes appear immediately
-                try {
-                    const view = app.currentView;
-                    if (view && app.render && app.render[view]) app.render[view]();
-                } catch (_) {}
-                }, function(err) {
-                    console.warn('[SYNC] Real-time listener error:', err);
-                    self.updateSyncBadge('error');
-                    // Listener errored – tear down and retry in 30s
-                    self._realtimeSyncUnsub = null;
-                    setTimeout(function() { self.setupRealtimeSync(); }, 30000);
-                });
-                // ---- periodic fallback pull every 60s ----
-                if (!self._periodicSyncId) {
-                    self._periodicSyncId = setInterval(function() {
-                        if (self._isSaving || window.sistemaVidaState?._pendingLocalChanges) return;
-                        self.withTimeout(getAuthReady(), 5000, 'auth_periodic').then(() => {
-                            const ref = doc(db, 'users', 'meu-sistema-vida');
-                            return self.withTimeout(getDoc(ref), 8000, 'periodic_getDoc');
-                        }).then((snap) => {
-                            if (!snap || !snap.exists()) return;
-                            const remote = snap.data();
-                            const remoteTs = Number(remote?._lastUpdatedAt || 0);
-                            const localTs  = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
-                            if (remoteTs <= localTs) return;
-                            console.log('[SYNC] Periodic pull: applying newer cloud state (remoteTs=' + remoteTs + ')');
-                            window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remote);
-                            window.sistemaVidaState._lastUpdatedAt = remoteTs;
-                            if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
-                            app.normalizeEntitiesState();
-                            app.normalizeDailyLogsState();
-                            app.persistLocalMirror();
-                            app.updateSyncBadge('ok');
-                            try { if (app.currentView && app.render && app.render[app.currentView]) app.render[app.currentView](); } catch (_) {}
-                        }).catch((e) => { console.warn('[SYNC] Periodic pull error:', e); });
-                    }, 60000);
-                }
-            }).catch(function(err) {
-                console.warn('[SYNC] Real-time listener auth timeout, retrying in 15s:', err);
-                self.updateSyncBadge('offline');
-                // Retry after 15s
-                setTimeout(trySetup, 15000);
-            });
-        }; // end trySetup
-        trySetup();
-    },
-
 
     showNotification: function(msg) {
         this.showToast(msg, 'success');
@@ -1151,6 +804,7 @@ const app = {
             if (diffDays >= 2) setTimeout(() => this.showNotification("Bom ter você de volta à sua jornada!"), 1000);
         }
         state.lastAccess = todayStr;
+        this.saveState(true);
 
         this.needsReview = false;
         if (today.getDay() === 0) { // Domingo
@@ -1263,51 +917,12 @@ const app = {
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando... v30");
-    // Signal dead-man's switch that the module loaded
-    document.dispatchEvent(new CustomEvent('lifeos-app-ready'));
-        console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
-        try {
-            await this.withTimeout(this.loadState(), 12000, 'loadState');
-        } catch (err) {
-            console.warn('Falha/timeout no carregamento da nuvem. Iniciando com backup local.', err);
-        }
-        if (!this._localFlushBound) {
-            this._localFlushBound = true;
-            const flushLocalMirror = () => {
-                try { this.persistLocalMirror(); } catch (_) {}
-            };
-            window.addEventListener('pagehide', flushLocalMirror);
-            window.addEventListener('beforeunload', flushLocalMirror);
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'hidden') flushLocalMirror();
-            });
-        }
-        try { this.ensureSettingsState(); } catch (_) {}
-        try { this.applyThemePreference(); } catch (_) {}
-        try { this.checkAlerts(); } catch (_) {}
-        try { this.ensureDeepWorkTicking(); } catch (_) {}
-        try { this.setupRealtimeSync(); } catch (_) {} // real-time cross-device sync
-
-        // Auto-migra imagens base64 do localStorage para o Firebase Storage
-        try {
-            const hasBase64Avatar = this.isInlineImageDataUrl(window.sistemaVidaState.profile?.avatarUrl);
-            const odysseyImgs = window.sistemaVidaState.profile?.odysseyImages || {};
-            const hasBase64Odyssey = Object.values(odysseyImgs).some(v => this.isInlineImageDataUrl(v));
-            if (hasBase64Avatar || hasBase64Odyssey) {
-                console.log("Imagens locais detectadas, sincronizando com a nuvem...");
-                authReady.then(() => {
-                    this.syncProfileImagesToCloud().then(changed => {
-                        if (changed) {
-                            console.log("Imagens migradas para a nuvem com sucesso.");
-                            this.saveState(true);
-                        }
-                    }).catch(e => console.warn("Falha ao migrar imagens:", e));
-                }).catch(() => {});
-            }
-        } catch (_) {}
-
-        // Always navigate — even if something above threw
+        console.log("Sistema Vida OS inicializando...");
+        await this.loadState();
+        this.ensureSettingsState();
+        this.applyThemePreference();
+        this.checkAlerts();
+        this.ensureDeepWorkTicking();
         if (!window.sistemaVidaState.onboardingComplete) {
             this.switchView('onboarding');
         } else {
@@ -1315,53 +930,48 @@ const app = {
         }
 
         // Tarefa 2: Filtro Inteligente - Listener de Dimensão
-        try {
-            const dimSelect = document.getElementById('crud-dimension');
-            if (dimSelect) {
-                dimSelect.addEventListener('change', () => {
-                    const typeSelect = document.getElementById('crud-type');
-                    if (typeSelect) this.updateParentList(typeSelect.value);
-                });
-            }
-        } catch (_) {}
+        const dimSelect = document.getElementById('crud-dimension');
+        if (dimSelect) {
+            dimSelect.addEventListener('change', () => {
+                const typeSelect = document.getElementById('crud-type');
+                if (typeSelect) this.updateParentList(typeSelect.value);
+            });
+        }
     },
 
     switchView: async function(viewName) {
         if (!viewName) return;
         this.currentView = viewName;
         this.updateNavUI(viewName);
-
+        
         const container = document.getElementById(this.config.containerId);
         if (container) {
             container.style.opacity = '0';
             container.style.transition = 'opacity 0.2s ease-in-out';
         }
 
-        let html = null;
         try {
-            // AbortController timeout so fetch never hangs forever
-            const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 8000);
-            const response = await fetch(`${this.config.viewsPath}${viewName}.html`, { signal: ctrl.signal });
-            clearTimeout(timer);
-            html = response.ok ? await response.text() : null;
+            const response = await fetch(`${this.config.viewsPath}${viewName}.html`);
+            const html = response.ok ? await response.text() : this.getFallbackTemplate(viewName);
+            
+            setTimeout(() => {
+                if (container) {
+                    container.innerHTML = html;
+                    container.style.opacity = '1';
+                    this.executeInjectedScripts(container);
+                }
+                if (this.render[viewName]) {
+                    this.render[viewName]();
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 200);
         } catch (error) {
             console.warn(`Erro ao carregar a view '${viewName}':`, error);
-            html = null;
-        }
-        if (!html) html = this.getFallbackTemplate(viewName);
-
-        setTimeout(() => {
             if (container) {
-                container.innerHTML = html;
+                container.innerHTML = this.getFallbackTemplate(viewName);
                 container.style.opacity = '1';
-                this.executeInjectedScripts(container);
             }
-            if (this.render[viewName]) {
-                try { this.render[viewName](); } catch (e) { console.warn('render error:', e); }
-            }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 200);
+        }
     },
 
     // Alias para compatibilidade com as chamadas do index.html
@@ -3025,7 +2635,7 @@ const app = {
         }
     },
 
-    onboardingSaveCurrentStep: function(persist = true) {
+    onboardingSaveCurrentStep: function() {
         const state = window.sistemaVidaState;
         if (this.onboardingStep === 1) {
             const nameInput = document.getElementById('onboarding-nome');
@@ -3038,7 +2648,7 @@ const app = {
             const purposeInput = document.getElementById('onboarding-proposito');
             if (purposeInput) state.profile.purpose = purposeInput.value.trim();
         }
-        if (persist) this.saveState();
+        this.saveState();
     },
 
     onboardingNext: function() {
@@ -3055,7 +2665,7 @@ const app = {
     },
 
     onboardingComplete: function() {
-        this.onboardingSaveCurrentStep(false);
+        this.onboardingSaveCurrentStep();
         window.sistemaVidaState.onboardingComplete = true;
         this.saveState();
         this.navigate('hoje');
@@ -3123,7 +2733,6 @@ const app = {
         },
         painel: function() {
             const state = window.sistemaVidaState;
-            app.syncDeepWorkMicroStatus();
             const filter = app.painelFilter || 'semana';
 
             // ---------------------------------------------------------
@@ -3357,7 +2966,6 @@ const app = {
         foco: function() {
             const state = window.sistemaVidaState;
             app.normalizeDeepWorkState();
-            app.syncDeepWorkMicroStatus();
             app.renderSidebarValues();
 
             app.renderDeepWorkPanel();
@@ -3386,11 +2994,6 @@ const app = {
                     const focusText = app.formatDurationHuman(m.focusSec || 0);
                     const sessionCount = Number(m.focusSessions || 0);
                     const statusText = m.status === 'done' ? 'Concluída' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
-                    const isTimerMicro = state.deepWork?.isRunning && state.deepWork?.microId === m.id;
-                    const actionLabel = (m.status === 'in_progress' || isTimerMicro) ? 'Gerenciar' : 'Focar';
-                    const actionHandler = (m.status === 'in_progress' || isTimerMicro)
-                        ? `window.app.openMicroInFocus('${m.id}', false)`
-                        : `window.app.startDeepWorkForMicro('${m.id}')`;
                     return `
                     <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group min-w-0">
                         <div class="flex justify-between items-start mb-4">
@@ -3422,7 +3025,7 @@ const app = {
                                 <span class="text-[10px] font-bold uppercase">${statusText}</span>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">${actionLabel}</button>` : ''}
+                                ${m.status !== 'done' ? `<button onclick="window.app.startDeepWorkForMicro('${m.id}')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">Focar</button>` : ''}
                                 ${m.status === 'done' ?
                                     `<span class="text-[10px] font-bold uppercase text-green-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">check_circle</span> Concluída</span>` :
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
@@ -3491,7 +3094,6 @@ const app = {
 
         hoje: function() {
             const state = window.sistemaVidaState;
-            app.syncDeepWorkMicroStatus();
 
             const dateEl = document.getElementById('data-hoje');
             if (dateEl) {
@@ -3840,9 +3442,9 @@ const app = {
                     const startDate = micro.inicioDate || micro.prazo || '';
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
-                    const overdueTag = isOverdue ? '<span class="inline-flex items-center px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Atrasada</span>' : '';
+                    const overdueTag = isOverdue ? '<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Atrasada</span>' : '';
                     const statusTag = micro.status === 'in_progress'
-                        ? '<span class="inline-flex items-center px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Em Andamento</span>'
+                        ? '<span class="inline-block mt-1 ml-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Em Andamento</span>'
                         : '';
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
@@ -3852,15 +3454,13 @@ const app = {
 
                     html += `
                     <div class="space-y-2">
-                        <div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-start gap-3 sm:gap-4 group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
-                            <div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0 mt-1" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm sm:text-base text-on-surface font-medium leading-snug break-words">${micro.title}</p>
-                                <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                                    <span class="inline-flex items-center px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag max-w-full">${micro.dimension}</span>${statusTag}${overdueTag}
-                                </div>
+                        <div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
+                            <div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
+                            <div class="flex-1">
+                                <p class="text-base text-on-surface font-medium">${micro.title}</p>
+                                <span class="inline-block mt-1 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${micro.dimension}</span>${statusTag}${overdueTag}
                             </div>
-                            <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                            <div class="flex items-center gap-2 shrink-0">
                                 ${startBtn}
                                 <span class="material-symbols-outlined notranslate text-outline-variant text-sm">keyboard_arrow_down</span>
                             </div>
@@ -5839,13 +5439,6 @@ const app = {
 
         dw.microId = micro.id;
         dw.intention = micro.title || '';
-        if (autoStart && micro.status !== 'done') {
-            const sourceMicro = (state.entities?.micros || []).find(m => m.id === micro.id);
-            const targetMicro = sourceMicro || micro;
-            targetMicro.status = 'in_progress';
-            targetMicro.completed = false;
-            if (!targetMicro.progress || targetMicro.progress < 1) targetMicro.progress = 1;
-        }
         this.pendingFocusMicroId = micro.id;
         this.pendingFocusAutoStart = !!autoStart;
         this.navigate('foco');
@@ -6081,4 +5674,15 @@ const app = {
         }
         
         this.renderSidebarValues(); // Sync any changes to values or name
-        if (this.rend
+        if (this.render.perfil) this.render.perfil();
+        this.showToast("Perfil atualizado com sucesso!", "success");
+    }
+};
+
+window.app = app;
+
+document.addEventListener("DOMContentLoaded", () => {
+    app.init();
+});
+
+

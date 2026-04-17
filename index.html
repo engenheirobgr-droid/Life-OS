@@ -1021,19 +1021,14 @@
     })();
     </script>
 
-    <\!-- PWA Service Worker Registration -->
+    <!-- PWA Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
+            var swRefreshed = false;
+            // When a new SW takes control, reload once so the page gets fresh files
+            navigator.serviceWorker.addEventListener('controllerchange', function() {
+                if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
+            });
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('sw.js')
-                    .then(function(registration) {
-                        console.log('SW registered:', registration);
-                    })
-                    .catch(function(err) {
-                        console.warn('SW registration failed:', err);
-                    });
-            });
-        }
-    </script>
-</body>
-</html>
+                    .then(fun

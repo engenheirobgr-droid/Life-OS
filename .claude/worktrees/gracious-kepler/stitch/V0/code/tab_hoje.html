@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-br"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"surface-bright": "#fff8f5", "surface-container-low": "#fff1e8", "primary-fixed-dim": "#ffb778", "on-primary": "#ffffff", "primary-fixed": "#ffdcc1", "error-container": "#ffdad6", "on-secondary-container": "#795638", "on-tertiary-container": "#b1d8ff", secondary: "#7a5739", "on-surface-variant": "#534438", error: "#ba1a1a", "on-secondary-fixed": "#2d1601", primary: "#683800", surface: "#fff8f5", "on-surface": "#211a15", "on-primary-container": "#ffca9d", "primary-container": "#8a4c00", "inverse-primary": "#ffb778", "inverse-surface": "#372f29", "surface-container-high": "#f4e5dc", "on-primary-fixed": "#2e1500", tertiary: "#004871", "on-secondary": "#ffffff", "on-error": "#ffffff", "secondary-fixed": "#ffdcc1", "secondary-fixed-dim": "#ebbe98", "surface-tint": "#8d4f03", background: "#fff8f5", "surface-container-highest": "#eee0d7", outline: "#857466", "tertiary-container": "#006095", "secondary-container": "#fdcea8", "inverse-on-surface": "#fdeee5", "on-error-container": "#93000a", "on-secondary-fixed-variant": "#5f4023", "on-tertiary-fixed": "#001d32", "on-primary-fixed-variant": "#6c3a00", "on-tertiary-fixed-variant": "#004a75", "tertiary-fixed-dim": "#95ccff", "surface-variant": "#eee0d7", "surface-dim": "#e5d7ce", "surface-container": "#faebe2", "outline-variant": "#d8c3b3", "surface-container-lowest": "#ffffff", "on-tertiary": "#ffffff", "tertiary-fixed": "#cde5ff", "on-background": "#211a15", "primary-dim": "#005d62", "tertiary-dim": "#615200", "secondary-dim": "#5a5427", "error-dim": "#70030f"}, fontFamily: {headline: ["Newsreader"], body: ["Inter"], label: ["Inter"], display: "Newsreader"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #faf9f5;
+            -webkit-font-smoothing: antialiased;
+        }
+        .signature-glow {
+            box-shadow: inset 0 0 12px rgba(1, 105, 111, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .custom-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="font-body text-on-surface">
+<!-- TopAppBar -->
+<header class="full-width top-0 sticky z-40 bg-gradient-to-b from-[#faf9f5] to-transparent">
+<div class="flex justify-between items-center w-full px-6 pt-8 pb-4">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-[#01696f]" data-icon="bolt">bolt</span>
+<div class="flex gap-1.5">
+<div class="w-2.5 h-2.5 rounded-full bg-primary-container"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-primary-container"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-primary-container"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-surface-container-high border border-outline-variant/30"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-surface-container-high border border-outline-variant/30"></div>
+</div>
+</div>
+<h1 class="font-serif text-3xl tracking-tight text-[#3f4949] dark:text-[#e9e8e4]">Terça, 31 de março</h1>
+</div>
+<button class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#3f4949]" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="px-6 pb-32 max-w-2xl mx-auto space-y-10">
+<!-- Para hoje (Checklist) -->
+<section class="space-y-6">
+<div class="flex justify-between items-end">
+<h2 class="font-headline text-2xl font-semibold tracking-tight">Para hoje</h2>
+<span class="text-xs font-label uppercase tracking-widest text-on-surface-variant/60">Nível 6 — Execução</span>
+</div>
+<div class="space-y-3">
+<!-- Task 1 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm transition-all">
+<div class="p-5 flex items-center gap-4 cursor-pointer hover:bg-surface-variant/10" onclick="this.nextElementSibling.classList.toggle('hidden')">
+<div class="relative w-6 h-6 shrink-0" onclick="event.stopPropagation()">
+<input class="peer appearance-none w-6 h-6 rounded-full border-2 border-outline-variant checked:bg-primary-container checked:border-primary-container transition-all cursor-pointer" type="checkbox"/>
+<span class="material-symbols-outlined absolute inset-0 text-white text-[16px] flex items-center justify-center pointer-events-none opacity-0 peer-checked:opacity-100" data-icon="check">check</span>
+</div>
+<div class="flex-grow">
+<p class="text-[15px] font-medium text-on-surface">Preparar apresentação do Q2</p>
+<div class="flex items-center gap-2">
+<span class="text-[11px] uppercase tracking-wider text-on-surface-variant/70 font-label">Profissional</span>
+<span class="material-symbols-outlined text-[14px] text-primary/40" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant/40" data-icon="drag_indicator">drag_indicator</span>
+</div>
+<!-- Connection Trail Panel -->
+<div class="hidden bg-surface-container-low/50 px-5 pb-6 pt-2 border-t border-outline-variant/10 ml-10 mr-4 rounded-b-xl">
+<p class="text-[10px] font-label uppercase tracking-widest text-primary/60 mb-4">Trilha de Conexão</p>
+<div class="relative space-y-4">
+<!-- Vertical Line -->
+<div class="absolute left-[11px] top-2 bottom-2 w-[1px] bg-primary/10"></div>
+<!-- Step 1 -->
+<div class="flex items-center gap-3 relative z-10">
+<div class="w-[23px] h-[23px] rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="check_circle">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant/50 uppercase tracking-tighter">Tarefa</span>
+<span class="text-[13px] font-medium text-on-surface">Preparar apresentação</span>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="flex items-center gap-3 relative z-10">
+<div class="w-[23px] h-[23px] rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="track_changes">track_changes</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant/50 uppercase tracking-tighter">OKR</span>
+<span class="text-[13px] font-medium text-on-surface">Aumentar impacto no Q2</span>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="flex items-center gap-3 relative z-10">
+<div class="w-[23px] h-[23px] rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="flag">flag</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant/50 uppercase tracking-tighter">Meta</span>
+<span class="text-[13px] font-medium text-on-surface">Liderança Estratégica</span>
+</div>
+</div>
+<!-- Step 4 -->
+<div class="flex items-center gap-3 relative z-10">
+<div class="w-[23px] h-[23px] rounded-full bg-primary/20 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-primary uppercase font-bold tracking-tighter">Propósito</span>
+<span class="text-[13px] font-headline italic text-on-surface">Transformar a tecnologia em humanização</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Task 2 (Completed) -->
+<div class="bg-surface-container-lowest/60 rounded-xl p-5 flex items-center gap-4 opacity-70">
+<div class="relative w-6 h-6 shrink-0">
+<input checked="" class="peer appearance-none w-6 h-6 rounded-full border-2 border-primary-container bg-primary-container transition-all cursor-pointer" type="checkbox"/>
+<span class="material-symbols-outlined absolute inset-0 text-white text-[16px] flex items-center justify-center pointer-events-none" data-icon="check">check</span>
+</div>
+<div class="flex-grow">
+<p class="text-[15px] font-medium text-on-surface line-through decoration-primary/30">Revisar roteiro da viagem</p>
+<span class="text-[11px] uppercase tracking-wider text-on-surface-variant/70 font-label">Pessoal</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant/40" data-icon="drag_indicator">drag_indicator</span>
+</div>
+<!-- Task 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 flex items-center gap-4 transition-all hover:translate-y-[-2px]">
+<div class="relative w-6 h-6 shrink-0">
+<input class="peer appearance-none w-6 h-6 rounded-full border-2 border-outline-variant checked:bg-primary-container checked:border-primary-container transition-all cursor-pointer" type="checkbox"/>
+<span class="material-symbols-outlined absolute inset-0 text-white text-[16px] flex items-center justify-center pointer-events-none opacity-0 peer-checked:opacity-100" data-icon="check">check</span>
+</div>
+<div class="flex-grow">
+<p class="text-[15px] font-medium text-on-surface">Agendar consulta anual</p>
+<span class="text-[11px] uppercase tracking-wider text-on-surface-variant/70 font-label">Saúde</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant/40" data-icon="drag_indicator">drag_indicator</span>
+</div>
+</div>
+</section>
+<!-- Hábitos de hoje -->
+<section class="space-y-4">
+<h2 class="font-headline text-2xl font-semibold tracking-tight">Hábitos de hoje</h2>
+<div class="flex gap-4 overflow-x-auto custom-scrollbar pb-2 -mx-6 px-6">
+<!-- Habit 1 -->
+<div class="min-w-[160px] bg-surface-container-lowest rounded-xl p-4 flex flex-col gap-4 shadow-sm">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="self_improvement">self_improvement</span>
+</div>
+<input class="appearance-none w-5 h-5 rounded-full border-2 border-outline-variant checked:bg-primary-container checked:border-primary-container cursor-pointer" type="checkbox"/>
+</div>
+<div>
+<p class="font-medium text-[14px]">Meditação</p>
+<p class="text-[11px] text-on-surface-variant/60">15 min</p>
+</div>
+</div>
+<!-- Habit 2 (Done) -->
+<div class="min-w-[160px] bg-surface-container-lowest/40 rounded-xl p-4 flex flex-col gap-4 opacity-60">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="menu_book">menu_book</span>
+</div>
+<input checked="" class="appearance-none w-5 h-5 rounded-full border-2 border-primary-container bg-primary-container cursor-pointer" type="checkbox"/>
+</div>
+<div>
+<p class="font-medium text-[14px] line-through">Leitura</p>
+<p class="text-[11px] text-on-surface-variant/60">20 páginas</p>
+</div>
+</div>
+<!-- Habit 3 -->
+<div class="min-w-[160px] bg-surface-container-lowest rounded-xl p-4 flex flex-col gap-4 shadow-sm">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="fitness_center">fitness_center</span>
+</div>
+<input class="appearance-none w-5 h-5 rounded-full border-2 border-outline-variant checked:bg-primary-container checked:border-primary-container cursor-pointer" type="checkbox"/>
+</div>
+<div>
+<p class="font-medium text-[14px]">Treino</p>
+<p class="text-[11px] text-on-surface-variant/60">Funcional</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Como foi o dia (Diary) -->
+<section class="space-y-6">
+<h2 class="font-headline text-2xl font-semibold tracking-tight">Como foi o dia</h2>
+<div class="bg-surface-container-lowest rounded-xl p-6 space-y-8 border border-outline-variant/10">
+<div class="space-y-4">
+<label class="block">
+<span class="text-xs font-label uppercase tracking-widest text-primary font-semibold">Pelo que sou grato hoje</span>
+<textarea class="w-full mt-2 bg-transparent border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary transition-all font-headline text-xl p-0 placeholder:text-outline-variant/40 italic" placeholder="Escreva aqui..." rows="1"></textarea>
+</label>
+<label class="block">
+<span class="text-xs font-label uppercase tracking-widest text-on-surface-variant/60">O que funcionou</span>
+<textarea class="w-full mt-2 bg-transparent border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary transition-all font-body text-base p-0 placeholder:text-outline-variant/40" placeholder="Momentos de fluxo..." rows="1"></textarea>
+</label>
+<label class="block">
+<span class="text-xs font-label uppercase tracking-widest text-on-surface-variant/60">O que aprendi</span>
+<textarea class="w-full mt-2 bg-transparent border-0 border-b border-outline-variant/20 focus:ring-0 focus:border-primary transition-all font-body text-base p-0 placeholder:text-outline-variant/40" placeholder="Uma nova perspectiva..." rows="1"></textarea>
+</label>
+<div class="pt-2 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-sm" data-icon="verified_user">verified_user</span>
+<span class="text-[13px] font-medium text-on-surface-variant">Ritual de Shutdown completo</span>
+</div>
+<button class="bg-primary-container text-on-primary px-6 py-2.5 rounded-lg text-sm font-medium signature-glow hover:opacity-90 active:scale-95 transition-all">
+                            Salvar diário
+                        </button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB -->
+<div class="fixed bottom-24 right-6 z-50">
+<button class="w-14 h-14 bg-primary-container text-on-primary rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
+</button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe h-20 bg-[#faf9f5]/90 dark:bg-[#171614]/90 backdrop-blur-xl z-50 border-t border-[#01696f]/10 shadow-[0_-12px_40px_rgba(27,28,26,0.05)]">
+<a class="flex flex-col items-center justify-center text-[#01696f] dark:text-[#01a4ad] after:content-[''] after:w-1 after:h-1 after:bg-[#01696f] after:rounded-full after:mt-1 hover:text-[#01696f] transition-colors active:translate-y-[-2px] duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="today">today</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Hoje</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#3f4949] dark:text-[#e9e8e4]/60 hover:text-[#01696f] transition-colors active:translate-y-[-2px] duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Planos</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#3f4949] dark:text-[#e9e8e4]/60 hover:text-[#01696f] transition-colors active:translate-y-[-2px] duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Propósito</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#3f4949] dark:text-[#e9e8e4]/60 hover:text-[#01696f] transition-colors active:translate-y-[-2px] duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Painel</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#3f4949] dark:text-[#e9e8e4]/60 hover:text-[#01696f] transition-colors active:translate-y-[-2px] duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Perfil</span>
+</a>
+</nav>
+<script>
+  (function() {
+    var urlMap = { 'Hoje': 'tab_hoje.html', 'Planos': 'tab_planos.html', 'Propósito': 'tab_proposito.html', 'Painel': 'tab_painel.html', 'Perfil': 'tab_perfil.html' };
+    document.querySelectorAll('nav a').forEach(function(link) {
+      var label = link.querySelector('span:last-child');
+      if (label && urlMap[label.textContent.trim()]) link.href = urlMap[label.textContent.trim()];
+    });
+  })();
+</script>
+</body></html>
