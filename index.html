@@ -1001,12 +1001,12 @@
     <!-- SPA Logic entry -->
     <script type="module" src="app.js"></script>
 
-    <\!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
+    <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
     (function() {
         var t = setTimeout(function() {
             var ph = document.getElementById('loading-placeholder');
-            if (\!ph) return;
+            if (!ph) return;
             ph.classList.remove('animate-pulse');
             ph.innerHTML = '<div style="padding:28px 24px;font-family:sans-serif;max-width:360px;margin:0 auto;text-align:center">' +
                 '<div style="font-size:2rem;margin-bottom:12px">\u26a0\ufe0f</div>' +

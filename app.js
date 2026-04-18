@@ -1263,7 +1263,7 @@ const app = {
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando... v30");
+        console.log("Sistema Vida OS inicializando... v33");
     // Signal dead-man's switch that the module loaded
     document.dispatchEvent(new CustomEvent('lifeos-app-ready'));
         console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
