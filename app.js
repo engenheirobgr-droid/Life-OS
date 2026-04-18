@@ -659,32 +659,31 @@ const app = {
         return typeof value === 'string' && value.startsWith('data:image/');
     },
     uploadProfileImageDataUrl: async function(dataUrl, path) {
-        if (!this.isInlineImageDataUrl(dataUrl)) return dataUrl || '';
-        await getAuthReady();
-        const imageRef = storageRef(storage, path);
-        await uploadString(imageRef, dataUrl, 'data_url');
-        return await getDownloadURL(imageRef);
+        // Firebase Storage bypassed — images stored in Firestore directly via syncImagesToFirestoreDoc.
+        return dataUrl || '';
     },
-    syncProfileImagesToCloud: async function() {
+    syncImagesToFirestoreDoc: async function() {
         this.ensureSettingsState();
         const profile = window.sistemaVidaState.profile || {};
-        let changed = false;
-        if (this.isInlineImageDataUrl(profile.avatarUrl)) {
-            profile.avatarUrl = await this.uploadProfileImageDataUrl(profile.avatarUrl, 'users/meu-sistema-vida/profile/avatar.jpg');
-            try { localStorage.setItem('lifeos_profile_avatar', profile.avatarUrl); } catch (_) {}
-            changed = true;
+        const imagesData = {};
+        let hasAny = false;
+        if (profile.avatarUrl && typeof profile.avatarUrl === 'string' && profile.avatarUrl.length > 10) {
+            imagesData.avatarUrl = profile.avatarUrl;
+            hasAny = true;
         }
-        const images = profile.odysseyImages || {};
+        const odysseyImages = profile.odysseyImages || {};
         for (const key of ['cenarioA', 'cenarioB', 'cenarioC']) {
-            if (!this.isInlineImageDataUrl(images[key])) continue;
-            images[key] = await this.uploadProfileImageDataUrl(images[key], `users/meu-sistema-vida/odyssey/${key}.jpg`);
-            changed = true;
+            if (odysseyImages[key] && typeof odysseyImages[key] === 'string' && odysseyImages[key].length > 10) {
+                if (!imagesData.odysseyImages) imagesData.odysseyImages = {};
+                imagesData.odysseyImages[key] = odysseyImages[key];
+                hasAny = true;
+            }
         }
-        if (changed) {
-            profile.odysseyImages = images;
-            try { localStorage.setItem('lifeos_odyssey_images', JSON.stringify(images)); } catch (_) {}
-        }
-        return changed;
+        if (!hasAny) return false;
+        const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
+        await this.withTimeout(setDoc(imagesRef, imagesData, { merge: true }), 15000, 'firestore_saveImages');
+        console.log('[Images] Imagens sincronizadas com Firestore.');
+        return true;
     },
     onProfilePhotoSelected: function(event) {
         const file = event?.target?.files?.[0];
@@ -693,20 +692,13 @@ const app = {
             this.showToast('Selecione um arquivo de imagem válido.', 'error');
             return;
         }
-        this.fileToOptimizedDataUrl(file, 512, 0.78).then(async (dataUrl) => {
+        this.fileToOptimizedDataUrl(file, 400, 0.70).then(async (dataUrl) => {
             this.ensureSettingsState();
             window.sistemaVidaState.profile.avatarUrl = dataUrl;
             try { localStorage.setItem('lifeos_profile_avatar', dataUrl); } catch (_) {}
-            // Feedback imediato antes do upload
+            // Feedback imediato
             if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
             this.showToast('Processando foto...', 'info');
-            try {
-                const url = await this.uploadProfileImageDataUrl(dataUrl, 'users/meu-sistema-vida/profile/avatar.jpg');
-                window.sistemaVidaState.profile.avatarUrl = url;
-                try { localStorage.setItem('lifeos_profile_avatar', url); } catch (_) {}
-            } catch (error) {
-                console.warn('Falha ao sincronizar foto de perfil com Storage:', error);
-            }
             await this.saveState(true);
             if (this.lastCloudSyncOk === false) {
                 const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
@@ -738,22 +730,15 @@ const app = {
             this.showToast('Selecione um arquivo de imagem válido para o cenário.', 'error');
             return;
         }
-        this.fileToOptimizedDataUrl(file, 900, 0.76).then(async (dataUrl) => {
+        this.fileToOptimizedDataUrl(file, 600, 0.65).then(async (dataUrl) => {
             const current = window.sistemaVidaState.profile.odysseyImages || {};
             window.sistemaVidaState.profile.odysseyImages = { ...current, [key]: dataUrl };
             try {
                 localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
             } catch (_) {}
-            // Feedback imediato: mostra a imagem (base64) antes do upload terminar
+            // Feedback imediato
             if (this.render.proposito) this.render.proposito();
-            this.showToast('Processando imagem...', 'info');
-            try {
-                const url = await this.uploadProfileImageDataUrl(dataUrl, `users/meu-sistema-vida/odyssey/${key}.jpg`);
-                window.sistemaVidaState.profile.odysseyImages = { ...window.sistemaVidaState.profile.odysseyImages, [key]: url };
-                localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
-            } catch (error) {
-                console.warn('Falha ao sincronizar imagem Odyssey com Storage:', error);
-            }
+            this.showToast('Sincronizando imagem...', 'info');
             await this.saveState(true);
             if (this.lastCloudSyncOk === false) {
                 const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
@@ -824,14 +809,10 @@ const app = {
         const snapshot = JSON.parse(JSON.stringify(raw));
         if (mode === 'cloud') {
             if (snapshot.profile) {
-                if (this.isInlineImageDataUrl(snapshot.profile.avatarUrl)) delete snapshot.profile.avatarUrl;
-                if (snapshot.profile.odysseyImages) {
-                    Object.keys(snapshot.profile.odysseyImages).forEach((key) => {
-                        if (this.isInlineImageDataUrl(snapshot.profile.odysseyImages[key])) {
-                            delete snapshot.profile.odysseyImages[key];
-                        }
-                    });
-                }
+                // Images are stored in a separate Firestore document (meu-sistema-vida-images).
+                // Always strip them from the main state document to keep it slim.
+                delete snapshot.profile.avatarUrl;
+                delete snapshot.profile.odysseyImages;
             }
             snapshot._persistenceMode = 'cloud_slim';
         }
@@ -892,11 +873,11 @@ const app = {
                 await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
                 try {
                     const imagesChanged = await this.withTimeout(
-                        this.syncProfileImagesToCloud(), 12000, 'sync_images'
+                        this.syncImagesToFirestoreDoc(), 15000, 'sync_images'
                     );
                     if (imagesChanged) this.persistLocalMirror();
                 } catch (imageError) {
-                    console.warn('Falha ao preparar imagens para a nuvem (ignorado):', imageError);
+                    console.warn('Falha ao sincronizar imagens com Firestore (ignorado):', imageError);
                 }
                 const stateRef = doc(db, "users", "meu-sistema-vida");
                 const cloudSnapshot = this.getPersistableState('cloud');
@@ -982,38 +963,45 @@ const app = {
         if (!shouldKeepLocal && window.sistemaVidaState._pendingLocalChanges) {
             window.sistemaVidaState._pendingLocalChanges = false;
         }
-        // Always apply Firebase Storage URLs from cloud — they are authoritative for images
+        // Load images from dedicated Firestore document (Firestore-native image storage)
         try {
-            if (cloudData && cloudData.profile && cloudData.profile.avatarUrl && this.hasRemoteImageUrl(cloudData.profile.avatarUrl)) {
+            const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
+            const imagesSnap = await this.withTimeout(getDoc(imagesRef), 8000, 'firestore_getImages');
+            if (imagesSnap.exists()) {
+                const imgData = imagesSnap.data();
                 if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                window.sistemaVidaState.profile.avatarUrl = cloudData.profile.avatarUrl;
+                if (imgData.avatarUrl && typeof imgData.avatarUrl === 'string') {
+                    window.sistemaVidaState.profile.avatarUrl = imgData.avatarUrl;
+                    try { localStorage.setItem('lifeos_profile_avatar', imgData.avatarUrl); } catch (_) {}
+                }
+                if (imgData.odysseyImages && typeof imgData.odysseyImages === 'object') {
+                    if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
+                    Object.entries(imgData.odysseyImages).forEach(([k, v]) => {
+                        if (v && typeof v === 'string') window.sistemaVidaState.profile.odysseyImages[k] = v;
+                    });
+                    try { localStorage.setItem('lifeos_odyssey_images', JSON.stringify(imgData.odysseyImages)); } catch (_) {}
+                }
+                console.log('[Images] Imagens carregadas do Firestore.');
             }
-            if (cloudData && cloudData.profile && cloudData.profile.odysseyImages) {
-                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
-                Object.entries(cloudData.profile.odysseyImages).forEach(function(entry) {
-                    var k = entry[0], v = entry[1];
-                    if (v && typeof v === 'string' && /^https?:\/\//.test(v)) {
-                        window.sistemaVidaState.profile.odysseyImages[k] = v;
-                    }
-                });
-            }
-        } catch (_) {}
-        try {
-            const cachedAvatar = localStorage.getItem('lifeos_profile_avatar');
-            if (cachedAvatar && !this.hasRemoteImageUrl(window.sistemaVidaState.profile.avatarUrl)) {
-                window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
-            }
-            const cachedOdyssey = localStorage.getItem('lifeos_odyssey_images');
-            if (cachedOdyssey) {
-                const parsed = JSON.parse(cachedOdyssey);
-                const current = window.sistemaVidaState.profile.odysseyImages || {};
-                Object.keys(parsed || {}).forEach((key) => {
-                    if (!this.hasRemoteImageUrl(current[key])) current[key] = parsed[key];
-                });
-                window.sistemaVidaState.profile.odysseyImages = current;
-            }
-        } catch (_) {}
+        } catch (imgErr) {
+            // Fallback to local cache if Firestore images doc unavailable
+            try {
+                const cachedAvatar = localStorage.getItem('lifeos_profile_avatar');
+                if (cachedAvatar && !window.sistemaVidaState.profile?.avatarUrl) {
+                    if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                    window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
+                }
+                const cachedOdyssey = localStorage.getItem('lifeos_odyssey_images');
+                if (cachedOdyssey) {
+                    const parsed = JSON.parse(cachedOdyssey);
+                    if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                    const current = window.sistemaVidaState.profile.odysseyImages || {};
+                    Object.keys(parsed || {}).forEach((key) => { if (!current[key]) current[key] = parsed[key]; });
+                    window.sistemaVidaState.profile.odysseyImages = current;
+                }
+            } catch (_) {}
+            console.warn('[Images] Falha ao carregar imagens do Firestore:', imgErr);
+        }
         this.persistLocalMirror();
         this.ensureSettingsState();
         this.normalizePermaState();
@@ -1051,23 +1039,6 @@ const app = {
                 window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
                 if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
                 window.sistemaVidaState._lastUpdatedAt = Number(remoteData?._lastUpdatedAt || window.sistemaVidaState._lastUpdatedAt || Date.now());
-                // Always apply Firebase Storage image URLs
-                try {
-                    const prof = remoteData.profile;
-                    if (prof && prof.avatarUrl && app.hasRemoteImageUrl(prof.avatarUrl)) {
-                        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                        window.sistemaVidaState.profile.avatarUrl = prof.avatarUrl;
-                    }
-                    if (prof && prof.odysseyImages) {
-                        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                        const cur = window.sistemaVidaState.profile.odysseyImages || {};
-                        Object.entries(prof.odysseyImages).forEach(function(e) {
-                            var k = e[0], v = e[1];
-                            if (v && typeof v === 'string' && /^https?:\/\//.test(v)) cur[k] = v;
-                        });
-                        window.sistemaVidaState.profile.odysseyImages = cur;
-                    }
-                } catch (_) {}
                 app.normalizeEntitiesState();
                 app.normalizeDailyLogsState();
                 app.persistLocalMirror();
@@ -1083,6 +1054,32 @@ const app = {
                     self._realtimeSyncUnsub = null;
                     setTimeout(function() { self.setupRealtimeSync(); }, 30000);
                 });
+                // ---- images document real-time listener ----
+                if (!self._imagesSyncUnsub) {
+                    const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
+                    self._imagesSyncUnsub = onSnapshot(imagesRef, (imgSnap) => {
+                        if (!imgSnap.exists()) return;
+                        if (self._isSaving) return;
+                        const imgData = imgSnap.data();
+                        try {
+                            if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                            if (imgData.avatarUrl && typeof imgData.avatarUrl === 'string') {
+                                window.sistemaVidaState.profile.avatarUrl = imgData.avatarUrl;
+                            }
+                            if (imgData.odysseyImages && typeof imgData.odysseyImages === 'object') {
+                                if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
+                                Object.entries(imgData.odysseyImages).forEach(([k, v]) => {
+                                    if (v && typeof v === 'string') window.sistemaVidaState.profile.odysseyImages[k] = v;
+                                });
+                            }
+                        } catch (_) {}
+                        app.persistLocalMirror();
+                        console.log('[Images] Atualização de imagens recebida em tempo real.');
+                        try {
+                            if (app.currentView && app.render && app.render[app.currentView]) app.render[app.currentView]();
+                        } catch (_) {}
+                    }, function(err) { console.warn('[Images] Listener de imagens erro:', err); });
+                }
                 // ---- periodic fallback pull every 60s ----
                 if (!self._periodicSyncId) {
                     self._periodicSyncId = setInterval(function() {
@@ -1263,7 +1260,7 @@ const app = {
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando... v33");
+        console.log("Sistema Vida OS inicializando... v35");
     // Signal dead-man's switch that the module loaded
     document.dispatchEvent(new CustomEvent('lifeos-app-ready'));
         console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
@@ -1289,20 +1286,14 @@ const app = {
         try { this.ensureDeepWorkTicking(); } catch (_) {}
         try { this.setupRealtimeSync(); } catch (_) {} // real-time cross-device sync
 
-        // Auto-migra imagens base64 do localStorage para o Firebase Storage
+        // Auto-sincroniza imagens com Firestore logo após o carregamento
         try {
-            const hasBase64Avatar = this.isInlineImageDataUrl(window.sistemaVidaState.profile?.avatarUrl);
+            const hasAvatar = !!(window.sistemaVidaState.profile?.avatarUrl);
             const odysseyImgs = window.sistemaVidaState.profile?.odysseyImages || {};
-            const hasBase64Odyssey = Object.values(odysseyImgs).some(v => this.isInlineImageDataUrl(v));
-            if (hasBase64Avatar || hasBase64Odyssey) {
-                console.log("Imagens locais detectadas, sincronizando com a nuvem...");
+            const hasOdyssey = Object.values(odysseyImgs).some(v => v && typeof v === 'string' && v.length > 10);
+            if (hasAvatar || hasOdyssey) {
                 authReady.then(() => {
-                    this.syncProfileImagesToCloud().then(changed => {
-                        if (changed) {
-                            console.log("Imagens migradas para a nuvem com sucesso.");
-                            this.saveState(true);
-                        }
-                    }).catch(e => console.warn("Falha ao migrar imagens:", e));
+                    this.syncImagesToFirestoreDoc().catch(e => console.warn('[Images] Falha ao sincronizar imagens na inicialização:', e));
                 }).catch(() => {});
             }
         } catch (_) {}
