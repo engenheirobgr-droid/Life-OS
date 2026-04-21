@@ -392,4 +392,25 @@
         </div>
     </section>
 
-    <!-- Modal de Revis
+    <!-- Modal de Revisão Trimestral -->
+    <div id="quarterly-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div
+            class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-md w-full p-6 shadow-xl flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center mb-6 shrink-0">
+                <div>
+                    <h3 class="font-headline text-2xl italic">Revisão de OKRs</h3>
+                    <p class="text-xs text-outline mt-1">Decida o destino dos seus objetivos ativos.</p>
+                </div>
+                <button onclick="window.app.closeQuarterlyModal()"
+                    class="text-outline hover:text-on-surface transform transition-transform active:scale-90"><span
+                        class="material-symbols-outlined notranslate">close</span></button>
+            </div>
+            <div id="quarterly-okrs-list" class="space-y-4 overflow-y-auto no-scrollbar flex-1 mb-6">
+            </div>
+            <button id="quarterly-save-btn" onclick="window.app.processQuarterlyReview()"
+                class="w-full shrink-0 bg-primary text-on-primary py-3 rounded-lg font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">Salvar
+                Novo Ciclo</button>
+        </div>
+    </div>
+
+</main>
