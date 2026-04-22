@@ -1803,6 +1803,16 @@ const app = {
         this.renderTimeline(); // Reação em Cadeia
     },
 
+    clearPlanosFilters: function() {
+        this.planosFilter = 'Todas';
+        this.planosStatusFilter = 'all';
+        this.planosHierarchyType = '';
+        this.planosHierarchyId = '';
+        if (this.render.planos) this.render.planos();
+        this.renderTimeline();
+        this.showToast('Filtros de Planos limpos.', 'success');
+    },
+
     setPainelFilter: function(filter) {
         this.painelFilter = filter;
         if (this.render.painel) this.render.painel();
@@ -1880,10 +1890,18 @@ const app = {
         const dimensionEl = document.getElementById('trail-meta-dimension');
         const prazoEl = document.getElementById('trail-meta-prazo');
         const whyEl = document.getElementById('trail-meta-why');
+        const horizonEl = document.getElementById('trail-meta-horizon');
+        const successEl = document.getElementById('trail-meta-success');
+        const challengeEl = document.getElementById('trail-meta-challenge');
+        const commitmentEl = document.getElementById('trail-meta-commitment');
         if (titleEl) titleEl.value = '';
         if (dimensionEl) dimensionEl.value = '';
         if (prazoEl) prazoEl.value = toDate(metaDeadline);
         if (whyEl) whyEl.value = '';
+        if (horizonEl) horizonEl.value = '1';
+        if (successEl) successEl.value = '';
+        if (challengeEl) challengeEl.value = '3';
+        if (commitmentEl) commitmentEl.value = '3';
 
         const okrList = document.getElementById('trail-okrs-list');
         const macroList = document.getElementById('trail-macros-list');
@@ -1936,6 +1954,8 @@ const app = {
         if (nextBtn) nextBtn.classList.toggle('hidden', target === 5);
         if (finishBtn) finishBtn.classList.toggle('hidden', target !== 5);
 
+        if (target === 3) this.refreshTrailMacroParentOptions();
+        if (target === 4) this.refreshTrailMicroParentOptions();
         if (target === 5) this.refreshTrailSummary();
     },
 
@@ -1966,8 +1986,25 @@ const app = {
                 <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
             </div>
             <input type="text" class="trail-okr-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Resultado-chave (ex.: Publicar 12 artigos)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
-            <input type="text" class="trail-okr-metric w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Métrica de sucesso (ex.: 12 artigos publicados até o prazo)" value="${this.escapeHtml(prefill.metric || '')}" oninput="window.app.refreshTrailSummary()">
-            <input type="date" class="trail-okr-prazo w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.prazo || '')}" onchange="window.app.refreshTrailSummary()">
+            <input type="text" class="trail-okr-metric w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Métrica de sucesso (ex.: 12 artigos publicados até o prazo)" value="${this.escapeHtml(prefill.metric || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
+            <input type="date" class="trail-okr-prazo w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.prazo || '')}" onchange="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <select class="trail-okr-challenge w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()">
+                    <option value="1" ${Number(prefill.challengeLevel) === 1 ? 'selected' : ''}>1 - Muito baixo</option>
+                    <option value="2" ${Number(prefill.challengeLevel) === 2 ? 'selected' : ''}>2 - Baixo</option>
+                    <option value="3" ${(Number(prefill.challengeLevel || 3) === 3) ? 'selected' : ''}>3 - Moderado</option>
+                    <option value="4" ${Number(prefill.challengeLevel) === 4 ? 'selected' : ''}>4 - Alto</option>
+                    <option value="5" ${Number(prefill.challengeLevel) === 5 ? 'selected' : ''}>5 - Muito alto</option>
+                </select>
+                <select class="trail-okr-commitment w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()">
+                    <option value="1" ${Number(prefill.commitmentLevel) === 1 ? 'selected' : ''}>1 - Muito baixo</option>
+                    <option value="2" ${Number(prefill.commitmentLevel) === 2 ? 'selected' : ''}>2 - Baixo</option>
+                    <option value="3" ${(Number(prefill.commitmentLevel || 3) === 3) ? 'selected' : ''}>3 - Moderado</option>
+                    <option value="4" ${Number(prefill.commitmentLevel) === 4 ? 'selected' : ''}>4 - Alto</option>
+                    <option value="5" ${Number(prefill.commitmentLevel) === 5 ? 'selected' : ''}>5 - Muito alto</option>
+                </select>
+            </div>
+            <textarea rows="3" class="trail-okr-krs w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-xs text-on-surface resize-none" placeholder="Key Results (um por linha): Título | Atual | Alvo" oninput="window.app.refreshTrailSummary()">${this.escapeHtml(prefill.keyResultsText || '')}</textarea>
         `;
         list.appendChild(row);
         this.refreshTrailMacroParentOptions();
@@ -1990,7 +2027,7 @@ const app = {
                 <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
             </div>
             <input type="text" class="trail-macro-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Iniciativa principal (ex.: Sistema editorial semanal)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMicroParentOptions(); window.app.refreshTrailSummary()">
-            <select class="trail-macro-okr w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()"></select>
+            <select class="trail-macro-okr w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailMicroParentOptions(); window.app.refreshTrailSummary()"></select>
             <input type="text" class="trail-macro-desc w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Detalhe opcional da iniciativa" value="${this.escapeHtml(prefill.description || '')}" oninput="window.app.refreshTrailSummary()">
         `;
         list.appendChild(row);
@@ -2043,15 +2080,17 @@ const app = {
                 select.value = '';
                 return;
             }
-            select.innerHTML = okrs.map((okr, idx) => `<option value="${okr.rowId}">${idx + 1}. ${this.escapeHtml(okr.title)}</option>`).join('');
+            const options = okrs.map((okr, idx) => `<option value="${okr.rowId}">${idx + 1}. ${this.escapeHtml(okr.title)}</option>`).join('');
+            select.innerHTML = `<option value="">Selecione o OKR...</option>${options}`;
             if (selected && okrs.some(okr => okr.rowId === selected)) select.value = selected;
+            else select.value = '';
         });
         this.refreshTrailMicroParentOptions();
         this.refreshTrailSummary();
     },
 
     refreshTrailMicroParentOptions: function() {
-        const macros = this._readTrailMacros().items;
+        const macros = this._readTrailMacroRowsForParentOptions();
         const selects = document.querySelectorAll('.trail-micro-macro');
         selects.forEach(select => {
             const selected = select.value;
@@ -2060,10 +2099,21 @@ const app = {
                 select.value = '';
                 return;
             }
-            select.innerHTML = macros.map((macro, idx) => `<option value="${macro.rowId}">${idx + 1}. ${this.escapeHtml(macro.title)}</option>`).join('');
+            const options = macros.map((macro, idx) => `<option value="${macro.rowId}">${idx + 1}. ${this.escapeHtml(macro.title)}</option>`).join('');
+            select.innerHTML = `<option value="">Selecione a Macro...</option>${options}`;
             if (selected && macros.some(macro => macro.rowId === selected)) select.value = selected;
+            else select.value = '';
         });
         this.refreshTrailSummary();
+    },
+
+    _readTrailMacroRowsForParentOptions: function() {
+        const rows = Array.from(document.querySelectorAll('#trail-macros-list [data-trail-row]'));
+        return rows.map((row, idx) => {
+            const rowId = row.getAttribute('data-trail-row');
+            const title = (row.querySelector('.trail-macro-title')?.value || '').trim();
+            return { rowId, title: title || `Macro ${idx + 1}` };
+        }).filter(item => item.rowId && item.title);
     },
 
     _readTrailMeta: function() {
@@ -2071,7 +2121,11 @@ const app = {
             title: (document.getElementById('trail-meta-title')?.value || '').trim(),
             dimension: (document.getElementById('trail-meta-dimension')?.value || '').trim(),
             prazo: (document.getElementById('trail-meta-prazo')?.value || '').trim(),
-            why: (document.getElementById('trail-meta-why')?.value || '').trim()
+            why: (document.getElementById('trail-meta-why')?.value || '').trim(),
+            horizonYears: Number(document.getElementById('trail-meta-horizon')?.value || 1),
+            successCriteria: (document.getElementById('trail-meta-success')?.value || '').trim(),
+            challengeLevel: Math.max(1, Math.min(5, Number(document.getElementById('trail-meta-challenge')?.value || 3))),
+            commitmentLevel: Math.max(1, Math.min(5, Number(document.getElementById('trail-meta-commitment')?.value || 3)))
         };
     },
 
@@ -2084,10 +2138,14 @@ const app = {
             const title = (row.querySelector('.trail-okr-title')?.value || '').trim();
             const metric = (row.querySelector('.trail-okr-metric')?.value || '').trim();
             const prazo = (row.querySelector('.trail-okr-prazo')?.value || '').trim();
-            const hasAny = !!(title || metric || prazo);
+            const challengeLevel = Math.max(1, Math.min(5, Number(row.querySelector('.trail-okr-challenge')?.value || 3)));
+            const commitmentLevel = Math.max(1, Math.min(5, Number(row.querySelector('.trail-okr-commitment')?.value || 3)));
+            const keyResultsText = (row.querySelector('.trail-okr-krs')?.value || '').trim();
+            const keyResults = this.parseKeyResultsText(keyResultsText);
+            const hasAny = !!(title || metric || prazo || keyResultsText);
             const isComplete = !!(title && metric && prazo);
             if (hasAny && !isComplete) hasPartial = true;
-            if (isComplete) items.push({ rowId, title, metric, prazo });
+            if (isComplete) items.push({ rowId, title, metric, prazo, challengeLevel, commitmentLevel, keyResults, keyResultsText });
         });
         return { items, hasPartial };
     },
@@ -2218,6 +2276,8 @@ const app = {
                 <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Meta</p>
                 <p class="text-sm font-bold text-on-surface">${this.escapeHtml(meta.title || '—')}</p>
                 <p class="text-xs text-outline mt-1">${this.escapeHtml(meta.dimension || 'Sem dimensão')} • ${this._formatTrailDate(meta.prazo)}</p>
+                <p class="text-[11px] text-outline mt-1">Horizonte: ${this.escapeHtml(String(meta.horizonYears || 1))} ano(s) • Desafio ${meta.challengeLevel || 3}/5 • Comprometimento ${meta.commitmentLevel || 3}/5</p>
+                <p class="text-xs text-outline mt-2">${this.escapeHtml(meta.successCriteria || 'Sem critério de sucesso definido.')}</p>
                 <p class="text-xs text-on-surface mt-2 leading-relaxed">${this.escapeHtml(meta.why || 'Sem motivação definida.')}</p>
             </div>`;
 
@@ -2227,6 +2287,8 @@ const app = {
                     <p class="text-[10px] font-bold uppercase tracking-widest text-outline">OKR ${idx + 1}</p>
                     <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(okr.title)}</p>
                     <p class="text-xs text-outline mt-1">${this.escapeHtml(okr.metric)}</p>
+                    <p class="text-[11px] text-outline mt-1">Desafio ${okr.challengeLevel || 3}/5 • Comprometimento ${okr.commitmentLevel || 3}/5</p>
+                    <p class="text-[11px] text-outline mt-1">${Array.isArray(okr.keyResults) && okr.keyResults.length > 0 ? `${okr.keyResults.length} key result(s)` : 'Sem key results'}</p>
                     <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(okr.prazo)}</p>
                 </div>
             `).join('')
@@ -2293,10 +2355,10 @@ const app = {
             dimension: meta.dimension,
             prazo: meta.prazo,
             purpose: meta.why,
-            horizonYears: 1,
-            successCriteria: '',
-            challengeLevel: 3,
-            commitmentLevel: 4,
+            horizonYears: Number(meta.horizonYears || 1),
+            successCriteria: meta.successCriteria || '',
+            challengeLevel: Math.max(1, Math.min(5, Number(meta.challengeLevel || 3))),
+            commitmentLevel: Math.max(1, Math.min(5, Number(meta.commitmentLevel || 3))),
             status: 'pending',
             progress: 0,
             completed: false
@@ -2306,6 +2368,8 @@ const app = {
         okrs.forEach(okr => {
             const okrId = makeId();
             okrMap[okr.rowId] = okrId;
+            const normalizedKrs = Array.isArray(okr.keyResults) ? this.normalizeKeyResultsList(okr.keyResults) : [];
+            const krProgress = this.computeKeyResultsProgress(normalizedKrs);
             state.entities.okrs.push({
                 id: okrId,
                 metaId,
@@ -2314,11 +2378,11 @@ const app = {
                 prazo: okr.prazo,
                 purpose: okr.metric,
                 successCriteria: okr.metric,
-                challengeLevel: 3,
-                commitmentLevel: 3,
-                keyResults: [],
+                challengeLevel: Math.max(1, Math.min(5, Number(okr.challengeLevel || 3))),
+                commitmentLevel: Math.max(1, Math.min(5, Number(okr.commitmentLevel || 3))),
+                keyResults: normalizedKrs,
                 status: 'pending',
-                progress: 0,
+                progress: krProgress === null ? 0 : krProgress,
                 completed: false
             });
         });
@@ -4407,43 +4471,6 @@ const app = {
                 }
             });
 
-            // Banner contextual: Planejar Semana ou Fazer Revisão
-            const reviewBanner = document.getElementById('review-banner');
-            if (reviewBanner) {
-                const todayDow = new Date().getDay(); // 0=Dom,1=Seg...6=Sáb
-                const currentWeekKey = app._getWeekKey();
-                const currentPlanExists = !!(state.weekPlans || {})[currentWeekKey];
-                const currentReviewExists = !!(state.reviews || {})[currentWeekKey];
-                const bannerTitle = reviewBanner.querySelector('h3');
-                const bannerDesc = reviewBanner.querySelector('p.text-sm');
-                const bannerIcon = reviewBanner.querySelector('.w-10 .material-symbols-outlined');
-                const bannerBtn = reviewBanner.querySelector('button');
-
-                if (todayDow >= 1 && todayDow <= 4 && !currentPlanExists) {
-                    // Seg–Qui sem plano → mostrar "Planejar esta semana"
-                    if (bannerTitle) bannerTitle.textContent = 'Planejar esta semana';
-                    if (bannerDesc) bannerDesc.textContent = 'Defina sua intenção e micro ações para a semana que começa.';
-                    if (bannerIcon) bannerIcon.textContent = 'edit_calendar';
-                    if (bannerBtn) {
-                        bannerBtn.textContent = 'Planejar Semana';
-                        bannerBtn.setAttribute('onclick', 'window.app.openWeeklyPlanModal()');
-                    }
-                    reviewBanner.classList.remove('hidden');
-                } else if ([5, 6, 0].includes(todayDow) && currentPlanExists && !currentReviewExists) {
-                    // Sex–Dom com plano mas sem revisão → mostrar "Fazer revisão da semana"
-                    if (bannerTitle) bannerTitle.textContent = 'Sua revisão semanal está disponível';
-                    if (bannerDesc) bannerDesc.textContent = 'Feche o ciclo atual e prepare-se para a próxima jornada.';
-                    if (bannerIcon) bannerIcon.textContent = 'event_available';
-                    if (bannerBtn) {
-                        bannerBtn.textContent = 'Fazer Revisão';
-                        bannerBtn.setAttribute('onclick', 'window.app.openReviewModal()');
-                    }
-                    reviewBanner.classList.remove('hidden');
-                } else {
-                    reviewBanner.classList.add('hidden');
-                }
-            }
-
             // 1. Ativa o Gráfico de Execução (Heatmap)
             this.renderAnnualHeatmap();
 
@@ -5258,7 +5285,13 @@ const app = {
                     }
                     if (entityType === 'macros') {
                          const o = state.entities.okrs.find(x => x.id === item.okrId);
-                         const m = o ? state.entities.metas.find(x => x.id === o.metaId) : null;
+                         const m = o ? state.entities.metas.find(x => x.id === o.metaId) : state.entities.metas.find(x => x.id === item.metaId);
+                         return m ? (m.dimension || m.dimensionName) : 'Geral';
+                    }
+                    if (entityType === 'micros') {
+                         const macro = state.entities.macros.find(x => x.id === item.macroId);
+                         const okr = macro ? state.entities.okrs.find(x => x.id === macro.okrId) : state.entities.okrs.find(x => x.id === item.okrId);
+                         const m = okr ? state.entities.metas.find(x => x.id === okr.metaId) : state.entities.metas.find(x => x.id === item.metaId);
                          return m ? (m.dimension || m.dimensionName) : 'Geral';
                     }
                     return 'Geral';
@@ -5271,11 +5304,22 @@ const app = {
                     if (type === 'micros') {
                         macroId = item.macroId;
                         const m = state.entities.macros.find(x => x.id === macroId);
-                        if (m) { okrId = m.okrId; const o = state.entities.okrs.find(x => x.id === okrId); if (o) metaId = o.metaId; }
+                        if (m) {
+                            okrId = m.okrId;
+                            const o = state.entities.okrs.find(x => x.id === okrId);
+                            if (o) metaId = o.metaId;
+                            else metaId = m.metaId || item.metaId || null;
+                        } else {
+                            okrId = item.okrId || null;
+                            const o = state.entities.okrs.find(x => x.id === okrId);
+                            if (o) metaId = o.metaId;
+                            else metaId = item.metaId || null;
+                        }
                     } else if (type === 'macros') {
                         okrId = item.okrId;
                         const o = state.entities.okrs.find(x => x.id === okrId);
                         if (o) metaId = o.metaId;
+                        else metaId = item.metaId || null;
                     } else if (type === 'okrs') {
                         metaId = item.metaId;
                     }
@@ -5352,9 +5396,9 @@ const app = {
                             trailNodes.push({ label: 'Micro Ação', title: item.title });
                             const macro = state.entities.macros.find(x => x.id === item.macroId);
                             trailNodes.push({ label: 'Macro Ação', title: macro ? macro.title : '-' });
-                            const okr = macro ? state.entities.okrs.find(x => x.id === macro.okrId) : null;
+                            const okr = macro ? state.entities.okrs.find(x => x.id === macro.okrId) : state.entities.okrs.find(x => x.id === item.okrId);
                             trailNodes.push({ label: 'OKR', title: okr ? okr.title : '-' });
-                            const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : null;
+                            const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : state.entities.metas.find(x => x.id === item.metaId);
                             trailNodes.push({ label: 'Meta', title: meta ? meta.title : '-' });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '-') : '-' });
@@ -5362,7 +5406,7 @@ const app = {
                             trailNodes.push({ label: 'Macro Ação', title: item.title });
                             const okr = state.entities.okrs.find(x => x.id === item.okrId);
                             trailNodes.push({ label: 'OKR', title: okr ? okr.title : '-' });
-                            const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : null;
+                            const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : state.entities.metas.find(x => x.id === item.metaId);
                             trailNodes.push({ label: 'Meta', title: meta ? meta.title : '-' });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '-') : '-' });
@@ -5849,9 +5893,12 @@ const app = {
 
         // ── Entidades (Render) ─────────────────────────────────────
         let rowsHTML = '';
+        const renderedIds = { metas: new Set(), okrs: new Set(), macros: new Set(), micros: new Set() };
 
         const renderRow = (entity, tipo, marginClass, parentDim) => {
             if (!entity.title || entity.title.trim() === '') return;
+            if (!entity.id) return;
+            if (renderedIds[tipo] && renderedIds[tipo].has(entity.id)) return;
             const durationFallbackByType = { metas: 60, okrs: 45, macros: 21, micros: 5 };
             const fallbackDays = durationFallbackByType[tipo] || 7;
             const hasPrazo = entity.prazo && entity.prazo.trim() !== '';
@@ -5907,6 +5954,7 @@ const app = {
             const minWidthPctByType = { metas: 6, okrs: 5, macros: 4, micros: 3 };
             const visualWidth = Math.max(widthPct, minWidthPctByType[tipo] || 3);
             const showInlineTitle = visualWidth >= 8;
+            if (renderedIds[tipo]) renderedIds[tipo].add(entity.id);
             
             rowsHTML += `
               <div class="flex items-center border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors group even:bg-surface-container-low/30">
@@ -5949,45 +5997,79 @@ const app = {
             });
         };
 
+        const processMetaBranch = (meta, ignoreDimFilter = false) => {
+            if (!meta || !filterStatus(meta)) return;
+            const dim = meta.dimensionName || meta.dimension || 'Geral';
+            if (!ignoreDimFilter && currentFilter !== 'Todas' && dim !== currentFilter) return;
+
+            renderRow(meta, 'metas', 'ml-0 border-l-4 pl-2', dim);
+            processOkrs(meta.id, dim);
+
+            const macrosWithoutOkr = (state.entities.macros || []).filter(m => {
+                if (!filterStatus(m)) return false;
+                if (renderedIds.macros.has(m.id)) return false;
+                if (m.metaId !== meta.id) return false;
+                if (!m.okrId) return true;
+                return !(state.entities.okrs || []).some(o => o.id === m.okrId);
+            });
+            macrosWithoutOkr.forEach(macro => {
+                renderRow(macro, 'macros', 'ml-8 border-l-4 pl-2', dim);
+                processMicros(macro.id, dim);
+            });
+
+            const microsWithoutMacro = (state.entities.micros || []).filter(micro => {
+                if (!filterStatus(micro)) return false;
+                if (renderedIds.micros.has(micro.id)) return false;
+                if (micro.metaId !== meta.id) return false;
+                if (!micro.macroId) return true;
+                return !(state.entities.macros || []).some(m => m.id === micro.macroId);
+            });
+            microsWithoutMacro.forEach(micro => {
+                renderRow(micro, 'micros', 'ml-16 border-l-4 pl-2', dim);
+            });
+        };
+
         const processMetas = () => {
-             const metas = (state.entities.metas || []).filter(m => {
-                 if (!filterStatus(m)) return false;
-                 const dim = m.dimensionName || m.dimension || 'Geral';
-                 if (currentFilter !== 'Todas' && dim !== currentFilter) return false;
-                 return true;
-             });
-             metas.forEach(meta => {
-                 const dim = meta.dimensionName || meta.dimension || 'Geral';
-                 renderRow(meta, 'metas', 'ml-0 border-l-4 pl-2', dim);
-                 processOkrs(meta.id, dim);
-             });
-        }
+             const metas = (state.entities.metas || []).filter(m => filterStatus(m));
+             metas.forEach(meta => processMetaBranch(meta));
+        };
 
         // Lógica de Processamento de Árvore (Hierárquica vs. Global)
         if (hType && hId) {
             if (hType === 'metas') {
                 const meta = state.entities.metas.find(m => m.id === hId);
-                if (meta && filterStatus(meta)) {
-                    const dim = meta.dimensionName || meta.dimension || 'Geral';
-                    renderRow(meta, 'metas', 'ml-0 border-l-4 pl-2', dim);
-                    processOkrs(meta.id, dim);
-                }
+                if (meta && filterStatus(meta)) processMetaBranch(meta, true);
             } else if (hType === 'okrs') {
                 const okr = state.entities.okrs.find(o => o.id === hId);
                 if (okr && filterStatus(okr)) {
-                    renderRow(okr, 'okrs', 'ml-0 border-l-4 pl-2', 'Geral');
-                    processMacros(okr.id, 'Geral');
+                    const meta = state.entities.metas.find(m => m.id === okr.metaId);
+                    const dim = okr.dimension || meta?.dimension || meta?.dimensionName || 'Geral';
+                    if (meta && filterStatus(meta)) renderRow(meta, 'metas', 'ml-0 border-l-4 pl-2', dim);
+                    renderRow(okr, 'okrs', 'ml-4 border-l-4 pl-2', dim);
+                    processMacros(okr.id, dim);
                 }
             } else if (hType === 'macros') {
                 const macro = state.entities.macros.find(m => m.id === hId);
                 if (macro && filterStatus(macro)) {
-                    renderRow(macro, 'macros', 'ml-0 border-l-4 pl-2', 'Geral');
-                    processMicros(macro.id, 'Geral');
+                    const okr = state.entities.okrs.find(o => o.id === macro.okrId);
+                    const meta = okr ? state.entities.metas.find(m => m.id === okr.metaId) : state.entities.metas.find(m => m.id === macro.metaId);
+                    const dim = macro.dimension || okr?.dimension || meta?.dimension || meta?.dimensionName || 'Geral';
+                    if (meta && filterStatus(meta)) renderRow(meta, 'metas', 'ml-0 border-l-4 pl-2', dim);
+                    if (okr && filterStatus(okr)) renderRow(okr, 'okrs', 'ml-4 border-l-4 pl-2', dim);
+                    renderRow(macro, 'macros', 'ml-8 border-l-4 pl-2', dim);
+                    processMicros(macro.id, dim);
                 }
             } else if (hType === 'micros') {
                 const micro = state.entities.micros.find(m => m.id === hId);
                 if (micro && filterStatus(micro)) {
-                    renderRow(micro, 'micros', 'ml-0 border-l-4 pl-2', 'Geral');
+                    const macro = state.entities.macros.find(m => m.id === micro.macroId);
+                    const okr = macro ? state.entities.okrs.find(o => o.id === macro.okrId) : state.entities.okrs.find(o => o.id === micro.okrId);
+                    const meta = okr ? state.entities.metas.find(m => m.id === okr.metaId) : state.entities.metas.find(m => m.id === micro.metaId);
+                    const dim = micro.dimension || macro?.dimension || okr?.dimension || meta?.dimension || meta?.dimensionName || 'Geral';
+                    if (meta && filterStatus(meta)) renderRow(meta, 'metas', 'ml-0 border-l-4 pl-2', dim);
+                    if (okr && filterStatus(okr)) renderRow(okr, 'okrs', 'ml-4 border-l-4 pl-2', dim);
+                    if (macro && filterStatus(macro)) renderRow(macro, 'macros', 'ml-8 border-l-4 pl-2', dim);
+                    renderRow(micro, 'micros', 'ml-16 border-l-4 pl-2', dim);
                 }
             }
         } else {
@@ -6338,9 +6420,18 @@ const app = {
         // Seta o pai após popular a lista
         const parentSelect = document.getElementById('create-parent');
         if (parentSelect) {
-            const parentId = type === 'metas'
-                ? (item.parentMetaId || '')
-                : (item.metaId || item.okrId || item.macroId || '');
+            let parentId = '';
+            if (type === 'metas') parentId = item.parentMetaId || '';
+            if (type === 'okrs') parentId = item.metaId || '';
+            if (type === 'macros') parentId = item.okrId || '';
+            if (type === 'micros') parentId = item.macroId || '';
+            const hasOption = Array.from(parentSelect.options || []).some(opt => opt.value === parentId);
+            if (parentId && !hasOption) {
+                const ghost = document.createElement('option');
+                ghost.value = parentId;
+                ghost.textContent = 'Vínculo atual (fora do filtro de dimensão)';
+                parentSelect.appendChild(ghost);
+            }
             parentSelect.value = parentId;
         }
     },

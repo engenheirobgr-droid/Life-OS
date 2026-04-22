@@ -752,6 +752,43 @@
                             <input id="trail-meta-prazo" type="date"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                         </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="trail-meta-horizon" class="text-xs uppercase tracking-widest font-bold text-outline">Horizonte</label>
+                            <select id="trail-meta-horizon"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                                <option value="1">1 ano</option>
+                                <option value="2.5">2,5 anos</option>
+                                <option value="5">5 anos</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="trail-meta-success" class="text-xs uppercase tracking-widest font-bold text-outline">Critério de Sucesso</label>
+                            <input id="trail-meta-success" type="text"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                placeholder="Como saberemos que essa meta foi alcançada?">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="trail-meta-challenge" class="text-xs uppercase tracking-widest font-bold text-outline">Nível de Desafio (1-5)</label>
+                            <select id="trail-meta-challenge"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                                <option value="1">1 - Muito baixo</option>
+                                <option value="2">2 - Baixo</option>
+                                <option value="3" selected>3 - Moderado</option>
+                                <option value="4">4 - Alto</option>
+                                <option value="5">5 - Muito alto</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="trail-meta-commitment" class="text-xs uppercase tracking-widest font-bold text-outline">Comprometimento (1-5)</label>
+                            <select id="trail-meta-commitment"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                                <option value="1">1 - Muito baixo</option>
+                                <option value="2">2 - Baixo</option>
+                                <option value="3" selected>3 - Moderado</option>
+                                <option value="4">4 - Alto</option>
+                                <option value="5">5 - Muito alto</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label for="trail-meta-why" class="text-xs uppercase tracking-widest font-bold text-outline">Por quê (motivação)</label>
@@ -769,7 +806,7 @@
                             + Adicionar OKR
                         </button>
                     </div>
-                    <p class="text-xs text-outline">Defina de 1 a 3 OKRs com métrica e prazo.</p>
+                    <p class="text-xs text-outline">Defina de 1 a 3 OKRs com métrica, prazo, nível de desafio, comprometimento e key results.</p>
                     <div id="trail-okrs-list" class="space-y-3"></div>
                 </section>
 

@@ -72,6 +72,13 @@
             <button onclick="window.app.setPlanosStatusFilter('all')" id="btn-stat-all" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Todos</button>
         </div>
     </div>
+    <div class="pt-3 border-t border-outline-variant/10">
+        <button onclick="window.app.clearPlanosFilters()"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-surface-container-high text-on-surface-variant text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest transition-colors">
+            <span class="material-symbols-outlined notranslate text-[14px]">filter_alt_off</span>
+            Limpar filtros
+        </button>
+    </div>
 </div>
 <!-- Tab: Metas -->
 <section class="mt-8 tab-content active space-y-12" id="tab-metas">
