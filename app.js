@@ -791,6 +791,7 @@ const app = {
     painelFilter: 'ciclo',
     planosFilter: 'Todas',
     planosStatusFilter: 'all',
+    planosActiveTab: 'metas',
     planosHierarchyType: '',
     planosHierarchyId: '',
     focusTypeFilter: 'Tudo',
@@ -1309,6 +1310,7 @@ const app = {
     },
 
     switchPlanosTab: function(tabId) {
+      this.planosActiveTab = tabId || 'metas';
       // 1. Oculta todos os conteúdos removendo 'active'
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     
@@ -1326,6 +1328,14 @@ const app = {
       if (activeBtn) {
         activeBtn.classList.add('active', 'text-primary');
         activeBtn.classList.remove('text-stone-500');
+      }
+
+      const plannedBtn = document.getElementById('btn-stat-planned');
+      const isMicroTab = tabId === 'micro';
+      if (plannedBtn) plannedBtn.classList.toggle('hidden', !isMicroTab);
+      if (!isMicroTab && this.planosStatusFilter === 'planned') {
+        this.planosStatusFilter = 'all';
+        if (this.currentView === 'planos' && this.render.planos) this.render.planos();
       }
 
       // Reação em cadeia: renderiza conteúdo específico da tab
@@ -5285,19 +5295,27 @@ const app = {
                     hierIdSelect.classList.add('hidden');
                 }
 
+                const activeTabFromDom = document.querySelector('.tab-btn.active')?.getAttribute('data-tab') || 'metas';
+                app.planosActiveTab = activeTabFromDom;
+                const showPlannedFilter = app.planosActiveTab === 'micro';
+                if (!showPlannedFilter && app.planosStatusFilter === 'planned') {
+                    app.planosStatusFilter = 'all';
+                }
                 const statFilterRaw = app.planosStatusFilter || 'all';
-                const statFilter = statFilterRaw === 'active' ? 'all' : statFilterRaw;
+                let statFilter = statFilterRaw === 'active' ? 'all' : statFilterRaw;
                 const base = 'px-4 py-1.5 rounded-full text-xs font-bold transition-colors';
                 const on = 'bg-primary text-on-primary';
                 const off = 'bg-surface-container-high text-on-surface-variant hover:brightness-95';
                 const btnPending = document.getElementById('btn-stat-pending');
                 const btnInProgress = document.getElementById('btn-stat-in-progress');
                 const btnDone = document.getElementById('btn-stat-done');
+                const btnPlanned = document.getElementById('btn-stat-planned');
                 const btnAll = document.getElementById('btn-stat-all');
                 const btnActive = document.getElementById('btn-stat-active'); // legado
                 if (btnPending) btnPending.className = `${base} ${statFilter === 'pending' ? on : off}`;
                 if (btnInProgress) btnInProgress.className = `${base} ${statFilter === 'in_progress' ? on : off}`;
                 if (btnDone) btnDone.className = `${base} ${statFilter === 'done' ? on : off}`;
+                if (btnPlanned) btnPlanned.className = `${showPlannedFilter ? '' : 'hidden '} ${base} ${statFilter === 'planned' ? on : off}`.trim();
                 if (btnAll) btnAll.className = `${base} ${statFilter === 'all' ? on : off}`;
                 if (btnActive) btnActive.className = `${base} ${statFilter === 'active' ? on : off}`;
             }
@@ -5366,6 +5384,7 @@ const app = {
                     else if (statFilter === 'pending') passStatus = !isDone && i.status !== 'abandoned' && i.status !== 'in_progress';
                     else if (statFilter === 'in_progress') passStatus = i.status === 'in_progress';
                     else if (statFilter === 'done') passStatus = isDone;
+                    else if (statFilter === 'planned') passStatus = entityType === 'micros' ? app._isPlannedThisWeek(i.id) : true;
                     else passStatus = i.status !== 'abandoned';
                     if (!passStatus) return false;
 
@@ -5495,6 +5514,11 @@ const app = {
 
                         const userValues = state.profile.values || [];
                         const isAligned = userValues.includes(item.dimension);
+                        const microPlanChip = entityType === 'micros'
+                            ? (app._isPlannedThisWeek(item.id)
+                                ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase tracking-wider">Semana</span>'
+                                : '<span class="shrink-0 bg-surface-container-high text-on-surface-variant text-[9px] px-2 py-0.5 rounded-full border border-outline-variant/20 font-bold uppercase tracking-wider">Captura</span>')
+                            : '';
 
                         const isInProgress = item.status === 'in_progress';
                         const isDone = prog >= 100 || item.status === 'done' || item.completed;
@@ -5541,6 +5565,7 @@ const app = {
                                 <div class="space-y-1.5 flex-1 min-w-0">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="shrink-0 bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-label font-bold uppercase tracking-wider">${item.dimension || 'Geral'}</span>
+                                        ${microPlanChip}
                                         ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold">ALINHADO</span>' : ''}
                                     </div>
                                     <h4 class="font-headline text-lg md:text-xl font-semibold leading-tight line-clamp-2">${item.title}</h4>
