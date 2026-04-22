@@ -1119,6 +1119,66 @@ const app = {
 
     showNotification: function(msg) {
         this.showToast(msg, 'success');
+        // Mostra notificação real do SO se permissão concedida e app aberto
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            try {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification('Life OS', {
+                            body: msg,
+                            icon: './icons/icon-192.png',
+                            badge: './icons/icon-96.png',
+                            tag: 'lifeos-alert'
+                        });
+                    }).catch(() => {});
+                } else {
+                    new Notification('Life OS', { body: msg, icon: './icons/icon-192.png' });
+                }
+            } catch (_) {}
+        }
+    },
+
+    // Agenda notificações locais relevantes para o contexto do dia
+    // (Dispara quando o app é aberto e as permissões estão concedidas)
+    scheduleLocalNotifications: function() {
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+        const state = window.sistemaVidaState;
+        if (!state.settings?.notificationsEnabled) return;
+        if (!('serviceWorker' in navigator)) return;
+
+        const today = new Date();
+        const dow = today.getDay(); // 0=Dom, 1=Seg...6=Sáb
+        const weekKey = this._getWeekKey();
+        const hasPlan = !!(state.weekPlans || {})[weekKey];
+        const hasReview = !!(state.reviews || {})[weekKey];
+
+        // Segunda-feira sem plano → lembrar de planejar a semana
+        if (dow === 1 && !hasPlan) {
+            setTimeout(() => {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification('Life OS — Planejar Semana', {
+                        body: '📅 Segunda-feira! Que tal definir sua intenção e micros para esta semana?',
+                        icon: './icons/icon-192.png',
+                        tag: 'lifeos-weekly-plan',
+                        requireInteraction: false
+                    });
+                }).catch(() => {});
+            }, 3000);
+        }
+
+        // Sexta/Sáb/Dom com plano mas sem revisão → lembrar de revisar
+        if ([5, 6, 0].includes(dow) && hasPlan && !hasReview) {
+            setTimeout(() => {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification('Life OS — Revisão Semanal', {
+                        body: '✍️ Fim de semana! Hora de revisar o que foi feito e fechar o ciclo semanal.',
+                        icon: './icons/icon-192.png',
+                        tag: 'lifeos-weekly-review',
+                        requireInteraction: false
+                    });
+                }).catch(() => {});
+            }, 3500);
+        }
     },
 
     proposito: function() {
@@ -1151,12 +1211,22 @@ const app = {
         state.lastAccess = todayStr;
 
         this.needsReview = false;
-        if (today.getDay() === 0) { // Domingo
-            const reviews = Object.keys(state.reviews || {});
-            const hasRecent = reviews.some(dateStr => (today - new Date(dateStr)) / (1000 * 60 * 60 * 24) <= 3);
-            this.needsReview = !hasRecent;
-            if (this.needsReview) setTimeout(() => this.showNotification("📅 É domingo! Dia de planejar a semana e revisar suas ações."), 2500);
+        const dow = today.getDay(); // 0=Dom, 5=Sex, 6=Sáb
+        if ([5, 6, 0].includes(dow)) { // Sex, Sáb ou Dom
+            const weekKey = this._getWeekKey();
+            const reviews = state.reviews || {};
+            const hasPlan = !!(state.weekPlans || {})[weekKey];
+            // Verifica por weekKey (novo formato) ou timestamp recente (formato antigo)
+            const hasReviewThisWeek = !!reviews[weekKey] ||
+                Object.keys(reviews).some(dateStr => {
+                    try { return (today - new Date(dateStr)) / (1000 * 60 * 60 * 24) <= 7; }
+                    catch (_) { return false; }
+                });
+            this.needsReview = hasPlan && !hasReviewThisWeek;
+            if (this.needsReview) setTimeout(() => this.showNotification("✍️ Fim de semana! Que tal fazer a revisão da semana?"), 2500);
         }
+        // Agenda notificações locais do SO (apenas se permissão concedida)
+        setTimeout(() => this.scheduleLocalNotifications(), 5000);
 
         const diffDaysCycle = Math.floor((today - new Date(state.cycleStartDate)) / (1000 * 60 * 60 * 24));
         if (diffDaysCycle >= 84) setTimeout(() => this.showNotification("🔄 Ciclo concluído! Reavalie a Roda da Vida e o PERMA na aba Propósito."), 4000);
@@ -1301,22 +1371,45 @@ const app = {
             } else {
                 historyContainer.innerHTML = pastKeys.map(key => {
                     const plan = weekPlans[key];
+                    const review = (state.reviews || {})[key];
                     const start = new Date(key + 'T00:00:00');
                     const end = new Date(start);
                     end.setDate(end.getDate() + 6);
+                    const reviewBadge = review
+                        ? `<span class="ml-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-full"><span class="material-symbols-outlined notranslate text-[12px]">check_circle</span>Revisado</span>`
+                        : `<span class="ml-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-outline bg-surface-container-high px-2 py-0.5 rounded-full">Sem revisão</span>`;
+                    const reviewSection = review ? `
+                        <div class="mt-4 pt-4 border-t border-outline-variant/10">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-secondary mb-3 flex items-center gap-1">
+                                <span class="material-symbols-outlined notranslate text-[14px]">rate_review</span>
+                                Revisão da Semana
+                            </p>
+                            <div class="grid md:grid-cols-2 gap-3">
+                                ${review.q1 ? `<div class="bg-surface-container p-3 rounded-xl"><p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">O que planejei</p><p class="text-xs text-on-surface leading-relaxed">${review.q1}</p></div>` : ''}
+                                ${review.q2 ? `<div class="bg-surface-container p-3 rounded-xl"><p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">O que executei</p><p class="text-xs text-on-surface leading-relaxed">${review.q2}</p></div>` : ''}
+                                ${review.q3 ? `<div class="bg-surface-container p-3 rounded-xl"><p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">O que aprendi</p><p class="text-xs text-on-surface leading-relaxed">${review.q3}</p></div>` : ''}
+                                ${review.q4 ? `<div class="bg-surface-container p-3 rounded-xl"><p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">O que ajustaria</p><p class="text-xs text-on-surface leading-relaxed">${review.q4}</p></div>` : ''}
+                                ${review.q5 ? `<div class="bg-surface-container p-3 rounded-xl md:col-span-2"><p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">Gratidão / Destaque</p><p class="text-xs text-on-surface leading-relaxed">${review.q5}</p></div>` : ''}
+                            </div>
+                        </div>` : '';
                     return `<details class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm overflow-hidden group">
                         <summary class="flex items-center justify-between p-5 cursor-pointer hover:bg-surface-container transition-colors list-none">
                             <div class="flex items-center gap-3">
                                 <span class="material-symbols-outlined notranslate text-outline text-lg">calendar_month</span>
                                 <div>
-                                    <p class="text-sm font-bold text-on-surface">${fmt(start)} — ${fmt(end)}</p>
+                                    <p class="text-sm font-bold text-on-surface flex items-center flex-wrap gap-1">${fmt(start)} — ${fmt(end)}${reviewBadge}</p>
                                     ${plan.intention ? `<p class="text-xs text-outline mt-0.5 truncate max-w-[240px]">${plan.intention}</p>` : ''}
                                 </div>
                             </div>
                             <span class="material-symbols-outlined notranslate text-outline text-sm transition-transform group-open:rotate-180">expand_more</span>
                         </summary>
                         <div class="px-5 pb-5 border-t border-outline-variant/10">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mt-4 mb-2 flex items-center gap-1">
+                                <span class="material-symbols-outlined notranslate text-[14px]">edit_calendar</span>
+                                Plano da Semana
+                            </p>
                             ${this._renderWeekPlanCard(plan, state, false)}
+                            ${reviewSection}
                         </div>
                     </details>`;
                 }).join('');
@@ -1371,6 +1464,25 @@ const app = {
             <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
                 <div class="h-full bg-primary rounded-full transition-all duration-700" style="width: ${completionPct}%"></div>
             </div>` : ''}
+
+            ${(() => {
+                if (!isCurrent) return '';
+                const todayDow = new Date().getDay();
+                if (![5, 6, 0].includes(todayDow)) return '';
+                const wk = app._getWeekKey();
+                const hasReview = !!(state.reviews || {})[wk];
+                if (hasReview) return `
+                <div class="flex items-center gap-2 mt-2 text-primary text-xs font-bold">
+                    <span class="material-symbols-outlined notranslate text-[16px]">check_circle</span>
+                    Revisão da semana já realizada
+                </div>`;
+                return `
+                <button onclick="window.app.openReviewModal()"
+                    class="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-secondary text-on-secondary text-sm font-bold rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all">
+                    <span class="material-symbols-outlined notranslate text-[18px]">rate_review</span>
+                    Fazer Revisão da Semana
+                </button>`;
+            })()}
         </div>`;
     },
 
@@ -2441,13 +2553,14 @@ const app = {
         const q4 = document.getElementById('rev-q4').value.trim();
         const q5 = document.getElementById('rev-q5').value.trim();
 
-        const key = new Date().toISOString();
+        // Salva pelo weekKey da segunda-feira (igual à chave de weekPlans)
+        const weekKey = this._getWeekKey();
         if (!window.sistemaVidaState.reviews) {
             window.sistemaVidaState.reviews = {};
         }
 
-        window.sistemaVidaState.reviews[key] = { q1, q2, q3, q4, q5 };
-        
+        window.sistemaVidaState.reviews[weekKey] = { q1, q2, q3, q4, q5, savedAt: new Date().toISOString() };
+
         this.saveState(true);
 
         const btn = document.getElementById('btn-save-review');
@@ -3652,6 +3765,43 @@ const app = {
                     ring.style.strokeDashoffset = offset;
                 }
             });
+
+            // Banner contextual: Planejar Semana ou Fazer Revisão
+            const reviewBanner = document.getElementById('review-banner');
+            if (reviewBanner) {
+                const todayDow = new Date().getDay(); // 0=Dom,1=Seg...6=Sáb
+                const currentWeekKey = app._getWeekKey();
+                const currentPlanExists = !!(state.weekPlans || {})[currentWeekKey];
+                const currentReviewExists = !!(state.reviews || {})[currentWeekKey];
+                const bannerTitle = reviewBanner.querySelector('h3');
+                const bannerDesc = reviewBanner.querySelector('p.text-sm');
+                const bannerIcon = reviewBanner.querySelector('.w-10 .material-symbols-outlined');
+                const bannerBtn = reviewBanner.querySelector('button');
+
+                if (todayDow >= 1 && todayDow <= 4 && !currentPlanExists) {
+                    // Seg–Qui sem plano → mostrar "Planejar esta semana"
+                    if (bannerTitle) bannerTitle.textContent = 'Planejar esta semana';
+                    if (bannerDesc) bannerDesc.textContent = 'Defina sua intenção e micro ações para a semana que começa.';
+                    if (bannerIcon) bannerIcon.textContent = 'edit_calendar';
+                    if (bannerBtn) {
+                        bannerBtn.textContent = 'Planejar Semana';
+                        bannerBtn.setAttribute('onclick', 'window.app.openWeeklyPlanModal()');
+                    }
+                    reviewBanner.classList.remove('hidden');
+                } else if ([5, 6, 0].includes(todayDow) && currentPlanExists && !currentReviewExists) {
+                    // Sex–Dom com plano mas sem revisão → mostrar "Fazer revisão da semana"
+                    if (bannerTitle) bannerTitle.textContent = 'Sua revisão semanal está disponível';
+                    if (bannerDesc) bannerDesc.textContent = 'Feche o ciclo atual e prepare-se para a próxima jornada.';
+                    if (bannerIcon) bannerIcon.textContent = 'event_available';
+                    if (bannerBtn) {
+                        bannerBtn.textContent = 'Fazer Revisão';
+                        bannerBtn.setAttribute('onclick', 'window.app.openReviewModal()');
+                    }
+                    reviewBanner.classList.remove('hidden');
+                } else {
+                    reviewBanner.classList.add('hidden');
+                }
+            }
 
             // 1. Ativa o Gráfico de Execução (Heatmap)
             this.renderAnnualHeatmap();
