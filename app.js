@@ -2620,6 +2620,8 @@ const app = {
                 } else {
                     toggleWrap.classList.remove('hidden');
                 }
+                const editingMicroId = (this.editingEntity && this.editingEntity.type === 'micros') ? this.editingEntity.id : '';
+                this.syncMicroWeekPlanToggle(editingMicroId);
             } else {
                 if (toggleWrap) toggleWrap.classList.add('hidden');
             }
@@ -3097,6 +3099,29 @@ const app = {
         const weekKey = this._getWeekKey();
         const plan = (state.weekPlans || {})[weekKey];
         return !!(plan && plan.selectedMicros && plan.selectedMicros.includes(microId));
+    },
+
+    syncMicroWeekPlanToggle: function(microId = '') {
+        const toggle = document.getElementById('add-to-week-plan');
+        const toggleWrap = document.getElementById('week-plan-toggle-wrap');
+        if (!toggle || !toggleWrap) return;
+
+        const weekKey = this._getWeekKey();
+        const plan = (window.sistemaVidaState.weekPlans || {})[weekKey];
+        if (!plan) {
+            toggle.checked = false;
+            toggle.disabled = true;
+            return;
+        }
+
+        toggle.disabled = false;
+        if (!microId) {
+            toggle.checked = false;
+            return;
+        }
+
+        const selected = Array.isArray(plan.selectedMicros) ? plan.selectedMicros : [];
+        toggle.checked = selected.includes(microId);
     },
 
     syncFocoPlannedFilterOption: function() {
@@ -3897,17 +3922,20 @@ const app = {
                 window.sistemaVidaState.entities[type].push(obj);
                 if (['micros', 'macros', 'okrs', 'metas'].includes(type)) this.updateCascadeProgress(obj.id, type);
             }
-            // Adiciona ao plano da semana se toggle marcado
-            if (type === 'micros') {
-                const addToWeek = document.getElementById('add-to-week-plan')?.checked;
-                if (addToWeek) {
-                    const weekKey = this._getWeekKey();
-                    if (!window.sistemaVidaState.weekPlans) window.sistemaVidaState.weekPlans = {};
-                    const plan = window.sistemaVidaState.weekPlans[weekKey];
-                    if (plan) {
-                        if (!plan.selectedMicros) plan.selectedMicros = [];
-                        if (!plan.selectedMicros.includes(obj.id)) plan.selectedMicros.push(obj.id);
-                    }
+        }
+
+        // Sincroniza seleção do micro no plano da semana (novo e edição).
+        if (type === 'micros') {
+            const toggleEl = document.getElementById('add-to-week-plan');
+            const weekKey = this._getWeekKey();
+            const plan = (window.sistemaVidaState.weekPlans || {})[weekKey];
+            if (toggleEl && plan) {
+                if (!Array.isArray(plan.selectedMicros)) plan.selectedMicros = [];
+                const alreadySelected = plan.selectedMicros.includes(obj.id);
+                if (toggleEl.checked && !alreadySelected) {
+                    plan.selectedMicros.push(obj.id);
+                } else if (!toggleEl.checked && alreadySelected) {
+                    plan.selectedMicros = plan.selectedMicros.filter(mid => mid !== obj.id);
                 }
             }
         }
@@ -5927,7 +5955,19 @@ const app = {
                 taskEnd = swap;
             }
 
-            if (taskEnd < startDate || taskStart > endDate) return; // fora da janela
+            const isOutsideWindow = taskEnd < startDate || taskStart > endDate;
+            if (isOutsideWindow) {
+                // Metas ainda devem aparecer como contexto da hierarquia,
+                // mesmo quando o prazo está fora da janela de 6 meses.
+                if (tipo !== 'metas') return;
+                if (taskStart > endDate) {
+                    taskStart = new Date(endDate);
+                    taskEnd = new Date(endDate);
+                } else if (taskEnd < startDate) {
+                    taskStart = new Date(startDate);
+                    taskEnd = new Date(startDate);
+                }
+            }
             
             // Clamping para a janela de visualização
             const visualStart = new Date(Math.max(taskStart, startDate));
@@ -6434,6 +6474,7 @@ const app = {
             }
             parentSelect.value = parentId;
         }
+        if (type === 'micros') this.syncMicroWeekPlanToggle(id);
     },
 
     // ------------------------------------------------------------------------
