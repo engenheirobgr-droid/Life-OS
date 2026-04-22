@@ -25,10 +25,13 @@
 <button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="timeline" onclick="window.app.switchPlanosTab('timeline')">Timeline</button>
 <button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="semanal" onclick="window.app.switchPlanosTab('semanal')">Semanal</button>
 </nav>
+<!-- Page Introduction -->
 <header class="mb-12">
 <h2 class="text-5xl font-headline font-semibold tracking-tight mb-4">Planos</h2>
 <p class="text-stone-500 max-w-md italic font-headline text-lg">A arquitetura da sua intenção. Dos grandes sonhos às ações microscópicas.</p>
 </header>
+
+<!-- Dimension Filters -->
 <div class="mt-8 flex gap-2 overflow-x-auto no-scrollbar mb-12">
     <button class="bg-primary text-on-primary px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap">Todas</button>
     <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Saúde</button>
@@ -40,6 +43,7 @@
     <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Lazer</button>
     <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Propósito</button>
 </div>
+<!-- Advanced Filters (Raio-X Relacional & Status) -->
 <div id="planos-advanced-filters" class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 mb-12 space-y-4">
     <div class="flex flex-col sm:flex-row sm:items-center gap-3">
         <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1">
@@ -69,36 +73,49 @@
         </div>
     </div>
 </div>
+<!-- Tab: Metas -->
 <section class="mt-8 tab-content active space-y-12" id="tab-metas">
 <div id="metas-container" class="space-y-12"></div>
 </section>
+<!-- Tab: OKRs -->
 <section class="mt-8 tab-content" id="tab-okrs">
 <div id="okrs-container" class="space-y-12"></div>
 </section>
+<!-- Tab: Macro -->
 <section class="mt-8 tab-content" id="tab-macro">
 <div id="macro-container" class="space-y-12"></div>
 </section>
+<!-- Tab: Micro -->
 <section class="mt-8 tab-content" id="tab-micro">
 <div id="micro-container" class="space-y-12"></div>
 </section>
+
 <section class="mt-8 tab-content" id="tab-timeline">
 <div id="timeline-container" class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm overflow-x-auto">
 </div>
 </section>
+
+<!-- Tab: Semanal -->
 <section class="mt-8 tab-content" id="tab-semanal">
+    <!-- Header com título e botão planejar -->
     <div class="flex items-center justify-between mb-6">
         <div>
             <h3 class="font-headline text-2xl italic font-bold">Planejamento Semanal</h3>
             <p id="semanal-week-label" class="text-xs text-outline uppercase tracking-widest font-bold mt-1"></p>
         </div>
-        <button onclick="window.app.openWeeklyPlanModal()" class="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all">
+        <button onclick="window.app.openWeeklyPlanModal()"
+            class="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all">
             <span class="material-symbols-outlined notranslate text-[18px]">edit_calendar</span>
             Planejar Semana
         </button>
     </div>
+
+    <!-- Card da semana atual -->
     <div id="semanal-current-card" class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-6 mb-10">
         <p class="text-sm text-outline italic">Nenhum plano para esta semana ainda. Clique em "Planejar Semana" para começar.</p>
     </div>
+
+    <!-- Histórico de semanas -->
     <div class="mb-4 flex items-center justify-between">
         <h4 class="font-headline text-lg font-bold">Histórico de Semanas</h4>
         <span id="semanal-history-count" class="text-xs text-outline"></span>
@@ -107,6 +124,8 @@
         <p class="text-sm text-outline italic">Nenhum histórico ainda.</p>
     </div>
 </section>
+
+<!-- FAB -->
 <button onclick="window.app.openCreateModal()" class="fixed bottom-28 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-xl flex items-center justify-center z-50 hover:scale-105 active:scale-90 transition-transform">
 <span class="material-symbols-outlined notranslate text-2xl" style="font-variation-settings: 'wght' 500;">add</span>
 </button>

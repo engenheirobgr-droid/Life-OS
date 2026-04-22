@@ -6615,4 +6615,133 @@ const app = {
         const keys = ['P', 'E', 'R', 'M', 'A'];
         keys.forEach(k => {
             const id = k.toLowerCase();
-            const slider = document.getElementBy
+            const slider = document.getElementById(`${id}-slider`);
+            const label = document.getElementById(`val-${id}`);
+            const normalized = this.normalizePermaScore(perma[k]);
+            if (slider) slider.value = String(normalized);
+            if (label) label.textContent = normalized.toFixed(1);
+        });
+
+        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    closePermaModal: function() {
+        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    savePerma: function() {
+        const state = window.sistemaVidaState;
+        if (!state.perma) state.perma = {P:0, E:0, R:0, M:0, A:0};
+
+        // Salva lendo explicitamente os sliders
+        const keys = ['P', 'E', 'R', 'M', 'A'];
+        keys.forEach(k => {
+            const slider = document.getElementById(`${k.toLowerCase()}-slider`);
+            if (slider) {
+                state.perma[k] = this.normalizePermaScore(slider.value);
+            }
+        });
+
+        // Tarefa 3: Persistência Explícita e Atualização Padronizada
+        this.saveState(true);
+        this.closePermaModal();
+        this.switchView('proposito'); // Força re-render completo
+        this.showNotification("Diagnóstico PERMA atualizado com sucesso!");
+    },
+
+    openOdysseyModal: function(id) {
+        const state = window.sistemaVidaState;
+        if (!state.profile.odyssey) state.profile.odyssey = {
+            A: { title: "A Via Consolidada", desc: "Foco em ascensão na carreira atual.", conf: 4, nrg: 4 },
+            B: { title: "O Salto Criativo", desc: "Transição para trabalho solo.", conf: 3, nrg: 5 },
+            C: { title: "A Vida Acadêmica", desc: "Doutorado e pesquisa.", conf: 2, nrg: 3 }
+        };
+        const plan = state.profile.odyssey[id];
+        document.getElementById('odyssey-id').value = id;
+        document.getElementById('odyssey-title').value = plan.title;
+        document.getElementById('odyssey-desc').value = plan.desc;
+        document.getElementById('odyssey-conf').value = plan.conf;
+        document.getElementById('odyssey-nrg').value = plan.nrg;
+        
+        const modal = document.getElementById('odyssey-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    },
+
+    saveOdyssey: function() {
+        const id = document.getElementById('odyssey-id').value;
+        if (!window.sistemaVidaState.profile.odyssey) window.sistemaVidaState.profile.odyssey = {};
+        
+        window.sistemaVidaState.profile.odyssey[id] = {
+            title: document.getElementById('odyssey-title').value,
+            desc: document.getElementById('odyssey-desc').value,
+            conf: parseInt(document.getElementById('odyssey-conf').value),
+            nrg: parseInt(document.getElementById('odyssey-nrg').value)
+        };
+        this.saveState();
+        const modal = document.getElementById('odyssey-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        if (this.render.proposito) this.render.proposito();
+    },
+
+    openProfileModal: function() {
+        const state = window.sistemaVidaState;
+        const nameInput = document.getElementById('profile-name-input');
+        if (nameInput) {
+            nameInput.value = state.profile.name || "";
+        }
+        
+        const modal = document.getElementById('profile-edit-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    closeProfileModal: function() {
+        const modal = document.getElementById('profile-edit-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    saveProfile: function() {
+        const nameInput = document.getElementById('profile-name-input');
+        if (nameInput) {
+            const newName = nameInput.value.trim();
+            window.sistemaVidaState.profile.name = newName;
+            
+            // Sync UI displays
+            const dashName = document.getElementById('perfil-nome-display');
+            if (dashName) dashName.textContent = newName;
+        }
+        
+        this.saveState(true);
+        
+        const modal = document.getElementById('profile-edit-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        
+        this.renderSidebarValues(); // Sync any changes to values or name
+        if (this.render.perfil) this.render.perfil();
+        this.showToast("Perfil atualizado com sucesso!", "success");
+    }
+};
+
+window.app = app;
+
+document.addEventListener("DOMContentLoaded", () => {
+    app.init();
+});
