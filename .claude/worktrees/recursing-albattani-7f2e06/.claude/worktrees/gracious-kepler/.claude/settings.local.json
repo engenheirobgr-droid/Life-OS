@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(awk 'NR>=3060 && NR<=3080' app.js)"
-    ]
-  }
-}
