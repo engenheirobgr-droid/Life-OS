@@ -799,6 +799,8 @@ const app = {
     currentTextGroup: null,
     currentTextKey: null,
     onboardingStep: 0,
+    metaTrailStep: 1,
+    _wizardPlanSuggestion: null,
     lastCloudSyncOk: null,
     lastCloudSyncErrorCode: '',
 
@@ -1547,6 +1549,7 @@ const app = {
     switchView: async function(viewName) {
         if (!viewName) return;
         this.currentView = viewName;
+        this.closeFabMenu();
         this.updateNavUI(viewName);
 
         const container = document.getElementById(this.config.containerId);
@@ -1831,7 +1834,563 @@ const app = {
         app.saveState(true);
     },
 
+    _trailRowId: function(prefix) {
+        return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+    },
+
+    toggleFabMenu: function(event) {
+        if (event && event.stopPropagation) event.stopPropagation();
+        const menu = document.getElementById('fab-context-menu');
+        if (!menu) {
+            this.openCreateModal('micros');
+            return;
+        }
+        if (menu.classList.contains('hidden')) menu.classList.remove('hidden');
+        else menu.classList.add('hidden');
+    },
+
+    closeFabMenu: function() {
+        const menu = document.getElementById('fab-context-menu');
+        if (menu) menu.classList.add('hidden');
+    },
+
+    openQuickCaptureFromFab: function() {
+        this.closeFabMenu();
+        this.openCreateModal('micros');
+    },
+
+    openMetaTrailWizard: function() {
+        this.closeFabMenu();
+        const modal = document.getElementById('meta-trail-modal');
+        if (!modal) return;
+
+        const today = new Date();
+        const metaDeadline = new Date(today);
+        metaDeadline.setDate(metaDeadline.getDate() + 84);
+        const microOne = new Date(today);
+        microOne.setDate(microOne.getDate() + 3);
+        const microTwo = new Date(today);
+        microTwo.setDate(microTwo.getDate() + 7);
+        const toDate = (d) => {
+            const local = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+            return local.toISOString().split('T')[0];
+        };
+
+        const titleEl = document.getElementById('trail-meta-title');
+        const dimensionEl = document.getElementById('trail-meta-dimension');
+        const prazoEl = document.getElementById('trail-meta-prazo');
+        const whyEl = document.getElementById('trail-meta-why');
+        if (titleEl) titleEl.value = '';
+        if (dimensionEl) dimensionEl.value = '';
+        if (prazoEl) prazoEl.value = toDate(metaDeadline);
+        if (whyEl) whyEl.value = '';
+
+        const okrList = document.getElementById('trail-okrs-list');
+        const macroList = document.getElementById('trail-macros-list');
+        const microList = document.getElementById('trail-micros-list');
+        if (okrList) okrList.innerHTML = '';
+        if (macroList) macroList.innerHTML = '';
+        if (microList) microList.innerHTML = '';
+
+        this.addTrailOkrRow({ prazo: toDate(metaDeadline) });
+        this.addTrailMacroRow();
+        this.addTrailMacroRow();
+        this.addTrailMicroRow({ prazo: toDate(microOne) });
+        this.addTrailMicroRow({ prazo: toDate(microTwo) });
+
+        this.metaTrailStep = 1;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        this.setMetaTrailStep(1);
+    },
+
+    closeMetaTrailWizard: function() {
+        const modal = document.getElementById('meta-trail-modal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    },
+
+    setMetaTrailStep: function(step) {
+        const target = Math.max(1, Math.min(5, Number(step) || 1));
+        this.metaTrailStep = target;
+
+        document.querySelectorAll('.meta-trail-step').forEach((section, idx) => {
+            section.classList.toggle('hidden', idx + 1 !== target);
+        });
+
+        document.querySelectorAll('[data-trail-step-dot]').forEach(dot => {
+            const dotStep = Number(dot.getAttribute('data-trail-step-dot'));
+            if (dotStep < target) dot.className = 'h-1.5 rounded-full bg-primary/60';
+            else if (dotStep === target) dot.className = 'h-1.5 rounded-full bg-primary';
+            else dot.className = 'h-1.5 rounded-full bg-surface-container-high';
+        });
+
+        const stepLabel = document.getElementById('trail-step-label');
+        if (stepLabel) stepLabel.textContent = `Passo ${target} de 5`;
+
+        const prevBtn = document.getElementById('trail-prev-btn');
+        const nextBtn = document.getElementById('trail-next-btn');
+        const finishBtn = document.getElementById('trail-finish-btn');
+        if (prevBtn) prevBtn.classList.toggle('invisible', target === 1);
+        if (nextBtn) nextBtn.classList.toggle('hidden', target === 5);
+        if (finishBtn) finishBtn.classList.toggle('hidden', target !== 5);
+
+        if (target === 5) this.refreshTrailSummary();
+    },
+
+    metaTrailPrevStep: function() {
+        this.setMetaTrailStep((this.metaTrailStep || 1) - 1);
+    },
+
+    metaTrailNextStep: function() {
+        const current = this.metaTrailStep || 1;
+        if (!this._validateMetaTrailStep(current)) return;
+        this.setMetaTrailStep(current + 1);
+    },
+
+    addTrailOkrRow: function(prefill = {}) {
+        const list = document.getElementById('trail-okrs-list');
+        if (!list) return;
+        if (list.children.length >= 3) {
+            this.showToast('Máximo de 3 OKRs na trilha.', 'error');
+            return;
+        }
+        const rowId = this._trailRowId('okr');
+        const row = document.createElement('div');
+        row.setAttribute('data-trail-row', rowId);
+        row.className = 'bg-surface-container-low border border-outline-variant/20 rounded-xl p-4 space-y-3';
+        row.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">OKR</p>
+                <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
+            </div>
+            <input type="text" class="trail-okr-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Resultado-chave (ex.: Publicar 12 artigos)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
+            <input type="text" class="trail-okr-metric w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Métrica de sucesso (ex.: 12 artigos publicados até o prazo)" value="${this.escapeHtml(prefill.metric || '')}" oninput="window.app.refreshTrailSummary()">
+            <input type="date" class="trail-okr-prazo w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.prazo || '')}" onchange="window.app.refreshTrailSummary()">
+        `;
+        list.appendChild(row);
+        this.refreshTrailMacroParentOptions();
+    },
+
+    addTrailMacroRow: function(prefill = {}) {
+        const list = document.getElementById('trail-macros-list');
+        if (!list) return;
+        if (list.children.length >= 5) {
+            this.showToast('Máximo de 5 Macros na trilha.', 'error');
+            return;
+        }
+        const rowId = this._trailRowId('macro');
+        const row = document.createElement('div');
+        row.setAttribute('data-trail-row', rowId);
+        row.className = 'bg-surface-container-low border border-outline-variant/20 rounded-xl p-4 space-y-3';
+        row.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Macro</p>
+                <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
+            </div>
+            <input type="text" class="trail-macro-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Iniciativa principal (ex.: Sistema editorial semanal)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMicroParentOptions(); window.app.refreshTrailSummary()">
+            <select class="trail-macro-okr w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()"></select>
+            <input type="text" class="trail-macro-desc w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Detalhe opcional da iniciativa" value="${this.escapeHtml(prefill.description || '')}" oninput="window.app.refreshTrailSummary()">
+        `;
+        list.appendChild(row);
+        this.refreshTrailMacroParentOptions();
+        this.refreshTrailMicroParentOptions();
+    },
+
+    addTrailMicroRow: function(prefill = {}) {
+        const list = document.getElementById('trail-micros-list');
+        if (!list) return;
+        const rowId = this._trailRowId('micro');
+        const row = document.createElement('div');
+        row.setAttribute('data-trail-row', rowId);
+        row.className = 'bg-surface-container-low border border-outline-variant/20 rounded-xl p-4 space-y-3';
+        row.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Micro</p>
+                <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
+            </div>
+            <input type="text" class="trail-micro-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Ação concreta (ex.: Escrever outline do artigo 1)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailSummary()">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <select class="trail-micro-macro w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()"></select>
+                <input type="date" class="trail-micro-prazo w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.prazo || '')}" onchange="window.app.refreshTrailSummary()">
+            </div>
+        `;
+        list.appendChild(row);
+        this.refreshTrailMicroParentOptions();
+    },
+
+    removeTrailRow: function(buttonEl) {
+        const row = buttonEl && buttonEl.closest ? buttonEl.closest('[data-trail-row]') : null;
+        if (!row || !row.parentNode) return;
+        const list = row.parentNode;
+        row.remove();
+        if (list.id === 'trail-okrs-list') this.refreshTrailMacroParentOptions();
+        if (list.id === 'trail-macros-list') {
+            this.refreshTrailMacroParentOptions();
+            this.refreshTrailMicroParentOptions();
+        }
+        if (list.id === 'trail-micros-list') this.refreshTrailSummary();
+    },
+
+    refreshTrailMacroParentOptions: function() {
+        const okrs = this._readTrailOkrs().items;
+        const selects = document.querySelectorAll('.trail-macro-okr');
+        selects.forEach(select => {
+            const selected = select.value;
+            if (okrs.length === 0) {
+                select.innerHTML = '<option value="">Sem OKR disponível</option>';
+                select.value = '';
+                return;
+            }
+            select.innerHTML = okrs.map((okr, idx) => `<option value="${okr.rowId}">${idx + 1}. ${this.escapeHtml(okr.title)}</option>`).join('');
+            if (selected && okrs.some(okr => okr.rowId === selected)) select.value = selected;
+        });
+        this.refreshTrailMicroParentOptions();
+        this.refreshTrailSummary();
+    },
+
+    refreshTrailMicroParentOptions: function() {
+        const macros = this._readTrailMacros().items;
+        const selects = document.querySelectorAll('.trail-micro-macro');
+        selects.forEach(select => {
+            const selected = select.value;
+            if (macros.length === 0) {
+                select.innerHTML = '<option value="">Sem Macro disponível</option>';
+                select.value = '';
+                return;
+            }
+            select.innerHTML = macros.map((macro, idx) => `<option value="${macro.rowId}">${idx + 1}. ${this.escapeHtml(macro.title)}</option>`).join('');
+            if (selected && macros.some(macro => macro.rowId === selected)) select.value = selected;
+        });
+        this.refreshTrailSummary();
+    },
+
+    _readTrailMeta: function() {
+        return {
+            title: (document.getElementById('trail-meta-title')?.value || '').trim(),
+            dimension: (document.getElementById('trail-meta-dimension')?.value || '').trim(),
+            prazo: (document.getElementById('trail-meta-prazo')?.value || '').trim(),
+            why: (document.getElementById('trail-meta-why')?.value || '').trim()
+        };
+    },
+
+    _readTrailOkrs: function() {
+        const rows = Array.from(document.querySelectorAll('#trail-okrs-list [data-trail-row]'));
+        const items = [];
+        let hasPartial = false;
+        rows.forEach(row => {
+            const rowId = row.getAttribute('data-trail-row');
+            const title = (row.querySelector('.trail-okr-title')?.value || '').trim();
+            const metric = (row.querySelector('.trail-okr-metric')?.value || '').trim();
+            const prazo = (row.querySelector('.trail-okr-prazo')?.value || '').trim();
+            const hasAny = !!(title || metric || prazo);
+            const isComplete = !!(title && metric && prazo);
+            if (hasAny && !isComplete) hasPartial = true;
+            if (isComplete) items.push({ rowId, title, metric, prazo });
+        });
+        return { items, hasPartial };
+    },
+
+    _readTrailMacros: function() {
+        const rows = Array.from(document.querySelectorAll('#trail-macros-list [data-trail-row]'));
+        const items = [];
+        let hasPartial = false;
+        rows.forEach(row => {
+            const rowId = row.getAttribute('data-trail-row');
+            const title = (row.querySelector('.trail-macro-title')?.value || '').trim();
+            const okrRowId = (row.querySelector('.trail-macro-okr')?.value || '').trim();
+            const description = (row.querySelector('.trail-macro-desc')?.value || '').trim();
+            const hasAny = !!(title || okrRowId || description);
+            const isComplete = !!(title && okrRowId);
+            if (hasAny && !isComplete) hasPartial = true;
+            if (isComplete) items.push({ rowId, title, okrRowId, description });
+        });
+        return { items, hasPartial };
+    },
+
+    _readTrailMicros: function() {
+        const rows = Array.from(document.querySelectorAll('#trail-micros-list [data-trail-row]'));
+        const items = [];
+        let hasPartial = false;
+        rows.forEach(row => {
+            const rowId = row.getAttribute('data-trail-row');
+            const title = (row.querySelector('.trail-micro-title')?.value || '').trim();
+            const macroRowId = (row.querySelector('.trail-micro-macro')?.value || '').trim();
+            const prazo = (row.querySelector('.trail-micro-prazo')?.value || '').trim();
+            const hasAny = !!(title || macroRowId || prazo);
+            const isComplete = !!(title && macroRowId && prazo);
+            if (hasAny && !isComplete) hasPartial = true;
+            if (isComplete) items.push({ rowId, title, macroRowId, prazo });
+        });
+        return { items, hasPartial };
+    },
+
+    _formatTrailDate: function(dateStr) {
+        if (!dateStr) return 'Sem prazo';
+        try {
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString('pt-BR');
+        } catch (_) {
+            return dateStr;
+        }
+    },
+
+    _validateMetaTrailStep: function(step) {
+        const s = Number(step || this.metaTrailStep || 1);
+        if (s === 1) {
+            const meta = this._readTrailMeta();
+            if (!meta.title || !meta.dimension || !meta.prazo || !meta.why) {
+                this.showToast('Preencha título, dimensão, prazo e motivação da meta.', 'error');
+                return false;
+            }
+            return true;
+        }
+        if (s === 2) {
+            const okrs = this._readTrailOkrs();
+            if (okrs.hasPartial) {
+                this.showToast('Complete os campos de cada OKR preenchido (resultado, métrica e prazo).', 'error');
+                return false;
+            }
+            if (okrs.items.length < 1 || okrs.items.length > 3) {
+                this.showToast('Defina de 1 a 3 OKRs para continuar.', 'error');
+                return false;
+            }
+            return true;
+        }
+        if (s === 3) {
+            const macros = this._readTrailMacros();
+            if (macros.hasPartial) {
+                this.showToast('Cada Macro precisa de título e OKR vinculado.', 'error');
+                return false;
+            }
+            if (macros.items.length < 2 || macros.items.length > 5) {
+                this.showToast('Defina de 2 a 5 Macros para continuar.', 'error');
+                return false;
+            }
+            return true;
+        }
+        if (s === 4) {
+            const micros = this._readTrailMicros();
+            if (micros.hasPartial) {
+                this.showToast('Cada Micro precisa de título, Macro vinculada e prazo.', 'error');
+                return false;
+            }
+            if (micros.items.length < 1) {
+                this.showToast('Defina ao menos 1 Micro para começar a semana.', 'error');
+                return false;
+            }
+            const todayKey = this.getLocalDateKey();
+            const today = new Date(todayKey + 'T00:00:00');
+            const maxDate = new Date(today);
+            maxDate.setDate(maxDate.getDate() + 14);
+            const invalidDate = micros.items.find(item => {
+                try {
+                    const d = new Date(item.prazo + 'T00:00:00');
+                    return d < today || d > maxDate;
+                } catch (_) {
+                    return true;
+                }
+            });
+            if (invalidDate) {
+                this.showToast('Os prazos dos Micros devem ficar dentro das próximas 2 semanas.', 'error');
+                return false;
+            }
+            return true;
+        }
+        return true;
+    },
+
+    refreshTrailSummary: function() {
+        const summary = document.getElementById('trail-summary');
+        if (!summary) return;
+        const meta = this._readTrailMeta();
+        const okrs = this._readTrailOkrs().items;
+        const macros = this._readTrailMacros().items;
+        const micros = this._readTrailMicros().items;
+        const okrByRow = {};
+        okrs.forEach(okr => { okrByRow[okr.rowId] = okr; });
+        const macroByRow = {};
+        macros.forEach(macro => { macroByRow[macro.rowId] = macro; });
+
+        const metaCard = `
+            <div class="bg-surface-container-low rounded-xl border border-outline-variant/20 p-4">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Meta</p>
+                <p class="text-sm font-bold text-on-surface">${this.escapeHtml(meta.title || '—')}</p>
+                <p class="text-xs text-outline mt-1">${this.escapeHtml(meta.dimension || 'Sem dimensão')} • ${this._formatTrailDate(meta.prazo)}</p>
+                <p class="text-xs text-on-surface mt-2 leading-relaxed">${this.escapeHtml(meta.why || 'Sem motivação definida.')}</p>
+            </div>`;
+
+        const okrCards = okrs.length > 0
+            ? okrs.map((okr, idx) => `
+                <div class="bg-surface-container rounded-lg border border-outline-variant/15 p-3">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">OKR ${idx + 1}</p>
+                    <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(okr.title)}</p>
+                    <p class="text-xs text-outline mt-1">${this.escapeHtml(okr.metric)}</p>
+                    <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(okr.prazo)}</p>
+                </div>
+            `).join('')
+            : '<p class="text-xs text-outline italic">Sem OKRs completos.</p>';
+
+        const macroCards = macros.length > 0
+            ? macros.map((macro, idx) => `
+                <div class="bg-surface-container rounded-lg border border-outline-variant/15 p-3">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Macro ${idx + 1}</p>
+                    <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(macro.title)}</p>
+                    <p class="text-xs text-outline mt-1">Vinculada a: ${this.escapeHtml(okrByRow[macro.okrRowId]?.title || 'OKR não definido')}</p>
+                    ${macro.description ? `<p class="text-xs text-on-surface mt-2">${this.escapeHtml(macro.description)}</p>` : ''}
+                </div>
+            `).join('')
+            : '<p class="text-xs text-outline italic">Sem Macros completas.</p>';
+
+        const microCards = micros.length > 0
+            ? micros.map((micro, idx) => `
+                <div class="bg-surface-container rounded-lg border border-outline-variant/15 p-3">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Micro ${idx + 1}</p>
+                    <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(micro.title)}</p>
+                    <p class="text-xs text-outline mt-1">Macro: ${this.escapeHtml(macroByRow[micro.macroRowId]?.title || 'Macro não definida')}</p>
+                    <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(micro.prazo)}</p>
+                </div>
+            `).join('')
+            : '<p class="text-xs text-outline italic">Sem Micros completas.</p>';
+
+        summary.innerHTML = `
+            ${metaCard}
+            <div class="grid md:grid-cols-3 gap-3">
+                <div class="space-y-2">${okrCards}</div>
+                <div class="space-y-2">${macroCards}</div>
+                <div class="space-y-2">${microCards}</div>
+            </div>
+        `;
+    },
+
+    finishMetaTrailWizard: function() {
+        for (let step = 1; step <= 4; step++) {
+            if (!this._validateMetaTrailStep(step)) {
+                this.setMetaTrailStep(step);
+                return;
+            }
+        }
+
+        const meta = this._readTrailMeta();
+        const okrs = this._readTrailOkrs().items;
+        const macros = this._readTrailMacros().items;
+        const micros = this._readTrailMicros().items;
+
+        const state = window.sistemaVidaState;
+        if (!state.entities) state.entities = { metas: [], okrs: [], macros: [], micros: [] };
+        ['metas', 'okrs', 'macros', 'micros'].forEach(type => {
+            if (!Array.isArray(state.entities[type])) state.entities[type] = [];
+        });
+
+        const makeId = () => `ent_${Date.now()}${Math.random().toString(36).slice(2, 6)}`;
+        const todayKey = this.getLocalDateKey();
+
+        const metaId = makeId();
+        state.entities.metas.push({
+            id: metaId,
+            title: meta.title,
+            dimension: meta.dimension,
+            prazo: meta.prazo,
+            purpose: meta.why,
+            horizonYears: 1,
+            successCriteria: '',
+            challengeLevel: 3,
+            commitmentLevel: 4,
+            status: 'pending',
+            progress: 0,
+            completed: false
+        });
+
+        const okrMap = {};
+        okrs.forEach(okr => {
+            const okrId = makeId();
+            okrMap[okr.rowId] = okrId;
+            state.entities.okrs.push({
+                id: okrId,
+                metaId,
+                title: okr.title,
+                dimension: meta.dimension,
+                prazo: okr.prazo,
+                purpose: okr.metric,
+                successCriteria: okr.metric,
+                challengeLevel: 3,
+                commitmentLevel: 3,
+                keyResults: [],
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+        });
+
+        const macroMap = {};
+        macros.forEach(macro => {
+            const macroId = makeId();
+            macroMap[macro.rowId] = macroId;
+            const okrId = okrMap[macro.okrRowId] || '';
+            state.entities.macros.push({
+                id: macroId,
+                metaId,
+                okrId,
+                title: macro.title,
+                dimension: meta.dimension,
+                prazo: meta.prazo,
+                description: macro.description || '',
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+        });
+
+        const createdMicroIds = [];
+        micros.forEach(micro => {
+            const microId = makeId();
+            const macroId = macroMap[micro.macroRowId] || '';
+            const macro = state.entities.macros.find(m => m.id === macroId);
+            state.entities.micros.push({
+                id: microId,
+                metaId,
+                okrId: macro?.okrId || '',
+                macroId,
+                title: micro.title,
+                dimension: meta.dimension,
+                inicioDate: todayKey,
+                prazo: micro.prazo,
+                indicator: 'Primeiro passo da trilha',
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+            createdMicroIds.push(microId);
+        });
+
+        this.normalizeEntitiesState();
+        createdMicroIds.forEach(id => this.updateCascadeProgress(id, 'micros'));
+        this._wizardPlanSuggestion = {
+            microIds: createdMicroIds,
+            intention: `Avançar meta: ${meta.title}`
+        };
+
+        this.closeMetaTrailWizard();
+        this.saveState(false);
+        this.showToast(`Trilha criada: 1 meta, ${okrs.length} OKR(s), ${macros.length} macro(s), ${micros.length} micro(s).`, 'success');
+
+        const openPlannerWhenReady = (attempt = 0) => {
+            const hasWeeklyModal = !!document.getElementById('weekly-plan-modal');
+            if (hasWeeklyModal) {
+                this.switchPlanosTab('semanal');
+                this.openWeeklyPlanModal();
+                return;
+            }
+            if (attempt < 10) setTimeout(() => openPlannerWhenReady(attempt + 1), 150);
+        };
+
+        if (this.currentView !== 'planos') this.switchView('planos');
+        setTimeout(() => openPlannerWhenReady(), this.currentView === 'planos' ? 80 : 450);
+    },
+
     openCreateModal: function(type = 'metas') {
+        this.closeFabMenu();
         this.editingEntity = null; // Limpa estado de edição
         // Reseta chips do seletor de propósito
         document.querySelectorAll('.purpose-option-chip').forEach(c => {
@@ -2476,6 +3035,28 @@ const app = {
         return !!(plan && plan.selectedMicros && plan.selectedMicros.includes(microId));
     },
 
+    syncFocoPlannedFilterOption: function() {
+        const statusSelect = document.getElementById('todo-status-filter');
+        if (!statusSelect) return;
+        const weekKey = this._getWeekKey();
+        const hasActivePlan = !!(window.sistemaVidaState.weekPlans || {})[weekKey];
+        const plannedOption = Array.from(statusSelect.options).find(opt => opt.value === 'planned');
+
+        if (hasActivePlan) {
+            if (!plannedOption) {
+                const opt = document.createElement('option');
+                opt.value = 'planned';
+                opt.textContent = 'Plano da Semana';
+                const pendingOpt = Array.from(statusSelect.options).find(o => o.value === 'pending');
+                if (pendingOpt) statusSelect.insertBefore(opt, pendingOpt);
+                else statusSelect.appendChild(opt);
+            }
+        } else {
+            if (plannedOption) plannedOption.remove();
+            if (statusSelect.value === 'planned') statusSelect.value = 'all';
+        }
+    },
+
     openWeeklyPlanModal: function() {
         const state = window.sistemaVidaState;
         const weekKey = this._getWeekKey();
@@ -2490,9 +3071,11 @@ const app = {
 
         // Pré-preenche com plano existente para esta semana (se houver)
         const existing = (state.weekPlans || {})[weekKey] || {};
+        const trailSuggestion = this._wizardPlanSuggestion || null;
+        const suggestedMicros = Array.isArray(trailSuggestion?.microIds) ? trailSuggestion.microIds : [];
         const intentionEl = document.getElementById('wp-intention');
         const energyEl = document.getElementById('wp-energy');
-        if (intentionEl) intentionEl.value = existing.intention || '';
+        if (intentionEl) intentionEl.value = existing.intention || trailSuggestion?.intention || '';
         if (energyEl) energyEl.value = existing.energyForecast || 3;
 
         // Monta lista de micros ativos
@@ -2503,7 +3086,7 @@ const app = {
                 microsContainer.innerHTML = '<p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>';
             } else {
                 microsContainer.innerHTML = activeMicros.map(m => {
-                    const checked = (existing.selectedMicros || []).includes(m.id) ? 'checked' : '';
+                    const checked = ((existing.selectedMicros || []).includes(m.id) || suggestedMicros.includes(m.id)) ? 'checked' : '';
                     const macroTitle = state.entities.macros?.find(ma => ma.id === m.macroId)?.title || '';
                     const sub = macroTitle ? `<span class="text-[10px] text-outline block">${macroTitle}</span>` : '';
                     return `<label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-primary/5 transition-colors">
@@ -2515,6 +3098,7 @@ const app = {
         }
 
         document.getElementById('weekly-plan-modal').classList.remove('hidden');
+        this._wizardPlanSuggestion = null;
     },
 
     closeWeeklyPlanModal: function() {
@@ -3999,6 +4583,7 @@ const app = {
             // Micros Management List
             const listContainer = document.getElementById('micros-management-list');
             if (listContainer) {
+                app.syncFocoPlannedFilterOption();
                 const dimFilter = document.getElementById('todo-dimension-filter')?.value || 'Tudo';
                 const statusFilter = document.getElementById('todo-status-filter')?.value || 'all';
 
