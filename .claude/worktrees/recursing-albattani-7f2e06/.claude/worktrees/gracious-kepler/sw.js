@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v35';
+const CACHE_NAME = 'sistema-vida-v8';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js',
+    './app.js?v=20260413-focus-micros',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
@@ -39,13 +39,6 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Allow pages to tell the waiting SW to skip waiting and take control immediately
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
-});
-
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
     
@@ -65,6 +58,7 @@ self.addEventListener('fetch', (event) => {
                 return response;
             })
             .catch(() => {
+                // Network failed, fallback to cache
                 return caches.match(event.request);
             })
     );

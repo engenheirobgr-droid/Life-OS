@@ -1,0 +1,120 @@
+<div class="animate-fade-in flex flex-col gap-8 md:gap-10 pb-24 px-6 pt-6 lg:px-10 lg:pt-10 max-w-7xl mx-auto overflow-x-hidden">
+    <!-- Header: Visão de Foco -->
+    <header class="order-1 flex flex-col md:flex-row md:items-end justify-between gap-6 min-w-0">
+        <div class="space-y-2 min-w-0">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-on-surface break-words">
+                Foco <span class="text-primary italic">&</span> Execução
+            </h1>
+            <p class="text-on-surface-variant font-medium max-w-lg">
+                Escolha uma micro ação de Planos, entre em um bloco de foco e registre o avanço no caminho certo.
+            </p>
+        </div>
+        <div class="flex items-center gap-4">
+            <div id="top-values-banner" class="flex flex-wrap gap-2"></div>
+        </div>
+    </header>
+
+    <!-- Deep Work Engine -->
+    <section id="deep-work-panel" class="order-2 bg-surface-container-lowest p-5 md:p-8 rounded-2xl border border-outline-variant/10 shadow-sm space-y-6 min-w-0">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div class="min-w-0">
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <span class="material-symbols-outlined notranslate text-primary">timer</span>
+                    Deep Work
+                </h2>
+                <p class="text-sm text-on-surface-variant mt-1">Blocos de foco profundo com pausa estruturada e registro de sessão.</p>
+            </div>
+            <div class="text-left md:text-right">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Status</p>
+                <p id="deep-work-status" class="text-sm font-bold text-primary">Pronto para iniciar</p>
+                <p id="deep-work-step" class="text-xs text-on-surface-variant mt-1">Escolha uma micro ação</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 min-w-0">
+            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-3 min-w-0">
+                <div class="space-y-1">
+                    <label for="deep-work-preset" class="text-[10px] uppercase tracking-widest font-bold text-outline">Duração foco</label>
+                    <select id="deep-work-preset" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none border border-outline-variant/30">
+                        <option value="60">60 minutos</option>
+                        <option value="90" selected>90 minutos</option>
+                        <option value="120">120 minutos</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label for="deep-work-micro" class="text-[10px] uppercase tracking-widest font-bold text-outline">Micro ação</label>
+                    <select id="deep-work-micro" onchange="window.app.selectDeepWorkMicro(this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none border border-outline-variant/30">
+                        <option value="">Selecione uma micro</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label for="deep-work-intention" class="text-[10px] uppercase tracking-widest font-bold text-outline">Intenção</label>
+                    <input id="deep-work-intention" type="text" placeholder="No que vou focar agora?"
+                        class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none border border-outline-variant/30">
+                </div>
+            </div>
+            <div class="bg-surface-container-low rounded-xl border border-outline-variant/10 p-4 flex flex-col justify-center items-center min-w-0">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Tempo restante</p>
+                <p id="deep-work-timer" class="text-4xl font-headline italic text-primary mt-2">90:00</p>
+                <p id="deep-work-phase" class="text-xs text-on-surface-variant mt-1">Foco</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+            <button id="deep-work-start-btn" onclick="window.app.startDeepWorkSession()" class="px-3 md:px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-widest">Iniciar</button>
+            <button id="deep-work-pause-btn" onclick="window.app.toggleDeepWorkPause()" class="px-3 md:px-4 py-2 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface text-xs font-bold uppercase tracking-widest">Pausar</button>
+            <button id="deep-work-reset-btn" onclick="window.app.resetDeepWorkSession()" class="px-3 md:px-4 py-2 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface text-xs font-bold uppercase tracking-widest">Resetar</button>
+            <button id="deep-work-finish-btn" onclick="window.app.finishDeepWorkNow()" class="px-3 md:px-4 py-2 rounded-lg bg-secondary-container text-on-secondary-container text-xs font-bold uppercase tracking-widest">Finalizar</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-surface-container-low rounded-xl border border-outline-variant/10 p-4">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-outline mb-2">Resumo da semana</p>
+                <p id="deep-work-week-summary" class="text-sm text-on-surface-variant">0 sessões, 0h00 de foco profundo.</p>
+            </div>
+            <div class="bg-surface-container-low rounded-xl border border-outline-variant/10 p-4">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-outline mb-2">Sessões recentes</p>
+                <div id="deep-work-history" class="space-y-2 text-sm text-on-surface-variant"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Micro Ações Management -->
+    <section class="order-4 space-y-6 min-w-0">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1 min-w-0">
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <span class="material-symbols-outlined notranslate text-primary">checklist</span>
+                    Gerenciador de Micros
+                </h2>
+                <p class="text-sm text-on-surface-variant">Sua fila de execução: escolha, foque, acompanhe tempo e conclua micro ações.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto">
+                <select id="todo-dimension-filter" onchange="window.app.render.foco()" class="w-full min-w-0 bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-4 py-2 outline-none border border-outline-variant/30">
+                    <option value="Tudo">Todas Dimensões</option>
+                    <option value="Saúde">Saúde</option>
+                    <option value="Mente">Mente</option>
+                    <option value="Carreira">Carreira</option>
+                    <option value="Finanças">Finanças</option>
+                    <option value="Relacionamentos">Relacionamentos</option>
+                    <option value="Família">Família</option>
+                    <option value="Lazer">Lazer</option>
+                    <option value="Propósito">Propósito</option>
+                </select>
+                <select id="todo-status-filter" onchange="window.app.render.foco()" class="w-full min-w-0 bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-4 py-2 outline-none border border-outline-variant/30">
+                    <option value="all" selected>Todas</option>
+                    <option value="pending">Pendentes</option>
+                    <option value="in_progress">Em Andamento</option>
+                    <option value="done">Concluídas</option>
+                </select>
+                <button onclick="window.app.openCreateModal('micros')" class="w-full min-w-0 bg-primary text-on-primary px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined notranslate text-sm">add</span> Nova Micro
+                </button>
+            </div>
+        </div>
+
+        <div id="micros-management-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <!-- Dinamicamente preenchido -->
+        </div>
+    </section>
+</div>

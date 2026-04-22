@@ -1,0 +1,30 @@
+# Backups e Versões anteriores
+_backup_v1_static/
+_backup_v2_integrated/
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Firebase (Gerado automaticamente)
+.firebase/
+firestore-debug.log
+ui-debug.log
+firebase-debug.log*
+
+# Sistema/IDE
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

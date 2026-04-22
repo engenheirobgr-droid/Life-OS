@@ -1,0 +1,102 @@
+<style>
+.tab-btn.active {
+  border-bottom: 2px solid currentColor;
+  padding-bottom: calc(1rem - 2px);
+}
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+}
+.gantt-stripe-bg {
+  background-image: linear-gradient(135deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
+  background-size: 20px 20px;
+}
+</style>
+
+<main class="pt-6 lg:pt-10 pb-32 px-6 max-w-7xl mx-auto">
+<!-- Tab Navigation -->
+<nav class="flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0">
+<button class="tab-btn active text-primary hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="metas" onclick="window.app.switchPlanosTab('metas')">Metas</button>
+<button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="okrs" onclick="window.app.switchPlanosTab('okrs')">OKRs</button>
+<button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="macro" onclick="window.app.switchPlanosTab('macro')">Macro</button>
+<button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="micro" onclick="window.app.switchPlanosTab('micro')">Micro</button>
+<button class="tab-btn text-stone-500 hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="timeline" onclick="window.app.switchPlanosTab('timeline')">Timeline</button>
+</nav>
+<!-- Page Introduction -->
+<header class="mb-12">
+<h2 class="text-5xl font-headline font-semibold tracking-tight mb-4">Planos</h2>
+<p class="text-stone-500 max-w-md italic font-headline text-lg">A arquitetura da sua intenção. Dos grandes sonhos às ações microscópicas.</p>
+</header>
+
+<!-- Dimension Filters -->
+<div class="mt-8 flex gap-2 overflow-x-auto no-scrollbar mb-12">
+    <button class="bg-primary text-on-primary px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap">Todas</button>
+    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Saúde</button>
+    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Mente</button>
+    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Carreira</button>
+    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Finanças</button>
+    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Relac.</button>
+    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Família</button>
+    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Lazer</button>
+    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Propósito</button>
+</div>
+<!-- Advanced Filters (Raio-X Relacional & Status) -->
+<div id="planos-advanced-filters" class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 mb-12 space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+        <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined notranslate text-[14px]">account_tree</span> Raio-X Relacional:
+        </span>
+        <div class="flex gap-2 w-full sm:w-auto">
+            <select id="hier-type" onchange="window.app.planosHierarchyType = this.value; window.app.planosHierarchyId = ''; window.app.render.planos(); window.app.renderTimeline();" class="flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none">
+                <option value="">Mostrar Tudo</option>
+                <option value="metas">Por Meta</option>
+                <option value="okrs">Por OKR</option>
+                <option value="macros">Por Macro Ação</option>
+            </select>
+            <select id="hier-id" onchange="window.app.planosHierarchyId = this.value; window.app.render.planos(); window.app.renderTimeline();" class="hidden flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none w-full sm:max-w-[250px] truncate">
+                <option value="">Selecione...</option>
+            </select>
+        </div>
+    </div>
+    <div class="flex items-center gap-3 pt-3 border-t border-outline-variant/10 overflow-x-auto no-scrollbar">
+        <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1 shrink-0">
+            <span class="material-symbols-outlined notranslate text-[14px]">check_circle</span> Status:
+        </span>
+        <div class="flex gap-2 shrink-0">
+            <button onclick="window.app.setPlanosStatusFilter('pending')" id="btn-stat-pending" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Pendentes</button>
+            <button onclick="window.app.setPlanosStatusFilter('in_progress')" id="btn-stat-in-progress" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Andamento</button>
+            <button onclick="window.app.setPlanosStatusFilter('done')" id="btn-stat-done" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Concluídos</button>
+            <button onclick="window.app.setPlanosStatusFilter('all')" id="btn-stat-all" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Todos</button>
+        </div>
+    </div>
+</div>
+<!-- Tab: Metas -->
+<section class="mt-8 tab-content active space-y-12" id="tab-metas">
+<div id="metas-container" class="space-y-12"></div>
+</section>
+<!-- Tab: OKRs -->
+<section class="mt-8 tab-content" id="tab-okrs">
+<div id="okrs-container" class="space-y-12"></div>
+</section>
+<!-- Tab: Macro -->
+<section class="mt-8 tab-content" id="tab-macro">
+<div id="macro-container" class="space-y-12"></div>
+</section>
+<!-- Tab: Micro -->
+<section class="mt-8 tab-content" id="tab-micro">
+<div id="micro-container" class="space-y-12"></div>
+</section>
+
+<section class="mt-8 tab-content" id="tab-timeline">
+<div id="timeline-container" class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm overflow-x-auto">
+</div>
+</section>
+
+<!-- FAB -->
+<button onclick="window.app.openCreateModal()" class="fixed bottom-28 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-xl flex items-center justify-center z-50 hover:scale-105 active:scale-90 transition-transform">
+<span class="material-symbols-outlined notranslate text-2xl" style="font-variation-settings: 'wght' 500;">add</span>
+</button>
+</main>
+

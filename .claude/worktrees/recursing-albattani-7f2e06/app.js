@@ -49,9 +49,9 @@ window.sistemaVidaState = {
         xp: 0,
         values: [],
         legacy: "",
-        ikigai: { missao: "", vocacao: "", love: "", good: "", need: "", paid: "", sintese: "", sinteseResumo: "" },
-        legacyObj: { familia: "", profissao: "", mundo: "", familiaResumo: "", profissaoResumo: "", mundoResumo: "" },
-        vision: { saude: "", carreira: "", intelecto: "", quote: "", saudeResumo: "", carreiraResumo: "", intelectoResumo: "" },
+        ikigai: { missao: "", vocacao: "", love: "", good: "", need: "", paid: "", sintese: "" },
+        legacyObj: { familia: "", profissao: "", mundo: "" },
+        vision: { saude: "", carreira: "", intelecto: "", quote: "" },
         odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" },
         odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" }
     },
@@ -84,7 +84,6 @@ window.sistemaVidaState = {
     habits: [],
     dailyLogs: {},
     reviews: {},
-    weekPlans: {},
     settings: {
         notificationsEnabled: false,
         theme: 'auto'
@@ -660,31 +659,32 @@ const app = {
         return typeof value === 'string' && value.startsWith('data:image/');
     },
     uploadProfileImageDataUrl: async function(dataUrl, path) {
-        // Firebase Storage bypassed — images stored in Firestore directly via syncImagesToFirestoreDoc.
-        return dataUrl || '';
+        if (!this.isInlineImageDataUrl(dataUrl)) return dataUrl || '';
+        await getAuthReady();
+        const imageRef = storageRef(storage, path);
+        await uploadString(imageRef, dataUrl, 'data_url');
+        return await getDownloadURL(imageRef);
     },
-    syncImagesToFirestoreDoc: async function() {
+    syncProfileImagesToCloud: async function() {
         this.ensureSettingsState();
         const profile = window.sistemaVidaState.profile || {};
-        const imagesData = {};
-        let hasAny = false;
-        if (profile.avatarUrl && typeof profile.avatarUrl === 'string' && profile.avatarUrl.length > 10) {
-            imagesData.avatarUrl = profile.avatarUrl;
-            hasAny = true;
+        let changed = false;
+        if (this.isInlineImageDataUrl(profile.avatarUrl)) {
+            profile.avatarUrl = await this.uploadProfileImageDataUrl(profile.avatarUrl, 'users/meu-sistema-vida/profile/avatar.jpg');
+            try { localStorage.setItem('lifeos_profile_avatar', profile.avatarUrl); } catch (_) {}
+            changed = true;
         }
-        const odysseyImages = profile.odysseyImages || {};
+        const images = profile.odysseyImages || {};
         for (const key of ['cenarioA', 'cenarioB', 'cenarioC']) {
-            if (odysseyImages[key] && typeof odysseyImages[key] === 'string' && odysseyImages[key].length > 10) {
-                if (!imagesData.odysseyImages) imagesData.odysseyImages = {};
-                imagesData.odysseyImages[key] = odysseyImages[key];
-                hasAny = true;
-            }
+            if (!this.isInlineImageDataUrl(images[key])) continue;
+            images[key] = await this.uploadProfileImageDataUrl(images[key], `users/meu-sistema-vida/odyssey/${key}.jpg`);
+            changed = true;
         }
-        if (!hasAny) return false;
-        const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
-        await this.withTimeout(setDoc(imagesRef, imagesData, { merge: true }), 15000, 'firestore_saveImages');
-        console.log('[Images] Imagens sincronizadas com Firestore.');
-        return true;
+        if (changed) {
+            profile.odysseyImages = images;
+            try { localStorage.setItem('lifeos_odyssey_images', JSON.stringify(images)); } catch (_) {}
+        }
+        return changed;
     },
     onProfilePhotoSelected: function(event) {
         const file = event?.target?.files?.[0];
@@ -693,13 +693,20 @@ const app = {
             this.showToast('Selecione um arquivo de imagem válido.', 'error');
             return;
         }
-        this.fileToOptimizedDataUrl(file, 400, 0.70).then(async (dataUrl) => {
+        this.fileToOptimizedDataUrl(file, 512, 0.78).then(async (dataUrl) => {
             this.ensureSettingsState();
             window.sistemaVidaState.profile.avatarUrl = dataUrl;
             try { localStorage.setItem('lifeos_profile_avatar', dataUrl); } catch (_) {}
-            // Feedback imediato
+            // Feedback imediato antes do upload
             if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
             this.showToast('Processando foto...', 'info');
+            try {
+                const url = await this.uploadProfileImageDataUrl(dataUrl, 'users/meu-sistema-vida/profile/avatar.jpg');
+                window.sistemaVidaState.profile.avatarUrl = url;
+                try { localStorage.setItem('lifeos_profile_avatar', url); } catch (_) {}
+            } catch (error) {
+                console.warn('Falha ao sincronizar foto de perfil com Storage:', error);
+            }
             await this.saveState(true);
             if (this.lastCloudSyncOk === false) {
                 const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
@@ -731,15 +738,22 @@ const app = {
             this.showToast('Selecione um arquivo de imagem válido para o cenário.', 'error');
             return;
         }
-        this.fileToOptimizedDataUrl(file, 600, 0.65).then(async (dataUrl) => {
+        this.fileToOptimizedDataUrl(file, 900, 0.76).then(async (dataUrl) => {
             const current = window.sistemaVidaState.profile.odysseyImages || {};
             window.sistemaVidaState.profile.odysseyImages = { ...current, [key]: dataUrl };
             try {
                 localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
             } catch (_) {}
-            // Feedback imediato
+            // Feedback imediato: mostra a imagem (base64) antes do upload terminar
             if (this.render.proposito) this.render.proposito();
-            this.showToast('Sincronizando imagem...', 'info');
+            this.showToast('Processando imagem...', 'info');
+            try {
+                const url = await this.uploadProfileImageDataUrl(dataUrl, `users/meu-sistema-vida/odyssey/${key}.jpg`);
+                window.sistemaVidaState.profile.odysseyImages = { ...window.sistemaVidaState.profile.odysseyImages, [key]: url };
+                localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
+            } catch (error) {
+                console.warn('Falha ao sincronizar imagem Odyssey com Storage:', error);
+            }
             await this.saveState(true);
             if (this.lastCloudSyncOk === false) {
                 const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
@@ -810,10 +824,14 @@ const app = {
         const snapshot = JSON.parse(JSON.stringify(raw));
         if (mode === 'cloud') {
             if (snapshot.profile) {
-                // Images are stored in a separate Firestore document (meu-sistema-vida-images).
-                // Always strip them from the main state document to keep it slim.
-                delete snapshot.profile.avatarUrl;
-                delete snapshot.profile.odysseyImages;
+                if (this.isInlineImageDataUrl(snapshot.profile.avatarUrl)) delete snapshot.profile.avatarUrl;
+                if (snapshot.profile.odysseyImages) {
+                    Object.keys(snapshot.profile.odysseyImages).forEach((key) => {
+                        if (this.isInlineImageDataUrl(snapshot.profile.odysseyImages[key])) {
+                            delete snapshot.profile.odysseyImages[key];
+                        }
+                    });
+                }
             }
             snapshot._persistenceMode = 'cloud_slim';
         }
@@ -874,11 +892,11 @@ const app = {
                 await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
                 try {
                     const imagesChanged = await this.withTimeout(
-                        this.syncImagesToFirestoreDoc(), 15000, 'sync_images'
+                        this.syncProfileImagesToCloud(), 12000, 'sync_images'
                     );
                     if (imagesChanged) this.persistLocalMirror();
                 } catch (imageError) {
-                    console.warn('Falha ao sincronizar imagens com Firestore (ignorado):', imageError);
+                    console.warn('Falha ao preparar imagens para a nuvem (ignorado):', imageError);
                 }
                 const stateRef = doc(db, "users", "meu-sistema-vida");
                 const cloudSnapshot = this.getPersistableState('cloud');
@@ -964,45 +982,38 @@ const app = {
         if (!shouldKeepLocal && window.sistemaVidaState._pendingLocalChanges) {
             window.sistemaVidaState._pendingLocalChanges = false;
         }
-        // Load images from dedicated Firestore document (Firestore-native image storage)
+        // Always apply Firebase Storage URLs from cloud — they are authoritative for images
         try {
-            const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
-            const imagesSnap = await this.withTimeout(getDoc(imagesRef), 8000, 'firestore_getImages');
-            if (imagesSnap.exists()) {
-                const imgData = imagesSnap.data();
+            if (cloudData && cloudData.profile && cloudData.profile.avatarUrl && this.hasRemoteImageUrl(cloudData.profile.avatarUrl)) {
                 if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                if (imgData.avatarUrl && typeof imgData.avatarUrl === 'string') {
-                    window.sistemaVidaState.profile.avatarUrl = imgData.avatarUrl;
-                    try { localStorage.setItem('lifeos_profile_avatar', imgData.avatarUrl); } catch (_) {}
-                }
-                if (imgData.odysseyImages && typeof imgData.odysseyImages === 'object') {
-                    if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
-                    Object.entries(imgData.odysseyImages).forEach(([k, v]) => {
-                        if (v && typeof v === 'string') window.sistemaVidaState.profile.odysseyImages[k] = v;
-                    });
-                    try { localStorage.setItem('lifeos_odyssey_images', JSON.stringify(imgData.odysseyImages)); } catch (_) {}
-                }
-                console.log('[Images] Imagens carregadas do Firestore.');
+                window.sistemaVidaState.profile.avatarUrl = cloudData.profile.avatarUrl;
             }
-        } catch (imgErr) {
-            // Fallback to local cache if Firestore images doc unavailable
-            try {
-                const cachedAvatar = localStorage.getItem('lifeos_profile_avatar');
-                if (cachedAvatar && !window.sistemaVidaState.profile?.avatarUrl) {
-                    if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                    window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
-                }
-                const cachedOdyssey = localStorage.getItem('lifeos_odyssey_images');
-                if (cachedOdyssey) {
-                    const parsed = JSON.parse(cachedOdyssey);
-                    if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                    const current = window.sistemaVidaState.profile.odysseyImages || {};
-                    Object.keys(parsed || {}).forEach((key) => { if (!current[key]) current[key] = parsed[key]; });
-                    window.sistemaVidaState.profile.odysseyImages = current;
-                }
-            } catch (_) {}
-            console.warn('[Images] Falha ao carregar imagens do Firestore:', imgErr);
-        }
+            if (cloudData && cloudData.profile && cloudData.profile.odysseyImages) {
+                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
+                Object.entries(cloudData.profile.odysseyImages).forEach(function(entry) {
+                    var k = entry[0], v = entry[1];
+                    if (v && typeof v === 'string' && /^https?:\/\//.test(v)) {
+                        window.sistemaVidaState.profile.odysseyImages[k] = v;
+                    }
+                });
+            }
+        } catch (_) {}
+        try {
+            const cachedAvatar = localStorage.getItem('lifeos_profile_avatar');
+            if (cachedAvatar && !this.hasRemoteImageUrl(window.sistemaVidaState.profile.avatarUrl)) {
+                window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
+            }
+            const cachedOdyssey = localStorage.getItem('lifeos_odyssey_images');
+            if (cachedOdyssey) {
+                const parsed = JSON.parse(cachedOdyssey);
+                const current = window.sistemaVidaState.profile.odysseyImages || {};
+                Object.keys(parsed || {}).forEach((key) => {
+                    if (!this.hasRemoteImageUrl(current[key])) current[key] = parsed[key];
+                });
+                window.sistemaVidaState.profile.odysseyImages = current;
+            }
+        } catch (_) {}
         this.persistLocalMirror();
         this.ensureSettingsState();
         this.normalizePermaState();
@@ -1040,6 +1051,23 @@ const app = {
                 window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
                 if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
                 window.sistemaVidaState._lastUpdatedAt = Number(remoteData?._lastUpdatedAt || window.sistemaVidaState._lastUpdatedAt || Date.now());
+                // Always apply Firebase Storage image URLs
+                try {
+                    const prof = remoteData.profile;
+                    if (prof && prof.avatarUrl && app.hasRemoteImageUrl(prof.avatarUrl)) {
+                        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                        window.sistemaVidaState.profile.avatarUrl = prof.avatarUrl;
+                    }
+                    if (prof && prof.odysseyImages) {
+                        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                        const cur = window.sistemaVidaState.profile.odysseyImages || {};
+                        Object.entries(prof.odysseyImages).forEach(function(e) {
+                            var k = e[0], v = e[1];
+                            if (v && typeof v === 'string' && /^https?:\/\//.test(v)) cur[k] = v;
+                        });
+                        window.sistemaVidaState.profile.odysseyImages = cur;
+                    }
+                } catch (_) {}
                 app.normalizeEntitiesState();
                 app.normalizeDailyLogsState();
                 app.persistLocalMirror();
@@ -1055,32 +1083,6 @@ const app = {
                     self._realtimeSyncUnsub = null;
                     setTimeout(function() { self.setupRealtimeSync(); }, 30000);
                 });
-                // ---- images document real-time listener ----
-                if (!self._imagesSyncUnsub) {
-                    const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
-                    self._imagesSyncUnsub = onSnapshot(imagesRef, (imgSnap) => {
-                        if (!imgSnap.exists()) return;
-                        if (self._isSaving) return;
-                        const imgData = imgSnap.data();
-                        try {
-                            if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                            if (imgData.avatarUrl && typeof imgData.avatarUrl === 'string') {
-                                window.sistemaVidaState.profile.avatarUrl = imgData.avatarUrl;
-                            }
-                            if (imgData.odysseyImages && typeof imgData.odysseyImages === 'object') {
-                                if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
-                                Object.entries(imgData.odysseyImages).forEach(([k, v]) => {
-                                    if (v && typeof v === 'string') window.sistemaVidaState.profile.odysseyImages[k] = v;
-                                });
-                            }
-                        } catch (_) {}
-                        app.persistLocalMirror();
-                        console.log('[Images] Atualização de imagens recebida em tempo real.');
-                        try {
-                            if (app.currentView && app.render && app.render[app.currentView]) app.render[app.currentView]();
-                        } catch (_) {}
-                    }, function(err) { console.warn('[Images] Listener de imagens erro:', err); });
-                }
                 // ---- periodic fallback pull every 60s ----
                 if (!self._periodicSyncId) {
                     self._periodicSyncId = setInterval(function() {
@@ -1256,126 +1258,12 @@ const app = {
         activeBtn.classList.remove('text-stone-500');
       }
 
-      // Reação em cadeia: renderiza conteúdo específico da tab
+      // Reação em cadeia: Renderiza a timeline ao entrar na tab
       if (tabId === 'timeline') this.renderTimeline();
-      if (tabId === 'semanal') this.renderWeeklyPlans();
-    },
-
-    // ── Renderização da aba Semanal ─────────────────────────────────────────────
-    renderWeeklyPlans: function() {
-        const state = window.sistemaVidaState;
-        const weekPlans = state.weekPlans || {};
-        const weekKey = this._getWeekKey();
-
-        // Rótulo da semana atual
-        const weekStart = new Date(weekKey + 'T00:00:00');
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-        const fmt = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        const labelEl = document.getElementById('semanal-week-label');
-        if (labelEl) labelEl.textContent = `Semana de ${fmt(weekStart)} a ${fmt(weekEnd)}`;
-
-        // Card da semana atual
-        const currentCard = document.getElementById('semanal-current-card');
-        const currentPlan = weekPlans[weekKey];
-        if (currentCard) {
-            if (currentPlan) {
-                currentCard.innerHTML = this._renderWeekPlanCard(currentPlan, state, true);
-            } else {
-                currentCard.innerHTML = '<p class="text-sm text-outline italic">Nenhum plano para esta semana ainda. Clique em "Planejar Semana" para começar.</p>';
-            }
-        }
-
-        // Histórico (semanas passadas, ordenadas da mais recente para mais antiga)
-        const historyContainer = document.getElementById('semanal-history-container');
-        const historyCount = document.getElementById('semanal-history-count');
-        const pastKeys = Object.keys(weekPlans)
-            .filter(k => k < weekKey)
-            .sort((a, b) => b.localeCompare(a));
-
-        if (historyCount) historyCount.textContent = pastKeys.length > 0 ? `${pastKeys.length} semana${pastKeys.length > 1 ? 's' : ''} anteriores` : '';
-
-        if (historyContainer) {
-            if (pastKeys.length === 0) {
-                historyContainer.innerHTML = '<p class="text-sm text-outline italic">Nenhum histórico ainda.</p>';
-            } else {
-                historyContainer.innerHTML = pastKeys.map(key => {
-                    const plan = weekPlans[key];
-                    const start = new Date(key + 'T00:00:00');
-                    const end = new Date(start);
-                    end.setDate(end.getDate() + 6);
-                    return `<details class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm overflow-hidden group">
-                        <summary class="flex items-center justify-between p-5 cursor-pointer hover:bg-surface-container transition-colors list-none">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined notranslate text-outline text-lg">calendar_month</span>
-                                <div>
-                                    <p class="text-sm font-bold text-on-surface">${fmt(start)} — ${fmt(end)}</p>
-                                    ${plan.intention ? `<p class="text-xs text-outline mt-0.5 truncate max-w-[240px]">${plan.intention}</p>` : ''}
-                                </div>
-                            </div>
-                            <span class="material-symbols-outlined notranslate text-outline text-sm transition-transform group-open:rotate-180">expand_more</span>
-                        </summary>
-                        <div class="px-5 pb-5 border-t border-outline-variant/10">
-                            ${this._renderWeekPlanCard(plan, state, false)}
-                        </div>
-                    </details>`;
-                }).join('');
-            }
-        }
-    },
-
-    _renderWeekPlanCard: function(plan, state, isCurrent) {
-        const micros = state.entities?.micros || [];
-        const energyLabels = { 1: '1 — Semana leve', 2: '2 — Abaixo do normal', 3: '3 — Normal', 4: '4 — Energia alta', 5: '5 — Semana de pico' };
-
-        const selectedMicros = (plan.selectedMicros || []).map(id => micros.find(m => m.id === id)).filter(Boolean);
-        const doneMicros = selectedMicros.filter(m => m.status === 'done' || m.completed);
-        const pendingMicros = selectedMicros.filter(m => m.status !== 'done' && !m.completed);
-
-        const completionPct = selectedMicros.length > 0 ? Math.round((doneMicros.length / selectedMicros.length) * 100) : 0;
-
-        return `<div class="space-y-4 mt-4">
-            ${plan.intention ? `
-            <div class="flex flex-col gap-1">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Intenção</p>
-                <p class="text-sm text-on-surface leading-relaxed">${plan.intention}</p>
-            </div>` : ''}
-
-            <div class="flex gap-6">
-                <div class="flex flex-col gap-0.5">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Energia</p>
-                    <p class="text-sm text-on-surface">${energyLabels[plan.energyForecast] || plan.energyForecast}</p>
-                </div>
-                ${selectedMicros.length > 0 ? `
-                <div class="flex flex-col gap-0.5">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Execução</p>
-                    <p class="text-sm text-on-surface font-bold text-primary">${doneMicros.length}/${selectedMicros.length} <span class="text-outline font-normal">(${completionPct}%)</span></p>
-                </div>` : ''}
-            </div>
-
-            ${selectedMicros.length > 0 ? `
-            <div class="flex flex-col gap-2">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Micros Planejados</p>
-                <div class="space-y-1.5">
-                    ${selectedMicros.map(m => {
-                        const done = m.status === 'done' || m.completed;
-                        return `<div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined notranslate text-[16px] ${done ? 'text-primary' : 'text-outline'}">${done ? 'check_circle' : 'radio_button_unchecked'}</span>
-                            <span class="text-xs ${done ? 'line-through text-outline' : 'text-on-surface'}">${m.title}</span>
-                        </div>`;
-                    }).join('')}
-                </div>
-            </div>` : '<p class="text-xs text-outline italic">Nenhum micro selecionado.</p>'}
-
-            ${isCurrent && selectedMicros.length > 0 ? `
-            <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                <div class="h-full bg-primary rounded-full transition-all duration-700" style="width: ${completionPct}%"></div>
-            </div>` : ''}
-        </div>`;
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando... v35");
+        console.log("Sistema Vida OS inicializando... v30");
     // Signal dead-man's switch that the module loaded
     document.dispatchEvent(new CustomEvent('lifeos-app-ready'));
         console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
@@ -1401,14 +1289,20 @@ const app = {
         try { this.ensureDeepWorkTicking(); } catch (_) {}
         try { this.setupRealtimeSync(); } catch (_) {} // real-time cross-device sync
 
-        // Auto-sincroniza imagens com Firestore logo após o carregamento
+        // Auto-migra imagens base64 do localStorage para o Firebase Storage
         try {
-            const hasAvatar = !!(window.sistemaVidaState.profile?.avatarUrl);
+            const hasBase64Avatar = this.isInlineImageDataUrl(window.sistemaVidaState.profile?.avatarUrl);
             const odysseyImgs = window.sistemaVidaState.profile?.odysseyImages || {};
-            const hasOdyssey = Object.values(odysseyImgs).some(v => v && typeof v === 'string' && v.length > 10);
-            if (hasAvatar || hasOdyssey) {
+            const hasBase64Odyssey = Object.values(odysseyImgs).some(v => this.isInlineImageDataUrl(v));
+            if (hasBase64Avatar || hasBase64Odyssey) {
+                console.log("Imagens locais detectadas, sincronizando com a nuvem...");
                 authReady.then(() => {
-                    this.syncImagesToFirestoreDoc().catch(e => console.warn('[Images] Falha ao sincronizar imagens na inicialização:', e));
+                    this.syncProfileImagesToCloud().then(changed => {
+                        if (changed) {
+                            console.log("Imagens migradas para a nuvem com sucesso.");
+                            this.saveState(true);
+                        }
+                    }).catch(e => console.warn("Falha ao migrar imagens:", e));
                 }).catch(() => {});
             }
         } catch (_) {}
@@ -1721,10 +1615,6 @@ const app = {
 
     openCreateModal: function(type = 'metas') {
         this.editingEntity = null; // Limpa estado de edição
-        // Reseta chips do seletor de propósito
-        document.querySelectorAll('.purpose-option-chip').forEach(c => {
-            c.classList.remove('bg-primary/10', 'border-primary');
-        });
         const modalTitle = document.getElementById('modal-title');
         if (modalTitle) modalTitle.textContent = 'Novo Item';
 
@@ -1832,19 +1722,6 @@ const app = {
             this.updateParentList(type);
         }
 
-        // Seletor de propósito: apenas para metas
-        const purposeSelectorGroup = document.getElementById('crud-purpose-selector-group');
-        if (type === 'metas') {
-            this.buildPurposeOptions();
-        } else if (purposeSelectorGroup) {
-            purposeSelectorGroup.classList.add('hidden');
-            purposeSelectorGroup.style.display = 'none';
-        }
-
-        // Atualiza painel de propósito conforme o tipo selecionado
-        const currentDimension = document.getElementById('crud-dimension')?.value || '';
-        this.updatePurposePanel(currentDimension, type);
-
         // Alterna campo de prazo padrão vs. janela real (macro/micro)
         const deadlineGroup = document.getElementById('prazo-deadline-group');
         const agendamentoGroup = document.getElementById('prazo-agendamento-group');
@@ -1861,152 +1738,6 @@ const app = {
             if (inicioInput && !inicioInput.value) inicioInput.value = hoje;
             if (prazoInput && !prazoInput.value) prazoInput.value = hoje;
         }
-    },
-
-    // ── Seletor de Propósito no modal de criação de Metas ──────────────────────
-    buildPurposeOptions: function() {
-        const selectorGroup = document.getElementById('crud-purpose-selector-group');
-        const optionsContainer = document.getElementById('crud-purpose-options');
-        const noneMsg = document.getElementById('crud-purpose-none');
-        if (!selectorGroup || !optionsContainer) return;
-
-        const p = window.sistemaVidaState?.profile || {};
-        const ikigai = p.ikigai || {};
-        const legacyObj = p.legacyObj || {};
-        const vision = p.vision || {};
-
-        // Coleta todas as opções disponíveis (só onde resumo está preenchido)
-        const options = [];
-        if (ikigai.sinteseResumo)    options.push({ label: 'Ikigai',              text: ikigai.sinteseResumo });
-        if (legacyObj.familiaResumo) options.push({ label: 'Legado Família',       text: legacyObj.familiaResumo });
-        if (legacyObj.profissaoResumo) options.push({ label: 'Legado Profissão',   text: legacyObj.profissaoResumo });
-        if (legacyObj.mundoResumo)   options.push({ label: 'Legado Mundo',         text: legacyObj.mundoResumo });
-        if (vision.saudeResumo)      options.push({ label: 'Visão Saúde',          text: vision.saudeResumo });
-        if (vision.carreiraResumo)   options.push({ label: 'Visão Carreira',       text: vision.carreiraResumo });
-        if (vision.intelectoResumo)  options.push({ label: 'Visão Intelecto',      text: vision.intelectoResumo });
-
-        if (options.length === 0) {
-            optionsContainer.innerHTML = '';
-            if (noneMsg) { noneMsg.classList.remove('hidden'); }
-        } else {
-            if (noneMsg) { noneMsg.classList.add('hidden'); }
-            optionsContainer.innerHTML = options.map(opt => `
-                <button type="button"
-                    onclick="window.app.selectPurposeOption(this, '${opt.text.replace(/'/g, "\\'")}')"
-                    class="purpose-option-chip px-3 py-1.5 rounded-full border border-primary/30 text-xs text-primary hover:bg-primary/10 transition-colors text-left"
-                    title="${opt.text}">
-                    <span class="font-bold text-outline">${opt.label}:</span> ${opt.text.length > 45 ? opt.text.slice(0, 45) + '…' : opt.text}
-                </button>
-            `).join('');
-        }
-
-        selectorGroup.classList.remove('hidden');
-        selectorGroup.style.display = 'flex';
-    },
-
-    selectPurposeOption: function(btn, text) {
-        // Destaca o chip selecionado
-        document.querySelectorAll('.purpose-option-chip').forEach(c => {
-            c.classList.remove('bg-primary/10', 'border-primary', 'font-bold');
-        });
-        btn.classList.add('bg-primary/10', 'border-primary');
-
-        // Preenche o campo de contexto com o texto completo
-        const contextInput = document.getElementById('crud-context');
-        if (contextInput) {
-            contextInput.value = text;
-            contextInput.focus();
-        }
-    },
-
-    // ── Painel de Propósito no modal de criação ─────────────────────────────────
-    // Dimensões mapeadas ao campo de legado do perfil
-    _dimensionLegacyMap: {
-        'Carreira': 'profissao', 'Finanças': 'profissao',
-        'Família': 'familia', 'Relacionamentos': 'familia',
-        'Propósito': 'mundo', 'Saúde': null, 'Mente': null, 'Lazer': null
-    },
-
-    updatePurposePanel: function(dimension, type) {
-        const panel = document.getElementById('crud-purpose-panel');
-        if (!panel) return;
-
-        // Só mostra para tipos com propósito (não hábitos)
-        const showForType = ['metas', 'okrs', 'macros', 'micros'].includes(type);
-        if (!showForType) {
-            panel.classList.add('hidden');
-            panel.style.display = 'none';
-            return;
-        }
-
-        const profile = window.sistemaVidaState?.profile || {};
-        const values = profile.values || [];
-        const ikigai = profile.ikigai || {};
-        const legacyObj = profile.legacyObj || {};
-
-        // Verifica se há algum dado para mostrar
-        const hasValues = values.length > 0;
-        const hasIkigai = !!(ikigai.sintese || ikigai.love);
-        const legacyKey = this._dimensionLegacyMap[dimension];
-        const legacyText = legacyKey ? (legacyObj[legacyKey] || '') : '';
-        const hasLegacy = !!legacyText;
-
-        if (!hasValues && !hasIkigai && !hasLegacy) {
-            panel.classList.add('hidden');
-            panel.style.display = 'none';
-            return;
-        }
-
-        // Popula os campos
-        const valuesSection = document.getElementById('crud-purpose-values');
-        const valuesText = document.getElementById('crud-purpose-values-text');
-        const ikigaiSection = document.getElementById('crud-purpose-ikigai');
-        const ikigaiText = document.getElementById('crud-purpose-ikigai-text');
-        const legacySection = document.getElementById('crud-purpose-legacy');
-        const legacyTextEl = document.getElementById('crud-purpose-legacy-text');
-
-        if (hasValues && valuesSection && valuesText) {
-            valuesText.textContent = values.slice(0, 3).join(' · ');
-            valuesSection.classList.remove('hidden');
-            valuesSection.style.display = 'flex';
-        } else if (valuesSection) {
-            valuesSection.classList.add('hidden');
-        }
-
-        if (hasIkigai && ikigaiSection && ikigaiText) {
-            ikigaiText.textContent = ikigai.sintese || ikigai.love || '';
-            ikigaiSection.classList.remove('hidden');
-            ikigaiSection.style.display = 'flex';
-        } else if (ikigaiSection) {
-            ikigaiSection.classList.add('hidden');
-        }
-
-        if (hasLegacy && legacySection && legacyTextEl) {
-            legacyTextEl.textContent = legacyText;
-            legacySection.classList.remove('hidden');
-            legacySection.style.display = 'flex';
-        } else if (legacySection) {
-            legacySection.classList.add('hidden');
-        }
-
-        // Mostra painel (começa fechado para não poluir o modal)
-        panel.classList.remove('hidden');
-        panel.style.display = 'flex';
-        // Garante que o body começa collapsed
-        const body = document.getElementById('crud-purpose-body');
-        const chevron = document.getElementById('crud-purpose-chevron');
-        if (body) { body.classList.add('hidden'); body.style.display = 'none'; }
-        if (chevron) chevron.style.transform = '';
-    },
-
-    togglePurposePanel: function() {
-        const body = document.getElementById('crud-purpose-body');
-        const chevron = document.getElementById('crud-purpose-chevron');
-        if (!body) return;
-        const isHidden = body.classList.contains('hidden');
-        body.classList.toggle('hidden', !isHidden);
-        body.style.display = isHidden ? 'flex' : 'none';
-        if (chevron) chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
     },
 
     getMetaHorizonYears: function(meta) {
@@ -2258,28 +1989,11 @@ const app = {
         this.editingEntity = null;
     },
 
-    openTextEdit: function(title, group, key, resumoKey) {
+    openTextEdit: function(title, group, key) {
         this.currentTextGroup = group;
         this.currentTextKey = key;
-        this.currentResumoKey = resumoKey || null;
         document.getElementById('text-edit-title').textContent = title;
         document.getElementById('text-edit-input').value = window.sistemaVidaState.profile[group][key] || "";
-
-        // Mostra/oculta campo de resumo
-        const resumoGroup = document.getElementById('text-edit-resumo-group');
-        const resumoInput = document.getElementById('text-edit-resumo');
-        const resumoCount = document.getElementById('text-edit-resumo-count');
-        if (resumoKey && resumoGroup && resumoInput) {
-            const resumoVal = window.sistemaVidaState.profile[group][resumoKey] || "";
-            resumoInput.value = resumoVal;
-            if (resumoCount) resumoCount.textContent = resumoVal.length;
-            resumoGroup.classList.remove('hidden');
-            resumoGroup.style.display = 'flex';
-        } else if (resumoGroup) {
-            resumoGroup.classList.add('hidden');
-            resumoGroup.style.display = 'none';
-        }
-
         document.getElementById('text-edit-modal').classList.remove('hidden');
     },
 
@@ -2289,21 +2003,6 @@ const app = {
 
     saveTextEdit: function() {
         const val = document.getElementById('text-edit-input').value.trim();
-
-        // Valida resumo obrigatório quando campo possui resumoKey
-        if (this.currentResumoKey) {
-            const resumoVal = (document.getElementById('text-edit-resumo')?.value || '').trim();
-            if (!resumoVal) {
-                alert('O resumo para trilha é obrigatório. Preencha uma versão curta (máx. 80 caracteres).');
-                document.getElementById('text-edit-resumo')?.focus();
-                return;
-            }
-            if (!window.sistemaVidaState.profile[this.currentTextGroup]) {
-                window.sistemaVidaState.profile[this.currentTextGroup] = {};
-            }
-            window.sistemaVidaState.profile[this.currentTextGroup][this.currentResumoKey] = resumoVal;
-        }
-
         if (this.currentTextGroup && this.currentTextKey) {
             if (!window.sistemaVidaState.profile[this.currentTextGroup]) {
                 window.sistemaVidaState.profile[this.currentTextGroup] = {};
@@ -2317,116 +2016,8 @@ const app = {
         }
     },
 
-    // ── Planejamento Semanal ────────────────────────────────────────────────────
-    _getWeekKey: function(date = new Date()) {
-        // Retorna a segunda-feira da semana no formato YYYY-MM-DD
-        const d = new Date(date);
-        const day = d.getDay(); // 0=dom, 1=seg...
-        const diff = (day === 0) ? -6 : 1 - day; // ajusta para segunda
-        d.setDate(d.getDate() + diff);
-        return d.toISOString().split('T')[0];
-    },
-
-    openWeeklyPlanModal: function() {
-        const state = window.sistemaVidaState;
-        const weekKey = this._getWeekKey();
-
-        // Formata o rótulo da semana
-        const weekStart = new Date(weekKey + 'T00:00:00');
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-        const fmt = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        const label = document.getElementById('weekly-plan-week-label');
-        if (label) label.textContent = `Semana de ${fmt(weekStart)} a ${fmt(weekEnd)}`;
-
-        // Pré-preenche com plano existente para esta semana (se houver)
-        const existing = (state.weekPlans || {})[weekKey] || {};
-        const intentionEl = document.getElementById('wp-intention');
-        const energyEl = document.getElementById('wp-energy');
-        if (intentionEl) intentionEl.value = existing.intention || '';
-        if (energyEl) energyEl.value = existing.energyForecast || 3;
-
-        // Monta lista de micros ativos
-        const microsContainer = document.getElementById('wp-micros-list');
-        if (microsContainer) {
-            const activeMicros = (state.entities?.micros || []).filter(m => m.status !== 'done' && !m.completed);
-            if (activeMicros.length === 0) {
-                microsContainer.innerHTML = '<p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>';
-            } else {
-                microsContainer.innerHTML = activeMicros.map(m => {
-                    const checked = (existing.selectedMicros || []).includes(m.id) ? 'checked' : '';
-                    const macroTitle = state.entities.macros?.find(ma => ma.id === m.macroId)?.title || '';
-                    const sub = macroTitle ? `<span class="text-[10px] text-outline block">${macroTitle}</span>` : '';
-                    return `<label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-primary/5 transition-colors">
-                        <input type="checkbox" class="wp-micro-check mt-0.5 accent-primary" value="${m.id}" ${checked}>
-                        <span class="text-sm text-on-surface leading-snug">${m.title}${sub}</span>
-                    </label>`;
-                }).join('');
-            }
-        }
-
-        document.getElementById('weekly-plan-modal').classList.remove('hidden');
-    },
-
-    closeWeeklyPlanModal: function() {
-        document.getElementById('weekly-plan-modal').classList.add('hidden');
-    },
-
-    saveWeeklyPlan: function() {
-        const weekKey = this._getWeekKey();
-        const intention = document.getElementById('wp-intention')?.value.trim() || '';
-        const energyForecast = Number(document.getElementById('wp-energy')?.value || 3);
-        const selectedMicros = Array.from(document.querySelectorAll('.wp-micro-check:checked')).map(cb => cb.value);
-
-        if (!window.sistemaVidaState.weekPlans) window.sistemaVidaState.weekPlans = {};
-        window.sistemaVidaState.weekPlans[weekKey] = {
-            weekKey,
-            intention,
-            selectedMicros,
-            energyForecast,
-            savedAt: Date.now()
-        };
-
-        this.saveState(true);
-        this.closeWeeklyPlanModal();
-        this.showNotification('Plano semanal salvo!');
-    },
-
     openReviewModal: function() {
         document.getElementById('review-form').reset();
-
-        // Auto-preenche q1/q2 a partir do plano semanal
-        const state = window.sistemaVidaState;
-        const weekKey = this._getWeekKey();
-        const plan = (state.weekPlans || {})[weekKey];
-
-        if (plan) {
-            const q1El = document.getElementById('rev-q1');
-            const q2El = document.getElementById('rev-q2');
-
-            // q1: O que planejei? → intenção + micros planejados
-            if (q1El && (plan.intention || plan.selectedMicros?.length)) {
-                const lines = [];
-                if (plan.intention) lines.push(plan.intention);
-                if (plan.selectedMicros?.length) {
-                    const titles = plan.selectedMicros
-                        .map(id => state.entities?.micros?.find(m => m.id === id)?.title)
-                        .filter(Boolean);
-                    if (titles.length) lines.push('Micros: ' + titles.join(', '));
-                }
-                q1El.value = lines.join('\n');
-            }
-
-            // q2: O que executei? → micros planejados que foram concluídos
-            if (q2El && plan.selectedMicros?.length) {
-                const doneTitles = plan.selectedMicros
-                    .map(id => state.entities?.micros?.find(m => m.id === id))
-                    .filter(m => m && (m.status === 'done' || m.completed))
-                    .map(m => m.title);
-                if (doneTitles.length) q2El.value = doneTitles.join(', ');
-            }
-        }
-
         document.getElementById('review-modal').classList.remove('hidden');
     },
 
@@ -2486,9 +2077,9 @@ const app = {
       const baseState = {
         profile: {
           name: 'Viajante', level: 1, xp: 0, values: [], legacy: '',
-          ikigai: { missao: '', vocacao: '', love: '', good: '', need: '', paid: '', sintese: '', sinteseResumo: '' },
-          legacyObj: { familia: '', profissao: '', mundo: '', familiaResumo: '', profissaoResumo: '', mundoResumo: '' },
-          vision: { saude: '', carreira: '', intelecto: '', quote: '', saudeResumo: '', carreiraResumo: '', intelectoResumo: '' },
+          ikigai: { missao: '', vocacao: '', love: '', good: '', need: '', paid: '', sintese: '' },
+          legacyObj: { familia: '', profissao: '', mundo: '' },
+          vision: { saude: '', carreira: '', intelecto: '', quote: '' },
           odyssey: { cenarioA: '', cenarioB: '', cenarioC: '' },
           odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' }
         },
@@ -2509,7 +2100,6 @@ const app = {
         dailyLogs: {},
         habits: [],
         reviews: {},
-        weekPlans: {},
         onboardingComplete: false
       };
     
@@ -2610,23 +2200,6 @@ const app = {
         : baseState;
     
       try {
-        // ── Apaga imagens do Firestore ──────────────────────────────────────────
-        try {
-          const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
-          await this.withTimeout(
-            setDoc(imagesRef, { avatarUrl: '', odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' } }),
-            8000, 'firestore_clearImages'
-          );
-        } catch (imgErr) {
-          console.warn('[Reset] Falha ao limpar imagens do Firestore (ignorado):', imgErr);
-        }
-        // ── Apaga imagens do localStorage ──────────────────────────────────────
-        try { localStorage.removeItem('lifeos_profile_avatar'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_odyssey_images'); } catch (_) {}
-        // ── Se for reset total (sem mockup), força onboarding na próxima carga ─
-        if (!useMockup) {
-          try { localStorage.setItem('lifeos_onboarding_complete', '0'); } catch (_) {}
-        }
         await this.saveState(false);
         // NÃO usa localStorage.clear() — bloqueado em ambientes sandbox/iframe
         this.showNotification(
@@ -6341,4 +5914,180 @@ const app = {
             const valueEl = document.getElementById(`swls-q${i}-val`);
             const answer = this.normalizeSwlsAnswer(swls.answers[i - 1]);
             if (slider) slider.value = String(answer);
-            if (valueEl) valueEl.textContent = String(answe
+            if (valueEl) valueEl.textContent = String(answer);
+        }
+        const modal = document.getElementById('swls-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    closeSwlsModal: function() {
+        const modal = document.getElementById('swls-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    saveSwls: function() {
+        this.normalizeSwlsState();
+        const state = window.sistemaVidaState;
+        const answers = [];
+        for (let i = 1; i <= 5; i++) {
+            const slider = document.getElementById(`swls-q${i}`);
+            answers.push(this.normalizeSwlsAnswer(slider ? slider.value : 4));
+        }
+        const score = answers.reduce((sum, n) => sum + n, 0);
+        const dateKey = this.getLocalDateKey();
+        state.swls.answers = answers;
+        state.swls.lastScore = score;
+        state.swls.lastDate = dateKey;
+        if (!state.swls.history || typeof state.swls.history !== 'object') state.swls.history = {};
+        state.swls.history[dateKey] = { score, answers: [...answers] };
+
+        this.saveState(true);
+        this.closeSwlsModal();
+        if (this.currentView === 'proposito' && this.render.proposito) this.render.proposito();
+        this.showNotification(`SWLS atualizado: ${score}/35 (${this.getSwlsBand(score)}).`);
+    },
+
+    openPermaModal: function() {
+        const state = window.sistemaVidaState;
+        const perma = state.perma || {P:0, E:0, R:0, M:0, A:0};
+        
+        // Tarefa 2: Sincronização Total e Explícita (Sliders + Labels)
+        const keys = ['P', 'E', 'R', 'M', 'A'];
+        keys.forEach(k => {
+            const id = k.toLowerCase();
+            const slider = document.getElementById(`${id}-slider`);
+            const label = document.getElementById(`val-${id}`);
+            const normalized = this.normalizePermaScore(perma[k]);
+            if (slider) slider.value = String(normalized);
+            if (label) label.textContent = normalized.toFixed(1);
+        });
+
+        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    closePermaModal: function() {
+        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    savePerma: function() {
+        const state = window.sistemaVidaState;
+        if (!state.perma) state.perma = {P:0, E:0, R:0, M:0, A:0};
+
+        // Salva lendo explicitamente os sliders
+        const keys = ['P', 'E', 'R', 'M', 'A'];
+        keys.forEach(k => {
+            const slider = document.getElementById(`${k.toLowerCase()}-slider`);
+            if (slider) {
+                state.perma[k] = this.normalizePermaScore(slider.value);
+            }
+        });
+
+        // Tarefa 3: Persistência Explícita e Atualização Padronizada
+        this.saveState(true);
+        this.closePermaModal();
+        this.switchView('proposito'); // Força re-render completo
+        this.showNotification("Diagnóstico PERMA atualizado com sucesso!");
+    },
+
+    openOdysseyModal: function(id) {
+        const state = window.sistemaVidaState;
+        if (!state.profile.odyssey) state.profile.odyssey = {
+            A: { title: "A Via Consolidada", desc: "Foco em ascensão na carreira atual.", conf: 4, nrg: 4 },
+            B: { title: "O Salto Criativo", desc: "Transição para trabalho solo.", conf: 3, nrg: 5 },
+            C: { title: "A Vida Acadêmica", desc: "Doutorado e pesquisa.", conf: 2, nrg: 3 }
+        };
+        const plan = state.profile.odyssey[id];
+        document.getElementById('odyssey-id').value = id;
+        document.getElementById('odyssey-title').value = plan.title;
+        document.getElementById('odyssey-desc').value = plan.desc;
+        document.getElementById('odyssey-conf').value = plan.conf;
+        document.getElementById('odyssey-nrg').value = plan.nrg;
+        
+        const modal = document.getElementById('odyssey-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    },
+
+    saveOdyssey: function() {
+        const id = document.getElementById('odyssey-id').value;
+        if (!window.sistemaVidaState.profile.odyssey) window.sistemaVidaState.profile.odyssey = {};
+        
+        window.sistemaVidaState.profile.odyssey[id] = {
+            title: document.getElementById('odyssey-title').value,
+            desc: document.getElementById('odyssey-desc').value,
+            conf: parseInt(document.getElementById('odyssey-conf').value),
+            nrg: parseInt(document.getElementById('odyssey-nrg').value)
+        };
+        this.saveState();
+        const modal = document.getElementById('odyssey-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        if (this.render.proposito) this.render.proposito();
+    },
+
+    openProfileModal: function() {
+        const state = window.sistemaVidaState;
+        const nameInput = document.getElementById('profile-name-input');
+        if (nameInput) {
+            nameInput.value = state.profile.name || "";
+        }
+        
+        const modal = document.getElementById('profile-edit-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    closeProfileModal: function() {
+        const modal = document.getElementById('profile-edit-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    saveProfile: function() {
+        const nameInput = document.getElementById('profile-name-input');
+        if (nameInput) {
+            const newName = nameInput.value.trim();
+            window.sistemaVidaState.profile.name = newName;
+            
+            // Sync UI displays
+            const dashName = document.getElementById('perfil-nome-display');
+            if (dashName) dashName.textContent = newName;
+        }
+        
+        this.saveState(true);
+        
+        const modal = document.getElementById('profile-edit-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        
+        this.renderSidebarValues(); // Sync any changes to values or name
+        if (this.render.perfil) this.render.perfil();
+        this.showToast("Perfil atualizado com sucesso!", "success");
+    }
+};
+
+window.app = app;
+
+document.addEventListener("DOMContentLoaded", () => {
+    app.init();
+});
