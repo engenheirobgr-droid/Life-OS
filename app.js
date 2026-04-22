@@ -49,9 +49,9 @@ window.sistemaVidaState = {
         xp: 0,
         values: [],
         legacy: "",
-        ikigai: { missao: "", vocacao: "", love: "", good: "", need: "", paid: "", sintese: "" },
-        legacyObj: { familia: "", profissao: "", mundo: "" },
-        vision: { saude: "", carreira: "", intelecto: "", quote: "" },
+        ikigai: { missao: "", vocacao: "", love: "", good: "", need: "", paid: "", sintese: "", sinteseResumo: "" },
+        legacyObj: { familia: "", profissao: "", mundo: "", familiaResumo: "", profissaoResumo: "", mundoResumo: "" },
+        vision: { saude: "", carreira: "", intelecto: "", quote: "", saudeResumo: "", carreiraResumo: "", intelectoResumo: "" },
         odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" },
         odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" }
     },
@@ -1607,6 +1607,10 @@ const app = {
 
     openCreateModal: function(type = 'metas') {
         this.editingEntity = null; // Limpa estado de edição
+        // Reseta chips do seletor de propósito
+        document.querySelectorAll('.purpose-option-chip').forEach(c => {
+            c.classList.remove('bg-primary/10', 'border-primary');
+        });
         const modalTitle = document.getElementById('modal-title');
         if (modalTitle) modalTitle.textContent = 'Novo Item';
 
@@ -1714,6 +1718,15 @@ const app = {
             this.updateParentList(type);
         }
 
+        // Seletor de propósito: apenas para metas
+        const purposeSelectorGroup = document.getElementById('crud-purpose-selector-group');
+        if (type === 'metas') {
+            this.buildPurposeOptions();
+        } else if (purposeSelectorGroup) {
+            purposeSelectorGroup.classList.add('hidden');
+            purposeSelectorGroup.style.display = 'none';
+        }
+
         // Atualiza painel de propósito conforme o tipo selecionado
         const currentDimension = document.getElementById('crud-dimension')?.value || '';
         this.updatePurposePanel(currentDimension, type);
@@ -1733,6 +1746,62 @@ const app = {
             const prazoInput = document.getElementById('crud-prazo-date');
             if (inicioInput && !inicioInput.value) inicioInput.value = hoje;
             if (prazoInput && !prazoInput.value) prazoInput.value = hoje;
+        }
+    },
+
+    // ── Seletor de Propósito no modal de criação de Metas ──────────────────────
+    buildPurposeOptions: function() {
+        const selectorGroup = document.getElementById('crud-purpose-selector-group');
+        const optionsContainer = document.getElementById('crud-purpose-options');
+        const noneMsg = document.getElementById('crud-purpose-none');
+        if (!selectorGroup || !optionsContainer) return;
+
+        const p = window.sistemaVidaState?.profile || {};
+        const ikigai = p.ikigai || {};
+        const legacyObj = p.legacyObj || {};
+        const vision = p.vision || {};
+
+        // Coleta todas as opções disponíveis (só onde resumo está preenchido)
+        const options = [];
+        if (ikigai.sinteseResumo)    options.push({ label: 'Ikigai',              text: ikigai.sinteseResumo });
+        if (legacyObj.familiaResumo) options.push({ label: 'Legado Família',       text: legacyObj.familiaResumo });
+        if (legacyObj.profissaoResumo) options.push({ label: 'Legado Profissão',   text: legacyObj.profissaoResumo });
+        if (legacyObj.mundoResumo)   options.push({ label: 'Legado Mundo',         text: legacyObj.mundoResumo });
+        if (vision.saudeResumo)      options.push({ label: 'Visão Saúde',          text: vision.saudeResumo });
+        if (vision.carreiraResumo)   options.push({ label: 'Visão Carreira',       text: vision.carreiraResumo });
+        if (vision.intelectoResumo)  options.push({ label: 'Visão Intelecto',      text: vision.intelectoResumo });
+
+        if (options.length === 0) {
+            optionsContainer.innerHTML = '';
+            if (noneMsg) { noneMsg.classList.remove('hidden'); }
+        } else {
+            if (noneMsg) { noneMsg.classList.add('hidden'); }
+            optionsContainer.innerHTML = options.map(opt => `
+                <button type="button"
+                    onclick="window.app.selectPurposeOption(this, '${opt.text.replace(/'/g, "\\'")}')"
+                    class="purpose-option-chip px-3 py-1.5 rounded-full border border-primary/30 text-xs text-primary hover:bg-primary/10 transition-colors text-left"
+                    title="${opt.text}">
+                    <span class="font-bold text-outline">${opt.label}:</span> ${opt.text.length > 45 ? opt.text.slice(0, 45) + '…' : opt.text}
+                </button>
+            `).join('');
+        }
+
+        selectorGroup.classList.remove('hidden');
+        selectorGroup.style.display = 'flex';
+    },
+
+    selectPurposeOption: function(btn, text) {
+        // Destaca o chip selecionado
+        document.querySelectorAll('.purpose-option-chip').forEach(c => {
+            c.classList.remove('bg-primary/10', 'border-primary', 'font-bold');
+        });
+        btn.classList.add('bg-primary/10', 'border-primary');
+
+        // Preenche o campo de contexto com o texto completo
+        const contextInput = document.getElementById('crud-context');
+        if (contextInput) {
+            contextInput.value = text;
+            contextInput.focus();
         }
     },
 
@@ -2075,11 +2144,28 @@ const app = {
         this.editingEntity = null;
     },
 
-    openTextEdit: function(title, group, key) {
+    openTextEdit: function(title, group, key, resumoKey) {
         this.currentTextGroup = group;
         this.currentTextKey = key;
+        this.currentResumoKey = resumoKey || null;
         document.getElementById('text-edit-title').textContent = title;
         document.getElementById('text-edit-input').value = window.sistemaVidaState.profile[group][key] || "";
+
+        // Mostra/oculta campo de resumo
+        const resumoGroup = document.getElementById('text-edit-resumo-group');
+        const resumoInput = document.getElementById('text-edit-resumo');
+        const resumoCount = document.getElementById('text-edit-resumo-count');
+        if (resumoKey && resumoGroup && resumoInput) {
+            const resumoVal = window.sistemaVidaState.profile[group][resumoKey] || "";
+            resumoInput.value = resumoVal;
+            if (resumoCount) resumoCount.textContent = resumoVal.length;
+            resumoGroup.classList.remove('hidden');
+            resumoGroup.style.display = 'flex';
+        } else if (resumoGroup) {
+            resumoGroup.classList.add('hidden');
+            resumoGroup.style.display = 'none';
+        }
+
         document.getElementById('text-edit-modal').classList.remove('hidden');
     },
 
@@ -2089,6 +2175,21 @@ const app = {
 
     saveTextEdit: function() {
         const val = document.getElementById('text-edit-input').value.trim();
+
+        // Valida resumo obrigatório quando campo possui resumoKey
+        if (this.currentResumoKey) {
+            const resumoVal = (document.getElementById('text-edit-resumo')?.value || '').trim();
+            if (!resumoVal) {
+                alert('O resumo para trilha é obrigatório. Preencha uma versão curta (máx. 80 caracteres).');
+                document.getElementById('text-edit-resumo')?.focus();
+                return;
+            }
+            if (!window.sistemaVidaState.profile[this.currentTextGroup]) {
+                window.sistemaVidaState.profile[this.currentTextGroup] = {};
+            }
+            window.sistemaVidaState.profile[this.currentTextGroup][this.currentResumoKey] = resumoVal;
+        }
+
         if (this.currentTextGroup && this.currentTextKey) {
             if (!window.sistemaVidaState.profile[this.currentTextGroup]) {
                 window.sistemaVidaState.profile[this.currentTextGroup] = {};
@@ -2271,9 +2372,9 @@ const app = {
       const baseState = {
         profile: {
           name: 'Viajante', level: 1, xp: 0, values: [], legacy: '',
-          ikigai: { missao: '', vocacao: '', love: '', good: '', need: '', paid: '', sintese: '' },
-          legacyObj: { familia: '', profissao: '', mundo: '' },
-          vision: { saude: '', carreira: '', intelecto: '', quote: '' },
+          ikigai: { missao: '', vocacao: '', love: '', good: '', need: '', paid: '', sintese: '', sinteseResumo: '' },
+          legacyObj: { familia: '', profissao: '', mundo: '', familiaResumo: '', profissaoResumo: '', mundoResumo: '' },
+          vision: { saude: '', carreira: '', intelecto: '', quote: '', saudeResumo: '', carreiraResumo: '', intelectoResumo: '' },
           odyssey: { cenarioA: '', cenarioB: '', cenarioC: '' },
           odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' }
         },
@@ -5915,391 +6016,4 @@ const app = {
         const activeBtn = `${baseBtn} bg-primary/10 border border-primary/30 text-primary ring-2 ring-primary/20`;
         const finishBtnClass = `${baseBtn} bg-secondary-container text-on-secondary-container`;
         if (startBtn) {
-            startBtn.textContent = dw.isRunning ? (dw.isPaused ? 'Em pausa' : 'Em foco') : 'Iniciar';
-            startBtn.className = dw.isRunning && dw.mode === 'focus' ? activeBtn : primaryBtn;
-            startBtn.disabled = dw.isRunning;
-        }
-        if (pauseBtn) {
-            pauseBtn.textContent = dw.isPaused ? 'Retomar' : 'Pausar';
-            pauseBtn.className = dw.isPaused ? activeBtn : neutralBtn;
-            pauseBtn.disabled = !dw.isRunning;
-        }
-        if (resetBtn) {
-            resetBtn.className = neutralBtn;
-            resetBtn.disabled = !dw.isRunning && !hasSelectedMicro;
-        }
-        if (finishBtn) {
-            finishBtn.className = dw.isRunning ? activeBtn : finishBtnClass;
-            finishBtn.disabled = !dw.isRunning;
-        }
-
-        if (summaryEl) {
-            const today = new Date();
-            const weekStart = new Date(today);
-            weekStart.setHours(0, 0, 0, 0);
-            weekStart.setDate(today.getDate() - today.getDay());
-            const sessions = (dw.sessions || []).filter(s => {
-                const dt = new Date(`${s.endedAt || ''}T00:00:00`);
-                return !Number.isNaN(dt.getTime()) && dt >= weekStart;
-            });
-            const totalSec = sessions.reduce((sum, s) => sum + (Number(s.focusSec) || 0), 0);
-            const hours = Math.floor(totalSec / 3600);
-            const mins = Math.floor((totalSec % 3600) / 60);
-            summaryEl.textContent = `${sessions.length} sessões, ${hours}h${String(mins).padStart(2, '0')} de foco profundo.`;
-        }
-
-        if (historyEl) {
-            const rows = (dw.sessions || []).slice(0, 5);
-            if (rows.length === 0) {
-                historyEl.innerHTML = '<p class="text-xs text-outline italic">Nenhuma sessão registrada.</p>';
-            } else {
-                historyEl.innerHTML = rows.map((s) => {
-                    const mins = Math.max(1, Math.round((Number(s.focusSec) || 0) / 60));
-                    const micro = (state.entities.micros || []).find(m => m.id === s.microId);
-                    const microLabel = micro?.title || 'Sem vínculo';
-                    const ctx = micro ? this.getMicroPlanContext(micro) : null;
-                    const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
-                    return `<div class="flex items-center justify-between text-xs border border-outline-variant/10 rounded-lg px-3 py-2">
-                        <div class="min-w-0">
-                            <p class="font-medium text-on-surface truncate">${this.escapeHtml(microLabel)}</p>
-                            <p class="text-outline truncate">${this.escapeHtml(ctx ? ctx.path : dateLabel)}</p>
-                            <p class="text-outline/80 truncate">${this.escapeHtml(dateLabel)}</p>
-                        </div>
-                        <span class="font-bold text-primary shrink-0">${mins} min</span>
-                    </div>`;
-                }).join('');
-            }
-        }
-
-        this.ensureDeepWorkTicking();
-    },
-
-    startDeepWorkSession: function() {
-        this.normalizeDeepWorkState();
-        const state = window.sistemaVidaState;
-        const dw = state.deepWork;
-        if (dw.isRunning && !dw.isPaused) return;
-
-        const presetEl = document.getElementById('deep-work-preset');
-        const microEl = document.getElementById('deep-work-micro');
-        const intentionEl = document.getElementById('deep-work-intention');
-        const minutes = Math.max(5, Math.round(Number(presetEl?.value || 90)));
-        const chosenMicro = microEl?.value || '';
-        const intention = (intentionEl?.value || '').trim();
-        if (!chosenMicro) {
-            this.showToast('Selecione uma micro ação de Planos para iniciar o foco.', 'error');
-            return;
-        }
-
-        if (!dw.isRunning || dw.mode !== 'focus') {
-            dw.targetSec = minutes * 60;
-            dw.remainingSec = dw.targetSec;
-            dw.mode = 'focus';
-        }
-        dw.microId = chosenMicro;
-        dw.intention = intention;
-        dw.isRunning = true;
-        dw.isPaused = false;
-        dw.lastTickAt = Date.now();
-
-        if (chosenMicro) {
-            const micro = (state.entities.micros || []).find(m => m.id === chosenMicro);
-            if (micro && micro.status !== 'done') {
-                micro.status = 'in_progress';
-                if (!micro.progress || micro.progress < 1) micro.progress = 1;
-                micro.completed = false;
-            }
-        }
-
-        this.ensureDeepWorkTicking();
-        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
-        else this.renderDeepWorkPanel();
-        this.saveState(true);
-    },
-    startDeepWorkForMicro: function(microId) {
-        this.normalizeDeepWorkState();
-        const state = window.sistemaVidaState;
-        const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
-        if (!micro || micro.status === 'done') return;
-        const dw = state.deepWork;
-        if (dw.isRunning) {
-            this.showToast('Já existe um bloco de foco em andamento.', 'error');
-            return;
-        }
-        dw.microId = micro.id;
-        dw.intention = micro.title || '';
-        const microEl = document.getElementById('deep-work-micro');
-        const intentionEl = document.getElementById('deep-work-intention');
-        if (microEl) microEl.value = micro.id;
-        if (intentionEl) intentionEl.value = micro.title || '';
-        this.startDeepWorkSession();
-        const panel = document.getElementById('deep-work-panel');
-        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    },
-
-    openMicroInFocus: function(microId, autoStart = false) {
-        this.normalizeDeepWorkState();
-        const state = window.sistemaVidaState;
-        const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
-        if (!micro || micro.status === 'done') return;
-        const dw = state.deepWork;
-        if (dw.isRunning && dw.microId && dw.microId !== micro.id) {
-            this.showToast('Finalize ou pause o bloco atual antes de trocar de micro ação.', 'error');
-            this.navigate('foco');
-            return;
-        }
-
-        dw.microId = micro.id;
-        dw.intention = micro.title || '';
-        if (autoStart && micro.status !== 'done') {
-            const sourceMicro = (state.entities?.micros || []).find(m => m.id === micro.id);
-            const targetMicro = sourceMicro || micro;
-            targetMicro.status = 'in_progress';
-            targetMicro.completed = false;
-            if (!targetMicro.progress || targetMicro.progress < 1) targetMicro.progress = 1;
-        }
-        this.pendingFocusMicroId = micro.id;
-        this.pendingFocusAutoStart = !!autoStart;
-        this.navigate('foco');
-    },
-
-    selectDeepWorkMicro: function(microId) {
-        this.normalizeDeepWorkState();
-        const state = window.sistemaVidaState;
-        const dw = state.deepWork;
-        if (dw.isRunning) return;
-        const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
-        dw.microId = micro ? micro.id : '';
-        if (micro) {
-            dw.intention = micro.title || '';
-            const intentionEl = document.getElementById('deep-work-intention');
-            if (intentionEl) intentionEl.value = dw.intention;
-        } else {
-            dw.intention = '';
-            const intentionEl = document.getElementById('deep-work-intention');
-            if (intentionEl) intentionEl.value = '';
-        }
-        this.renderDeepWorkPanel();
-    },
-
-    toggleDeepWorkPause: function() {
-        this.normalizeDeepWorkState();
-        const dw = window.sistemaVidaState.deepWork;
-        if (!dw.isRunning) return;
-        dw.isPaused = !dw.isPaused;
-        dw.lastTickAt = Date.now();
-        if (dw.isPaused) this.stopDeepWorkTicking();
-        else this.ensureDeepWorkTicking();
-        this.renderDeepWorkPanel();
-        this.saveState(true);
-    },
-
-    resetDeepWorkSession: function() {
-        this.normalizeDeepWorkState();
-        const dw = window.sistemaVidaState.deepWork;
-        dw.isRunning = false;
-        dw.isPaused = false;
-        dw.mode = 'focus';
-        dw.remainingSec = dw.targetSec || 5400;
-        dw.lastTickAt = 0;
-        this.stopDeepWorkTicking();
-        this.renderDeepWorkPanel();
-        this.saveState(true);
-    },
-
-    finishDeepWorkNow: function() {
-        this.normalizeDeepWorkState();
-        const dw = window.sistemaVidaState.deepWork;
-        if (!dw.isRunning) return;
-        if (dw.mode === 'focus') {
-            dw.completedFocusSec = Math.max(60, Math.round((Number(dw.targetSec) || 0) - (Number(dw.remainingSec) || 0)));
-        }
-        dw.remainingSec = 0;
-        this.onDeepWorkCountdownEnd();
-    },
-
-    openSwlsModal: function() {
-        this.normalizeSwlsState();
-        const swls = window.sistemaVidaState.swls;
-        for (let i = 1; i <= 5; i++) {
-            const slider = document.getElementById(`swls-q${i}`);
-            const valueEl = document.getElementById(`swls-q${i}-val`);
-            const answer = this.normalizeSwlsAnswer(swls.answers[i - 1]);
-            if (slider) slider.value = String(answer);
-            if (valueEl) valueEl.textContent = String(answer);
-        }
-        const modal = document.getElementById('swls-modal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-    },
-
-    closeSwlsModal: function() {
-        const modal = document.getElementById('swls-modal');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-    },
-
-    saveSwls: function() {
-        this.normalizeSwlsState();
-        const state = window.sistemaVidaState;
-        const answers = [];
-        for (let i = 1; i <= 5; i++) {
-            const slider = document.getElementById(`swls-q${i}`);
-            answers.push(this.normalizeSwlsAnswer(slider ? slider.value : 4));
-        }
-        const score = answers.reduce((sum, n) => sum + n, 0);
-        const dateKey = this.getLocalDateKey();
-        state.swls.answers = answers;
-        state.swls.lastScore = score;
-        state.swls.lastDate = dateKey;
-        if (!state.swls.history || typeof state.swls.history !== 'object') state.swls.history = {};
-        state.swls.history[dateKey] = { score, answers: [...answers] };
-
-        this.saveState(true);
-        this.closeSwlsModal();
-        if (this.currentView === 'proposito' && this.render.proposito) this.render.proposito();
-        this.showNotification(`SWLS atualizado: ${score}/35 (${this.getSwlsBand(score)}).`);
-    },
-
-    openPermaModal: function() {
-        const state = window.sistemaVidaState;
-        const perma = state.perma || {P:0, E:0, R:0, M:0, A:0};
-        
-        // Tarefa 2: Sincronização Total e Explícita (Sliders + Labels)
-        const keys = ['P', 'E', 'R', 'M', 'A'];
-        keys.forEach(k => {
-            const id = k.toLowerCase();
-            const slider = document.getElementById(`${id}-slider`);
-            const label = document.getElementById(`val-${id}`);
-            const normalized = this.normalizePermaScore(perma[k]);
-            if (slider) slider.value = String(normalized);
-            if (label) label.textContent = normalized.toFixed(1);
-        });
-
-        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
-        if (modal) {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-    },
-
-    closePermaModal: function() {
-        const modal = document.getElementById('perma-modal') || document.querySelector('[id*="perma-modal"]');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-    },
-
-    savePerma: function() {
-        const state = window.sistemaVidaState;
-        if (!state.perma) state.perma = {P:0, E:0, R:0, M:0, A:0};
-
-        // Salva lendo explicitamente os sliders
-        const keys = ['P', 'E', 'R', 'M', 'A'];
-        keys.forEach(k => {
-            const slider = document.getElementById(`${k.toLowerCase()}-slider`);
-            if (slider) {
-                state.perma[k] = this.normalizePermaScore(slider.value);
-            }
-        });
-
-        // Tarefa 3: Persistência Explícita e Atualização Padronizada
-        this.saveState(true);
-        this.closePermaModal();
-        this.switchView('proposito'); // Força re-render completo
-        this.showNotification("Diagnóstico PERMA atualizado com sucesso!");
-    },
-
-    openOdysseyModal: function(id) {
-        const state = window.sistemaVidaState;
-        if (!state.profile.odyssey) state.profile.odyssey = {
-            A: { title: "A Via Consolidada", desc: "Foco em ascensão na carreira atual.", conf: 4, nrg: 4 },
-            B: { title: "O Salto Criativo", desc: "Transição para trabalho solo.", conf: 3, nrg: 5 },
-            C: { title: "A Vida Acadêmica", desc: "Doutorado e pesquisa.", conf: 2, nrg: 3 }
-        };
-        const plan = state.profile.odyssey[id];
-        document.getElementById('odyssey-id').value = id;
-        document.getElementById('odyssey-title').value = plan.title;
-        document.getElementById('odyssey-desc').value = plan.desc;
-        document.getElementById('odyssey-conf').value = plan.conf;
-        document.getElementById('odyssey-nrg').value = plan.nrg;
-        
-        const modal = document.getElementById('odyssey-modal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    },
-
-    saveOdyssey: function() {
-        const id = document.getElementById('odyssey-id').value;
-        if (!window.sistemaVidaState.profile.odyssey) window.sistemaVidaState.profile.odyssey = {};
-        
-        window.sistemaVidaState.profile.odyssey[id] = {
-            title: document.getElementById('odyssey-title').value,
-            desc: document.getElementById('odyssey-desc').value,
-            conf: parseInt(document.getElementById('odyssey-conf').value),
-            nrg: parseInt(document.getElementById('odyssey-nrg').value)
-        };
-        this.saveState();
-        const modal = document.getElementById('odyssey-modal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        if (this.render.proposito) this.render.proposito();
-    },
-
-    openProfileModal: function() {
-        const state = window.sistemaVidaState;
-        const nameInput = document.getElementById('profile-name-input');
-        if (nameInput) {
-            nameInput.value = state.profile.name || "";
-        }
-        
-        const modal = document.getElementById('profile-edit-modal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-    },
-
-    closeProfileModal: function() {
-        const modal = document.getElementById('profile-edit-modal');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-    },
-
-    saveProfile: function() {
-        const nameInput = document.getElementById('profile-name-input');
-        if (nameInput) {
-            const newName = nameInput.value.trim();
-            window.sistemaVidaState.profile.name = newName;
-            
-            // Sync UI displays
-            const dashName = document.getElementById('perfil-nome-display');
-            if (dashName) dashName.textContent = newName;
-        }
-        
-        this.saveState(true);
-        
-        const modal = document.getElementById('profile-edit-modal');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-        
-        this.renderSidebarValues(); // Sync any changes to values or name
-        if (this.render.perfil) this.render.perfil();
-        this.showToast("Perfil atualizado com sucesso!", "success");
-    }
-};
-
-window.app = app;
-
-document.addEventListener("DOMContentLoaded", () => {
-    app.init();
-});
+            startBtn.
