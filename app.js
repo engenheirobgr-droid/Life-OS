@@ -3111,6 +3111,26 @@ const app = {
         return !!(plan && plan.selectedMicros && plan.selectedMicros.includes(microId));
     },
 
+    _getEntityCounts: function(entityType, entityId, state) {
+        const e = state.entities;
+        if (entityType === 'metas') {
+            const okrs = (e.okrs || []).filter(o => o.metaId === entityId);
+            const macros = (e.macros || []).filter(m => m.metaId === entityId);
+            const micros = (e.micros || []).filter(m => m.metaId === entityId);
+            return { okrs: okrs.length, macros: macros.length, micros: micros.length };
+        }
+        if (entityType === 'okrs') {
+            const macros = (e.macros || []).filter(m => m.okrId === entityId);
+            const micros = (e.micros || []).filter(m => m.okrId === entityId);
+            return { macros: macros.length, micros: micros.length };
+        }
+        if (entityType === 'macros') {
+            const micros = (e.micros || []).filter(m => m.macroId === entityId);
+            return { micros: micros.length };
+        }
+        return {};
+    },
+
     syncMicroWeekPlanToggle: function(microId = '') {
         const toggle = document.getElementById('add-to-week-plan');
         const toggleWrap = document.getElementById('week-plan-toggle-wrap');
@@ -5447,6 +5467,17 @@ const app = {
                                 ? `Comprometimento ${item.commitmentLevel || 3}/5`
                                 : '');
                         
+                        // Count children for hierarchy display
+                        let countLine = '';
+                        if (entityType === 'metas' || entityType === 'okrs' || entityType === 'macros') {
+                            const counts = app._getEntityCounts(entityType, item.id, state);
+                            const parts = [];
+                            if (counts.okrs > 0) parts.push(`${counts.okrs} OKR${counts.okrs > 1 ? 's' : ''}`);
+                            if (counts.macros > 0) parts.push(`${counts.macros} Macro${counts.macros > 1 ? 's' : ''}`);
+                            if (counts.micros > 0) parts.push(`${counts.micros} Micro${counts.micros > 1 ? 's' : ''}`);
+                            countLine = parts.join(' · ');
+                        }
+
                         // Build Hierarchy Trail Nodes
                         let trailNodes = [];
                         if (entityType === 'micros') {
@@ -5580,6 +5611,7 @@ const app = {
                                     </div>
                                     <h4 class="font-headline text-lg md:text-xl font-semibold leading-tight line-clamp-2">${item.title}</h4>
                                     ${subMetaText ? `<p class="text-[11px] text-outline">${subMetaText}</p>` : ''}
+                                    ${countLine ? `<p class="text-[10px] text-outline font-label uppercase tracking-widest mt-1">${countLine}</p>` : ''}
                                 </div>
                                 <div class="flex flex-col items-end gap-2 shrink-0">
                                     ${statusChip}
