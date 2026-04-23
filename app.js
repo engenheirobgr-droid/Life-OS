@@ -97,6 +97,7 @@ const app = {
     config: {
         containerId: 'app-content',
         viewsPath: 'views/',
+        repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     getLocalDateKey: function(date = new Date()) {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -1940,6 +1941,30 @@ const app = {
         window.sistemaVidaState.profile.values = newValuesArray;
         if (this.render.proposito) this.render.proposito();
         app.saveState(true);
+    },
+    updateProfileAppVersion: async function() {
+        const versionEl = document.getElementById('perfil-app-version');
+        if (!versionEl) return;
+        const cacheKey = 'lifeos_last_main_commit';
+        const cachedHash = localStorage.getItem(cacheKey);
+
+        if (cachedHash) versionEl.textContent = `Commit ${cachedHash}`;
+        else versionEl.textContent = 'Commit indisponível';
+
+        const repo = this.config.repoFullName;
+        if (!repo) return;
+
+        try {
+            const response = await fetch(`https://api.github.com/repos/${repo}/commits/main`, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`HTTP_${response.status}`);
+            const payload = await response.json();
+            const sha = String(payload?.sha || '').slice(0, 7);
+            if (!sha) return;
+            versionEl.textContent = `Commit ${sha}`;
+            localStorage.setItem(cacheKey, sha);
+        } catch (_) {
+            if (!cachedHash) versionEl.textContent = 'Commit indisponível (offline)';
+        }
     },
 
     _trailRowId: function(prefix) {
@@ -6076,6 +6101,7 @@ const app = {
 
             const themeSelect = document.getElementById('theme-select');
             if (themeSelect) themeSelect.value = state.settings.theme || 'auto';
+            this.updateProfileAppVersion();
         },
 
         proposito: function() {
