@@ -4836,14 +4836,16 @@ const app = {
             
             // Filtro Temporal
             if (filter === 'semana') {
-                micros = micros.filter(m => app.isDateInCurrentWeek(m.prazo));
-                macros = macros.filter(m => app.isDateInCurrentWeek(m.prazo));
-                // Se existe plano ativo, usa selectedMicros como base para execScore
                 const weekKey = this._getWeekKey();
                 const weekPlan = (state.weekPlans || {})[weekKey];
-                if (weekPlan && weekPlan.selectedMicros && weekPlan.selectedMicros.length > 0) {
-                    const plannedIds = new Set(weekPlan.selectedMicros);
-                    micros = micros.filter(m => plannedIds.has(m.id));
+                const plannedIds = (weekPlan && weekPlan.selectedMicros) || [];
+                if (plannedIds.length > 0) {
+                    micros = micros.filter(m => plannedIds.includes(m.id));
+                    const macroIds = new Set(micros.map(m => m.macroId).filter(Boolean));
+                    macros = macros.filter(m => macroIds.has(m.id));
+                } else {
+                    micros = micros.filter(m => app.isDateInCurrentWeek(m.prazo));
+                    macros = macros.filter(m => app.isDateInCurrentWeek(m.prazo));
                 }
             } else if (filter === 'mes') {
                 micros = micros.filter(m => app.isDateInCurrentMonth(m.prazo));
@@ -6465,19 +6467,31 @@ const app = {
             const oneDayMs = 1000 * 60 * 60 * 24;
             const widthPct = (((visualEnd - visualStart) + oneDayMs) / totalWindowTime) * 100;
 
-            const textMap = { metas: 'text-white', okrs: 'text-white', macros: 'text-white', micros: 'text-on-surface-variant' };
             const labelMap = { metas: 'Meta', okrs: 'OKR', macros: 'Macro', micros: 'Micro' };
-            
-            const txtColor = textMap[tipo] || 'text-white';
+
             const progress = entity.progress || (entity.status === 'done' ? 100 : 0);
             const isOverdue = taskEnd < today && entity.status !== 'done';
-            
+            const isMicro = tipo === 'micros';
+
+            let barBg;
+            if (entity.status === 'done') {
+                barBg = 'bg-emerald-500';
+            } else if (isOverdue) {
+                barBg = 'bg-error/80';
+            } else if (entity.status === 'in_progress') {
+                barBg = isMicro ? 'bg-primary/70' : 'bg-primary';
+            } else {
+                barBg = isMicro ? 'bg-outline/30' : 'bg-outline/40';
+            }
+            const barStyles = barBg;
+            const txtColor = (entity.status === 'done' || entity.status === 'in_progress' || isOverdue)
+                ? 'text-white'
+                : 'text-on-surface-variant';
+
             const dimValue = entity.dimension || entity.dimensionName || parentDim || 'Geral';
             const borderColor = dimColorMap[dimValue] || 'border-outline-variant/40';
 
-            const isMicro = tipo === 'micros';
             const barHeight = isMicro ? 'h-4' : 'h-6';
-            const barStyles = isMicro ? 'bg-secondary/60' : (entity.status === 'done' ? 'bg-primary' : 'bg-primary/85 opacity-80 gantt-stripe-bg');
             const minWidthPctByType = { metas: 6, okrs: 5, macros: 4, micros: 3 };
             const visualWidth = Math.min(100, Math.max(widthPct, minWidthPctByType[tipo] || 3));
             const maxLeftForWidth = Math.max(0, 100 - visualWidth);
@@ -6495,7 +6509,7 @@ const app = {
                 </div>
                 <!-- Área do Gráfico de Gantt -->
                 <div class="flex-1 relative h-12 py-3 flex items-center cursor-default group/bar">
-                  <div class="absolute ${barHeight} rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${barStyles} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60' : ''}"
+                  <div class="absolute ${barHeight} rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${barStyles} ${txtColor}"
                        style="left:${visualLeft.toFixed(2)}%; width:${visualWidth.toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
                     <!-- Fundo de progresso Real -->
                     <div class="absolute top-0 bottom-0 left-0 bg-black/20 dark:bg-white/10" style="width: ${progress}%"></div>
@@ -7580,19 +7594,21 @@ const app = {
             resetBtn.disabled = !dw.isRunning && !hasSelectedMicro;
         }
         if (finishBtn) {
-            finishBtn.className = dw.isRunning ? activeBtn : finishBtnClass;
             if (dw.isRunning && dw.mode === 'focus') {
                 finishBtn.textContent = 'Finalizar sessão';
+                finishBtn.className = activeBtn;
                 finishBtn.disabled = false;
+                finishBtn.onclick = () => window.app.finishDeepWorkNow();
             } else if (dw.isRunning && dw.mode === 'break') {
-                finishBtn.textContent = canCompleteSelectedMicro ? 'Concluir micro' : 'Encerrar pausa';
+                finishBtn.textContent = 'Pular descanso';
+                finishBtn.className = neutralBtn;
                 finishBtn.disabled = false;
-            } else if (!dw.isRunning && canCompleteSelectedMicro) {
-                finishBtn.textContent = 'Concluir micro';
-                finishBtn.disabled = false;
+                finishBtn.onclick = () => window.app.skipBreak();
             } else {
                 finishBtn.textContent = 'Finalizar';
-                finishBtn.disabled = !dw.isRunning;
+                finishBtn.className = finishBtnClass;
+                finishBtn.disabled = true;
+                finishBtn.onclick = () => window.app.finishDeepWorkNow();
             }
         }
 
@@ -7822,6 +7838,21 @@ const app = {
         }
 
         if (this.showNotification) this.showNotification('Pausa encerrada.');
+        if (this.currentView === 'foco') this.renderDeepWorkPanel();
+    },
+
+    skipBreak: function() {
+        this.normalizeDeepWorkState();
+        const dw = window.sistemaVidaState.deepWork;
+        if (!dw || !dw.isRunning || dw.mode !== 'break') return;
+        dw.isRunning = false;
+        dw.isPaused = false;
+        dw.mode = 'focus';
+        dw.remainingSec = dw.targetSec || 5400;
+        dw.lastTickAt = 0;
+        this.stopDeepWorkTicking();
+        this.saveState(true);
+        if (this.showNotification) this.showNotification('Descanso pulado. Pronto para nova sessão.');
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
     },
 
