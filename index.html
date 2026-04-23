@@ -734,7 +734,7 @@
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label for="trail-meta-dimension" class="text-xs uppercase tracking-widest font-bold text-outline">Dimensão</label>
-                            <select id="trail-meta-dimension"
+                            <select id="trail-meta-dimension" onchange="window.app.updateTrailPurposePanel(); window.app.refreshTrailSummary()"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                                 <option value="">Selecione...</option>
                                 <option value="Saúde">Saúde</option>
@@ -796,13 +796,20 @@
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"
                             placeholder="Qual transformação essa meta gera na sua vida?"></textarea>
                     </div>
-                    <div class="flex flex-col gap-1.5">
-                        <label for="trail-actions-purpose" class="text-xs uppercase tracking-widest font-bold text-outline">Propósito para as ações da trilha (Macro/Micro)</label>
-                        <input id="trail-actions-purpose" type="text"
-                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
-                            placeholder="Opcional: texto de propósito para vincular às ações"
-                            oninput="window.app.refreshTrailSummary()">
-                        <p class="text-[11px] text-outline">Se preenchido, será aplicado automaticamente nas Macro e Micro criadas por esta trilha.</p>
+                    <div id="trail-purpose-panel" class="hidden rounded-xl bg-primary/5 border border-primary/15 p-3 space-y-2">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Referência de Propósito da Dimensão</p>
+                        <div id="trail-purpose-values" class="hidden">
+                            <p class="text-[10px] uppercase tracking-widest text-outline font-bold">Valores</p>
+                            <p id="trail-purpose-values-text" class="text-xs text-on-surface/80 leading-relaxed"></p>
+                        </div>
+                        <div id="trail-purpose-ikigai" class="hidden">
+                            <p class="text-[10px] uppercase tracking-widest text-outline font-bold">Ikigai</p>
+                            <p id="trail-purpose-ikigai-text" class="text-xs text-on-surface/80 italic leading-relaxed"></p>
+                        </div>
+                        <div id="trail-purpose-legacy" class="hidden">
+                            <p class="text-[10px] uppercase tracking-widest text-outline font-bold">Legado relacionado</p>
+                            <p id="trail-purpose-legacy-text" class="text-xs text-on-surface/80 leading-relaxed"></p>
+                        </div>
                     </div>
                 </section>
 

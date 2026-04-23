@@ -1945,26 +1945,38 @@ const app = {
     _trailRowId: function(prefix) {
         return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
     },
-    getPurposeSummaryOptions: function() {
+    updateTrailPurposePanel: function() {
+        const panel = document.getElementById('trail-purpose-panel');
+        if (!panel) return;
+
+        const dimension = (document.getElementById('trail-meta-dimension')?.value || '').trim();
         const profile = window.sistemaVidaState?.profile || {};
+        const values = Array.isArray(profile.values) ? profile.values : [];
         const ikigai = profile.ikigai || {};
         const legacyObj = profile.legacyObj || {};
-        const vision = profile.vision || {};
-        const options = [];
-        if (ikigai.sinteseResumo) options.push(ikigai.sinteseResumo);
-        if (legacyObj.familiaResumo) options.push(legacyObj.familiaResumo);
-        if (legacyObj.profissaoResumo) options.push(legacyObj.profissaoResumo);
-        if (legacyObj.mundoResumo) options.push(legacyObj.mundoResumo);
-        if (vision.saudeResumo) options.push(vision.saudeResumo);
-        if (vision.carreiraResumo) options.push(vision.carreiraResumo);
-        if (vision.intelectoResumo) options.push(vision.intelectoResumo);
-        return options.filter(Boolean);
-    },
-    getDefaultTrailActionsPurpose: function(metaWhy = '') {
-        const direct = String(metaWhy || '').trim();
-        if (direct) return direct;
-        const fallbackOptions = this.getPurposeSummaryOptions();
-        return fallbackOptions[0] || '';
+        const legacyKey = this._dimensionLegacyMap ? this._dimensionLegacyMap[dimension] : null;
+
+        const valuesText = values.length ? values.slice(0, 3).join(' · ') : '';
+        const ikigaiText = (ikigai.sintese || ikigai.love || '').trim();
+        const legacyText = (legacyKey ? (legacyObj[legacyKey] || '') : '').trim();
+        const hasAny = !!(valuesText || ikigaiText || legacyText);
+
+        const valuesWrap = document.getElementById('trail-purpose-values');
+        const valuesOut = document.getElementById('trail-purpose-values-text');
+        const ikigaiWrap = document.getElementById('trail-purpose-ikigai');
+        const ikigaiOut = document.getElementById('trail-purpose-ikigai-text');
+        const legacyWrap = document.getElementById('trail-purpose-legacy');
+        const legacyOut = document.getElementById('trail-purpose-legacy-text');
+
+        panel.classList.toggle('hidden', !hasAny);
+        if (!hasAny) return;
+
+        if (valuesWrap) valuesWrap.classList.toggle('hidden', !valuesText);
+        if (valuesOut) valuesOut.textContent = valuesText;
+        if (ikigaiWrap) ikigaiWrap.classList.toggle('hidden', !ikigaiText);
+        if (ikigaiOut) ikigaiOut.textContent = ikigaiText;
+        if (legacyWrap) legacyWrap.classList.toggle('hidden', !legacyText);
+        if (legacyOut) legacyOut.textContent = legacyText;
     },
 
     toggleFabMenu: function(event) {
@@ -2017,7 +2029,6 @@ const app = {
         const successEl = document.getElementById('trail-meta-success');
         const challengeEl = document.getElementById('trail-meta-challenge');
         const commitmentEl = document.getElementById('trail-meta-commitment');
-        const actionsPurposeEl = document.getElementById('trail-actions-purpose');
         if (titleEl) titleEl.value = '';
         if (dimensionEl) dimensionEl.value = '';
         if (prazoEl) prazoEl.value = toDate(metaDeadline);
@@ -2026,7 +2037,6 @@ const app = {
         if (successEl) successEl.value = '';
         if (challengeEl) challengeEl.value = '3';
         if (commitmentEl) commitmentEl.value = '3';
-        if (actionsPurposeEl) actionsPurposeEl.value = this.getDefaultTrailActionsPurpose('');
 
         const okrList = document.getElementById('trail-okrs-list');
         const macroList = document.getElementById('trail-macros-list');
@@ -2045,6 +2055,7 @@ const app = {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         this.setMetaTrailStep(1);
+        this.updateTrailPurposePanel();
     },
 
     closeMetaTrailWizard: function() {
@@ -2082,6 +2093,7 @@ const app = {
         if (target === 3) this.refreshTrailMacroParentOptions();
         if (target === 4) this.refreshTrailMicroParentOptions();
         if (target === 5) this.refreshTrailSummary();
+        if (target === 1) this.updateTrailPurposePanel();
     },
 
     metaTrailPrevStep: function() {
@@ -2255,7 +2267,6 @@ const app = {
             dimension: (document.getElementById('trail-meta-dimension')?.value || '').trim(),
             prazo: (document.getElementById('trail-meta-prazo')?.value || '').trim(),
             why: (document.getElementById('trail-meta-why')?.value || '').trim(),
-            actionsPurpose: (document.getElementById('trail-actions-purpose')?.value || '').trim(),
             horizonYears: Number(document.getElementById('trail-meta-horizon')?.value || 1),
             successCriteria: (document.getElementById('trail-meta-success')?.value || '').trim(),
             challengeLevel: Math.max(1, Math.min(5, Number(document.getElementById('trail-meta-challenge')?.value || 3))),
@@ -2448,7 +2459,6 @@ const app = {
         const okrs = this._readTrailOkrs().items;
         const macros = this._readTrailMacros().items;
         const micros = this._readTrailMicros().items;
-        const actionsPurposePreview = this.getDefaultTrailActionsPurpose(meta.actionsPurpose || meta.why);
         const okrByRow = {};
         okrs.forEach(okr => { okrByRow[okr.rowId] = okr; });
         const macroByRow = {};
@@ -2462,7 +2472,6 @@ const app = {
                 <p class="text-[11px] text-outline mt-1">Horizonte: ${this.escapeHtml(String(meta.horizonYears || 1))} ano(s) • Desafio ${meta.challengeLevel || 3}/5 • Comprometimento ${meta.commitmentLevel || 3}/5</p>
                 <p class="text-xs text-outline mt-2">${this.escapeHtml(meta.successCriteria || 'Sem critério de sucesso definido.')}</p>
                 <p class="text-xs text-on-surface mt-2 leading-relaxed">${this.escapeHtml(meta.why || 'Sem motivação definida.')}</p>
-                <p class="text-[11px] text-outline mt-2">Propósito das ações: ${this.escapeHtml(actionsPurposePreview || 'Não definido')}</p>
             </div>`;
 
         const okrCards = okrs.length > 0
@@ -2523,7 +2532,6 @@ const app = {
         const okrs = this._readTrailOkrs().items;
         const macros = this._readTrailMacros().items;
         const micros = this._readTrailMicros().items;
-        const trailActionsPurpose = this.getDefaultTrailActionsPurpose(meta.actionsPurpose || meta.why);
 
         const state = window.sistemaVidaState;
         if (!state.entities) state.entities = { metas: [], okrs: [], macros: [], micros: [] };
@@ -2591,7 +2599,7 @@ const app = {
                 prazo: macro.prazo,
                 createdAt: todayKey,
                 description: macro.description || '',
-                purpose: trailActionsPurpose,
+                purpose: meta.why || '',
                 status: 'pending',
                 progress: 0,
                 completed: false
@@ -2614,7 +2622,7 @@ const app = {
                 prazo: micro.prazo,
                 createdAt: todayKey,
                 indicator: 'Primeiro passo da trilha',
-                purpose: trailActionsPurpose,
+                purpose: meta.why || '',
                 status: 'pending',
                 progress: 0,
                 completed: false
@@ -5061,7 +5069,7 @@ const app = {
                     const sessionCount = Number(m.focusSessions || 0);
                     const statusText = m.status === 'done' ? 'Concluída' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
                     const isTimerMicro = state.deepWork?.isRunning && state.deepWork?.microId === m.id;
-                    const actionLabel = (m.status === 'in_progress' || isTimerMicro) ? 'Gerenciar' : 'Focar';
+                    const actionLabel = (m.status === 'in_progress' || isTimerMicro) ? 'Gerenciar' : 'Iniciar';
                     const actionHandler = (m.status === 'in_progress' || isTimerMicro)
                         ? `window.app.openMicroInFocus('${m.id}', false)`
                         : `window.app.startDeepWorkForMicro('${m.id}')`;
@@ -7465,6 +7473,7 @@ const app = {
         const pauseBtn = document.getElementById('deep-work-pause-btn');
         const resetBtn = document.getElementById('deep-work-reset-btn');
         const finishBtn = document.getElementById('deep-work-finish-btn');
+        const contextActionsEl = document.getElementById('deep-work-context-actions');
 
         if (presetEl && !dw.isRunning) {
             const presetMin = Math.max(5, Math.round((dw.targetSec || 5400) / 60));
@@ -7546,6 +7555,22 @@ const app = {
             } else {
                 finishBtn.textContent = 'Finalizar';
                 finishBtn.disabled = !dw.isRunning;
+            }
+        }
+
+        if (contextActionsEl) {
+            const shouldShowQuickComplete = !!(hasSelectedMicro && canCompleteSelectedMicro && (dw.mode === 'break' || !dw.isRunning));
+            contextActionsEl.classList.toggle('hidden', !shouldShowQuickComplete);
+            if (shouldShowQuickComplete && selectedMicro) {
+                contextActionsEl.innerHTML = `
+                    <div class="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center justify-between gap-3">
+                        <p class="text-[11px] text-on-surface-variant leading-snug">Sessão finalizada para <span class="font-bold text-on-surface">${this.escapeHtml(selectedMicro.title)}</span>. Concluir agora?</p>
+                        <button onclick="window.app.completeMicroAction('${selectedMicro.id}')" class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-widest hover:opacity-90">
+                            Concluir
+                        </button>
+                    </div>`;
+            } else {
+                contextActionsEl.innerHTML = '';
             }
         }
 
