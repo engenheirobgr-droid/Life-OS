@@ -142,11 +142,12 @@ const app = {
         const txt = String(dimRaw || '').toLowerCase()
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '');
+        const compact = txt.replace(/[^a-z]/g, '');
         if (txt.includes('saud')) return 'Saúde';
-        if (txt.includes('ment') || txt.includes('pessoal')) return 'Mente';
+        if (txt.includes('relac')) return 'Relacionamentos';
+        if (txt.includes('pessoal') || txt.includes('mental') || compact.startsWith('mente')) return 'Mente';
         if (txt.includes('carre') || txt.includes('profiss') || txt.includes('trabalh')) return 'Carreira';
         if (txt.includes('finan')) return 'Finanças';
-        if (txt.includes('relac')) return 'Relacionamentos';
         if (txt.includes('fam')) return 'Família';
         if (txt.includes('lazer')) return 'Lazer';
         if (txt.includes('propos') || txt.includes('contribu')) return 'Propósito';
@@ -1098,6 +1099,7 @@ const app = {
         this.persistLocalMirror();
         this.ensureSettingsState();
         this.normalizePermaState();
+        this.normalizeDimensionsState();
         this.normalizeEntitiesState();
         this.normalizeSwlsState();
         this.normalizeDailyLogsState();
@@ -1132,6 +1134,7 @@ const app = {
                 window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
                 if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
                 window.sistemaVidaState._lastUpdatedAt = Number(remoteData?._lastUpdatedAt || window.sistemaVidaState._lastUpdatedAt || Date.now());
+                app.normalizeDimensionsState();
                 app.normalizeEntitiesState();
                 app.normalizeDailyLogsState();
                 app.persistLocalMirror();
@@ -1190,6 +1193,7 @@ const app = {
                             window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remote);
                             window.sistemaVidaState._lastUpdatedAt = remoteTs;
                             if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
+                            app.normalizeDimensionsState();
                             app.normalizeEntitiesState();
                             app.normalizeDailyLogsState();
                             app.persistLocalMirror();
@@ -6101,7 +6105,7 @@ const app = {
 
             const themeSelect = document.getElementById('theme-select');
             if (themeSelect) themeSelect.value = state.settings.theme || 'auto';
-            this.updateProfileAppVersion();
+            app.updateProfileAppVersion();
         },
 
         proposito: function() {
