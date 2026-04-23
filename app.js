@@ -5228,7 +5228,7 @@ const app = {
                 const check = new Date();
                 check.setHours(0, 0, 0, 0);
                 while (true) {
-                    const key = check.toISOString().split('T')[0];
+                    const key = app.getLocalDateKey(check);
                     if (logs[key]) {
                         streak++;
                         check.setDate(check.getDate() - 1);
@@ -5241,10 +5241,15 @@ const app = {
                 if (headerStreak) headerStreak.textContent = streak + ' dias';
             }
 
-            // Progresso semanal — apenas Micro Ações com janela ativa nesta semana
-            const weekMicros = state.entities.micros.filter(m =>
-              app.isDateInCurrentWeek(m.inicioDate || m.prazo) || app.isDateInCurrentWeek(m.prazo)
-            );
+            // Progresso semanal — usa plano selecionado; fallback por datas se não houver plano
+            const _weekKey = app._getWeekKey();
+            const _weekPlan = (state.weekPlans || {})[_weekKey];
+            const _selectedIds = (_weekPlan && _weekPlan.selectedMicros) || [];
+            const weekMicros = _selectedIds.length > 0
+              ? state.entities.micros.filter(m => _selectedIds.includes(m.id))
+              : state.entities.micros.filter(m =>
+                  app.isDateInCurrentWeek(m.inicioDate || m.prazo) || app.isDateInCurrentWeek(m.prazo)
+                );
             const weekDone = weekMicros.filter(m => m.status === 'done').length;
             const weekProgress = weekMicros.length > 0
               ? Math.round((weekDone / weekMicros.length) * 100)
@@ -6279,8 +6284,8 @@ const app = {
 
             // Render SVG Roda da Vida
             try {
-                this.normalizeDimensionsState();
-                this.updateWheelPolygon();
+                app.normalizeDimensionsState();
+                app.updateWheelPolygon();
             } catch (e) {
                 console.error("Erro na renderização das barras PERMA ou Roda da Vida:", e);
             }
@@ -6291,7 +6296,7 @@ const app = {
             const slidersContainer = document.getElementById('roda-sliders');
             if (slidersContainer) {
                 let html = '';
-                for (const dim of this.getWheelAxes()) {
+                for (const dim of app.getWheelAxes()) {
                     const data = state.dimensions[dim] || { score: 1 };
                     html += `
                     <div class="flex flex-col gap-1 w-full">
@@ -6727,23 +6732,25 @@ const app = {
         // Dispara cascata
         this.updateCascadeProgress(micro.id, 'micros');
 
-        if (isCompleting && micro.macroId) {
+        if (micro.macroId) {
             const macro = state.entities.macros.find(m => m.id === micro.macroId);
             if (macro && macro.okrId) {
                 const okr = state.entities.okrs.find(o => o.id === macro.okrId);
                 if (okr) {
-                    // Regra de Sucesso (Locke & Latham): 70% é o alvo ideal.
-                    if (okr.progress >= 70 && !okr.rewarded70) {
-                        okr.rewarded70 = true;
-                        if (state.perma) {
-                            state.perma.A = this.normalizePermaScore((state.perma.A || 0) + 0.5);
+                    if (isCompleting) {
+                        // Regra de Sucesso (Locke & Latham): 70% é o alvo ideal.
+                        if (okr.progress >= 70 && !okr.rewarded70) {
+                            okr.rewarded70 = true;
+                            if (state.perma) {
+                                state.perma.A = this.normalizePermaScore((state.perma.A || 0) + 0.5);
+                            }
+                            if (this.showNotification) this.showNotification("🎯 OKR atingiu 70% (Alvo Ideal). Bônus de realização aplicado!");
                         }
-                        const metaLocal = state.entities.metas.find(m => m.id === okr.metaId);
-                        const bonusDim = this.normalizeDimensionKey(metaLocal?.dimension || metaLocal?.dimensionName);
-                        if (bonusDim && state.dimensions[bonusDim]) {
-                            state.dimensions[bonusDim].score = Math.min(100, state.dimensions[bonusDim].score + 5);
+                    } else {
+                        // Ao desmarcar: reseta flag se progresso voltou abaixo de 70%
+                        if (okr.rewarded70 && okr.progress < 70) {
+                            okr.rewarded70 = false;
                         }
-                        if (this.showNotification) this.showNotification("🎯 OKR atingiu 70% (Alvo Ideal). Bônus de realização aplicado!");
                     }
                 }
             }
@@ -6753,7 +6760,7 @@ const app = {
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'planos' && this.render.planos) this.render.planos();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
-        if (this.currentView === 'foco') this.render.foco();
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
     },
 
     startEntity: function(id, type) {
@@ -6768,6 +6775,7 @@ const app = {
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
         if (this.currentView === 'planos' && this.render.planos) this.render.planos();
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
     },
 
     startMicroAction: function(id) {
