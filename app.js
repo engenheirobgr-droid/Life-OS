@@ -1887,10 +1887,14 @@ const app = {
         const today = new Date();
         const metaDeadline = new Date(today);
         metaDeadline.setDate(metaDeadline.getDate() + 84);
+        const macroDeadline = new Date(today);
+        macroDeadline.setDate(macroDeadline.getDate() + 30);
         const microOne = new Date(today);
         microOne.setDate(microOne.getDate() + 3);
-        const microTwo = new Date(today);
-        microTwo.setDate(microTwo.getDate() + 7);
+        const microTwoStart = new Date(today);
+        microTwoStart.setDate(microTwoStart.getDate() + 4);
+        const microTwoDeadline = new Date(today);
+        microTwoDeadline.setDate(microTwoDeadline.getDate() + 7);
         const toDate = (d) => {
             const local = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
             return local.toISOString().split('T')[0];
@@ -1920,11 +1924,11 @@ const app = {
         if (macroList) macroList.innerHTML = '';
         if (microList) microList.innerHTML = '';
 
-        this.addTrailOkrRow({ prazo: toDate(metaDeadline) });
-        this.addTrailMacroRow();
-        this.addTrailMacroRow();
-        this.addTrailMicroRow({ prazo: toDate(microOne) });
-        this.addTrailMicroRow({ prazo: toDate(microTwo) });
+        this.addTrailOkrRow({ inicioDate: toDate(today), prazo: toDate(metaDeadline) });
+        this.addTrailMacroRow({ inicioDate: toDate(today), prazo: toDate(macroDeadline) });
+        this.addTrailMacroRow({ inicioDate: toDate(today), prazo: toDate(macroDeadline) });
+        this.addTrailMicroRow({ inicioDate: toDate(today), prazo: toDate(microOne) });
+        this.addTrailMicroRow({ inicioDate: toDate(microTwoStart), prazo: toDate(microTwoDeadline) });
 
         this.metaTrailStep = 1;
         modal.classList.remove('hidden');
@@ -1997,7 +2001,10 @@ const app = {
             </div>
             <input type="text" class="trail-okr-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Resultado-chave (ex.: Publicar 12 artigos)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
             <input type="text" class="trail-okr-metric w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Métrica de sucesso (ex.: 12 artigos publicados até o prazo)" value="${this.escapeHtml(prefill.metric || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
-            <input type="date" class="trail-okr-prazo w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.prazo || '')}" onchange="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input type="date" class="trail-okr-inicio w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.inicioDate || '')}" onchange="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
+                <input type="date" class="trail-okr-prazo w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.prazo || '')}" onchange="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <select class="trail-okr-challenge w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()">
                     <option value="1" ${Number(prefill.challengeLevel) === 1 ? 'selected' : ''}>1 - Muito baixo</option>
@@ -2038,6 +2045,10 @@ const app = {
             </div>
             <input type="text" class="trail-macro-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Iniciativa principal (ex.: Sistema editorial semanal)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMicroParentOptions(); window.app.refreshTrailSummary()">
             <select class="trail-macro-okr w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailMicroParentOptions(); window.app.refreshTrailSummary()"></select>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input type="date" class="trail-macro-inicio w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.inicioDate || '')}" onchange="window.app.refreshTrailSummary()">
+                <input type="date" class="trail-macro-prazo w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.prazo || '')}" onchange="window.app.refreshTrailSummary()">
+            </div>
             <input type="text" class="trail-macro-desc w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Detalhe opcional da iniciativa" value="${this.escapeHtml(prefill.description || '')}" oninput="window.app.refreshTrailSummary()">
         `;
         list.appendChild(row);
@@ -2058,8 +2069,9 @@ const app = {
                 <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
             </div>
             <input type="text" class="trail-micro-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Ação concreta (ex.: Escrever outline do artigo 1)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailSummary()">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <select class="trail-micro-macro w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()"></select>
+                <input type="date" class="trail-micro-inicio w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.inicioDate || '')}" onchange="window.app.refreshTrailSummary()">
                 <input type="date" class="trail-micro-prazo w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.prazo || '')}" onchange="window.app.refreshTrailSummary()">
             </div>
         `;
@@ -2147,15 +2159,16 @@ const app = {
             const rowId = row.getAttribute('data-trail-row');
             const title = (row.querySelector('.trail-okr-title')?.value || '').trim();
             const metric = (row.querySelector('.trail-okr-metric')?.value || '').trim();
+            const inicioDate = (row.querySelector('.trail-okr-inicio')?.value || '').trim();
             const prazo = (row.querySelector('.trail-okr-prazo')?.value || '').trim();
             const challengeLevel = Math.max(1, Math.min(5, Number(row.querySelector('.trail-okr-challenge')?.value || 3)));
             const commitmentLevel = Math.max(1, Math.min(5, Number(row.querySelector('.trail-okr-commitment')?.value || 3)));
             const keyResultsText = (row.querySelector('.trail-okr-krs')?.value || '').trim();
             const keyResults = this.parseKeyResultsText(keyResultsText);
-            const hasAny = !!(title || metric || prazo || keyResultsText);
+            const hasAny = !!(title || metric || inicioDate || prazo || keyResultsText);
             const isComplete = !!(title && metric && prazo);
             if (hasAny && !isComplete) hasPartial = true;
-            if (isComplete) items.push({ rowId, title, metric, prazo, challengeLevel, commitmentLevel, keyResults, keyResultsText });
+            if (isComplete) items.push({ rowId, title, metric, inicioDate, prazo, challengeLevel, commitmentLevel, keyResults, keyResultsText });
         });
         return { items, hasPartial };
     },
@@ -2168,11 +2181,13 @@ const app = {
             const rowId = row.getAttribute('data-trail-row');
             const title = (row.querySelector('.trail-macro-title')?.value || '').trim();
             const okrRowId = (row.querySelector('.trail-macro-okr')?.value || '').trim();
+            const inicioDate = (row.querySelector('.trail-macro-inicio')?.value || '').trim();
+            const prazo = (row.querySelector('.trail-macro-prazo')?.value || '').trim();
             const description = (row.querySelector('.trail-macro-desc')?.value || '').trim();
-            const hasAny = !!(title || okrRowId || description);
-            const isComplete = !!(title && okrRowId);
+            const hasAny = !!(title || okrRowId || inicioDate || prazo || description);
+            const isComplete = !!(title && okrRowId && inicioDate && prazo);
             if (hasAny && !isComplete) hasPartial = true;
-            if (isComplete) items.push({ rowId, title, okrRowId, description });
+            if (isComplete) items.push({ rowId, title, okrRowId, inicioDate, prazo, description });
         });
         return { items, hasPartial };
     },
@@ -2185,11 +2200,12 @@ const app = {
             const rowId = row.getAttribute('data-trail-row');
             const title = (row.querySelector('.trail-micro-title')?.value || '').trim();
             const macroRowId = (row.querySelector('.trail-micro-macro')?.value || '').trim();
+            const inicioDate = (row.querySelector('.trail-micro-inicio')?.value || '').trim();
             const prazo = (row.querySelector('.trail-micro-prazo')?.value || '').trim();
-            const hasAny = !!(title || macroRowId || prazo);
-            const isComplete = !!(title && macroRowId && prazo);
+            const hasAny = !!(title || macroRowId || inicioDate || prazo);
+            const isComplete = !!(title && macroRowId && inicioDate && prazo);
             if (hasAny && !isComplete) hasPartial = true;
-            if (isComplete) items.push({ rowId, title, macroRowId, prazo });
+            if (isComplete) items.push({ rowId, title, macroRowId, inicioDate, prazo });
         });
         return { items, hasPartial };
     },
@@ -2212,6 +2228,20 @@ const app = {
                 this.showToast('Preencha título, dimensão, prazo e motivação da meta.', 'error');
                 return false;
             }
+            const horizonAlign = this.alignMetaHorizonSelection({
+                prazo: meta.prazo,
+                selectedHorizonYears: meta.horizonYears,
+                selectElementId: 'trail-meta-horizon'
+            });
+            if (!horizonAlign.ok) {
+                this.showToast(horizonAlign.message || 'Ajuste o horizonte da meta para continuar.', 'error');
+                return false;
+            }
+            const validation = this.validateEntityTimeWindow('metas', { prazo: meta.prazo, metaHorizonYears: horizonAlign.horizonYears });
+            if (!validation.ok) {
+                this.showToast(validation.message, 'error');
+                return false;
+            }
             return true;
         }
         if (s === 2) {
@@ -2224,30 +2254,60 @@ const app = {
                 this.showToast('Defina de 1 a 3 OKRs para continuar.', 'error');
                 return false;
             }
+            const invalidOkr = okrs.items.find((okr, idx) => {
+                const validation = this.validateEntityTimeWindow('okrs', {
+                    inicioDate: okr.inicioDate,
+                    prazo: okr.prazo
+                });
+                if (validation.ok) return false;
+                this.showToast(`OKR ${idx + 1}: ${validation.message}`, 'error');
+                return true;
+            });
+            if (invalidOkr) return false;
             return true;
         }
         if (s === 3) {
             const macros = this._readTrailMacros();
             if (macros.hasPartial) {
-                this.showToast('Cada Macro precisa de título e OKR vinculado.', 'error');
+                this.showToast('Cada Macro precisa de título, OKR vinculado, início e prazo.', 'error');
                 return false;
             }
             if (macros.items.length < 2 || macros.items.length > 5) {
                 this.showToast('Defina de 2 a 5 Macros para continuar.', 'error');
                 return false;
             }
+            const invalidMacro = macros.items.find((macro, idx) => {
+                const validation = this.validateEntityTimeWindow('macros', {
+                    inicioDate: macro.inicioDate,
+                    prazo: macro.prazo
+                });
+                if (validation.ok) return false;
+                this.showToast(`Macro ${idx + 1}: ${validation.message}`, 'error');
+                return true;
+            });
+            if (invalidMacro) return false;
             return true;
         }
         if (s === 4) {
             const micros = this._readTrailMicros();
             if (micros.hasPartial) {
-                this.showToast('Cada Micro precisa de título, Macro vinculada e prazo.', 'error');
+                this.showToast('Cada Micro precisa de título, Macro vinculada, início e prazo.', 'error');
                 return false;
             }
             if (micros.items.length < 1) {
                 this.showToast('Defina ao menos 1 Micro para começar a semana.', 'error');
                 return false;
             }
+            const invalidMicro = micros.items.find((micro, idx) => {
+                const validation = this.validateEntityTimeWindow('micros', {
+                    inicioDate: micro.inicioDate,
+                    prazo: micro.prazo
+                });
+                if (validation.ok) return false;
+                this.showToast(`Micro ${idx + 1}: ${validation.message}`, 'error');
+                return true;
+            });
+            if (invalidMicro) return false;
             const todayKey = this.getLocalDateKey();
             const today = new Date(todayKey + 'T00:00:00');
             const maxDate = new Date(today);
@@ -2299,7 +2359,7 @@ const app = {
                     <p class="text-xs text-outline mt-1">${this.escapeHtml(okr.metric)}</p>
                     <p class="text-[11px] text-outline mt-1">Desafio ${okr.challengeLevel || 3}/5 • Comprometimento ${okr.commitmentLevel || 3}/5</p>
                     <p class="text-[11px] text-outline mt-1">${Array.isArray(okr.keyResults) && okr.keyResults.length > 0 ? `${okr.keyResults.length} key result(s)` : 'Sem key results'}</p>
-                    <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(okr.prazo)}</p>
+                    <p class="text-[11px] text-primary font-bold mt-2">${okr.inicioDate ? `${this._formatTrailDate(okr.inicioDate)} → ` : ''}${this._formatTrailDate(okr.prazo)}</p>
                 </div>
             `).join('')
             : '<p class="text-xs text-outline italic">Sem OKRs completos.</p>';
@@ -2310,6 +2370,7 @@ const app = {
                     <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Macro ${idx + 1}</p>
                     <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(macro.title)}</p>
                     <p class="text-xs text-outline mt-1">Vinculada a: ${this.escapeHtml(okrByRow[macro.okrRowId]?.title || 'OKR não definido')}</p>
+                    <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(macro.inicioDate)} → ${this._formatTrailDate(macro.prazo)}</p>
                     ${macro.description ? `<p class="text-xs text-on-surface mt-2">${this.escapeHtml(macro.description)}</p>` : ''}
                 </div>
             `).join('')
@@ -2321,7 +2382,7 @@ const app = {
                     <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Micro ${idx + 1}</p>
                     <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(micro.title)}</p>
                     <p class="text-xs text-outline mt-1">Macro: ${this.escapeHtml(macroByRow[micro.macroRowId]?.title || 'Macro não definida')}</p>
-                    <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(micro.prazo)}</p>
+                    <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(micro.inicioDate)} → ${this._formatTrailDate(micro.prazo)}</p>
                 </div>
             `).join('')
             : '<p class="text-xs text-outline italic">Sem Micros completas.</p>';
@@ -2364,6 +2425,7 @@ const app = {
             title: meta.title,
             dimension: meta.dimension,
             prazo: meta.prazo,
+            createdAt: todayKey,
             purpose: meta.why,
             horizonYears: Number(meta.horizonYears || 1),
             successCriteria: meta.successCriteria || '',
@@ -2385,7 +2447,9 @@ const app = {
                 metaId,
                 title: okr.title,
                 dimension: meta.dimension,
+                inicioDate: okr.inicioDate || '',
                 prazo: okr.prazo,
+                createdAt: todayKey,
                 purpose: okr.metric,
                 successCriteria: okr.metric,
                 challengeLevel: Math.max(1, Math.min(5, Number(okr.challengeLevel || 3))),
@@ -2408,7 +2472,9 @@ const app = {
                 okrId,
                 title: macro.title,
                 dimension: meta.dimension,
-                prazo: meta.prazo,
+                inicioDate: macro.inicioDate,
+                prazo: macro.prazo,
+                createdAt: todayKey,
                 description: macro.description || '',
                 status: 'pending',
                 progress: 0,
@@ -2428,8 +2494,9 @@ const app = {
                 macroId,
                 title: micro.title,
                 dimension: meta.dimension,
-                inicioDate: todayKey,
+                inicioDate: micro.inicioDate,
                 prazo: micro.prazo,
+                createdAt: todayKey,
                 indicator: 'Primeiro passo da trilha',
                 status: 'pending',
                 progress: 0,
@@ -2477,10 +2544,16 @@ const app = {
         const challengeInput = document.getElementById('crud-challenge-level');
         const commitmentInput = document.getElementById('crud-commitment-level');
         const keyResultsInput = document.getElementById('crud-key-results');
+        const deadlineInput = document.getElementById('create-prazo');
+        const inicioDateInput = document.getElementById('crud-inicio-date');
+        const prazoDateInput = document.getElementById('crud-prazo-date');
         if (successCriteriaInput) successCriteriaInput.value = '';
         if (challengeInput) challengeInput.value = '3';
         if (commitmentInput) commitmentInput.value = '3';
         if (keyResultsInput) keyResultsInput.value = '';
+        if (deadlineInput) deadlineInput.value = '';
+        if (inicioDateInput) inicioDateInput.value = '';
+        if (prazoDateInput) prazoDateInput.value = '';
 
         document.getElementById('crud-type').value = type;
         this.onTypeChange(type);
@@ -2590,20 +2663,20 @@ const app = {
         const currentDimension = document.getElementById('crud-dimension')?.value || '';
         this.updatePurposePanel(currentDimension, type);
 
-        // Alterna campo de prazo padrão vs. janela real (macro/micro)
+        // Alterna campo de prazo padrão vs. janela real (OKR/macro/micro)
         const deadlineGroup = document.getElementById('prazo-deadline-group');
         const agendamentoGroup = document.getElementById('prazo-agendamento-group');
-        const usaAgendamento = ['macros', 'micros'].includes(type);
+        const usaAgendamento = ['okrs', 'macros', 'micros'].includes(type);
 
         if (deadlineGroup) deadlineGroup.classList.toggle('hidden', usaAgendamento);
         if (agendamentoGroup) agendamentoGroup.classList.toggle('hidden', !usaAgendamento);
 
-        // Defaults para datas reais no modal (macro/micro)
+        // Defaults para datas reais no modal (OKR/macro/micro)
         if (usaAgendamento) {
             const hoje = new Date().toISOString().split('T')[0];
             const inicioInput = document.getElementById('crud-inicio-date');
             const prazoInput = document.getElementById('crud-prazo-date');
-            if (inicioInput && !inicioInput.value) inicioInput.value = hoje;
+            if (type !== 'okrs' && inicioInput && !inicioInput.value) inicioInput.value = hoje;
             if (prazoInput && !prazoInput.value) prazoInput.value = hoje;
         }
 
@@ -2786,16 +2859,67 @@ const app = {
         if (chevron) chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
     },
 
+    normalizeMetaHorizonYears: function(raw) {
+        const n = Number(raw);
+        if (n === 2.5) return 2.5;
+        if (n === 5) return 5;
+        return 1;
+    },
+    getMetaHorizonBands: function() {
+        return {
+            '1': { min: 180, max: 639, label: '1 ano' },
+            '2.5': { min: 640, max: 1369, label: '2,5 anos' },
+            '5': { min: 1370, max: 2555, label: '5 anos' }
+        };
+    },
+    getMetaHorizonRule: function(metaHorizonYears = 1) {
+        const bands = this.getMetaHorizonBands();
+        const key = String(this.normalizeMetaHorizonYears(metaHorizonYears));
+        return bands[key] || bands['1'];
+    },
+    inferMetaHorizonYearsByDays: function(days) {
+        if (!Number.isFinite(Number(days))) return null;
+        const value = Number(days);
+        const bands = this.getMetaHorizonBands();
+        if (value >= bands['1'].min && value <= bands['1'].max) return 1;
+        if (value >= bands['2.5'].min && value <= bands['2.5'].max) return 2.5;
+        if (value >= bands['5'].min && value <= bands['5'].max) return 5;
+        return null;
+    },
+    alignMetaHorizonSelection: function({ prazo = '', selectedHorizonYears = 1, selectElementId = '' } = {}) {
+        const normalized = this.normalizeMetaHorizonYears(selectedHorizonYears);
+        const days = this.getDayDiffFromNow(prazo);
+        const suggested = this.inferMetaHorizonYearsByDays(days);
+        if (!suggested || suggested === normalized) {
+            return { ok: true, horizonYears: normalized, adjusted: false };
+        }
+
+        const suggestedRule = this.getMetaHorizonRule(suggested);
+        const shouldAdjust = window.confirm(
+            `O prazo informado se encaixa no horizonte de ${suggestedRule.label}. Deseja ajustar automaticamente o horizonte da meta?`
+        );
+        if (!shouldAdjust) {
+            return { ok: false, horizonYears: normalized, message: `Ajuste o horizonte da meta para ${suggestedRule.label} ou altere o prazo.` };
+        }
+        if (selectElementId) {
+            const select = document.getElementById(selectElementId);
+            if (select) select.value = String(suggested);
+        }
+        return { ok: true, horizonYears: suggested, adjusted: true };
+    },
     getMetaHorizonYears: function(meta) {
         const explicit = Number(meta?.horizonYears);
-        if (Number.isFinite(explicit) && explicit > 0) return explicit;
+        if (Number.isFinite(explicit) && explicit > 0) return this.normalizeMetaHorizonYears(explicit);
         if (!meta?.prazo) return 1;
-        const today = new Date();
-        const deadline = new Date(meta.prazo + 'T00:00:00');
-        if (isNaN(deadline.getTime())) return 1;
-        const years = (deadline - today) / (1000 * 60 * 60 * 24 * 365.25);
-        if (years > 3.5) return 5;
-        if (years > 1.5) return 2.5;
+        const days = this.getDayDiffFromNow(meta.prazo);
+        const inferred = this.inferMetaHorizonYearsByDays(days);
+        if (inferred) return inferred;
+        if (Number.isFinite(Number(days))) {
+            const value = Number(days);
+            if (value >= 1370) return 5;
+            if (value >= 640) return 2.5;
+            if (value >= 180) return 1;
+        }
         return 1;
     },
 
@@ -2836,13 +2960,7 @@ const app = {
         if (normalizedType === 'metas') {
             const days = this.getDayDiffFromNow(prazo);
             if (days === null || days < 1) return { ok: false, message: 'Meta precisa de um prazo futuro válido.' };
-            const bands = {
-                '1': { min: 180, max: 639, label: '1 ano' },
-                '2.5': { min: 640, max: 1369, label: '2,5 anos' },
-                '5': { min: 1370, max: 2555, label: '5 anos' }
-            };
-            const key = String(Number(metaHorizonYears) === 2.5 ? 2.5 : (Number(metaHorizonYears) === 5 ? 5 : 1));
-            const rule = bands[key] || bands['1'];
+            const rule = this.getMetaHorizonRule(metaHorizonYears);
             if (days < rule.min || days > rule.max) {
                 return { ok: false, message: `Para meta de ${rule.label}, ajuste o prazo para a janela esperada desse horizonte.` };
             }
@@ -2850,8 +2968,9 @@ const app = {
         }
 
         if (normalizedType === 'okrs') {
-            const days = this.getDayDiffFromNow(prazo);
-            if (days === null || days < 1) return { ok: false, message: 'OKR precisa de um prazo futuro válido.' };
+            const startRef = String(inicioDate || this.getLocalDateKey());
+            const days = this.getDayDiffBetween(startRef, prazo);
+            if (days === null || days < 0) return { ok: false, message: 'OKR precisa de início e prazo válidos.' };
             if (days > 92) return { ok: false, message: 'OKR deve ficar dentro de até 3 meses (máx. 92 dias).' };
             return { ok: true };
         }
@@ -3800,22 +3919,21 @@ const app = {
                 return;
             }
         }
-        
-        const usaAgendamento = ['macros', 'micros'].includes(type);
+
+        const usaAgendamento = ['okrs', 'macros', 'micros'].includes(type);
         let prazo = '';
         let inicioDate = '';
-
         if (usaAgendamento) {
             inicioDate = document.getElementById('crud-inicio-date')?.value || '';
             prazo = document.getElementById('crud-prazo-date')?.value || '';
-            if (!inicioDate && prazo) inicioDate = prazo; // fallback retrô
+            if (type !== 'okrs' && !inicioDate && prazo) inicioDate = prazo; // fallback retrô para macro/micro
             if (!prazo && inicioDate) prazo = inicioDate; // consistência mínima
         } else {
             prazo = document.getElementById('create-prazo')?.value || '';
         }
 
         const parentId = document.getElementById('create-parent') ? document.getElementById('create-parent').value : '';
-        const metaHorizonYears = Number(document.getElementById('crud-meta-horizon')?.value || 1);
+        let metaHorizonYears = Number(document.getElementById('crud-meta-horizon')?.value || 1);
         const successCriteria = (document.getElementById('crud-success-criteria')?.value || '').trim();
         const challengeLevel = Number(document.getElementById('crud-challenge-level')?.value || 3);
         const commitmentLevel = Number(document.getElementById('crud-commitment-level')?.value || 3);
@@ -3823,12 +3941,24 @@ const app = {
 
         const isEditing = !!this.editingEntity;
         const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
+        if (type === 'metas') {
+            const horizonAlign = this.alignMetaHorizonSelection({
+                prazo,
+                selectedHorizonYears: metaHorizonYears,
+                selectElementId: 'crud-meta-horizon'
+            });
+            if (!horizonAlign.ok) {
+                app.showToast(horizonAlign.message || 'Ajuste o horizonte da meta antes de salvar.', 'error');
+                return;
+            }
+            metaHorizonYears = horizonAlign.horizonYears;
+        }
         const windowValidation = this.validateEntityTimeWindow(type, { prazo, inicioDate, metaHorizonYears });
         if (!windowValidation.ok) {
             app.showToast(windowValidation.message, 'error');
             return;
         }
-        
+
         const obj = { id: id || '', title: title || '', dimension: dimension || 'Geral', prazo: prazo || '' };
         if (usaAgendamento && inicioDate) obj.inicioDate = inicioDate;
 
@@ -3837,6 +3967,10 @@ const app = {
             const list = etype === 'habits' ? state.habits : state.entities[etype];
             return (list || []).find(e => e.id === eid) || {};
         };
+        const oldEntity = isEditing ? getOldItem(id, type) : {};
+        if (['metas', 'okrs', 'macros', 'micros'].includes(type)) {
+            obj.createdAt = oldEntity.createdAt || this.getLocalDateKey();
+        }
 
         if (type === 'metas' || type === 'okrs') {
             obj.purpose = context || '';
@@ -5994,24 +6128,50 @@ const app = {
             if (!entity.title || entity.title.trim() === '') return;
             if (!entity.id) return;
             if (renderedIds[tipo] && renderedIds[tipo].has(entity.id)) return;
-            const durationFallbackByType = { metas: 60, okrs: 45, macros: 21, micros: 5 };
-            const fallbackDays = durationFallbackByType[tipo] || 7;
+            let fallbackDays = 7;
+            if (tipo === 'okrs') fallbackDays = 92;
+            else if (tipo === 'macros') fallbackDays = 31;
+            else if (tipo === 'micros') fallbackDays = 7;
+            else if (tipo === 'metas') fallbackDays = Math.max(180, Math.round(this.getMetaHorizonYears(entity) * 365));
             const hasPrazo = entity.prazo && entity.prazo.trim() !== '';
             const hasInicio = entity.inicioDate && entity.inicioDate.trim() !== '';
+            const hasCreatedAt = entity.createdAt !== undefined && entity.createdAt !== null && String(entity.createdAt).trim() !== '';
+            let createdAtDate = null;
+            if (hasCreatedAt) {
+                if (typeof entity.createdAt === 'number') {
+                    createdAtDate = new Date(entity.createdAt);
+                } else {
+                    const createdRaw = String(entity.createdAt).trim();
+                    createdAtDate = createdRaw.includes('T')
+                        ? new Date(createdRaw)
+                        : new Date(createdRaw + 'T00:00:00');
+                }
+            }
+            const hasValidCreatedAt = !!(createdAtDate && !Number.isNaN(createdAtDate.getTime()));
 
             let taskStart = hasInicio ? new Date(entity.inicioDate + 'T00:00:00') : null;
             let taskEnd = hasPrazo ? new Date(entity.prazo + 'T00:00:00') : null;
 
             if (!taskStart && taskEnd) {
-                taskStart = new Date(taskEnd.getTime());
-                taskStart.setDate(taskStart.getDate() - (fallbackDays - 1));
+                if (hasValidCreatedAt) {
+                    taskStart = new Date(createdAtDate.getTime());
+                } else {
+                    taskStart = new Date(taskEnd.getTime());
+                    taskStart.setDate(taskStart.getDate() - (fallbackDays - 1));
+                }
             } else if (taskStart && !taskEnd) {
                 taskEnd = new Date(taskStart.getTime());
                 taskEnd.setDate(taskEnd.getDate() + (fallbackDays - 1));
             } else if (!taskStart && !taskEnd) {
-                taskEnd = new Date(today);
-                taskStart = new Date(today);
-                taskStart.setDate(taskStart.getDate() - (fallbackDays - 1));
+                if (hasValidCreatedAt) {
+                    taskStart = new Date(createdAtDate.getTime());
+                    taskEnd = new Date(createdAtDate.getTime());
+                    taskEnd.setDate(taskEnd.getDate() + (fallbackDays - 1));
+                } else {
+                    taskEnd = new Date(today);
+                    taskStart = new Date(today);
+                    taskStart.setDate(taskStart.getDate() - (fallbackDays - 1));
+                }
             }
 
             if (isNaN(taskStart.getTime())) taskStart = new Date(today);
@@ -6059,7 +6219,9 @@ const app = {
             const barHeight = isMicro ? 'h-4' : 'h-6';
             const barStyles = isMicro ? 'bg-secondary/60' : (entity.status === 'done' ? 'bg-primary' : 'bg-primary/85 opacity-80 gantt-stripe-bg');
             const minWidthPctByType = { metas: 6, okrs: 5, macros: 4, micros: 3 };
-            const visualWidth = Math.max(widthPct, minWidthPctByType[tipo] || 3);
+            const visualWidth = Math.min(100, Math.max(widthPct, minWidthPctByType[tipo] || 3));
+            const maxLeftForWidth = Math.max(0, 100 - visualWidth);
+            const visualLeft = Math.min(Math.max(0, leftPct), maxLeftForWidth);
             const showInlineTitle = visualWidth >= 8;
             if (renderedIds[tipo]) renderedIds[tipo].add(entity.id);
             
@@ -6073,8 +6235,8 @@ const app = {
                 </div>
                 <!-- Área do Gráfico de Gantt -->
                 <div class="flex-1 relative h-12 py-3 flex items-center cursor-default group/bar">
-                  <div class="absolute ${barHeight} rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${barStyles} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60' : ''}" 
-                       style="left:${leftPct.toFixed(2)}%; width:${visualWidth.toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
+                  <div class="absolute ${barHeight} rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${barStyles} ${txtColor} ${isOverdue ? 'ring-2 ring-error/60' : ''}"
+                       style="left:${visualLeft.toFixed(2)}%; width:${visualWidth.toFixed(2)}%" title="${entity.title} | Progresso: ${progress}%">
                     <!-- Fundo de progresso Real -->
                     <div class="absolute top-0 bottom-0 left-0 bg-black/20 dark:bg-white/10" style="width: ${progress}%"></div>
                     <div class="absolute inset-0 flex items-center px-2">
@@ -6410,6 +6572,9 @@ const app = {
             clone.logs = {};
             clone.stepLogs = {};
         }
+        if (['metas', 'okrs', 'macros', 'micros'].includes(type)) {
+            clone.createdAt = this.getLocalDateKey();
+        }
 
         list.push(clone);
         this.saveState(true);
@@ -6425,19 +6590,18 @@ const app = {
         const item = list.find(e => e.id === id);
         
         if (item && confirm(`Deseja realmente excluir "${item.title}"?`)) {
-            // Guarda o ID do pai antes de remover para cascata
-            const parentId = item.macroId || item.okrId || item.parentMetaId || item.metaId;
+            // Recalcula a hierarquia antes da remoção definitiva, tratando o item como excluído.
+            // Assim, os percentuais dos pais são atualizados sem depender de IDs já removidos.
+            if (type !== 'habits' && ['micros', 'macros', 'okrs', 'metas'].includes(type)) {
+                item.status = 'abandoned';
+                item.progress = 0;
+                this.updateCascadeProgress(item.id, type);
+            }
 
             if (type === 'habits') {
                 state.habits = state.habits.filter(e => e.id !== id);
             } else {
                 state.entities[type] = state.entities[type].filter(e => e.id !== id);
-            }
-
-            // Recálculo da cascata
-            if (parentId) {
-                const parentType = type === 'micros' ? 'macros' : (type === 'macros' ? 'okrs' : 'metas');
-                this.updateCascadeProgress(parentId, parentType);
             }
 
             this.saveState(true); // Silencioso (rotina administrativa)
@@ -6489,7 +6653,7 @@ const app = {
         }
         const inicioInput = document.getElementById('crud-inicio-date');
         const prazoInput = document.getElementById('crud-prazo-date');
-        if (inicioInput) inicioInput.value = item.inicioDate || item.agendamento?.inicioDate || item.prazo || '';
+        if (inicioInput) inicioInput.value = item.inicioDate || item.agendamento?.inicioDate || (type === 'okrs' ? '' : (item.prazo || ''));
         if (prazoInput) prazoInput.value = item.prazo || '';
         document.getElementById('crud-context').value = item.purpose || item.description || item.indicator || '';
         const successCriteriaInput = document.getElementById('crud-success-criteria');
