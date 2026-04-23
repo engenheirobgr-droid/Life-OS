@@ -334,7 +334,7 @@
         </aside>
 
         <!-- Main Content area -->
-        <section class="flex-1 overflow-y-auto min-h-screen pb-0 lg:pb-0 bg-background relative">
+        <section class="flex-1 overflow-y-auto min-h-screen pb-4 lg:pb-2 bg-background relative">
             <div id="app-content" class="fade-in">
                 <!-- Views loaded here -->
                 <div class="flex flex-col items-center justify-center min-h-[60vh] text-outline animate-pulse" id="loading-placeholder">
@@ -795,6 +795,14 @@
                         <textarea id="trail-meta-why" rows="3"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"
                             placeholder="Qual transformação essa meta gera na sua vida?"></textarea>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="trail-actions-purpose" class="text-xs uppercase tracking-widest font-bold text-outline">Propósito para as ações da trilha (Macro/Micro)</label>
+                        <input id="trail-actions-purpose" type="text"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                            placeholder="Opcional: texto de propósito para vincular às ações"
+                            oninput="window.app.refreshTrailSummary()">
+                        <p class="text-[11px] text-outline">Se preenchido, será aplicado automaticamente nas Macro e Micro criadas por esta trilha.</p>
                     </div>
                 </section>
 

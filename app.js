@@ -151,6 +151,43 @@ const app = {
         if (txt.includes('propos') || txt.includes('contribu')) return 'Propósito';
         return '';
     },
+    getWheelAxes: function() {
+        return ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
+    },
+    normalizeDimensionsState: function() {
+        const state = window.sistemaVidaState;
+        const axes = this.getWheelAxes();
+        const source = (state && state.dimensions && typeof state.dimensions === 'object') ? state.dimensions : {};
+        const normalized = {};
+        axes.forEach((dim) => {
+            normalized[dim] = { score: 1 };
+        });
+
+        Object.entries(source).forEach(([rawKey, rawVal]) => {
+            const canonical = this.normalizeDimensionKey(rawKey) || '';
+            if (!canonical || !normalized[canonical]) return;
+            const scoreRaw = Number(rawVal && typeof rawVal === 'object' ? rawVal.score : rawVal);
+            const score = Number.isFinite(scoreRaw) ? Math.max(1, Math.min(100, Math.round(scoreRaw))) : 1;
+            normalized[canonical].score = score;
+        });
+
+        state.dimensions = normalized;
+    },
+    updateWheelPolygon: function() {
+        this.normalizeDimensionsState();
+        const polygon = document.getElementById('roda-polygon');
+        if (!polygon) return;
+        const axes = this.getWheelAxes();
+        const angles = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => deg * Math.PI / 180);
+        const pts = axes.map((dim, i) => {
+            const score = window.sistemaVidaState.dimensions[dim]?.score || 0;
+            const r = 40 * (score / 100);
+            const x = 50 + r * Math.sin(angles[i]);
+            const y = 50 - r * Math.cos(angles[i]);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        });
+        polygon.setAttribute('points', pts.join(' '));
+    },
     normalizePermaScore: function(rawValue) {
         let value = Number(rawValue);
         if (!Number.isFinite(value)) value = 0;
@@ -1908,6 +1945,27 @@ const app = {
     _trailRowId: function(prefix) {
         return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
     },
+    getPurposeSummaryOptions: function() {
+        const profile = window.sistemaVidaState?.profile || {};
+        const ikigai = profile.ikigai || {};
+        const legacyObj = profile.legacyObj || {};
+        const vision = profile.vision || {};
+        const options = [];
+        if (ikigai.sinteseResumo) options.push(ikigai.sinteseResumo);
+        if (legacyObj.familiaResumo) options.push(legacyObj.familiaResumo);
+        if (legacyObj.profissaoResumo) options.push(legacyObj.profissaoResumo);
+        if (legacyObj.mundoResumo) options.push(legacyObj.mundoResumo);
+        if (vision.saudeResumo) options.push(vision.saudeResumo);
+        if (vision.carreiraResumo) options.push(vision.carreiraResumo);
+        if (vision.intelectoResumo) options.push(vision.intelectoResumo);
+        return options.filter(Boolean);
+    },
+    getDefaultTrailActionsPurpose: function(metaWhy = '') {
+        const direct = String(metaWhy || '').trim();
+        if (direct) return direct;
+        const fallbackOptions = this.getPurposeSummaryOptions();
+        return fallbackOptions[0] || '';
+    },
 
     toggleFabMenu: function(event) {
         if (event && event.stopPropagation) event.stopPropagation();
@@ -1959,6 +2017,7 @@ const app = {
         const successEl = document.getElementById('trail-meta-success');
         const challengeEl = document.getElementById('trail-meta-challenge');
         const commitmentEl = document.getElementById('trail-meta-commitment');
+        const actionsPurposeEl = document.getElementById('trail-actions-purpose');
         if (titleEl) titleEl.value = '';
         if (dimensionEl) dimensionEl.value = '';
         if (prazoEl) prazoEl.value = toDate(metaDeadline);
@@ -1967,6 +2026,7 @@ const app = {
         if (successEl) successEl.value = '';
         if (challengeEl) challengeEl.value = '3';
         if (commitmentEl) commitmentEl.value = '3';
+        if (actionsPurposeEl) actionsPurposeEl.value = this.getDefaultTrailActionsPurpose('');
 
         const okrList = document.getElementById('trail-okrs-list');
         const macroList = document.getElementById('trail-macros-list');
@@ -2195,6 +2255,7 @@ const app = {
             dimension: (document.getElementById('trail-meta-dimension')?.value || '').trim(),
             prazo: (document.getElementById('trail-meta-prazo')?.value || '').trim(),
             why: (document.getElementById('trail-meta-why')?.value || '').trim(),
+            actionsPurpose: (document.getElementById('trail-actions-purpose')?.value || '').trim(),
             horizonYears: Number(document.getElementById('trail-meta-horizon')?.value || 1),
             successCriteria: (document.getElementById('trail-meta-success')?.value || '').trim(),
             challengeLevel: Math.max(1, Math.min(5, Number(document.getElementById('trail-meta-challenge')?.value || 3))),
@@ -2387,6 +2448,7 @@ const app = {
         const okrs = this._readTrailOkrs().items;
         const macros = this._readTrailMacros().items;
         const micros = this._readTrailMicros().items;
+        const actionsPurposePreview = this.getDefaultTrailActionsPurpose(meta.actionsPurpose || meta.why);
         const okrByRow = {};
         okrs.forEach(okr => { okrByRow[okr.rowId] = okr; });
         const macroByRow = {};
@@ -2400,6 +2462,7 @@ const app = {
                 <p class="text-[11px] text-outline mt-1">Horizonte: ${this.escapeHtml(String(meta.horizonYears || 1))} ano(s) • Desafio ${meta.challengeLevel || 3}/5 • Comprometimento ${meta.commitmentLevel || 3}/5</p>
                 <p class="text-xs text-outline mt-2">${this.escapeHtml(meta.successCriteria || 'Sem critério de sucesso definido.')}</p>
                 <p class="text-xs text-on-surface mt-2 leading-relaxed">${this.escapeHtml(meta.why || 'Sem motivação definida.')}</p>
+                <p class="text-[11px] text-outline mt-2">Propósito das ações: ${this.escapeHtml(actionsPurposePreview || 'Não definido')}</p>
             </div>`;
 
         const okrCards = okrs.length > 0
@@ -2460,6 +2523,7 @@ const app = {
         const okrs = this._readTrailOkrs().items;
         const macros = this._readTrailMacros().items;
         const micros = this._readTrailMicros().items;
+        const trailActionsPurpose = this.getDefaultTrailActionsPurpose(meta.actionsPurpose || meta.why);
 
         const state = window.sistemaVidaState;
         if (!state.entities) state.entities = { metas: [], okrs: [], macros: [], micros: [] };
@@ -2527,6 +2591,7 @@ const app = {
                 prazo: macro.prazo,
                 createdAt: todayKey,
                 description: macro.description || '',
+                purpose: trailActionsPurpose,
                 status: 'pending',
                 progress: 0,
                 completed: false
@@ -2549,6 +2614,7 @@ const app = {
                 prazo: micro.prazo,
                 createdAt: todayKey,
                 indicator: 'Primeiro passo da trilha',
+                purpose: trailActionsPurpose,
                 status: 'pending',
                 progress: 0,
                 completed: false
@@ -2566,6 +2632,14 @@ const app = {
         this.closeMetaTrailWizard();
         this.saveState(false);
         this.showToast(`Trilha criada: 1 meta, ${okrs.length} OKR(s), ${macros.length} macro(s), ${micros.length} micro(s).`, 'success');
+
+        if (this.currentView === 'planos' && this.render.planos) {
+            this.render.planos();
+            this.switchPlanosTab(this.planosActiveTab || 'metas');
+        }
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+        if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        if (this.currentView === 'painel' && this.render.painel) this.render.painel();
 
         const openPlannerWhenReady = (attempt = 0) => {
             const hasWeeklyModal = !!document.getElementById('weekly-plan-modal');
@@ -3412,6 +3486,14 @@ const app = {
         this.saveState(true);
         this.closeWeeklyPlanModal();
         this.showNotification('Plano semanal salvo!');
+        if (this.renderWeeklyPlans) this.renderWeeklyPlans();
+        if (this.currentView === 'planos' && this.render.planos) {
+            this.render.planos();
+            this.switchPlanosTab(this.planosActiveTab || 'semanal');
+        }
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+        if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        if (this.currentView === 'painel' && this.render.painel) this.render.painel();
     },
 
     openReviewModal: function() {
@@ -3730,22 +3812,24 @@ const app = {
         const state = window.sistemaVidaState;
         const container = document.getElementById('wheel-sliders-container');
         if (!container) return;
-        
-        const dimensions = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
+
+        this.normalizeDimensionsState();
+        const dimensions = this.getWheelAxes();
         let html = '';
-        
-        dimensions.forEach(dim => {
+
+        dimensions.forEach((dim, idx) => {
             const score = (state.dimensions && state.dimensions[dim]) ? state.dimensions[dim].score : 1;
+            const targetId = `val-wheel-${idx}`;
             html += `
             <div class="space-y-1">
                 <div class="flex justify-between text-xs font-label uppercase tracking-widest text-outline font-bold">
                     <label>${dim}</label>
-                    <span id="val-wheel-${dim}">${score}</span>
+                    <span id="${targetId}">${score}</span>
                 </div>
-                <input type="range" id="slider-wheel-${dim}" data-dim="${dim}" min="1" max="100" value="${score}" class="w-full accent-primary" oninput="document.getElementById('val-wheel-${dim}').textContent = this.value" style="touch-action: none; overscroll-behavior: contain;">
+                <input type="range" id="slider-wheel-${idx}" data-dim="${dim}" data-target="${targetId}" min="1" max="100" value="${score}" class="w-full accent-primary" oninput="window.app.updateDimensionVisual(this.getAttribute('data-dim'), this.value); const target=document.getElementById(this.getAttribute('data-target')); if(target) target.textContent = this.value;" style="touch-action: none; overscroll-behavior: contain;">
             </div>`;
         });
-        
+
         container.innerHTML = html;
         const modal = document.getElementById('wheel-modal');
         if (modal) {
@@ -3764,23 +3848,23 @@ const app = {
 
     saveWheel: function() {
         const state = window.sistemaVidaState;
-        if (!state.dimensions) state.dimensions = {};
-        
+        this.normalizeDimensionsState();
         const container = document.getElementById('wheel-sliders-container');
         if (container) {
             const ranges = container.querySelectorAll('input[type="range"]');
             ranges.forEach(range => {
-                const dim = range.getAttribute('data-dim');
+                const dim = this.normalizeDimensionKey(range.getAttribute('data-dim') || '');
                 if (dim) {
                     if (!state.dimensions[dim]) state.dimensions[dim] = { score: 1 };
-                    state.dimensions[dim].score = parseInt(range.value, 10);
+                    state.dimensions[dim].score = Math.max(1, Math.min(100, parseInt(range.value, 10) || 1));
                 }
             });
         }
-        
+
+        this.updateWheelPolygon();
         this.saveState(false);
         this.closeWheelModal();
-        if (this.render.proposito) this.render.proposito();
+        if (this.currentView === 'proposito' && this.render.proposito) this.render.proposito();
         if (this.render.painel) this.render.painel();
     },
 
@@ -5019,7 +5103,7 @@ const app = {
                             <div class="flex flex-wrap items-center gap-2">
                                 ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">${actionLabel}</button>` : ''}
                                 ${m.status === 'done' ?
-                                    `<span class="text-[10px] font-bold uppercase text-green-600 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-xs">check_circle</span> Concluída</span>` :
+                                    `<button onclick="window.app.completeMicroAction('${m.id}')" class="px-3 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-widest hover:opacity-90">Reabrir</button>` :
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
                                 }
                             </div>
@@ -5863,10 +5947,16 @@ const app = {
                             `
                             : (isDone
                                 ? `
-                                <button onclick="event.stopPropagation(); app.deleteEntity('${item.id}', '${entityType}')"
-                                    class="p-2.5 border border-outline-variant/30 hover:bg-error-container/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-error transition-colors">
-                                    <span class="material-symbols-outlined notranslate text-base">delete</span> Excluir
-                                </button>
+                                ${entityType === 'micros'
+                                    ? `<button onclick="event.stopPropagation(); app.completeMicroAction('${item.id}')"
+                                        class="p-2.5 border border-primary/30 bg-primary/10 hover:bg-primary/20 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-primary transition-colors">
+                                        <span class="material-symbols-outlined notranslate text-base">undo</span> Reabrir
+                                    </button>`
+                                    : `<button onclick="event.stopPropagation(); app.deleteEntity('${item.id}', '${entityType}')"
+                                        class="p-2.5 border border-outline-variant/30 hover:bg-error-container/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-error transition-colors">
+                                        <span class="material-symbols-outlined notranslate text-base">delete</span> Excluir
+                                    </button>`
+                                }
                                 `
                                 : `
                                 <button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')"
@@ -6149,25 +6239,10 @@ const app = {
                 }
             }, 150);
 
-            // Render SVG Roda da Vida Trigonometry
+            // Render SVG Roda da Vida
             try {
-                const polygon = document.getElementById('roda-polygon');
-                if (polygon) {
-                    // The order must match the SVG visual spokes: Saúde (top/0), Mente (45), Carreira (90), Finanças (135), Relac (180), Família (225), Lazer (270), Propósito (315)
-                    const axes = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
-                    const angles = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => deg * Math.PI / 180);
-                    
-                    const pts = axes.map((dim, i) => {
-                        const score = state.dimensions[dim]?.score || 0;
-                        // Max radius is ~40. Center is 50,50.
-                        const r = 40 * (score / 100);
-                        const x = 50 + r * Math.sin(angles[i]);
-                        const y = 50 - r * Math.cos(angles[i]);
-                        return `${x.toFixed(1)},${y.toFixed(1)}`;
-                    });
-                    
-                    polygon.setAttribute('points', pts.join(' '));
-                }
+                this.normalizeDimensionsState();
+                this.updateWheelPolygon();
             } catch (e) {
                 console.error("Erro na renderização das barras PERMA ou Roda da Vida:", e);
             }
@@ -6178,7 +6253,8 @@ const app = {
             const slidersContainer = document.getElementById('roda-sliders');
             if (slidersContainer) {
                 let html = '';
-                for (const [dim, data] of Object.entries(state.dimensions)) {
+                for (const dim of this.getWheelAxes()) {
+                    const data = state.dimensions[dim] || { score: 1 };
                     html += `
                     <div class="flex flex-col gap-1 w-full">
                         <div class="flex justify-between items-center text-[10px] font-label uppercase tracking-widest">
@@ -6718,6 +6794,9 @@ const app = {
         }
 
         list.push(clone);
+        if (['metas', 'okrs', 'macros', 'micros'].includes(type)) {
+            this.updateCascadeProgress(clone.id, type);
+        }
         this.saveState(true);
         this.showToast('Card duplicado com sucesso.', 'success');
         if (this.currentView === 'planos' && this.render.planos) this.render.planos();
@@ -6753,20 +6832,12 @@ const app = {
     },
 
     updateDimensionVisual: function(dim, score) {
-        window.sistemaVidaState.dimensions[dim].score = parseInt(score);
-        const polygon = document.getElementById('roda-polygon');
-        if (polygon) {
-            const axes = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
-            const angles = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => deg * Math.PI / 180);
-            const pts = axes.map((d, i) => {
-                const sc = window.sistemaVidaState.dimensions[d]?.score || 0;
-                const r = 40 * (sc / 100);
-                const x = 50 + r * Math.sin(angles[i]);
-                const y = 50 - r * Math.cos(angles[i]);
-                return `${x.toFixed(1)},${y.toFixed(1)}`;
-            });
-            polygon.setAttribute('points', pts.join(' '));
-        }
+        this.normalizeDimensionsState();
+        const canonicalDim = this.normalizeDimensionKey(dim || '');
+        if (!canonicalDim) return;
+        if (!window.sistemaVidaState.dimensions[canonicalDim]) window.sistemaVidaState.dimensions[canonicalDim] = { score: 1 };
+        window.sistemaVidaState.dimensions[canonicalDim].score = Math.max(1, Math.min(100, parseInt(score, 10) || 1));
+        this.updateWheelPolygon();
     },
 
     editEntity: function(id, type) {
@@ -7358,7 +7429,7 @@ const app = {
             dw.mode = 'break';
             dw.remainingSec = dw.breakSec;
             dw.lastTickAt = Date.now();
-            if (this.showNotification) this.showNotification('Bloco de foco concluído. Iniciando pausa de 20 minutos.');
+            if (this.showNotification) this.showNotification('Bloco de foco concluído. Iniciando pausa de 20 minutos. Use "Concluir micro" para fechar a ação.');
             this.saveState(true);
             this.ensureDeepWorkTicking();
             if (this.currentView === 'foco' && this.render.foco) this.render.foco();
@@ -7425,17 +7496,19 @@ const app = {
         if (intentionEl && !intentionEl.value && dw.intention) intentionEl.value = dw.intention;
 
         const hasSelectedMicro = !!(dw.microId || microEl?.value);
+        const selectedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
+        const canCompleteSelectedMicro = !!(selectedMicro && selectedMicro.status !== 'done');
         if (statusEl) {
             if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Escolha uma micro ação';
             else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
             else if (dw.isPaused) statusEl.textContent = 'Sessão pausada';
-            else statusEl.textContent = dw.mode === 'focus' ? 'Foco profundo em andamento' : 'Pausa de recuperação';
+            else statusEl.textContent = dw.mode === 'focus' ? 'Foco profundo em andamento' : (canCompleteSelectedMicro ? 'Sessão concluída: confirme a micro ação' : 'Pausa de recuperação');
         }
         if (stepEl) {
             if (!dw.isRunning && !hasSelectedMicro) stepEl.textContent = 'Passo 1 de 3: selecione a micro';
             else if (!dw.isRunning) stepEl.textContent = 'Passo 2 de 3: inicie o bloco';
             else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
-            else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3 de 3: executando foco' : 'Pausa estruturada';
+            else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3 de 3: executando foco' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a micro após o foco' : 'Pausa estruturada');
         }
         if (timerEl) timerEl.textContent = this.formatClock(dw.remainingSec);
         if (phaseEl) phaseEl.textContent = dw.mode === 'focus' ? 'Foco' : 'Pausa';
@@ -7461,7 +7534,19 @@ const app = {
         }
         if (finishBtn) {
             finishBtn.className = dw.isRunning ? activeBtn : finishBtnClass;
-            finishBtn.disabled = !dw.isRunning;
+            if (dw.isRunning && dw.mode === 'focus') {
+                finishBtn.textContent = 'Finalizar sessão';
+                finishBtn.disabled = false;
+            } else if (dw.isRunning && dw.mode === 'break') {
+                finishBtn.textContent = canCompleteSelectedMicro ? 'Concluir micro' : 'Encerrar pausa';
+                finishBtn.disabled = false;
+            } else if (!dw.isRunning && canCompleteSelectedMicro) {
+                finishBtn.textContent = 'Concluir micro';
+                finishBtn.disabled = false;
+            } else {
+                finishBtn.textContent = 'Finalizar';
+                finishBtn.disabled = !dw.isRunning;
+            }
         }
 
         if (summaryEl) {
@@ -7640,13 +7725,41 @@ const app = {
 
     finishDeepWorkNow: function() {
         this.normalizeDeepWorkState();
+        const state = window.sistemaVidaState;
+        const linkedMicro = state.deepWork?.microId ? (state.entities?.micros || []).find(m => m.id === state.deepWork.microId) : null;
+        const canCompleteLinkedMicro = !!(linkedMicro && linkedMicro.status !== 'done');
         const dw = window.sistemaVidaState.deepWork;
-        if (!dw.isRunning) return;
+        if (!dw.isRunning) {
+            if (canCompleteLinkedMicro) {
+                this.completeMicroAction(linkedMicro.id);
+                if (this.showNotification) this.showNotification('Micro ação concluída.');
+            }
+            return;
+        }
         if (dw.mode === 'focus') {
             dw.completedFocusSec = Math.max(60, Math.round((Number(dw.targetSec) || 0) - (Number(dw.remainingSec) || 0)));
+            dw.remainingSec = 0;
+            this.onDeepWorkCountdownEnd();
+            return;
         }
-        dw.remainingSec = 0;
-        this.onDeepWorkCountdownEnd();
+
+        // Se está na pausa, o botão "Finalizar" também pode concluir a micro vinculada.
+        dw.isRunning = false;
+        dw.isPaused = false;
+        dw.mode = 'focus';
+        dw.remainingSec = dw.targetSec || 5400;
+        dw.lastTickAt = 0;
+        this.stopDeepWorkTicking();
+        this.saveState(true);
+
+        if (canCompleteLinkedMicro) {
+            this.completeMicroAction(linkedMicro.id);
+            if (this.showNotification) this.showNotification('Sessão encerrada e micro concluída.');
+            return;
+        }
+
+        if (this.showNotification) this.showNotification('Pausa encerrada.');
+        if (this.currentView === 'foco') this.renderDeepWorkPanel();
     },
 
     openSwlsModal: function() {
