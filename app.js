@@ -517,6 +517,57 @@ const app = {
         if (typeof window.sistemaVidaState.profile.avatarUrl !== 'string') {
             window.sistemaVidaState.profile.avatarUrl = '';
         }
+        if (!Array.isArray(window.sistemaVidaState.profile.values)) {
+            window.sistemaVidaState.profile.values = [];
+        }
+        if (typeof window.sistemaVidaState.profile.legacy !== 'string') {
+            window.sistemaVidaState.profile.legacy = '';
+        }
+        if (!window.sistemaVidaState.profile.ikigai || typeof window.sistemaVidaState.profile.ikigai !== 'object') {
+            window.sistemaVidaState.profile.ikigai = {};
+        }
+        const ikigaiDefaults = {
+            missao: '',
+            vocacao: '',
+            love: '',
+            good: '',
+            need: '',
+            paid: '',
+            sintese: '',
+            sinteseResumo: ''
+        };
+        Object.keys(ikigaiDefaults).forEach((key) => {
+            if (typeof window.sistemaVidaState.profile.ikigai[key] !== 'string') {
+                window.sistemaVidaState.profile.ikigai[key] = ikigaiDefaults[key];
+            }
+        });
+        if (!window.sistemaVidaState.profile.legacyObj || typeof window.sistemaVidaState.profile.legacyObj !== 'object') {
+            window.sistemaVidaState.profile.legacyObj = {};
+        }
+        const legacyDefaults = {
+            familia: '',
+            profissao: '',
+            mundo: '',
+            familiaResumo: '',
+            profissaoResumo: '',
+            mundoResumo: ''
+        };
+        Object.keys(legacyDefaults).forEach((key) => {
+            if (typeof window.sistemaVidaState.profile.legacyObj[key] !== 'string') {
+                window.sistemaVidaState.profile.legacyObj[key] = legacyDefaults[key];
+            }
+        });
+        // Compatibilidade retroativa: onboarding antigo salvava em profile.purpose.
+        const legacyPurpose = typeof window.sistemaVidaState.profile.purpose === 'string'
+            ? window.sistemaVidaState.profile.purpose.trim()
+            : '';
+        if (legacyPurpose) {
+            if (!window.sistemaVidaState.profile.ikigai.sintese) window.sistemaVidaState.profile.ikigai.sintese = legacyPurpose;
+            if (!window.sistemaVidaState.profile.legacyObj.mundo) window.sistemaVidaState.profile.legacyObj.mundo = legacyPurpose;
+            if (!window.sistemaVidaState.profile.legacy) window.sistemaVidaState.profile.legacy = legacyPurpose;
+        } else if (window.sistemaVidaState.profile.legacy && !window.sistemaVidaState.profile.ikigai.sintese) {
+            window.sistemaVidaState.profile.ikigai.sintese = window.sistemaVidaState.profile.legacy;
+        }
         if (!window.sistemaVidaState.profile.odysseyImages) {
             window.sistemaVidaState.profile.odysseyImages = { cenarioA: "", cenarioB: "", cenarioC: "" };
         }
@@ -4463,10 +4514,78 @@ const app = {
             if (nameEl) nameEl.textContent = state.profile.name;
             if (valuesEl) valuesEl.textContent = (state.profile.values || []).join(', ');
         }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    onboardingGetFieldValue: function(id) {
+        const el = document.getElementById(id);
+        if (!el) return '';
+        return String(el.value || '').trim();
+    },
+
+    onboardingHydrateFields: function() {
+        const state = window.sistemaVidaState;
+        this.ensureSettingsState();
+
+        const profile = state.profile || {};
+        const ikigai = profile.ikigai || {};
+        const legacyObj = profile.legacyObj || {};
+
+        const setValue = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value || '';
+        };
+
+        setValue('onboarding-nome', profile.name || '');
+        setValue('onboarding-ikigai-missao', ikigai.missao || '');
+        setValue('onboarding-ikigai-vocacao', ikigai.vocacao || '');
+        setValue('onboarding-ikigai-love', ikigai.love || '');
+        setValue('onboarding-ikigai-good', ikigai.good || '');
+        setValue('onboarding-ikigai-need', ikigai.need || '');
+        setValue('onboarding-ikigai-paid', ikigai.paid || '');
+        setValue('onboarding-legacy-familia', legacyObj.familia || '');
+        setValue('onboarding-legacy-profissao', legacyObj.profissao || '');
+        setValue('onboarding-legacy-mundo', legacyObj.mundo || '');
+
+        const fallbackPurpose = ikigai.sintese || legacyObj.mundo || profile.legacy || profile.purpose || '';
+        setValue('onboarding-proposito', fallbackPurpose);
+
+        const dimensions = [
+            { key: 'Saúde', sliderId: 'onboarding-slider-saude' },
+            { key: 'Mente', sliderId: 'onboarding-slider-mente' },
+            { key: 'Carreira', sliderId: 'onboarding-slider-carreira' },
+            { key: 'Finanças', sliderId: 'onboarding-slider-financas' },
+            { key: 'Relacionamentos', sliderId: 'onboarding-slider-relacionamentos' },
+            { key: 'Família', sliderId: 'onboarding-slider-familia' },
+            { key: 'Lazer', sliderId: 'onboarding-slider-lazer' },
+            { key: 'Propósito', sliderId: 'onboarding-slider-proposito' }
+        ];
+        dimensions.forEach(({ key, sliderId }) => {
+            const slider = document.getElementById(sliderId);
+            const currentVal = Number(state.dimensions?.[key]?.score);
+            const safeVal = Number.isFinite(currentVal) ? Math.max(0, Math.min(100, Math.round(currentVal))) : 50;
+            if (slider) slider.value = String(safeVal);
+            const valEl = document.getElementById(`slider-val-${key}`);
+            if (valEl) valEl.textContent = String(safeVal);
+        });
+
+        const selectedValues = new Set((profile.values || []).slice(0, 5));
+        document.querySelectorAll('#values-container [data-valor]').forEach((btn) => {
+            const v = btn.getAttribute('data-valor');
+            btn.classList.toggle('selected', selectedValues.has(v));
+        });
+        const previewEl = document.getElementById('onboarding-valores-preview');
+        if (previewEl) {
+            previewEl.textContent = selectedValues.size > 0
+                ? Array.from(selectedValues).join(' • ')
+                : 'Selecione seus valores...';
+        }
     },
 
     onboardingSaveCurrentStep: function(persist = true) {
         const state = window.sistemaVidaState;
+        this.ensureSettingsState();
         if (this.onboardingStep === 1) {
             const nameInput = document.getElementById('onboarding-nome');
             if (nameInput) state.profile.name = nameInput.value.trim() || "Viajante";
@@ -4475,8 +4594,29 @@ const app = {
         } else if (this.onboardingStep === 3) {
             // Valores já salvos em tempo real via onboardingToggleValor
         } else if (this.onboardingStep === 4) {
-            const purposeInput = document.getElementById('onboarding-proposito');
-            if (purposeInput) state.profile.purpose = purposeInput.value.trim();
+            const ikigai = state.profile.ikigai || {};
+            const legacyObj = state.profile.legacyObj || {};
+
+            ikigai.missao = this.onboardingGetFieldValue('onboarding-ikigai-missao');
+            ikigai.vocacao = this.onboardingGetFieldValue('onboarding-ikigai-vocacao');
+            ikigai.love = this.onboardingGetFieldValue('onboarding-ikigai-love');
+            ikigai.good = this.onboardingGetFieldValue('onboarding-ikigai-good');
+            ikigai.need = this.onboardingGetFieldValue('onboarding-ikigai-need');
+            ikigai.paid = this.onboardingGetFieldValue('onboarding-ikigai-paid');
+
+            const purposeText = this.onboardingGetFieldValue('onboarding-proposito');
+            if (purposeText) ikigai.sintese = purposeText;
+
+            legacyObj.familia = this.onboardingGetFieldValue('onboarding-legacy-familia');
+            legacyObj.profissao = this.onboardingGetFieldValue('onboarding-legacy-profissao');
+            legacyObj.mundo = this.onboardingGetFieldValue('onboarding-legacy-mundo');
+            if (!legacyObj.mundo && purposeText) legacyObj.mundo = purposeText;
+
+            state.profile.ikigai = ikigai;
+            state.profile.legacyObj = legacyObj;
+            state.profile.legacy = ikigai.sintese || legacyObj.mundo || state.profile.legacy || '';
+            // Campo legado mantido por compatibilidade, agora espelhando a sintese.
+            state.profile.purpose = ikigai.sintese || state.profile.legacy || '';
         }
         if (persist) this.saveState();
     },
@@ -4558,6 +4698,7 @@ const app = {
 
     render: {
         onboarding: function() {
+            app.onboardingHydrateFields();
             // Inicializa o primeiro passo
             app.onboardingGoTo(0);
         },

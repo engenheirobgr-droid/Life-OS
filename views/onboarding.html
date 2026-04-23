@@ -2,9 +2,9 @@
     <div id="onboarding-progress-bar" class="h-full bg-primary transition-all duration-500 ease-out" style="width: 0%"></div>
 </div>
 
-<main class="pt-20 pb-32 px-6 max-w-7xl mx-auto min-h-screen flex flex-col justify-center relative overflow-hidden">
+<main class="pt-16 md:pt-20 pb-24 md:pb-32 px-4 sm:px-6 max-w-4xl mx-auto min-h-[100dvh] md:min-h-screen flex flex-col justify-start md:justify-center relative overflow-x-hidden">
     
-    <div class="absolute top-8 left-6 flex items-center gap-2 text-outline">
+    <div class="absolute top-4 left-4 sm:top-8 sm:left-6 flex items-center gap-2 text-outline">
         <span class="text-[10px] font-bold uppercase tracking-widest" id="onboarding-step-indicator">1/6</span>
     </div>
 
@@ -25,7 +25,7 @@
     </div>
 
     <!-- PASSO 1: IDENTIDADE -->
-    <div class="onboarding-step step-transition step-hidden-right absolute w-[calc(100%-3rem)] flex flex-col gap-6" id="step-1">
+    <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-6" id="step-1">
         <h2 class="text-3xl font-headline font-bold italic text-on-background">Como devemos te chamar?</h2>
         <p class="text-outline">Sua identidade é o ponto de partida de toda transformação.</p>
         <div class="mt-4">
@@ -38,7 +38,7 @@
     </div>
 
     <!-- PASSO 2: RODA DA VIDA -->
-    <div class="onboarding-step step-transition step-hidden-right absolute w-[calc(100%-3rem)] flex flex-col gap-6" id="step-2">
+    <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-6" id="step-2">
         <h2 class="text-3xl font-headline font-bold italic text-on-background">Sua Roda da Vida</h2>
         <p class="text-outline text-sm">Seja honesto. Como você avalia seu nível de satisfação (1-100) em cada área hoje?</p>
         
@@ -48,56 +48,56 @@
                     <span>Saúde</span>
                     <span id="slider-val-Saúde" class="text-primary">50</span>
                 </div>
-                <input type="range" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Saúde', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <input type="range" id="onboarding-slider-saude" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Saúde', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Mente</span>
                     <span id="slider-val-Mente" class="text-primary">50</span>
                 </div>
-                <input type="range" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Mente', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <input type="range" id="onboarding-slider-mente" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Mente', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Carreira</span>
                     <span id="slider-val-Carreira" class="text-primary">50</span>
                 </div>
-                <input type="range" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Carreira', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <input type="range" id="onboarding-slider-carreira" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Carreira', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Finanças</span>
                     <span id="slider-val-Finanças" class="text-primary">50</span>
                 </div>
-                <input type="range" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Finanças', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <input type="range" id="onboarding-slider-financas" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Finanças', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Relacionamentos</span>
                     <span id="slider-val-Relacionamentos" class="text-primary">50</span>
                 </div>
-                <input type="range" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Relacionamentos', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <input type="range" id="onboarding-slider-relacionamentos" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Relacionamentos', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Família</span>
                     <span id="slider-val-Família" class="text-primary">50</span>
                 </div>
-                <input type="range" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Família', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <input type="range" id="onboarding-slider-familia" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Família', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Lazer</span>
                     <span id="slider-val-Lazer" class="text-primary">50</span>
                 </div>
-                <input type="range" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Lazer', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <input type="range" id="onboarding-slider-lazer" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Lazer', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Propósito</span>
                     <span id="slider-val-Propósito" class="text-primary">50</span>
                 </div>
-                <input type="range" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Propósito', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <input type="range" id="onboarding-slider-proposito" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Propósito', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
         </div>
 
@@ -108,7 +108,7 @@
     </div>
 
     <!-- PASSO 3: VALORES -->
-    <div class="onboarding-step step-transition step-hidden-right absolute w-[calc(100%-3rem)] flex flex-col gap-6" id="step-3">
+    <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-6" id="step-3">
         <h2 class="text-3xl font-headline font-bold italic text-on-background">Seus Valores Base</h2>
         <p class="text-outline text-sm">Escolha até 5 valores que definem quem você é ou quem quer se tornar.</p>
         
@@ -139,22 +139,44 @@
     </div>
 
     <!-- PASSO 4: PROPÓSITO -->
-    <div class="onboarding-step step-transition step-hidden-right absolute w-[calc(100%-3rem)] flex flex-col gap-6" id="step-4">
-        <h2 class="text-3xl font-headline font-bold italic text-on-background">Qual é o seu legado?</h2>
-        <p class="text-outline text-sm">Se você tivesse todo o dinheiro e tempo do mundo, o que continuaria fazendo? Escreva seu propósito em uma frase.</p>
-        
-        <div class="mt-4">
-            <textarea id="onboarding-proposito" rows="4" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-2xl p-6 text-lg italic focus:border-primary transition-colors outline-none resize-none" placeholder="Eu existo para..."></textarea>
+    <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-5" id="step-4">
+        <h2 class="text-3xl font-headline font-bold italic text-on-background">Qual é o seu propósito?</h2>
+        <p class="text-outline text-sm">Preencha sua síntese, seus pilares de Ikigai e o legado que quer construir.</p>
+
+        <div class="grid grid-cols-1 gap-4">
+            <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Missão</label>
+            <input type="text" id="onboarding-ikigai-missao" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Minha missão é...">
+
+            <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Vocação</label>
+            <input type="text" id="onboarding-ikigai-vocacao" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Minha vocação é...">
         </div>
 
-        <div class="flex gap-4 mt-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input type="text" id="onboarding-ikigai-love" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="O que eu amo fazer">
+            <input type="text" id="onboarding-ikigai-good" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="No que sou bom">
+            <input type="text" id="onboarding-ikigai-need" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="O que o mundo precisa">
+            <input type="text" id="onboarding-ikigai-paid" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Pelo que posso ser pago">
+        </div>
+
+        <div class="space-y-3">
+            <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Síntese do Ikigai</label>
+            <textarea id="onboarding-proposito" rows="3" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-2xl p-4 text-base italic focus:border-primary transition-colors outline-none resize-none" placeholder="Eu existo para..."></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3">
+            <textarea id="onboarding-legacy-familia" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Legado para família"></textarea>
+            <textarea id="onboarding-legacy-profissao" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Legado para profissão"></textarea>
+            <textarea id="onboarding-legacy-mundo" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Legado para o mundo"></textarea>
+        </div>
+
+        <div class="flex gap-4 mt-6">
             <button onclick="app.onboardingBack()" class="flex-1 border-2 border-outline-variant/30 py-4 rounded-xl font-bold uppercase text-xs tracking-widest text-outline">Voltar</button>
             <button onclick="app.onboardingNext()" class="flex-[2] bg-primary text-on-primary py-4 rounded-xl font-bold uppercase text-sm tracking-widest">Quase lá</button>
         </div>
     </div>
 
     <!-- PASSO 5: CONCLUSÃO -->
-    <div class="onboarding-step step-transition step-hidden-right absolute w-[calc(100%-3rem)] flex flex-col gap-6 text-center" id="step-5">
+    <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-6 text-center" id="step-5">
         <div class="flex justify-center mb-4">
             <div class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                 <span class="material-symbols-outlined text-5xl">task_alt</span>
