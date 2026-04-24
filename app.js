@@ -233,6 +233,7 @@ const app = {
         };
         const normalizedStatus = (rawStatus, progress, completedRaw = false) => {
             if (completedRaw || progress >= 100 || rawStatus === 'done') return 'done';
+            if (rawStatus === 'abandoned') return 'abandoned';
             if (rawStatus === 'in_progress' || rawStatus === 'active') return 'in_progress';
             return 'pending';
         };
@@ -3853,7 +3854,7 @@ const app = {
             saveBtn.classList.remove('opacity-60', 'cursor-not-allowed');
         }
         
-        const activeOkrs = state.entities.okrs.filter(o => o.status !== 'done' && o.status !== 'abandoned');
+        const activeOkrs = (state.entities.okrs || []).filter(o => o.status !== 'done' && o.status !== 'abandoned');
 
         if (activeOkrs.length === 0) {
             listContainer.innerHTML = '<p class="text-sm text-outline italic text-center py-8">Nenhum OKR ativo no momento.</p>';
@@ -4232,6 +4233,7 @@ const app = {
                 obj.keyResults = keyResults;
                 const oldItem = getOldItem(id, 'okrs');
                 obj.rewarded70 = !!oldItem.rewarded70;
+                obj.status = isEditing ? (oldItem.status || 'pending') : 'pending';
                 const krProgress = this.computeKeyResultsProgress(obj.keyResults);
                 if (krProgress !== null) obj.progress = krProgress;
             }
