@@ -1831,70 +1831,6 @@ const app = {
         }
     },
 
-    openDiarioModal: function() {
-        const modal = document.getElementById('diario-flash-modal');
-        const selectMicros = document.getElementById('flash-micro-select');
-        if (!modal || !selectMicros) return;
-
-        // Limpa select
-        selectMicros.innerHTML = '<option value="">Qual foi a Micro Ação?</option>';
-
-        // Busca Micro Ações pendentes do estado
-        const micros = window.sistemaVidaState.entities.micros || [];
-        const pendingMicros = micros.filter(m => m.status !== 'done');
-
-        pendingMicros.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.id;
-            opt.textContent = m.title;
-            selectMicros.appendChild(opt);
-        });
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    },
-
-    closeDiarioModal: function() {
-        const modal = document.getElementById('diario-flash-modal');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-    },
-
-    saveDiarioFlash: function() {
-        const microId = document.getElementById('flash-micro-select').value;
-        const emotion = document.getElementById('flash-emotion-input')?.value || 'neutral';
-        const gratitude = document.getElementById('flash-gratidao').value.trim();
-
-        if (!gratitude) {
-            alert('Por favor, escreva um motivo de gratidão.');
-            return;
-        }
-
-        const date = this.getLocalDateKey();
-        const state = window.sistemaVidaState;
-
-        // Atualiza log do dia sem apagar outros campos (ex: intenção/energy/gratidão do diário de sono)
-        state.dailyLogs[date] = {
-            ...state.dailyLogs[date],
-            flashEmotion: emotion,
-            flashGratitude: gratitude,
-            lastMicroActionId: microId,
-            timestamp: new Date().getTime()
-        };
-        // Dispara completeMicroAction apenas se o checkbox estiver marcado
-        const markDone = document.getElementById('flash-mark-done')?.checked;
-        if (microId && markDone) {
-            this.completeMicroAction(microId);
-            setTimeout(() => this.showToast('Diário e Ação concluídos!', 'success'), 500);
-        } else {
-            this.saveState(false);
-            this.showToast('Diário Flash salvo com sucesso!', 'success');
-        }
-        this.closeDiarioModal();
-    },
-
     setPlanosFilter: function(dim) {
         this.planosFilter = dim;
         if (this.render.planos) this.render.planos();
@@ -4071,6 +4007,30 @@ const app = {
         }
     },
 
+    /**
+     * Adia uma Micro Ação para o dia seguinte.
+     * Move o inicioDate para amanhã (removendo do "Hoje"). Se o prazo ficar
+     * anterior ao novo início, empurra o prazo junto para manter a janela válida.
+     */
+    postponeMicroOneDay: function(id) {
+        const state = window.sistemaVidaState;
+        const micro = (state.entities.micros || []).find(m => m.id === id);
+        if (!micro) return;
+
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = this.getLocalDateKey(tomorrow);
+
+        micro.inicioDate = tomorrowStr;
+        if (!micro.prazo || micro.prazo < tomorrowStr) {
+            micro.prazo = tomorrowStr;
+        }
+
+        this.saveState(false);
+        this.showToast('Micro adiada para amanhã', 'success');
+        if (this.render.hoje) this.render.hoje();
+    },
+
     setFocusTypeFilter: function(type) {
       const normalizedType = type === 'Macro' ? 'Macros' : (type === 'Micro' ? 'Micros' : type);
       this.focusTypeFilter = normalizedType;
@@ -5403,24 +5363,6 @@ const app = {
                 if (s1) s1.value = shutdown;
             }
 
-            // Indicador de Diário Flash (Raio Amarelo)
-            const flashBtn = document.getElementById('btn-open-flash');
-            if (flashBtn) {
-                const hasFlash = state.dailyLogs && state.dailyLogs[today] && state.dailyLogs[today].flashGratitude;
-                if (hasFlash) {
-                    flashBtn.classList.add('ring-4', 'ring-secondary/30');
-                    if (!flashBtn.querySelector('.flash-indicator')) {
-                        const badge = document.createElement('span');
-                        badge.className = 'flash-indicator absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400 text-[12px] shadow-sm animate-pulse border-2 border-white dark:border-stone-900';
-                        badge.innerHTML = '⚡';
-                        flashBtn.style.position = 'relative';
-                        flashBtn.appendChild(badge);
-                    }
-                } else {
-                    flashBtn.classList.remove('ring-4', 'ring-secondary/30');
-                    flashBtn.querySelector('.flash-indicator')?.remove();
-                }
-            }
 
             // Render Habits
             const habitsContainer = document.getElementById('habits-container');
@@ -5640,6 +5582,9 @@ const app = {
                             </div>
                             <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">
                                 ${startBtn}
+                                <button type="button" title="Adiar para amanhã" onclick="event.stopPropagation(); app.postponeMicroOneDay('${micro.id}');" class="w-7 h-7 flex items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-90">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">schedule</span>
+                                </button>
                                 <span class="material-symbols-outlined notranslate text-outline-variant text-sm">keyboard_arrow_down</span>
                             </div>
                         </div>
