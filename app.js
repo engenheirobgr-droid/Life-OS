@@ -2714,6 +2714,7 @@ const app = {
                 const freqInput = document.getElementById('habit-frequency');
                 if (freqInput) this.onHabitFreqChange(freqInput.value);
             }
+            this.populateHabitLinkedMeta();
             if (contextGroup) contextGroup.classList.add('hidden');
             if (contextInput) contextInput.required = false;
             if (triggerInput) triggerInput.required = true;
@@ -3440,6 +3441,177 @@ const app = {
         }
     },
 
+    /**
+     * Gera uma lista de insights automáticos baseados nos dados já existentes.
+     * Retorna um array de objetos {icon, tone, text} ordenados por prioridade.
+     * Zero impacto em dados — apenas leitura.
+     */
+    /**
+     * Popula o select #habit-linked-meta com todas as Metas ativas,
+     * agrupadas por dimensão. Mantém a seleção atual se o id ainda existir.
+     */
+    populateHabitLinkedMeta: function() {
+        const select = document.getElementById('habit-linked-meta');
+        if (!select) return;
+        const state = window.sistemaVidaState;
+        const prev = select.value;
+
+        const metas = (state.entities?.metas || []).filter(m =>
+            m.status !== 'done' && m.status !== 'abandoned'
+        );
+        // Agrupa por dimensão
+        const byDim = {};
+        metas.forEach(m => {
+            const dim = m.dimension || 'Geral';
+            (byDim[dim] = byDim[dim] || []).push(m);
+        });
+
+        let html = '<option value="">— Sem vínculo —</option>';
+        Object.keys(byDim).sort().forEach(dim => {
+            html += `<optgroup label="${dim}">`;
+            byDim[dim].forEach(m => {
+                const title = (m.title || '').replace(/</g, '&lt;');
+                html += `<option value="${m.id}">${title}</option>`;
+            });
+            html += '</optgroup>';
+        });
+        select.innerHTML = html;
+
+        // Restaura seleção anterior se ainda existir
+        if (prev && select.querySelector(`option[value="${prev}"]`)) {
+            select.value = prev;
+        }
+    },
+
+    _computeInsights: function() {
+        const state = window.sistemaVidaState;
+        const insights = [];
+        const todayStr = this.getLocalDateKey();
+        const today = new Date(todayStr + 'T00:00:00');
+        const dimensions = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
+
+        // 1. Dimensão com Meta ativa mas sem micro concluída nas últimas 4 semanas
+        const fourWeeksAgo = new Date(today);
+        fourWeeksAgo.setDate(today.getDate() - 28);
+        const fourWeeksAgoStr = this.getLocalDateKey(fourWeeksAgo);
+
+        dimensions.forEach(dim => {
+            const hasActiveMeta = (state.entities?.metas || []).some(m =>
+                m.dimension === dim && m.status !== 'done' && m.status !== 'abandoned'
+            );
+            if (!hasActiveMeta) return;
+            const hasRecentActivity = (state.entities?.micros || []).some(m =>
+                m.dimension === dim && m.completedDate && m.completedDate >= fourWeeksAgoStr
+            );
+            if (!hasRecentActivity) {
+                insights.push({
+                    icon: 'trending_down',
+                    tone: 'warn',
+                    text: `<b>${dim}</b> tem Meta ativa mas nenhuma micro concluída nas últimas 4 semanas.`
+                });
+            }
+        });
+
+        // 2. Hábito com sequência 3+ dias quebrada (ontem e hoje em branco)
+        (state.habits || []).forEach(h => {
+            const logs = h.logs || {};
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yesterdayStr = this.getLocalDateKey(yesterday);
+            const doneYesterday = (logs[yesterdayStr] || 0) > 0;
+            const doneToday = (logs[todayStr] || 0) > 0;
+            if (doneToday || doneYesterday) return;
+
+            let streak = 0;
+            for (let i = 2; i < 30; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                const ds = this.getLocalDateKey(d);
+                if ((logs[ds] || 0) > 0) streak++;
+                else break;
+            }
+            if (streak >= 3) {
+                insights.push({
+                    icon: 'local_fire_department',
+                    tone: 'info',
+                    text: `<b>${h.title}</b> tinha ${streak} dias de sequência — 2 dias em branco, vale retomar.`
+                });
+            }
+        });
+
+        // 3. Acúmulo de atrasadas (5+)
+        const overdueCount = (state.entities?.micros || []).filter(m =>
+            m.status !== 'done' && m.prazo && m.prazo < todayStr
+        ).length;
+        if (overdueCount >= 5) {
+            insights.push({
+                icon: 'warning',
+                tone: 'warn',
+                text: `${overdueCount} micros atrasadas acumuladas. Considere migrar ou adiar em lote.`
+            });
+        }
+
+        return insights;
+    },
+
+    /**
+     * Retorna a média de Micros concluídos por semana nas últimas N semanas
+     * (exclui a semana corrente para não contaminar com dados parciais).
+     * Baseia-se em micro.completedDate (definido por completeMicroAction).
+     */
+    _computeWeeklyCompletionAverage: function(weeks = 4) {
+        const state = window.sistemaVidaState;
+        const micros = state.entities?.micros || [];
+        if (!micros.length) return 0;
+
+        const currentWeekKey = this._getWeekKey();
+        const buckets = {};
+
+        micros.forEach(m => {
+            if (!m.completedDate) return;
+            const d = new Date(m.completedDate + 'T00:00:00');
+            if (isNaN(d.getTime())) return;
+            const wk = this._getWeekKey(d);
+            if (wk === currentWeekKey) return; // ignora semana em curso
+            buckets[wk] = (buckets[wk] || 0) + 1;
+        });
+
+        const sortedKeys = Object.keys(buckets).sort().slice(-weeks);
+        if (!sortedKeys.length) return 0;
+        const total = sortedKeys.reduce((acc, k) => acc + buckets[k], 0);
+        return Math.round((total / sortedKeys.length) * 10) / 10;
+    },
+
+    /** Atualiza o medidor de carga no modal de planejamento semanal. */
+    _updateWeeklyPlanLoadMeter: function() {
+        const countEl = document.getElementById('wp-load-count');
+        const hintEl = document.getElementById('wp-load-hint');
+        const avgEl = document.getElementById('wp-load-average');
+        if (!countEl || !hintEl || !avgEl) return;
+
+        const checked = document.querySelectorAll('.wp-micro-check:checked').length;
+        const avg = this._computeWeeklyCompletionAverage(4);
+
+        countEl.textContent = String(checked);
+        avgEl.textContent = avg > 0 ? String(avg) : '—';
+
+        // Cor e dica conforme overcommitment
+        countEl.classList.remove('text-primary', 'text-amber-600', 'text-red-600', 'dark:text-amber-400', 'dark:text-red-400');
+        if (avg <= 0) {
+            countEl.classList.add('text-primary');
+            hintEl.textContent = 'Sem histórico suficiente ainda.';
+        } else if (checked > avg * 1.5) {
+            countEl.classList.add('text-red-600', 'dark:text-red-400');
+            hintEl.textContent = 'Muito acima do seu ritmo médio.';
+        } else if (checked > avg * 1.1) {
+            countEl.classList.add('text-amber-600', 'dark:text-amber-400');
+            hintEl.textContent = 'Acima da média — priorize com cuidado.';
+        } else {
+            countEl.classList.add('text-primary');
+            hintEl.textContent = 'Dentro do seu ritmo.';
+        }
+    },
+
     openWeeklyPlanModal: function() {
         const state = window.sistemaVidaState;
         const weekKey = this._getWeekKey();
@@ -3482,6 +3654,18 @@ const app = {
 
         document.getElementById('weekly-plan-modal').classList.remove('hidden');
         this._wizardPlanSuggestion = null;
+
+        // Medidor de carga: inicializa e escuta mudanças
+        this._updateWeeklyPlanLoadMeter();
+        const listEl = document.getElementById('wp-micros-list');
+        if (listEl && !listEl._loadMeterBound) {
+            listEl.addEventListener('change', (e) => {
+                if (e.target && e.target.classList && e.target.classList.contains('wp-micro-check')) {
+                    this._updateWeeklyPlanLoadMeter();
+                }
+            });
+            listEl._loadMeterBound = true;
+        }
     },
 
     closeWeeklyPlanModal: function() {
@@ -4252,6 +4436,8 @@ const app = {
             }
             obj.logs = isEditing ? (getOldItem(id, 'habits').logs || {}) : {};
             obj.stepLogs = isEditing ? (getOldItem(id, 'habits').stepLogs || {}) : {};
+            const linkedSel = document.getElementById('habit-linked-meta');
+            obj.linkedMetaId = linkedSel && linkedSel.value ? linkedSel.value : null;
             if (!obj.steps.length) obj.stepLogs = {};
             else {
                 Object.keys(obj.stepLogs || {}).forEach(dateKey => {
@@ -5445,6 +5631,16 @@ const app = {
                     if (mode === 'timer') progressText = `${currentVal}m/${target}m`;
                     if (hasSteps) progressText = `${todayStepsDone}/${steps.length} passos`;
                     
+                    // Meta vinculada (opcional)
+                    let linkedMetaHtml = '';
+                    if (habit.linkedMetaId) {
+                        const linkedMeta = (state.entities?.metas || []).find(m => m.id === habit.linkedMetaId);
+                        if (linkedMeta) {
+                            const linkTitle = (linkedMeta.title || '').replace(/</g, '&lt;');
+                            linkedMetaHtml = `<p class="mt-1 text-[10px] text-primary/90 leading-tight truncate flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[11px]">flag</span>${linkTitle}</p>`;
+                        }
+                    }
+
                     habitsHtml += `
                     <div onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer">
                         <div class="flex justify-between items-start mb-2">
@@ -5461,6 +5657,7 @@ const app = {
                             <div class="flex justify-between items-end">
                                 <div class="overflow-hidden pr-2">
                                     <p class="font-medium text-on-surface text-sm ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
+                                    ${linkedMetaHtml}
                                     ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight truncate">Gatilho: ${habit.trigger}</p>` : ''}
                                     ${habit.routine ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Rotina: ${habit.routine}</p>` : ''}
                                     ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight truncate">Recompensa: ${habit.reward}</p>` : ''}
@@ -5671,6 +5868,25 @@ const app = {
                     </button>
                 </div>`;
                 html = migrationBtnHtml + html;
+            }
+
+            // Insights automáticos (até 2 no topo)
+            const insights = this._computeInsights().slice(0, 2);
+            if (insights.length > 0) {
+                const insightsHtml = insights.map(ins => {
+                    const toneClass = ins.tone === 'warn'
+                        ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30 text-amber-900 dark:text-amber-100'
+                        : 'bg-primary/5 border-primary/20 text-on-surface';
+                    const iconColor = ins.tone === 'warn'
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-primary';
+                    return `
+                    <div class="flex items-start gap-3 ${toneClass} border p-3 rounded-xl">
+                        <span class="material-symbols-outlined notranslate ${iconColor} text-[20px] shrink-0 mt-0.5">${ins.icon}</span>
+                        <p class="text-xs leading-snug flex-1">${ins.text}</p>
+                    </div>`;
+                }).join('');
+                html = `<div class="space-y-2 mb-4">${insightsHtml}</div>` + html;
             }
 
             container.innerHTML = html;
@@ -6972,7 +7188,16 @@ const app = {
         }
 
         this.onTypeChange(type);
-        if (type === 'habits') this.renderHabitStepsChecklist(id);
+        if (type === 'habits') {
+            this.renderHabitStepsChecklist(id);
+            // Restaura vínculo com Meta (populateHabitLinkedMeta já rodou dentro de onTypeChange)
+            const linkedSel = document.getElementById('habit-linked-meta');
+            if (linkedSel && item.linkedMetaId) {
+                if (linkedSel.querySelector(`option[value="${item.linkedMetaId}"]`)) {
+                    linkedSel.value = item.linkedMetaId;
+                }
+            }
+        }
         
         // Seta o pai após popular a lista
         const parentSelect = document.getElementById('create-parent');

@@ -664,6 +664,16 @@
                             <p class="text-[10px] text-outline">Segure Ctrl (ou Cmd) para selecionar vários.</p>
                         </div>
                     </div>
+
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-linked-meta"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Vincular a Meta (opcional)</label>
+                        <select id="habit-linked-meta"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                            <option value="">— Sem vínculo —</option>
+                        </select>
+                        <p class="text-[10px] text-outline">Conecta este hábito a uma Meta estratégica para mostrar o impacto no Hoje.</p>
+                    </div>
                 </div>
             </form>
 
@@ -1017,6 +1027,16 @@
                     <p class="text-[11px] text-outline -mt-1">Selecione os itens que planeja trabalhar esta semana.</p>
                     <div id="wp-micros-list" class="flex flex-col gap-2 max-h-52 overflow-y-auto no-scrollbar rounded-xl bg-surface-container p-3">
                         <p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>
+                    </div>
+                    <div id="wp-load-meter" class="flex items-center justify-between gap-3 rounded-lg bg-surface-container-low px-3 py-2 mt-1">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-outline">Carga planejada</span>
+                            <span id="wp-load-hint" class="text-[10px] text-outline">—</span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="wp-load-count" class="text-lg font-bold text-primary">0</span>
+                            <span class="text-xs text-outline">/ <span id="wp-load-average">—</span> média</span>
+                        </div>
                     </div>
                 </div>
 
