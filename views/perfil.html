@@ -26,6 +26,33 @@
     <p class="font-label text-xs uppercase tracking-[0.15em] text-outline">Sistema Vida · 2026</p>
 </div>
 </section>
+<!-- Gamification -->
+<section id="gamification-profile-panel" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-6">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-2">Identidade em progresso</p>
+            <h3 id="gamification-total-level" class="font-headline text-2xl md:text-3xl font-bold text-on-surface">Nivel 1</h3>
+            <p id="gamification-total-xp" class="text-xs text-outline mt-1">0/100 XP para o proximo nivel</p>
+        </div>
+        <div class="flex items-center gap-2 text-primary">
+            <span class="material-symbols-outlined notranslate text-2xl">military_tech</span>
+            <span class="text-xs font-bold uppercase tracking-[0.16em]">Consistencia</span>
+        </div>
+    </div>
+    <div class="h-2 rounded-full bg-outline-variant/20 overflow-hidden">
+        <div id="gamification-total-bar" class="h-full rounded-full bg-primary transition-all duration-500" style="width:0%"></div>
+    </div>
+    <div>
+        <div class="flex items-center justify-between gap-3 mb-3">
+            <h4 class="text-xs font-bold uppercase tracking-[0.18em] text-outline">Arquetipos por area</h4>
+        </div>
+        <div id="gamification-dimensions" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+    </div>
+    <div>
+        <h4 class="text-xs font-bold uppercase tracking-[0.18em] text-outline mb-3">Conquistas recentes</h4>
+        <div id="gamification-achievements" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    </div>
+</section>
 <!-- Settings Menu -->
 <div class="mt-8 space-y-2">
 <!-- Group: Preferências -->

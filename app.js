@@ -85,6 +85,13 @@ window.sistemaVidaState = {
     dailyLogs: {},
     reviews: {},
     weekPlans: {},
+    gamification: {
+        totalXp: 0,
+        dimensionXp: {},
+        achievements: [],
+        events: {},
+        recentEvents: []
+    },
     settings: {
         notificationsEnabled: false,
         theme: 'auto'
@@ -465,6 +472,170 @@ const app = {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     },
+    getDimensionIdentity: function(dimension) {
+        const identities = {
+            'Saúde': { title: 'Atleta', icon: 'fitness_center' },
+            'Mente': { title: 'Pensador', icon: 'psychology' },
+            'Carreira': { title: 'Criador', icon: 'work' },
+            'Finanças': { title: 'Estrategista', icon: 'payments' },
+            'Relacionamentos': { title: 'Conector', icon: 'groups' },
+            'Família': { title: 'Guardião', icon: 'family_restroom' },
+            'Lazer': { title: 'Explorador', icon: 'sports_esports' },
+            'Propósito': { title: 'Visionário', icon: 'auto_awesome' }
+        };
+        return identities[dimension] || { title: 'Integrador', icon: 'stars' };
+    },
+    getLevelFromXp: function(xp) {
+        return Math.floor(Math.max(0, Number(xp) || 0) / 100) + 1;
+    },
+    getLevelProgress: function(xp) {
+        const safeXp = Math.max(0, Number(xp) || 0);
+        const current = safeXp % 100;
+        return {
+            level: this.getLevelFromXp(safeXp),
+            current,
+            next: 100,
+            pct: Math.max(0, Math.min(100, current))
+        };
+    },
+    ensureGamificationState: function() {
+        const state = window.sistemaVidaState;
+        if (!state.gamification || typeof state.gamification !== 'object') state.gamification = {};
+        const gamification = state.gamification;
+        if (!gamification.dimensionXp || typeof gamification.dimensionXp !== 'object' || Array.isArray(gamification.dimensionXp)) {
+            gamification.dimensionXp = {};
+        }
+        if (!gamification.events || typeof gamification.events !== 'object' || Array.isArray(gamification.events)) {
+            gamification.events = {};
+        }
+        if (!Array.isArray(gamification.achievements)) gamification.achievements = [];
+        if (!Array.isArray(gamification.recentEvents)) gamification.recentEvents = [];
+
+        const legacyXp = Math.max(0, Number(state.profile?.xp) || 0);
+        gamification.totalXp = Math.max(0, Number(gamification.totalXp) || 0, legacyXp);
+        Object.keys(gamification.dimensionXp).forEach((dim) => {
+            gamification.dimensionXp[dim] = Math.max(0, Number(gamification.dimensionXp[dim]) || 0);
+        });
+        gamification.achievements = gamification.achievements
+            .filter(item => item && item.id)
+            .filter((item, idx, arr) => arr.findIndex(a => a.id === item.id) === idx);
+        gamification.recentEvents = gamification.recentEvents.filter(Boolean).slice(0, 20);
+
+        if (!state.profile) state.profile = {};
+        state.profile.xp = gamification.totalXp;
+        state.profile.level = this.getLevelFromXp(gamification.totalXp);
+        return gamification;
+    },
+    getAchievementCatalog: function() {
+        return {
+            first_micro_done: { title: 'Primeira micro concluída', icon: 'task_alt' },
+            first_planned_micro: { title: 'Plano executado', icon: 'event_available' },
+            first_habit_done: { title: 'Ritual iniciado', icon: 'repeat' },
+            first_focus_session: { title: 'Bloco de foco', icon: 'timer' },
+            first_weekly_review: { title: 'Semana revisada', icon: 'rate_review' },
+            total_level_5: { title: 'Sistema em movimento', icon: 'rocket_launch' }
+        };
+    },
+    unlockAchievement: function(id, extra = {}) {
+        const gamification = this.ensureGamificationState();
+        if (gamification.achievements.some(a => a.id === id)) return null;
+        const catalog = this.getAchievementCatalog();
+        const achievement = {
+            id,
+            title: extra.title || catalog[id]?.title || 'Conquista desbloqueada',
+            icon: extra.icon || catalog[id]?.icon || 'military_tech',
+            unlockedAt: new Date().toISOString()
+        };
+        gamification.achievements.unshift(achievement);
+        gamification.achievements = gamification.achievements.slice(0, 50);
+        return achievement;
+    },
+    awardGamification: function(eventType, payload = {}) {
+        const gamification = this.ensureGamificationState();
+        const key = payload.key || `${eventType}:${payload.id || ''}:${payload.date || this.getLocalDateKey()}`;
+        if (!key || gamification.events[key]) return null;
+
+        let xp = 0;
+        if (eventType === 'micro_complete') xp = 12 + (payload.planned ? 6 : 0) + (payload.inProgress ? 4 : 0);
+        if (eventType === 'habit_complete') xp = 6;
+        if (eventType === 'deep_work') xp = Math.max(10, Math.min(40, Math.round((Number(payload.focusSec) || 0) / 300)));
+        if (eventType === 'weekly_review') xp = 25;
+        if (xp <= 0) return null;
+
+        const dimension = payload.dimension || '';
+        const totalBefore = gamification.totalXp;
+        const dimensionBefore = Math.max(0, Number(gamification.dimensionXp[dimension]) || 0);
+        gamification.events[key] = { type: eventType, at: new Date().toISOString(), xp, dimension };
+        gamification.totalXp += xp;
+        if (dimension) gamification.dimensionXp[dimension] = dimensionBefore + xp;
+        gamification.recentEvents.unshift({
+            type: eventType,
+            title: payload.title || '',
+            xp,
+            dimension,
+            at: new Date().toISOString()
+        });
+        gamification.recentEvents = gamification.recentEvents.slice(0, 20);
+
+        const unlocked = [];
+        if (eventType === 'micro_complete') {
+            const firstMicro = this.unlockAchievement('first_micro_done');
+            if (firstMicro) unlocked.push(firstMicro);
+            if (payload.planned) {
+                const planned = this.unlockAchievement('first_planned_micro');
+                if (planned) unlocked.push(planned);
+            }
+        }
+        if (eventType === 'habit_complete') {
+            const habit = this.unlockAchievement('first_habit_done');
+            if (habit) unlocked.push(habit);
+        }
+        if (eventType === 'deep_work') {
+            const focus = this.unlockAchievement('first_focus_session');
+            if (focus) unlocked.push(focus);
+        }
+        if (eventType === 'weekly_review') {
+            const review = this.unlockAchievement('first_weekly_review');
+            if (review) unlocked.push(review);
+        }
+        if (this.getLevelFromXp(totalBefore) < 5 && this.getLevelFromXp(gamification.totalXp) >= 5) {
+            const total = this.unlockAchievement('total_level_5');
+            if (total) unlocked.push(total);
+        }
+        if (dimension && this.getLevelFromXp(dimensionBefore) < 3 && this.getLevelFromXp(gamification.dimensionXp[dimension]) >= 3) {
+            const identity = this.getDimensionIdentity(dimension);
+            const dimAchievement = this.unlockAchievement(`dimension_level_3:${dimension}`, {
+                title: `${identity.title} nível 3`,
+                icon: identity.icon
+            });
+            if (dimAchievement) unlocked.push(dimAchievement);
+        }
+
+        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+        window.sistemaVidaState.profile.xp = gamification.totalXp;
+        window.sistemaVidaState.profile.level = this.getLevelFromXp(gamification.totalXp);
+        return {
+            xp,
+            dimension,
+            identity: this.getDimensionIdentity(dimension),
+            totalLevel: this.getLevelFromXp(gamification.totalXp),
+            dimensionLevel: dimension ? this.getLevelFromXp(gamification.dimensionXp[dimension]) : null,
+            achievementsUnlocked: unlocked
+        };
+    },
+    showGamificationToast: function(result) {
+        if (!result || !this.showToast) return;
+        const parts = [`+${result.xp} XP`];
+        if (result.dimension && result.identity) {
+            parts.push(`${result.identity.title} nível ${result.dimensionLevel}`);
+        } else {
+            parts.push(`Sistema nível ${result.totalLevel}`);
+        }
+        if (result.achievementsUnlocked && result.achievementsUnlocked.length) {
+            parts.push(`Conquista: ${result.achievementsUnlocked[0].title}`);
+        }
+        this.showToast(parts.join(' · '), 'success');
+    },
     formatDateTimeLocal: function(raw) {
         const dt = raw ? new Date(raw) : null;
         if (!dt || Number.isNaN(dt.getTime())) return '';
@@ -657,6 +828,7 @@ const app = {
         this.normalizeSwlsState();
         this.normalizeDailyLogsState();
         this.normalizeDeepWorkState();
+        this.ensureGamificationState();
     },
     applyThemePreference: function() {
         this.ensureSettingsState();
@@ -4008,8 +4180,13 @@ const app = {
         if (!window.sistemaVidaState.reviews) {
             window.sistemaVidaState.reviews = {};
         }
+        const hadReview = !!window.sistemaVidaState.reviews[weekKey];
 
         window.sistemaVidaState.reviews[weekKey] = { q1, q2, q3, q4, q5, savedAt: new Date().toISOString() };
+        if (!hadReview) {
+            const award = this.awardGamification('weekly_review', { key: `review:${weekKey}` });
+            this.showGamificationToast(award);
+        }
 
         this.saveState(true);
 
@@ -4927,6 +5104,9 @@ const app = {
         const habit = state.habits.find(h => h.id === habitId);
         if (habit) {
             if (!habit.logs) habit.logs = {};
+            const target = habit.targetValue || 1;
+            const previousValue = Number(habit.logs[dateStr]) || 0;
+            const wasDone = (habit.trackMode || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
             habit.logs[dateStr] = value;
             if (Array.isArray(habit.steps) && habit.steps.length > 0) {
                 if (!habit.stepLogs) habit.stepLogs = {};
@@ -4935,17 +5115,26 @@ const app = {
                 if (markAll) habit.steps.forEach((_, idx) => { map[idx] = true; });
                 habit.stepLogs[dateStr] = map;
             }
-            
+
+            // Toast feedback based on new value
+            const isDone = (habit.trackMode || 'boolean') === 'boolean' ? value > 0 : value >= target;
+            let award = null;
+            if (isDone && !wasDone) {
+                award = this.awardGamification('habit_complete', {
+                    key: `habit:${habit.id}:${dateStr}`,
+                    id: habit.id,
+                    title: habit.title,
+                    dimension: habit.dimension,
+                    date: dateStr
+                });
+                this.showGamificationToast(award);
+            }
+            if (isDone && !award && typeof showIdentityToast === 'function') {
+                showIdentityToast(habit.title, habit.dimension);
+            }
             // Legacy sync removed to avoid hybrid state contradictions
             // Derive completion dynamically from log values during render cycle.
             this.saveState(true);
-
-            // Toast feedback based on new value
-            const target = habit.targetValue || 1;
-            const isDone = (habit.trackMode || 'boolean') === 'boolean' ? value > 0 : value >= target;
-            if (isDone && typeof showIdentityToast === 'function') {
-                showIdentityToast(habit.title, habit.dimension);
-            }
             if (this.currentView === 'hoje' && this.render.hoje) {
                 this.render.hoje();
             }
@@ -4958,6 +5147,9 @@ const app = {
         if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return;
         if (!habit.stepLogs) habit.stepLogs = {};
         if (!habit.stepLogs[dateStr]) habit.stepLogs[dateStr] = {};
+        const target = habit.targetValue || 1;
+        const previousValue = Number(habit.logs?.[dateStr]) || 0;
+        const wasDone = (habit.trackMode || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
         const current = !!(habit.stepLogs[dateStr][stepIndex] || habit.stepLogs[dateStr][String(stepIndex)]);
         habit.stepLogs[dateStr][stepIndex] = !current;
         const doneCount = habit.steps.reduce((acc, _, idx) => acc + (habit.stepLogs[dateStr][idx] ? 1 : 0), 0);
@@ -4965,6 +5157,16 @@ const app = {
         if (!habit.logs) habit.logs = {};
         if ((habit.trackMode || 'boolean') === 'boolean') {
             habit.logs[dateStr] = allDone ? 1 : 0;
+        }
+        if (allDone && !wasDone) {
+            const award = this.awardGamification('habit_complete', {
+                key: `habit:${habit.id}:${dateStr}`,
+                id: habit.id,
+                title: habit.title,
+                dimension: habit.dimension,
+                date: dateStr
+            });
+            this.showGamificationToast(award);
         }
         this.saveState(true);
         this.renderHabitStepsChecklist(habitId);
@@ -4977,6 +5179,9 @@ const app = {
         if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return;
         if (!habit.stepLogs) habit.stepLogs = {};
         if (!habit.logs) habit.logs = {};
+        const target = habit.targetValue || 1;
+        const previousValue = Number(habit.logs?.[dateStr]) || 0;
+        const wasDone = (habit.trackMode || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
         if (currentlyDone) {
             habit.stepLogs[dateStr] = {};
             if ((habit.trackMode || 'boolean') === 'boolean') habit.logs[dateStr] = 0;
@@ -4985,6 +5190,16 @@ const app = {
             habit.steps.forEach((_, idx) => { all[idx] = true; });
             habit.stepLogs[dateStr] = all;
             if ((habit.trackMode || 'boolean') === 'boolean') habit.logs[dateStr] = 1;
+            if (!wasDone) {
+                const award = this.awardGamification('habit_complete', {
+                    key: `habit:${habit.id}:${dateStr}`,
+                    id: habit.id,
+                    title: habit.title,
+                    dimension: habit.dimension,
+                    date: dateStr
+                });
+                this.showGamificationToast(award);
+            }
         }
         this.saveState(true);
         this.renderHabitStepsChecklist(habitId);
@@ -5267,6 +5482,64 @@ const app = {
             `;
         }
         return `<span>${entity.prazo || 'Sem prazo'}</span>`;
+    },
+
+    renderGamificationProfile: function() {
+        const panel = document.getElementById('gamification-profile-panel');
+        if (!panel) return;
+        const state = window.sistemaVidaState;
+        const gamification = this.ensureGamificationState();
+        const totalProgress = this.getLevelProgress(gamification.totalXp);
+
+        const totalLevelEl = document.getElementById('gamification-total-level');
+        const totalXpEl = document.getElementById('gamification-total-xp');
+        const totalBarEl = document.getElementById('gamification-total-bar');
+        if (totalLevelEl) totalLevelEl.textContent = `Nível ${totalProgress.level}`;
+        if (totalXpEl) totalXpEl.textContent = `${totalProgress.current}/${totalProgress.next} XP para o próximo nível`;
+        if (totalBarEl) totalBarEl.style.width = `${totalProgress.pct}%`;
+
+        const dimensionsEl = document.getElementById('gamification-dimensions');
+        if (dimensionsEl) {
+            const dimKeys = Object.keys(state.dimensions || {});
+            dimensionsEl.innerHTML = dimKeys.map((dim) => {
+                const xp = Math.max(0, Number(gamification.dimensionXp[dim]) || 0);
+                const progress = this.getLevelProgress(xp);
+                const identity = this.getDimensionIdentity(dim);
+                return `
+                <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4 min-w-0">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline truncate">${this.escapeHtml(dim)}</p>
+                            <p class="mt-1 text-sm font-bold text-on-surface truncate">${this.escapeHtml(identity.title)}</p>
+                        </div>
+                        <span class="material-symbols-outlined notranslate text-primary text-xl">${identity.icon}</span>
+                    </div>
+                    <div class="mt-4 flex items-center justify-between text-[11px] text-outline">
+                        <span>Nível ${progress.level}</span>
+                        <span>${progress.current}/100 XP</span>
+                    </div>
+                    <div class="mt-2 h-1.5 rounded-full bg-outline-variant/20 overflow-hidden">
+                        <div class="h-full rounded-full bg-primary" style="width:${progress.pct}%"></div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        const achievementsEl = document.getElementById('gamification-achievements');
+        if (achievementsEl) {
+            const achievements = (gamification.achievements || []).slice(0, 4);
+            achievementsEl.innerHTML = achievements.length
+                ? achievements.map((achievement) => `
+                    <div class="flex items-center gap-3 rounded-xl bg-surface-container-low p-3">
+                        <span class="material-symbols-outlined notranslate text-primary text-lg">${this.escapeHtml(achievement.icon || 'military_tech')}</span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-bold text-on-surface truncate">${this.escapeHtml(achievement.title)}</p>
+                            <p class="text-[10px] text-outline">${achievement.unlockedAt ? new Date(achievement.unlockedAt).toLocaleDateString('pt-BR') : ''}</p>
+                        </div>
+                    </div>
+                `).join('')
+                : `<div class="rounded-xl bg-surface-container-low p-4 text-sm text-outline">Conclua uma micro, um hábito, um foco ou uma revisão para desbloquear conquistas.</div>`;
+        }
     },
 
     render: {
@@ -6565,6 +6838,7 @@ const app = {
 
             const themeSelect = document.getElementById('theme-select');
             if (themeSelect) themeSelect.value = state.settings.theme || 'auto';
+            app.renderGamificationProfile();
             app.updateProfileAppVersion();
         },
 
@@ -7204,6 +7478,7 @@ const app = {
 
         // Define se estamos marcando ou desmarcando a tarefa
         const isCompleting = micro.status !== 'done';
+        const wasInProgress = micro.status === 'in_progress';
         micro.status = isCompleting ? 'done' : 'pending';
         // Sincroniza com a propriedade Legada 'completed' para manter UI funcionando
         micro.completed = isCompleting;
@@ -7211,6 +7486,15 @@ const app = {
 
         if (isCompleting) {
           micro.completedDate = this.getLocalDateKey();
+          const award = this.awardGamification('micro_complete', {
+              key: `micro:${micro.id}:complete`,
+              id: micro.id,
+              title: micro.title,
+              dimension: micro.dimension,
+              planned: this._isPlannedThisWeek ? this._isPlannedThisWeek(micro.id) : false,
+              inProgress: wasInProgress
+          });
+          this.showGamificationToast(award);
         } else {
           delete micro.completedDate;
         }
@@ -7957,14 +8241,23 @@ const app = {
                 linkedMicro.focusSessions = Math.max(0, Number(linkedMicro.focusSessions) || 0) + 1;
                 linkedMicro.lastFocusDate = dateKey;
             }
+            const endedAtTs = new Date().toISOString();
             dw.sessions.unshift({
                 endedAt: dateKey,
-                endedAtTs: new Date().toISOString(),
+                endedAtTs,
                 focusSec: focusSec,
                 mode: 'focus',
                 microId: dw.microId || '',
                 intention: dw.intention || ''
             });
+            const award = this.awardGamification('deep_work', {
+                key: `deep:${endedAtTs}`,
+                id: endedAtTs,
+                title: linkedMicro?.title || dw.intention || 'Foco profundo',
+                dimension: linkedMicro?.dimension || '',
+                focusSec
+            });
+            this.showGamificationToast(award);
             dw.sessions = dw.sessions.slice(0, 50);
             dw.mode = 'break';
             dw.remainingSec = dw.breakSec;
