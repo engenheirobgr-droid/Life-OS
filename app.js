@@ -6375,9 +6375,11 @@ const app = {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // ── Janela de 6 meses ──────────────────────────────────────
+        // ── Janela: mês anterior até dez/ano corrente (mínimo 5 meses à frente) ───
         const startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const endDate   = new Date(today.getFullYear(), today.getMonth() + 5, 0);
+        const minEnd    = new Date(today.getFullYear(), today.getMonth() + 5, 0);
+        const yearEnd   = new Date(today.getFullYear(), 11, 31);
+        const endDate   = yearEnd > minEnd ? yearEnd : minEnd;
         const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
 
         // ── Cabeçalho de meses ─────────────────────────────────────
@@ -6683,6 +6685,22 @@ const app = {
             </div>`;
         }
 
+        const legendHTML = `
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 px-2 opacity-60">
+            <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
+              <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>Concluído
+            </span>
+            <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
+              <span class="inline-block w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>Em andamento
+            </span>
+            <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
+              <span class="inline-block w-2 h-2 rounded-full bg-outline/40 flex-shrink-0"></span>Pendente
+            </span>
+            <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
+              <span class="inline-block w-2 h-2 rounded-full bg-error/80 flex-shrink-0"></span>Atrasado
+            </span>
+          </div>`;
+
         container.innerHTML = `
           <div class="relative min-w-[600px]">
             ${headerHTML}
@@ -6690,6 +6708,7 @@ const app = {
               ${todayLine}
               ${rowsHTML}
             </div>
+            ${legendHTML}
           </div>`;
     },
 
