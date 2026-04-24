@@ -16,9 +16,16 @@
         </div>
     </header>
 
+    <section class="mt-8 space-y-4">
+        <div class="space-y-1">
+            <h3 class="font-headline text-2xl italic">Situação</h3>
+            <p class="text-sm text-on-surface-variant leading-relaxed">O estado real do ciclo, da semana e do seu ritmo de execução.</p>
+        </div>
+    </section>
+
     <!-- Progresso Semana: Foco & Execução -->
     <section
-        class="mt-8 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
+        class="mt-4 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
         <div class="grid md:grid-cols-2 gap-8">
             <div class="space-y-3">
                 <div class="flex justify-between items-end">
@@ -58,6 +65,23 @@
                 <span id="painel-atrasadas-val" class="block text-2xl font-headline italic text-error">0</span>
                 <span class="text-[9px] uppercase tracking-[0.2em] text-outline font-bold">Atrasadas</span>
             </div>
+        </div>
+    </section>
+
+    <section class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="space-y-4">
+            <div class="space-y-1">
+                <h3 class="font-headline text-2xl italic">Diagnóstico</h3>
+                <p class="text-sm text-on-surface-variant leading-relaxed">Sinais que merecem atenção antes de criar mais plano.</p>
+            </div>
+            <div id="painel-diagnostics" class="space-y-3"></div>
+        </div>
+        <div class="space-y-4">
+            <div class="space-y-1">
+                <h3 class="font-headline text-2xl italic">Decisão</h3>
+                <p class="text-sm text-on-surface-variant leading-relaxed">O próximo movimento recomendado para destravar a semana.</p>
+            </div>
+            <div id="painel-decision" class="space-y-3"></div>
         </div>
     </section>
 
@@ -321,34 +345,6 @@
         </div>
     </section>
 
-
-    <!-- Meta Financeira -->
-    <section class="mt-8 space-y-4">
-        <h3 class="font-headline text-2xl italic mb-6">Meta Financeira</h3>
-        <div class="bg-primary text-on-primary p-8 rounded-2xl relative overflow-hidden shadow-sm">
-            <div class="absolute -right-10 -bottom-10 opacity-10">
-                <span class="material-symbols-outlined notranslate text-9xl">payments</span>
-            </div>
-            <div class="relative z-10 space-y-4">
-                <div class="space-y-1">
-                    <span class="font-label text-10px uppercase tracking-widest opacity-70">
-                        Módulo em Desenvolvimento
-                    </span>
-                    <div class="text-2xl font-headline tracking-tight">
-                        Em breve
-                    </div>
-                </div>
-                <p class="text-sm font-light opacity-80 leading-relaxed">
-                    O módulo financeiro — com patrimônio líquido, metas de investimento
-                    e simulador — será lançado em uma próxima versão do Sistema Vida.
-                </p>
-                <div class="flex items-center gap-2 pt-2 opacity-60">
-                    <span class="material-symbols-outlined notranslate text-base">schedule</span>
-                    <span class="text-xs font-label uppercase tracking-widest">Próxima atualização</span>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- Modal de Revisão Trimestral -->
     <div id="quarterly-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">

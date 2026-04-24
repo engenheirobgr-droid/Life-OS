@@ -3551,7 +3551,261 @@ const app = {
             });
         }
 
+        const weekKey = this._getWeekKey();
+        const weekPlan = (state.weekPlans || {})[weekKey];
+        const selectedIds = Array.isArray(weekPlan?.selectedMicros) ? weekPlan.selectedMicros : [];
+        const weekMicros = selectedIds.length > 0
+            ? (state.entities?.micros || []).filter(m => selectedIds.includes(m.id) && m.status !== 'done' && m.status !== 'abandoned')
+            : (state.entities?.micros || []).filter(m => m.status !== 'done' && m.status !== 'abandoned' && this.isDateInCurrentWeek(m.prazo));
+
+        if (weekMicros.length >= 4) {
+            const byDim = {};
+            weekMicros.forEach(m => {
+                const dim = m.dimension || 'Geral';
+                byDim[dim] = (byDim[dim] || 0) + 1;
+            });
+            const dominant = Object.entries(byDim).sort((a, b) => b[1] - a[1])[0];
+            if (dominant && dominant[1] / weekMicros.length >= 0.7) {
+                insights.push({
+                    icon: 'balance',
+                    tone: 'info',
+                    text: `<b>${dominant[0]}</b> concentra ${Math.round((dominant[1] / weekMicros.length) * 100)}% das micros da semana. Veja se isso é intenção ou desequilíbrio.`
+                });
+            }
+
+            const unlinked = weekMicros.filter(m => {
+                const ctx = this._getMicroContext(m);
+                return !ctx.meta;
+            }).length;
+            if (unlinked / weekMicros.length >= 0.6) {
+                insights.push({
+                    icon: 'link_off',
+                    tone: 'warn',
+                    text: `${unlinked} de ${weekMicros.length} micros da semana estão sem vínculo com Meta. Pode ser operação necessária, mas revise se o plano ainda aponta para algo maior.`
+                });
+            }
+        }
+
         return insights;
+    },
+
+    _getMicroContext: function(micro) {
+        const state = window.sistemaVidaState;
+        const macro = micro?.macroId
+            ? (state.entities?.macros || []).find(m => m.id === micro.macroId)
+            : null;
+        const okr = macro?.okrId
+            ? (state.entities?.okrs || []).find(o => o.id === macro.okrId)
+            : (micro?.okrId ? (state.entities?.okrs || []).find(o => o.id === micro.okrId) : null);
+        const meta = okr?.metaId
+            ? (state.entities?.metas || []).find(m => m.id === okr.metaId)
+            : (micro?.metaId ? (state.entities?.metas || []).find(m => m.id === micro.metaId) : null);
+        return { macro, okr, meta };
+    },
+
+    getNextBestAction: function(options = {}) {
+        const state = window.sistemaVidaState;
+        const todayStr = this.getLocalDateKey();
+        const today = new Date(todayStr + 'T00:00:00');
+        const scope = options.scope || 'today';
+        const micros = (state.entities?.micros || []).filter(m =>
+            m && m.id && m.status !== 'done' && m.status !== 'abandoned' && !m.completed
+        );
+
+        const candidates = micros.map(micro => {
+            const reasons = [];
+            let score = 0;
+            const { macro, okr, meta } = this._getMicroContext(micro);
+            const prazo = micro.prazo ? new Date(micro.prazo + 'T00:00:00') : null;
+            const inicio = micro.inicioDate ? new Date(micro.inicioDate + 'T00:00:00') : null;
+            const daysToDue = prazo && !Number.isNaN(prazo.getTime())
+                ? Math.floor((prazo - today) / (1000 * 60 * 60 * 24))
+                : null;
+            const hasStarted = !inicio || Number.isNaN(inicio.getTime()) || inicio <= today;
+            const plannedThisWeek = this._isPlannedThisWeek(micro.id);
+            const dimScoreRaw = Number(state.dimensions?.[micro.dimension]?.score);
+            const dimScore = Number.isFinite(dimScoreRaw) ? dimScoreRaw : null;
+
+            if (daysToDue !== null && daysToDue < 0) {
+                score += 12 + Math.min(6, Math.abs(daysToDue));
+                reasons.push(`${Math.abs(daysToDue)} dia${Math.abs(daysToDue) === 1 ? '' : 's'} em atraso`);
+            } else if (daysToDue === 0) {
+                score += 9;
+                reasons.push('vence hoje');
+            } else if (daysToDue !== null && daysToDue <= 2) {
+                score += 6;
+                reasons.push(`vence em ${daysToDue} dia${daysToDue === 1 ? '' : 's'}`);
+            } else if (daysToDue !== null && daysToDue <= 7) {
+                score += 3;
+                reasons.push('está na janela da semana');
+            }
+
+            if (plannedThisWeek) {
+                score += 5;
+                reasons.push('está no plano da semana');
+            }
+
+            if (micro.status === 'in_progress') {
+                score += 4;
+                reasons.push('já está em andamento');
+            } else if (hasStarted) {
+                score += 2;
+                reasons.push('já pode ser executada');
+            } else if (scope === 'today') {
+                score -= 4;
+            }
+
+            if (macro?.status === 'in_progress') {
+                score += 2;
+                reasons.push(`destrava a macro "${macro.title}"`);
+            } else if (macro?.title) {
+                score += 1;
+                reasons.push(`conecta com "${macro.title}"`);
+            }
+
+            if (meta?.status && meta.status !== 'done' && meta.status !== 'abandoned') {
+                score += 1;
+            }
+
+            if (dimScore !== null && dimScore > 0 && dimScore <= 40) {
+                score += 3;
+                reasons.push(`${micro.dimension} está com score baixo na Roda`);
+            }
+
+            if (scope === 'today' && !hasStarted && !plannedThisWeek && !(daysToDue !== null && daysToDue <= 2)) {
+                score -= 3;
+            }
+
+            return { micro, macro, okr, meta, score, reasons: reasons.slice(0, 3), daysToDue, plannedThisWeek };
+        }).filter(item => item.score > 0);
+
+        candidates.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            const aDue = a.daysToDue === null ? 9999 : a.daysToDue;
+            const bDue = b.daysToDue === null ? 9999 : b.daysToDue;
+            return aDue - bDue;
+        });
+
+        const top = candidates[0] || null;
+        if (!top) return null;
+        if (top.reasons.length === 0) top.reasons.push('é a melhor próxima micro ativa');
+        return top;
+    },
+
+    _renderNextActionCard: function(next, variant = 'today') {
+        if (!next?.micro) {
+            const title = variant === 'panel' ? 'Nenhuma decisão urgente' : 'Nada urgente agora';
+            const text = variant === 'panel'
+                ? 'O plano não mostra uma micro crítica neste momento. Continue executando o que já foi planejado.'
+                : 'Seu dia não tem uma micro crítica pendente. Execute o plano com calma ou capture uma próxima ação.';
+            return `
+                <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined notranslate text-primary shrink-0">check_circle</span>
+                        <div>
+                            <p class="text-sm font-bold text-on-surface">${title}</p>
+                            <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">${text}</p>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        const micro = next.micro;
+        const metaText = next.meta?.title ? `Meta: ${this.escapeHtml(next.meta.title)}` : 'Sem meta vinculada';
+        const reasons = next.reasons.map(r => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">${this.escapeHtml(r)}</span>`).join('');
+        const wrapper = variant === 'panel'
+            ? 'bg-primary/5 border-primary/20'
+            : 'bg-surface-container-lowest border-primary/20 shadow-sm';
+
+        return `
+            <div class="${wrapper} border rounded-2xl p-5 md:p-6">
+                <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">Próxima melhor ação</p>
+                        <h4 class="font-headline text-xl md:text-2xl font-bold text-on-background leading-tight">${this.escapeHtml(micro.title)}</h4>
+                        <div class="mt-3 flex flex-wrap gap-2">${reasons}</div>
+                        <p class="mt-3 text-xs text-on-surface-variant leading-relaxed">${metaText}</p>
+                    </div>
+                    <div class="flex flex-wrap md:flex-col gap-2 md:min-w-[140px]">
+                        <button type="button" onclick="window.app.completeMicroAction('${micro.id}')"
+                            class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">
+                            Concluir
+                        </button>
+                        <button type="button" onclick="window.app.postponeMicroOneDay('${micro.id}')"
+                            class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest active:scale-95 transition-all">
+                            Adiar
+                        </button>
+                        <button type="button" onclick="window.app.openEntityReview('${micro.id}', 'micros')"
+                            class="flex-1 md:flex-none px-4 py-2 rounded-xl border border-outline-variant/30 text-outline text-xs font-bold uppercase tracking-widest hover:bg-surface-container-high active:scale-95 transition-all">
+                            Ver detalhes
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+    },
+
+    renderNextBestAction: function() {
+        const container = document.getElementById('next-best-action-container');
+        if (!container) return;
+        container.innerHTML = this._renderNextActionCard(this.getNextBestAction({ scope: 'today' }), 'today');
+    },
+
+    renderPainelDiagnostics: function() {
+        const container = document.getElementById('painel-diagnostics');
+        if (!container) return;
+        const insights = this._computeInsights().slice(0, 3);
+        if (insights.length === 0) {
+            container.innerHTML = `
+                <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined notranslate text-primary shrink-0">verified</span>
+                        <div>
+                            <p class="text-sm font-bold text-on-surface">Sem alertas relevantes</p>
+                            <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">Nenhum sinal forte passou do limite de atenção agora.</p>
+                        </div>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = insights.map(ins => {
+            const toneClass = ins.tone === 'warn'
+                ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30 text-amber-900 dark:text-amber-100'
+                : 'bg-surface-container-lowest border-outline-variant/10 text-on-surface';
+            const iconColor = ins.tone === 'warn' ? 'text-amber-600 dark:text-amber-400' : 'text-primary';
+            return `
+                <div class="${toneClass} border rounded-2xl p-4 shadow-sm flex items-start gap-3">
+                    <span class="material-symbols-outlined notranslate ${iconColor} shrink-0">${ins.icon}</span>
+                    <p class="text-xs leading-relaxed">${ins.text}</p>
+                </div>`;
+        }).join('');
+    },
+
+    renderPainelDecision: function() {
+        const container = document.getElementById('painel-decision');
+        if (!container) return;
+        const next = this.getNextBestAction({ scope: 'week' });
+        const avg = this._computeWeeklyCompletionAverage(4);
+        const weekKey = this._getWeekKey();
+        const plan = (window.sistemaVidaState.weekPlans || {})[weekKey];
+        const plannedCount = Array.isArray(plan?.selectedMicros) ? plan.selectedMicros.length : 0;
+        let loadHtml = '';
+        if (avg > 0 && plannedCount > 0) {
+            const ratio = plannedCount / avg;
+            const tone = ratio > 1.5 ? 'text-red-600 dark:text-red-400' : (ratio > 1.1 ? 'text-amber-600 dark:text-amber-400' : 'text-primary');
+            const copy = ratio > 1.5
+                ? 'Seu plano está muito acima do ritmo recente. Corte ou adie antes de criar novas ações.'
+                : (ratio > 1.1
+                    ? 'Seu plano está um pouco acima da média. Priorize as micros essenciais.'
+                    : 'A carga planejada está dentro do seu ritmo recente.');
+            loadHtml = `
+                <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-4 shadow-sm">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Execução realista</p>
+                    <p class="mt-2 text-sm text-on-surface"><span class="${tone} font-bold">${plannedCount}</span> micros planejadas para média recente de <span class="font-bold">${avg}</span>.</p>
+                    <p class="mt-1 text-xs text-on-surface-variant leading-relaxed">${copy}</p>
+                </div>`;
+        }
+        container.innerHTML = this._renderNextActionCard(next, 'panel') + loadHtml;
     },
 
     /**
@@ -4213,6 +4467,7 @@ const app = {
         this.saveState(false);
         this.showToast('Micro adiada para amanhã', 'success');
         if (this.render.hoje) this.render.hoje();
+        if (this.currentView === 'painel' && this.render.painel) this.render.painel();
     },
 
     setFocusTypeFilter: function(type) {
@@ -5139,6 +5394,9 @@ const app = {
 
             // 2. Calcula e Renderiza a Distribuição de Foco
             this.renderFocusDistribution('focus-distribution');
+
+            app.renderPainelDiagnostics();
+            app.renderPainelDecision();
         },
         renderFocusDistribution: function(containerId) {
             const container = document.getElementById(containerId);
@@ -5698,6 +5956,8 @@ const app = {
                 };
             });
 
+            app.renderNextBestAction();
+
             const container = document.getElementById('checklist-container');
             if (!container) return;
             
@@ -5868,25 +6128,6 @@ const app = {
                     </button>
                 </div>`;
                 html = migrationBtnHtml + html;
-            }
-
-            // Insights automáticos (até 2 no topo)
-            const insights = this._computeInsights().slice(0, 2);
-            if (insights.length > 0) {
-                const insightsHtml = insights.map(ins => {
-                    const toneClass = ins.tone === 'warn'
-                        ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30 text-amber-900 dark:text-amber-100'
-                        : 'bg-primary/5 border-primary/20 text-on-surface';
-                    const iconColor = ins.tone === 'warn'
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-primary';
-                    return `
-                    <div class="flex items-start gap-3 ${toneClass} border p-3 rounded-xl">
-                        <span class="material-symbols-outlined notranslate ${iconColor} text-[20px] shrink-0 mt-0.5">${ins.icon}</span>
-                        <p class="text-xs leading-snug flex-1">${ins.text}</p>
-                    </div>`;
-                }).join('');
-                html = `<div class="space-y-2 mb-4">${insightsHtml}</div>` + html;
             }
 
             container.innerHTML = html;
