@@ -558,13 +558,21 @@
                     </div>
                 </div>
 
-                <div id="crud-key-results-group" class="hidden flex-col gap-1.5">
-                    <label for="crud-key-results"
-                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Key Results (um por linha)</label>
-                    <textarea id="crud-key-results" rows="4"
-                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface placeholder-outline-variant resize-none"
-                        placeholder="Formato: Título | Atual | Alvo&#10;Ex.: Publicar 8 artigos técnicos | 2 | 8"></textarea>
-                    <p class="text-[10px] text-outline">Quando preencher os KRs, o progresso do OKR passa a considerar estes indicadores.</p>
+                <div id="crud-key-results-group" class="hidden flex-col gap-2">
+                    <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Key Results</label>
+                    <!-- Cabeçalho das colunas -->
+                    <div id="kr-rows-header" class="hidden grid gap-2 px-1" style="grid-template-columns: 1fr 72px 72px 32px;">
+                        <span class="text-[10px] font-label uppercase tracking-widest text-outline">Resultado</span>
+                        <span class="text-[10px] font-label uppercase tracking-widest text-outline text-center">Atual</span>
+                        <span class="text-[10px] font-label uppercase tracking-widest text-outline text-center">Meta</span>
+                        <span></span>
+                    </div>
+                    <div id="kr-rows-container" class="flex flex-col gap-2"></div>
+                    <button type="button" onclick="window.app.addKrRow()"
+                        class="flex items-center gap-1.5 text-[11px] text-primary font-bold uppercase tracking-widest py-2 px-3 rounded-lg border border-primary/20 hover:bg-primary/5 transition-colors w-fit">
+                        <span class="material-symbols-outlined notranslate text-[15px]">add</span> Adicionar KR
+                    </button>
+                    <p class="text-[10px] text-outline">O progresso do OKR passa a ser calculado com base nesses indicadores.</p>
                 </div>
 
                 <div id="crud-trigger-container" class="flex-col gap-1.5" style="display: none;">

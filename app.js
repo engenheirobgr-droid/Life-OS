@@ -2705,14 +2705,13 @@ const app = {
         const successCriteriaInput = document.getElementById('crud-success-criteria');
         const challengeInput = document.getElementById('crud-challenge-level');
         const commitmentInput = document.getElementById('crud-commitment-level');
-        const keyResultsInput = document.getElementById('crud-key-results');
         const deadlineInput = document.getElementById('create-prazo');
         const inicioDateInput = document.getElementById('crud-inicio-date');
         const prazoDateInput = document.getElementById('crud-prazo-date');
         if (successCriteriaInput) successCriteriaInput.value = '';
         if (challengeInput) challengeInput.value = '3';
         if (commitmentInput) commitmentInput.value = '3';
-        if (keyResultsInput) keyResultsInput.value = '';
+        this.clearKrRows();
         if (deadlineInput) deadlineInput.value = '';
         if (inicioDateInput) inicioDateInput.value = '';
         if (prazoDateInput) prazoDateInput.value = '';
@@ -3182,6 +3181,53 @@ const app = {
             daysContainer.classList.remove('flex');
             daysContainer.style.display = 'none';
         }
+    },
+
+    addKrRow: function(kr = {}) {
+        const container = document.getElementById('kr-rows-container');
+        const header = document.getElementById('kr-rows-header');
+        if (!container) return;
+        const row = document.createElement('div');
+        row.className = 'kr-row grid gap-2 items-center';
+        row.style.gridTemplateColumns = '1fr 72px 72px 32px';
+        row.innerHTML = `
+            <input type="text" class="kr-title w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-10 px-3 text-on-surface placeholder-outline-variant" placeholder="Descrição do resultado" value="${this.escapeHtml(kr.title || '')}">
+            <input type="number" class="kr-current w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-10 px-2 text-on-surface text-center" placeholder="Atual" min="0" value="${Number(kr.current || 0)}">
+            <input type="number" class="kr-target w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-10 px-2 text-on-surface text-center" placeholder="Meta" min="0" value="${Number(kr.target || 0)}">
+            <button type="button" onclick="this.closest('.kr-row').remove(); window.app._syncKrHeader();" class="flex items-center justify-center w-8 h-8 rounded-lg text-outline hover:text-error hover:bg-error/10 transition-colors">
+                <span class="material-symbols-outlined notranslate text-[18px]">close</span>
+            </button>
+        `;
+        container.appendChild(row);
+        if (header) header.classList.remove('hidden');
+    },
+
+    _syncKrHeader: function() {
+        const container = document.getElementById('kr-rows-container');
+        const header = document.getElementById('kr-rows-header');
+        if (header && container) header.classList.toggle('hidden', container.children.length === 0);
+    },
+
+    clearKrRows: function() {
+        const container = document.getElementById('kr-rows-container');
+        const header = document.getElementById('kr-rows-header');
+        if (container) container.innerHTML = '';
+        if (header) header.classList.add('hidden');
+    },
+
+    populateKrRows: function(keyResults) {
+        this.clearKrRows();
+        if (!Array.isArray(keyResults) || keyResults.length === 0) return;
+        keyResults.forEach(kr => this.addKrRow(kr));
+    },
+
+    readKrRows: function() {
+        const rows = document.querySelectorAll('#kr-rows-container .kr-row');
+        return this.normalizeKeyResultsList(Array.from(rows).map(row => ({
+            title: row.querySelector('.kr-title')?.value?.trim() || '',
+            current: row.querySelector('.kr-current')?.value || 0,
+            target: row.querySelector('.kr-target')?.value || 0,
+        })));
     },
 
     parseKeyResultsText: function(textRaw) {
@@ -3765,6 +3811,9 @@ const app = {
         // ── Apaga imagens do localStorage ──────────────────────────────────────
         try { localStorage.removeItem('lifeos_profile_avatar'); } catch (_) {}
         try { localStorage.removeItem('lifeos_odyssey_images'); } catch (_) {}
+        // ── Apaga backups locais para evitar que estado antigo sobreponha o reset ─
+        try { localStorage.removeItem('lifeos_state_backup'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_state_backup_core'); } catch (_) {}
         // ── Se for reset total (sem mockup), força onboarding na próxima carga ─
         if (!useMockup) {
           try { localStorage.setItem('lifeos_onboarding_complete', '0'); } catch (_) {}
@@ -3804,8 +3853,8 @@ const app = {
             saveBtn.classList.remove('opacity-60', 'cursor-not-allowed');
         }
         
-        const activeOkrs = state.entities.okrs.filter(o => o.status === 'active');
-        
+        const activeOkrs = state.entities.okrs.filter(o => o.status !== 'done' && o.status !== 'abandoned');
+
         if (activeOkrs.length === 0) {
             listContainer.innerHTML = '<p class="text-sm text-outline italic text-center py-8">Nenhum OKR ativo no momento.</p>';
         } else {
@@ -4109,7 +4158,7 @@ const app = {
         const successCriteria = (document.getElementById('crud-success-criteria')?.value || '').trim();
         const challengeLevel = Number(document.getElementById('crud-challenge-level')?.value || 3);
         const commitmentLevel = Number(document.getElementById('crud-commitment-level')?.value || 3);
-        const keyResults = this.parseKeyResultsText(document.getElementById('crud-key-results')?.value || '');
+        const keyResults = this.readKrRows();
 
         const isEditing = !!this.editingEntity;
         const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
@@ -4836,7 +4885,7 @@ const app = {
             
             // Filtro Temporal
             if (filter === 'semana') {
-                const weekKey = this._getWeekKey();
+                const weekKey = app._getWeekKey();
                 const weekPlan = (state.weekPlans || {})[weekKey];
                 const plannedIds = (weekPlan && weekPlan.selectedMicros) || [];
                 if (plannedIds.length > 0) {
@@ -6934,8 +6983,7 @@ const app = {
         if (challengeInput) challengeInput.value = String(item.challengeLevel || 3);
         const commitmentInput = document.getElementById('crud-commitment-level');
         if (commitmentInput) commitmentInput.value = String(item.commitmentLevel || 3);
-        const keyResultsInput = document.getElementById('crud-key-results');
-        if (keyResultsInput) keyResultsInput.value = this.serializeKeyResultsText(item.keyResults);
+        this.populateKrRows(item.keyResults);
         
         // Compatibilidade retrô: agendamento antigo migra visualmente para datas reais
         
