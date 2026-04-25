@@ -6638,24 +6638,28 @@ const app = {
 
                     html += `
                     <div class="space-y-2">
-                        <div class="relative overflow-hidden ${micro.status === 'in_progress' ? 'bg-amber-500/[0.04] border border-amber-500/35 shadow-sm shadow-amber-500/10' : 'bg-surface-container-lowest shadow-[0_4px_20px_rgba(0,0,0,0.02)]'} p-4 rounded-xl flex items-start gap-3 sm:gap-4 group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
+                        <div class="relative overflow-hidden ${micro.status === 'in_progress' ? 'bg-amber-500/[0.04] border border-amber-500/35 shadow-sm shadow-amber-500/10' : 'bg-surface-container-lowest shadow-[0_4px_20px_rgba(0,0,0,0.02)]'} p-4 rounded-xl group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
                             <div class="absolute left-0 top-0 bottom-0 w-1 ${micro.status === 'in_progress' ? 'bg-amber-500' : 'bg-primary/20'}"></div>
-                            <div class="w-6 h-6 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0 mt-1" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3 sm:gap-4">
+                                <div class="w-6 h-6 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0 mt-1" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
+                                <div class="flex-1 min-w-0">
                                     <p class="text-sm sm:text-base text-on-surface font-semibold leading-snug break-words">${micro.title}</p>
+                                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-normal">
+                                        <span class="inline-flex items-center gap-1 text-primary whitespace-nowrap">
+                                            <span class="material-symbols-outlined notranslate text-[12px]">${dimIcon}</span>
+                                            ${micro.dimension}
+                                        </span>
+                                        ${metaLine}
+                                    </div>
+                                    ${startBtn ? `<div class="mt-3 sm:hidden">${startBtn}</div>` : ''}
                                 </div>
-                                <div class="mt-2 flex items-center gap-2 min-w-0">
-                                    <span class="shrink-0 inline-flex items-center px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-normal rounded-md area-tag whitespace-nowrap">${micro.dimension}</span>
-                                    <div class="flex items-center gap-1.5 min-w-0 overflow-hidden text-[9px] font-bold uppercase tracking-normal whitespace-nowrap">${metaLine}</div>
+                                <div class="flex items-center gap-1.5 shrink-0 self-start">
+                                    ${startBtn ? `<div class="hidden sm:block">${startBtn}</div>` : ''}
+                                    <button type="button" title="Adiar para amanhã" onclick="event.stopPropagation(); app.postponeMicroOneDay('${micro.id}');" class="w-7 h-7 flex items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-90">
+                                        <span class="material-symbols-outlined notranslate text-[18px]">schedule</span>
+                                    </button>
+                                    <span class="material-symbols-outlined notranslate text-outline-variant text-sm">keyboard_arrow_down</span>
                                 </div>
-                            </div>
-                            <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">
-                                ${startBtn}
-                                <button type="button" title="Adiar para amanhã" onclick="event.stopPropagation(); app.postponeMicroOneDay('${micro.id}');" class="w-7 h-7 flex items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-90">
-                                    <span class="material-symbols-outlined notranslate text-[18px]">schedule</span>
-                                </button>
-                                <span class="material-symbols-outlined notranslate text-outline-variant text-sm">keyboard_arrow_down</span>
                             </div>
                         </div>
                         
