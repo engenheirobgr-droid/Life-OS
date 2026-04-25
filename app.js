@@ -6638,27 +6638,26 @@ const app = {
 
                     html += `
                     <div class="space-y-2">
-                        <div class="relative overflow-hidden ${micro.status === 'in_progress' ? 'bg-amber-500/[0.04] border border-amber-500/35 shadow-sm shadow-amber-500/10' : 'bg-surface-container-lowest shadow-[0_4px_20px_rgba(0,0,0,0.02)]'} p-4 rounded-xl group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
-                            <div class="absolute left-0 top-0 bottom-0 w-1 ${micro.status === 'in_progress' ? 'bg-amber-500' : 'bg-primary/20'}"></div>
-                            <div class="flex items-start gap-3 sm:gap-4">
-                                <div class="w-6 h-6 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0 mt-1" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
+                        <div class="relative overflow-hidden ${micro.status === 'in_progress' ? 'bg-amber-500/[0.04] border border-amber-500/35 shadow-sm shadow-amber-500/10' : 'bg-surface-container-lowest border border-outline-variant/10 shadow-[0_2px_8px_rgba(0,0,0,0.03)]'} px-4 py-3 rounded-xl group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${micro.status === 'in_progress' ? 'bg-amber-500' : 'bg-primary/30'}"></div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-5 h-5 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm sm:text-base text-on-surface font-semibold leading-snug break-words">${micro.title}</p>
-                                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-normal">
-                                        <span class="inline-flex items-center gap-1 text-primary whitespace-nowrap">
-                                            <span class="material-symbols-outlined notranslate text-[12px]">${dimIcon}</span>
+                                    <p class="text-sm font-semibold text-on-surface leading-snug">${micro.title}</p>
+                                    <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] font-bold uppercase tracking-wide">
+                                        <span class="inline-flex items-center gap-0.5 text-primary">
+                                            <span class="material-symbols-outlined notranslate text-[11px]">${dimIcon}</span>
                                             ${micro.dimension}
                                         </span>
                                         ${metaLine}
                                     </div>
-                                    ${startBtn ? `<div class="mt-3 sm:hidden">${startBtn}</div>` : ''}
                                 </div>
-                                <div class="flex items-center gap-1.5 shrink-0 self-start">
-                                    ${startBtn ? `<div class="hidden sm:block">${startBtn}</div>` : ''}
+                                <div class="flex items-center gap-1 shrink-0">
+                                    ${startBtn}
                                     <button type="button" title="Adiar para amanhã" onclick="event.stopPropagation(); app.postponeMicroOneDay('${micro.id}');" class="w-7 h-7 flex items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-90">
                                         <span class="material-symbols-outlined notranslate text-[18px]">schedule</span>
                                     </button>
-                                    <span class="material-symbols-outlined notranslate text-outline-variant text-sm">keyboard_arrow_down</span>
+                                    <span class="material-symbols-outlined notranslate text-outline-variant text-sm transition-transform group-[.open]:rotate-180">keyboard_arrow_down</span>
                                 </div>
                             </div>
                         </div>
@@ -7054,7 +7053,7 @@ const app = {
                                     <span class="material-symbols-outlined notranslate text-base">${isPending ? 'play_arrow' : 'timer'}</span> ${isPending ? 'Iniciar' : 'Gerenciar'}
                                 </button>
                             `
-                            : (isPending
+                            : (isPending && entityType === 'macros'
                             ? `
                                 <button onclick="event.stopPropagation(); app.startEntity('${item.id}', '${entityType}')"
                                     class="p-2.5 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-amber-700 dark:text-amber-400 transition-colors">
@@ -7747,7 +7746,10 @@ const app = {
                 const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
                 const macro = state.entities.macros.find(m => m.id === micro.macroId);
                 if (macro) {
-                    if (avg >= 99) {
+                    if (siblings.length === 0) {
+                        macro.progress = 0;
+                        if (macro.status === 'in_progress') macro.status = 'pending';
+                    } else if (avg >= 99) {
                         macro.progress = 100;
                         macro.status = 'done';
                     } else {
@@ -7917,7 +7919,36 @@ const app = {
         }
         entity.status = 'in_progress';
         if (!entity.progress || entity.progress < 1) entity.progress = 1;
-        if (type === 'micros') entity.completed = false;
+        if (type === 'micros') {
+            entity.completed = false;
+            const parentMacro = (state.entities.macros || []).find(m => m.id === entity.macroId);
+            if (parentMacro && parentMacro.status === 'pending') {
+                parentMacro.status = 'in_progress';
+                if (!parentMacro.progress || parentMacro.progress < 1) parentMacro.progress = 1;
+                const parentOkr = (state.entities.okrs || []).find(o => o.id === parentMacro.okrId);
+                if (parentOkr && parentOkr.status === 'pending') {
+                    parentOkr.status = 'in_progress';
+                    if (!parentOkr.progress || parentOkr.progress < 1) parentOkr.progress = 1;
+                    const parentMeta = (state.entities.metas || []).find(m => m.id === parentOkr.metaId);
+                    if (parentMeta && parentMeta.status === 'pending') {
+                        parentMeta.status = 'in_progress';
+                        if (!parentMeta.progress || parentMeta.progress < 1) parentMeta.progress = 1;
+                    }
+                }
+            }
+        }
+        if (type === 'macros') {
+            const parentOkr = (state.entities.okrs || []).find(o => o.id === entity.okrId);
+            if (parentOkr && parentOkr.status === 'pending') {
+                parentOkr.status = 'in_progress';
+                if (!parentOkr.progress || parentOkr.progress < 1) parentOkr.progress = 1;
+                const parentMeta = (state.entities.metas || []).find(m => m.id === parentOkr.metaId);
+                if (parentMeta && parentMeta.status === 'pending') {
+                    parentMeta.status = 'in_progress';
+                    if (!parentMeta.progress || parentMeta.progress < 1) parentMeta.progress = 1;
+                }
+            }
+        }
         this.saveState(false);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
