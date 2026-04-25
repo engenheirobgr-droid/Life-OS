@@ -315,7 +315,8 @@ const app = {
                 dimension: String(micro?.dimension || micro?.dimensao || micro?.area || ''),
                 progress: status === 'done' ? 100 : progress,
                 status,
-                completed: status === 'done'
+                completed: status === 'done',
+                effort: this.getMicroEffort(micro)
             };
         }).filter((micro) => {
             const keep = micro.id && micro.title;
@@ -497,6 +498,16 @@ const app = {
             next: 100,
             pct: Math.max(0, Math.min(100, current))
         };
+    },
+    getMicroEffort: function(micro) {
+        const raw = String(micro?.effort || micro?.esforco || 'medio').toLowerCase();
+        if (raw === 'leve' || raw === 'light') return 'leve';
+        if (raw === 'denso' || raw === 'dense' || raw === 'alto') return 'denso';
+        return 'medio';
+    },
+    getMicroEffortLabel: function(effort) {
+        const labels = { leve: 'Leve', medio: 'Médio', denso: 'Denso' };
+        return labels[this.getMicroEffort({ effort })] || labels.medio;
     },
     ensureGamificationState: function() {
         const state = window.sistemaVidaState;
@@ -2885,6 +2896,7 @@ const app = {
         const deadlineInput = document.getElementById('create-prazo');
         const inicioDateInput = document.getElementById('crud-inicio-date');
         const prazoDateInput = document.getElementById('crud-prazo-date');
+        const effortInput = document.getElementById('crud-effort');
         if (successCriteriaInput) successCriteriaInput.value = '';
         if (challengeInput) challengeInput.value = '3';
         if (commitmentInput) commitmentInput.value = '3';
@@ -2892,6 +2904,7 @@ const app = {
         if (deadlineInput) deadlineInput.value = '';
         if (inicioDateInput) inicioDateInput.value = '';
         if (prazoDateInput) prazoDateInput.value = '';
+        if (effortInput) effortInput.value = 'medio';
 
         document.getElementById('crud-type').value = type;
         this.onTypeChange(type);
@@ -2916,6 +2929,7 @@ const app = {
         const successCriteriaGroup = document.getElementById('crud-success-criteria-group');
         const goalRigorGroup = document.getElementById('crud-goal-rigor-group');
         const keyResultsGroup = document.getElementById('crud-key-results-group');
+        const effortGroup = document.getElementById('crud-effort-group');
         const successCriteriaLabel = document.querySelector('label[for="crud-success-criteria"]');
         const setGroupVisible = (el, visible, displayMode = 'flex') => {
             if (!el) return;
@@ -2933,6 +2947,7 @@ const app = {
         setGroupVisible(successCriteriaGroup, false);
         setGroupVisible(goalRigorGroup, false);
         setGroupVisible(keyResultsGroup, false);
+        setGroupVisible(effortGroup, false);
         if (metaHorizonGroup) metaHorizonGroup.classList.add('hidden');
         if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
         if (contextGroup) contextGroup.classList.remove('hidden');
@@ -2986,6 +3001,7 @@ const app = {
             if (parentGroup) parentGroup.classList.remove('hidden');
             if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério de Sucesso';
             if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
+            if (type === 'micros') setGroupVisible(effortGroup, true);
             this.updateParentList(type);
         }
 
@@ -3844,6 +3860,89 @@ const app = {
         return { macro, okr, meta };
     },
 
+    getDailyCompassQuotes: function() {
+        return [
+            { theme: 'Saúde', quote: 'O corpo precisa de constância antes de intensidade.', author: 'Princípio Life OS', reflection: 'Proteja energia suficiente para cumprir o essencial.' },
+            { theme: 'Mente', quote: 'A mente se fortalece quando volta ao que controla.', author: 'Epicteto', reflection: 'Escolha uma ação que dependa de você.' },
+            { theme: 'Carreira', quote: 'O trabalho visível nasce de blocos invisíveis de foco.', author: 'Princípio Life OS', reflection: 'Faça progresso pequeno, mensurável e entregável.' },
+            { theme: 'Finanças', quote: 'Quem sabe o bastante sabe também o que basta.', author: 'Princípio estoico', reflection: 'Decida com clareza, não por impulso.' },
+            { theme: 'Relacionamentos', quote: 'A atenção é uma forma rara de generosidade.', author: 'Simone Weil', reflection: 'Dê presença real a uma pessoa importante.' },
+            { theme: 'Família', quote: 'O que é importante precisa aparecer no calendário.', author: 'Princípio Life OS', reflection: 'Transforme cuidado em gesto concreto.' },
+            { theme: 'Lazer', quote: 'Descanso também é parte do sistema.', author: 'Princípio Life OS', reflection: 'Recupere energia sem culpa e sem fuga.' },
+            { theme: 'Propósito', quote: 'Quem tem um porquê suporta quase qualquer como.', author: 'Viktor Frankl', reflection: 'Relembre o motivo antes de escolher a tarefa.' },
+            { theme: 'Geral', quote: 'Nós somos aquilo que repetidamente fazemos.', author: 'Aristóteles', reflection: 'Uma repetição pequena hoje reforça a identidade certa.' },
+            { theme: 'Geral', quote: 'Comece fazendo o necessário; depois, o possível.', author: 'Francisco de Assis', reflection: 'Não precisa vencer o dia inteiro. Vença o próximo passo.' }
+        ];
+    },
+    getDailyCompass: function() {
+        const state = window.sistemaVidaState;
+        const todayStr = this.getLocalDateKey();
+        const next = this.getNextBestAction({ scope: 'today', skipEnergyFilter: true });
+        const profile = state.profile || {};
+        const values = Array.isArray(profile.values) ? profile.values.filter(Boolean) : [];
+        const vision = profile.vision || {};
+        const ikigai = profile.ikigai || {};
+        const legacyObj = profile.legacyObj || {};
+
+        const dimScores = Object.entries(state.dimensions || {})
+            .map(([dim, data]) => ({ dim, score: Number(data?.score) || 0 }))
+            .filter(item => item.score > 0)
+            .sort((a, b) => a.score - b.score);
+        const theme = next?.micro?.dimension || dimScores[0]?.dim || values[0] || 'Geral';
+        const quotes = this.getDailyCompassQuotes();
+        const pool = quotes.filter(q => q.theme === theme);
+        const fallback = quotes.filter(q => q.theme === 'Geral');
+        const source = pool.length ? pool : fallback;
+        const seed = Array.from(`${todayStr}:${theme}`).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+        const quote = source[seed % source.length];
+
+        const purposePieces = [
+            next?.meta?.purpose,
+            next?.meta?.successCriteria,
+            vision.quote,
+            vision.saude,
+            vision.carreira,
+            vision.intelecto,
+            ikigai.sintese,
+            legacyObj.familia,
+            legacyObj.profissao,
+            legacyObj.mundo
+        ].map(v => String(v || '').trim()).filter(Boolean);
+        const personalAnchor = purposePieces[seed % Math.max(1, purposePieces.length)] || values[0] || theme;
+        const valueText = values.length ? `valor ${values[0]}` : `área ${theme}`;
+        const direction = next?.micro?.title
+            ? `Direção: avance "${next.micro.title}" sem perder de vista ${valueText}.`
+            : `Direção: escolha uma micro ação que torne ${valueText} visível hoje.`;
+
+        return {
+            theme,
+            quote,
+            personal: `Hoje, lembre-se de agir a partir de ${this.escapeHtml(personalAnchor)}.`,
+            direction
+        };
+    },
+    renderDailyCompass: function() {
+        const container = document.getElementById('daily-compass-container');
+        if (!container) return;
+        const compass = this.getDailyCompass();
+        container.innerHTML = `
+            <div class="relative overflow-hidden rounded-2xl border border-primary/15 bg-primary/5 p-5 md:p-6 shadow-sm">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">Bússola do Dia · ${this.escapeHtml(compass.theme)}</p>
+                        <p class="text-sm text-on-surface leading-relaxed">${compass.personal}</p>
+                        <blockquote class="mt-4 border-l border-primary/30 pl-4">
+                            <p class="font-headline text-xl md:text-2xl italic text-on-background leading-snug">"${this.escapeHtml(compass.quote.quote)}"</p>
+                            <p class="mt-2 text-[11px] font-bold uppercase tracking-widest text-outline">${this.escapeHtml(compass.quote.author)}</p>
+                        </blockquote>
+                        <p class="mt-4 text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(compass.quote.reflection)} ${this.escapeHtml(compass.direction)}</p>
+                    </div>
+                    <span class="material-symbols-outlined notranslate text-primary text-2xl shrink-0">explore</span>
+                </div>
+            </div>`;
+    },
+
     getNextBestAction: function(options = {}) {
         const state = window.sistemaVidaState;
         const todayStr = this.getLocalDateKey();
@@ -3866,6 +3965,8 @@ const app = {
             const plannedThisWeek = this._isPlannedThisWeek(micro.id);
             const dimScoreRaw = Number(state.dimensions?.[micro.dimension]?.score);
             const dimScore = Number.isFinite(dimScoreRaw) ? dimScoreRaw : null;
+            const energy = Math.max(0, Math.min(5, Number(state.energy || 0)));
+            const effort = this.getMicroEffort(micro);
 
             if (daysToDue !== null && daysToDue < 0) {
                 score += 12 + Math.min(6, Math.abs(daysToDue));
@@ -3913,21 +4014,43 @@ const app = {
                 reasons.push(`${micro.dimension} está com score baixo na Roda`);
             }
 
+            if (scope === 'today' && energy > 0) {
+                if (energy <= 2) {
+                    if (effort === 'leve') {
+                        score += 4;
+                        reasons.push('cabe na energia de hoje');
+                    } else if (effort === 'medio') {
+                        score -= 2;
+                    } else if (effort === 'denso' && !(daysToDue !== null && daysToDue <= 0) && micro.status !== 'in_progress') {
+                        score -= 8;
+                    }
+                } else if (energy >= 4 && effort === 'denso') {
+                    score += 2;
+                    reasons.push('aproveita energia alta');
+                }
+            }
+
             if (scope === 'today' && !hasStarted && !plannedThisWeek && !(daysToDue !== null && daysToDue <= 2)) {
                 score -= 3;
             }
 
-            return { micro, macro, okr, meta, score, reasons: reasons.slice(0, 3), daysToDue, plannedThisWeek };
+            return { micro, macro, okr, meta, score, reasons: reasons.slice(0, 3), daysToDue, plannedThisWeek, effort };
         }).filter(item => item.score > 0);
 
-        candidates.sort((a, b) => {
+        const energy = Math.max(0, Math.min(5, Number(state.energy || 0)));
+        const energyMatched = !options.skipEnergyFilter && energy > 0 && energy <= 2
+            ? candidates.filter(item => item.effort !== 'denso' || item.daysToDue !== null && item.daysToDue <= 0 || item.micro.status === 'in_progress')
+            : candidates;
+        const ranked = energyMatched.length ? energyMatched : candidates;
+
+        ranked.sort((a, b) => {
             if (b.score !== a.score) return b.score - a.score;
             const aDue = a.daysToDue === null ? 9999 : a.daysToDue;
             const bDue = b.daysToDue === null ? 9999 : b.daysToDue;
             return aDue - bDue;
         });
 
-        const top = candidates[0] || null;
+        const top = ranked[0] || null;
         if (!top) return null;
         if (top.reasons.length === 0) top.reasons.push('é a melhor próxima micro ativa');
         return top;
@@ -3953,7 +4076,11 @@ const app = {
 
         const micro = next.micro;
         const metaText = next.meta?.title ? `Meta: ${this.escapeHtml(next.meta.title)}` : 'Sem meta vinculada';
-        const reasons = next.reasons.map(r => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">${this.escapeHtml(r)}</span>`).join('');
+        const effortLabel = this.getMicroEffortLabel(next.effort || micro.effort);
+        const reasons = [
+            `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">Esforço ${effortLabel}</span>`,
+            ...next.reasons.map(r => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">${this.escapeHtml(r)}</span>`)
+        ].join('');
         const wrapper = variant === 'panel'
             ? 'bg-primary/5 border-primary/20'
             : 'bg-surface-container-lowest border-primary/20 shadow-sm';
@@ -4047,6 +4174,50 @@ const app = {
                 </div>`;
         }
         container.innerHTML = this._renderNextActionCard(next, 'panel') + loadHtml;
+    },
+
+    renderWeeklyHealthScore: function({ execScore = 0, plannedCount = 0, doneCount = 0 } = {}) {
+        const scoreEl = document.getElementById('weekly-health-score');
+        const barEl = document.getElementById('weekly-health-bar');
+        const labelEl = document.getElementById('weekly-health-label');
+        const copyEl = document.getElementById('weekly-health-copy');
+        if (!scoreEl && !barEl && !labelEl && !copyEl) return;
+
+        const avg = this._computeWeeklyCompletionAverage(4);
+        const loadRatio = avg > 0 && plannedCount > 0 ? plannedCount / avg : 1;
+        const loadPenalty = plannedCount > 0 && avg > 0 ? Math.max(0, Math.min(30, Math.round((loadRatio - 1) * 20))) : 0;
+        const overdueCount = (window.sistemaVidaState.entities?.micros || []).filter(m => m.status !== 'done' && m.prazo && m.prazo < this.getLocalDateKey()).length;
+        const overduePenalty = Math.min(30, overdueCount * 10);
+        const score = plannedCount === 0
+            ? 0
+            : Math.max(0, Math.min(100, Math.round((execScore * 0.75) + 25 - loadPenalty - overduePenalty)));
+
+        let label = 'Semana sem plano';
+        let copy = 'Planeje micros para medir se a semana está executável.';
+        let color = 'bg-primary';
+        if (plannedCount > 0) {
+            if (score >= 75) {
+                label = 'Saudável';
+                copy = `${doneCount}/${plannedCount} micros concluídas. Continue executando sem inflar o plano.`;
+                color = 'bg-emerald-500';
+            } else if (score >= 45) {
+                label = 'Pede atenção';
+                copy = `${doneCount}/${plannedCount} micros concluídas. Priorize o essencial antes de adicionar novas ações.`;
+                color = 'bg-amber-500';
+            } else {
+                label = 'Sob risco';
+                copy = `${doneCount}/${plannedCount} micros concluídas. Reduza escopo, adie o que for denso e resolva atrasos.`;
+                color = 'bg-error';
+            }
+        }
+
+        if (scoreEl) scoreEl.textContent = plannedCount > 0 ? `${score}` : '--';
+        if (labelEl) labelEl.textContent = label;
+        if (copyEl) copyEl.textContent = copy;
+        if (barEl) {
+            barEl.className = `h-full ${color} rounded-full transition-all duration-700`;
+            barEl.style.width = `${score}%`;
+        }
     },
 
     /**
@@ -4810,6 +4981,7 @@ const app = {
         const challengeLevel = Number(document.getElementById('crud-challenge-level')?.value || 3);
         const commitmentLevel = Number(document.getElementById('crud-commitment-level')?.value || 3);
         const keyResults = this.readKrRows();
+        const effort = this.getMicroEffort({ effort: document.getElementById('crud-effort')?.value || 'medio' });
 
         const isEditing = !!this.editingEntity;
         const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
@@ -4910,6 +5082,7 @@ const app = {
                 }
             }
             obj.indicator = context || '';
+            obj.effort = effort;
             const oldItem = getOldItem(id, 'micros');
             obj.status = isEditing ? (oldItem.status || 'pending') : 'pending';
             obj.completed = obj.status === 'done';
@@ -5700,6 +5873,7 @@ const app = {
                 const delayedMicros = micros.filter(m => m.status !== 'done' && m.prazo && m.prazo < todayStr).length;
                 atrasadasVal.textContent = delayedMicros;
             }
+            app.renderWeeklyHealthScore({ execScore, plannedCount: totalMicros, doneCount: doneMicros });
             // ---------------------------------------------------------
             
             // Fix Filter Buttons Highlight
@@ -6323,6 +6497,7 @@ const app = {
                 };
             });
 
+            app.renderDailyCompass();
             app.renderNextBestAction();
 
             const container = document.getElementById('checklist-container');
@@ -7803,6 +7978,8 @@ const app = {
         if (challengeInput) challengeInput.value = String(item.challengeLevel || 3);
         const commitmentInput = document.getElementById('crud-commitment-level');
         if (commitmentInput) commitmentInput.value = String(item.commitmentLevel || 3);
+        const effortInput = document.getElementById('crud-effort');
+        if (effortInput) effortInput.value = this.getMicroEffort(item);
         this.populateKrRows(item.keyResults);
         
         // Compatibilidade retrô: agendamento antigo migra visualmente para datas reais

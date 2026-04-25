@@ -483,6 +483,18 @@
                     </div>
                 </div>
 
+                <div id="crud-effort-group" class="hidden flex-col gap-1.5">
+                    <label for="crud-effort"
+                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Esforço</label>
+                    <select id="crud-effort"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                        <option value="leve">Leve — cabe em energia baixa</option>
+                        <option value="medio" selected>Médio — exige presença normal</option>
+                        <option value="denso">Denso — exige foco alto</option>
+                    </select>
+                    <p class="text-[10px] text-outline">Usado pela Próxima Melhor Ação para combinar tarefa e energia do dia.</p>
+                </div>
+
                 <!-- Seletor de Propósito — apenas para Metas, usa resumos do perfil -->
                 <div id="crud-purpose-selector-group" class="hidden flex-col gap-2">
                     <label class="text-xs font-bold uppercase tracking-widest text-outline">Vincular ao Propósito</label>

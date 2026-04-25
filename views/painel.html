@@ -56,6 +56,19 @@
                 </div>
             </div>
         </div>
+        <div id="weekly-health-card" class="rounded-2xl border border-outline-variant/10 bg-surface-container-high/40 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <p class="text-[10px] font-label uppercase tracking-widest text-outline">Saúde da semana</p>
+                <p id="weekly-health-label" class="mt-1 text-sm font-bold text-on-surface">Sem dados suficientes</p>
+                <p id="weekly-health-copy" class="mt-1 text-xs text-on-surface-variant leading-relaxed">Planeje micros para medir se a semana está executável.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="weekly-health-score" class="font-headline text-3xl italic text-primary">--</span>
+                <div class="h-2 w-24 bg-surface-container-highest rounded-full overflow-hidden">
+                    <div id="weekly-health-bar" class="h-full bg-primary rounded-full transition-all duration-700" style="width:0%"></div>
+                </div>
+            </div>
+        </div>
         <div class="flex justify-between border-t border-outline-variant/10 pt-4 px-2">
             <div class="text-center">
                 <span id="painel-concluidas-val" class="block text-2xl font-headline italic text-primary">0</span>
