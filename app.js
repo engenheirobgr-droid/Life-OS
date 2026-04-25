@@ -2077,6 +2077,15 @@ const app = {
         return date >= startOfWeek && date <= endOfWeek;
     },
 
+    hasDayActivity: function(dateKey) {
+        const state = window.sistemaVidaState || {};
+        if (!dateKey) return false;
+        if ((state.dailyLogs || {})[dateKey]) return true;
+        if ((state.entities?.micros || []).some(m => m.completedDate === dateKey || m.doneDate === dateKey)) return true;
+        if ((state.deepWork?.sessions || []).some(s => (s.endedAt || '').slice(0, 10) === dateKey)) return true;
+        return false;
+    },
+
     isDateInCurrentMonth: function(dateStr) {
         if (!dateStr) return false;
         const date = new Date(dateStr + "T00:00:00");
@@ -6012,15 +6021,15 @@ const app = {
                 const raw = btn.getAttribute('data-focus-type');
                 const t = typeMap[raw] || raw;
                 btn.className = t === typeFilter
-                    ? "shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
-                    : "shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                    ? "shrink-0 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
+                    : "shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
             });
 
             document.querySelectorAll('[data-focus-status]').forEach(btn => {
                 const s = btn.getAttribute('data-focus-status');
                 btn.className = s === statusFilter
-                    ? "shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
-                    : "shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                    ? "shrink-0 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
+                    : "shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
             });
 
             const lists = [
@@ -6215,8 +6224,7 @@ const app = {
             if (!heatmap) return;
 
             const state = window.sistemaVidaState;
-            const logs = state.dailyLogs || {};
-            const cycleStart = new Date((state.cycleStartDate || this.getLocalDateKey()) + 'T00:00:00');
+            const cycleStart = new Date((state.cycleStartDate || app.getLocalDateKey()) + 'T00:00:00');
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const elapsedDays = Math.max(0, Math.min(84, Math.floor((today - cycleStart) / (1000 * 60 * 60 * 24)) + 1));
@@ -6230,8 +6238,8 @@ const app = {
                     const offset = (week * 7) + day;
                     const d = new Date(cycleStart);
                     d.setDate(cycleStart.getDate() + offset);
-                    const key = this.getLocalDateKey(d);
-                    const hasLog = !!logs[key];
+                    const key = app.getLocalDateKey(d);
+                    const hasLog = app.hasDayActivity(key);
                     const isToday = d.getTime() === today.getTime();
                     const isFuture = d > today;
                     const color = hasLog
@@ -6266,13 +6274,12 @@ const app = {
 
             const streakEl = document.getElementById('streak-count');
             if (streakEl) {
-                const logs = window.sistemaVidaState.dailyLogs || {};
                 let streak = 0;
                 const check = new Date();
                 check.setHours(0, 0, 0, 0);
                 while (true) {
                     const key = app.getLocalDateKey(check);
-                    if (logs[key]) {
+                    if (app.hasDayActivity(key)) {
                         streak++;
                         check.setDate(check.getDate() - 1);
                     } else {
@@ -6305,7 +6312,6 @@ const app = {
 
             const heatmapEl = document.getElementById('week-days-container');
             if (heatmapEl) {
-                const logs = window.sistemaVidaState.dailyLogs || {};
                 const days = ['D','S','T','Q','Q','S','S'];
                 const today = new Date();
                 today.setHours(0,0,0,0);
@@ -6314,9 +6320,9 @@ const app = {
                 for (let i = 0; i < 7; i++) {
                     const d = new Date(today);
                     d.setDate(today.getDate() - dayOfWeek + i);
-                    const key = d.toISOString().split('T')[0];
+                    const key = app.getLocalDateKey(d);
                     const isToday = i === dayOfWeek;
-                    const hasDone = !!logs[key];
+                    const hasDone = app.hasDayActivity(key);
                     const isFuture = d > today;
                     let circleClass = '';
                     let inner = '';
@@ -6604,14 +6610,14 @@ const app = {
                     const startDate = micro.inicioDate || micro.prazo || '';
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
-                    const overdueTag = isOverdue ? '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[9px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap">Atrasada</span>' : '';
+                    const overdueTag = isOverdue ? '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[8px] sm:text-[9px] font-bold uppercase tracking-normal rounded-full whitespace-nowrap">Atrasada</span>' : '';
                     const statusTag = micro.status === 'in_progress'
-                        ? '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap">Em Andamento</span>'
+                        ? '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[8px] sm:text-[9px] font-bold uppercase tracking-normal rounded-full whitespace-nowrap">Em Andamento</span>'
                         : '';
                     const isHojePlanned = app._isPlannedThisWeek(micro.id);
                     const hojePlannedTag = isHojePlanned
-                        ? '<span class="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-wider whitespace-nowrap"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
-                        : '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">Captura</span>';
+                        ? '<span class="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[8px] sm:text-[9px] font-bold uppercase tracking-normal whitespace-nowrap"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
+                        : '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full bg-surface-container-high text-outline text-[8px] sm:text-[9px] font-bold uppercase tracking-normal whitespace-nowrap">Captura</span>';
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
                         : (micro.status === 'in_progress'
@@ -6625,8 +6631,8 @@ const app = {
                             <div class="w-6 h-6 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0 mt-1" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm sm:text-base text-on-surface font-medium leading-snug break-words">${micro.title}</p>
-                                <div class="mt-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 max-w-full">
-                                    <span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-wider rounded-full area-tag whitespace-nowrap">${micro.dimension}</span>${statusTag}${overdueTag}${hojePlannedTag}
+                                <div class="mt-2 flex items-center gap-1.5 max-w-full min-w-0">
+                                    <span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-secondary-container text-on-secondary-container text-[8px] sm:text-[9px] font-bold uppercase tracking-normal rounded-full area-tag whitespace-nowrap">${micro.dimension}</span>${statusTag}${overdueTag}${hojePlannedTag}
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">

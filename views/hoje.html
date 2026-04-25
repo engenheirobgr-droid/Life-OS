@@ -50,18 +50,20 @@
 
     <!-- Progresso da Semana -->
     <section class="mt-6 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6">
-            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1 mb-5">
+            <div class="mb-5">
               <div>
                 <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Progresso da Semana</p>
                 <p class="text-xs text-on-surface-variant mt-1">Micros planejadas e executadas nesta semana.</p>
               </div>
-              <span id="week-progress-val" class="text-xs font-bold text-primary">0%</span>
             </div>
 
+            <div id="week-days-container" class="flex justify-between w-full mb-5"></div>
+
             <!-- Barra de progresso semanal — apenas Micro Ações ativas -->
-            <div class="mb-4">
+            <div>
               <div class="flex justify-between items-center mb-2">
-                <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Micros da semana</span>
+                <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Micros planejadas</span>
+                <span id="week-progress-val" class="text-xs font-bold text-primary">0%</span>
               </div>
               <div class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
                 <div id="week-progress-bar"
@@ -70,8 +72,6 @@
                 </div>
               </div>
             </div>
-
-            <div id="week-days-container" class="flex justify-between w-full"></div>
     </section>
 
 <!-- Section: Checklist do dia -->
