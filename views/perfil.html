@@ -52,12 +52,17 @@
         <h4 class="text-xs font-bold uppercase tracking-[0.18em] text-outline mb-3">Conquistas recentes</h4>
         <div id="gamification-achievements" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
     </div>
-    <div class="rounded-xl border border-primary/15 bg-primary/5 p-4">
-        <div class="flex items-center gap-2 mb-3 text-primary">
-            <span class="material-symbols-outlined notranslate text-lg">sports_score</span>
-            <h4 class="text-xs font-bold uppercase tracking-[0.18em]">Regras do jogo</h4>
+    <div class="rounded-xl border border-primary/15 bg-primary/5 overflow-hidden">
+        <button type="button" onclick="window.app.toggleGamificationRules()" class="w-full flex items-center justify-between gap-3 p-4 text-primary hover:bg-primary/5 transition-colors">
+            <span class="flex items-center gap-2 min-w-0">
+                <span class="material-symbols-outlined notranslate text-lg">sports_score</span>
+                <span class="text-xs font-bold uppercase tracking-[0.18em]">Regras do jogo</span>
+            </span>
+            <span id="gamification-rules-chevron" class="material-symbols-outlined notranslate text-lg transition-transform">expand_more</span>
+        </button>
+        <div id="gamification-rules-wrap" class="hidden px-4 pb-4">
+            <div id="gamification-rules" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2"></div>
         </div>
-        <div id="gamification-rules" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2"></div>
     </div>
 </section>
 <!-- Settings Menu -->

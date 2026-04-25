@@ -126,10 +126,10 @@ const app = {
     updateSyncBadge: function(state) {
         // state: 'ok' | 'error' | 'syncing' | 'offline'
         const labels = {
-            ok:      { icon: 'cloud_done',    text: 'Sincronizado',     cls: 'text-green-500' },
+            ok:      { icon: 'cloud_done',    text: 'Sincronizado',     cls: 'text-emerald-500' },
             error:   { icon: 'cloud_off',     text: 'Falha na nuvem',   cls: 'text-red-400' },
             syncing: { icon: 'cloud_sync',    text: 'Sincronizando…',   cls: 'text-primary' },
-            offline: { icon: 'cloud_off',     text: 'Modo local',       cls: 'text-yellow-400' },
+            offline: { icon: 'cloud_off',     text: 'Modo local',       cls: 'text-amber-400' },
         };
         const d = labels[state] || labels['ok'];
         document.querySelectorAll('.lifeos-sync-badge').forEach(el => {
@@ -1621,13 +1621,13 @@ const app = {
       // 3. Remove estado ativo de TODOS os botões
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active', 'text-primary');
-        btn.classList.add('text-stone-500');
+        btn.classList.add('text-outline');
       });
     
       const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
       if (activeBtn) {
         activeBtn.classList.add('active', 'text-primary');
-        activeBtn.classList.remove('text-stone-500');
+        activeBtn.classList.remove('text-outline');
       }
 
       const plannedBtn = document.getElementById('btn-stat-planned');
@@ -1976,7 +1976,7 @@ const app = {
                 const dateStr = dateObj.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
                 const [dia, de, mes] = dateStr.split(' ');
                 
-                const energyColor = log.energy >= 4 ? 'text-green-600' : log.energy >= 3 ? 'text-yellow-600' : 'text-red-600';
+                const energyColor = log.energy >= 4 ? 'text-emerald-600 dark:text-emerald-400' : log.energy >= 3 ? 'text-amber-600 dark:text-amber-400' : 'text-error';
                 const gratidaoBlock = log.gratidao ? `<p class="text-[11px] text-on-surface-variant mt-2">Gratidão: ${log.gratidao}</p>` : '';
                 const funcionouBlock = log.funcionou ? `<p class="text-[11px] text-on-surface-variant mt-1">Funcionou: ${log.funcionou}</p>` : '';
                 const shutdownText = Array.isArray(log.shutdown) ? (log.shutdown[0] || '') : (log.shutdown || '');
@@ -3862,13 +3862,13 @@ const app = {
 
     getDailyCompassQuotes: function() {
         return [
-            { theme: 'Saúde', quote: 'O corpo precisa de constância antes de intensidade.', author: 'Princípio Life OS', reflection: 'Proteja energia suficiente para cumprir o essencial.' },
+            { theme: 'Saúde', quote: 'O corpo precisa de constância antes de intensidade.', author: 'Life OS', reflection: 'Proteja energia suficiente para cumprir o essencial.' },
             { theme: 'Mente', quote: 'A mente se fortalece quando volta ao que controla.', author: 'Epicteto', reflection: 'Escolha uma ação que dependa de você.' },
-            { theme: 'Carreira', quote: 'O trabalho visível nasce de blocos invisíveis de foco.', author: 'Princípio Life OS', reflection: 'Faça progresso pequeno, mensurável e entregável.' },
-            { theme: 'Finanças', quote: 'Quem sabe o bastante sabe também o que basta.', author: 'Princípio estoico', reflection: 'Decida com clareza, não por impulso.' },
+            { theme: 'Carreira', quote: 'O trabalho visível nasce de blocos invisíveis de foco.', author: 'Life OS', reflection: 'Faça progresso pequeno, mensurável e entregável.' },
+            { theme: 'Finanças', quote: 'Quem sabe o bastante sabe também o que basta.', author: 'Estoicismo', reflection: 'Decida com clareza, não por impulso.' },
             { theme: 'Relacionamentos', quote: 'A atenção é uma forma rara de generosidade.', author: 'Simone Weil', reflection: 'Dê presença real a uma pessoa importante.' },
-            { theme: 'Família', quote: 'O que é importante precisa aparecer no calendário.', author: 'Princípio Life OS', reflection: 'Transforme cuidado em gesto concreto.' },
-            { theme: 'Lazer', quote: 'Descanso também é parte do sistema.', author: 'Princípio Life OS', reflection: 'Recupere energia sem culpa e sem fuga.' },
+            { theme: 'Família', quote: 'O que é importante precisa aparecer no calendário.', author: 'Life OS', reflection: 'Transforme cuidado em gesto concreto.' },
+            { theme: 'Lazer', quote: 'Descanso também é parte do sistema.', author: 'Life OS', reflection: 'Recupere energia sem culpa e sem fuga.' },
             { theme: 'Propósito', quote: 'Quem tem um porquê suporta quase qualquer como.', author: 'Viktor Frankl', reflection: 'Relembre o motivo antes de escolher a tarefa.' },
             { theme: 'Geral', quote: 'Nós somos aquilo que repetidamente fazemos.', author: 'Aristóteles', reflection: 'Uma repetição pequena hoje reforça a identidade certa.' },
             { theme: 'Geral', quote: 'Comece fazendo o necessário; depois, o possível.', author: 'Francisco de Assis', reflection: 'Não precisa vencer o dia inteiro. Vença o próximo passo.' }
@@ -5808,6 +5808,14 @@ const app = {
             `).join('');
         }
     },
+    toggleGamificationRules: function() {
+        const wrap = document.getElementById('gamification-rules-wrap');
+        const chevron = document.getElementById('gamification-rules-chevron');
+        if (!wrap) return;
+        const willOpen = wrap.classList.contains('hidden');
+        wrap.classList.toggle('hidden', !willOpen);
+        if (chevron) chevron.style.transform = willOpen ? 'rotate(180deg)' : '';
+    },
 
     render: {
         onboarding: function() {
@@ -6095,6 +6103,19 @@ const app = {
                     const focusText = app.formatDurationHuman(m.focusSec || 0);
                     const sessionCount = Number(m.focusSessions || 0);
                     const statusText = m.status === 'done' ? 'Concluída' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
+                    const isDone = m.status === 'done' || m.completed;
+                    const isInProgress = m.status === 'in_progress';
+                    const cardStateClass = isDone
+                        ? 'border-emerald-500/35 bg-emerald-500/[0.035] shadow-sm shadow-emerald-500/10'
+                        : (isInProgress
+                            ? 'border-amber-500/40 bg-amber-500/[0.035] shadow-sm shadow-amber-500/10'
+                            : 'border-outline-variant/10 bg-surface-container-lowest shadow-sm');
+                    const accentClass = isDone ? 'bg-emerald-500' : (isInProgress ? 'bg-amber-500' : 'bg-primary/30');
+                    const statusBadge = isDone
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25'
+                        : (isInProgress
+                            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25'
+                            : 'bg-surface-container-high text-on-surface-variant border border-outline-variant/20');
                     const isTimerMicro = state.deepWork?.isRunning && state.deepWork?.microId === m.id;
                     const actionLabel = (m.status === 'in_progress' || isTimerMicro) ? 'Gerenciar' : 'Iniciar';
                     const actionHandler = (m.status === 'in_progress' || isTimerMicro)
@@ -6105,7 +6126,9 @@ const app = {
                         ? '<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
                         : '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-widest">Captura</span>';
                     return `
-                    <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/10 shadow-sm hover:shadow-md transition-all group min-w-0">
+                    <div class="relative overflow-hidden p-5 rounded-2xl border ${cardStateClass} hover:shadow-md transition-all group min-w-0">
+                        <div class="absolute left-0 top-0 bottom-0 w-1 ${accentClass}"></div>
+                        ${isDone ? '<div class="absolute right-3 bottom-3 pointer-events-none opacity-[0.07]"><span class="material-symbols-outlined notranslate text-6xl text-emerald-500">verified</span></div>' : ''}
                         <div class="flex justify-between items-start mb-4">
                             <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded-full">
                                 ${app.escapeHtml(m.dimension || 'Geral')}
@@ -6133,12 +6156,12 @@ const app = {
                             <div class="flex items-center gap-2 text-outline">
                                 <span class="material-symbols-outlined notranslate text-xs">event</span>
                                 <span class="text-[10px] font-bold uppercase">${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>
-                                <span class="text-[10px] font-bold uppercase">${statusText}</span>
+                                <span class="text-[10px] font-bold uppercase rounded-full px-2 py-0.5 ${statusBadge}">${statusText}</span>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
                                 ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">${actionLabel}</button>` : ''}
                                 ${m.status === 'done' ?
-                                    `<button onclick="window.app.completeMicroAction('${m.id}')" class="px-3 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-widest hover:opacity-90">Reabrir</button>` :
+                                    `<button onclick="window.app.completeMicroAction('${m.id}')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">Reabrir</button>` :
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
                                 }
                             </div>
@@ -6195,7 +6218,7 @@ const app = {
                 d.setDate(startDate.getDate() + i);
                 const key = d.toISOString().split('T')[0];
                 const hasLog = !!logs[key];
-                const color = hasLog ? 'bg-primary' : 'bg-stone-200 dark:bg-stone-800';
+                const color = hasLog ? 'bg-primary' : 'bg-surface-container-high border border-outline-variant/10';
                 
                 html += `<div class="w-2 h-2 rounded-[1px] ${color}" title="${key}"></div>`;
             }
@@ -6283,7 +6306,7 @@ const app = {
                     } else if (isToday) {
                         circleClass = 'w-7 h-7 rounded-full bg-[#01696f]/15 border-2 border-[#01696f] ring-2 ring-[#01696f]/30';
                     } else {
-                        circleClass = 'w-7 h-7 rounded-full bg-stone-200 dark:bg-stone-800 border border-outline-variant/30';
+                        circleClass = 'w-7 h-7 rounded-full bg-surface-container-high border border-outline-variant/30';
                     }
                     html += `
                     <div class="flex flex-col items-center gap-2">
@@ -6593,11 +6616,11 @@ const app = {
                             </div>
                         </div>
                         
-                        <div class="hidden bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant overflow-hidden" id="trail-${idx}">
+                        <div class="hidden bg-surface-container-low rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant overflow-hidden" id="trail-${idx}">
                             <div class="absolute left-[12px] top-4 bottom-4 w-px bg-primary/10"></div>
                             
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
-                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low">check_circle</span>
+                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-surface-container-lowest p-0.5 rounded-full">check_circle</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Micro Ação</span>
                                     <span class="text-sm font-medium truncate">${micro.title}</span>
@@ -6605,7 +6628,7 @@ const app = {
                             </div>
                             
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
-                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low">account_tree</span>
+                                <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">account_tree</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Macro Ação</span>
                                     <span class="text-xs truncate">${macro.title || '-'}</span>
@@ -6613,7 +6636,7 @@ const app = {
                             </div>
                             
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
-                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low">track_changes</span>
+                                <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">track_changes</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">OKR</span>
                                     <span class="text-xs truncate">${okr.title || '-'}</span>
@@ -6621,7 +6644,7 @@ const app = {
                             </div>
                             
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
-                                <span class="material-symbols-outlined notranslate text-stone-400 text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low">flag</span>
+                                <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">flag</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Meta</span>
                                     <span class="text-xs text-on-surface-variant font-medium truncate">${meta.title || '-'}</span>
@@ -6629,7 +6652,7 @@ const app = {
                             </div>
                             
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
-                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low">${dimIcon}</span>
+                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-surface-container-lowest p-0.5 rounded-full">${dimIcon}</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Área</span>
                                     <span class="text-xs truncate">${micro.dimension}</span>
@@ -6637,7 +6660,7 @@ const app = {
                             </div>
                             
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
-                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                                <span class="material-symbols-outlined notranslate text-primary text-xl bg-surface-container-lowest p-0.5 rounded-full" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold text-primary">Propósito (Nível 0)</span>
                                     <span class="text-base font-headline italic truncate">${meta.purpose || '-'}</span>
@@ -6855,7 +6878,7 @@ const app = {
                     html += `
                     <div>
                         <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-xs font-label uppercase tracking-[0.2em] text-stone-400">${dim}</h3>
+                            <h3 class="text-xs font-label uppercase tracking-[0.2em] text-outline">${dim}</h3>
                             <div class="h-px flex-1 bg-surface-container-high mx-4"></div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">`;
@@ -6927,18 +6950,18 @@ const app = {
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '-' });
                         }
 
-                        let trailHtml = `<div class="bg-stone-100 dark:bg-stone-900 rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant mt-6 overflow-hidden">
+                        let trailHtml = `<div class="bg-surface-container-low rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant mt-6 overflow-hidden">
                             <div class="absolute left-[12px] top-4 bottom-4 w-px bg-primary/10"></div>`;
-                        
+
                         trailNodes.forEach((node) => {
-                            let icon = 'trip_origin'; let colorClass = 'text-stone-400'; let titleClass = 'text-xs text-on-surface-variant font-medium';
+                            let icon = 'trip_origin'; let colorClass = 'text-outline'; let titleClass = 'text-xs text-on-surface-variant font-medium';
                             if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; titleClass = 'text-base font-headline italic text-on-surface'; }
                             else if (node.label === 'Área') { icon = 'stars'; colorClass = 'text-primary'; }
-                            else if (node.label === 'Meta') { icon = 'flag'; colorClass = 'text-stone-400'; }
-                            else if (node.label === 'Meta Pai') { icon = 'outbound'; colorClass = 'text-stone-400'; }
+                            else if (node.label === 'Meta') { icon = 'flag'; colorClass = 'text-outline'; }
+                            else if (node.label === 'Meta Pai') { icon = 'outbound'; colorClass = 'text-outline'; }
                             else if (node.label === 'Horizonte') { icon = 'schedule'; colorClass = 'text-primary'; }
-                            else if (node.label === 'OKR') { icon = 'track_changes'; colorClass = 'text-stone-400'; }
-                            else if (node.label === 'Macro Ação') { icon = 'account_tree'; colorClass = 'text-stone-400'; }
+                            else if (node.label === 'OKR') { icon = 'track_changes'; colorClass = 'text-outline'; }
+                            else if (node.label === 'Macro Ação') { icon = 'account_tree'; colorClass = 'text-outline'; }
                             else if (node.label === 'Micro Ação') { icon = 'check_circle'; colorClass = 'text-primary'; }
                             else if (node.label === 'Critério de Sucesso') { icon = 'rule'; colorClass = 'text-primary'; }
                             else if (node.label === 'Desafio') { icon = 'military_tech'; colorClass = 'text-primary'; }
@@ -6947,7 +6970,7 @@ const app = {
                             
                             trailHtml += `
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
-                                <span class="material-symbols-outlined notranslate ${colorClass} text-xl bg-stone-100 dark:bg-stone-900 p-0.5 rounded-full bg-surface-container-low" style="font-variation-settings: 'FILL' 1;">${icon}</span>
+                                <span class="material-symbols-outlined notranslate ${colorClass} text-xl bg-surface-container-lowest p-0.5 rounded-full" style="font-variation-settings: 'FILL' 1;">${icon}</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold ${colorClass}">${node.label}</span>
                                     <span class="${titleClass} truncate">${node.title}</span>
@@ -7006,7 +7029,7 @@ const app = {
                                 `
                                 : `
                                 <button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')"
-                                    class="p-2.5 border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-green-700 dark:text-green-400 transition-colors">
+                                    class="p-2.5 border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 transition-colors">
                                     <span class="material-symbols-outlined notranslate text-base">check_circle</span> Concluir
                                 </button>
                                 `));
@@ -7041,7 +7064,7 @@ const app = {
                             </div>
 
                             <div class="space-y-1.5 mb-4">
-                                <div class="flex justify-between items-center text-[10px] font-label uppercase tracking-wider text-stone-500">
+                                <div class="flex justify-between items-center text-[10px] font-label uppercase tracking-wider text-outline">
                                     <span>Progresso</span>
                                     <span>${prog.toFixed(0)}%</span>
                                 </div>
