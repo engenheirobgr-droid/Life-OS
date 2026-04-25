@@ -306,10 +306,10 @@
             <span id="painel-exec-days" class="text-sm font-medium text-primary"></span>
         </div>
         <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm">
-            <div id="annual-heatmap" class="overflow-x-auto p-1 no-scrollbar">
+            <div id="annual-heatmap" class="space-y-4">
                 <!-- Gerado dinamicamente pelo app.js -->
             </div>
-            <div class="flex justify-between mt-4 text-[10px] text-outline uppercase tracking-widest">
+            <div class="flex justify-between mt-5 text-[10px] text-outline uppercase tracking-widest">
                 <span>Início do ciclo</span>
                 <span>Hoje</span>
             </div>
@@ -331,31 +331,31 @@
                 <div class="space-y-1">
                     <span
                         class="text-[9px] uppercase tracking-widest text-outline font-bold">Tipo:</span>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="grid grid-cols-5 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
                         <button data-focus-type="Tudo" onclick="app.setFocusTypeFilter('Tudo')"
-                            class="shrink-0 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all">Tudo</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Tudo</button>
                         <button data-focus-type="Metas" onclick="app.setFocusTypeFilter('Metas')"
-                            class="shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Metas</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Metas</button>
                         <button data-focus-type="OKRs" onclick="app.setFocusTypeFilter('OKRs')"
-                            class="shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">OKRs</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">OKRs</button>
                         <button data-focus-type="Macros" onclick="app.setFocusTypeFilter('Macros')"
-                            class="shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Macros</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Macros</button>
                         <button data-focus-type="Micros" onclick="app.setFocusTypeFilter('Micros')"
-                            class="shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Micros</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Micros</button>
                     </div>
                 </div>
                 <div class="space-y-1">
                     <span
                         class="text-[9px] uppercase tracking-widest text-outline font-bold">Status:</span>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
                         <button data-focus-status="Tudo" onclick="app.setFocusStatusFilter('Tudo')"
-                            class="shrink-0 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all">Tudo</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Tudo</button>
                         <button data-focus-status="Pendentes" onclick="app.setFocusStatusFilter('Pendentes')"
-                            class="shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Pendentes</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Pendentes</button>
                         <button data-focus-status="Em Andamento" onclick="app.setFocusStatusFilter('Em Andamento')"
-                            class="shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Em Andamento</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Em andamento</button>
                         <button data-focus-status="Concluídos" onclick="app.setFocusStatusFilter('Concluídos')"
-                            class="shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all">Concluídos</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Concluídos</button>
                     </div>
                 </div>
             </div>

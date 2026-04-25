@@ -6021,15 +6021,15 @@ const app = {
                 const raw = btn.getAttribute('data-focus-type');
                 const t = typeMap[raw] || raw;
                 btn.className = t === typeFilter
-                    ? "shrink-0 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
-                    : "shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                    ? "px-2 py-2 rounded-lg bg-primary text-on-primary text-[9px] font-bold uppercase transition-all shadow-sm"
+                    : "px-2 py-2 rounded-lg text-outline text-[9px] font-bold uppercase hover:bg-surface-container-high transition-all";
             });
 
             document.querySelectorAll('[data-focus-status]').forEach(btn => {
                 const s = btn.getAttribute('data-focus-status');
                 btn.className = s === statusFilter
-                    ? "shrink-0 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
-                    : "shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                    ? "px-2 py-2 rounded-lg bg-primary text-on-primary text-[9px] font-bold uppercase transition-all shadow-sm"
+                    : "px-2 py-2 rounded-lg text-outline text-[9px] font-bold uppercase hover:bg-surface-container-high transition-all";
             });
 
             const lists = [
@@ -6231,28 +6231,40 @@ const app = {
             const daysLabel = document.getElementById('painel-exec-days');
             if (daysLabel) daysLabel.textContent = `${elapsedDays}/84 dias`;
 
-            let html = '<div class="flex items-start gap-1.5 min-w-max">';
+            let html = '<div class="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-12 gap-2">';
             for (let week = 0; week < 12; week++) {
-                html += '<div class="grid grid-rows-7 gap-1">';
+                const weekStart = new Date(cycleStart);
+                weekStart.setDate(cycleStart.getDate() + (week * 7));
+                let weekDone = 0;
+                let weekElapsed = 0;
                 for (let day = 0; day < 7; day++) {
                     const offset = (week * 7) + day;
                     const d = new Date(cycleStart);
                     d.setDate(cycleStart.getDate() + offset);
                     const key = app.getLocalDateKey(d);
-                    const hasLog = app.hasDayActivity(key);
-                    const isToday = d.getTime() === today.getTime();
-                    const isFuture = d > today;
-                    const color = hasLog
-                        ? 'bg-primary border-primary'
-                        : (isFuture
-                            ? 'bg-transparent border-outline-variant/20'
-                            : 'bg-surface-container-high border-outline-variant/20');
-                    const todayRing = isToday ? 'ring-2 ring-primary/40 ring-offset-1 ring-offset-surface-container-lowest' : '';
-                    html += `<div class="w-3 h-3 rounded-[3px] border ${color} ${todayRing}" title="${key}"></div>`;
+                    if (d <= today) weekElapsed += 1;
+                    if (app.hasDayActivity(key)) weekDone += 1;
                 }
-                html += '</div>';
+                const isCurrentWeek = elapsedDays >= (week * 7) + 1 && elapsedDays <= (week + 1) * 7;
+                const weekPct = weekElapsed > 0 ? Math.round((weekDone / weekElapsed) * 100) : 0;
+                const isFutureWeek = weekElapsed === 0;
+                const fillClass = isFutureWeek ? 'bg-transparent' : (weekDone > 0 ? 'bg-primary' : 'bg-surface-container-highest');
+                const cardClass = isCurrentWeek
+                    ? 'border-primary/35 bg-primary/[0.04] shadow-sm'
+                    : 'border-outline-variant/10 bg-surface-container-low';
+                html += `
+                    <div class="rounded-xl border ${cardClass} p-2 min-w-0" title="Semana ${week + 1}: ${weekDone}/${weekElapsed || 7} dias ativos">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-outline">S${week + 1}</span>
+                            <span class="text-[9px] font-bold ${isCurrentWeek ? 'text-primary' : 'text-outline'}">${isFutureWeek ? '--' : weekPct + '%'}</span>
+                        </div>
+                        <div class="h-12 rounded-lg bg-surface-container-highest/70 overflow-hidden flex items-end">
+                            <div class="w-full ${fillClass} transition-all duration-500" style="height:${isFutureWeek ? 0 : Math.max(8, weekPct)}%"></div>
+                        </div>
+                    </div>`;
             }
             html += '</div>';
+            html += '<div class="mt-4 flex items-center justify-between text-[10px] text-on-surface-variant"><span>Dias ativos por semana</span><span class="font-bold text-primary">12 semanas</span></div>';
             heatmap.innerHTML = html;
         },
 
@@ -6610,14 +6622,14 @@ const app = {
                     const startDate = micro.inicioDate || micro.prazo || '';
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
-                    const overdueTag = isOverdue ? '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[8px] sm:text-[9px] font-bold uppercase tracking-normal rounded-full whitespace-nowrap">Atrasada</span>' : '';
+                    const overdueTag = isOverdue ? '<span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[9px] font-bold uppercase tracking-normal rounded-md whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Atrasada</span>' : '';
                     const statusTag = micro.status === 'in_progress'
-                        ? '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[8px] sm:text-[9px] font-bold uppercase tracking-normal rounded-full whitespace-nowrap">Em Andamento</span>'
+                        ? '<span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[9px] font-bold uppercase tracking-normal rounded-md whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Em andamento</span>'
                         : '';
                     const isHojePlanned = app._isPlannedThisWeek(micro.id);
                     const hojePlannedTag = isHojePlanned
-                        ? '<span class="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[8px] sm:text-[9px] font-bold uppercase tracking-normal whitespace-nowrap"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
-                        : '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full bg-surface-container-high text-outline text-[8px] sm:text-[9px] font-bold uppercase tracking-normal whitespace-nowrap">Captura</span>';
+                        ? '<span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-normal whitespace-nowrap"><span class="material-symbols-outlined notranslate text-[12px]">event</span>Semana</span>'
+                        : '<span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-normal whitespace-nowrap"><span class="material-symbols-outlined notranslate text-[12px]">inbox</span>Captura</span>';
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
                         : (micro.status === 'in_progress'
@@ -6630,9 +6642,12 @@ const app = {
                             <div class="absolute left-0 top-0 bottom-0 w-1 ${micro.status === 'in_progress' ? 'bg-amber-500' : 'bg-primary/20'}"></div>
                             <div class="w-6 h-6 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0 mt-1" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm sm:text-base text-on-surface font-medium leading-snug break-words">${micro.title}</p>
-                                <div class="mt-2 flex items-center gap-1.5 max-w-full min-w-0">
-                                    <span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-secondary-container text-on-secondary-container text-[8px] sm:text-[9px] font-bold uppercase tracking-normal rounded-full area-tag whitespace-nowrap">${micro.dimension}</span>${statusTag}${overdueTag}${hojePlannedTag}
+                                <div class="flex items-start justify-between gap-3">
+                                    <p class="text-sm sm:text-base text-on-surface font-semibold leading-snug break-words">${micro.title}</p>
+                                </div>
+                                <div class="mt-3 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-2 min-w-0">
+                                    <span class="inline-flex w-fit items-center px-2 py-1 bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-normal rounded-md area-tag whitespace-nowrap">${micro.dimension}</span>
+                                    <div class="flex flex-wrap items-center gap-1.5 min-w-0">${statusTag}${overdueTag}${hojePlannedTag}</div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">
