@@ -6579,39 +6579,69 @@ const app = {
             const now = new Date();
             const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
             
-            // Filtro "Para Hoje": pendentes/in_progress dentro da janela [inicio, prazo]
-            const todayMicros = (state.entities.micros || []).filter(m => {
-                if (m.status === 'done') return false;
-                
+            const isInTodayWindow = (m) => {
                 // Normalização para meia-noite local para comparação precisa
                 const now = new Date();
                 const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                
                 const inicioStr = m.inicioDate || m.prazo;
                 const prazoStr = m.prazo;
-                
                 if (!prazoStr) return false; // Sem prazo, sem janela
-
                 const start = new Date(inicioStr + 'T00:00:00');
                 const end = new Date(prazoStr + 'T00:00:00');
-
                 return start <= today && end >= today;
-            });
+            };
+            const allTodayMicros = (state.entities.micros || []).filter(isInTodayWindow);
+            const dayDone = allTodayMicros.filter(m => m.status === 'done' || m.completed).length;
+            const dayTotal = allTodayMicros.length;
+            const dayProgress = dayTotal ? Math.round((dayDone / dayTotal) * 100) : 0;
+            const dayProgressCard = document.getElementById('day-progress-card');
+            const dayProgressLabel = document.getElementById('day-progress-label');
+            const dayProgressBar = document.getElementById('day-progress-bar');
+            if (dayProgressCard) dayProgressCard.classList.toggle('hidden', dayTotal === 0);
+            if (dayProgressLabel) dayProgressLabel.textContent = `${dayDone} de ${dayTotal} feitas`;
+            if (dayProgressBar) dayProgressBar.style.width = dayProgress + '%';
 
+            // Filtro "Para Hoje": pendentes/in_progress dentro da janela, mantendo a recém-concluída por um pulso visual.
+            const todayMicros = allTodayMicros
+                .filter(m => m.status !== 'done' || m.id === app.recentCompletedMicroId)
+                .sort((a, b) => {
+                    const aDone = a.status === 'done' || a.completed ? 1 : 0;
+                    const bDone = b.status === 'done' || b.completed ? 1 : 0;
+                    if (aDone !== bDone) return aDone - bDone;
+                    if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
+                    if (b.status === 'in_progress' && a.status !== 'in_progress') return 1;
+                    const dim = String(a.dimension || '').localeCompare(String(b.dimension || ''), 'pt-BR');
+                    if (dim !== 0) return dim;
+                    return String(a.prazo || '9999').localeCompare(String(b.prazo || '9999'));
+                });
+
+            let lastDimension = '';
             todayMicros.forEach((micro, idx) => {
-                if (micro.completed) {
+                const dimensionLabel = micro.dimension || 'Geral';
+                if (dimensionLabel !== lastDimension) {
+                    lastDimension = dimensionLabel;
                     html += `
-                    <div class="relative overflow-hidden bg-emerald-500/[0.04] border border-emerald-500/25 p-4 rounded-xl flex items-center gap-4 shadow-sm shadow-emerald-500/5">
+                    <div class="pt-2 first:pt-0">
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">${app.escapeHtml(dimensionLabel)}</span>
+                            <span class="h-px flex-1 bg-outline-variant/20"></span>
+                        </div>
+                    </div>`;
+                }
+                if (micro.completed) {
+                    const isRecentCompletion = micro.id === app.recentCompletedMicroId;
+                    html += `
+                    <div class="relative overflow-hidden bg-emerald-500/[0.04] border border-emerald-500/25 p-4 rounded-xl flex items-center gap-4 shadow-sm shadow-emerald-500/5 ${isRecentCompletion ? 'micro-complete-feedback' : ''}">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
                         <div class="absolute right-3 bottom-2 pointer-events-none opacity-[0.08]">
                             <span class="material-symbols-outlined notranslate text-5xl text-emerald-500">verified</span>
                         </div>
-                        <div class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                        <div class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 ${isRecentCompletion ? 'micro-complete-check' : ''}">
                             <span class="material-symbols-outlined notranslate text-white text-sm" style="font-variation-settings: 'wght' 700;">check</span>
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-base text-on-surface font-medium line-through">${micro.title}</p>
-                            <span class="inline-block mt-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${micro.dimension}</span>
+                            <span class="inline-block mt-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${dimensionLabel}</span>
                         </div>
                     </div>`;
                 } else {
@@ -6628,8 +6658,8 @@ const app = {
                     if (micro.status === 'in_progress') metaBits.push('<span class="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Andamento</span>');
                     if (isOverdue) metaBits.push('<span class="inline-flex items-center gap-1 text-red-700 dark:text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Atrasada</span>');
                     metaBits.push(app._isPlannedThisWeek(micro.id)
-                        ? '<span class="inline-flex items-center gap-1 text-primary"><span class="material-symbols-outlined notranslate text-[12px]">event</span>Semana</span>'
-                        : '<span class="inline-flex items-center gap-1 text-outline"><span class="material-symbols-outlined notranslate text-[12px]">inbox</span>Captura</span>');
+                        ? '<span title="Micro selecionada no planejamento semanal" class="inline-flex items-center gap-1 text-primary"><span class="material-symbols-outlined notranslate text-[12px]">event</span>Semana</span>'
+                        : '<span title="Micro capturada fora do plano semanal" class="inline-flex items-center gap-1 text-outline"><span class="material-symbols-outlined notranslate text-[12px]">inbox</span>Captura</span>');
                     const metaLine = metaBits.join('<span class="text-outline/50">•</span>');
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
@@ -6656,7 +6686,7 @@ const app = {
                                 <div class="flex items-center gap-1 shrink-0">
                                     ${startBtn}
                                     <button type="button" title="Adiar para amanhã" onclick="event.stopPropagation(); app.postponeMicroOneDay('${micro.id}');" class="w-7 h-7 flex items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-90">
-                                        <span class="material-symbols-outlined notranslate text-[18px]">schedule</span>
+                                        <span class="material-symbols-outlined notranslate text-[18px]">event_upcoming</span>
                                     </button>
                                     <span class="material-symbols-outlined notranslate text-outline-variant text-sm transition-transform group-[.open]:rotate-180">keyboard_arrow_down</span>
                                 </div>
@@ -6748,6 +6778,14 @@ const app = {
             }
 
             container.innerHTML = html;
+            if (app.recentCompletedMicroId) {
+                const completedId = app.recentCompletedMicroId;
+                setTimeout(() => {
+                    if (app.recentCompletedMicroId !== completedId) return;
+                    app.recentCompletedMicroId = '';
+                    if (app.currentView === 'hoje' && app.render.hoje) app.render.hoje();
+                }, 850);
+            }
 
             const pendingBadge = document.getElementById('macros-pendentes-badge');
             if (pendingBadge) {
@@ -6913,13 +6951,27 @@ const app = {
 
                 if (Object.keys(grouped).length === 0) {
                     const emptyIcon = (entityType === 'metas' || entityType === 'okrs') ? 'flag' : 'task_alt';
+                    const emptyTypeLabel = ({ metas: 'meta', okrs: 'OKR', macros: 'macro', micros: 'micro ação' })[entityType] || 'plano';
+                    const filterCopy = filter === 'Todas' ? 'nesta categoria' : `em ${filter}`;
                     return `
                     <div class="bg-surface-container-lowest rounded-2xl p-8 border border-outline-variant/10 border-dashed text-center flex flex-col items-center justify-center">
                         <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-4">
                             <span class="material-symbols-outlined notranslate text-outline text-3xl">${emptyIcon}</span>
                         </div>
-                        <h4 class="font-headline text-lg font-bold text-on-background">Nenhum registro encontrado</h4>
-                        <p class="text-sm text-outline mt-2 max-w-sm">Você ainda não tem planos definidos nesta categoria. Clique no botão de adicionar (+) para começar a planejar.</p>
+                        <h4 class="font-headline text-lg font-bold text-on-background">Nenhum ${emptyTypeLabel} encontrado</h4>
+                        <p class="text-sm text-outline mt-2 max-w-sm">Não há itens ${filterCopy} com os filtros atuais.</p>
+                        <div class="mt-5 flex flex-wrap justify-center gap-2">
+                            <button type="button" onclick="window.app.openCreateModal('${entityType}')"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">
+                                <span class="material-symbols-outlined notranslate text-[16px]">add</span>
+                                Criar ${emptyTypeLabel}
+                            </button>
+                            <button type="button" onclick="window.app.clearPlanosFilters()"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-container-high text-on-surface-variant text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest active:scale-95 transition-all">
+                                <span class="material-symbols-outlined notranslate text-[16px]">filter_alt_off</span>
+                                Limpar filtros
+                            </button>
+                        </div>
                     </div>`;
                 }
 
@@ -7003,9 +7055,10 @@ const app = {
                         let trailHtml = `<div class="bg-surface-container-low rounded-lg p-4 space-y-3 relative trail-line text-on-surface-variant mt-0 overflow-hidden">
                             <div class="absolute left-[12px] top-3 bottom-3 w-px bg-primary/10"></div>`;
 
-                        trailNodes.forEach((node) => {
+                        trailNodes.forEach((node, nodeIdx) => {
                             let icon = 'trip_origin'; let colorClass = 'text-outline'; let titleClass = 'text-xs text-on-surface-variant font-medium';
-                            if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; titleClass = 'text-base font-headline italic text-on-surface'; }
+                            let nodeShell = 'py-0.5';
+                            if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; titleClass = 'text-base font-headline italic text-on-surface'; nodeShell = 'mt-1 rounded-xl bg-primary/5 border border-primary/10 p-3'; }
                             else if (node.label === 'Área') { icon = 'stars'; colorClass = 'text-primary'; }
                             else if (node.label === 'Meta') { icon = 'flag'; colorClass = 'text-outline'; }
                             else if (node.label === 'Meta Pai') { icon = 'outbound'; colorClass = 'text-outline'; }
@@ -7018,12 +7071,13 @@ const app = {
                             else if (node.label === 'Comprometimento') { icon = 'verified'; colorClass = 'text-primary'; }
                             else if (node.label === 'Key Results') { icon = 'query_stats'; colorClass = 'text-primary'; }
                             
+                            const indent = Math.min(nodeIdx, 5) * 10;
                             trailHtml += `
-                            <div class="flex items-center gap-4 relative z-10 min-w-0">
-                                <span class="material-symbols-outlined notranslate ${colorClass} text-xl bg-surface-container-lowest p-0.5 rounded-full" style="font-variation-settings: 'FILL' 1;">${icon}</span>
+                            <div class="${nodeShell} flex items-center gap-3 relative z-10 min-w-0" style="margin-left:${indent}px">
+                                <span class="material-symbols-outlined notranslate ${colorClass} text-lg bg-surface-container-lowest p-0.5 rounded-full ring-1 ring-outline-variant/10" style="font-variation-settings: 'FILL' 1;">${icon}</span>
                                 <div class="flex flex-col min-w-0">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold ${colorClass}">${node.label}</span>
-                                    <span class="${titleClass} truncate">${node.title}</span>
+                                    <span class="text-[9px] uppercase opacity-50 font-bold ${colorClass}">${node.label}</span>
+                                    <span class="${titleClass} ${node.label === 'Propósito (Nível 0)' ? 'line-clamp-2' : 'truncate'}">${node.title}</span>
                                 </div>
                             </div>`;
                         });
@@ -7033,8 +7087,8 @@ const app = {
                         const isAligned = userValues.includes(item.dimension);
                         const microPlanChip = entityType === 'micros'
                             ? (app._isPlannedThisWeek(item.id)
-                                ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase tracking-wider">Semana</span>'
-                                : '<span class="shrink-0 bg-surface-container-high text-on-surface-variant text-[9px] px-2 py-0.5 rounded-full border border-outline-variant/20 font-bold uppercase tracking-wider">Captura</span>')
+                                ? '<span title="Micro selecionada no planejamento semanal" class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase tracking-wider">Semana</span>'
+                                : '<span title="Micro capturada fora do plano semanal" class="shrink-0 bg-surface-container-high text-on-surface-variant text-[9px] px-2 py-0.5 rounded-full border border-outline-variant/20 font-bold uppercase tracking-wider">Captura</span>')
                             : '';
 
                         const isInProgress = item.status === 'in_progress';
@@ -7057,7 +7111,7 @@ const app = {
                             : (isReadyToClose
                                 ? '<span class="shrink-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Pronto p/ fechar</span>'
                                 : (isInProgress
-                                    ? '<span class="shrink-0 bg-amber-100 text-amber-700 border border-amber-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Andamento</span>'
+                                    ? '<span class="shrink-0 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Andamento</span>'
                                     : '<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Pendente</span>'));
                         const actionButton = entityType === 'micros' && !isDone
                             ? `
@@ -7081,8 +7135,8 @@ const app = {
                                 `
                                 : (isPending
                                     ? `
-                                <div class="p-2.5 border border-outline-variant/20 bg-surface-container-low rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline" title="Inicia automaticamente quando você inicia uma micro filha">
-                                    <span class="material-symbols-outlined notranslate text-base">arrow_downward</span> Aguarda micros
+                                <div class="p-2.5 border border-outline-variant/20 bg-surface-container-low rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline" title="Inicia automaticamente quando uma micro filha entra em execução">
+                                    <span class="material-symbols-outlined notranslate text-base">account_tree</span> Inicia via cascata
                                 </div>
                                 `
                                     : `
@@ -7105,7 +7159,6 @@ const app = {
                                     </div>
                                     <h4 class="font-headline text-lg md:text-xl font-semibold leading-tight line-clamp-2">${item.title}</h4>
                                     ${subMetaText ? `<p class="text-[11px] text-outline">${subMetaText}</p>` : ''}
-                                    ${countLine ? `<p class="text-[10px] text-outline font-label uppercase tracking-widest mt-1">${countLine}</p>` : ''}
                                 </div>
                                 <div class="flex flex-col items-end gap-2 shrink-0">
                                     ${statusChip}
@@ -7113,10 +7166,11 @@ const app = {
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between gap-3 mb-3">
+                            <div class="flex items-center justify-between gap-3 mb-3 border-t border-outline-variant/10 pt-3">
                                 <div class="flex items-center gap-2 text-outline text-xs min-w-0">
                                     <span class="material-symbols-outlined notranslate text-sm shrink-0">event</span>
                                     <span class="truncate">${app.formatPrazoDisplay(item)}</span>
+                                    ${countLine ? `<span class="text-outline/50">/</span><span class="truncate">${countLine}</span>` : ''}
                                 </div>
                                 <span class="text-[10px] font-label uppercase tracking-wider text-outline shrink-0">Trilha estrategica</span>
                             </div>
@@ -7864,6 +7918,7 @@ const app = {
               inProgress: wasInProgress
           });
           this.showGamificationToast(award);
+          this.recentCompletedMicroId = micro.id;
         } else {
           delete micro.completedDate;
         }

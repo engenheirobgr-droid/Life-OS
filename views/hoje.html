@@ -90,6 +90,15 @@
 <h3 class="font-headline text-2xl italic">Para hoje</h3>
 <span id="macros-pendentes-badge" class="text-xs font-label uppercase tracking-wider text-outline font-medium">0 Pendentes</span>
 </div>
+<div id="day-progress-card" class="hidden rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4 shadow-sm">
+  <div class="flex items-center justify-between gap-4 mb-2">
+    <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Progresso do dia</span>
+    <span id="day-progress-label" class="text-xs font-bold text-primary">0 de 0 feitas</span>
+  </div>
+  <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+    <div id="day-progress-bar" class="h-full bg-primary rounded-full transition-all duration-500" style="width: 0%"></div>
+  </div>
+</div>
 <div id="next-best-action-container"></div>
 <div id="checklist-container" class="space-y-3"></div>
 
