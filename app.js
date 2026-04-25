@@ -5982,7 +5982,8 @@ const app = {
             };
             const typeMap = { Macro: 'Macros', Micro: 'Micros' };
             const typeFilter = typeMap[app.focusTypeFilter] || app.focusTypeFilter || 'Tudo';
-            const statusFilter = app.focusStatusFilter || 'Tudo';
+            app.focusStatusFilter = 'Tudo';
+            const statusFilter = 'Tudo';
 
             const normalizeText = (value) => String(value || '')
                 .toLowerCase()
