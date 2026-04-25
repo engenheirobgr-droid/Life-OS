@@ -2,9 +2,19 @@
     <!-- Greeting & Time Filter -->
     <header class="mb-12">
         <p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Análise & Progresso</p>
-        <h2 id="painel-title"
-            class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Painel de
-            Evolução</h2>
+        <div class="flex items-start gap-3">
+            <h2 id="painel-title"
+                class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Painel de
+                Evolução</h2>
+            <div class="relative inline-flex group mt-1">
+                <button type="button" class="w-8 h-8 rounded-full border border-outline-variant/40 bg-surface-container-low text-outline hover:text-primary hover:border-primary/30 flex items-center justify-center transition-colors" aria-label="Informações sobre Painel">
+                    <span class="material-symbols-outlined notranslate text-[17px]">info</span>
+                </button>
+                <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-10 z-30 w-72 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-4 text-xs text-on-surface-variant leading-relaxed shadow-xl">
+                    O Painel mostra situação, diagnóstico e decisões para acompanhar o ciclo, a semana e a execução real.
+                </div>
+            </div>
+        </div>
         <div class="mt-6 h-px w-24 bg-primary"></div>
         <div class="mt-8 flex gap-2 overflow-x-auto no-scrollbar mb-6">
             <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')"

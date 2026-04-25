@@ -4,6 +4,14 @@
     <p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Rotina & Execução</p>
     <div class="flex flex-col sm:flex-row sm:items-baseline gap-4 sm:gap-6">
         <h2 id="data-hoje" class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background"></h2>
+        <div class="relative inline-flex group w-fit">
+            <button type="button" class="w-8 h-8 rounded-full border border-outline-variant/40 bg-surface-container-low text-outline hover:text-primary hover:border-primary/30 flex items-center justify-center transition-colors" aria-label="Informações sobre Hoje">
+                <span class="material-symbols-outlined notranslate text-[17px]">info</span>
+            </button>
+            <div class="hidden group-hover:block group-focus-within:block absolute left-0 top-10 z-30 w-72 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-4 text-xs text-on-surface-variant leading-relaxed shadow-xl">
+                O Hoje organiza energia, intenção, próxima melhor ação, micros planejadas e fechamento do dia.
+            </div>
+        </div>
         <div class="bg-surface-container-highest border border-outline-variant/10 text-on-surface rounded-full px-4 py-1.5 text-sm flex items-center gap-2 font-bold shadow-sm w-fit">
             <span class="material-symbols-outlined notranslate text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
             <span id="header-streak">-- dias</span>
