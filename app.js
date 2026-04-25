@@ -238,8 +238,12 @@ const app = {
             if (!Number.isFinite(n)) return 0;
             return Math.max(0, Math.min(100, Math.round(n)));
         };
-        const normalizedStatus = (rawStatus, progress, completedRaw = false) => {
-            if (completedRaw || progress >= 100 || rawStatus === 'done') return 'done';
+        // Para micros: progress 100 OU completed implica done (binário/atômico).
+        // Para macro/okr/meta: done depende EXCLUSIVAMENTE de decisão explícita do usuário.
+        // Ter 100% de progresso significa "pronto para fechar", não "fechado automaticamente".
+        const normalizedStatus = (rawStatus, progress, completedRaw = false, isAtomic = false) => {
+            if (rawStatus === 'done') return 'done';
+            if (isAtomic && (completedRaw || progress >= 100)) return 'done';
             if (rawStatus === 'abandoned') return 'abandoned';
             if (rawStatus === 'in_progress' || rawStatus === 'active') return 'in_progress';
             return 'pending';
@@ -252,7 +256,7 @@ const app = {
 
         state.entities.metas = state.entities.metas.map((meta) => {
             const progress = clampProgress(meta?.progress);
-            const status = normalizedStatus(meta?.status, progress, meta?.completed);
+            const status = normalizedStatus(meta?.status, progress, meta?.completed, false);
             return {
                 ...meta,
                 id: String(meta?.id || ''),
@@ -274,7 +278,7 @@ const app = {
                 const krProgress = this.computeKeyResultsProgress(keyResults);
                 progress = krProgress === null ? 0 : krProgress;
             }
-            const status = normalizedStatus(okr?.status, progress, okr?.completed);
+            const status = normalizedStatus(okr?.status, progress, okr?.completed, false);
             return {
                 ...okr,
                 id: String(okr?.id || ''),
@@ -292,7 +296,7 @@ const app = {
 
         state.entities.macros = state.entities.macros.map((macro) => {
             const progress = clampProgress(macro?.progress);
-            const status = normalizedStatus(macro?.status, progress, macro?.completed);
+            const status = normalizedStatus(macro?.status, progress, macro?.completed, false);
             return {
                 ...macro,
                 id: String(macro?.id || ''),
@@ -307,7 +311,7 @@ const app = {
         const beforeCount = state.entities.micros.length;
         state.entities.micros = state.entities.micros.map((micro) => {
             const progress = clampProgress(micro?.progress);
-            const status = normalizedStatus(micro?.status, progress, micro?.completed);
+            const status = normalizedStatus(micro?.status, progress, micro?.completed, true);
             return {
                 ...micro,
                 id: String(micro?.id || ''),
@@ -440,14 +444,11 @@ const app = {
         let changed = false;
         if (micro.status !== 'in_progress') {
             micro.status = 'in_progress';
+            this.cascadeStartUp(micro.id);
             changed = true;
         }
         if (micro.completed) {
             micro.completed = false;
-            changed = true;
-        }
-        if (!micro.progress || micro.progress < 1) {
-            micro.progress = 1;
             changed = true;
         }
         return changed;
@@ -6878,7 +6879,10 @@ const app = {
                 const filteredByDim = filter === 'Todas' ? items : items.filter(i => resolveDim(i) === filter);
                 const filtered = filteredByDim.filter(i => {
                     // Filtro 1: Status
-                    const isDone = i.progress >= 100 || i.status === 'done' || i.completed;
+                    // Micros usam regra binária; macro/okr/meta exigem decisão explícita do usuário.
+                    const isDone = entityType === 'micros'
+                        ? (i.status === 'done' || i.completed || (Number(i.progress) || 0) >= 100)
+                        : (i.status === 'done');
                     const statFilterRaw = app.planosStatusFilter || 'all';
                     const statFilter = statFilterRaw === 'active' ? 'all' : statFilterRaw;
                     let passStatus = false;
@@ -7034,30 +7038,32 @@ const app = {
                             : '';
 
                         const isInProgress = item.status === 'in_progress';
-                        const isDone = prog >= 100 || item.status === 'done' || item.completed;
+                        // Para micros (atômicas): completed/progress 100 implicam done.
+                        // Para macros/okrs/metas: done EXIGE decisão explícita (status === 'done').
+                        const isDone = entityType === 'micros'
+                            ? (item.status === 'done' || item.completed || prog >= 100)
+                            : (item.status === 'done');
                         const isPending = item.status === 'pending';
-                        const highlightClass = isInProgress
-                            ? 'ring-2 ring-amber-500/30 border-amber-500/50 shadow-md shadow-amber-500/10 bg-amber-500/[0.03]'
-                            : (isDone ? 'border-emerald-500/40 shadow-md shadow-emerald-500/10 bg-emerald-500/[0.035]' : 'border-outline-variant/20 shadow-sm');
-                        const accentClass = isDone ? 'bg-emerald-500' : (isInProgress ? 'bg-amber-500' : 'bg-primary/30');
-                        const progressColor = isDone ? 'bg-emerald-500' : (isInProgress ? 'bg-amber-500' : 'bg-primary');
+                        const isReadyToClose = !isDone && entityType !== 'micros' && prog >= 100;
+                        const highlightClass = isReadyToClose
+                            ? 'ring-2 ring-emerald-500/40 border-emerald-500/50 shadow-md shadow-emerald-500/10 bg-emerald-500/[0.03]'
+                            : (isInProgress
+                                ? 'ring-2 ring-amber-500/30 border-amber-500/50 shadow-md shadow-amber-500/10 bg-amber-500/[0.03]'
+                                : (isDone ? 'border-emerald-500/40 shadow-md shadow-emerald-500/10 bg-emerald-500/[0.035]' : 'border-outline-variant/20 shadow-sm'));
+                        const accentClass = isDone ? 'bg-emerald-500' : (isReadyToClose ? 'bg-emerald-500' : (isInProgress ? 'bg-amber-500' : 'bg-primary/30'));
+                        const progressColor = isDone ? 'bg-emerald-500' : (isReadyToClose ? 'bg-emerald-500' : (isInProgress ? 'bg-amber-500' : 'bg-primary'));
                         const statusChip = isDone
                             ? '<span class="shrink-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Concluído</span>'
-                            : (isInProgress
-                                ? '<span class="shrink-0 bg-amber-100 text-amber-700 border border-amber-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Andamento</span>'
-                                : '<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Pendente</span>');
+                            : (isReadyToClose
+                                ? '<span class="shrink-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Pronto p/ fechar</span>'
+                                : (isInProgress
+                                    ? '<span class="shrink-0 bg-amber-100 text-amber-700 border border-amber-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Andamento</span>'
+                                    : '<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Pendente</span>'));
                         const actionButton = entityType === 'micros' && !isDone
                             ? `
                                 <button onclick="event.stopPropagation(); app.openMicroInFocus('${item.id}', ${isPending ? 'true' : 'false'})"
                                     class="p-2.5 border ${isPending ? 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary'} rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold transition-colors">
                                     <span class="material-symbols-outlined notranslate text-base">${isPending ? 'play_arrow' : 'timer'}</span> ${isPending ? 'Iniciar' : 'Gerenciar'}
-                                </button>
-                            `
-                            : (isPending && entityType === 'macros'
-                            ? `
-                                <button onclick="event.stopPropagation(); app.startEntity('${item.id}', '${entityType}')"
-                                    class="p-2.5 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-amber-700 dark:text-amber-400 transition-colors">
-                                    <span class="material-symbols-outlined notranslate text-base">play_arrow</span> Iniciar
                                 </button>
                             `
                             : (isDone
@@ -7073,10 +7079,16 @@ const app = {
                                     </button>`
                                 }
                                 `
-                                : `
+                                : (isPending
+                                    ? `
+                                <div class="p-2.5 border border-outline-variant/20 bg-surface-container-low rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline" title="Inicia automaticamente quando você inicia uma micro filha">
+                                    <span class="material-symbols-outlined notranslate text-base">arrow_downward</span> Aguarda micros
+                                </div>
+                                `
+                                    : `
                                 <button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')"
-                                    class="p-2.5 border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 transition-colors">
-                                    <span class="material-symbols-outlined notranslate text-base">check_circle</span> Concluir
+                                    class="p-2.5 border ${isReadyToClose ? 'border-emerald-500/50 bg-emerald-500/15 hover:bg-emerald-500/25 ring-2 ring-emerald-500/20' : 'border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10'} rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-base">check_circle</span> ${isReadyToClose ? 'Fechar agora' : 'Concluir'}
                                 </button>
                                 `));
 
@@ -7735,27 +7747,35 @@ const app = {
           </div>`;
     },
 
+    // Cascata bottom-up:
+    // - Calcula progress dos pais a partir das filhas (done-count para macros; avg para okr/meta).
+    // - NUNCA marca pai como 'done' automaticamente — chegar a 100% só sinaliza "pronto para fechar".
+    //   Apenas o usuário fecha (via forceCompleteEntity / botão Concluir).
+    // - Auto-start: se algum filho está ativo (in_progress/done) e o pai está pending → pai vira in_progress.
+    // - Auto-revert: se pai estava 'done' mas filha foi reaberta → volta para in_progress.
     updateCascadeProgress: function(entityId, type) {
         const state = window.sistemaVidaState;
-        
+
+        const hasActiveChild = (children) => children.some(c => c.status === 'in_progress' || c.status === 'done');
+        const setParentStatus = (parent, children, computedProgress) => {
+            // Reverte done forçado pelo usuário se filha foi reaberta (computedProgress < 100)
+            if (parent.status === 'done' && computedProgress < 100) parent.status = 'in_progress';
+            // Auto-start ao detectar filha ativa
+            if (parent.status === 'pending' && hasActiveChild(children)) parent.status = 'in_progress';
+            // Sem filhas ativas e progress 0 → volta para pending
+            if (children.length === 0 && parent.status === 'in_progress') parent.status = 'pending';
+        };
+
         if (type === 'micros') {
             const micro = state.entities.micros.find(m => m.id === entityId);
             if (micro && micro.macroId) {
                 const siblings = state.entities.micros.filter(m => m.macroId === micro.macroId && m.status !== 'abandoned');
-                console.log("Calculando progresso:", micro.macroId, "| Filhos (Micros) encontrados:", siblings.length);
-                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
+                const doneCount = siblings.filter(s => s.status === 'done').length;
+                const computed = siblings.length > 0 ? Math.round((doneCount / siblings.length) * 100) : 0;
                 const macro = state.entities.macros.find(m => m.id === micro.macroId);
                 if (macro) {
-                    if (siblings.length === 0) {
-                        macro.progress = 0;
-                        if (macro.status === 'in_progress') macro.status = 'pending';
-                    } else if (avg >= 99) {
-                        macro.progress = 100;
-                        macro.status = 'done';
-                    } else {
-                        macro.progress = Math.round(avg);
-                        if (macro.status === 'done') macro.status = 'active';
-                    }
+                    macro.progress = computed;
+                    setParentStatus(macro, siblings, computed);
                     this.updateCascadeProgress(macro.id, 'macros');
                 }
             }
@@ -7763,20 +7783,14 @@ const app = {
             const macro = state.entities.macros.find(m => m.id === entityId);
             if (macro && macro.okrId) {
                 const siblings = state.entities.macros.filter(m => m.okrId === macro.okrId && m.status !== 'abandoned');
-                console.log("Calculando progresso:", macro.okrId, "| Filhos (Macros) encontrados:", siblings.length);
                 const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
                 const okr = state.entities.okrs.find(o => o.id === macro.okrId);
                 if (okr) {
                     const krProgress = this.computeKeyResultsProgress(okr.keyResults);
                     const hasKrs = krProgress !== null;
-                    const finalProgress = hasKrs ? Math.round((krProgress * 0.7) + (avg * 0.3)) : Math.round(avg);
-                    if (finalProgress >= 99) {
-                        okr.progress = 100;
-                        okr.status = 'done';
-                    } else {
-                        okr.progress = finalProgress;
-                        if (okr.status === 'done') okr.status = 'active';
-                    }
+                    const computed = hasKrs ? Math.round((krProgress * 0.7) + (avg * 0.3)) : Math.round(avg);
+                    okr.progress = computed;
+                    setParentStatus(okr, siblings, computed);
                     this.updateCascadeProgress(okr.id, 'okrs');
                 }
             }
@@ -7784,34 +7798,24 @@ const app = {
             const okr = state.entities.okrs.find(o => o.id === entityId);
             if (okr && okr.metaId) {
                 const siblings = state.entities.okrs.filter(o => o.metaId === okr.metaId && o.status !== 'abandoned');
-                console.log("Calculando progresso:", okr.metaId, "| Filhos (OKRs) encontrados:", siblings.length);
                 const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
                 const meta = state.entities.metas.find(m => m.id === okr.metaId);
                 if (meta) {
-                    if (avg >= 99) {
-                        meta.progress = 100;
-                        meta.status = 'done';
-                    } else {
-                        meta.progress = Math.round(avg);
-                        if (meta.status === 'done') meta.status = 'active';
-                    }
+                    const computed = Math.round(avg);
+                    meta.progress = computed;
+                    setParentStatus(meta, siblings, computed);
                 }
             }
         } else if (type === 'metas') {
             const meta = state.entities.metas.find(m => m.id === entityId);
             if (meta && meta.parentMetaId) {
                 const siblings = state.entities.metas.filter(m => m.parentMetaId === meta.parentMetaId && m.status !== 'abandoned');
-                console.log("Calculando progresso:", meta.parentMetaId, "| Filhos (Metas) encontrados:", siblings.length);
                 const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
                 const parentMeta = state.entities.metas.find(m => m.id === meta.parentMetaId);
                 if (parentMeta) {
-                    if (avg >= 99) {
-                        parentMeta.progress = 100;
-                        parentMeta.status = 'done';
-                    } else {
-                        parentMeta.progress = Math.round(avg);
-                        if (parentMeta.status === 'done') parentMeta.status = 'active';
-                    }
+                    const computed = Math.round(avg);
+                    parentMeta.progress = computed;
+                    setParentStatus(parentMeta, siblings, computed);
                     this.updateCascadeProgress(parentMeta.id, 'metas');
                 }
             }
@@ -7898,57 +7902,44 @@ const app = {
         if (this.currentView === 'foco' && this.render.foco) this.render.foco();
     },
 
+    // Sobe a cascata de status quando uma micro entra em execução: pais que estavam
+    // 'pending' viram 'in_progress'. Não toca em pais 'done' (usuário decidiu fechar).
+    // Não altera progress dos pais — isso é responsabilidade do updateCascadeProgress.
+    cascadeStartUp: function(microId) {
+        const state = window.sistemaVidaState;
+        const micro = (state.entities?.micros || []).find(m => m.id === microId);
+        if (!micro) return;
+        const macro = (state.entities.macros || []).find(m => m.id === micro.macroId);
+        if (macro && macro.status === 'pending') macro.status = 'in_progress';
+        const okr = macro ? (state.entities.okrs || []).find(o => o.id === macro.okrId) : null;
+        if (okr && okr.status === 'pending') okr.status = 'in_progress';
+        const meta = okr ? (state.entities.metas || []).find(m => m.id === okr.metaId) : null;
+        if (meta && meta.status === 'pending') meta.status = 'in_progress';
+    },
+
+    // Inicia uma micro ação manualmente (botão Iniciar / Foco). Macro/OKR/Meta NÃO são
+    // iniciados manualmente — eles cascateiam a partir das micros via cascadeStartUp.
     startEntity: function(id, type) {
         const state = window.sistemaVidaState;
-        const list = (state.entities && state.entities[type]) || [];
-        const entity = list.find(e => e.id === id);
+        if (type !== 'micros') {
+            // Caminho legado: ignora silenciosamente para macros/okrs/metas.
+            // O fluxo correto é iniciar a partir da micro filha.
+            console.warn(`[startEntity] type='${type}' não é mais suportado. Use cascade via micro.`);
+            return;
+        }
+        const entity = (state.entities.micros || []).find(e => e.id === id);
         if (!entity) {
             this.showToast('Item não encontrado. Atualize a tela e tente novamente.', 'error');
             return;
         }
         if (entity.status === 'done') {
-            this.showToast('Este item já está concluído. Reabra antes de iniciar novamente.', 'error');
+            this.showToast('Esta micro já está concluída. Reabra antes de iniciar novamente.', 'error');
             return;
         }
-        if (type === 'macros') {
-            const hasActiveMicros = (state.entities.micros || []).some(m => m.macroId === id && m.status !== 'abandoned');
-            if (!hasActiveMicros) {
-                this.showToast('Crie ao menos uma micro ação antes de colocar esta macro em andamento.', 'error');
-                return;
-            }
-        }
         entity.status = 'in_progress';
-        if (!entity.progress || entity.progress < 1) entity.progress = 1;
-        if (type === 'micros') {
-            entity.completed = false;
-            const parentMacro = (state.entities.macros || []).find(m => m.id === entity.macroId);
-            if (parentMacro && parentMacro.status === 'pending') {
-                parentMacro.status = 'in_progress';
-                if (!parentMacro.progress || parentMacro.progress < 1) parentMacro.progress = 1;
-                const parentOkr = (state.entities.okrs || []).find(o => o.id === parentMacro.okrId);
-                if (parentOkr && parentOkr.status === 'pending') {
-                    parentOkr.status = 'in_progress';
-                    if (!parentOkr.progress || parentOkr.progress < 1) parentOkr.progress = 1;
-                    const parentMeta = (state.entities.metas || []).find(m => m.id === parentOkr.metaId);
-                    if (parentMeta && parentMeta.status === 'pending') {
-                        parentMeta.status = 'in_progress';
-                        if (!parentMeta.progress || parentMeta.progress < 1) parentMeta.progress = 1;
-                    }
-                }
-            }
-        }
-        if (type === 'macros') {
-            const parentOkr = (state.entities.okrs || []).find(o => o.id === entity.okrId);
-            if (parentOkr && parentOkr.status === 'pending') {
-                parentOkr.status = 'in_progress';
-                if (!parentOkr.progress || parentOkr.progress < 1) parentOkr.progress = 1;
-                const parentMeta = (state.entities.metas || []).find(m => m.id === parentOkr.metaId);
-                if (parentMeta && parentMeta.status === 'pending') {
-                    parentMeta.status = 'in_progress';
-                    if (!parentMeta.progress || parentMeta.progress < 1) parentMeta.progress = 1;
-                }
-            }
-        }
+        entity.completed = false;
+        // Micro tem progresso binário: 0 (não-done) ou 100 (done). Início não muda progress.
+        this.cascadeStartUp(entity.id);
         this.saveState(false);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
@@ -7976,19 +7967,25 @@ const app = {
     },
 
     forceCompleteEntity: function(id, type) {
-        if (confirm('Deseja marcar este item (e todos os seus dependentes diretos) como 100% concluído?')) {
-            const state = window.sistemaVidaState;
-            const item = state.entities[type].find(e => e.id === id);
-            if (item) {
-                item.progress = 100; item.status = 'done';
-                if (type === 'micros') item.completed = true;
-                this.updateCascadeProgress(id, type); // Mantém a automação Bottom-Up
-                this.cascadeStatusDown(id, type, 'done'); // Dispara a nova Cascata Top-Down
-                this.saveState(false);
-                if (this.render.planos) this.render.planos();
-                if (this.render.painel) this.render.painel();
-            }
-        }
+        const state = window.sistemaVidaState;
+        const item = state.entities[type].find(e => e.id === id);
+        if (!item) return;
+        const currentProgress = Number(item.progress) || 0;
+        const isAtFullProgress = currentProgress >= 100;
+        // Texto adaptado: 100% = simples confirmação; < 100% = aviso de força.
+        const message = isAtFullProgress
+            ? 'Todas as filhas estão concluídas. Deseja fechar este item?'
+            : `Este item está em ${currentProgress}%. Concluir agora vai marcar todas as filhas pendentes como concluídas. Confirmar?`;
+        if (!confirm(message)) return;
+        item.progress = 100;
+        item.status = 'done';
+        if (type === 'micros') item.completed = true;
+        this.updateCascadeProgress(id, type); // recálculo bottom-up dos pais
+        // Top-down só faz sentido quando força (< 100%); a 100% as filhas já estão done.
+        if (!isAtFullProgress) this.cascadeStatusDown(id, type, 'done');
+        this.saveState(false);
+        if (this.render.planos) this.render.planos();
+        if (this.render.painel) this.render.painel();
     },
 
     duplicateEntity: function(id, type) {
@@ -8662,12 +8659,13 @@ const app = {
             const dateKey = this.getLocalDateKey();
             const linkedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
             if (linkedMicro && linkedMicro.status !== 'done') {
+                const wasNotInProgress = linkedMicro.status !== 'in_progress';
                 linkedMicro.status = 'in_progress';
                 linkedMicro.completed = false;
-                linkedMicro.progress = Math.max(Number(linkedMicro.progress) || 0, 1);
                 linkedMicro.focusSec = Math.max(0, Number(linkedMicro.focusSec) || 0) + focusSec;
                 linkedMicro.focusSessions = Math.max(0, Number(linkedMicro.focusSessions) || 0) + 1;
                 linkedMicro.lastFocusDate = dateKey;
+                if (wasNotInProgress) this.cascadeStartUp(linkedMicro.id);
             }
             const endedAtTs = new Date().toISOString();
             dw.sessions.unshift({
@@ -8901,9 +8899,10 @@ const app = {
         if (chosenMicro) {
             const micro = (state.entities.micros || []).find(m => m.id === chosenMicro);
             if (micro && micro.status !== 'done') {
+                const wasNotInProgress = micro.status !== 'in_progress';
                 micro.status = 'in_progress';
-                if (!micro.progress || micro.progress < 1) micro.progress = 1;
                 micro.completed = false;
+                if (wasNotInProgress) this.cascadeStartUp(micro.id);
             }
         }
 
@@ -8964,9 +8963,10 @@ const app = {
         if (autoStart && micro.status !== 'done') {
             const sourceMicro = (state.entities?.micros || []).find(m => m.id === micro.id);
             const targetMicro = sourceMicro || micro;
+            const wasNotInProgress = targetMicro.status !== 'in_progress';
             targetMicro.status = 'in_progress';
             targetMicro.completed = false;
-            if (!targetMicro.progress || targetMicro.progress < 1) targetMicro.progress = 1;
+            if (wasNotInProgress && sourceMicro) this.cascadeStartUp(sourceMicro.id);
         }
         this.pendingFocusMicroId = micro.id;
         this.pendingFocusAutoStart = !!autoStart;
