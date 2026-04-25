@@ -6623,14 +6623,13 @@ const app = {
                     const startDate = micro.inicioDate || micro.prazo || '';
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
-                    const overdueTag = isOverdue ? '<span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[9px] font-bold uppercase tracking-normal rounded-md whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Atrasada</span>' : '';
-                    const statusTag = micro.status === 'in_progress'
-                        ? '<span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[9px] font-bold uppercase tracking-normal rounded-md whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Em andamento</span>'
-                        : '';
-                    const isHojePlanned = app._isPlannedThisWeek(micro.id);
-                    const hojePlannedTag = isHojePlanned
-                        ? '<span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-normal whitespace-nowrap"><span class="material-symbols-outlined notranslate text-[12px]">event</span>Semana</span>'
-                        : '<span class="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-normal whitespace-nowrap"><span class="material-symbols-outlined notranslate text-[12px]">inbox</span>Captura</span>';
+                    const metaBits = [];
+                    if (micro.status === 'in_progress') metaBits.push('<span class="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Andamento</span>');
+                    if (isOverdue) metaBits.push('<span class="inline-flex items-center gap-1 text-red-700 dark:text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Atrasada</span>');
+                    metaBits.push(app._isPlannedThisWeek(micro.id)
+                        ? '<span class="inline-flex items-center gap-1 text-primary"><span class="material-symbols-outlined notranslate text-[12px]">event</span>Semana</span>'
+                        : '<span class="inline-flex items-center gap-1 text-outline"><span class="material-symbols-outlined notranslate text-[12px]">inbox</span>Captura</span>');
+                    const metaLine = metaBits.join('<span class="text-outline/50">•</span>');
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
                         : (micro.status === 'in_progress'
@@ -6646,9 +6645,9 @@ const app = {
                                 <div class="flex items-start justify-between gap-3">
                                     <p class="text-sm sm:text-base text-on-surface font-semibold leading-snug break-words">${micro.title}</p>
                                 </div>
-                                <div class="mt-3 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-2 min-w-0">
-                                    <span class="inline-flex w-fit items-center px-2 py-1 bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-normal rounded-md area-tag whitespace-nowrap">${micro.dimension}</span>
-                                    <div class="flex flex-wrap items-center gap-1.5 min-w-0">${statusTag}${overdueTag}${hojePlannedTag}</div>
+                                <div class="mt-2 flex items-center gap-2 min-w-0">
+                                    <span class="shrink-0 inline-flex items-center px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-normal rounded-md area-tag whitespace-nowrap">${micro.dimension}</span>
+                                    <div class="flex items-center gap-1.5 min-w-0 overflow-hidden text-[9px] font-bold uppercase tracking-normal whitespace-nowrap">${metaLine}</div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">
@@ -8530,18 +8529,36 @@ const app = {
     },
 
     updateNavUI: function(activeView) {
-        document.querySelectorAll('nav button').forEach(btn => {
+        document.querySelectorAll('.nav-item-link').forEach(btn => {
             const icon = btn.querySelector('.material-symbols-outlined.notranslate');
-            const view = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            const iconWrap = icon ? icon.parentElement : null;
+            const label = btn.querySelector('span:last-child');
+            const view = btn.getAttribute('data-view') || btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
             btn.setAttribute('data-active', view === activeView ? 'true' : 'false');
-            
+
             if (view === activeView) {
-                btn.classList.add('text-primary');
+                btn.classList.add('text-primary', 'font-bold');
                 btn.classList.remove('text-on-surface-variant');
+                if (iconWrap) {
+                    iconWrap.classList.add('bg-primary-container/60', 'text-on-primary-container');
+                    iconWrap.classList.remove('hover:bg-primary-container/30');
+                }
+                if (label) {
+                    label.classList.add('text-primary');
+                    label.classList.remove('text-outline');
+                }
                 if (icon) icon.style.fontVariationSettings = "'FILL' 1";
             } else {
-                btn.classList.remove('text-primary');
+                btn.classList.remove('text-primary', 'font-bold');
                 btn.classList.add('text-on-surface-variant');
+                if (iconWrap) {
+                    iconWrap.classList.remove('bg-primary-container/60', 'text-on-primary-container');
+                    iconWrap.classList.add('hover:bg-primary-container/30');
+                }
+                if (label) {
+                    label.classList.remove('text-primary');
+                    label.classList.add('text-outline');
+                }
                 if (icon) icon.style.fontVariationSettings = "'FILL' 0";
             }
         });
