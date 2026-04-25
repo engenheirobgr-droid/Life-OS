@@ -5901,12 +5901,12 @@ const app = {
             // ---------------------------------------------------------
             
             // Fix Filter Buttons Highlight
-            document.querySelectorAll('header .flex.gap-2 button').forEach(btn => {
+            document.querySelectorAll('[data-painel-filter]').forEach(btn => {
                 const btnType = btn.getAttribute('data-painel-filter');
                 const isSelected = btnType === filter;
-                btn.className = isSelected ? 
-                    'px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95' :
-                    'px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors';
+                btn.className = isSelected ?
+                    'px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-wider transition-all shadow-sm' :
+                    'px-4 py-2 rounded-lg text-outline text-xs font-bold uppercase tracking-wider hover:bg-surface-container-high transition-all';
             });
 
             // Cycle Progress Logic
@@ -6022,15 +6022,15 @@ const app = {
                 const raw = btn.getAttribute('data-focus-type');
                 const t = typeMap[raw] || raw;
                 btn.className = t === typeFilter
-                    ? "px-2 py-2 rounded-lg bg-primary text-on-primary text-[9px] font-bold uppercase transition-all shadow-sm"
-                    : "px-2 py-2 rounded-lg text-outline text-[9px] font-bold uppercase hover:bg-surface-container-high transition-all";
+                    ? "px-2 py-2 rounded-lg bg-primary text-on-primary text-[9px] font-bold uppercase tracking-wider transition-all shadow-sm"
+                    : "px-2 py-2 rounded-lg text-outline text-[9px] font-bold uppercase tracking-wider hover:bg-surface-container-high transition-all";
             });
 
             document.querySelectorAll('[data-focus-status]').forEach(btn => {
                 const s = btn.getAttribute('data-focus-status');
                 btn.className = s === statusFilter
-                    ? "px-2 py-2 rounded-lg bg-primary text-on-primary text-[9px] font-bold uppercase transition-all shadow-sm"
-                    : "px-2 py-2 rounded-lg text-outline text-[9px] font-bold uppercase hover:bg-surface-container-high transition-all";
+                    ? "px-2 py-2 rounded-lg bg-primary text-on-primary text-[9px] font-bold uppercase tracking-wider transition-all shadow-sm"
+                    : "px-2 py-2 rounded-lg text-outline text-[9px] font-bold uppercase tracking-wider hover:bg-surface-container-high transition-all";
             });
 
             const lists = [
@@ -6759,7 +6759,7 @@ const app = {
             const filter = app.planosFilter || 'Todas';
 
             // Sync filter buttons UI
-            const filterContainer = document.querySelector('.overflow-x-auto.no-scrollbar.mb-12');
+            const filterContainer = document.getElementById('planos-dimension-filters') || document.querySelector('.overflow-x-auto.no-scrollbar.mb-12');
             if (filterContainer) {
                 const btns = filterContainer.querySelectorAll('button');
                 btns.forEach(btn => {
@@ -6767,9 +6767,9 @@ const app = {
                     const isMatched = (txt === filter || (filter === 'Relacionamentos' && txt === 'Relac.'));
 
                     if (isMatched) {
-                        btn.className = "bg-primary text-on-primary px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap";
+                        btn.className = "px-4 py-2 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all shadow-sm";
                     } else {
-                        btn.className = "bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors";
+                        btn.className = "px-4 py-2 rounded-lg text-outline text-[10px] font-bold uppercase tracking-wider whitespace-nowrap hover:bg-surface-container-high transition-all";
                     }
                     
                     btn.onclick = () => {
@@ -6802,9 +6802,9 @@ const app = {
                 }
                 const statFilterRaw = app.planosStatusFilter || 'all';
                 let statFilter = statFilterRaw === 'active' ? 'all' : statFilterRaw;
-                const base = 'px-4 py-1.5 rounded-full text-xs font-bold transition-colors';
-                const on = 'bg-primary text-on-primary';
-                const off = 'bg-surface-container-high text-on-surface-variant hover:brightness-95';
+                const base = 'px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap';
+                const on = 'bg-primary text-on-primary shadow-sm';
+                const off = 'text-outline hover:bg-surface-container-high';
                 const btnPending = document.getElementById('btn-stat-pending');
                 const btnInProgress = document.getElementById('btn-stat-in-progress');
                 const btnDone = document.getElementById('btn-stat-done');

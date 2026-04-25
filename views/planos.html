@@ -44,16 +44,18 @@ A arquitetura da sua intenção: metas, OKRs, macros, micros, timeline e planeja
 </nav>
 
 <!-- Dimension Filters -->
-<div class="mt-8 flex gap-2 overflow-x-auto no-scrollbar mb-12">
-    <button class="bg-primary text-on-primary px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap">Todas</button>
-    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Saúde</button>
-    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Mente</button>
-    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Carreira</button>
-    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Finanças</button>
-    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Relac.</button>
-    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Família</button>
-    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Lazer</button>
-    <button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-full text-[11px] font-label uppercase tracking-widest whitespace-nowrap hover:bg-surface-container-highest transition-colors">Propósito</button>
+<div id="planos-dimension-filters" class="mt-8 mb-12 overflow-x-auto no-scrollbar">
+    <div class="inline-flex min-w-max gap-1 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
+        <button class="px-4 py-2 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all shadow-sm">Todas</button>
+        <button class="px-4 py-2 rounded-lg text-outline text-[10px] font-bold uppercase tracking-wider whitespace-nowrap hover:bg-surface-container-high transition-all">Saúde</button>
+        <button class="px-4 py-2 rounded-lg text-outline text-[10px] font-bold uppercase tracking-wider whitespace-nowrap hover:bg-surface-container-high transition-all">Mente</button>
+        <button class="px-4 py-2 rounded-lg text-outline text-[10px] font-bold uppercase tracking-wider whitespace-nowrap hover:bg-surface-container-high transition-all">Carreira</button>
+        <button class="px-4 py-2 rounded-lg text-outline text-[10px] font-bold uppercase tracking-wider whitespace-nowrap hover:bg-surface-container-high transition-all">Finanças</button>
+        <button class="px-4 py-2 rounded-lg text-outline text-[10px] font-bold uppercase tracking-wider whitespace-nowrap hover:bg-surface-container-high transition-all">Relac.</button>
+        <button class="px-4 py-2 rounded-lg text-outline text-[10px] font-bold uppercase tracking-wider whitespace-nowrap hover:bg-surface-container-high transition-all">Família</button>
+        <button class="px-4 py-2 rounded-lg text-outline text-[10px] font-bold uppercase tracking-wider whitespace-nowrap hover:bg-surface-container-high transition-all">Lazer</button>
+        <button class="px-4 py-2 rounded-lg text-outline text-[10px] font-bold uppercase tracking-wider whitespace-nowrap hover:bg-surface-container-high transition-all">Propósito</button>
+    </div>
 </div>
 <!-- Advanced Filters (Raio-X Relacional & Status) -->
 <div id="planos-advanced-filters" class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 mb-12 space-y-4">
@@ -73,16 +75,18 @@ A arquitetura da sua intenção: metas, OKRs, macros, micros, timeline e planeja
             </select>
         </div>
     </div>
-    <div class="flex items-center gap-3 pt-3 border-t border-outline-variant/10 overflow-x-auto no-scrollbar">
+    <div class="space-y-2 pt-3 border-t border-outline-variant/10">
         <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1 shrink-0">
             <span class="material-symbols-outlined notranslate text-[14px]">check_circle</span> Status:
         </span>
-        <div class="flex gap-2 shrink-0">
-            <button onclick="window.app.setPlanosStatusFilter('pending')" id="btn-stat-pending" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Pendentes</button>
-            <button onclick="window.app.setPlanosStatusFilter('in_progress')" id="btn-stat-in-progress" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Andamento</button>
-            <button onclick="window.app.setPlanosStatusFilter('done')" id="btn-stat-done" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Concluídos</button>
-            <button onclick="window.app.setPlanosStatusFilter('planned')" id="btn-stat-planned" class="hidden px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Plano da Semana</button>
-            <button onclick="window.app.setPlanosStatusFilter('all')" id="btn-stat-all" class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors">Todos</button>
+        <div class="overflow-x-auto no-scrollbar">
+            <div class="inline-flex min-w-max gap-1 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
+                <button onclick="window.app.setPlanosStatusFilter('pending')" id="btn-stat-pending" class="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all">Pendentes</button>
+                <button onclick="window.app.setPlanosStatusFilter('in_progress')" id="btn-stat-in-progress" class="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all">Andamento</button>
+                <button onclick="window.app.setPlanosStatusFilter('done')" id="btn-stat-done" class="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all">Concluídos</button>
+                <button onclick="window.app.setPlanosStatusFilter('planned')" id="btn-stat-planned" class="hidden px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all">Plano da Semana</button>
+                <button onclick="window.app.setPlanosStatusFilter('all')" id="btn-stat-all" class="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all">Todos</button>
+            </div>
         </div>
     </div>
     <div class="pt-3 border-t border-outline-variant/10">

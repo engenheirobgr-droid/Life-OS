@@ -16,13 +16,15 @@
             </div>
         </div>
         <div class="mt-6 h-px w-24 bg-primary"></div>
-        <div class="mt-8 flex gap-2 overflow-x-auto no-scrollbar mb-6">
+        <div class="mt-8 mb-6 overflow-x-auto no-scrollbar">
+            <div class="inline-grid grid-cols-3 min-w-max rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
             <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')"
-                class="px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-medium transition-transform active:scale-95">Ciclo</button>
+                class="px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-wider transition-all shadow-sm">Ciclo</button>
             <button data-painel-filter="mes" onclick="app.setPainelFilter('mes')"
-                class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Mês</button>
+                class="px-4 py-2 rounded-lg text-outline text-xs font-bold uppercase tracking-wider hover:bg-surface-container-high transition-all">Mês</button>
             <button data-painel-filter="semana" onclick="app.setPainelFilter('semana')"
-                class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Semana</button>
+                class="px-4 py-2 rounded-lg text-outline text-xs font-bold uppercase tracking-wider hover:bg-surface-container-high transition-all">Semana</button>
+            </div>
         </div>
     </header>
 
@@ -343,15 +345,15 @@
                         class="text-[9px] uppercase tracking-widest text-outline font-bold">Tipo:</span>
                     <div class="grid grid-cols-5 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
                         <button data-focus-type="Tudo" onclick="app.setFocusTypeFilter('Tudo')"
-                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Tudo</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all">Tudo</button>
                         <button data-focus-type="Metas" onclick="app.setFocusTypeFilter('Metas')"
-                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Metas</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all">Metas</button>
                         <button data-focus-type="OKRs" onclick="app.setFocusTypeFilter('OKRs')"
-                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">OKRs</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all">OKRs</button>
                         <button data-focus-type="Macros" onclick="app.setFocusTypeFilter('Macros')"
-                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Macros</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all">Macros</button>
                         <button data-focus-type="Micros" onclick="app.setFocusTypeFilter('Micros')"
-                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase transition-all">Micros</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all">Micros</button>
                     </div>
                 </div>
                 <div class="space-y-1 hidden" aria-hidden="true">
