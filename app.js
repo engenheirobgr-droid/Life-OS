@@ -620,12 +620,19 @@ const app = {
             identity: this.getDimensionIdentity(dimension),
             totalLevel: this.getLevelFromXp(gamification.totalXp),
             dimensionLevel: dimension ? this.getLevelFromXp(gamification.dimensionXp[dimension]) : null,
+            totalLeveledUp: this.getLevelFromXp(totalBefore) < this.getLevelFromXp(gamification.totalXp),
+            dimensionLeveledUp: !!(dimension && this.getLevelFromXp(dimensionBefore) < this.getLevelFromXp(gamification.dimensionXp[dimension])),
             achievementsUnlocked: unlocked
         };
     },
     showGamificationToast: function(result) {
         if (!result || !this.showToast) return;
-        const parts = [`+${result.xp} XP`];
+        const leveledUp = result.totalLeveledUp || result.dimensionLeveledUp || result.achievementsUnlocked?.some(a => /nível|Sistema em movimento/i.test(a.title));
+        const openers = leveledUp
+            ? ['Subiu de nível!', 'Novo patamar desbloqueado!', 'Evolução registrada!']
+            : ['Boa execução!', 'Pequena vitória registrada!', 'Consistência conta!'];
+        const opener = openers[Math.floor(Math.random() * openers.length)];
+        const parts = [`${opener} +${result.xp} XP`];
         if (result.dimension && result.identity) {
             parts.push(`${result.identity.title} nível ${result.dimensionLevel}`);
         } else {
@@ -1032,7 +1039,7 @@ const app = {
         toast.className = `flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl transform transition-all duration-500 translate-y-8 opacity-0 ${bgColor} border border-outline-variant/10 ring-4 ${ringColor}`;
         toast.innerHTML = `
             <span class="material-symbols-outlined notranslate ${textColor} text-xl">${icon}</span>
-            <p class="text-sm font-semibold text-on-surface">${message}</p>
+            <p class="text-sm font-semibold ${isSuccess ? 'text-on-surface' : 'text-white'}">${message}</p>
         `;
         
         container.appendChild(toast);
@@ -1047,6 +1054,22 @@ const app = {
             toast.classList.add('translate-y-4', 'opacity-0');
             setTimeout(() => toast.remove(), 500);
         }, 3500);
+    },
+    clearBlockingMessage: function() {
+        const el = document.getElementById('crud-blocking-message');
+        if (!el) return;
+        el.textContent = '';
+        el.classList.add('hidden');
+    },
+    showBlockingMessage: function(message, options = {}) {
+        const text = String(message || 'Não foi possível continuar. Verifique os campos destacados.').trim();
+        const el = document.getElementById(options.targetId || 'crud-blocking-message');
+        if (el) {
+            el.textContent = text;
+            el.classList.remove('hidden');
+            try { el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_) {}
+        }
+        this.showToast(text, 'error');
     },
     currentView: '',
     pendingFocusMicroId: '',
@@ -2282,10 +2305,49 @@ const app = {
                     <option value="5" ${Number(prefill.commitmentLevel) === 5 ? 'selected' : ''}>5 - Muito alto</option>
                 </select>
             </div>
-            <textarea rows="3" class="trail-okr-krs w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-xs text-on-surface resize-none" placeholder="Key Results (um por linha): Título | Atual | Alvo" oninput="window.app.refreshTrailSummary()">${this.escapeHtml(prefill.keyResultsText || '')}</textarea>
+            <div class="trail-okr-krs-wrap space-y-2">
+                <div class="grid gap-2 px-1" style="grid-template-columns: 1fr 72px 72px 32px;">
+                    <span class="text-[10px] font-label uppercase tracking-widest text-outline">Resultado</span>
+                    <span class="text-[10px] font-label uppercase tracking-widest text-outline text-center">Atual</span>
+                    <span class="text-[10px] font-label uppercase tracking-widest text-outline text-center">Meta</span>
+                    <span></span>
+                </div>
+                <div class="trail-kr-rows flex flex-col gap-2"></div>
+                <button type="button" onclick="window.app.addTrailKrRow(this)"
+                    class="flex items-center gap-1.5 text-[11px] text-primary font-bold uppercase tracking-widest py-2 px-3 rounded-lg border border-primary/20 hover:bg-primary/5 transition-colors w-fit">
+                    <span class="material-symbols-outlined notranslate text-[15px]">add</span> Adicionar KR
+                </button>
+            </div>
         `;
         list.appendChild(row);
+        const initialKrs = Array.isArray(prefill.keyResults)
+            ? prefill.keyResults
+            : this.parseKeyResultsText(prefill.keyResultsText || '');
+        if (initialKrs.length) {
+            initialKrs.forEach(kr => this.addTrailKrRow(row.querySelector('.trail-okr-krs-wrap button'), kr));
+        } else {
+            this.addTrailKrRow(row.querySelector('.trail-okr-krs-wrap button'));
+        }
         this.refreshTrailMacroParentOptions();
+    },
+
+    addTrailKrRow: function(buttonOrRow, kr = {}) {
+        const okrRow = buttonOrRow?.closest ? buttonOrRow.closest('[data-trail-row]') : buttonOrRow;
+        const container = okrRow ? okrRow.querySelector('.trail-kr-rows') : null;
+        if (!container) return;
+        const row = document.createElement('div');
+        row.className = 'trail-kr-row grid gap-2 items-center';
+        row.style.gridTemplateColumns = '1fr 72px 72px 32px';
+        row.innerHTML = `
+            <input type="text" class="trail-kr-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Resultado mensurável" value="${this.escapeHtml(kr.title || '')}" oninput="window.app.refreshTrailSummary()">
+            <input type="number" class="trail-kr-current w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-2 py-2 text-sm text-on-surface text-center" placeholder="Atual" min="0" value="${Number(kr.current || 0)}" oninput="window.app.refreshTrailSummary()">
+            <input type="number" class="trail-kr-target w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-2 py-2 text-sm text-on-surface text-center" placeholder="Meta" min="0" value="${Number(kr.target || 0)}" oninput="window.app.refreshTrailSummary()">
+            <button type="button" onclick="this.closest('.trail-kr-row').remove(); window.app.refreshTrailSummary();" class="flex items-center justify-center w-8 h-9 rounded-lg text-outline hover:text-error hover:bg-error/10 transition-colors">
+                <span class="material-symbols-outlined notranslate text-[18px]">close</span>
+            </button>
+        `;
+        container.appendChild(row);
+        this.refreshTrailSummary();
     },
 
     addTrailMacroRow: function(prefill = {}) {
@@ -2424,12 +2486,17 @@ const app = {
             const prazo = (row.querySelector('.trail-okr-prazo')?.value || '').trim();
             const challengeLevel = Math.max(1, Math.min(5, Number(row.querySelector('.trail-okr-challenge')?.value || 3)));
             const commitmentLevel = Math.max(1, Math.min(5, Number(row.querySelector('.trail-okr-commitment')?.value || 3)));
-            const keyResultsText = (row.querySelector('.trail-okr-krs')?.value || '').trim();
-            const keyResults = this.parseKeyResultsText(keyResultsText);
-            const hasAny = !!(title || metric || inicioDate || prazo || keyResultsText);
+            const keyResultsRaw = Array.from(row.querySelectorAll('.trail-kr-row')).map(krRow => ({
+                title: krRow.querySelector('.trail-kr-title')?.value?.trim() || '',
+                current: krRow.querySelector('.trail-kr-current')?.value || 0,
+                target: krRow.querySelector('.trail-kr-target')?.value || 0
+            }));
+            const keyResults = this.normalizeKeyResultsList(keyResultsRaw);
+            const hasKrInput = keyResultsRaw.some(kr => kr.title || Number(kr.current || 0) > 0 || Number(kr.target || 0) > 0);
+            const hasAny = !!(title || metric || inicioDate || prazo || hasKrInput);
             const isComplete = !!(title && metric && prazo);
             if (hasAny && !isComplete) hasPartial = true;
-            if (isComplete) items.push({ rowId, title, metric, inicioDate, prazo, challengeLevel, commitmentLevel, keyResults, keyResultsText });
+            if (isComplete) items.push({ rowId, title, metric, inicioDate, prazo, challengeLevel, commitmentLevel, keyResults });
         });
         return { items, hasPartial };
     },
@@ -2804,6 +2871,7 @@ const app = {
     openCreateModal: function(type = 'metas') {
         this.closeFabMenu();
         this.editingEntity = null; // Limpa estado de edição
+        this.clearBlockingMessage();
         // Reseta chips do seletor de propósito
         document.querySelectorAll('.purpose-option-chip').forEach(c => {
             c.classList.remove('bg-primary/10', 'border-primary');
@@ -3225,7 +3293,7 @@ const app = {
         const normalizedType = String(type || '');
         const hasPrazo = !!String(prazo || '').trim();
         if (['metas', 'okrs', 'macros', 'micros'].includes(normalizedType) && !hasPrazo) {
-            return { ok: false, message: 'Defina um prazo para respeitar a janela temporal deste tipo.' };
+            return { ok: false, message: 'Defina um prazo. Cada tipo do plano tem uma janela máxima para manter a execução realista.' };
         }
 
         if (normalizedType === 'metas') {
@@ -3233,7 +3301,7 @@ const app = {
             if (days === null || days < 1) return { ok: false, message: 'Meta precisa de um prazo futuro válido.' };
             const rule = this.getMetaHorizonRule(metaHorizonYears);
             if (days < rule.min || days > rule.max) {
-                return { ok: false, message: `Para meta de ${rule.label}, ajuste o prazo para a janela esperada desse horizonte.` };
+                return { ok: false, message: `Para uma meta de ${rule.label}, o prazo precisa ficar entre ${rule.min} e ${rule.max} dias. Ajuste o prazo ou escolha outro horizonte.` };
             }
             return { ok: true };
         }
@@ -3241,24 +3309,24 @@ const app = {
         if (normalizedType === 'okrs') {
             const startRef = String(inicioDate || this.getLocalDateKey());
             const days = this.getDayDiffBetween(startRef, prazo);
-            if (days === null || days < 0) return { ok: false, message: 'OKR precisa de início e prazo válidos.' };
-            if (days > 92) return { ok: false, message: 'OKR deve ficar dentro de até 3 meses (máx. 92 dias).' };
+            if (days === null || days < 0) return { ok: false, message: 'OKR precisa de início e prazo válidos. O prazo não pode vir antes do início.' };
+            if (days > 92) return { ok: false, message: 'OKR deve ficar dentro de até 3 meses (máx. 92 dias). Se for maior, transforme em Meta ou divida em OKRs menores.' };
             return { ok: true };
         }
 
         if (normalizedType === 'macros') {
             const startRef = String(inicioDate || this.getLocalDateKey());
             const days = this.getDayDiffBetween(startRef, prazo);
-            if (days === null || days < 0) return { ok: false, message: 'Macro Ação precisa de início e prazo válidos.' };
-            if (days > 31) return { ok: false, message: 'Macro Ação deve ficar dentro de 1 mês (máx. 31 dias).' };
+            if (days === null || days < 0) return { ok: false, message: 'Macro Ação precisa de início e prazo válidos. O prazo não pode vir antes do início.' };
+            if (days > 31) return { ok: false, message: 'Macro Ação deve caber em até 1 mês (máx. 31 dias). Se passar disso, divida em macros menores ou promova para OKR.' };
             return { ok: true };
         }
 
         if (normalizedType === 'micros') {
             const startRef = String(inicioDate || this.getLocalDateKey());
             const days = this.getDayDiffBetween(startRef, prazo);
-            if (days === null || days < 0) return { ok: false, message: 'Micro Ação precisa de início e prazo válidos.' };
-            if (days > 7) return { ok: false, message: 'Micro Ação deve ficar dentro de 1 semana (máx. 7 dias).' };
+            if (days === null || days < 0) return { ok: false, message: 'Micro Ação precisa de início e prazo válidos. O prazo não pode vir antes do início.' };
+            if (days > 7) return { ok: false, message: 'Micro Ação deve caber em até 7 dias. Se passar disso, divida em micros menores ou classifique como Macro Ação.' };
             return { ok: true };
         }
 
@@ -3444,6 +3512,7 @@ const app = {
         const modal = document.getElementById('crud-modal');
         const form = document.getElementById('crud-form');
         if (modal) modal.classList.add('hidden');
+        this.clearBlockingMessage();
         if (form) {
             form.reset();
             // Reset de campos extras não limpos pelo reset() standard
@@ -4630,7 +4699,10 @@ const app = {
     postponeMicroOneDay: function(id) {
         const state = window.sistemaVidaState;
         const micro = (state.entities.micros || []).find(m => m.id === id);
-        if (!micro) return;
+        if (!micro) {
+            this.showToast('Micro ação não encontrada para adiar.', 'error');
+            return;
+        }
 
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -4698,12 +4770,14 @@ const app = {
     saveNewEntity: function() {
         const titleInput = document.getElementById('crud-title');
         const title = titleInput ? titleInput.value.trim() : '';
-        
+
         if (!title) {
-            if (this.showToast) this.showToast('Por favor, insira um título.', 'error');
+            if (this.showBlockingMessage) this.showBlockingMessage('Por favor, insira um título antes de salvar.');
+            else if (this.showToast) this.showToast('Por favor, insira um título.', 'error');
             else alert('Por favor, insira um título.');
             return;
         }
+        this.clearBlockingMessage();
 
         const type = document.getElementById('crud-type').value;
         const dimension = document.getElementById('crud-dimension').value;
@@ -4713,7 +4787,7 @@ const app = {
             const routineVal = document.getElementById('habit-routine') ? document.getElementById('habit-routine').value.trim() : '';
             const rewardVal = document.getElementById('habit-reward') ? document.getElementById('habit-reward').value.trim() : '';
             if (!trigger || !routineVal || !rewardVal) {
-                this.showToast('Para hábitos, preencha gatilho, rotina e recompensa do dia.', 'error');
+                this.showBlockingMessage('Para hábitos, preencha gatilho, rotina e recompensa do dia.');
                 return;
             }
         }
@@ -4746,14 +4820,14 @@ const app = {
                 selectElementId: 'crud-meta-horizon'
             });
             if (!horizonAlign.ok) {
-                app.showToast(horizonAlign.message || 'Ajuste o horizonte da meta antes de salvar.', 'error');
+                app.showBlockingMessage(horizonAlign.message || 'Ajuste o horizonte da meta antes de salvar.');
                 return;
             }
             metaHorizonYears = horizonAlign.horizonYears;
         }
         const windowValidation = this.validateEntityTimeWindow(type, { prazo, inicioDate, metaHorizonYears });
         if (!windowValidation.ok) {
-            app.showToast(windowValidation.message, 'error');
+            app.showBlockingMessage(windowValidation.message);
             return;
         }
 
@@ -4801,7 +4875,7 @@ const app = {
                 if (parentId) obj.metaId = parentId || '';
                 const okrCriterion = successCriteria || context || '';
                 if (!okrCriterion.trim()) {
-                    app.showToast('Defina o Critério / Meta do OKR para salvar.', 'error');
+                    app.showBlockingMessage('Defina o Critério / Meta do OKR para salvar.');
                     return;
                 }
                 obj.successCriteria = okrCriterion;
@@ -4826,12 +4900,12 @@ const app = {
                 const start = new Date(obj.inicioDate + 'T00:00:00');
                 const end = new Date(obj.prazo + 'T00:00:00');
                 if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
-                    app.showToast('Datas inválidas para Micro Ação. Verifique início e prazo.', 'error');
+                    app.showBlockingMessage('Datas inválidas para Micro Ação. Verifique início e prazo.');
                     return;
                 }
                 const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
                 if (diffDays > 7) {
-                    app.showToast('Uma Micro Ação não pode durar mais de 7 dias. Divida-a em partes menores ou classifique como Macro Ação.', 'error');
+                    app.showBlockingMessage('Uma Micro Ação não pode durar mais de 7 dias. Divida-a em partes menores ou classifique como Macro Ação.');
                     return;
                 }
             }
@@ -5539,6 +5613,26 @@ const app = {
                     </div>
                 `).join('')
                 : `<div class="rounded-xl bg-surface-container-low p-4 text-sm text-outline">Conclua uma micro, um hábito, um foco ou uma revisão para desbloquear conquistas.</div>`;
+        }
+
+        const rulesEl = document.getElementById('gamification-rules');
+        if (rulesEl) {
+            const rules = [
+                { icon: 'task_alt', label: 'Micro concluída', xp: '+12 XP', note: '+6 se está no plano da semana' },
+                { icon: 'repeat', label: 'Hábito do dia', xp: '+6 XP', note: 'conta uma vez por hábito/dia' },
+                { icon: 'timer', label: 'Foco profundo', xp: '+10 a +40 XP', note: 'varia pela duração do bloco' },
+                { icon: 'rate_review', label: 'Revisão semanal', xp: '+25 XP', note: 'conta uma vez por semana' }
+            ];
+            rulesEl.innerHTML = rules.map(rule => `
+                <div class="rounded-lg bg-surface-container-lowest border border-outline-variant/10 p-3">
+                    <div class="flex items-center gap-2 text-primary">
+                        <span class="material-symbols-outlined notranslate text-base">${rule.icon}</span>
+                        <span class="text-xs font-bold">${rule.xp}</span>
+                    </div>
+                    <p class="mt-2 text-xs font-bold text-on-surface">${rule.label}</p>
+                    <p class="mt-1 text-[10px] text-outline leading-snug">${rule.note}</p>
+                </div>
+            `).join('');
         }
     },
 
@@ -6267,13 +6361,17 @@ const app = {
             todayMicros.forEach((micro, idx) => {
                 if (micro.completed) {
                     html += `
-                    <div class="bg-surface-container-low/50 p-4 rounded-xl flex items-center gap-4 opacity-60">
-                        <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                    <div class="relative overflow-hidden bg-emerald-500/[0.04] border border-emerald-500/25 p-4 rounded-xl flex items-center gap-4 shadow-sm shadow-emerald-500/5">
+                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+                        <div class="absolute right-3 bottom-2 pointer-events-none opacity-[0.08]">
+                            <span class="material-symbols-outlined notranslate text-5xl text-emerald-500">verified</span>
+                        </div>
+                        <div class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
                             <span class="material-symbols-outlined notranslate text-white text-sm" style="font-variation-settings: 'wght' 700;">check</span>
                         </div>
-                        <div class="flex-1">
+                        <div class="flex-1 min-w-0">
                             <p class="text-base text-on-surface font-medium line-through">${micro.title}</p>
-                            <span class="inline-block mt-1 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${micro.dimension}</span>
+                            <span class="inline-block mt-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${micro.dimension}</span>
                         </div>
                     </div>`;
                 } else {
@@ -6302,8 +6400,9 @@ const app = {
 
                     html += `
                     <div class="space-y-2">
-                        <div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-start gap-3 sm:gap-4 group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
-                            <div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0 mt-1" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
+                        <div class="relative overflow-hidden ${micro.status === 'in_progress' ? 'bg-amber-500/[0.04] border border-amber-500/35 shadow-sm shadow-amber-500/10' : 'bg-surface-container-lowest shadow-[0_4px_20px_rgba(0,0,0,0.02)]'} p-4 rounded-xl flex items-start gap-3 sm:gap-4 group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 ${micro.status === 'in_progress' ? 'bg-amber-500' : 'bg-primary/20'}"></div>
+                            <div class="w-6 h-6 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0 mt-1" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm sm:text-base text-on-surface font-medium leading-snug break-words">${micro.title}</p>
                                 <div class="mt-2 flex flex-wrap items-center gap-1.5">
@@ -6694,10 +6793,12 @@ const app = {
                         const isDone = prog >= 100 || item.status === 'done' || item.completed;
                         const isPending = item.status === 'pending';
                         const highlightClass = isInProgress
-                            ? 'ring-2 ring-amber-500/40 border-amber-500/40 shadow-md shadow-amber-500/10'
-                            : (isDone ? 'border-emerald-500/30 shadow-md shadow-emerald-500/10' : 'border-outline-variant/20 shadow-sm');
+                            ? 'ring-2 ring-amber-500/30 border-amber-500/50 shadow-md shadow-amber-500/10 bg-amber-500/[0.03]'
+                            : (isDone ? 'border-emerald-500/40 shadow-md shadow-emerald-500/10 bg-emerald-500/[0.035]' : 'border-outline-variant/20 shadow-sm');
+                        const accentClass = isDone ? 'bg-emerald-500' : (isInProgress ? 'bg-amber-500' : 'bg-primary/30');
+                        const progressColor = isDone ? 'bg-emerald-500' : (isInProgress ? 'bg-amber-500' : 'bg-primary');
                         const statusChip = isDone
-                            ? '<span class="shrink-0 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Concluído</span>'
+                            ? '<span class="shrink-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Concluído</span>'
                             : (isInProgress
                                 ? '<span class="shrink-0 bg-amber-100 text-amber-700 border border-amber-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Andamento</span>'
                                 : '<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Pendente</span>');
@@ -6737,6 +6838,8 @@ const app = {
 
                         html += `
                         <div data-entity-id="${item.id}" data-entity-type="${entityType}" class="bg-surface-container-lowest p-4 md:p-5 rounded-2xl border ${highlightClass} hover:shadow-lg transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 ${accentClass}"></div>
+                            ${isDone ? '<div class="absolute right-4 bottom-4 pointer-events-none opacity-[0.07]"><span class="material-symbols-outlined notranslate text-7xl text-emerald-500">verified</span></div>' : ''}
                             <div class="flex items-start justify-between gap-3 mb-3">
                                 <div class="space-y-1.5 flex-1 min-w-0">
                                     <div class="flex items-center gap-2 flex-wrap">
@@ -6768,7 +6871,7 @@ const app = {
                                     <span>${prog.toFixed(0)}%</span>
                                 </div>
                                 <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
-                                    <div class="h-full bg-primary rounded-full transition-all" style="width: ${visualProg}%"></div>
+                                    <div class="h-full ${progressColor} rounded-full transition-all" style="width: ${visualProg}%"></div>
                                 </div>
                             </div>
 
@@ -7474,7 +7577,10 @@ const app = {
     completeMicroAction: function(id) {
         const state = window.sistemaVidaState;
         const micro = state.entities.micros.find(m => m.id === id);
-        if (!micro) return;
+        if (!micro) {
+            this.showToast('Micro ação não encontrada. Atualize a tela e tente novamente.', 'error');
+            return;
+        }
 
         // Define se estamos marcando ou desmarcando a tarefa
         const isCompleting = micro.status !== 'done';
@@ -7537,7 +7643,14 @@ const app = {
         const state = window.sistemaVidaState;
         const list = (state.entities && state.entities[type]) || [];
         const entity = list.find(e => e.id === id);
-        if (!entity || entity.status === 'done') return;
+        if (!entity) {
+            this.showToast('Item não encontrado. Atualize a tela e tente novamente.', 'error');
+            return;
+        }
+        if (entity.status === 'done') {
+            this.showToast('Este item já está concluído. Reabra antes de iniciar novamente.', 'error');
+            return;
+        }
         entity.status = 'in_progress';
         if (!entity.progress || entity.progress < 1) entity.progress = 1;
         if (type === 'micros') entity.completed = false;
@@ -8488,7 +8601,14 @@ const app = {
         this.normalizeDeepWorkState();
         const state = window.sistemaVidaState;
         const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
-        if (!micro || micro.status === 'done') return;
+        if (!micro) {
+            this.showToast('Micro ação indisponível para foco. Verifique se ela ainda está ativa.', 'error');
+            return;
+        }
+        if (micro.status === 'done') {
+            this.showToast('Esta micro já está concluída. Reabra antes de iniciar foco.', 'error');
+            return;
+        }
         const dw = state.deepWork;
         if (dw.isRunning) {
             this.showToast('Já existe um bloco de foco em andamento.', 'error');
@@ -8509,7 +8629,14 @@ const app = {
         this.normalizeDeepWorkState();
         const state = window.sistemaVidaState;
         const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
-        if (!micro || micro.status === 'done') return;
+        if (!micro) {
+            this.showToast('Micro ação indisponível para foco. Verifique se ela ainda está ativa.', 'error');
+            return;
+        }
+        if (micro.status === 'done') {
+            this.showToast('Esta micro já está concluída. Reabra antes de gerenciar no foco.', 'error');
+            return;
+        }
         const dw = state.deepWork;
         if (dw.isRunning && dw.microId && dw.microId !== micro.id) {
             this.showToast('Finalize ou pause o bloco atual antes de trocar de micro ação.', 'error');
