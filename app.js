@@ -3925,6 +3925,13 @@ const app = {
         const container = document.getElementById('daily-compass-container');
         if (!container) return;
         const compass = this.getDailyCompass();
+        const isInternalPrinciple = compass.quote?.author === 'Life OS';
+        const quoteText = isInternalPrinciple
+            ? this.escapeHtml(compass.quote.quote)
+            : `"${this.escapeHtml(compass.quote.quote)}"`;
+        const quoteSource = isInternalPrinciple
+            ? 'Princípio interno do Life OS'
+            : this.escapeHtml(compass.quote.author);
         container.innerHTML = `
             <div class="relative overflow-hidden rounded-2xl border border-primary/15 bg-primary/5 p-5 md:p-6 shadow-sm">
                 <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
@@ -3933,8 +3940,8 @@ const app = {
                         <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">Bússola do Dia · ${this.escapeHtml(compass.theme)}</p>
                         <p class="text-sm text-on-surface leading-relaxed">${compass.personal}</p>
                         <blockquote class="mt-4 border-l border-primary/30 pl-4">
-                            <p class="font-headline text-xl md:text-2xl italic text-on-background leading-snug">"${this.escapeHtml(compass.quote.quote)}"</p>
-                            <p class="mt-2 text-[11px] font-bold uppercase tracking-widest text-outline">${this.escapeHtml(compass.quote.author)}</p>
+                            <p class="font-headline text-xl md:text-2xl italic text-on-background leading-snug">${quoteText}</p>
+                            <p class="mt-2 text-[11px] font-bold uppercase tracking-widest text-outline">${quoteSource}</p>
                         </blockquote>
                         <p class="mt-4 text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(compass.quote.reflection)} ${this.escapeHtml(compass.direction)}</p>
                     </div>
@@ -6616,8 +6623,8 @@ const app = {
                             </div>
                         </div>
                         
-                        <div class="hidden bg-surface-container-low rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant overflow-hidden" id="trail-${idx}">
-                            <div class="absolute left-[12px] top-4 bottom-4 w-px bg-primary/10"></div>
+                        <div class="hidden bg-surface-container-low rounded-lg p-4 space-y-3 relative trail-line text-on-surface-variant overflow-hidden" id="trail-${idx}">
+                            <div class="absolute left-[12px] top-3 bottom-3 w-px bg-primary/10"></div>
                             
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-primary text-xl bg-surface-container-lowest p-0.5 rounded-full">check_circle</span>
@@ -6667,7 +6674,7 @@ const app = {
                                 </div>
                             </div>
 
-                            <div class="pt-4 border-t border-outline-variant/10 flex justify-end">
+                            <div class="pt-3 border-t border-outline-variant/10 flex justify-end">
                                 <button onclick="event.stopPropagation(); app.openEntityReview('${micro.id}', 'micros')" class="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-bold transition-all shadow-sm">
                                     <span class="material-symbols-outlined notranslate text-[18px]">settings_accessibility</span> Gerir Micro Ação
                                 </button>
@@ -6950,8 +6957,8 @@ const app = {
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '-' });
                         }
 
-                        let trailHtml = `<div class="bg-surface-container-low rounded-lg p-6 space-y-6 relative trail-line text-on-surface-variant mt-6 overflow-hidden">
-                            <div class="absolute left-[12px] top-4 bottom-4 w-px bg-primary/10"></div>`;
+                        let trailHtml = `<div class="bg-surface-container-low rounded-lg p-4 space-y-3 relative trail-line text-on-surface-variant mt-0 overflow-hidden">
+                            <div class="absolute left-[12px] top-3 bottom-3 w-px bg-primary/10"></div>`;
 
                         trailNodes.forEach((node) => {
                             let icon = 'trip_origin'; let colorClass = 'text-outline'; let titleClass = 'text-xs text-on-surface-variant font-medium';
@@ -7089,9 +7096,9 @@ const app = {
                                 ${actionButton}
                             </div>
 
-                            <div class="trail-panel hidden overflow-hidden transition-all duration-300 max-h-0 mt-5 border-t border-outline-variant/10 pt-4">
-                                <div class="relative pl-6 pt-1">
-                                    <div class="absolute left-[7px] top-2 bottom-2 w-px bg-primary/20"></div>
+                            <div class="trail-panel hidden overflow-hidden transition-all duration-300 max-h-0 mt-3 border-t border-outline-variant/10 pt-3">
+                                <div class="relative pl-4 pt-0">
+                                    <div class="absolute left-[7px] top-1 bottom-1 w-px bg-primary/20"></div>
                                     ${trailHtml}
                                 </div>
                             </div>
@@ -7509,7 +7516,7 @@ const app = {
             } else if (isOverdue) {
                 barBg = 'bg-error/80';
             } else if (entity.status === 'in_progress') {
-                barBg = isMicro ? 'bg-primary/70' : 'bg-primary';
+                barBg = 'bg-amber-500';
             } else {
                 barBg = isMicro ? 'bg-outline/30' : 'bg-outline/40';
             }
@@ -7668,7 +7675,7 @@ const app = {
               <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>Concluído
             </span>
             <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
-              <span class="inline-block w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>Em andamento
+              <span class="inline-block w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span>Em andamento
             </span>
             <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
               <span class="inline-block w-2 h-2 rounded-full bg-outline/40 flex-shrink-0"></span>Pendente
@@ -7783,6 +7790,18 @@ const app = {
         // Define se estamos marcando ou desmarcando a tarefa
         const isCompleting = micro.status !== 'done';
         const wasInProgress = micro.status === 'in_progress';
+        if (!isCompleting) {
+            const confirmed = confirm('Reabrir esta micro vai remover a conclusão e recalcular o progresso da trilha. Deseja continuar?');
+            if (!confirmed) return;
+        } else {
+            const focusSec = Number(micro.focusSec || 0);
+            const focusSessions = Number(micro.focusSessions || 0);
+            const hasFocusEvidence = focusSec > 0 || focusSessions > 0;
+            if (!hasFocusEvidence) {
+                const confirmed = confirm('Esta micro não tem tempo de foco registrado. Concluir mesmo assim?');
+                if (!confirmed) return;
+            }
+        }
         micro.status = isCompleting ? 'done' : 'pending';
         // Sincroniza com a propriedade Legada 'completed' para manter UI funcionando
         micro.completed = isCompleting;
@@ -7848,6 +7867,13 @@ const app = {
         if (entity.status === 'done') {
             this.showToast('Este item já está concluído. Reabra antes de iniciar novamente.', 'error');
             return;
+        }
+        if (type === 'macros') {
+            const hasActiveMicros = (state.entities.micros || []).some(m => m.macroId === id && m.status !== 'abandoned');
+            if (!hasActiveMicros) {
+                this.showToast('Crie ao menos uma micro ação antes de colocar esta macro em andamento.', 'error');
+                return;
+            }
         }
         entity.status = 'in_progress';
         if (!entity.progress || entity.progress < 1) entity.progress = 1;
