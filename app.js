@@ -5901,19 +5901,20 @@ const app = {
             });
 
             // Cycle Progress Logic
-            const cycleStart = new Date(state.cycleStartDate || new Date());
+            const cycleStart = new Date((state.cycleStartDate || app.getLocalDateKey()) + 'T00:00:00');
             const today = new Date();
-            const diffDays = Math.ceil((today - cycleStart) / (1000 * 60 * 60 * 24));
-            const diffWeeks = Math.ceil(diffDays / 7) || 1;
-            const cyclePercent = Math.min(100, Math.round((diffDays / 84) * 100)); // 12 weeks = 84 days
+            today.setHours(0, 0, 0, 0);
+            const elapsedCycleDays = Math.max(0, Math.min(84, Math.floor((today - cycleStart) / (1000 * 60 * 60 * 24)) + 1));
+            const diffWeeks = Math.max(1, Math.min(12, Math.ceil(elapsedCycleDays / 7) || 1));
+            const cyclePercent = Math.min(100, Math.round((elapsedCycleDays / 84) * 100)); // 12 weeks = 84 days
 
             const cycleBar = document.getElementById('cycle-progress-bar');
             const cycleVal = document.getElementById('cycle-percent-val');
             const cycleWeekText = document.getElementById('cycle-week-text');
-            
+
             if (cycleBar) cycleBar.style.width = cyclePercent + '%';
             if (cycleVal) cycleVal.textContent = cyclePercent + '%';
-            if (cycleWeekText) cycleWeekText.textContent = `Semana ${diffWeeks} de 12`;
+            if (cycleWeekText) cycleWeekText.textContent = `Semana ${diffWeeks} de 12 · ${elapsedCycleDays}/84 dias`;
 
             // Dynamic OKR Rendering
             const okrList = document.getElementById('painel-okr-list');
@@ -6011,15 +6012,15 @@ const app = {
                 const raw = btn.getAttribute('data-focus-type');
                 const t = typeMap[raw] || raw;
                 btn.className = t === typeFilter
-                    ? "shrink-0 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
-                    : "shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                    ? "shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
+                    : "shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
             });
 
             document.querySelectorAll('[data-focus-status]').forEach(btn => {
                 const s = btn.getAttribute('data-focus-status');
                 btn.className = s === statusFilter
-                    ? "shrink-0 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
-                    : "shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
+                    ? "shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold uppercase transition-all"
+                    : "shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-surface-container-high text-outline text-[10px] font-bold uppercase hover:bg-surface-container-highest transition-all";
             });
 
             const lists = [
@@ -6056,12 +6057,14 @@ const app = {
                 const pendingPct = s.total > 0 ? Math.max(0, 100 - donePct - inProgressPct) : 0;
                 return `
                 <div class="rounded-xl bg-surface-container-lowest border border-outline-variant/10 p-3 min-w-0">
-                    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-2 min-w-0">
-                        <span class="text-[10px] uppercase tracking-widest font-bold text-outline">${dimLabels[dim]}</span>
-                        <span class="text-[10px] font-bold text-primary">Foco ${focusPct}% (${s.focusItems})</span>
-                        <span class="text-[10px] text-emerald-600 font-semibold">C ${donePct}%</span>
-                        <span class="text-[10px] text-amber-600 font-semibold">A ${inProgressPct}%</span>
-                        <span class="text-[10px] text-outline font-semibold">P ${pendingPct}%</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-[128px_minmax(0,1fr)] gap-2 mb-2 min-w-0">
+                        <span class="text-[10px] uppercase tracking-widest font-bold text-outline leading-tight break-words">${dimLabels[dim]}</span>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1 min-w-0">
+                            <span class="rounded-md bg-primary/10 px-2 py-1 text-[9px] font-bold text-primary whitespace-nowrap">Foco ${focusPct}% (${s.focusItems})</span>
+                            <span class="rounded-md bg-emerald-500/10 px-2 py-1 text-[9px] text-emerald-700 dark:text-emerald-300 font-semibold whitespace-nowrap">C ${donePct}%</span>
+                            <span class="rounded-md bg-amber-500/10 px-2 py-1 text-[9px] text-amber-700 dark:text-amber-300 font-semibold whitespace-nowrap">A ${inProgressPct}%</span>
+                            <span class="rounded-md bg-surface-container-high px-2 py-1 text-[9px] text-outline font-semibold whitespace-nowrap">P ${pendingPct}%</span>
+                        </div>
                     </div>
                     <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
                         <div class="h-full transition-all duration-700 flex" style="width:${focusPct}%">
@@ -6210,26 +6213,38 @@ const app = {
         renderAnnualHeatmap: function() {
             const heatmap = document.getElementById('annual-heatmap');
             if (!heatmap) return;
-            
+
             const state = window.sistemaVidaState;
             const logs = state.dailyLogs || {};
-            let html = '';
-            
-            // Gerar 140 quadradinhos (20 semanas x 7 dias)
-            // Começa de 140 dias atrás até hoje
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 139);
-            
-            for (let i = 0; i < 140; i++) {
-                const d = new Date(startDate);
-                d.setDate(startDate.getDate() + i);
-                const key = d.toISOString().split('T')[0];
-                const hasLog = !!logs[key];
-                const color = hasLog ? 'bg-primary' : 'bg-surface-container-high border border-outline-variant/10';
-                
-                html += `<div class="w-2 h-2 rounded-[1px] ${color}" title="${key}"></div>`;
+            const cycleStart = new Date((state.cycleStartDate || this.getLocalDateKey()) + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const elapsedDays = Math.max(0, Math.min(84, Math.floor((today - cycleStart) / (1000 * 60 * 60 * 24)) + 1));
+            const daysLabel = document.getElementById('painel-exec-days');
+            if (daysLabel) daysLabel.textContent = `${elapsedDays}/84 dias`;
+
+            let html = '<div class="flex items-start gap-1.5 min-w-max">';
+            for (let week = 0; week < 12; week++) {
+                html += '<div class="grid grid-rows-7 gap-1">';
+                for (let day = 0; day < 7; day++) {
+                    const offset = (week * 7) + day;
+                    const d = new Date(cycleStart);
+                    d.setDate(cycleStart.getDate() + offset);
+                    const key = this.getLocalDateKey(d);
+                    const hasLog = !!logs[key];
+                    const isToday = d.getTime() === today.getTime();
+                    const isFuture = d > today;
+                    const color = hasLog
+                        ? 'bg-primary border-primary'
+                        : (isFuture
+                            ? 'bg-transparent border-outline-variant/20'
+                            : 'bg-surface-container-high border-outline-variant/20');
+                    const todayRing = isToday ? 'ring-2 ring-primary/40 ring-offset-1 ring-offset-surface-container-lowest' : '';
+                    html += `<div class="w-3 h-3 rounded-[3px] border ${color} ${todayRing}" title="${key}"></div>`;
+                }
+                html += '</div>';
             }
-            
+            html += '</div>';
             heatmap.innerHTML = html;
         },
 
@@ -6589,14 +6604,14 @@ const app = {
                     const startDate = micro.inicioDate || micro.prazo || '';
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
-                    const overdueTag = isOverdue ? '<span class="inline-flex items-center px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Atrasada</span>' : '';
+                    const overdueTag = isOverdue ? '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[9px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap">Atrasada</span>' : '';
                     const statusTag = micro.status === 'in_progress'
-                        ? '<span class="inline-flex items-center px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider rounded-full">Em Andamento</span>'
+                        ? '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap">Em Andamento</span>'
                         : '';
                     const isHojePlanned = app._isPlannedThisWeek(micro.id);
                     const hojePlannedTag = isHojePlanned
-                        ? '<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
-                        : '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-widest">Captura</span>';
+                        ? '<span class="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-wider whitespace-nowrap"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
+                        : '<span class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">Captura</span>';
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
                         : (micro.status === 'in_progress'
@@ -6610,8 +6625,8 @@ const app = {
                             <div class="w-6 h-6 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0 mt-1" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm sm:text-base text-on-surface font-medium leading-snug break-words">${micro.title}</p>
-                                <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                                    <span class="inline-flex items-center px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider rounded-full area-tag max-w-full">${micro.dimension}</span>${statusTag}${overdueTag}${hojePlannedTag}
+                                <div class="mt-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 max-w-full">
+                                    <span class="shrink-0 inline-flex items-center px-1.5 py-0.5 bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-wider rounded-full area-tag whitespace-nowrap">${micro.dimension}</span>${statusTag}${overdueTag}${hojePlannedTag}
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">
