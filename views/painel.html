@@ -1,6 +1,6 @@
 <main class="pt-6 lg:pt-10 pb-20 px-6 max-w-7xl mx-auto">
     <!-- Greeting & Time Filter -->
-    <header class="mb-12">
+    <header class="mb-4">
         <div class="flex items-center gap-3 mb-4">
             <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Análise & Progresso</p>
             <div class="relative inline-flex group">
@@ -16,8 +16,8 @@
             class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Painel de
             Evolução</h2>
         <div class="mt-6 h-px w-24 bg-primary"></div>
-        <div class="mt-8 mb-6 overflow-x-auto no-scrollbar">
-            <div class="inline-grid grid-cols-3 min-w-max rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
+        <div class="mt-4 mb-2">
+            <div class="grid grid-cols-3 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
             <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')"
                 class="px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-wider transition-all shadow-sm">Ciclo</button>
             <button data-painel-filter="mes" onclick="app.setPainelFilter('mes')"
@@ -28,7 +28,7 @@
         </div>
     </header>
 
-    <section class="mt-8 space-y-4">
+    <section class="mt-4 space-y-4">
         <div class="space-y-1">
             <h3 class="font-headline text-2xl italic">Situação</h3>
             <p class="text-sm text-on-surface-variant leading-relaxed">O estado real do ciclo, da semana e do seu ritmo de execução.</p>
