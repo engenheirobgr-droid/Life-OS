@@ -330,6 +330,36 @@ const app = {
         if (beforeCount !== state.entities.micros.length) {
             console.log(`[normalizeEntitiesState] Micros filtered: ${beforeCount} → ${state.entities.micros.length}`);
         }
+
+        // Orfanizacao: pais com status in_progress mas sem filhos ativos voltam para pending.
+        // Reproduz a logica do updateCascadeProgress no momento do load para corrigir
+        // estados legados (ex.: macro marcada in_progress antes do refator de cascata).
+        const hasActiveChild = (children) => children.some((c) => c.status === 'in_progress' || c.status === 'done');
+        state.entities.macros.forEach((macro) => {
+            if (macro.status === 'done') return;
+            const microsOfMacro = state.entities.micros.filter((m) => m.macroId === macro.id);
+            if (microsOfMacro.length === 0 || !hasActiveChild(microsOfMacro)) {
+                if (macro.status === 'in_progress') macro.status = 'pending';
+                if (microsOfMacro.length === 0) {
+                    macro.progress = 0;
+                    macro.completed = false;
+                }
+            }
+        });
+        state.entities.okrs.forEach((okr) => {
+            if (okr.status === 'done') return;
+            const macrosOfOkr = state.entities.macros.filter((m) => m.okrId === okr.id);
+            if (macrosOfOkr.length === 0 || !hasActiveChild(macrosOfOkr)) {
+                if (okr.status === 'in_progress') okr.status = 'pending';
+            }
+        });
+        state.entities.metas.forEach((meta) => {
+            if (meta.status === 'done') return;
+            const okrsOfMeta = state.entities.okrs.filter((o) => o.metaId === meta.id);
+            if (okrsOfMeta.length === 0 || !hasActiveChild(okrsOfMeta)) {
+                if (meta.status === 'in_progress') meta.status = 'pending';
+            }
+        });
     },
     normalizeSwlsAnswer: function(rawValue) {
         let value = Number(rawValue);
@@ -6655,12 +6685,12 @@ const app = {
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
                     const metaBits = [];
-                    if (micro.status === 'in_progress') metaBits.push('<span class="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Andamento</span>');
-                    if (isOverdue) metaBits.push('<span class="inline-flex items-center gap-1 text-red-700 dark:text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Atrasada</span>');
+                    if (micro.status === 'in_progress') metaBits.push('<span class="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Andamento</span>');
+                    if (isOverdue) metaBits.push('<span class="inline-flex items-center gap-1 text-red-700 dark:text-red-400 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Atrasada</span>');
                     metaBits.push(app._isPlannedThisWeek(micro.id)
-                        ? '<span title="Micro selecionada no planejamento semanal" class="inline-flex items-center gap-1 text-primary"><span class="material-symbols-outlined notranslate text-[12px]">event</span>Semana</span>'
-                        : '<span title="Micro capturada fora do plano semanal" class="inline-flex items-center gap-1 text-outline"><span class="material-symbols-outlined notranslate text-[12px]">inbox</span>Captura</span>');
-                    const metaLine = metaBits.join('<span class="text-outline/50">•</span>');
+                        ? '<span title="Micro selecionada no planejamento semanal" class="inline-flex items-center gap-1 text-primary shrink-0"><span class="material-symbols-outlined notranslate text-[12px]">event</span>Semana</span>'
+                        : '<span title="Micro capturada fora do plano semanal" class="inline-flex items-center gap-1 text-outline shrink-0"><span class="material-symbols-outlined notranslate text-[12px]">inbox</span>Captura</span>');
+                    const metaLine = metaBits.join('<span class="text-outline/50 shrink-0">•</span>');
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
                         : (micro.status === 'in_progress'
@@ -6675,8 +6705,8 @@ const app = {
                                 <div class="w-5 h-5 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-semibold text-on-surface leading-snug">${micro.title}</p>
-                                    <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] font-bold uppercase tracking-wide">
-                                        <span class="inline-flex items-center gap-0.5 text-primary">
+                                    <div class="mt-1 flex items-center gap-x-2 text-[9px] font-bold uppercase tracking-wide whitespace-nowrap overflow-x-auto no-scrollbar">
+                                        <span class="inline-flex items-center gap-0.5 text-primary shrink-0">
                                             <span class="material-symbols-outlined notranslate text-[11px]">${dimIcon}</span>
                                             ${micro.dimension}
                                         </span>
@@ -7052,13 +7082,13 @@ const app = {
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '-' });
                         }
 
-                        let trailHtml = `<div class="bg-surface-container-low rounded-lg p-4 space-y-3 relative trail-line text-on-surface-variant mt-0 overflow-hidden">
-                            <div class="absolute left-[12px] top-3 bottom-3 w-px bg-primary/10"></div>`;
+                        let trailHtml = `<div class="bg-surface-container-low rounded-lg p-3 space-y-2 relative trail-line text-on-surface-variant mt-0 overflow-hidden">
+                            <div class="absolute left-[20px] top-4 bottom-4 w-px bg-primary/15"></div>`;
 
-                        trailNodes.forEach((node, nodeIdx) => {
+                        trailNodes.forEach((node) => {
                             let icon = 'trip_origin'; let colorClass = 'text-outline'; let titleClass = 'text-xs text-on-surface-variant font-medium';
-                            let nodeShell = 'py-0.5';
-                            if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; titleClass = 'text-base font-headline italic text-on-surface'; nodeShell = 'mt-1 rounded-xl bg-primary/5 border border-primary/10 p-3'; }
+                            let nodeShell = '';
+                            if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; titleClass = 'text-sm font-headline italic text-on-surface'; nodeShell = 'mt-1 rounded-xl bg-primary/5 border border-primary/10 p-3'; }
                             else if (node.label === 'Área') { icon = 'stars'; colorClass = 'text-primary'; }
                             else if (node.label === 'Meta') { icon = 'flag'; colorClass = 'text-outline'; }
                             else if (node.label === 'Meta Pai') { icon = 'outbound'; colorClass = 'text-outline'; }
@@ -7070,14 +7100,13 @@ const app = {
                             else if (node.label === 'Desafio') { icon = 'military_tech'; colorClass = 'text-primary'; }
                             else if (node.label === 'Comprometimento') { icon = 'verified'; colorClass = 'text-primary'; }
                             else if (node.label === 'Key Results') { icon = 'query_stats'; colorClass = 'text-primary'; }
-                            
-                            const indent = Math.min(nodeIdx, 5) * 10;
+
                             trailHtml += `
-                            <div class="${nodeShell} flex items-center gap-3 relative z-10 min-w-0" style="margin-left:${indent}px">
-                                <span class="material-symbols-outlined notranslate ${colorClass} text-lg bg-surface-container-lowest p-0.5 rounded-full ring-1 ring-outline-variant/10" style="font-variation-settings: 'FILL' 1;">${icon}</span>
-                                <div class="flex flex-col min-w-0">
-                                    <span class="text-[9px] uppercase opacity-50 font-bold ${colorClass}">${node.label}</span>
-                                    <span class="${titleClass} ${node.label === 'Propósito (Nível 0)' ? 'line-clamp-2' : 'truncate'}">${node.title}</span>
+                            <div class="${nodeShell} flex items-start gap-3 relative z-10 min-w-0">
+                                <span class="material-symbols-outlined notranslate ${colorClass} text-base bg-surface-container-lowest p-1 rounded-full shrink-0 mt-0.5 ring-1 ring-outline-variant/10" style="font-variation-settings: 'FILL' 1;">${icon}</span>
+                                <div class="flex flex-col min-w-0 flex-1">
+                                    <span class="text-[9px] uppercase tracking-wider opacity-60 font-bold ${colorClass}">${node.label}</span>
+                                    <span class="${titleClass} ${node.label === 'Propósito (Nível 0)' ? 'line-clamp-2' : 'break-words'}">${node.title}</span>
                                 </div>
                             </div>`;
                         });
@@ -7166,13 +7195,12 @@ const app = {
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between gap-3 mb-3 border-t border-outline-variant/10 pt-3">
-                                <div class="flex items-center gap-2 text-outline text-xs min-w-0">
-                                    <span class="material-symbols-outlined notranslate text-sm shrink-0">event</span>
-                                    <span class="truncate">${app.formatPrazoDisplay(item)}</span>
-                                    ${countLine ? `<span class="text-outline/50">/</span><span class="truncate">${countLine}</span>` : ''}
-                                </div>
-                                <span class="text-[10px] font-label uppercase tracking-wider text-outline shrink-0">Trilha estrategica</span>
+                            <div class="flex items-center gap-2 mb-3 text-[11px] text-outline whitespace-nowrap overflow-x-auto no-scrollbar border-t border-outline-variant/10 pt-3">
+                                <span class="inline-flex items-center gap-1 shrink-0">
+                                    <span class="material-symbols-outlined notranslate text-sm">event</span>
+                                    ${app.formatPrazoDisplay(item)}
+                                </span>
+                                ${countLine ? `<span class="text-outline/40 shrink-0">·</span><span class="font-label uppercase tracking-wider shrink-0">${countLine}</span>` : ''}
                             </div>
 
                             <div class="space-y-1.5 mb-4">
@@ -7202,10 +7230,7 @@ const app = {
                             </div>
 
                             <div class="trail-panel hidden overflow-hidden transition-all duration-300 max-h-0 mt-3 border-t border-outline-variant/10 pt-3">
-                                <div class="relative pl-4 pt-0">
-                                    <div class="absolute left-[7px] top-1 bottom-1 w-px bg-primary/20"></div>
-                                    ${trailHtml}
-                                </div>
+                                ${trailHtml}
                             </div>
                         </div>`;
                     });
@@ -7301,7 +7326,7 @@ const app = {
             // 2. Renderização SWLS (score + histórico)
             setTimeout(() => {
                 try {
-                    this.normalizeSwlsState();
+                    app.normalizeSwlsState();
                     const swls = state.swls || { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
                     const scoreEl = document.getElementById('swls-score');
                     const bandEl = document.getElementById('swls-band');
@@ -7309,13 +7334,13 @@ const app = {
                     const historyEl = document.getElementById('swls-history-list');
                     const insightEl = document.getElementById('swls-perma-insight');
                     const score = Number(swls.lastScore) || 0;
-                    const permaVals = ['P', 'E', 'R', 'M', 'A'].map((k) => this.normalizePermaScore(state.perma?.[k]));
+                    const permaVals = ['P', 'E', 'R', 'M', 'A'].map((k) => app.normalizePermaScore(state.perma?.[k]));
                     const permaAvg = permaVals.reduce((sum, n) => sum + n, 0) / permaVals.length;
                     const swlsEq10 = Math.round((score / 35) * 100) / 10;
                     const delta = Math.abs(permaAvg - swlsEq10);
 
                     if (scoreEl) scoreEl.textContent = `${score}/35`;
-                    if (bandEl) bandEl.textContent = this.getSwlsBand(score);
+                    if (bandEl) bandEl.textContent = app.getSwlsBand(score);
                     if (dateEl) dateEl.textContent = swls.lastDate ? `Última avaliação: ${swls.lastDate}` : '';
                     if (insightEl) {
                         let insight = `PERMA médio ${permaAvg.toFixed(1)}/10 e SWLS equivalente ${swlsEq10.toFixed(1)}/10: leitura coerente.`;
