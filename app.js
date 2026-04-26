@@ -1982,6 +1982,57 @@ const app = {
             }
         }
 
+        const nextCard = document.getElementById('semanal-next-card');
+        if (nextCard) {
+            const nextWeekKey = this._getNextWeekKey();
+            const nextPlan = weekPlans[nextWeekKey];
+            const suggestions = this.getNextWeekCarryoverSuggestions(weekKey);
+            if (nextPlan) {
+                nextCard.innerHTML = `
+                <div class="bg-surface-container-lowest rounded-2xl border border-primary/15 shadow-sm p-6">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Próxima Semana</p>
+                            <h4 class="font-headline text-xl font-bold italic mt-1">${this._formatWeekRange(nextWeekKey)}</h4>
+                        </div>
+                        <button onclick="window.app.openWeeklyPlanModal({ weekKey: '${nextWeekKey}', nextWeek: true })"
+                            class="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
+                            <span class="material-symbols-outlined notranslate text-[16px]">edit_calendar</span>
+                            Editar
+                        </button>
+                    </div>
+                    ${this._renderWeekPlanCard(nextPlan, state, false)}
+                </div>`;
+            } else if (suggestions.length > 0) {
+                nextCard.innerHTML = `
+                <div class="bg-primary/5 rounded-2xl border border-primary/20 shadow-sm p-5 flex flex-col md:flex-row md:items-center gap-4">
+                    <span class="material-symbols-outlined notranslate text-primary text-2xl shrink-0">tips_and_updates</span>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-on-surface">Há ${suggestions.length} micro${suggestions.length > 1 ? 's' : ''} pendente${suggestions.length > 1 ? 's' : ''} para considerar na próxima semana.</p>
+                        <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">Priorizei o que ficou planejado e não concluído, está atrasado ou já estava em andamento.</p>
+                    </div>
+                    <button onclick="window.app.openWeeklyPlanModal({ weekKey: '${nextWeekKey}', nextWeek: true, suggestCarryover: true })"
+                        class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
+                        <span class="material-symbols-outlined notranslate text-[16px]">auto_awesome</span>
+                        Planejar próxima
+                    </button>
+                </div>`;
+            } else {
+                nextCard.innerHTML = `
+                <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 flex flex-col md:flex-row md:items-center gap-4">
+                    <div class="flex-1">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Próxima Semana</p>
+                        <p class="text-sm text-on-surface mt-1">Quando fechar esta semana, prepare o próximo plano aqui.</p>
+                    </div>
+                    <button onclick="window.app.openWeeklyPlanModal({ weekKey: '${nextWeekKey}', nextWeek: true })"
+                        class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-outline-variant/30 text-outline text-xs font-bold uppercase tracking-wider hover:bg-surface-container-high transition-colors">
+                        <span class="material-symbols-outlined notranslate text-[16px]">event_upcoming</span>
+                        Planejar próxima
+                    </button>
+                </div>`;
+            }
+        }
+
         // Histórico (semanas passadas, ordenadas da mais recente para mais antiga)
         const historyContainer = document.getElementById('semanal-history-container');
         const historyCount = document.getElementById('semanal-history-count');
@@ -4001,6 +4052,24 @@ const app = {
         return d.toISOString().split('T')[0];
     },
 
+    _getNextWeekKey: function(date = new Date()) {
+        const d = new Date(this._getWeekKey(date) + 'T00:00:00');
+        d.setDate(d.getDate() + 7);
+        return this.getLocalDateKey(d);
+    },
+
+    _formatWeekRange: function(weekKey) {
+        const start = new Date(weekKey + 'T00:00:00');
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        const fmt = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        return `Semana de ${fmt(start)} a ${fmt(end)}`;
+    },
+
+    _getWeeklyPlanKey: function() {
+        return this._weeklyPlanTargetKey || this._getWeekKey();
+    },
+
     _isPlannedThisWeek: function(microId) {
         const state = window.sistemaVidaState;
         const weekKey = this._getWeekKey();
@@ -4701,6 +4770,31 @@ const app = {
         return Math.round((total / sortedKeys.length) * 10) / 10;
     },
 
+    getNextWeekCarryoverSuggestions: function(sourceWeekKey = this._getWeekKey()) {
+        const state = window.sistemaVidaState;
+        const micros = (state.entities?.micros || []).filter(m => m.status !== 'done' && !m.completed && m.status !== 'abandoned');
+        const currentPlan = (state.weekPlans || {})[sourceWeekKey] || {};
+        const plannedIds = new Set(Array.isArray(currentPlan.selectedMicros) ? currentPlan.selectedMicros : []);
+        const todayKey = this.getLocalDateKey();
+
+        return micros
+            .map((micro) => {
+                let score = 0;
+                if (plannedIds.has(micro.id)) score += 4;
+                if (micro.status === 'in_progress') score += 3;
+                if (micro.prazo && micro.prazo < todayKey) score += 3;
+                if (micro.prazo && micro.prazo <= this._getNextWeekKey()) score += 1;
+                return { micro, score };
+            })
+            .filter(item => item.score > 0)
+            .sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return String(a.micro.prazo || '9999').localeCompare(String(b.micro.prazo || '9999'));
+            })
+            .slice(0, 8)
+            .map(item => item.micro);
+    },
+
     /** Atualiza o medidor de carga no modal de planejamento semanal. */
     _updateWeeklyPlanLoadMeter: function() {
         const countEl = document.getElementById('wp-load-count');
@@ -4733,23 +4827,26 @@ const app = {
 
     openWeeklyPlanModal: function(options = {}) {
         const state = window.sistemaVidaState;
-        const weekKey = this._getWeekKey();
+        const weekKey = options.weekKey || this._getWeekKey();
+        this._weeklyPlanTargetKey = weekKey;
+        const isNextWeek = weekKey > this._getWeekKey();
 
         // Formata o rótulo da semana
-        const weekStart = new Date(weekKey + 'T00:00:00');
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-        const fmt = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        const title = document.getElementById('weekly-plan-modal-title');
         const label = document.getElementById('weekly-plan-week-label');
-        if (label) label.textContent = `Semana de ${fmt(weekStart)} a ${fmt(weekEnd)}`;
+        if (title) title.textContent = isNextWeek ? 'Planejar Próxima Semana' : 'Planejamento Semanal';
+        if (label) label.textContent = this._formatWeekRange(weekKey);
 
         // Pré-preenche com plano existente para esta semana (se houver)
         const existing = (state.weekPlans || {})[weekKey] || {};
         const trailSuggestion = this._wizardPlanSuggestion || null;
-        const suggestedMicros = Array.isArray(trailSuggestion?.microIds) ? trailSuggestion.microIds : [];
+        const carryover = options.suggestCarryover ? this.getNextWeekCarryoverSuggestions(this._getWeekKey()) : [];
+        const suggestedMicros = Array.isArray(trailSuggestion?.microIds)
+            ? trailSuggestion.microIds
+            : carryover.map(m => m.id);
         const intentionEl = document.getElementById('wp-intention');
         const energyEl = document.getElementById('wp-energy');
-        if (intentionEl) intentionEl.value = existing.intention || trailSuggestion?.intention || '';
+        if (intentionEl) intentionEl.value = existing.intention || trailSuggestion?.intention || (options.suggestCarryover ? 'Fechar pendências importantes e manter o plano executável.' : '');
         if (energyEl) energyEl.value = existing.energyForecast || 3;
 
         // Monta lista de micros ativos
@@ -4759,7 +4856,13 @@ const app = {
             if (activeMicros.length === 0) {
                 microsContainer.innerHTML = '<p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>';
             } else {
-                microsContainer.innerHTML = activeMicros.map(m => {
+                const suggestionSet = new Set(suggestedMicros);
+                const suggestionNotice = carryover.length ? `
+                    <div class="mb-2 rounded-xl bg-primary/10 border border-primary/20 p-3 text-xs text-on-surface-variant leading-relaxed">
+                        <span class="font-bold text-primary">${carryover.length} pendência${carryover.length > 1 ? 's' : ''} pré-selecionada${carryover.length > 1 ? 's' : ''}.</span>
+                        Revise a carga antes de salvar a próxima semana.
+                    </div>` : '';
+                microsContainer.innerHTML = suggestionNotice + activeMicros.map(m => {
                     const checked = ((existing.selectedMicros || []).includes(m.id) || suggestedMicros.includes(m.id)) ? 'checked' : '';
                     const macroTitle = state.entities.macros?.find(ma => ma.id === m.macroId)?.title || '';
                     const details = [
@@ -4767,7 +4870,8 @@ const app = {
                         macroTitle,
                         m.prazo ? `prazo ${this._formatTrailDate ? this._formatTrailDate(m.prazo) : m.prazo}` : ''
                     ].filter(Boolean).join(' · ');
-                    const sub = details ? `<span class="text-[10px] text-outline block">${this.escapeHtml(details)}</span>` : '';
+                    const carryBadge = suggestionSet.has(m.id) ? '<span class="ml-1 text-[9px] font-bold uppercase tracking-wider text-primary">sugerida</span>' : '';
+                    const sub = details ? `<span class="text-[10px] text-outline block">${this.escapeHtml(details)}${carryBadge}</span>` : '';
                     return `<label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-primary/5 transition-colors">
                         <input type="checkbox" class="wp-micro-check mt-0.5 accent-primary" value="${m.id}" ${checked}>
                         <span class="text-sm text-on-surface leading-snug">${this.escapeHtml(m.title)}${sub}</span>
@@ -4800,6 +4904,7 @@ const app = {
     closeWeeklyPlanModal: function() {
         document.getElementById('weekly-plan-modal').classList.add('hidden');
         this.cancelInlineNewMicro();
+        this._weeklyPlanTargetKey = null;
     },
 
     toggleInlineNewMicro: function() {
@@ -4820,8 +4925,9 @@ const app = {
                     select.innerHTML = '<option value="">Nenhum macro ativo — crie um primeiro</option>';
                 }
             }
-            const todayKey = this.getLocalDateKey();
-            const weekEnd = new Date(this._getWeekKey() + 'T00:00:00');
+            const targetWeekKey = this._getWeeklyPlanKey();
+            const todayKey = targetWeekKey > this._getWeekKey() ? targetWeekKey : this.getLocalDateKey();
+            const weekEnd = new Date(targetWeekKey + 'T00:00:00');
             weekEnd.setDate(weekEnd.getDate() + 6);
             const weekEndKey = this.getLocalDateKey(weekEnd);
             const startEl = document.getElementById('wp-new-micro-start');
@@ -4864,7 +4970,7 @@ const app = {
         const macroId = document.getElementById('wp-new-macro-id')?.value || '';
         const title = (document.getElementById('wp-new-micro-title')?.value || '').trim();
         const effort = document.getElementById('wp-new-micro-effort')?.value || 'medio';
-        const inicioDate = document.getElementById('wp-new-micro-start')?.value || this.getLocalDateKey();
+        const inicioDate = document.getElementById('wp-new-micro-start')?.value || this._getWeeklyPlanKey();
         const prazo = document.getElementById('wp-new-micro-deadline')?.value || '';
 
         if (!macroId) { this.showToast('Selecione um macro pai.', 'error'); return; }
@@ -4899,7 +5005,7 @@ const app = {
         state.entities.micros.push(newMicro);
 
         // Mark immediately in current week plan
-        const weekKey = this._getWeekKey();
+        const weekKey = this._getWeeklyPlanKey();
         if (!state.weekPlans) state.weekPlans = {};
         const plan = state.weekPlans[weekKey] || {};
         const selected = Array.isArray(plan.selectedMicros) ? [...plan.selectedMicros] : [];
@@ -4923,7 +5029,7 @@ const app = {
 
     _refreshWpMicrosList: function() {
         const state = window.sistemaVidaState;
-        const weekKey = this._getWeekKey();
+        const weekKey = this._getWeeklyPlanKey();
         const plan = (state.weekPlans || {})[weekKey] || {};
         const selectedIds = Array.isArray(plan.selectedMicros) ? plan.selectedMicros : [];
         const activeMicros = (state.entities?.micros || []).filter(m => m.status !== 'done' && !m.completed);
@@ -4952,7 +5058,7 @@ const app = {
     },
 
     saveWeeklyPlan: function() {
-        const weekKey = this._getWeekKey();
+        const weekKey = this._getWeeklyPlanKey();
         const intention = document.getElementById('wp-intention')?.value.trim() || '';
         const energyForecast = Number(document.getElementById('wp-energy')?.value || 3);
         const selectedMicros = Array.from(document.querySelectorAll('.wp-micro-check:checked')).map(cb => cb.value);
@@ -4967,8 +5073,9 @@ const app = {
         };
 
         this.saveState(true);
+        const isNextWeek = weekKey > this._getWeekKey();
         this.closeWeeklyPlanModal();
-        this.showNotification('Plano semanal salvo!');
+        this.showNotification(isNextWeek ? 'Plano da próxima semana salvo!' : 'Plano semanal salvo!');
         if (this.renderWeeklyPlans) this.renderWeeklyPlans();
         if (this.currentView === 'planos' && this.render.planos) {
             this.render.planos();
@@ -5101,7 +5208,16 @@ const app = {
         setTimeout(() => {
             this.switchPlanosTab('semanal');
             if (this.renderWeeklyPlans) this.renderWeeklyPlans();
-        }, 120);
+            const nextWeekKey = this._getNextWeekKey();
+            const nextPlan = (window.sistemaVidaState.weekPlans || {})[nextWeekKey];
+            if (!nextPlan) {
+                this.openWeeklyPlanModal({
+                    weekKey: nextWeekKey,
+                    nextWeek: true,
+                    suggestCarryover: true
+                });
+            }
+        }, 360);
     },
 
     factoryReset: async function() {
