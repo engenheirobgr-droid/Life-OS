@@ -1092,6 +1092,45 @@
                             <span class="text-xs text-outline">/ <span id="wp-load-average">—</span> média</span>
                         </div>
                     </div>
+                    <!-- Criar micro inline -->
+                    <div class="mt-1">
+                        <button type="button" onclick="window.app.toggleInlineNewMicro()"
+                            class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-outline-variant/40 text-outline text-xs font-bold uppercase tracking-wider hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all">
+                            <span class="material-symbols-outlined notranslate text-[15px]">add</span>
+                            Criar micro novo
+                        </button>
+                        <div id="wp-inline-new-micro" class="hidden mt-2 rounded-xl bg-surface-container p-3 flex flex-col gap-3">
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Macro pai *</label>
+                                <select id="wp-new-macro-id" class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20">
+                                    <option value="">Selecione um macro...</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Título *</label>
+                                <input type="text" id="wp-new-micro-title" placeholder="Descreva a ação..."
+                                    class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Esforço</label>
+                                <select id="wp-new-micro-effort" class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20">
+                                    <option value="rapido">⚡ Rápido</option>
+                                    <option value="medio" selected>💪 Médio</option>
+                                    <option value="pesado">🔥 Pesado</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-2 pt-1">
+                                <button type="button" onclick="window.app.cancelInlineNewMicro()"
+                                    class="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-outline hover:bg-surface-container-high transition-colors uppercase tracking-wider">
+                                    Cancelar
+                                </button>
+                                <button type="button" onclick="window.app.saveInlineNewMicro()"
+                                    class="flex-1 px-3 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
+                                    Criar e marcar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex flex-col gap-2">

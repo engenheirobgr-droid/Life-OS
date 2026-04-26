@@ -4562,6 +4562,103 @@ const app = {
 
     closeWeeklyPlanModal: function() {
         document.getElementById('weekly-plan-modal').classList.add('hidden');
+        this.cancelInlineNewMicro();
+    },
+
+    toggleInlineNewMicro: function() {
+        const form = document.getElementById('wp-inline-new-micro');
+        if (!form) return;
+        if (form.classList.contains('hidden')) {
+            const select = document.getElementById('wp-new-macro-id');
+            if (select) {
+                const activeMacros = (window.sistemaVidaState.entities?.macros || [])
+                    .filter(m => m.status !== 'done' && m.status !== 'abandoned');
+                select.innerHTML = '<option value="">Selecione um macro...</option>' +
+                    activeMacros.map(m => `<option value="${m.id}">${this.escapeHtml(m.title)}</option>`).join('');
+                if (activeMacros.length === 0) {
+                    select.innerHTML = '<option value="">Nenhum macro ativo — crie um primeiro</option>';
+                }
+            }
+            form.classList.remove('hidden');
+            setTimeout(() => document.getElementById('wp-new-micro-title')?.focus(), 50);
+        } else {
+            form.classList.add('hidden');
+        }
+    },
+
+    cancelInlineNewMicro: function() {
+        const form = document.getElementById('wp-inline-new-micro');
+        if (form) form.classList.add('hidden');
+        const titleEl = document.getElementById('wp-new-micro-title');
+        if (titleEl) titleEl.value = '';
+    },
+
+    saveInlineNewMicro: function() {
+        const macroId = document.getElementById('wp-new-macro-id')?.value || '';
+        const title = (document.getElementById('wp-new-micro-title')?.value || '').trim();
+        const effort = document.getElementById('wp-new-micro-effort')?.value || 'medio';
+
+        if (!macroId) { this.showToast('Selecione um macro pai.', 'error'); return; }
+        if (!title) { this.showToast('Informe o título da micro ação.', 'error'); return; }
+
+        const state = window.sistemaVidaState;
+        const macro = (state.entities?.macros || []).find(m => m.id === macroId);
+        if (!macro) { this.showToast('Macro não encontrado.', 'error'); return; }
+
+        const newMicro = {
+            id: `micro-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            title,
+            macroId,
+            dimension: macro.dimension || '',
+            status: 'pending',
+            completed: false,
+            progress: 0,
+            effort,
+            createdAt: new Date().toISOString()
+        };
+
+        if (!state.entities) state.entities = {};
+        if (!Array.isArray(state.entities.micros)) state.entities.micros = [];
+        state.entities.micros.push(newMicro);
+
+        // Mark immediately in current week plan
+        const weekKey = this._getWeekKey();
+        if (!state.weekPlans) state.weekPlans = {};
+        const plan = state.weekPlans[weekKey] || {};
+        const selected = Array.isArray(plan.selectedMicros) ? [...plan.selectedMicros] : [];
+        if (!selected.includes(newMicro.id)) selected.push(newMicro.id);
+        state.weekPlans[weekKey] = { ...plan, selectedMicros: selected };
+
+        // Refresh list in modal
+        this._refreshWpMicrosList();
+        this.cancelInlineNewMicro();
+        this.saveState(true);
+        this.showToast(`"${title}" criada e adicionada ao plano.`, 'success');
+    },
+
+    _refreshWpMicrosList: function() {
+        const state = window.sistemaVidaState;
+        const weekKey = this._getWeekKey();
+        const plan = (state.weekPlans || {})[weekKey] || {};
+        const selectedIds = Array.isArray(plan.selectedMicros) ? plan.selectedMicros : [];
+        const activeMicros = (state.entities?.micros || []).filter(m => m.status !== 'done' && !m.completed);
+        const container = document.getElementById('wp-micros-list');
+        if (!container) return;
+        if (activeMicros.length === 0) {
+            container.innerHTML = '<p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>';
+            this._updateWeeklyPlanLoadMeter();
+            return;
+        }
+        container.innerHTML = activeMicros.map(m => {
+            const checked = selectedIds.includes(m.id) ? 'checked' : '';
+            const macroTitle = (state.entities.macros || []).find(ma => ma.id === m.macroId)?.title || '';
+            const sub = macroTitle ? `<span class="text-[10px] text-outline block">${this.escapeHtml(macroTitle)}</span>` : '';
+            return `<label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-primary/5 transition-colors">
+                <input type="checkbox" class="wp-micro-check mt-0.5 accent-primary" value="${m.id}" ${checked}>
+                <span class="text-sm text-on-surface leading-snug">${this.escapeHtml(m.title)}${sub}</span>
+            </label>`;
+        }).join('');
+        this._updateWeeklyPlanLoadMeter();
     },
 
     saveWeeklyPlan: function() {
