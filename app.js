@@ -1157,19 +1157,22 @@ const app = {
 
         const el = document.createElement('div');
         el.id = 'daily-splash-screen';
-        el.style.cssText = 'position:fixed;inset:0;z-index:10000;background:var(--md-sys-color-background);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;cursor:pointer;';
-        const quoteHtml = quote ? `<p style="font-size:1.25rem;font-style:italic;font-weight:700;color:var(--md-sys-color-on-background);margin-top:1.5rem;line-height:1.5;max-width:360px;">"${this.escapeHtml(quote.quote)}"</p>` : '';
-        const authorHtml = quote?.author ? `<p style="font-size:0.75rem;color:var(--md-sys-color-outline);margin-top:0.5rem;">— ${this.escapeHtml(quote.author)}</p>` : '';
-        const reflectionHtml = quote?.reflection ? `<p style="font-size:0.85rem;color:var(--md-sys-color-on-surface-variant);margin-top:1.25rem;line-height:1.65;max-width:320px;">${this.escapeHtml(quote.reflection)}</p>` : '';
+        el.className = 'lifeos-splash';
+        const quoteHtml = quote ? `<p class="lifeos-splash__quote">"${this.escapeHtml(quote.quote)}"</p>` : '';
+        const authorHtml = quote?.author ? `<p class="lifeos-splash__author">— ${this.escapeHtml(quote.author)}</p>` : '';
+        const reflectionHtml = quote?.reflection ? `<p class="lifeos-splash__reflection">${this.escapeHtml(quote.reflection)}</p>` : '';
         el.innerHTML = `
-            <div style="max-width:400px;width:100%;text-align:center;animation:fadeIn 0.7s ease-out;">
-                <span class="material-symbols-outlined notranslate" style="font-size:2.25rem;color:var(--md-sys-color-primary);display:block;">explore</span>
-                <p style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.22em;color:var(--md-sys-color-outline);margin-top:1rem;">Bússola do Dia · ${this.escapeHtml(compass.theme)}</p>
+            <div class="lifeos-splash__content">
+                <span class="lifeos-splash__mark">
+                    <span class="material-symbols-outlined notranslate" style="font-size:2rem;">explore</span>
+                </span>
+                <p class="lifeos-splash__eyebrow">Bússola do Dia</p>
+                <p class="lifeos-splash__theme">${this.escapeHtml(compass.theme || 'Life OS')}</p>
                 ${quoteHtml}${authorHtml}${reflectionHtml}
-                <button onclick="event.stopPropagation();window.app.dismissSplash()" style="margin-top:2.5rem;padding:0.75rem 2.5rem;background:var(--md-sys-color-primary);color:var(--md-sys-color-on-primary);border:none;border-radius:9999px;font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;cursor:pointer;">
+                <button class="lifeos-splash__button" onclick="event.stopPropagation();window.app.dismissSplash()">
                     Começar o dia
                 </button>
-                <p id="splash-countdown" style="font-size:0.65rem;color:var(--md-sys-color-outline);margin-top:0.6rem;">Continua em ${duration}s</p>
+                <p id="splash-countdown" class="lifeos-splash__countdown">Continua em ${duration}s</p>
             </div>`;
         el.addEventListener('click', () => this.dismissSplash());
         document.body.appendChild(el);
@@ -1967,11 +1970,15 @@ const app = {
         // Card da semana atual
         const currentCard = document.getElementById('semanal-current-card');
         const currentPlan = weekPlans[weekKey];
+        const primaryLabel = document.getElementById('weekly-plan-primary-label');
+        const primaryIcon = document.getElementById('weekly-plan-primary-icon');
+        if (primaryLabel) primaryLabel.textContent = currentPlan ? 'Editar Plano' : 'Criar Plano da Semana';
+        if (primaryIcon) primaryIcon.textContent = currentPlan ? 'edit_calendar' : 'event_available';
         if (currentCard) {
             if (currentPlan) {
                 currentCard.innerHTML = this._renderWeekPlanCard(currentPlan, state, true);
             } else {
-                currentCard.innerHTML = '<p class="text-sm text-outline italic">Nenhum plano para esta semana ainda. Clique em "Planejar Semana" para começar.</p>';
+                currentCard.innerHTML = '<p class="text-sm text-outline italic">Nenhum plano para esta semana ainda. Clique em "Criar Plano da Semana" para começar.</p>';
             }
         }
 
@@ -2085,11 +2092,17 @@ const app = {
             </div>` : ''}
 
             ${isCurrent ? `
-            <button onclick="window.app.openWeeklyPlanModal()"
+            <button onclick="window.app.openWeeklyPlanModal({ addMicro: true })"
                 class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-dashed border-outline-variant/40 text-outline text-xs font-bold uppercase tracking-wider hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all">
                 <span class="material-symbols-outlined notranslate text-[16px]">add_task</span>
-                Adicionar micro ao plano
+                Nova micro para esta semana
             </button>` : ''}
+
+            ${(() => {
+                if (!isCurrent) return '';
+                const review = (state.reviews || {})[plan.weekKey || app._getWeekKey()];
+                return review ? app._renderWeeklyReviewSummary(review) : '';
+            })()}
 
             ${(() => {
                 if (!isCurrent) return '';
@@ -2098,7 +2111,7 @@ const app = {
                 const wk = app._getWeekKey();
                 const hasReview = !!(state.reviews || {})[wk];
                 if (hasReview) return `
-                <div class="flex items-center gap-2 mt-2 text-primary text-xs font-bold">
+                <div class="flex items-center gap-2 mt-2 text-primary text-xs font-bold uppercase tracking-wider">
                     <span class="material-symbols-outlined notranslate text-[16px]">check_circle</span>
                     Revisão da semana já realizada
                 </div>`;
@@ -2109,6 +2122,41 @@ const app = {
                     Fazer Revisão da Semana
                 </button>`;
             })()}
+        </div>`;
+    },
+
+    _renderWeeklyReviewSummary: function(review) {
+        if (!review) return '';
+        const fields = [
+            ['O que planejei', review.q1],
+            ['O que executei', review.q2],
+            ['O que aprendi', review.q3],
+            ['O que ajustaria', review.q4],
+            ['Gratidão / Destaque', review.q5]
+        ].filter(([, value]) => String(value || '').trim());
+
+        if (!fields.length) {
+            return `
+            <div class="mt-4 pt-4 border-t border-outline-variant/10 text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                <span class="material-symbols-outlined notranslate text-[16px]">check_circle</span>
+                Revisão da semana salva
+            </div>`;
+        }
+
+        return `
+        <div class="mt-4 pt-4 border-t border-outline-variant/10">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-secondary mb-3 flex items-center gap-1">
+                <span class="material-symbols-outlined notranslate text-[14px]">rate_review</span>
+                Revisão da Semana
+            </p>
+            <div class="grid md:grid-cols-2 gap-3">
+                ${fields.map(([label, value], idx) => `
+                    <div class="bg-surface-container p-3 rounded-xl ${idx === fields.length - 1 && fields.length % 2 === 1 ? 'md:col-span-2' : ''}">
+                        <p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">${this.escapeHtml(label)}</p>
+                        <p class="text-xs text-on-surface leading-relaxed">${this.escapeHtml(String(value || ''))}</p>
+                    </div>
+                `).join('')}
+            </div>
         </div>`;
     },
 
@@ -4683,7 +4731,7 @@ const app = {
         }
     },
 
-    openWeeklyPlanModal: function() {
+    openWeeklyPlanModal: function(options = {}) {
         const state = window.sistemaVidaState;
         const weekKey = this._getWeekKey();
 
@@ -4741,6 +4789,11 @@ const app = {
                 }
             });
             listEl._loadMeterBound = true;
+        }
+
+        if (options && options.addMicro) {
+            const inlineForm = document.getElementById('wp-inline-new-micro');
+            if (inlineForm?.classList.contains('hidden')) this.toggleInlineNewMicro();
         }
     },
 
@@ -5035,10 +5088,20 @@ const app = {
             setTimeout(() => {
                 btn.innerHTML = originalText;
                 this.closeReviewModal();
+                this.goToWeeklyPlansAfterReview();
             }, 1000);
         } else {
             this.closeReviewModal();
+            this.goToWeeklyPlansAfterReview();
         }
+    },
+
+    goToWeeklyPlansAfterReview: async function() {
+        await this.switchView('planos');
+        setTimeout(() => {
+            this.switchPlanosTab('semanal');
+            if (this.renderWeeklyPlans) this.renderWeeklyPlans();
+        }, 120);
     },
 
     factoryReset: async function() {

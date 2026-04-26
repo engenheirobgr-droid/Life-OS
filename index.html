@@ -169,6 +169,142 @@
             animation: cardSuccessPulse 0.55s ease-out;
         }
 
+        @keyframes splashEnter {
+            from { opacity: 0; transform: translateY(18px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .lifeos-splash {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            background:
+                radial-gradient(circle at 50% 12%, rgba(1, 105, 111, 0.10), transparent 34%),
+                linear-gradient(180deg, #ffffff 0%, #f8fafc 56%, #eef5f6 100%);
+            color: #191c1d;
+            cursor: pointer;
+        }
+
+        .lifeos-splash__content {
+            width: min(100%, 420px);
+            min-height: min(620px, calc(100dvh - 4rem));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            animation: splashEnter 0.65s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .lifeos-splash__mark {
+            width: 56px;
+            height: 56px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #01696f;
+            background: rgba(1, 105, 111, 0.10);
+            border: 1px solid rgba(1, 105, 111, 0.18);
+            box-shadow: 0 16px 44px rgba(1, 105, 111, 0.12);
+        }
+
+        .lifeos-splash__eyebrow {
+            margin-top: 1.25rem;
+            font-size: 0.64rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: #01696f;
+        }
+
+        .lifeos-splash__theme {
+            margin-top: 0.6rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 1.5rem;
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            background: rgba(74, 99, 101, 0.10);
+            color: #4a6365;
+            font-size: 0.62rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+        }
+
+        .lifeos-splash__quote {
+            margin-top: 1.75rem;
+            max-width: 360px;
+            font-family: Outfit, Inter, sans-serif;
+            font-size: clamp(1.45rem, 9vw, 2.15rem);
+            line-height: 1.08;
+            font-weight: 800;
+            font-style: italic;
+            letter-spacing: 0;
+            text-wrap: balance;
+            color: #101415;
+        }
+
+        .lifeos-splash__author {
+            margin-top: 0.9rem;
+            color: #6f797a;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
+        .lifeos-splash__reflection {
+            margin-top: 1.6rem;
+            max-width: 320px;
+            color: #3f484a;
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        .lifeos-splash__button {
+            margin-top: 2.4rem;
+            min-height: 44px;
+            padding: 0 1.5rem;
+            border: 0;
+            border-radius: 999px;
+            background: #01696f;
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            box-shadow: 0 12px 28px rgba(1, 105, 111, 0.18);
+        }
+
+        .lifeos-splash__countdown {
+            min-height: 1rem;
+            margin-top: 0.8rem;
+            color: #6f797a;
+            font-size: 0.68rem;
+            font-weight: 600;
+        }
+
+        html.dark .lifeos-splash {
+            background:
+                radial-gradient(circle at 50% 12%, rgba(156, 241, 246, 0.13), transparent 34%),
+                linear-gradient(180deg, #0b1220 0%, #101827 58%, #0f172a 100%);
+            color: #e2e8f0;
+        }
+
+        html.dark .lifeos-splash__quote { color: #f8fafc; }
+        html.dark .lifeos-splash__reflection { color: #cbd5e1; }
+        html.dark .lifeos-splash__author { color: #94a3b8; }
+        html.dark .lifeos-splash__theme {
+            background: rgba(156, 241, 246, 0.10);
+            color: #9cf1f6;
+        }
+
         @keyframes tierUpFade {
             0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
             12%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
