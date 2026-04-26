@@ -728,6 +728,48 @@ const app = {
         }
         this.showToast(parts.join(' · '), 'success');
     },
+    showFloatingXp: function(xp) {
+        if (!xp || xp <= 0) return;
+        const el = document.createElement('div');
+        el.textContent = `+${xp} XP`;
+        Object.assign(el.style, {
+            position: 'fixed',
+            bottom: '130px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            color: 'var(--md-sys-color-primary)',
+            fontSize: '1.15rem',
+            fontWeight: '800',
+            letterSpacing: '0.05em',
+            pointerEvents: 'none',
+            zIndex: '9999',
+            animation: 'xpFloat 1.2s cubic-bezier(0.19,1,0.22,1) forwards',
+            textShadow: '0 2px 12px rgba(0,0,0,0.18)'
+        });
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1300);
+    },
+    flashMicroCard: function(id) {
+        const btn = document.querySelector(`[onclick*="completeMicroAction('${id}')"]`);
+        if (!btn) return;
+        const card = btn.closest('.rounded-2xl, .rounded-xl, .rounded-lg, li') || btn.parentElement;
+        if (!card) return;
+        card.classList.add('card-success-pulse');
+        card.addEventListener('animationend', () => card.classList.remove('card-success-pulse'), { once: true });
+    },
+    showTierPromotionOverlay: function(dimension, title, icon) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10001;pointer-events:none;';
+        overlay.innerHTML = `
+            <div style="position:absolute;top:50%;left:50%;animation:tierUpFade 2.1s cubic-bezier(0.19,1,0.22,1) forwards;background:var(--md-sys-color-surface-container-highest);border:1px solid var(--md-sys-color-outline-variant);border-radius:1.5rem;padding:2rem 3rem;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.25);min-width:220px;">
+                <span class="material-symbols-outlined notranslate" style="font-size:2.5rem;color:var(--md-sys-color-primary);display:block;">${icon}</span>
+                <p style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.18em;color:var(--md-sys-color-outline);margin-top:0.75rem;">${this.escapeHtml(dimension)}</p>
+                <p style="font-size:1.4rem;font-weight:800;color:var(--md-sys-color-on-surface);margin-top:0.2rem;">${this.escapeHtml(title)}</p>
+                <p style="font-size:0.7rem;color:var(--md-sys-color-outline);margin-top:0.2rem;">Novo título desbloqueado</p>
+            </div>`;
+        document.body.appendChild(overlay);
+        setTimeout(() => overlay.remove(), 2300);
+    },
     formatDateTimeLocal: function(raw) {
         const dt = raw ? new Date(raw) : null;
         if (!dt || Number.isNaN(dt.getTime())) return '';
@@ -8088,6 +8130,13 @@ const app = {
           });
           this.showGamificationToast(award);
           this.recentCompletedMicroId = micro.id;
+          if (award) {
+              this.showFloatingXp(award.xp);
+              this.flashMicroCard(micro.id);
+              if (award.tierPromotion && award.identity) {
+                  setTimeout(() => this.showTierPromotionOverlay(award.dimension, award.identity.title, award.identity.icon), 600);
+              }
+          }
         } else {
           delete micro.completedDate;
         }

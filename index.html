@@ -153,6 +153,29 @@
             animation: microCompletePulse 0.45s cubic-bezier(0.19, 1, 0.22, 1);
         }
 
+        @keyframes xpFloat {
+            0%   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+            70%  { opacity: 0.9; transform: translateX(-50%) translateY(-52px) scale(1.1); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-72px) scale(0.9); }
+        }
+
+        @keyframes cardSuccessPulse {
+            0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--md-sys-color-primary) 40%, transparent); }
+            50%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--md-sys-color-primary) 0%, transparent); transform: scale(1.01); }
+            100% { box-shadow: 0 0 0 0 transparent; transform: scale(1); }
+        }
+
+        .card-success-pulse {
+            animation: cardSuccessPulse 0.55s ease-out;
+        }
+
+        @keyframes tierUpFade {
+            0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+            12%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            78%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.06); }
+        }
+
         /* Animações do Onboarding */
         .step-transition {
             transition: opacity 0.4s ease, transform 0.4s ease;
