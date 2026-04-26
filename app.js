@@ -504,18 +504,25 @@ const app = {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     },
-    getDimensionIdentity: function(dimension) {
-        const identities = {
-            'Saúde': { title: 'Atleta', icon: 'fitness_center' },
-            'Mente': { title: 'Pensador', icon: 'psychology' },
-            'Carreira': { title: 'Criador', icon: 'work' },
-            'Finanças': { title: 'Estrategista', icon: 'payments' },
-            'Relacionamentos': { title: 'Conector', icon: 'groups' },
-            'Família': { title: 'Guardião', icon: 'family_restroom' },
-            'Lazer': { title: 'Explorador', icon: 'sports_esports' },
-            'Propósito': { title: 'Visionário', icon: 'auto_awesome' }
+    getTierFromLevel: function(level) {
+        const lv = Math.max(1, Number(level) || 1);
+        return lv <= 2 ? 0 : lv <= 5 ? 1 : lv <= 9 ? 2 : lv <= 14 ? 3 : 4;
+    },
+    getDimensionIdentity: function(dimension, level) {
+        const lv = Math.max(1, Number(level) || 1);
+        const tier = this.getTierFromLevel(lv);
+        const tiers = {
+            'Saúde':          { titles: ['Sedentário', 'Ativo', 'Atleta', 'Guerreiro', 'Lendário'], icon: 'fitness_center' },
+            'Mente':          { titles: ['Curioso', 'Estudioso', 'Pensador', 'Sábio', 'Iluminado'], icon: 'psychology' },
+            'Carreira':       { titles: ['Aprendiz', 'Criador', 'Construtor', 'Mestre', 'Visionário'], icon: 'work' },
+            'Finanças':       { titles: ['Administrador', 'Poupador', 'Estrategista', 'Investidor', 'Patriarca'], icon: 'payments' },
+            'Relacionamentos':{ titles: ['Presente', 'Conector', 'Influente', 'Mentor', 'Catalisador'], icon: 'groups' },
+            'Família':        { titles: ['Cuidador', 'Guardião', 'Pilar', 'Âncora', 'Legado'], icon: 'family_restroom' },
+            'Lazer':          { titles: ['Espectador', 'Explorador', 'Aventureiro', 'Criativo', 'Maestro'], icon: 'sports_esports' },
+            'Propósito':      { titles: ['Buscador', 'Visionário', 'Missionário', 'Guia', 'Sábio'], icon: 'auto_awesome' }
         };
-        return identities[dimension] || { title: 'Integrador', icon: 'stars' };
+        const def = tiers[dimension] || { titles: ['Iniciante', 'Integrador', 'Mestre', 'Líder', 'Lendário'], icon: 'stars' };
+        return { title: def.titles[tier], icon: def.icon, tier, tierMax: 4 };
     },
     getLevelFromXp: function(xp) {
         return Math.floor(Math.max(0, Number(xp) || 0) / 100) + 1;
@@ -644,10 +651,40 @@ const app = {
             const total = this.unlockAchievement('total_level_5');
             if (total) unlocked.push(total);
         }
-        if (dimension && this.getLevelFromXp(dimensionBefore) < 3 && this.getLevelFromXp(gamification.dimensionXp[dimension]) >= 3) {
-            const identity = this.getDimensionIdentity(dimension);
-            const dimAchievement = this.unlockAchievement(`dimension_level_3:${dimension}`, {
-                title: `${identity.title} nível 3`,
+        const dimLevelAfter = dimension ? this.getLevelFromXp(gamification.dimensionXp[dimension]) : 0;
+        const dimLevelBefore = this.getLevelFromXp(dimensionBefore);
+        const tierBefore = this.getTierFromLevel(dimLevelBefore);
+        const tierAfter = this.getTierFromLevel(dimLevelAfter);
+        const tierPromotion = !!(dimension && tierAfter > tierBefore);
+
+        if (dimension && dimLevelBefore < 3 && dimLevelAfter >= 3) {
+            const identity = this.getDimensionIdentity(dimension, dimLevelAfter);
+            const dimAchievement = this.unlockAchievement(`dimension_tier_2:${dimension}`, {
+                title: `${identity.title} desbloqueado`,
+                icon: identity.icon
+            });
+            if (dimAchievement) unlocked.push(dimAchievement);
+        }
+        if (dimension && dimLevelBefore < 6 && dimLevelAfter >= 6) {
+            const identity = this.getDimensionIdentity(dimension, dimLevelAfter);
+            const dimAchievement = this.unlockAchievement(`dimension_tier_3:${dimension}`, {
+                title: `${identity.title} desbloqueado`,
+                icon: identity.icon
+            });
+            if (dimAchievement) unlocked.push(dimAchievement);
+        }
+        if (dimension && dimLevelBefore < 10 && dimLevelAfter >= 10) {
+            const identity = this.getDimensionIdentity(dimension, dimLevelAfter);
+            const dimAchievement = this.unlockAchievement(`dimension_tier_4:${dimension}`, {
+                title: `${identity.title} desbloqueado`,
+                icon: identity.icon
+            });
+            if (dimAchievement) unlocked.push(dimAchievement);
+        }
+        if (dimension && dimLevelBefore < 15 && dimLevelAfter >= 15) {
+            const identity = this.getDimensionIdentity(dimension, dimLevelAfter);
+            const dimAchievement = this.unlockAchievement(`dimension_tier_5:${dimension}`, {
+                title: `${identity.title} desbloqueado`,
                 icon: identity.icon
             });
             if (dimAchievement) unlocked.push(dimAchievement);
@@ -659,24 +696,30 @@ const app = {
         return {
             xp,
             dimension,
-            identity: this.getDimensionIdentity(dimension),
+            identity: this.getDimensionIdentity(dimension, dimLevelAfter),
             totalLevel: this.getLevelFromXp(gamification.totalXp),
-            dimensionLevel: dimension ? this.getLevelFromXp(gamification.dimensionXp[dimension]) : null,
+            dimensionLevel: dimLevelAfter || null,
             totalLeveledUp: this.getLevelFromXp(totalBefore) < this.getLevelFromXp(gamification.totalXp),
-            dimensionLeveledUp: !!(dimension && this.getLevelFromXp(dimensionBefore) < this.getLevelFromXp(gamification.dimensionXp[dimension])),
+            dimensionLeveledUp: !!(dimension && dimLevelBefore < dimLevelAfter),
+            tierPromotion,
             achievementsUnlocked: unlocked
         };
     },
     showGamificationToast: function(result) {
         if (!result || !this.showToast) return;
-        const leveledUp = result.totalLeveledUp || result.dimensionLeveledUp || result.achievementsUnlocked?.some(a => /nível|Sistema em movimento/i.test(a.title));
-        const openers = leveledUp
-            ? ['Subiu de nível!', 'Novo patamar desbloqueado!', 'Evolução registrada!']
-            : ['Boa execução!', 'Pequena vitória registrada!', 'Consistência conta!'];
+        const tierPromotion = result.tierPromotion;
+        const leveledUp = tierPromotion || result.totalLeveledUp || result.dimensionLeveledUp || result.achievementsUnlocked?.some(a => /desbloqueado|Sistema em movimento/i.test(a.title));
+        const openers = tierPromotion
+            ? ['Novo título desbloqueado!', 'Você avançou de tier!', 'Promoção registrada!']
+            : leveledUp
+                ? ['Subiu de nível!', 'Novo patamar!', 'Evolução registrada!']
+                : ['Boa execução!', 'Pequena vitória registrada!', 'Consistência conta!'];
         const opener = openers[Math.floor(Math.random() * openers.length)];
         const parts = [`${opener} +${result.xp} XP`];
         if (result.dimension && result.identity) {
-            parts.push(`${result.identity.title} nível ${result.dimensionLevel}`);
+            parts.push(tierPromotion
+                ? `${result.dimension}: agora ${result.identity.title}`
+                : `${result.identity.title} · nível ${result.dimensionLevel}`);
         } else {
             parts.push(`Sistema nível ${result.totalLevel}`);
         }
@@ -5892,18 +5935,21 @@ const app = {
             dimensionsEl.innerHTML = dimKeys.map((dim) => {
                 const xp = Math.max(0, Number(gamification.dimensionXp[dim]) || 0);
                 const progress = this.getLevelProgress(xp);
-                const identity = this.getDimensionIdentity(dim);
+                const identity = this.getDimensionIdentity(dim, progress.level);
+                const tierNames = ['I', 'II', 'III', 'IV', 'V'];
+                const tierLabel = tierNames[identity.tier] || 'I';
                 return `
                 <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4 min-w-0">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline truncate">${this.escapeHtml(dim)}</p>
                             <p class="mt-1 text-sm font-bold text-on-surface truncate">${this.escapeHtml(identity.title)}</p>
+                            <p class="text-[10px] text-outline mt-0.5">Tier ${tierLabel} · Nível ${progress.level}</p>
                         </div>
                         <span class="material-symbols-outlined notranslate text-primary text-xl">${identity.icon}</span>
                     </div>
-                    <div class="mt-4 flex items-center justify-between text-[11px] text-outline">
-                        <span>Nível ${progress.level}</span>
+                    <div class="mt-3 flex items-center justify-between text-[11px] text-outline">
+                        <span>Próximo nível</span>
                         <span>${progress.current}/100 XP</span>
                     </div>
                     <div class="mt-2 h-1.5 rounded-full bg-outline-variant/20 overflow-hidden">
