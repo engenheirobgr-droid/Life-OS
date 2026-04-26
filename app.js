@@ -2205,8 +2205,8 @@ const app = {
                 </button>`;
             }).join('');
         };
-        renderSelected('strengths', 'Escolha forças que aparecem quando você está no seu melhor.');
-        renderSelected('shadows', 'Escolha padrões que você quer observar e transformar.');
+        renderSelected('strengths', 'Escolha uma força abaixo para começar — elas amplificam seu XP nos hábitos.');
+        renderSelected('shadows', 'Escolha um padrão abaixo — trabalhar sombras vale mais XP nos hábitos.');
         renderOptions('strengths');
         renderOptions('shadows');
     },
@@ -4524,26 +4524,34 @@ const app = {
         this.ensureIdentityState();
         const prev = select.value;
         const identity = window.sistemaVidaState.profile.identity || { strengths: [], shadows: [] };
-        const renderOption = (type, item) => {
-            const prefix = type === 'strengths' ? 'Força' : 'Sombra';
-            return `<option value="${type}:${this.escapeHtml(item.id)}">${prefix}: ${this.escapeHtml(item.title)}</option>`;
-        };
         const strengths = identity.strengths || [];
         const shadows = identity.shadows || [];
-        let html = '<option value="">— Sem conexão —</option>';
-        if (strengths.length) {
-            html += '<optgroup label="Forças">';
-            strengths.forEach(item => { html += renderOption('strengths', item); });
-            html += '</optgroup>';
+        const isEmpty = !strengths.length && !shadows.length;
+
+        const notice = document.getElementById('habit-identity-empty-notice');
+        if (notice) notice.classList.toggle('hidden', !isEmpty);
+        select.classList.toggle('hidden', isEmpty);
+
+        if (!isEmpty) {
+            const renderOption = (type, item) => {
+                const prefix = type === 'strengths' ? 'Força' : 'Sombra';
+                return `<option value="${type}:${this.escapeHtml(item.id)}">${prefix}: ${this.escapeHtml(item.title)}</option>`;
+            };
+            let html = '<option value="">— Sem conexão —</option>';
+            if (strengths.length) {
+                html += '<optgroup label="Forças">';
+                strengths.forEach(item => { html += renderOption('strengths', item); });
+                html += '</optgroup>';
+            }
+            if (shadows.length) {
+                html += '<optgroup label="Sombras">';
+                shadows.forEach(item => { html += renderOption('shadows', item); });
+                html += '</optgroup>';
+            }
+            select.innerHTML = html;
+            if (prev && select.querySelector(`option[value="${prev}"]`)) select.value = prev;
+            this.onHabitIdentitySourceChange(select.value);
         }
-        if (shadows.length) {
-            html += '<optgroup label="Sombras">';
-            shadows.forEach(item => { html += renderOption('shadows', item); });
-            html += '</optgroup>';
-        }
-        select.innerHTML = html;
-        if (prev && select.querySelector(`option[value="${prev}"]`)) select.value = prev;
-        this.onHabitIdentitySourceChange(select.value);
     },
 
     onHabitIdentitySourceChange: function(value) {
@@ -5751,18 +5759,31 @@ const app = {
     populateReviewIdentityFields: function() {
         this.ensureIdentityState();
         const identity = window.sistemaVidaState.profile.identity || { strengths: [], shadows: [] };
-        const fillSelect = (id, items) => {
-            const select = document.getElementById(id);
-            if (!select) return;
-            select.innerHTML = '<option value="">— Opcional —</option>' + (items || []).map(item =>
-                `<option value="${this.escapeHtml(item.id)}">${this.escapeHtml(item.title)}</option>`
-            ).join('');
-        };
-        fillSelect('rev-strength', identity.strengths || []);
-        fillSelect('rev-shadow', identity.shadows || []);
+        const isEmpty = !(identity.strengths || []).length && !(identity.shadows || []).length;
+
+        const cta = document.getElementById('review-identity-cta');
+        const selects = document.getElementById('review-identity-selects');
+        if (cta) cta.classList.toggle('hidden', !isEmpty);
+        if (selects) selects.classList.toggle('hidden', isEmpty);
+
+        if (!isEmpty) {
+            const fillSelect = (id, items) => {
+                const select = document.getElementById(id);
+                if (!select) return;
+                select.innerHTML = '<option value="">— Opcional —</option>' + (items || []).map(item =>
+                    `<option value="${this.escapeHtml(item.id)}">${this.escapeHtml(item.title)}</option>`
+                ).join('');
+            };
+            fillSelect('rev-strength', identity.strengths || []);
+            fillSelect('rev-shadow', identity.shadows || []);
+        }
 
         const suggestion = document.getElementById('review-identity-suggestion');
         if (!suggestion) return;
+        if (isEmpty) {
+            suggestion.textContent = '';
+            return;
+        }
         const weekKey = this._getWeekKey();
         const weekDates = this.getWeekDateKeys(weekKey);
         const practiced = (window.sistemaVidaState.habits || [])
