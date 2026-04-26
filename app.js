@@ -7309,6 +7309,256 @@ const app = {
         if (chevron) chevron.style.transform = willOpen ? 'rotate(180deg)' : '';
     },
 
+    manualGuideChapters: [
+        {
+            id: 'visao-geral',
+            icon: 'menu_book',
+            title: 'Visão Geral',
+            subtitle: 'A arquitetura do Life OS em uma página',
+            what: 'O Life OS funciona em quatro camadas que se alimentam: <strong>Propósito</strong> (quem você é e quer ser) → <strong>Planos</strong> (Meta→OKR→Macro→Micro) → <strong>Execução</strong> (Hoje + Foco) → <strong>Reflexão</strong> (Painel + Revisão Semanal). Identidade e hábitos atravessam todas as camadas.',
+            why: 'Sistemas de mudança duradoura precisam de coerência vertical: ações diárias devem servir objetivos de médio prazo, que servem propósito de longo prazo. Sem essa cadeia, o esforço diário não acumula em direção a algo significativo.',
+            refs: ['Covey — 7 Habits (begin with the end in mind)', 'Locke & Latham — Goal-Setting Theory'],
+            how: [
+                'Comece pelo Propósito: defina valores, identidade (forças e sombras) e Ikigai antes de criar Metas.',
+                'Quebre cada Meta em OKRs (90 dias) → Macros (semanais) → Micros (atômicos, executáveis em uma sessão).',
+                'Use o Hoje para executar Micros e o Foco para sessões de atenção profunda.',
+                'Revise no Painel e na Revisão Semanal para fechar o ciclo.'
+            ],
+            cta: null
+        },
+        {
+            id: 'identidade',
+            icon: 'person_pin',
+            title: 'Identidade & Valores',
+            subtitle: 'Quem você está se tornando',
+            what: 'A aba Propósito guarda <strong>Valores</strong> (princípios inegociáveis), <strong>Forças</strong> (o que quer expressar mais) e <strong>Sombras</strong> (padrões a transformar). Cada hábito pode ser conectado a uma força ou sombra, e a Revisão Semanal pergunta qual delas você praticou.',
+            why: 'Mudanças sustentáveis acontecem em nível de identidade, não de comportamento isolado. Trabalhar sombras (psicologia junguiana) e cultivar forças (VIA Character Strengths) cria uma narrativa interna coerente: cada ação vira "voto" para a pessoa que você está se tornando.',
+            refs: ['James Clear — Atomic Habits (identity-based habits)', 'Peterson & Seligman — VIA Character Strengths', 'Carl Jung — Shadow integration'],
+            how: [
+                'Em Propósito, escolha 3-5 forças do catálogo e 1-2 sombras a observar.',
+                'Ao criar um hábito, conecte-o a uma força (modo "construir") ou sombra (modo "substituir").',
+                'Hábitos de sombra valem +4 XP, hábitos de força valem +2 XP — a diferença reflete o esforço cognitivo.',
+                'Na Revisão Semanal, marque qual força usou e qual sombra apareceu.'
+            ],
+            cta: { label: 'Abrir Propósito', view: 'proposito' }
+        },
+        {
+            id: 'ikigai-odyssey',
+            icon: 'explore',
+            title: 'Ikigai, Odyssey & Visão',
+            subtitle: 'Razão de viver e cenários de futuro',
+            what: 'O <strong>Ikigai</strong> cruza o que você ama, no que é bom, o que o mundo precisa e pelo que pode ser pago. Os <strong>Odyssey Plans</strong> projetam três cenários distintos para os próximos 5 anos. A <strong>Visão de Vida</strong> declara quem você quer ser em saúde, carreira e intelecto.',
+            why: 'O futuro psicologicamente "próximo" é o que motiva ação no presente. Pesquisas em continuidade do self mostram que pessoas que visualizam um futuro vívido tomam decisões financeiras e de saúde melhores. Designing Your Life (Stanford) recomenda múltiplos cenários porque combate a falsa premissa de que existe "um caminho certo".',
+            refs: ['Mieko Kamiya / Ken Mogi — Ikigai', 'Burnett & Evans — Designing Your Life', 'Hal Hershfield — Future Self Continuity'],
+            how: [
+                'Preencha cada quadrante do Ikigai com 1-2 frases honestas, depois sintetize sua "razão de viver".',
+                'Crie 3 Odyssey Plans bem distintos — um conservador, um audacioso, um radical — para forçar imaginação.',
+                'Atualize a Visão de Vida a cada 6-12 meses; ela é uma bússola, não um contrato.',
+                'Quando definir Metas, pergunte: "qual cenário Odyssey isso serve?"'
+            ],
+            cta: { label: 'Editar Ikigai e Odyssey', view: 'proposito' }
+        },
+        {
+            id: 'bem-estar',
+            icon: 'monitoring',
+            title: 'Bem-estar: Roda da Vida, PERMA & SWLS',
+            subtitle: 'Diagnóstico holístico de florescimento',
+            what: 'Três instrumentos complementares: a <strong>Roda da Vida</strong> mede equilíbrio em 8 dimensões; o <strong>PERMA</strong> mensura florescimento em 5 dimensões (Emoções positivas, Engajamento, Relacionamentos, Meaning, Achievement); o <strong>SWLS</strong> é uma escala validada de satisfação cognitiva global.',
+            why: 'PERMA (Seligman) e SWLS (Diener) são instrumentos validados em centenas de estudos. Usados juntos, capturam tanto o "como me sinto" (afetivo) quanto o "como avalio minha vida" (cognitivo). A Roda da Vida adiciona granularidade por dimensão para detectar áreas negligenciadas.',
+            refs: ['Seligman — Flourish (PERMA)', 'Diener et al. — Satisfaction with Life Scale (SWLS)', 'Paul J. Meyer — Wheel of Life'],
+            how: [
+                'Reavalie a Roda da Vida a cada 4-6 semanas — anote a dimensão mais baixa.',
+                'PERMA é mais sensível: avalie mensalmente para detectar tendências.',
+                'SWLS deve ser preenchido a cada 3 meses; comparações curtas demais são ruído.',
+                'Cruze: dimensões baixas na Roda devem aparecer como Metas em Planos.'
+            ],
+            cta: { label: 'Reavaliar bem-estar', view: 'proposito' }
+        },
+        {
+            id: 'planos',
+            icon: 'account_tree',
+            title: 'Planos: Hierarquia Meta → OKR → Macro → Micro',
+            subtitle: 'Cascata de objetivos com weekly planning',
+            what: 'A hierarquia decompõe ambição em ação: <strong>Meta</strong> (1-5 anos) → <strong>OKR</strong> (trimestral, com Key Results mensuráveis) → <strong>Macro</strong> (semanal/mensal) → <strong>Micro</strong> (atômico, ~1 sessão). O <strong>Planejamento Semanal</strong> seleciona quais Micros entram na semana com previsão de energia.',
+            why: 'OKRs (Andy Grove, popularizado por John Doerr) separam objetivo qualitativo (Objective) de medidas (Key Results), evitando metas vagas. Decomposição em Micros respeita a teoria da auto-eficácia (Bandura): vitórias pequenas alimentam crença de competência. Weekly planning aplica o "12 Week Year" — comprimir o foco em ciclos curtos aumenta execução.',
+            refs: ['John Doerr — Measure What Matters (OKRs)', 'Brian Moran — The 12 Week Year', 'Albert Bandura — Self-Efficacy Theory'],
+            how: [
+                'Crie 1-3 Metas por dimensão, não mais. Foco vence quantidade.',
+                'Para cada OKR, defina 2-4 Key Results numéricos (não tarefas, mas resultados mensuráveis).',
+                'Quebre Macros em Micros executáveis em até 90 minutos.',
+                'No Planejamento Semanal, selecione Micros com base na energia prevista — não encha o calendário.',
+                'Pais (Meta/OKR/Macro) só ficam "concluídos" quando você decide; o sistema não fecha automaticamente.'
+            ],
+            cta: { label: 'Abrir Planos', view: 'planos' }
+        },
+        {
+            id: 'hoje',
+            icon: 'today',
+            title: 'Hoje: Bússola, Diário, Gratidão & Shutdown',
+            subtitle: 'A camada de execução e reflexão diária',
+            what: 'O <strong>Hoje</strong> reúne: a <strong>Bússola do Dia</strong> (frase + ação sugerida), a lista de <strong>Micros</strong> da semana, os <strong>hábitos</strong> ativos, o <strong>Diário</strong> (escrita livre + 3 gratidões) e o <strong>Shutdown Ritual</strong> (encerramento consciente do dia).',
+            why: 'A Bússola usa "implementation intentions" (Gollwitzer): declarar antecipadamente o que vai fazer aumenta execução em ~2-3x. Gratidão (3 Good Things, Seligman) por 1-2 semanas eleva afeto positivo por meses. O Shutdown Ritual fecha o "loop Zeigarnik" — tarefas inacabadas criam ruminação; declarar fechamento libera capacidade cognitiva para descansar.',
+            refs: ['Gollwitzer — Implementation Intentions', 'Seligman — Three Good Things', 'Cal Newport — Deep Work (shutdown)', 'Zeigarnik Effect'],
+            how: [
+                'Abra o Hoje pela manhã; deixe a Bússola do Dia ancorar a primeira ação.',
+                'Faça o Diário e 3 gratidões à noite — específicas, não genéricas ("o sorriso do meu filho ao voltar pra casa", não "minha família").',
+                'Execute o Shutdown ao terminar o trabalho: revise o que ficou, anote pendências para amanhã, declare fechamento.',
+                'Não tente esvaziar todos os Micros da semana num dia só — sobrecarga mata consistência.'
+            ],
+            cta: { label: 'Ir para Hoje', view: 'hoje' }
+        },
+        {
+            id: 'foco',
+            icon: 'timer',
+            title: 'Foco: Pomodoro 90/20 & Deep Work',
+            subtitle: 'Atenção profunda em ritmos ultradianos',
+            what: 'Timer de <strong>90 minutos de foco + 20 minutos de pausa</strong>, conectado a um Micro específico. Ao final da sessão, registra Deep Work e atribui XP.',
+            why: 'O ciclo 90/20 segue os ritmos ultradianos (Kleitman) — o cérebro alterna entre alta e baixa ativação a cada ~90 minutos. Pomodoros de 25 minutos são bons para tarefas leves, mas trabalho profundo (Deep Work, Cal Newport) exige blocos longos sem interrupção. A pausa de 20 minutos permite consolidação e redução de fadiga atencional (depleção de glicose pré-frontal).',
+            refs: ['Nathan Kleitman — BRAC (Basic Rest-Activity Cycle)', 'Cal Newport — Deep Work', 'Csikszentmihalyi — Flow'],
+            how: [
+                'Antes de iniciar, escolha UM Micro — multitarefa destrói deep work.',
+                'Desligue notificações; o ambiente deve sinalizar "agora é foco".',
+                'Use a pausa de 20 min para movimento físico ou descanso real, não redes sociais.',
+                'Faça no máximo 3-4 sessões por dia; deep work é caro biologicamente.'
+            ],
+            cta: { label: 'Iniciar Foco', view: 'foco' }
+        },
+        {
+            id: 'habitos',
+            icon: 'repeat',
+            title: 'Hábitos: Habit Loop & Identidade em Ação',
+            subtitle: 'Cue → Routine → Reward, ancorado em quem você quer ser',
+            what: 'Cada hábito tem <strong>Gatilho</strong> (cue), <strong>Rotina</strong> (routine), <strong>Recompensa</strong> (reward) e pode estar conectado a uma força ou sombra. Modos: construir (força), reduzir (sombra) ou substituir (resposta melhor).',
+            why: 'O Habit Loop (Duhigg, baseado em pesquisa do MIT/Graybiel) é a estrutura mínima de qualquer comportamento automatizado. James Clear adiciona a camada de identidade: "todo hábito é um voto para o tipo de pessoa que você quer ser". Implementation intentions ("depois de X, eu farei Y") aumentam aderência em meta-análises de 2-3x.',
+            refs: ['Charles Duhigg — The Power of Habit', 'James Clear — Atomic Habits', 'B.J. Fogg — Tiny Habits'],
+            how: [
+                'Ancore o hábito em uma rotina existente: "depois de escovar os dentes, eu...".',
+                'Comece ridiculamente pequeno: 2 minutos, não 30. Consistência > intensidade.',
+                'Conecte à identidade: "sou alguém que..." em vez de "vou fazer X".',
+                'Para sombras, defina a resposta-substituta antes do gatilho aparecer.',
+                'Use o checklist de passos para hábitos complexos; quebra em micropassos previne paralisia.'
+            ],
+            cta: { label: 'Criar hábito', view: 'planos' }
+        },
+        {
+            id: 'reflexao',
+            icon: 'insights',
+            title: 'Painel & Revisão Semanal',
+            subtitle: 'Fechamento de ciclo e aprendizado',
+            what: 'O <strong>Painel</strong> mostra scores de Foco/Execução, ciclo de 12 semanas e heatmap. A <strong>Revisão Semanal</strong> faz 5 perguntas (planejei → executei → aprendi → ajustar → próxima intenção) + autoconhecimento aplicado (força usada, sombra observada).',
+            why: 'Reflexão estruturada transforma experiência em aprendizado — sem revisão, repetimos os mesmos erros. Brian Moran (12 Week Year) mostra que a frequência de revisão (semanal > mensal > trimestral) é o maior preditor de execução de OKRs. Escrever o que aprendeu ativa metacognição e consolida memória (Bjork — desirable difficulties).',
+            refs: ['Brian Moran — 12 Week Year', 'Robert Bjork — Desirable Difficulties', 'Kolb — Experiential Learning Cycle'],
+            how: [
+                'Faça a Revisão Semanal todo domingo ou segunda — não pule, mesmo na semana ruim (especialmente nela).',
+                'Seja específico: "aprendi que reuniões antes das 10h drenam minha energia para deep work" > "preciso focar mais".',
+                'Use a aba "Autoconhecimento aplicado" para fechar o loop identidade → ação → reflexão.',
+                'No Painel, observe tendências, não dias isolados — métricas voláteis enganam.'
+            ],
+            cta: { label: 'Abrir Painel', view: 'painel' }
+        }
+    ],
+
+    ensureManualGuideState: function() {
+        if (!window.sistemaVidaState.profile) return;
+        const profile = window.sistemaVidaState.profile;
+        if (!profile.manualGuide || typeof profile.manualGuide !== 'object') {
+            profile.manualGuide = { read: [] };
+        }
+        if (!Array.isArray(profile.manualGuide.read)) profile.manualGuide.read = [];
+    },
+
+    isManualChapterRead: function(id) {
+        this.ensureManualGuideState();
+        return (window.sistemaVidaState.profile.manualGuide.read || []).includes(id);
+    },
+
+    toggleManualChapter: function(id) {
+        const wrap = document.getElementById(`manual-ch-body-${id}`);
+        const chevron = document.getElementById(`manual-ch-chevron-${id}`);
+        if (!wrap) return;
+        const willOpen = wrap.classList.contains('hidden');
+        wrap.classList.toggle('hidden', !willOpen);
+        if (chevron) chevron.style.transform = willOpen ? 'rotate(180deg)' : '';
+        if (willOpen && !this.isManualChapterRead(id)) {
+            this.ensureManualGuideState();
+            window.sistemaVidaState.profile.manualGuide.read.push(id);
+            this.saveState(true);
+            this.renderManualGuideProgress();
+            const card = document.getElementById(`manual-ch-card-${id}`);
+            if (card) card.classList.add('manual-ch-read');
+            const badge = document.getElementById(`manual-ch-badge-${id}`);
+            if (badge) badge.textContent = 'Lido';
+        }
+    },
+
+    manualGuideJumpTo: function(view) {
+        if (!view) return;
+        this.switchView(view);
+    },
+
+    renderManualGuideProgress: function() {
+        const total = this.manualGuideChapters.length;
+        const read = (window.sistemaVidaState?.profile?.manualGuide?.read || []).filter(id =>
+            this.manualGuideChapters.some(c => c.id === id)
+        ).length;
+        const progress = document.getElementById('manual-guide-progress');
+        const bar = document.getElementById('manual-guide-progress-bar');
+        if (progress) progress.textContent = `${read}/${total}`;
+        if (bar) bar.style.width = total ? `${Math.round((read / total) * 100)}%` : '0%';
+    },
+
+    renderManualGuide: function() {
+        const list = document.getElementById('manual-guide-list');
+        if (!list) return;
+        this.ensureManualGuideState();
+        const esc = (s) => this.escapeHtml(String(s || ''));
+        const cards = this.manualGuideChapters.map((ch, idx) => {
+            const isRead = this.isManualChapterRead(ch.id);
+            const refs = (ch.refs || []).map(r => `<li>${esc(r)}</li>`).join('');
+            const how = (ch.how || []).map(h => `<li>${esc(h)}</li>`).join('');
+            const cta = ch.cta ? `
+                <button type="button" onclick="window.app.manualGuideJumpTo('${esc(ch.cta.view)}')"
+                    class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all">
+                    <span class="material-symbols-outlined notranslate text-[16px]">arrow_forward</span>
+                    ${esc(ch.cta.label)}
+                </button>` : '';
+            return `
+            <div id="manual-ch-card-${esc(ch.id)}" class="rounded-xl border border-outline-variant/15 bg-surface-container-low overflow-hidden ${isRead ? 'manual-ch-read' : ''}">
+                <button type="button" onclick="window.app.toggleManualChapter('${esc(ch.id)}')"
+                    class="w-full flex items-center gap-3 p-4 text-left hover:bg-surface-container transition-colors">
+                    <span class="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary shrink-0">
+                        <span class="material-symbols-outlined notranslate text-[18px]">${esc(ch.icon)}</span>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Capítulo ${idx + 1}</p>
+                        <p class="text-sm font-bold text-on-surface leading-tight mt-0.5">${esc(ch.title)}</p>
+                        <p class="text-[11px] text-outline mt-0.5 leading-snug">${esc(ch.subtitle)}</p>
+                    </div>
+                    <span id="manual-ch-badge-${esc(ch.id)}" class="text-[10px] font-bold uppercase tracking-wider text-primary shrink-0">${isRead ? 'Lido' : 'Novo'}</span>
+                    <span id="manual-ch-chevron-${esc(ch.id)}" class="material-symbols-outlined notranslate text-outline text-[18px] transition-transform shrink-0">expand_more</span>
+                </button>
+                <div id="manual-ch-body-${esc(ch.id)}" class="hidden px-5 pb-5 pt-1 space-y-4 text-sm text-on-surface-variant leading-relaxed">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">O que é</p>
+                        <p>${ch.what}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Por que funciona</p>
+                        <p>${esc(ch.why)}</p>
+                        ${refs ? `<ul class="mt-2 list-disc list-inside text-[11px] text-outline space-y-0.5">${refs}</ul>` : ''}
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Como usar</p>
+                        <ol class="list-decimal list-inside space-y-1.5">${how}</ol>
+                    </div>
+                    ${cta}
+                </div>
+            </div>`;
+        }).join('');
+        list.innerHTML = cards;
+        this.renderManualGuideProgress();
+    },
+
     render: {
         onboarding: function() {
             app.onboardingHydrateFields();
@@ -8737,6 +8987,7 @@ const app = {
                 soundKnob.className = `w-3 h-3 rounded-full absolute transition-all ${soundOn ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
             }
             app.renderGamificationProfile();
+            app.renderManualGuide();
             app.updateProfileAppVersion();
         },
 
