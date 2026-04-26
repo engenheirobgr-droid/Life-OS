@@ -6685,12 +6685,12 @@ const app = {
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
                     const metaBits = [];
-                    if (micro.status === 'in_progress') metaBits.push('<span title="Em andamento" class="inline-flex items-center text-amber-600 dark:text-amber-400 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span></span>');
-                    if (isOverdue) metaBits.push('<span title="Atrasada" class="inline-flex items-center text-red-600 dark:text-red-400 shrink-0"><span class="material-symbols-outlined notranslate text-[11px]">alarm</span></span>');
+                    if (micro.status === 'in_progress') metaBits.push('<span title="Em andamento" class="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span><span class="text-[9px] font-bold uppercase tracking-wide">Andamento</span></span>');
+                    if (isOverdue) metaBits.push('<span title="Atrasada" class="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400 shrink-0"><span class="material-symbols-outlined notranslate" style="font-size:12px">alarm</span><span class="text-[9px] font-bold uppercase tracking-wide">Atrasada</span></span>');
                     metaBits.push(app._isPlannedThisWeek(micro.id)
-                        ? '<span title="No plano da semana" class="inline-flex items-center text-primary shrink-0"><span class="material-symbols-outlined notranslate text-[11px]">event</span></span>'
-                        : '<span title="Capturada fora do plano semanal" class="inline-flex items-center text-outline shrink-0"><span class="material-symbols-outlined notranslate text-[11px]">inbox</span></span>');
-                    const metaLine = metaBits.join('');
+                        ? '<span title="No plano da semana" class="inline-flex items-center gap-0.5 text-primary shrink-0"><span class="material-symbols-outlined notranslate" style="font-size:12px">event</span><span class="text-[9px] font-bold uppercase tracking-wide">Semana</span></span>'
+                        : '<span title="Capturada fora do plano semanal" class="inline-flex items-center gap-0.5 text-on-surface-variant shrink-0"><span class="material-symbols-outlined notranslate" style="font-size:12px">inbox</span><span class="text-[9px] font-bold uppercase tracking-wide">Captura</span></span>');
+                    const metaLine = metaBits.join('<span class="text-outline/40 shrink-0 mx-0.5">·</span>');
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
                         : (micro.status === 'in_progress'
@@ -6705,12 +6705,12 @@ const app = {
                                 <div class="w-5 h-5 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-semibold text-on-surface leading-snug">${micro.title}</p>
-                                    <div class="mt-1 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide flex-wrap">
+                                    <div class="mt-1 flex items-center flex-wrap gap-x-1.5 gap-y-0.5">
                                         <span class="inline-flex items-center gap-0.5 text-primary shrink-0">
-                                            <span class="material-symbols-outlined notranslate text-[11px]">${dimIcon}</span>
-                                            ${micro.dimension}
+                                            <span class="material-symbols-outlined notranslate" style="font-size:12px">${dimIcon}</span>
+                                            <span class="text-[9px] font-bold uppercase tracking-wide">${micro.dimension}</span>
                                         </span>
-                                        ${metaLine ? `<span class="flex items-center gap-1 shrink-0">${metaLine}</span>` : ''}
+                                        ${metaLine ? `<span class="text-outline/40 shrink-0">·</span><span class="inline-flex items-center gap-x-1.5 flex-wrap gap-y-0.5">${metaLine}</span>` : ''}
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1 shrink-0">
