@@ -54,7 +54,9 @@ window.sistemaVidaState = {
         vision: { saude: "", carreira: "", intelecto: "", quote: "", saudeResumo: "", carreiraResumo: "", intelectoResumo: "" },
         odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" },
         odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" },
-        identity: { strengths: [], shadows: [] }
+        identity: { strengths: [], shadows: [] },
+        dailyCheckins: [],
+        cadence: {}
     },
     energy: 5,
     dimensions: {
@@ -971,6 +973,8 @@ const app = {
             window.sistemaVidaState.profile.values = [];
         }
         this.ensureIdentityState();
+        this.ensureDailyCheckinState();
+        this.ensureCadenceState();
         if (typeof window.sistemaVidaState.profile.legacy !== 'string') {
             window.sistemaVidaState.profile.legacy = '';
         }
@@ -4614,6 +4618,223 @@ const app = {
         });
     },
 
+    ensureDailyCheckinState: function() {
+        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+        const profile = window.sistemaVidaState.profile;
+        if (!Array.isArray(profile.dailyCheckins)) profile.dailyCheckins = [];
+        const seen = new Set();
+        profile.dailyCheckins = profile.dailyCheckins
+            .map((entry) => {
+                const date = String(entry?.date || '').slice(0, 10);
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || seen.has(date)) return null;
+                seen.add(date);
+                const clamp = (value, fallback = 3) => {
+                    const n = Math.round(Number(value));
+                    if (!Number.isFinite(n)) return fallback;
+                    return Math.max(1, Math.min(5, n));
+                };
+                const sleepHours = Math.round(Math.max(0, Math.min(16, Number(entry?.sleepHours) || 0)) * 10) / 10;
+                return {
+                    date,
+                    sleepHours,
+                    sleepQuality: clamp(entry?.sleepQuality),
+                    energy: clamp(entry?.energy),
+                    mood: clamp(entry?.mood),
+                    stress: clamp(entry?.stress),
+                    emotion: String(entry?.emotion || '').trim().slice(0, 40),
+                    savedAt: String(entry?.savedAt || new Date().toISOString())
+                };
+            })
+            .filter(Boolean)
+            .sort((a, b) => b.date.localeCompare(a.date))
+            .slice(0, 180);
+    },
+
+    ensureCadenceState: function() {
+        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+        const profile = window.sistemaVidaState.profile;
+        if (!profile.cadence || typeof profile.cadence !== 'object' || Array.isArray(profile.cadence)) profile.cadence = {};
+        Object.keys(profile.cadence).forEach((key) => {
+            const item = profile.cadence[key];
+            if (!item || typeof item !== 'object') profile.cadence[key] = {};
+            if (profile.cadence[key].lastAt && typeof profile.cadence[key].lastAt !== 'string') {
+                profile.cadence[key].lastAt = String(profile.cadence[key].lastAt);
+            }
+        });
+    },
+
+    getCadenceConfig: function() {
+        return {
+            checkin: { label: 'Check-in diário', expectedDays: 1, icon: 'monitor_heart', why: 'Sono, energia, humor e estresse.' },
+            diary: { label: 'Diário / Shutdown', expectedDays: 1, icon: 'edit_note', why: 'Fechamento consciente do dia.' },
+            weeklyPlan: { label: 'Planejamento semanal', expectedDays: 7, icon: 'edit_calendar', why: 'Escolher a carga da semana.' },
+            weeklyReview: { label: 'Revisão semanal', expectedDays: 7, icon: 'rate_review', why: 'Transformar experiência em aprendizado.' },
+            wheel: { label: 'Roda da Vida', expectedDays: 30, icon: 'pie_chart', why: 'Termômetro mensal das áreas.' },
+            perma: { label: 'PERMA', expectedDays: 30, icon: 'psychology', why: 'Florescimento mensal.' },
+            swls: { label: 'SWLS', expectedDays: 90, icon: 'monitoring', why: 'Satisfação global trimestral.' },
+            odyssey: { label: 'Odyssey / Visão', expectedDays: 180, icon: 'explore', why: 'Revisão semestral dos cenários.' }
+        };
+    },
+
+    markCadence: function(toolKey, dateKey = this.getLocalDateKey()) {
+        this.ensureCadenceState();
+        const config = this.getCadenceConfig();
+        if (!config[toolKey]) return;
+        window.sistemaVidaState.profile.cadence[toolKey] = {
+            ...(window.sistemaVidaState.profile.cadence[toolKey] || {}),
+            lastAt: dateKey,
+            updatedAt: new Date().toISOString()
+        };
+    },
+
+    getCadenceStatus: function(toolKey) {
+        this.ensureCadenceState();
+        const cfg = this.getCadenceConfig()[toolKey];
+        if (!cfg) return { state: 'overdue', daysSince: null, expectedFreq: 0, label: toolKey };
+        const lastAt = window.sistemaVidaState.profile.cadence?.[toolKey]?.lastAt || '';
+        if (!lastAt) return { ...cfg, state: 'overdue', daysSince: null, expectedFreq: cfg.expectedDays, lastAt: '' };
+        const today = new Date(this.getLocalDateKey() + 'T00:00:00');
+        const last = new Date(lastAt + 'T00:00:00');
+        const daysSince = Number.isFinite(last.getTime()) ? Math.max(0, Math.floor((today - last) / 86400000)) : null;
+        let state = 'overdue';
+        if (daysSince === null) state = 'overdue';
+        else if (cfg.expectedDays <= 1) state = daysSince === 0 ? 'ok' : daysSince === 1 ? 'soon' : 'overdue';
+        else if (daysSince <= Math.floor(cfg.expectedDays * 0.75)) state = 'ok';
+        else if (daysSince <= cfg.expectedDays) state = 'soon';
+        return { ...cfg, state, daysSince, expectedFreq: cfg.expectedDays, lastAt };
+    },
+
+    renderCadenceBadge: function(toolKey) {
+        const status = this.getCadenceStatus(toolKey);
+        const cfg = {
+            ok: { text: 'Em dia', cls: 'bg-primary/10 text-primary border-primary/20' },
+            soon: { text: 'Próximo', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' },
+            overdue: { text: 'Em atraso', cls: 'bg-error/10 text-error border-error/20' }
+        }[status.state] || {};
+        const detail = status.daysSince === null ? 'Nunca feito' : `${status.daysSince}d`;
+        return `<span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${cfg.cls}">
+            ${cfg.text} · ${detail}
+        </span>`;
+    },
+
+    renderCadencePanel: function(containerId = 'cadence-status-panel', limit = 4) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const keys = Object.keys(this.getCadenceConfig());
+        const items = keys
+            .map(key => ({ key, status: this.getCadenceStatus(key) }))
+            .sort((a, b) => {
+                const rank = { overdue: 0, soon: 1, ok: 2 };
+                return (rank[a.status.state] ?? 9) - (rank[b.status.state] ?? 9);
+            })
+            .slice(0, limit);
+        container.innerHTML = items.map(({ key, status }) => `
+            <div class="rounded-xl bg-surface-container-lowest border border-outline-variant/10 p-3 flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-on-surface flex items-center gap-1">
+                        <span class="material-symbols-outlined notranslate text-primary text-[16px]">${this.escapeHtml(status.icon)}</span>
+                        ${this.escapeHtml(status.label)}
+                    </p>
+                    <p class="mt-1 text-[11px] text-outline leading-relaxed">${this.escapeHtml(status.why)}</p>
+                </div>
+                <div class="shrink-0">${this.renderCadenceBadge(key)}</div>
+            </div>
+        `).join('');
+    },
+
+    renderProfileCadence: function() {
+        const container = document.getElementById('profile-cadence-list');
+        if (!container) return;
+        const keys = Object.keys(this.getCadenceConfig());
+        container.innerHTML = keys.map(key => {
+            const status = this.getCadenceStatus(key);
+            const freq = status.expectedFreq === 1 ? 'Diário' : `${status.expectedFreq} dias`;
+            return `
+            <div class="flex items-start justify-between gap-4 rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined notranslate text-primary text-[18px]">${this.escapeHtml(status.icon)}</span>
+                        ${this.escapeHtml(status.label)}
+                    </p>
+                    <p class="mt-1 text-xs text-outline leading-relaxed">${this.escapeHtml(status.why)} · Frequência: ${this.escapeHtml(freq)}</p>
+                </div>
+                ${this.renderCadenceBadge(key)}
+            </div>`;
+        }).join('');
+    },
+
+    getTodayCheckin: function() {
+        this.ensureDailyCheckinState();
+        const today = this.getLocalDateKey();
+        return (window.sistemaVidaState.profile.dailyCheckins || []).find(entry => entry.date === today) || null;
+    },
+
+    saveDailyCheckin: function() {
+        this.ensureDailyCheckinState();
+        const today = this.getLocalDateKey();
+        const read = (id, fallback = 3) => {
+            const el = document.getElementById(id);
+            const n = Number(el?.value);
+            return Number.isFinite(n) ? n : fallback;
+        };
+        const entry = {
+            date: today,
+            sleepHours: Math.round(Math.max(0, Math.min(16, read('daily-checkin-sleep-hours', 0))) * 10) / 10,
+            sleepQuality: Math.max(1, Math.min(5, Math.round(read('daily-checkin-sleep-quality')))),
+            energy: Math.max(1, Math.min(5, Math.round(read('daily-checkin-energy')))),
+            mood: Math.max(1, Math.min(5, Math.round(read('daily-checkin-mood')))),
+            stress: Math.max(1, Math.min(5, Math.round(read('daily-checkin-stress')))),
+            emotion: String(document.getElementById('daily-checkin-emotion')?.value || '').trim().slice(0, 40),
+            savedAt: new Date().toISOString()
+        };
+        const list = window.sistemaVidaState.profile.dailyCheckins.filter(item => item.date !== today);
+        list.unshift(entry);
+        window.sistemaVidaState.profile.dailyCheckins = list.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 180);
+        window.sistemaVidaState.energy = entry.energy;
+        this.markCadence('checkin', today);
+        this.saveState(true);
+        this.renderDailyCheckinPanel();
+        this.renderCadencePanel();
+        if (this.showToast) this.showToast('Check-in do dia salvo.', 'success');
+    },
+
+    renderDailyCheckinPanel: function() {
+        const root = document.getElementById('daily-checkin-panel');
+        if (!root) return;
+        this.ensureDailyCheckinState();
+        const todayEntry = this.getTodayCheckin();
+        const defaults = todayEntry || { sleepHours: '', sleepQuality: 3, energy: window.sistemaVidaState.energy || 3, mood: 3, stress: 3, emotion: '' };
+        const setVal = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+            const label = document.getElementById(`${id}-val`);
+            if (label) label.textContent = String(value || '--');
+        };
+        setVal('daily-checkin-sleep-hours', defaults.sleepHours || '');
+        setVal('daily-checkin-sleep-quality', defaults.sleepQuality);
+        setVal('daily-checkin-energy', defaults.energy);
+        setVal('daily-checkin-mood', defaults.mood);
+        setVal('daily-checkin-stress', defaults.stress);
+        const emotion = document.getElementById('daily-checkin-emotion');
+        if (emotion) emotion.value = defaults.emotion || '';
+
+        const empty = document.getElementById('daily-checkin-empty');
+        if (empty) empty.classList.toggle('hidden', !!todayEntry);
+        const history = document.getElementById('daily-checkin-history');
+        if (history) {
+            const rows = (window.sistemaVidaState.profile.dailyCheckins || []).slice(0, 7);
+            history.innerHTML = rows.length ? rows.map(item => `
+                <div class="grid grid-cols-5 gap-2 text-[10px] text-center rounded-lg bg-surface-container-low px-2 py-2">
+                    <span class="text-left text-outline">${this.escapeHtml(item.date.slice(5))}</span>
+                    <span title="Sono">${this.escapeHtml(String(item.sleepHours || '--'))}h</span>
+                    <span title="Energia">E${this.escapeHtml(String(item.energy))}</span>
+                    <span title="Humor">H${this.escapeHtml(String(item.mood))}</span>
+                    <span title="Estresse">S${this.escapeHtml(String(item.stress))}</span>
+                </div>
+            `).join('') : '<p class="text-xs text-outline italic">Sem histórico ainda. O primeiro check-in já cria a linha base.</p>';
+        }
+    },
+
     getIdentityPracticeStats: function(weekKey = this._getWeekKey()) {
         this.ensureIdentityState();
         const identity = window.sistemaVidaState.profile.identity || { strengths: [], shadows: [] };
@@ -5666,6 +5887,7 @@ const app = {
             savedAt: Date.now()
         };
 
+        this.markCadence('weeklyPlan');
         this.saveState(true);
         const isNextWeek = weekKey > this._getWeekKey();
         this.closeWeeklyPlanModal();
@@ -5827,6 +6049,7 @@ const app = {
             savedAt: new Date().toISOString()
         };
         this.updateIdentityWeeklyLogs(weekKey, window.sistemaVidaState.reviews[weekKey]);
+        this.markCadence('weeklyReview');
         if (!hadReview) {
             const hasIdentityReflection = !!(strengthId || shadowId || responsePracticed || habitAdjustment);
             const award = this.awardGamification('weekly_review', { key: `review:${weekKey}`, identityReflection: hasIdentityReflection });
@@ -5918,7 +6141,9 @@ const app = {
           vision: { saude: '', carreira: '', intelecto: '', quote: '', saudeResumo: '', carreiraResumo: '', intelectoResumo: '' },
           odyssey: { cenarioA: '', cenarioB: '', cenarioC: '' },
           odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' },
-          identity: { strengths: [], shadows: [] }
+          identity: { strengths: [], shadows: [] },
+          dailyCheckins: [],
+          cadence: {}
         },
         energy: 5,
         dimensions: {
@@ -5978,6 +6203,20 @@ const app = {
               { id: 'shadow-sobrecarga', title: 'Sobrecarga' },
               { id: 'shadow-perfeccionismo', title: 'Perfeccionismo' }
             ]
+          },
+          dailyCheckins: [
+            { date: '2026-04-24', sleepHours: 7, sleepQuality: 4, energy: 4, mood: 4, stress: 2, emotion: 'focado', savedAt: '2026-04-24T08:00:00.000Z' },
+            { date: '2026-04-25', sleepHours: 6.5, sleepQuality: 3, energy: 3, mood: 3, stress: 3, emotion: 'neutro', savedAt: '2026-04-25T08:00:00.000Z' }
+          ],
+          cadence: {
+            checkin: { lastAt: '2026-04-25' },
+            diary: { lastAt: '2026-04-25' },
+            weeklyPlan: { lastAt: '2026-04-20' },
+            weeklyReview: { lastAt: '2026-04-19' },
+            wheel: { lastAt: '2026-04-01' },
+            perma: { lastAt: '2026-04-01' },
+            swls: { lastAt: '2026-04-01' },
+            odyssey: { lastAt: '2026-01-15' }
           }
         },
         dimensions: {
@@ -6212,6 +6451,7 @@ const app = {
 
         this.updateWheelPolygon();
         this.recordWellbeingSnapshot('wheel');
+        this.markCadence('wheel');
         this.saveState(false);
         this.closeWheelModal();
         if (this.currentView === 'proposito' && this.render.proposito) this.render.proposito();
@@ -6985,13 +7225,14 @@ const app = {
             ...window.sistemaVidaState.dailyLogs[today],
             gratidao, 
             funcionou, 
-            shutdown: [s1], 
-            energy: window.sistemaVidaState.energy || 0 
+            shutdown: [s1],
+            energy: window.sistemaVidaState.energy || 0
         };
 
         const focoInput = document.getElementById('diario-foco');
         if (focoInput) window.sistemaVidaState.dailyLogs[today].focus = focoInput.value.trim();
 
+        this.markCadence('diary', today);
         this.saveState(true);
 
         const btn = document.getElementById('btn-salvar-diario');
@@ -7408,6 +7649,22 @@ const app = {
             cta: { label: 'Ir para Hoje', view: 'hoje' }
         },
         {
+            id: 'cadencia',
+            icon: 'sync_alt',
+            title: 'Cadência e Ritmo',
+            subtitle: 'Frequências saudáveis sem travar o sistema',
+            what: 'A <strong>Cadência</strong> mostra se ferramentas essenciais estão em dia, próximas do vencimento ou atrasadas. O <strong>Check-in diário</strong> coleta sono, qualidade do sono, energia, humor e estresse em poucos segundos para criar uma linha de base do seu estado interno.',
+            why: 'Mudança pessoal melhora quando dados de estado são coletados perto do momento real, princípio usado em EMA (Ecological Momentary Assessment). Revisões semanais sustentam OKRs e execução; escalas como PERMA/SWLS pedem cadência mais espaçada para evitar ruído e fadiga de medição.',
+            refs: ['Ecological Momentary Assessment (EMA)', 'Brian Moran — 12 Week Year', 'Diener — SWLS', 'Seligman — PERMA'],
+            how: [
+                'Faça o check-in diário no Painel: sono, energia, humor e estresse.',
+                'Use os badges de cadência como sinal visual, nunca como punição.',
+                'Roda da Vida e PERMA: mensal. SWLS: trimestral. Odyssey/Visão: semestral.',
+                'Quando algo atrasar, retome com a menor ação possível em vez de compensar tudo de uma vez.'
+            ],
+            cta: { label: 'Abrir Painel', view: 'painel' }
+        },
+        {
             id: 'foco',
             icon: 'timer',
             title: 'Foco: Pomodoro 90/20 & Deep Work',
@@ -7689,6 +7946,8 @@ const app = {
 
             app.renderPainelDiagnostics();
             app.renderPainelDecision();
+            app.renderDailyCheckinPanel();
+            app.renderCadencePanel();
             app.renderPersonalEvolutionPanel();
             app.renderWellbeingTrendsPanel();
         },
@@ -8987,6 +9246,7 @@ const app = {
                 soundKnob.className = `w-3 h-3 rounded-full absolute transition-all ${soundOn ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
             }
             app.renderGamificationProfile();
+            app.renderProfileCadence();
             app.renderManualGuide();
             app.updateProfileAppVersion();
         },
@@ -10920,6 +11180,7 @@ const app = {
         if (!state.swls.history || typeof state.swls.history !== 'object') state.swls.history = {};
         state.swls.history[dateKey] = { score, answers: [...answers] };
 
+        this.markCadence('swls', dateKey);
         this.saveState(true);
         this.closeSwlsModal();
         if (this.currentView === 'proposito' && this.render.proposito) this.render.proposito();
@@ -10971,6 +11232,7 @@ const app = {
 
         // Tarefa 3: Persistência Explícita e Atualização Padronizada
         this.recordWellbeingSnapshot('perma');
+        this.markCadence('perma');
         this.saveState(true);
         this.closePermaModal();
         this.switchView('proposito'); // Força re-render completo
@@ -11006,6 +11268,7 @@ const app = {
             conf: parseInt(document.getElementById('odyssey-conf').value),
             nrg: parseInt(document.getElementById('odyssey-nrg').value)
         };
+        this.markCadence('odyssey');
         this.saveState();
         const modal = document.getElementById('odyssey-modal');
         modal.classList.add('hidden');

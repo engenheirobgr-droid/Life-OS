@@ -36,6 +36,64 @@
     </section>
 
     <!-- Progresso Semana: Foco & Execução -->
+    <section id="daily-checkin-panel"
+        class="mt-4 bg-surface-container-lowest rounded-2xl p-5 md:p-6 border border-outline-variant/10 shadow-sm space-y-4">
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+            <div>
+                <p class="text-[10px] font-label uppercase tracking-widest text-outline">Check-in diario</p>
+                <h3 class="font-headline text-2xl italic text-on-background mt-1">Sono, energia, humor e estresse</h3>
+                <p id="daily-checkin-empty" class="mt-1 text-xs text-primary font-bold uppercase tracking-wider">Ainda nao registrado hoje.</p>
+            </div>
+            <button type="button" onclick="window.app.saveDailyCheckin()"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-on-primary hover:opacity-90 transition-opacity">
+                <span class="material-symbols-outlined notranslate text-[16px]">check_circle</span>
+                Salvar check-in
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <label class="flex flex-col gap-1.5">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-outline">Sono (h)</span>
+                <input id="daily-checkin-sleep-hours" type="number" min="0" max="16" step="0.5"
+                    class="h-10 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+                    placeholder="7.5">
+            </label>
+            <label class="flex flex-col gap-1.5">
+                <span class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">Qualidade <b id="daily-checkin-sleep-quality-val">3</b></span>
+                <input id="daily-checkin-sleep-quality" type="range" min="1" max="5" value="3" class="accent-primary" oninput="document.getElementById('daily-checkin-sleep-quality-val').textContent=this.value">
+            </label>
+            <label class="flex flex-col gap-1.5">
+                <span class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">Energia <b id="daily-checkin-energy-val">3</b></span>
+                <input id="daily-checkin-energy" type="range" min="1" max="5" value="3" class="accent-primary" oninput="document.getElementById('daily-checkin-energy-val').textContent=this.value">
+            </label>
+            <label class="flex flex-col gap-1.5">
+                <span class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">Humor <b id="daily-checkin-mood-val">3</b></span>
+                <input id="daily-checkin-mood" type="range" min="1" max="5" value="3" class="accent-primary" oninput="document.getElementById('daily-checkin-mood-val').textContent=this.value">
+            </label>
+            <label class="flex flex-col gap-1.5">
+                <span class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">Estresse <b id="daily-checkin-stress-val">3</b></span>
+                <input id="daily-checkin-stress" type="range" min="1" max="5" value="3" class="accent-primary" oninput="document.getElementById('daily-checkin-stress-val').textContent=this.value">
+            </label>
+        </div>
+        <label class="flex flex-col gap-1.5">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-outline">Emocao dominante (opcional)</span>
+            <input id="daily-checkin-emotion" type="text" maxlength="40"
+                class="h-10 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+                placeholder="Ex.: calmo, ansioso, animado">
+        </label>
+        <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Ultimos 7 dias</p>
+            <div id="daily-checkin-history" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2"></div>
+        </div>
+    </section>
+
+    <section class="mt-4 space-y-3">
+        <div class="flex items-center justify-between gap-3">
+            <h3 class="font-headline text-xl italic">Cadencia</h3>
+            <span class="text-[10px] uppercase tracking-widest font-bold text-outline">Nao bloqueante</span>
+        </div>
+        <div id="cadence-status-panel" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    </section>
+
     <section
         class="mt-4 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
         <div class="grid md:grid-cols-2 gap-8">
