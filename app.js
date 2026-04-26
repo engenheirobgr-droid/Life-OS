@@ -1928,7 +1928,7 @@ const app = {
                     Revisão da semana já realizada
                 </div>`;
                 return `
-                <button onclick="window.app.openReviewModal()"
+                <button onclick="window.app.startWeeklyReview()"
                     class="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-secondary text-on-secondary text-sm font-bold rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all">
                     <span class="material-symbols-outlined notranslate text-[18px]">rate_review</span>
                     Fazer Revisão da Semana
@@ -4689,6 +4689,43 @@ const app = {
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
     },
 
+    startWeeklyReview: async function() {
+        await this.switchView('proposito');
+        await new Promise(r => setTimeout(r, 350));
+        this._showReviewPurposeAnchor();
+    },
+
+    _showReviewPurposeAnchor: function() {
+        document.getElementById('review-purpose-anchor')?.remove();
+        const state = window.sistemaVidaState;
+        const ikigai = state.profile?.ikigai || {};
+        const values = Array.isArray(state.profile?.values) ? state.profile.values.filter(Boolean) : [];
+        const vision = state.profile?.vision || {};
+        const anchor = ikigai.sintese || vision.quote || values[0] || '';
+        const el = document.createElement('div');
+        el.id = 'review-purpose-anchor';
+        el.innerHTML = `
+            <div class="animate-fade-in fixed bottom-20 left-0 right-0 z-[90] px-4 pb-2">
+                <div class="max-w-lg mx-auto rounded-2xl bg-surface-container-highest border border-primary/20 shadow-xl p-4 flex items-center gap-4">
+                    <span class="material-symbols-outlined notranslate text-primary text-2xl shrink-0">auto_awesome</span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-outline">Revisão Semanal</p>
+                        <p class="text-xs text-on-surface-variant mt-0.5 leading-snug truncate">${anchor ? this.escapeHtml(anchor) : 'Relembre seu propósito antes de avaliar a semana.'}</p>
+                    </div>
+                    <button onclick="window.app._launchReviewFromAnchor()"
+                        class="shrink-0 px-4 py-2 bg-primary text-on-primary text-xs font-bold rounded-xl hover:opacity-90 transition-opacity uppercase tracking-wider whitespace-nowrap">
+                        Abrir Revisão
+                    </button>
+                </div>
+            </div>`;
+        document.body.appendChild(el);
+    },
+
+    _launchReviewFromAnchor: function() {
+        document.getElementById('review-purpose-anchor')?.remove();
+        this.openReviewModal();
+    },
+
     openReviewModal: function() {
         document.getElementById('review-form').reset();
 
@@ -4729,6 +4766,7 @@ const app = {
 
     closeReviewModal: function() {
         document.getElementById('review-modal').classList.add('hidden');
+        document.getElementById('review-purpose-anchor')?.remove();
     },
 
     saveReview: function() {
