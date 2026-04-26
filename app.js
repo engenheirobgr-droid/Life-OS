@@ -592,7 +592,8 @@ const app = {
             first_strength_habit: { title: 'Força consciente', icon: 'workspace_premium' },
             shadow_antidote_7: { title: 'Antídoto em prática', icon: 'healing' },
             identity_integration_week: { title: 'Integração', icon: 'all_inclusive' },
-            sustained_identity_growth: { title: 'Evolução sustentada', icon: 'trending_up' }
+            sustained_identity_growth: { title: 'Evolução sustentada', icon: 'trending_up' },
+            first_habit_graduated: { title: 'Hábito automático', icon: 'verified' }
         };
     },
     unlockAchievement: function(id, extra = {}) {
@@ -620,6 +621,7 @@ const app = {
         if (eventType === 'deep_work') xp = Math.max(10, Math.min(40, Math.round((Number(payload.focusSec) || 0) / 300)));
         if (eventType === 'weekly_review') xp = 25;
         if (eventType === 'habit_complete' && payload.sourceType) xp += payload.sourceType === 'shadow' ? 4 : 2;
+        if (eventType === 'habit_complete' && payload.maturity === 'graduated') xp = Math.max(1, Math.round(xp * 0.5));
         if (eventType === 'weekly_review' && payload.identityReflection) xp += 5;
         if (xp <= 0) return null;
 
@@ -633,7 +635,8 @@ const app = {
             dimension,
             sourceType: payload.sourceType || '',
             sourceId: payload.sourceId || '',
-            habitMode: payload.habitMode || ''
+            habitMode: payload.habitMode || '',
+            maturity: payload.maturity || ''
         };
         gamification.totalXp += xp;
         if (dimension) gamification.dimensionXp[dimension] = dimensionBefore + xp;
@@ -644,6 +647,7 @@ const app = {
             dimension,
             sourceType: payload.sourceType || '',
             sourceId: payload.sourceId || '',
+            maturity: payload.maturity || '',
             at: new Date().toISOString()
         });
         gamification.recentEvents = gamification.recentEvents.slice(0, 20);
@@ -751,6 +755,131 @@ const app = {
         const stepLogs = habit?.stepLogs || {};
         const dates = new Set([...Object.keys(logs), ...Object.keys(stepLogs)]);
         return Array.from(dates).filter(date => this.isHabitDoneOnDate(habit, date)).sort();
+    },
+
+    getHabitMaturityConfig: function() {
+        return {
+            graduationWeeks: 4,
+            graduationRate: 0.8,
+            regressionWeeks: 2,
+            regressionRate: 0.5
+        };
+    },
+
+    ensureHabitMaturityState: function() {
+        if (!Array.isArray(window.sistemaVidaState.habits)) window.sistemaVidaState.habits = [];
+        window.sistemaVidaState.habits.forEach(habit => {
+            if (!['forming', 'graduated'].includes(habit.maturity)) habit.maturity = 'forming';
+            if (!habit.maturityMeta || typeof habit.maturityMeta !== 'object' || Array.isArray(habit.maturityMeta)) {
+                habit.maturityMeta = {};
+            }
+        });
+    },
+
+    getHabitExpectedDatesForWeek: function(habit, weekKey = this._getWeekKey()) {
+        const dates = this.getWeekDateKeys(weekKey);
+        const specific = Array.isArray(habit?.specificDays) ? habit.specificDays.map(String) : [];
+        if (habit?.frequency === 'specific' && specific.length) {
+            return dates.filter(dateKey => specific.includes(String(new Date(dateKey + 'T00:00:00').getDay())));
+        }
+        return dates;
+    },
+
+    getHabitWeekRate: function(habit, weekKey = this._getWeekKey()) {
+        const expected = this.getHabitExpectedDatesForWeek(habit, weekKey);
+        if (!expected.length) return 0;
+        const done = expected.reduce((sum, dateKey) => sum + (this.isHabitDoneOnDate(habit, dateKey) ? 1 : 0), 0);
+        return done / expected.length;
+    },
+
+    evaluateHabitMaturity: function(habit) {
+        if (!habit) return null;
+        this.ensureHabitMaturityState();
+        const cfg = this.getHabitMaturityConfig();
+        const current = this._getWeekKey();
+        const rates = [];
+        for (let i = cfg.graduationWeeks - 1; i >= 0; i--) {
+            rates.push(this.getHabitWeekRate(habit, this.getRelativeWeekKey(current, -i)));
+        }
+        const graduatedReady = rates.length === cfg.graduationWeeks && rates.every(rate => rate >= cfg.graduationRate);
+        const recentRates = [];
+        for (let i = cfg.regressionWeeks - 1; i >= 0; i--) {
+            recentRates.push(this.getHabitWeekRate(habit, this.getRelativeWeekKey(current, -i)));
+        }
+        const regressionReady = recentRates.length === cfg.regressionWeeks && recentRates.every(rate => rate < cfg.regressionRate);
+
+        if (habit.maturity !== 'graduated' && graduatedReady) {
+            habit.maturity = 'graduated';
+            habit.maturityMeta = {
+                ...(habit.maturityMeta || {}),
+                graduatedAt: this.getLocalDateKey(),
+                lastEvaluationAt: new Date().toISOString()
+            };
+            return { changed: true, state: 'graduated', rates };
+        }
+        if (habit.maturity === 'graduated' && regressionReady) {
+            habit.maturity = 'forming';
+            habit.maturityMeta = {
+                ...(habit.maturityMeta || {}),
+                regressedAt: this.getLocalDateKey(),
+                lastEvaluationAt: new Date().toISOString()
+            };
+            return { changed: true, state: 'forming', rates: recentRates };
+        }
+        habit.maturityMeta = {
+            ...(habit.maturityMeta || {}),
+            lastEvaluationAt: new Date().toISOString()
+        };
+        return { changed: false, state: habit.maturity, rates };
+    },
+
+    evaluateAllHabitMaturity: function() {
+        this.ensureHabitMaturityState();
+        return (window.sistemaVidaState.habits || [])
+            .map(habit => ({ habit, result: this.evaluateHabitMaturity(habit) }))
+            .filter(item => item.result?.changed);
+    },
+
+    handleHabitMaturityChange: function(habit, result) {
+        if (!habit || !result?.changed) return;
+        if (result.state === 'graduated') {
+            this.unlockAchievement('first_habit_graduated');
+            if (this.showToast) this.showToast(`"${habit.title}" virou um hábito automático. XP de manutenção ativado.`, 'success');
+            const shouldAddStrength = habit.sourceType !== 'strength'
+                && confirm(`"${habit.title}" parece parte de quem voce esta se tornando. Registrar como forca em Proposito?`);
+            if (shouldAddStrength) {
+                this.ensureIdentityState();
+                const strengths = window.sistemaVidaState.profile.identity.strengths || [];
+                const exists = strengths.some(item => String(item.title || '').toLowerCase() === String(habit.title || '').toLowerCase());
+                if (!exists) {
+                    strengths.push({
+                        id: `identity_${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+                        title: habit.title,
+                        dimension: habit.dimension || 'Geral',
+                        evidence: 'Graduou como habito automatico.',
+                        excessRisk: '',
+                        practice: habit.routine || habit.title,
+                        linkedHabitIds: [habit.id],
+                        weeklyLogs: {},
+                        createdAt: this.getLocalDateKey(),
+                        updatedAt: this.getLocalDateKey()
+                    });
+                    this.syncIdentityLinkedHabits();
+                }
+            }
+        } else if (result.state === 'forming' && this.showToast) {
+            this.showToast(`"${habit.title}" voltou para formação. Ajuste pequeno, sem drama.`, 'success');
+        }
+    },
+
+    renderHabitMaturityChip: function(habit) {
+        const graduated = habit?.maturity === 'graduated';
+        const text = graduated ? 'Automatico' : 'Em formacao';
+        const icon = graduated ? 'verified' : 'construction';
+        const cls = graduated ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-surface-container-high text-outline';
+        return `<span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${cls}">
+            <span class="material-symbols-outlined notranslate text-[11px]">${icon}</span>${text}
+        </span>`;
     },
 
     evaluateIdentityAchievements: function() {
@@ -977,6 +1106,7 @@ const app = {
         this.ensureDailyCheckinState();
         this.ensureCadenceState();
         this.ensureNotesState();
+        this.ensureHabitMaturityState();
         if (typeof window.sistemaVidaState.profile.legacy !== 'string') {
             window.sistemaVidaState.profile.legacy = '';
         }
@@ -5190,6 +5320,60 @@ const app = {
         ].join('');
     },
 
+    renderHabitMaturityPanel: function() {
+        const container = document.getElementById('habit-maturity-panel');
+        if (!container) return;
+        this.ensureHabitMaturityState();
+        const habits = window.sistemaVidaState.habits || [];
+        const forming = habits.filter(h => h.maturity !== 'graduated');
+        const graduated = habits.filter(h => h.maturity === 'graduated');
+        const cfg = this.getHabitMaturityConfig();
+        const currentWeek = this._getWeekKey();
+        const candidates = forming
+            .map(habit => {
+                const rates = [];
+                for (let i = cfg.graduationWeeks - 1; i >= 0; i--) {
+                    rates.push(this.getHabitWeekRate(habit, this.getRelativeWeekKey(currentWeek, -i)));
+                }
+                const avg = rates.length ? rates.reduce((sum, n) => sum + n, 0) / rates.length : 0;
+                return { habit, avg };
+            })
+            .sort((a, b) => b.avg - a.avg)
+            .slice(0, 3);
+        const cards = [
+            {
+                label: 'Em formacao',
+                value: forming.length,
+                icon: 'construction',
+                body: `${cfg.graduationWeeks} semanas com ${Math.round(cfg.graduationRate * 100)}%+ de consistencia graduam o habito.`
+            },
+            {
+                label: 'Automaticos',
+                value: graduated.length,
+                icon: 'verified',
+                body: 'Habitos graduados continuam sendo acompanhados, mas recebem XP de manutencao.'
+            },
+            {
+                label: 'Mais proximos',
+                value: candidates.length ? `${Math.round(candidates[0].avg * 100)}%` : '--',
+                icon: 'trending_up',
+                body: candidates.length
+                    ? candidates.map(item => `${this.escapeHtml(item.habit.title)} (${Math.round(item.avg * 100)}%)`).join(' · ')
+                    : 'Sem historico suficiente para indicar candidatos.'
+            }
+        ];
+        container.innerHTML = cards.map(card => `
+            <div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">${this.escapeHtml(card.label)}</p>
+                    <span class="material-symbols-outlined notranslate text-primary text-[18px]">${this.escapeHtml(card.icon)}</span>
+                </div>
+                <p class="mt-2 text-2xl font-headline font-bold text-on-surface">${this.escapeHtml(String(card.value))}</p>
+                <p class="mt-2 text-xs text-on-surface-variant leading-relaxed">${card.body}</p>
+            </div>
+        `).join('');
+    },
+
     renderWellbeingTrendsPanel: function() {
         const container = document.getElementById('wellbeing-trends-panel');
         if (!container) return;
@@ -7098,6 +7282,8 @@ const app = {
             }
             obj.logs = isEditing ? (getOldItem(id, 'habits').logs || {}) : {};
             obj.stepLogs = isEditing ? (getOldItem(id, 'habits').stepLogs || {}) : {};
+            obj.maturity = isEditing ? (getOldItem(id, 'habits').maturity || 'forming') : 'forming';
+            obj.maturityMeta = isEditing ? (getOldItem(id, 'habits').maturityMeta || {}) : {};
             const linkedSel = document.getElementById('habit-linked-meta');
             obj.linkedMetaId = linkedSel && linkedSel.value ? linkedSel.value : null;
             const identityLink = this.parseHabitIdentitySource(document.getElementById('habit-identity-source')?.value || '');
@@ -7366,10 +7552,13 @@ const app = {
                     date: dateStr,
                     sourceType: habit.sourceType || '',
                     sourceId: habit.sourceId || '',
-                    habitMode: habit.habitMode || ''
+                    habitMode: habit.habitMode || '',
+                    maturity: habit.maturity || 'forming'
                 });
                 this.showGamificationToast(award);
             }
+            const maturityResult = this.evaluateHabitMaturity(habit);
+            this.handleHabitMaturityChange(habit, maturityResult);
             if (isDone && !award && typeof showIdentityToast === 'function') {
                 showIdentityToast(habit.title, habit.dimension);
             }
@@ -7408,10 +7597,13 @@ const app = {
                 date: dateStr,
                 sourceType: habit.sourceType || '',
                 sourceId: habit.sourceId || '',
-                habitMode: habit.habitMode || ''
+                habitMode: habit.habitMode || '',
+                maturity: habit.maturity || 'forming'
             });
             this.showGamificationToast(award);
         }
+        const maturityResult = this.evaluateHabitMaturity(habit);
+        this.handleHabitMaturityChange(habit, maturityResult);
         this.saveState(true);
         this.renderHabitStepsChecklist(habitId);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
@@ -7443,11 +7635,14 @@ const app = {
                     date: dateStr,
                     sourceType: habit.sourceType || '',
                     sourceId: habit.sourceId || '',
-                    habitMode: habit.habitMode || ''
+                    habitMode: habit.habitMode || '',
+                    maturity: habit.maturity || 'forming'
                 });
                 this.showGamificationToast(award);
             }
         }
+        const maturityResult = this.evaluateHabitMaturity(habit);
+        this.handleHabitMaturityChange(habit, maturityResult);
         this.saveState(true);
         this.renderHabitStepsChecklist(habitId);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
@@ -7796,7 +7991,7 @@ const app = {
         if (rulesEl) {
             const rules = [
                 { icon: 'task_alt', label: 'Micro concluída', xp: '+12 XP', note: '+6 se está no plano da semana' },
-                { icon: 'repeat', label: 'Hábito do dia', xp: '+6 XP', note: 'conta uma vez por hábito/dia' },
+                { icon: 'repeat', label: 'Hábito do dia', xp: '+6 XP', note: 'automáticos recebem XP de manutenção (50%)' },
                 { icon: 'timer', label: 'Foco profundo', xp: '+10 a +40 XP', note: 'varia pela duração do bloco' },
                 { icon: 'rate_review', label: 'Revisão semanal', xp: '+25 XP', note: 'conta uma vez por semana' }
             ];
@@ -7999,6 +8194,22 @@ const app = {
                 'Use o checklist de passos para hábitos complexos; quebra em micropassos previne paralisia.'
             ],
             cta: { label: 'Criar hábito', view: 'planos' }
+        },
+        {
+            id: 'maturacao-habitos',
+            icon: 'verified',
+            title: 'Maturacao de Habitos',
+            subtitle: 'Do esforco consciente para o automatico',
+            what: 'Habitos agora podem estar <strong>em formacao</strong> ou <strong>automaticos</strong>. Quando um habito sustenta consistencia por semanas, ele gradua: continua sendo acompanhado, mas passa a render XP de manutencao em vez de XP cheio.',
+            why: 'A formacao de habitos segue curva de repeticao em contexto estavel. Recompensas ajudam no inicio, mas a Teoria da Autodeterminacao alerta que recompensa externa demais pode competir com motivacao intrinseca. Graduar reduz esse risco e reforca identidade.',
+            refs: ['Lally et al. — habit formation', 'James Clear — Atomic Habits', 'Deci & Ryan — Self-Determination Theory'],
+            how: [
+                'Um habito gradua apos 4 semanas com 80% ou mais de consistencia.',
+                'Habitos automaticos aparecem com chip proprio e recebem XP reduzido de manutencao.',
+                'Se a consistencia cair por 2 semanas, o habito volta para formacao com aviso compassivo.',
+                'No Painel, acompanhe quantos habitos estao em formacao, automaticos e proximos de graduar.'
+            ],
+            cta: { label: 'Abrir Painel', view: 'painel' }
         },
         {
             id: 'reflexao',
@@ -8252,6 +8463,7 @@ const app = {
             app.renderDailyCheckinPanel();
             app.renderCadencePanel();
             app.renderPersonalEvolutionPanel();
+            app.renderHabitMaturityPanel();
             app.renderWellbeingTrendsPanel();
         },
         renderFocusDistribution: function(containerId) {
@@ -8793,12 +9005,17 @@ const app = {
                             linkedMetaHtml = `<p class="mt-1 text-[10px] text-primary/90 leading-tight truncate flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[11px]">flag</span>${linkTitle}</p>`;
                         }
                     }
+                    const maturityChip = app.renderHabitMaturityChip(habit);
+                    const maturityClass = habit.maturity === 'graduated'
+                        ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
+                        : 'border-transparent bg-surface-container-low';
 
                     habitsHtml += `
-                    <div onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] bg-surface-container-low p-4 rounded-xl border border-transparent flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer">
+                    <div onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer">
                         <div class="flex justify-between items-start mb-2">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-primary text-2xl">${icon}</span>
+                                ${maturityChip}
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-primary transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
@@ -10380,6 +10597,8 @@ const app = {
             clone.completed = false;
             clone.logs = {};
             clone.stepLogs = {};
+            clone.maturity = 'forming';
+            clone.maturityMeta = {};
         }
         if (['metas', 'okrs', 'macros', 'micros'].includes(type)) {
             clone.createdAt = this.getLocalDateKey();
