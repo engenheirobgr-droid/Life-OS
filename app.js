@@ -56,7 +56,8 @@ window.sistemaVidaState = {
         odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" },
         identity: { strengths: [], shadows: [] },
         dailyCheckins: [],
-        cadence: {}
+        cadence: {},
+        notes: []
     },
     energy: 5,
     dimensions: {
@@ -975,6 +976,7 @@ const app = {
         this.ensureIdentityState();
         this.ensureDailyCheckinState();
         this.ensureCadenceState();
+        this.ensureNotesState();
         if (typeof window.sistemaVidaState.profile.legacy !== 'string') {
             window.sistemaVidaState.profile.legacy = '';
         }
@@ -2028,6 +2030,8 @@ const app = {
                     evidence: String(item?.evidence || ''),
                     excessRisk: String(item?.excessRisk || ''),
                     practice: String(item?.practice || item?.suggestedPractice || ''),
+                    obstacle: String(item?.obstacle || ''),
+                    ifThen: String(item?.ifThen || ''),
                     trigger: String(item?.trigger || ''),
                     impact: String(item?.impact || ''),
                     desiredResponse: String(item?.desiredResponse || ''),
@@ -2091,6 +2095,8 @@ const app = {
             evidence: '',
             excessRisk: '',
             practice: '',
+            obstacle: '',
+            ifThen: '',
             trigger: '',
             impact: '',
             desiredResponse: '',
@@ -2151,9 +2157,15 @@ const app = {
             if (impact === null) return;
             const desiredResponse = window.prompt('Resposta desejada: o que praticar no lugar?', item.desiredResponse || '');
             if (desiredResponse === null) return;
+            const obstacle = window.prompt('Obstáculo previsto: o que costuma te puxar para esse padrão?', item.obstacle || item.trigger || '');
+            if (obstacle === null) return;
+            const ifThen = window.prompt('Plano se-então: se o obstáculo aparecer, então...', item.ifThen || '');
+            if (ifThen === null) return;
             item.trigger = String(trigger || '').trim();
             item.impact = String(impact || '').trim();
             item.desiredResponse = String(desiredResponse || '').trim();
+            item.obstacle = String(obstacle || '').trim();
+            item.ifThen = String(ifThen || '').trim();
         }
         item.updatedAt = this.getLocalDateKey();
         this.saveState(true);
@@ -2193,6 +2205,8 @@ const app = {
                         ${type === 'shadows' && item.trigger ? `<p><span class="font-bold text-on-surface">Gatilho:</span> ${this.escapeHtml(item.trigger)}</p>` : ''}
                         ${type === 'shadows' && item.impact ? `<p><span class="font-bold text-on-surface">Impacto:</span> ${this.escapeHtml(item.impact)}</p>` : ''}
                         ${type === 'shadows' && item.desiredResponse ? `<p><span class="font-bold text-on-surface">Resposta:</span> ${this.escapeHtml(item.desiredResponse)}</p>` : ''}
+                        ${type === 'shadows' && item.obstacle ? `<p><span class="font-bold text-on-surface">Obstáculo:</span> ${this.escapeHtml(item.obstacle)}</p>` : ''}
+                        ${type === 'shadows' && item.ifThen ? `<p><span class="font-bold text-on-surface">Se-então:</span> ${this.escapeHtml(item.ifThen)}</p>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -3645,6 +3659,8 @@ const app = {
         const inicioDateInput = document.getElementById('crud-inicio-date');
         const prazoDateInput = document.getElementById('crud-prazo-date');
         const effortInput = document.getElementById('crud-effort');
+        const obstacleInput = document.getElementById('crud-obstacle');
+        const ifThenInput = document.getElementById('crud-ifthen');
         if (successCriteriaInput) successCriteriaInput.value = '';
         if (challengeInput) challengeInput.value = '3';
         if (commitmentInput) commitmentInput.value = '3';
@@ -3653,6 +3669,9 @@ const app = {
         if (inicioDateInput) inicioDateInput.value = '';
         if (prazoDateInput) prazoDateInput.value = '';
         if (effortInput) effortInput.value = 'medio';
+        if (obstacleInput) obstacleInput.value = '';
+        if (ifThenInput) ifThenInput.value = '';
+        this.toggleCrudWoop(false);
 
         document.getElementById('crud-type').value = type;
         this.onTypeChange(type);
@@ -3673,6 +3692,7 @@ const app = {
         const routineInput = document.getElementById('habit-routine');
         const rewardInput = document.getElementById('habit-reward');
         const habitControls = document.getElementById('crud-habit-controls');
+        const woopGroup = document.getElementById('crud-woop-group');
         const metaHorizonGroup = document.getElementById('crud-meta-horizon-group');
         const successCriteriaGroup = document.getElementById('crud-success-criteria-group');
         const goalRigorGroup = document.getElementById('crud-goal-rigor-group');
@@ -3690,6 +3710,7 @@ const app = {
         if (parentGroup) parentGroup.classList.add('hidden');
         setGroupVisible(triggerGroup, false);
         setGroupVisible(habitControls, false);
+        setGroupVisible(woopGroup, false);
         setGroupVisible(habitIdentityGroup, false);
         setGroupVisible(habitStepsChecklistWrap, false);
         setGroupVisible(successCriteriaGroup, false);
@@ -3751,6 +3772,7 @@ const app = {
             if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério de Sucesso';
             if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
             if (type === 'micros') setGroupVisible(effortGroup, true);
+            if (['macros', 'micros'].includes(type)) setGroupVisible(woopGroup, true, 'block');
             this.updateParentList(type);
         }
 
@@ -3871,6 +3893,15 @@ const app = {
             contextInput.value = text;
             contextInput.focus();
         }
+    },
+
+    toggleCrudWoop: function(forceOpen = null) {
+        const body = document.getElementById('crud-woop-body');
+        const chevron = document.getElementById('crud-woop-chevron');
+        if (!body) return;
+        const willOpen = forceOpen === null ? body.classList.contains('hidden') : !!forceOpen;
+        body.classList.toggle('hidden', !willOpen);
+        if (chevron) chevron.style.transform = willOpen ? 'rotate(180deg)' : '';
     },
 
     // ── Painel de Propósito no modal de criação ─────────────────────────────────
@@ -4661,6 +4692,226 @@ const app = {
                 profile.cadence[key].lastAt = String(profile.cadence[key].lastAt);
             }
         });
+    },
+
+    ensureNotesState: function() {
+        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+        const profile = window.sistemaVidaState.profile;
+        if (!Array.isArray(profile.notes)) profile.notes = [];
+        profile.notes = profile.notes
+            .map((note) => {
+                const title = String(note?.title || '').trim();
+                const body = String(note?.body || '').trim();
+                if (!title && !body) return null;
+                const rawLinked = note?.linkedTo && typeof note.linkedTo === 'object' ? note.linkedTo : {};
+                const entityType = String(rawLinked.entityType || '').trim();
+                const entityId = String(rawLinked.entityId || '').trim();
+                return {
+                    id: String(note?.id || `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`),
+                    title: title || 'Nota sem titulo',
+                    body,
+                    url: String(note?.url || '').trim(),
+                    tags: Array.isArray(note?.tags)
+                        ? note.tags.map(tag => String(tag || '').trim()).filter(Boolean)
+                        : String(note?.tags || '').split(',').map(tag => tag.trim()).filter(Boolean),
+                    linkedTo: entityType && entityId ? { entityType, entityId } : null,
+                    createdAt: String(note?.createdAt || new Date().toISOString()),
+                    updatedAt: String(note?.updatedAt || note?.createdAt || new Date().toISOString())
+                };
+            })
+            .filter(Boolean)
+            .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+    },
+
+    getNoteLinkOptions: function() {
+        const state = window.sistemaVidaState;
+        this.ensureIdentityState();
+        const makeOption = (entityType, entityId, label, group) => ({
+            value: `${entityType}:${entityId}`,
+            entityType,
+            entityId,
+            label: String(label || '').trim(),
+            group
+        });
+        const options = [];
+        const entities = state.entities || {};
+        [
+            ['metas', 'Metas'],
+            ['okrs', 'OKRs'],
+            ['macros', 'Macros'],
+            ['micros', 'Micros']
+        ].forEach(([type, group]) => {
+            (entities[type] || []).forEach(item => {
+                if (item?.id && item?.title) options.push(makeOption(type, item.id, item.title, group));
+            });
+        });
+        (state.habits || []).forEach(item => {
+            if (item?.id && item?.title) options.push(makeOption('habits', item.id, item.title, 'Habitos'));
+        });
+        const identity = state.profile?.identity || {};
+        (identity.strengths || []).forEach(item => {
+            if (item?.id && item?.title) options.push(makeOption('strengths', item.id, item.title, 'Forcas'));
+        });
+        (identity.shadows || []).forEach(item => {
+            if (item?.id && item?.title) options.push(makeOption('shadows', item.id, item.title, 'Sombras'));
+        });
+        return options;
+    },
+
+    getNoteLinkLabel: function(linkedTo) {
+        if (!linkedTo || !linkedTo.entityType || !linkedTo.entityId) return '';
+        const found = this.getNoteLinkOptions().find(opt =>
+            opt.entityType === linkedTo.entityType && opt.entityId === linkedTo.entityId
+        );
+        return found ? `${found.group}: ${found.label}` : `${linkedTo.entityType}: ${linkedTo.entityId}`;
+    },
+
+    populateNoteLinkedSelect: function() {
+        const select = document.getElementById('note-linked');
+        if (!select) return;
+        const prev = select.value;
+        const groups = {};
+        this.getNoteLinkOptions().forEach(opt => {
+            if (!groups[opt.group]) groups[opt.group] = [];
+            groups[opt.group].push(opt);
+        });
+        let html = '<option value="">Sem vinculo</option>';
+        Object.keys(groups).forEach(group => {
+            html += `<optgroup label="${this.escapeHtml(group)}">`;
+            groups[group].forEach(opt => {
+                html += `<option value="${this.escapeHtml(opt.value)}">${this.escapeHtml(opt.label)}</option>`;
+            });
+            html += '</optgroup>';
+        });
+        select.innerHTML = html;
+        if (prev && Array.from(select.options || []).some(opt => opt.value === prev)) select.value = prev;
+    },
+
+    clearNoteForm: function() {
+        ['note-title', 'note-url', 'note-tags', 'note-body', 'note-edit-id'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        const linked = document.getElementById('note-linked');
+        if (linked) linked.value = '';
+    },
+
+    saveProfileNote: function() {
+        this.ensureNotesState();
+        const title = String(document.getElementById('note-title')?.value || '').trim();
+        const body = String(document.getElementById('note-body')?.value || '').trim();
+        if (!title && !body) {
+            if (this.showToast) this.showToast('Escreva um titulo ou conteudo para salvar a nota.', 'error');
+            return;
+        }
+        const editId = String(document.getElementById('note-edit-id')?.value || '').trim();
+        const linkedRaw = String(document.getElementById('note-linked')?.value || '');
+        const [entityType, ...entityIdParts] = linkedRaw.split(':');
+        const entityId = entityIdParts.join(':');
+        const now = new Date().toISOString();
+        const note = {
+            id: editId || `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
+            title: title || 'Nota sem titulo',
+            body,
+            url: String(document.getElementById('note-url')?.value || '').trim(),
+            tags: String(document.getElementById('note-tags')?.value || '').split(',').map(tag => tag.trim()).filter(Boolean),
+            linkedTo: entityType && entityId ? { entityType, entityId } : null,
+            createdAt: now,
+            updatedAt: now
+        };
+        const list = window.sistemaVidaState.profile.notes || [];
+        const idx = editId ? list.findIndex(item => item.id === editId) : -1;
+        if (idx >= 0) {
+            note.createdAt = list[idx].createdAt || now;
+            list[idx] = note;
+        } else {
+            list.unshift(note);
+        }
+        window.sistemaVidaState.profile.notes = list;
+        this.ensureNotesState();
+        this.saveState(true);
+        this.clearNoteForm();
+        this.renderNotesPanel();
+        if (this.showToast) this.showToast('Nota salva.', 'success');
+    },
+
+    editProfileNote: function(noteId) {
+        this.ensureNotesState();
+        const note = (window.sistemaVidaState.profile.notes || []).find(item => item.id === noteId);
+        if (!note) return;
+        const set = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value || '';
+        };
+        set('note-title', note.title);
+        set('note-url', note.url);
+        set('note-tags', (note.tags || []).join(', '));
+        set('note-body', note.body);
+        set('note-edit-id', note.id);
+        this.populateNoteLinkedSelect();
+        const linked = document.getElementById('note-linked');
+        if (linked) linked.value = note.linkedTo ? `${note.linkedTo.entityType}:${note.linkedTo.entityId}` : '';
+    },
+
+    deleteProfileNote: function(noteId) {
+        this.ensureNotesState();
+        const note = (window.sistemaVidaState.profile.notes || []).find(item => item.id === noteId);
+        if (!note || !confirm(`Excluir a nota "${note.title}"?`)) return;
+        window.sistemaVidaState.profile.notes = window.sistemaVidaState.profile.notes.filter(item => item.id !== noteId);
+        this.saveState(true);
+        this.renderNotesPanel();
+        if (this.showToast) this.showToast('Nota removida.', 'success');
+    },
+
+    renderNotesPanel: function() {
+        const container = document.getElementById('notes-list');
+        if (!container) return;
+        this.ensureNotesState();
+        this.populateNoteLinkedSelect();
+        const query = String(document.getElementById('notes-search')?.value || '').trim().toLowerCase();
+        const notes = (window.sistemaVidaState.profile.notes || []).filter(note => {
+            if (!query) return true;
+            const haystack = [note.title, note.body, note.url, ...(note.tags || []), this.getNoteLinkLabel(note.linkedTo)]
+                .join(' ')
+                .toLowerCase();
+            return haystack.includes(query);
+        });
+        if (!notes.length) {
+            container.innerHTML = '<p class="md:col-span-2 text-sm text-outline italic rounded-xl bg-surface-container-low p-4">Nenhuma nota encontrada.</p>';
+            return;
+        }
+        container.innerHTML = notes.map(note => {
+            const linkLabel = this.getNoteLinkLabel(note.linkedTo);
+            const tags = (note.tags || []).map(tag =>
+                `<span class="inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`
+            ).join('');
+            const url = note.url
+                ? `<a href="${this.escapeHtml(note.url)}" target="_blank" rel="noopener" class="text-[11px] text-primary hover:underline truncate">${this.escapeHtml(note.url)}</a>`
+                : '';
+            return `
+                <article class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4 flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h4 class="text-sm font-bold text-on-surface leading-snug">${this.escapeHtml(note.title)}</h4>
+                            ${linkLabel ? `<p class="mt-1 text-[10px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(linkLabel)}</p>` : ''}
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" onclick="window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[17px] hover:text-primary" title="Editar">edit</button>
+                            <button type="button" onclick="window.app.deleteProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[17px] hover:text-error" title="Excluir">delete</button>
+                        </div>
+                    </div>
+                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line">${this.escapeHtml(note.body)}</p>` : ''}
+                    ${url}
+                    ${tags ? `<div class="flex flex-wrap gap-1.5">${tags}</div>` : ''}
+                </article>`;
+        }).join('');
+    },
+
+    getLinkedNotes: function(entityType, entityId) {
+        this.ensureNotesState();
+        return (window.sistemaVidaState.profile.notes || []).filter(note =>
+            note.linkedTo?.entityType === entityType && note.linkedTo?.entityId === entityId
+        );
     },
 
     getCadenceConfig: function() {
@@ -5951,6 +6202,7 @@ const app = {
         if (plan) {
             const q1El = document.getElementById('rev-q1');
             const q2El = document.getElementById('rev-q2');
+            const q4El = document.getElementById('rev-q4');
 
             // q1: O que planejei? → intenção + micros planejados
             if (q1El && (plan.intention || plan.selectedMicros?.length)) {
@@ -5972,6 +6224,18 @@ const app = {
                     .filter(m => m && (m.status === 'done' || m.completed))
                     .map(m => m.title);
                 if (doneTitles.length) q2El.value = doneTitles.join(', ');
+            }
+
+            if (q4El && !q4El.value && plan.selectedMicros?.length) {
+                const obstacles = plan.selectedMicros
+                    .map(id => state.entities?.micros?.find(m => m.id === id))
+                    .filter(m => m && (m.obstacle || m.ifThen))
+                    .slice(0, 4)
+                    .map(m => {
+                        const detail = [m.obstacle, m.ifThen].filter(Boolean).join(' -> ');
+                        return `${m.title}: ${detail}`;
+                    });
+                if (obstacles.length) q4El.value = `Obstaculos previstos na semana:\n${obstacles.join('\n')}`;
             }
         }
 
@@ -6143,7 +6407,8 @@ const app = {
           odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' },
           identity: { strengths: [], shadows: [] },
           dailyCheckins: [],
-          cadence: {}
+          cadence: {},
+          notes: []
         },
         energy: 5,
         dimensions: {
@@ -6694,6 +6959,8 @@ const app = {
         const commitmentLevel = Number(document.getElementById('crud-commitment-level')?.value || 3);
         const keyResults = this.readKrRows();
         const effort = this.getMicroEffort({ effort: document.getElementById('crud-effort')?.value || 'medio' });
+        const obstacle = (document.getElementById('crud-obstacle')?.value || '').trim();
+        const ifThen = (document.getElementById('crud-ifthen')?.value || '').trim();
 
         const isEditing = !!this.editingEntity;
         const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
@@ -6773,6 +7040,8 @@ const app = {
             }
         } else if (type === 'macros') {
             obj.description = context || '';
+            obj.obstacle = obstacle;
+            obj.ifThen = ifThen;
             obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
             if (parentId) {
                 obj.okrId = parentId;
@@ -6795,6 +7064,8 @@ const app = {
             }
             obj.indicator = context || '';
             obj.effort = effort;
+            obj.obstacle = obstacle;
+            obj.ifThen = ifThen;
             const oldItem = getOldItem(id, 'micros');
             obj.status = isEditing ? (oldItem.status || 'pending') : 'pending';
             obj.completed = obj.status === 'done';
@@ -7631,6 +7902,38 @@ const app = {
                 'Pais (Meta/OKR/Macro) só ficam "concluídos" quando você decide; o sistema não fecha automaticamente.'
             ],
             cta: { label: 'Abrir Planos', view: 'planos' }
+        },
+        {
+            id: 'woop',
+            icon: 'psychology_alt',
+            title: 'WOOP e Se-entao',
+            subtitle: 'Antecipar obstaculos antes da execucao',
+            what: 'Macros, Micros e Sombras podem guardar dois campos opcionais: <strong>obstaculo previsto</strong> e <strong>plano se-entao</strong>. A ideia e transformar uma intencao vaga em uma resposta preparada para o atrito real.',
+            why: 'WOOP (Wish, Outcome, Obstacle, Plan) combina contraste mental com implementation intentions. O ponto forte e nomear o obstaculo interno ou contextual antes que ele apareca, reduzindo improviso quando a energia ja esta baixa.',
+            refs: ['Gabriele Oettingen — WOOP / Mental Contrasting', 'Peter Gollwitzer — Implementation Intentions'],
+            how: [
+                'Ao criar uma Macro ou Micro, abra "Antecipar obstaculo" apenas quando houver risco claro.',
+                'Escreva o obstaculo em linguagem concreta: "chegar cansado depois do trabalho", nao "falta de disciplina".',
+                'Use o formato se-entao: "Se eu chegar cansado, entao farei 5 minutos antes de decidir parar".',
+                'Na Revisao Semanal, os obstaculos das Micros planejadas aparecem como lembrete de ajuste.'
+            ],
+            cta: { label: 'Abrir Planos', view: 'planos' }
+        },
+        {
+            id: 'notas',
+            icon: 'note_stack',
+            title: 'Notas e Memoria Externa',
+            subtitle: 'Contexto vinculado ao sistema',
+            what: 'Notas ficam no Perfil e podem ser vinculadas a Metas, OKRs, Macros, Micros, Habitos, Forcas ou Sombras. Elas guardam contexto, links, aprendizados e referencias sem transformar o app em uma area separada de documentos.',
+            why: 'Memoria externa reduz carga cognitiva: voce nao precisa manter todo o contexto ativo na cabeca. Quando uma nota esta vinculada a uma entidade do sistema, ela vira suporte para decisao e revisao, nao apenas arquivo solto.',
+            refs: ['David Allen — Getting Things Done', 'Tiago Forte — Building a Second Brain', 'Extended Mind / cognitive offloading'],
+            how: [
+                'Crie notas curtas com titulo, corpo, tags e URL quando houver uma referencia importante.',
+                'Vincule a nota ao item que ela ajuda: uma Micro, uma Meta, um Habito ou uma Sombra.',
+                'Use a busca do Perfil para encontrar notas por texto, tag ou entidade vinculada.',
+                'Prefira notas que apoiem uma decisao futura, nao colecoes infinitas de informacao.'
+            ],
+            cta: { label: 'Abrir Perfil', view: 'perfil' }
         },
         {
             id: 'hoje',
@@ -9079,6 +9382,12 @@ const app = {
                                 ? '<span title="Micro selecionada no planejamento semanal" class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase tracking-wider">Semana</span>'
                                 : '<span title="Micro capturada fora do plano semanal" class="shrink-0 bg-surface-container-high text-on-surface-variant text-[9px] px-2 py-0.5 rounded-full border border-outline-variant/20 font-bold uppercase tracking-wider">Captura</span>')
                             : '';
+                        const woopHtml = (item.obstacle || item.ifThen) ? `
+                            <div class="mb-3 rounded-xl border border-primary/15 bg-primary/5 p-3 text-xs text-on-surface-variant leading-relaxed">
+                                <p class="text-[9px] uppercase tracking-widest font-bold text-primary mb-1">WOOP / Se-então</p>
+                                ${item.obstacle ? `<p><span class="font-bold text-on-surface">Obstáculo:</span> ${app.escapeHtml(item.obstacle)}</p>` : ''}
+                                ${item.ifThen ? `<p class="mt-1"><span class="font-bold text-on-surface">Plano:</span> ${app.escapeHtml(item.ifThen)}</p>` : ''}
+                            </div>` : '';
 
                         const isInProgress = item.status === 'in_progress';
                         // Para micros (atômicas): completed/progress 100 implicam done.
@@ -9173,6 +9482,8 @@ const app = {
                                 </div>
                             </div>
 
+                            ${woopHtml}
+
                             <div class="grid grid-cols-3 gap-2">
                                 <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')"
                                     class="col-span-3 p-2.5 bg-primary/10 border border-primary/25 text-primary hover:bg-primary/15 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all">
@@ -9247,6 +9558,7 @@ const app = {
             }
             app.renderGamificationProfile();
             app.renderProfileCadence();
+            app.renderNotesPanel();
             app.renderManualGuide();
             app.updateProfileAppVersion();
         },
@@ -10156,6 +10468,10 @@ const app = {
         if (commitmentInput) commitmentInput.value = String(item.commitmentLevel || 3);
         const effortInput = document.getElementById('crud-effort');
         if (effortInput) effortInput.value = this.getMicroEffort(item);
+        const obstacleInput = document.getElementById('crud-obstacle');
+        if (obstacleInput) obstacleInput.value = item.obstacle || '';
+        const ifThenInput = document.getElementById('crud-ifthen');
+        if (ifThenInput) ifThenInput.value = item.ifThen || '';
         this.populateKrRows(item.keyResults);
         
         // Compatibilidade retrô: agendamento antigo migra visualmente para datas reais
@@ -10179,6 +10495,7 @@ const app = {
         }
 
         this.onTypeChange(type);
+        if ((item.obstacle || item.ifThen) && ['macros', 'micros'].includes(type)) this.toggleCrudWoop(true);
         if (type === 'habits') {
             this.renderHabitStepsChecklist(id);
             // Restaura vínculo com Meta (populateHabitLinkedMeta já rodou dentro de onTypeChange)
