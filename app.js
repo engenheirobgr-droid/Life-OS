@@ -6685,10 +6685,11 @@ const app = {
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
                     const isPlanned = app._isPlannedThisWeek(micro.id);
-                    const badge = (icon, label, color) => `<span class="inline-flex items-center gap-0.5 ${color} shrink-0"><span class="material-symbols-outlined notranslate leading-none" style="font-size:11px">${icon}</span><span class="text-[9px] font-bold uppercase tracking-wide">${label}</span></span>`;
-                    const statusBadge = micro.status === 'in_progress' ? badge('radio_button_checked', 'Andamento', 'text-amber-600 dark:text-amber-400') : '';
-                    const overdueBadge = isOverdue ? badge('alarm', 'Atrasada', 'text-red-600 dark:text-red-400') : '';
-                    const planBadge = isPlanned ? badge('event', 'Semana', 'text-primary') : badge('inbox', 'Captura', 'text-on-surface-variant');
+                    const badge = (icon, label, color, bg) => `<span class="inline-flex items-center gap-0.5 ${color} ${bg} border border-outline-variant/20 rounded-md px-1 py-0.5 shrink-0 leading-none"><span class="material-symbols-outlined notranslate leading-none" style="font-size:11px">${icon}</span><span>${label}</span></span>`;
+                    const dimensionBadge = badge(dimIcon, micro.dimension || 'Geral', 'text-primary', 'bg-primary/5');
+                    const statusBadge = micro.status === 'in_progress' ? badge('radio_button_checked', 'Andamento', 'text-amber-600 dark:text-amber-400', 'bg-amber-500/10') : '';
+                    const overdueBadge = isOverdue ? badge('alarm', 'Atrasada', 'text-red-600 dark:text-red-400', 'bg-red-500/10') : '';
+                    const planBadge = isPlanned ? badge('event', 'Semana', 'text-primary', 'bg-primary/5') : badge('inbox', 'Captura', 'text-on-surface-variant', 'bg-surface-container-high');
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
                         : (micro.status === 'in_progress'
@@ -6701,26 +6702,23 @@ const app = {
                             <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${micro.status === 'in_progress' ? 'bg-amber-500' : 'bg-primary/30'}"></div>
                             <div class="flex items-center gap-3">
                                 <div class="w-5 h-5 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-semibold text-on-surface leading-snug">${micro.title}</p>
-                                    <div class="mt-1 space-y-0.5">
-                                        <div class="flex items-center gap-0.5 text-primary">
-                                            <span class="material-symbols-outlined notranslate leading-none" style="font-size:11px">${dimIcon}</span>
-                                            <span class="text-[9px] font-bold uppercase tracking-wide">${micro.dimension}</span>
-                                        </div>
-                                        <div class="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-                                            ${statusBadge}${statusBadge && (overdueBadge || planBadge) ? '<span class="text-outline/40 text-[9px]">·</span>' : ''}
-                                            ${overdueBadge}${overdueBadge && planBadge ? '<span class="text-outline/40 text-[9px]">·</span>' : ''}
-                                            ${planBadge}
+                                <div class="flex-1 min-w-0 space-y-1.5">
+                                    <div class="flex items-center gap-3">
+                                        <p class="text-sm font-semibold text-on-surface leading-snug flex-1 min-w-0">${micro.title}</p>
+                                        <div class="flex items-center gap-1 shrink-0">
+                                            ${startBtn}
+                                            <button type="button" title="Adiar para amanhã" onclick="event.stopPropagation(); app.postponeMicroOneDay('${micro.id}');" class="w-7 h-7 flex items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-90">
+                                                <span class="material-symbols-outlined notranslate text-[18px]">event_upcoming</span>
+                                            </button>
+                                            <span class="material-symbols-outlined notranslate text-outline-variant text-sm transition-transform group-[.open]:rotate-180">keyboard_arrow_down</span>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="flex items-center gap-1 shrink-0">
-                                    ${startBtn}
-                                    <button type="button" title="Adiar para amanhã" onclick="event.stopPropagation(); app.postponeMicroOneDay('${micro.id}');" class="w-7 h-7 flex items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-90">
-                                        <span class="material-symbols-outlined notranslate text-[18px]">event_upcoming</span>
-                                    </button>
-                                    <span class="material-symbols-outlined notranslate text-outline-variant text-sm transition-transform group-[.open]:rotate-180">keyboard_arrow_down</span>
+                                    <div class="flex flex-nowrap items-center gap-1 overflow-hidden text-[9px] font-bold uppercase tracking-wide leading-none">
+                                        ${dimensionBadge}
+                                        ${statusBadge}
+                                        ${overdueBadge}
+                                        ${planBadge}
+                                    </div>
                                 </div>
                             </div>
                         </div>
