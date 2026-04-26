@@ -1009,6 +1009,7 @@ const app = {
             this.ensureSettingsState();
             window.sistemaVidaState.profile.avatarUrl = dataUrl;
             try { localStorage.setItem('lifeos_profile_avatar', dataUrl); } catch (_) {}
+            this.renderProfileChrome();
             // Feedback imediato
             if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
             this.showToast('Processando foto...', 'info');
@@ -1619,7 +1620,8 @@ const app = {
         const state = window.sistemaVidaState;
         const profile = state.profile || {};
         const values = profile.values || [];
-        
+        this.renderProfileChrome();
+
         const container = document.getElementById('sidebar-values-container');
         if (container) {
             if (values.length > 0) {
@@ -1638,6 +1640,27 @@ const app = {
                 `<span class="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in">${v}</span>`
             ).join('');
         }
+    },
+
+    renderProfileChrome: function() {
+        this.ensureSettingsState();
+        const profile = window.sistemaVidaState.profile || {};
+        const avatarUrl = String(profile.avatarUrl || '').trim();
+        const nameEl = document.getElementById('perfil-sidebar-name');
+        if (nameEl) nameEl.textContent = profile.name || 'Bruno';
+
+        [
+            { img: 'profile-nav-avatar-mobile', icon: 'profile-nav-icon-mobile' },
+            { img: 'profile-sidebar-avatar', icon: 'profile-sidebar-icon' }
+        ].forEach(({ img, icon }) => {
+            const imgEl = document.getElementById(img);
+            const iconEl = document.getElementById(icon);
+            if (imgEl) {
+                imgEl.classList.toggle('hidden', !avatarUrl);
+                if (avatarUrl) imgEl.src = avatarUrl;
+            }
+            if (iconEl) iconEl.classList.toggle('hidden', !!avatarUrl);
+        });
     },
 
     switchPlanosTab: function(tabId) {
@@ -6633,7 +6656,10 @@ const app = {
 
             // Filtro "Para Hoje": pendentes/in_progress dentro da janela, mantendo a recém-concluída por um pulso visual.
             const todayMicros = allTodayMicros
-                .filter(m => m.status !== 'done' || m.id === app.recentCompletedMicroId)
+                .filter(m => {
+                    const completedToday = (m.status === 'done' || m.completed) && (m.completedDate === todayStr || m.doneDate === todayStr);
+                    return m.status !== 'done' || completedToday || m.id === app.recentCompletedMicroId;
+                })
                 .sort((a, b) => {
                     const aDone = a.status === 'done' || a.completed ? 1 : 0;
                     const bDone = b.status === 'done' || b.completed ? 1 : 0;
@@ -6658,20 +6684,20 @@ const app = {
                         </div>
                     </div>`;
                 }
-                if (micro.completed) {
+                if (micro.status === 'done' || micro.completed) {
                     const isRecentCompletion = micro.id === app.recentCompletedMicroId;
                     html += `
-                    <div class="relative overflow-hidden bg-emerald-500/[0.04] border border-emerald-500/25 p-4 rounded-xl flex items-center gap-4 shadow-sm shadow-emerald-500/5 ${isRecentCompletion ? 'micro-complete-feedback' : ''}">
+                    <div class="relative overflow-hidden bg-emerald-500/[0.04] border border-emerald-500/25 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm shadow-emerald-500/5 ${isRecentCompletion ? 'micro-complete-feedback' : ''}">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
-                        <div class="absolute right-3 bottom-2 pointer-events-none opacity-[0.08]">
-                            <span class="material-symbols-outlined notranslate text-5xl text-emerald-500">verified</span>
+                        <div class="absolute right-3 bottom-2 pointer-events-none opacity-[0.05]">
+                            <span class="material-symbols-outlined notranslate text-4xl text-emerald-500">verified</span>
                         </div>
-                        <div class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 ${isRecentCompletion ? 'micro-complete-check' : ''}">
-                            <span class="material-symbols-outlined notranslate text-white text-sm" style="font-variation-settings: 'wght' 700;">check</span>
+                        <div class="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 ${isRecentCompletion ? 'micro-complete-check' : ''}">
+                            <span class="material-symbols-outlined notranslate text-white leading-none" style="font-size:13px; font-variation-settings: 'wght' 700;">check</span>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-base text-on-surface font-medium line-through">${micro.title}</p>
-                            <span class="inline-block mt-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider rounded-full area-tag">${dimensionLabel}</span>
+                            <p class="text-sm text-on-surface font-semibold leading-snug line-through">${micro.title}</p>
+                            <span class="inline-flex items-center mt-1 px-1.5 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-[9px] font-bold uppercase tracking-wide rounded-md leading-none area-tag">${dimensionLabel}</span>
                         </div>
                     </div>`;
                 } else {
@@ -7265,6 +7291,7 @@ const app = {
             if (profileImg) {
                 profileImg.src = state.profile.avatarUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDE4p8AoYVsz6pEXUcgS6BkD6ZMnpFej1qRvtAnjsOWWGCk7xJhzaMTg6eRpIrmf1nkexNBtrYL3KbuHY6ZwSPi-Kdj4ivoosw4MlhSqGkDRZeaWiu0ULKlO9WJofnhhFK3dg6DTg4IQBS1fYuInfMqPQH2xU1CoJ_kNGEuGwa-nEMQzBHm4jSNxfxVSNi8W5QYdVVAzvIMm62lcyjTcDnQkk9xlvlKrssjp1lApdoTVkjnhRL8luZ5XJaaZ8Tgexi6luLt5O1w6g';
             }
+            app.renderProfileChrome();
 
             const notifKnob = document.getElementById('notif-toggle-knob');
             const notifTrack = document.getElementById('notif-toggle-track');

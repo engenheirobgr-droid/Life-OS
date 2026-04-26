@@ -11,8 +11,8 @@
 <div class="w-32 h-32 rounded-full overflow-hidden ring-4 ring-surface-container-high transition-transform duration-300 group-hover:scale-105">
 <img id="profile-avatar-image" alt="User Profile" class="w-full h-full object-cover" data-alt="close-up portrait of a thoughtful man in a linen shirt against a soft neutral background with warm morning light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDE4p8AoYVsz6pEXUcgS6BkD6ZMnpFej1qRvtAnjsOWWGCk7xJhzaMTg6eRpIrmf1nkexNBtrYL3KbuHY6ZwSPi-Kdj4ivoosw4MlhSqGkDRZeaWiu0ULKlO9WJofnhhFK3dg6DTg4IQBS1fYuInfMqPQH2xU1CoJ_kNGEuGwa-nEMQzBHm4jSNxfxVSNi8W5QYdVVAzvIMm62lcyjTcDnQkk9xlvlKrssjp1lApdoTVkjnhRL8luZ5XJaaZ8Tgexi6luLt5O1w6g"/>
 </div>
-<button onclick="window.app.openAvatarPicker()" class="absolute bottom-0 right-0 bg-primary text-on-primary p-2 rounded-full shadow-lg hover:opacity-90 transition-all">
-<span class="material-symbols-outlined notranslate text-sm" data-icon="edit">edit</span>
+<button onclick="window.app.openAvatarPicker()" class="absolute bottom-0 right-0 w-10 h-10 bg-primary text-on-primary rounded-full shadow-lg shadow-primary/20 hover:scale-105 hover:opacity-90 transition-all flex items-center justify-center ring-4 ring-background" title="Alterar foto">
+<span class="material-symbols-outlined notranslate text-[18px]" data-icon="edit">edit</span>
 </button>
 <input type="file" id="profile-photo-input" accept="image/*" class="hidden" onchange="window.app.onProfilePhotoSelected(event)">
 </div>

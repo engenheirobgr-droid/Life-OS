@@ -258,9 +258,10 @@
                 </div>
             </div>
         </div>
-        <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container"
+        <button class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hover:bg-surface-container"
             onclick="app.navigate('perfil')">
-            <span class="material-symbols-outlined notranslate text-outline">account_circle</span>
+            <img id="profile-nav-avatar-mobile" alt="Foto de perfil" class="hidden w-full h-full object-cover rounded-full">
+            <span id="profile-nav-icon-mobile" class="material-symbols-outlined notranslate text-outline">account_circle</span>
         </button>
     </header>
 
@@ -331,7 +332,10 @@
                 <button data-view="perfil"
                     class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
                     onclick="app.navigate('perfil')">
-                    <span class="material-symbols-outlined notranslate">account_circle</span>
+                    <span class="w-7 h-7 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center shrink-0">
+                        <img id="profile-sidebar-avatar" alt="Foto de perfil" class="hidden w-full h-full object-cover">
+                        <span id="profile-sidebar-icon" class="material-symbols-outlined notranslate text-[22px]">account_circle</span>
+                    </span>
                     <div class="flex flex-col text-left">
                         <span class="text-sm font-bold text-on-background" id="perfil-sidebar-name">Bruno</span>
                         <span class="text-[10px] text-outline uppercase tracking-wider">Ver Perfil</span>
