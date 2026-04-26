@@ -69,6 +69,7 @@ window.sistemaVidaState = {
     },
     perma: { P: 0, E: 0, R: 0, M: 0, A: 0 },
     swls: { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} },
+    wellbeingHistory: { wheel: {}, perma: {}, odyssey: {} },
     deepWork: {
         isRunning: false,
         isPaused: false,
@@ -583,7 +584,12 @@ const app = {
             first_habit_done: { title: 'Ritual iniciado', icon: 'repeat' },
             first_focus_session: { title: 'Bloco de foco', icon: 'timer' },
             first_weekly_review: { title: 'Semana revisada', icon: 'rate_review' },
-            total_level_5: { title: 'Sistema em movimento', icon: 'rocket_launch' }
+            total_level_5: { title: 'Sistema em movimento', icon: 'rocket_launch' },
+            first_shadow_named: { title: 'Sombra nomeada', icon: 'change_circle' },
+            first_strength_habit: { title: 'Força consciente', icon: 'workspace_premium' },
+            shadow_antidote_7: { title: 'Antídoto em prática', icon: 'healing' },
+            identity_integration_week: { title: 'Integração', icon: 'all_inclusive' },
+            sustained_identity_growth: { title: 'Evolução sustentada', icon: 'trending_up' }
         };
     },
     unlockAchievement: function(id, extra = {}) {
@@ -610,12 +616,22 @@ const app = {
         if (eventType === 'habit_complete') xp = 6;
         if (eventType === 'deep_work') xp = Math.max(10, Math.min(40, Math.round((Number(payload.focusSec) || 0) / 300)));
         if (eventType === 'weekly_review') xp = 25;
+        if (eventType === 'habit_complete' && payload.sourceType) xp += payload.sourceType === 'shadow' ? 4 : 2;
+        if (eventType === 'weekly_review' && payload.identityReflection) xp += 5;
         if (xp <= 0) return null;
 
         const dimension = payload.dimension || '';
         const totalBefore = gamification.totalXp;
         const dimensionBefore = Math.max(0, Number(gamification.dimensionXp[dimension]) || 0);
-        gamification.events[key] = { type: eventType, at: new Date().toISOString(), xp, dimension };
+        gamification.events[key] = {
+            type: eventType,
+            at: new Date().toISOString(),
+            xp,
+            dimension,
+            sourceType: payload.sourceType || '',
+            sourceId: payload.sourceId || '',
+            habitMode: payload.habitMode || ''
+        };
         gamification.totalXp += xp;
         if (dimension) gamification.dimensionXp[dimension] = dimensionBefore + xp;
         gamification.recentEvents.unshift({
@@ -623,6 +639,8 @@ const app = {
             title: payload.title || '',
             xp,
             dimension,
+            sourceType: payload.sourceType || '',
+            sourceId: payload.sourceId || '',
             at: new Date().toISOString()
         });
         gamification.recentEvents = gamification.recentEvents.slice(0, 20);
@@ -690,6 +708,11 @@ const app = {
             });
             if (dimAchievement) unlocked.push(dimAchievement);
         }
+        if (eventType === 'habit_complete' || eventType === 'weekly_review') {
+            this.syncIdentityLinkedHabits();
+            const identityAchievements = this.evaluateIdentityAchievements();
+            identityAchievements.forEach(ach => unlocked.push(ach));
+        }
 
         if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
         window.sistemaVidaState.profile.xp = gamification.totalXp;
@@ -705,6 +728,72 @@ const app = {
             tierPromotion,
             achievementsUnlocked: unlocked
         };
+    },
+
+    isHabitDoneOnDate: function(habit, dateStr) {
+        if (!habit || !dateStr) return false;
+        const mode = habit.trackMode || 'boolean';
+        const target = Number(habit.targetValue) || 1;
+        const steps = Array.isArray(habit.steps) ? habit.steps.filter(Boolean) : [];
+        if (steps.length) {
+            const map = habit.stepLogs?.[dateStr] || {};
+            return steps.every((_, idx) => !!(map[idx] || map[String(idx)]));
+        }
+        const value = Number(habit.logs?.[dateStr]) || 0;
+        return mode === 'boolean' ? value > 0 : value >= target;
+    },
+
+    getHabitDoneDates: function(habit) {
+        const logs = habit?.logs || {};
+        const stepLogs = habit?.stepLogs || {};
+        const dates = new Set([...Object.keys(logs), ...Object.keys(stepLogs)]);
+        return Array.from(dates).filter(date => this.isHabitDoneOnDate(habit, date)).sort();
+    },
+
+    evaluateIdentityAchievements: function() {
+        const unlocked = [];
+        this.ensureIdentityState();
+        const identity = window.sistemaVidaState.profile.identity || { strengths: [], shadows: [] };
+        const habits = window.sistemaVidaState.habits || [];
+
+        if ((identity.shadows || []).length > 0) {
+            const ach = this.unlockAchievement('first_shadow_named');
+            if (ach) unlocked.push(ach);
+        }
+        if (habits.some(h => h.sourceType === 'strength' && h.sourceId)) {
+            const ach = this.unlockAchievement('first_strength_habit');
+            if (ach) unlocked.push(ach);
+        }
+        if (habits.some(h => h.sourceType === 'shadow' && this.getHabitDoneDates(h).length >= 7)) {
+            const ach = this.unlockAchievement('shadow_antidote_7');
+            if (ach) unlocked.push(ach);
+        }
+        const weekKey = this._getWeekKey ? this._getWeekKey() : '';
+        if (weekKey) {
+            const weekDates = this.getWeekDateKeys(weekKey);
+            const didStrength = habits.some(h => h.sourceType === 'strength' && weekDates.some(d => this.isHabitDoneOnDate(h, d)));
+            const didShadow = habits.some(h => h.sourceType === 'shadow' && weekDates.some(d => this.isHabitDoneOnDate(h, d)));
+            if (didStrength && didShadow) {
+                const ach = this.unlockAchievement('identity_integration_week');
+                if (ach) unlocked.push(ach);
+            }
+        }
+        const linkedHabits = habits.filter(h => h.sourceType && h.sourceId);
+        const hasFourWeeks = linkedHabits.some(h => {
+            const done = new Set(this.getHabitDoneDates(h));
+            const current = this._getWeekKey ? this._getWeekKey() : '';
+            if (!current) return false;
+            for (let i = 0; i < 4; i++) {
+                const wk = this.getRelativeWeekKey(current, -i);
+                if (!this.getWeekDateKeys(wk).some(d => done.has(d))) return false;
+            }
+            return true;
+        });
+        if (hasFourWeeks) {
+            const ach = this.unlockAchievement('sustained_identity_growth');
+            if (ach) unlocked.push(ach);
+        }
+        return unlocked;
     },
     showGamificationToast: function(result) {
         if (!result || !this.showToast) return;
@@ -939,6 +1028,18 @@ const app = {
         if (!window.sistemaVidaState.swls) {
             window.sistemaVidaState.swls = { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
         }
+        if (!window.sistemaVidaState.wellbeingHistory || typeof window.sistemaVidaState.wellbeingHistory !== 'object') {
+            window.sistemaVidaState.wellbeingHistory = { wheel: {}, perma: {}, odyssey: {} };
+        }
+        if (!window.sistemaVidaState.wellbeingHistory.wheel || typeof window.sistemaVidaState.wellbeingHistory.wheel !== 'object') {
+            window.sistemaVidaState.wellbeingHistory.wheel = {};
+        }
+        if (!window.sistemaVidaState.wellbeingHistory.perma || typeof window.sistemaVidaState.wellbeingHistory.perma !== 'object') {
+            window.sistemaVidaState.wellbeingHistory.perma = {};
+        }
+        if (!window.sistemaVidaState.wellbeingHistory.odyssey || typeof window.sistemaVidaState.wellbeingHistory.odyssey !== 'object') {
+            window.sistemaVidaState.wellbeingHistory.odyssey = {};
+        }
         if (!window.sistemaVidaState.deepWork) {
             window.sistemaVidaState.deepWork = {
                 isRunning: false, isPaused: false, mode: 'focus',
@@ -980,6 +1081,7 @@ const app = {
         this.normalizeDailyLogsState();
         this.normalizeDeepWorkState();
         this.ensureGamificationState();
+        this.syncIdentityLinkedHabits();
     },
     applyThemePreference: function() {
         this.ensureSettingsState();
@@ -1917,13 +2019,16 @@ const app = {
                 return {
                     id: String(item?.id || `${type}-${title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-')}`),
                     title,
+                    dimension: String(item?.dimension || ''),
                     description: String(item?.description || ''),
                     evidence: String(item?.evidence || ''),
                     excessRisk: String(item?.excessRisk || ''),
+                    practice: String(item?.practice || item?.suggestedPractice || ''),
                     trigger: String(item?.trigger || ''),
                     impact: String(item?.impact || ''),
                     desiredResponse: String(item?.desiredResponse || ''),
                     linkedHabitIds: Array.isArray(item?.linkedHabitIds) ? item.linkedHabitIds.map(String) : [],
+                    weeklyLogs: item?.weeklyLogs && typeof item.weeklyLogs === 'object' && !Array.isArray(item.weeklyLogs) ? item.weeklyLogs : {},
                     createdAt: String(item?.createdAt || this.getLocalDateKey()),
                     updatedAt: String(item?.updatedAt || '')
                 };
@@ -1948,6 +2053,21 @@ const app = {
         return type === 'strengths' ? strengths : shadows;
     },
 
+    getIdentityTypeLabel: function(type) {
+        return type === 'strengths' ? 'Força' : 'Sombra';
+    },
+
+    getIdentityItemById: function(type, id) {
+        this.ensureIdentityState();
+        const list = window.sistemaVidaState.profile.identity?.[type] || [];
+        return list.find(item => item.id === id) || null;
+    },
+
+    getIdentityTitleById: function(type, id) {
+        const item = this.getIdentityItemById(type, id);
+        return item ? item.title : '';
+    },
+
     addIdentityItem: function(type, title) {
         this.ensureIdentityState();
         const list = window.sistemaVidaState.profile.identity[type];
@@ -1962,16 +2082,20 @@ const app = {
         list.push({
             id: `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             title: cleanTitle,
+            dimension: '',
             description: '',
             evidence: '',
             excessRisk: '',
+            practice: '',
             trigger: '',
             impact: '',
             desiredResponse: '',
             linkedHabitIds: [],
+            weeklyLogs: {},
             createdAt: this.getLocalDateKey(),
             updatedAt: this.getLocalDateKey()
         });
+        this.evaluateIdentityAchievements();
         this.saveState(true);
         this.renderIdentityBase();
         this.showToast(type === 'strengths' ? 'Força adicionada.' : 'Sombra adicionada.', 'success');
@@ -1994,6 +2118,45 @@ const app = {
         this.showToast(type === 'strengths' ? 'Força removida.' : 'Sombra removida.', 'success');
     },
 
+    editIdentityItem: function(type, id) {
+        this.ensureIdentityState();
+        const item = this.getIdentityItemById(type, id);
+        if (!item) return;
+        const isStrength = type === 'strengths';
+        const title = window.prompt(`${this.getIdentityTypeLabel(type)}: nome`, item.title);
+        if (title === null) return;
+        const dimension = window.prompt('Dimensão principal (opcional)', item.dimension || '');
+        if (dimension === null) return;
+
+        item.title = String(title || '').trim() || item.title;
+        item.dimension = String(dimension || '').trim();
+        if (isStrength) {
+            const evidence = window.prompt('Evidência real: onde essa força aparece?', item.evidence || '');
+            if (evidence === null) return;
+            const excessRisk = window.prompt('Risco de excesso: quando essa força passa do ponto?', item.excessRisk || '');
+            if (excessRisk === null) return;
+            const practice = window.prompt('Prática sugerida: como treinar essa força?', item.practice || item.suggestedPractice || '');
+            if (practice === null) return;
+            item.evidence = String(evidence || '').trim();
+            item.excessRisk = String(excessRisk || '').trim();
+            item.practice = String(practice || '').trim();
+        } else {
+            const trigger = window.prompt('Gatilho: quando essa sombra aparece?', item.trigger || '');
+            if (trigger === null) return;
+            const impact = window.prompt('Impacto: o que ela costuma gerar?', item.impact || '');
+            if (impact === null) return;
+            const desiredResponse = window.prompt('Resposta desejada: o que praticar no lugar?', item.desiredResponse || '');
+            if (desiredResponse === null) return;
+            item.trigger = String(trigger || '').trim();
+            item.impact = String(impact || '').trim();
+            item.desiredResponse = String(desiredResponse || '').trim();
+        }
+        item.updatedAt = this.getLocalDateKey();
+        this.saveState(true);
+        this.renderIdentityBase();
+        this.showToast(`${this.getIdentityTypeLabel(type)} atualizada.`, 'success');
+    },
+
     renderIdentityBase: function() {
         this.ensureIdentityState();
         this.renderSidebarValues();
@@ -2008,10 +2171,26 @@ const app = {
                 return;
             }
             container.innerHTML = items.map(item => `
-                <span class="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
-                    ${this.escapeHtml(item.title)}
-                    <button type="button" onclick="event.stopPropagation(); window.app.removeIdentityItem(${jsArg(type)}, ${jsArg(item.id)})" class="material-symbols-outlined notranslate text-[13px] leading-none hover:text-error" title="Remover">close</button>
-                </span>
+                <div class="w-full rounded-xl border border-outline-variant/10 bg-surface-container-lowest/70 p-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="text-xs font-bold text-on-surface">${this.escapeHtml(item.title)}</p>
+                            ${item.dimension ? `<p class="mt-0.5 text-[10px] uppercase tracking-widest text-primary">${this.escapeHtml(item.dimension)}</p>` : ''}
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" onclick="event.stopPropagation(); window.app.editIdentityItem(${jsArg(type)}, ${jsArg(item.id)})" class="material-symbols-outlined notranslate text-outline text-[16px] hover:text-primary" title="Editar">edit</button>
+                            <button type="button" onclick="event.stopPropagation(); window.app.removeIdentityItem(${jsArg(type)}, ${jsArg(item.id)})" class="material-symbols-outlined notranslate text-outline text-[16px] hover:text-error" title="Remover">close</button>
+                        </div>
+                    </div>
+                    <div class="mt-2 space-y-1 text-[11px] text-outline leading-relaxed">
+                        ${type === 'strengths' && item.evidence ? `<p><span class="font-bold text-on-surface">Evidência:</span> ${this.escapeHtml(item.evidence)}</p>` : ''}
+                        ${type === 'strengths' && item.excessRisk ? `<p><span class="font-bold text-on-surface">Excesso:</span> ${this.escapeHtml(item.excessRisk)}</p>` : ''}
+                        ${type === 'strengths' && (item.practice || item.suggestedPractice) ? `<p><span class="font-bold text-on-surface">Prática:</span> ${this.escapeHtml(item.practice || item.suggestedPractice)}</p>` : ''}
+                        ${type === 'shadows' && item.trigger ? `<p><span class="font-bold text-on-surface">Gatilho:</span> ${this.escapeHtml(item.trigger)}</p>` : ''}
+                        ${type === 'shadows' && item.impact ? `<p><span class="font-bold text-on-surface">Impacto:</span> ${this.escapeHtml(item.impact)}</p>` : ''}
+                        ${type === 'shadows' && item.desiredResponse ? `<p><span class="font-bold text-on-surface">Resposta:</span> ${this.escapeHtml(item.desiredResponse)}</p>` : ''}
+                    </div>
+                </div>
             `).join('');
         };
         const renderOptions = (type) => {
@@ -2181,20 +2360,7 @@ const app = {
                     const reviewBadge = review
                         ? `<span class="ml-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-full"><span class="material-symbols-outlined notranslate text-[12px]">check_circle</span>Revisado</span>`
                         : `<span class="ml-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-outline bg-surface-container-high px-2 py-0.5 rounded-full">Sem revisão</span>`;
-                    const reviewSection = review ? `
-                        <div class="mt-4 pt-4 border-t border-outline-variant/10">
-                            <p class="text-[10px] font-bold uppercase tracking-widest text-secondary mb-3 flex items-center gap-1">
-                                <span class="material-symbols-outlined notranslate text-[14px]">rate_review</span>
-                                Revisão da Semana
-                            </p>
-                            <div class="grid md:grid-cols-2 gap-3">
-                                ${review.q1 ? `<div class="bg-surface-container p-3 rounded-xl"><p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">O que planejei</p><p class="text-xs text-on-surface leading-relaxed">${review.q1}</p></div>` : ''}
-                                ${review.q2 ? `<div class="bg-surface-container p-3 rounded-xl"><p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">O que executei</p><p class="text-xs text-on-surface leading-relaxed">${review.q2}</p></div>` : ''}
-                                ${review.q3 ? `<div class="bg-surface-container p-3 rounded-xl"><p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">O que aprendi</p><p class="text-xs text-on-surface leading-relaxed">${review.q3}</p></div>` : ''}
-                                ${review.q4 ? `<div class="bg-surface-container p-3 rounded-xl"><p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">O que ajustaria</p><p class="text-xs text-on-surface leading-relaxed">${review.q4}</p></div>` : ''}
-                                ${review.q5 ? `<div class="bg-surface-container p-3 rounded-xl md:col-span-2"><p class="text-[9px] uppercase tracking-widest text-outline font-bold mb-1">Gratidão / Destaque</p><p class="text-xs text-on-surface leading-relaxed">${review.q5}</p></div>` : ''}
-                            </div>
-                        </div>` : '';
+                    const reviewSection = review ? this._renderWeeklyReviewSummary(review) : '';
                     return `<details class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm overflow-hidden group">
                         <summary class="flex items-center justify-between p-5 cursor-pointer hover:bg-surface-container transition-colors list-none">
                             <div class="flex items-center gap-3">
@@ -2331,7 +2497,11 @@ const app = {
             ['O que executei', review.q2],
             ['O que aprendi', review.q3],
             ['O que ajustaria', review.q4],
-            ['Gratidão / Destaque', review.q5]
+            ['Gratidão / Destaque', review.q5],
+            ['Força usada', this.getIdentityTitleById('strengths', review.strengthId)],
+            ['Sombra observada', this.getIdentityTitleById('shadows', review.shadowId)],
+            ['Resposta melhor', review.responsePracticed],
+            ['Hábito a ajustar', review.habitAdjustment]
         ].filter(([, value]) => String(value || '').trim());
 
         if (!fields.length) {
@@ -3544,6 +3714,7 @@ const app = {
                 if (freqInput) this.onHabitFreqChange(freqInput.value);
             }
             this.populateHabitLinkedMeta();
+            this.populateHabitIdentitySource();
             if (contextGroup) contextGroup.classList.add('hidden');
             if (contextInput) contextInput.required = false;
             if (triggerInput) triggerInput.required = true;
@@ -4206,6 +4377,21 @@ const app = {
         return this.getLocalDateKey(d);
     },
 
+    getRelativeWeekKey: function(weekKey, offsetWeeks = 0) {
+        const d = new Date((weekKey || this._getWeekKey()) + 'T00:00:00');
+        d.setDate(d.getDate() + (Number(offsetWeeks) || 0) * 7);
+        return this.getLocalDateKey(d);
+    },
+
+    getWeekDateKeys: function(weekKey = this._getWeekKey()) {
+        const start = new Date(weekKey + 'T00:00:00');
+        return Array.from({ length: 7 }, (_, idx) => {
+            const d = new Date(start);
+            d.setDate(start.getDate() + idx);
+            return this.getLocalDateKey(d);
+        });
+    },
+
     _formatWeekRange: function(weekKey) {
         const start = new Date(weekKey + 'T00:00:00');
         const end = new Date(start);
@@ -4329,6 +4515,258 @@ const app = {
         // Restaura seleção anterior se ainda existir
         if (prev && select.querySelector(`option[value="${prev}"]`)) {
             select.value = prev;
+        }
+    },
+
+    populateHabitIdentitySource: function() {
+        const select = document.getElementById('habit-identity-source');
+        if (!select) return;
+        this.ensureIdentityState();
+        const prev = select.value;
+        const identity = window.sistemaVidaState.profile.identity || { strengths: [], shadows: [] };
+        const renderOption = (type, item) => {
+            const prefix = type === 'strengths' ? 'Força' : 'Sombra';
+            return `<option value="${type}:${this.escapeHtml(item.id)}">${prefix}: ${this.escapeHtml(item.title)}</option>`;
+        };
+        const strengths = identity.strengths || [];
+        const shadows = identity.shadows || [];
+        let html = '<option value="">— Sem conexão —</option>';
+        if (strengths.length) {
+            html += '<optgroup label="Forças">';
+            strengths.forEach(item => { html += renderOption('strengths', item); });
+            html += '</optgroup>';
+        }
+        if (shadows.length) {
+            html += '<optgroup label="Sombras">';
+            shadows.forEach(item => { html += renderOption('shadows', item); });
+            html += '</optgroup>';
+        }
+        select.innerHTML = html;
+        if (prev && select.querySelector(`option[value="${prev}"]`)) select.value = prev;
+        this.onHabitIdentitySourceChange(select.value);
+    },
+
+    onHabitIdentitySourceChange: function(value) {
+        const wrap = document.getElementById('habit-identity-mode-wrap');
+        const mode = document.getElementById('habit-identity-mode');
+        const isShadow = String(value || '').startsWith('shadows:');
+        if (wrap) {
+            wrap.classList.toggle('hidden', !value);
+            wrap.classList.toggle('flex', !!value);
+        }
+        if (mode && value) {
+            mode.value = isShadow ? (mode.value === 'build' ? 'replace' : mode.value) : 'build';
+        }
+    },
+
+    parseHabitIdentitySource: function(rawValue) {
+        const raw = String(rawValue || '');
+        const [type, ...rest] = raw.split(':');
+        const id = rest.join(':');
+        if (!id || !['strengths', 'shadows'].includes(type)) return { sourceType: '', sourceId: '', habitMode: '' };
+        const sourceType = type === 'strengths' ? 'strength' : 'shadow';
+        const modeEl = document.getElementById('habit-identity-mode');
+        let habitMode = modeEl ? String(modeEl.value || '') : '';
+        if (!['build', 'reduce', 'replace'].includes(habitMode)) habitMode = sourceType === 'strength' ? 'build' : 'replace';
+        if (sourceType === 'strength') habitMode = 'build';
+        return { sourceType, sourceId: id, habitMode };
+    },
+
+    getHabitIdentityItem: function(habit) {
+        if (!habit || !habit.sourceType || !habit.sourceId) return null;
+        const type = habit.sourceType === 'strength' ? 'strengths' : habit.sourceType === 'shadow' ? 'shadows' : '';
+        if (!type) return null;
+        return this.getIdentityItemById(type, habit.sourceId);
+    },
+
+    renderHabitIdentityChip: function(habit) {
+        const item = this.getHabitIdentityItem(habit);
+        if (!item) return '';
+        const isStrength = habit.sourceType === 'strength';
+        const label = isStrength ? 'Força' : 'Sombra';
+        const icon = isStrength ? 'workspace_premium' : 'change_circle';
+        return `<p class="mt-1 text-[10px] ${isStrength ? 'text-primary' : 'text-secondary'} leading-tight truncate flex items-center gap-1">
+            <span class="material-symbols-outlined notranslate text-[11px]">${icon}</span>${label}: ${this.escapeHtml(item.title)}
+        </p>`;
+    },
+
+    syncIdentityLinkedHabits: function() {
+        this.ensureIdentityState();
+        const identity = window.sistemaVidaState.profile.identity || {};
+        ['strengths', 'shadows'].forEach(type => {
+            (identity[type] || []).forEach(item => { item.linkedHabitIds = []; });
+        });
+        (window.sistemaVidaState.habits || []).forEach(habit => {
+            const type = habit.sourceType === 'strength' ? 'strengths' : habit.sourceType === 'shadow' ? 'shadows' : '';
+            if (!type || !habit.sourceId) return;
+            const item = (identity[type] || []).find(i => i.id === habit.sourceId);
+            if (!item) return;
+            if (!Array.isArray(item.linkedHabitIds)) item.linkedHabitIds = [];
+            if (!item.linkedHabitIds.includes(habit.id)) item.linkedHabitIds.push(habit.id);
+        });
+    },
+
+    getIdentityPracticeStats: function(weekKey = this._getWeekKey()) {
+        this.ensureIdentityState();
+        const identity = window.sistemaVidaState.profile.identity || { strengths: [], shadows: [] };
+        const habits = window.sistemaVidaState.habits || [];
+        const weekDates = this.getWeekDateKeys(weekKey);
+        const priorWeekDates = this.getWeekDateKeys(this.getRelativeWeekKey(weekKey, -1));
+        const linkedHabits = habits.filter(h => h.sourceType && h.sourceId);
+        const doneThisWeek = linkedHabits.filter(h => weekDates.some(date => this.isHabitDoneOnDate(h, date)));
+        const doneLastWeek = linkedHabits.filter(h => priorWeekDates.some(date => this.isHabitDoneOnDate(h, date)));
+        const practicedStrengthIds = new Set(doneThisWeek.filter(h => h.sourceType === 'strength').map(h => h.sourceId));
+        const workedShadowIds = new Set(doneThisWeek.filter(h => h.sourceType === 'shadow').map(h => h.sourceId));
+        const strengthIdsWithHabits = new Set(linkedHabits.filter(h => h.sourceType === 'strength').map(h => h.sourceId));
+        const shadowIdsWithHabits = new Set(linkedHabits.filter(h => h.sourceType === 'shadow').map(h => h.sourceId));
+        return {
+            strengths: identity.strengths || [],
+            shadows: identity.shadows || [],
+            linkedHabits,
+            doneThisWeek,
+            doneLastWeek,
+            practicedStrengthIds,
+            workedShadowIds,
+            strengthsWithoutPractice: (identity.strengths || []).filter(item => !practicedStrengthIds.has(item.id)),
+            shadowsWithoutHabit: (identity.shadows || []).filter(item => !shadowIdsWithHabits.has(item.id)),
+            strengthsWithoutHabit: (identity.strengths || []).filter(item => !strengthIdsWithHabits.has(item.id))
+        };
+    },
+
+    getIdentityTrendSummary: function(weekKey = this._getWeekKey(), weeks = 4) {
+        const habits = window.sistemaVidaState.habits || [];
+        const summary = [];
+        for (let i = weeks - 1; i >= 0; i--) {
+            const wk = this.getRelativeWeekKey(weekKey, -i);
+            const dates = this.getWeekDateKeys(wk);
+            const strengthIds = new Set();
+            const shadowIds = new Set();
+            let linkedCompletions = 0;
+            habits.forEach(habit => {
+                if (!habit.sourceType || !habit.sourceId) return;
+                const count = dates.reduce((acc, date) => acc + (this.isHabitDoneOnDate(habit, date) ? 1 : 0), 0);
+                if (!count) return;
+                linkedCompletions += count;
+                if (habit.sourceType === 'strength') strengthIds.add(habit.sourceId);
+                if (habit.sourceType === 'shadow') shadowIds.add(habit.sourceId);
+            });
+            summary.push({ weekKey: wk, strengthCount: strengthIds.size, shadowCount: shadowIds.size, linkedCompletions });
+        }
+        return summary;
+    },
+
+    renderPersonalEvolutionPanel: function() {
+        const container = document.getElementById('personal-evolution-panel');
+        if (!container) return;
+        const stats = this.getIdentityPracticeStats();
+        const card = ({ icon, title, value, copy, tone = 'primary' }) => `
+            <div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">${this.escapeHtml(title)}</p>
+                        <p class="mt-2 font-headline text-3xl italic text-${tone}">${this.escapeHtml(value)}</p>
+                    </div>
+                    <span class="material-symbols-outlined notranslate text-${tone}">${this.escapeHtml(icon)}</span>
+                </div>
+                <p class="mt-3 text-xs text-on-surface-variant leading-relaxed">${copy}</p>
+            </div>`;
+        const practicedNames = stats.strengths
+            .filter(item => stats.practicedStrengthIds.has(item.id))
+            .map(item => item.title);
+        const shadowNames = stats.shadows
+            .filter(item => stats.workedShadowIds.has(item.id))
+            .map(item => item.title);
+        const missingShadowNames = stats.shadowsWithoutHabit.map(item => item.title).slice(0, 3);
+        const trend = this.getIdentityTrendSummary();
+        const trendCopy = trend.map(row => `${row.linkedCompletions}`).join(' · ');
+        container.innerHTML = [
+            card({
+                icon: 'workspace_premium',
+                title: 'Forças praticadas',
+                value: String(stats.practicedStrengthIds.size),
+                copy: practicedNames.length ? `Você praticou ${this.escapeHtml(practicedNames.join(', '))} nesta semana.` : 'Nenhuma força mapeada apareceu em hábitos concluídos nesta semana.'
+            }),
+            card({
+                icon: 'change_circle',
+                title: 'Sombras trabalhadas',
+                value: String(stats.workedShadowIds.size),
+                copy: shadowNames.length ? `Você trabalhou ${this.escapeHtml(shadowNames.join(', '))} com hábitos antídoto.` : 'Nenhuma sombra foi trabalhada por hábito vinculado nesta semana.',
+                tone: 'secondary'
+            }),
+            card({
+                icon: 'link_off',
+                title: 'Sem antídoto',
+                value: String(stats.shadowsWithoutHabit.length),
+                copy: missingShadowNames.length ? `Sombras sem hábito: ${this.escapeHtml(missingShadowNames.join(', '))}.` : 'Todas as sombras mapeadas já têm algum hábito conectado.',
+                tone: stats.shadowsWithoutHabit.length ? 'error' : 'primary'
+            }),
+            card({
+                icon: 'timeline',
+                title: 'Últimas 4 semanas',
+                value: String(trend.reduce((sum, row) => sum + row.linkedCompletions, 0)),
+                copy: `Conclusões ligadas à identidade por semana: ${this.escapeHtml(trendCopy || '0 · 0 · 0 · 0')}.`,
+                tone: 'primary'
+            })
+        ].join('');
+    },
+
+    renderWellbeingTrendsPanel: function() {
+        const container = document.getElementById('wellbeing-trends-panel');
+        if (!container) return;
+        const state = window.sistemaVidaState;
+        const permaVals = ['P', 'E', 'R', 'M', 'A'].map(k => this.normalizePermaScore(state.perma?.[k]));
+        const permaAvg = permaVals.length ? permaVals.reduce((sum, n) => sum + n, 0) / permaVals.length : 0;
+        const wheelVals = Object.values(state.dimensions || {}).map(item => Number(item?.score) || 0);
+        const wheelAvg = wheelVals.length ? Math.round(wheelVals.reduce((sum, n) => sum + n, 0) / wheelVals.length) : 0;
+        const swlsScore = Number(state.swls?.lastScore) || 0;
+        const history = state.wellbeingHistory || { wheel: {}, perma: {} };
+        const trendLabel = (entries, current, suffix = '') => {
+            const ordered = Object.entries(entries || {}).sort((a, b) => b[0].localeCompare(a[0]));
+            const previous = ordered.find(([, item]) => Number.isFinite(Number(item?.avg ?? item?.score)));
+            if (!previous) return 'Sem snapshot anterior.';
+            const oldVal = Number(previous[1].avg ?? previous[1].score);
+            const delta = Math.round((Number(current) - oldVal) * 10) / 10;
+            if (Math.abs(delta) < 0.1) return `Estável desde ${previous[0]}.`;
+            return `${delta > 0 ? '+' : ''}${delta}${suffix} desde ${previous[0]}.`;
+        };
+        const card = (label, value, copy, icon) => `
+            <div class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10 shadow-sm flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-[10px] uppercase tracking-widest font-bold text-outline">${this.escapeHtml(label)}</p>
+                    <p class="mt-1 text-2xl font-headline italic text-primary">${this.escapeHtml(value)}</p>
+                    <p class="mt-1 text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(copy)}</p>
+                </div>
+                <span class="material-symbols-outlined notranslate text-primary">${this.escapeHtml(icon)}</span>
+            </div>`;
+        container.innerHTML = [
+            card('Roda da Vida', `${wheelAvg}%`, trendLabel(history.wheel, wheelAvg, ' pts'), 'pie_chart'),
+            card('PERMA', `${permaAvg.toFixed(1)}/10`, trendLabel(history.perma, permaAvg), 'psychology'),
+            card('SWLS', swlsScore ? `${swlsScore}/35` : '--', state.swls?.lastDate ? `Última avaliação: ${state.swls.lastDate}` : 'Sem avaliação registrada.', 'monitoring')
+        ].join('');
+    },
+
+    recordWellbeingSnapshot: function(kind) {
+        if (!window.sistemaVidaState.wellbeingHistory) window.sistemaVidaState.wellbeingHistory = { wheel: {}, perma: {}, odyssey: {} };
+        const dateKey = this.getLocalDateKey();
+        if (kind === 'wheel') {
+            this.normalizeDimensionsState();
+            const scores = {};
+            this.getWheelAxes().forEach(dim => { scores[dim] = Number(window.sistemaVidaState.dimensions?.[dim]?.score) || 1; });
+            const vals = Object.values(scores);
+            window.sistemaVidaState.wellbeingHistory.wheel[dateKey] = {
+                avg: vals.length ? Math.round(vals.reduce((sum, n) => sum + n, 0) / vals.length) : 0,
+                scores
+            };
+        }
+        if (kind === 'perma') {
+            this.normalizePermaState();
+            const scores = {};
+            ['P', 'E', 'R', 'M', 'A'].forEach(k => { scores[k] = this.normalizePermaScore(window.sistemaVidaState.perma?.[k]); });
+            const vals = Object.values(scores);
+            window.sistemaVidaState.wellbeingHistory.perma[dateKey] = {
+                avg: vals.length ? Math.round((vals.reduce((sum, n) => sum + n, 0) / vals.length) * 10) / 10 : 0,
+                scores
+            };
         }
     },
 
@@ -5273,6 +5711,7 @@ const app = {
 
     openReviewModal: function() {
         document.getElementById('review-form').reset();
+        this.populateReviewIdentityFields();
 
         // Auto-preenche q1/q2 a partir do plano semanal
         const state = window.sistemaVidaState;
@@ -5309,6 +5748,32 @@ const app = {
         document.getElementById('review-modal').classList.remove('hidden');
     },
 
+    populateReviewIdentityFields: function() {
+        this.ensureIdentityState();
+        const identity = window.sistemaVidaState.profile.identity || { strengths: [], shadows: [] };
+        const fillSelect = (id, items) => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            select.innerHTML = '<option value="">— Opcional —</option>' + (items || []).map(item =>
+                `<option value="${this.escapeHtml(item.id)}">${this.escapeHtml(item.title)}</option>`
+            ).join('');
+        };
+        fillSelect('rev-strength', identity.strengths || []);
+        fillSelect('rev-shadow', identity.shadows || []);
+
+        const suggestion = document.getElementById('review-identity-suggestion');
+        if (!suggestion) return;
+        const weekKey = this._getWeekKey();
+        const weekDates = this.getWeekDateKeys(weekKey);
+        const practiced = (window.sistemaVidaState.habits || [])
+            .filter(h => h.sourceType && h.sourceId && weekDates.some(date => this.isHabitDoneOnDate(h, date)))
+            .map(h => this.getHabitIdentityItem(h)?.title)
+            .filter(Boolean);
+        suggestion.textContent = practiced.length
+            ? `Sugestão: esta semana você praticou ${practiced.slice(0, 3).join(', ')}.`
+            : 'Opcional: conecte a semana às suas forças e sombras.';
+    },
+
     closeReviewModal: function() {
         document.getElementById('review-modal').classList.add('hidden');
         document.getElementById('review-purpose-anchor')?.remove();
@@ -5320,6 +5785,10 @@ const app = {
         const q3 = document.getElementById('rev-q3').value.trim();
         const q4 = document.getElementById('rev-q4').value.trim();
         const q5 = document.getElementById('rev-q5').value.trim();
+        const strengthId = document.getElementById('rev-strength')?.value || '';
+        const shadowId = document.getElementById('rev-shadow')?.value || '';
+        const responsePracticed = document.getElementById('rev-response')?.value.trim() || '';
+        const habitAdjustment = document.getElementById('rev-habit-adjust')?.value.trim() || '';
 
         // Salva pelo weekKey da segunda-feira (igual à chave de weekPlans)
         const weekKey = this._getWeekKey();
@@ -5328,9 +5797,18 @@ const app = {
         }
         const hadReview = !!window.sistemaVidaState.reviews[weekKey];
 
-        window.sistemaVidaState.reviews[weekKey] = { q1, q2, q3, q4, q5, savedAt: new Date().toISOString() };
+        window.sistemaVidaState.reviews[weekKey] = {
+            q1, q2, q3, q4, q5,
+            strengthId,
+            shadowId,
+            responsePracticed,
+            habitAdjustment,
+            savedAt: new Date().toISOString()
+        };
+        this.updateIdentityWeeklyLogs(weekKey, window.sistemaVidaState.reviews[weekKey]);
         if (!hadReview) {
-            const award = this.awardGamification('weekly_review', { key: `review:${weekKey}` });
+            const hasIdentityReflection = !!(strengthId || shadowId || responsePracticed || habitAdjustment);
+            const award = this.awardGamification('weekly_review', { key: `review:${weekKey}`, identityReflection: hasIdentityReflection });
             this.showGamificationToast(award);
         }
 
@@ -5349,6 +5827,29 @@ const app = {
             this.closeReviewModal();
             this.goToWeeklyPlansAfterReview();
         }
+    },
+
+    updateIdentityWeeklyLogs: function(weekKey, review) {
+        this.ensureIdentityState();
+        const identity = window.sistemaVidaState.profile.identity || {};
+        const stamp = new Date().toISOString();
+        const writeLog = (type, id, payload) => {
+            if (!id) return;
+            const item = (identity[type] || []).find(i => i.id === id);
+            if (!item) return;
+            if (!item.weeklyLogs || typeof item.weeklyLogs !== 'object') item.weeklyLogs = {};
+            item.weeklyLogs[weekKey] = { ...(item.weeklyLogs[weekKey] || {}), ...payload, updatedAt: stamp };
+            item.updatedAt = this.getLocalDateKey();
+        };
+        writeLog('strengths', review.strengthId, {
+            used: true,
+            note: review.responsePracticed || review.q3 || ''
+        });
+        writeLog('shadows', review.shadowId, {
+            appeared: true,
+            responsePracticed: review.responsePracticed || '',
+            habitAdjustment: review.habitAdjustment || ''
+        });
     },
 
     goToWeeklyPlansAfterReview: async function() {
@@ -5406,6 +5907,7 @@ const app = {
         },
         perma: { P: 5, E: 5, R: 5, M: 5, A: 5 },
         swls: { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} },
+        wellbeingHistory: { wheel: {}, perma: {}, odyssey: {} },
         deepWork: {
           isRunning: false, isPaused: false, mode: 'focus',
           remainingSec: 5400, targetSec: 5400, breakSec: 1200,
@@ -5471,6 +5973,17 @@ const app = {
             '2026-03-01': { score: 24, answers: [5, 4, 5, 5, 5] },
             '2026-04-01': { score: 27, answers: [6, 5, 6, 5, 5] }
           }
+        },
+        wellbeingHistory: {
+          wheel: {
+            '2026-03-01': { avg: 62 },
+            '2026-04-01': { avg: 69 }
+          },
+          perma: {
+            '2026-03-01': { avg: 6.5 },
+            '2026-04-01': { avg: 7.2 }
+          },
+          odyssey: {}
         },
         deepWork: {
           isRunning: false, isPaused: false, mode: 'focus',
@@ -5677,6 +6190,7 @@ const app = {
         }
 
         this.updateWheelPolygon();
+        this.recordWellbeingSnapshot('wheel');
         this.saveState(false);
         this.closeWheelModal();
         if (this.currentView === 'proposito' && this.render.proposito) this.render.proposito();
@@ -6054,6 +6568,10 @@ const app = {
             obj.stepLogs = isEditing ? (getOldItem(id, 'habits').stepLogs || {}) : {};
             const linkedSel = document.getElementById('habit-linked-meta');
             obj.linkedMetaId = linkedSel && linkedSel.value ? linkedSel.value : null;
+            const identityLink = this.parseHabitIdentitySource(document.getElementById('habit-identity-source')?.value || '');
+            obj.sourceType = identityLink.sourceType || '';
+            obj.sourceId = identityLink.sourceId || '';
+            obj.habitMode = identityLink.habitMode || '';
             if (!obj.steps.length) obj.stepLogs = {};
             else {
                 Object.keys(obj.stepLogs || {}).forEach(dateKey => {
@@ -6100,6 +6618,10 @@ const app = {
         }
 
         this.editingEntity = null;
+        if (type === 'habits') {
+            this.syncIdentityLinkedHabits();
+            this.evaluateIdentityAchievements();
+        }
         this.closeModal();
         this.saveState(false); // Feedback ativo para criação/edição manual
 
@@ -6309,7 +6831,10 @@ const app = {
                     id: habit.id,
                     title: habit.title,
                     dimension: habit.dimension,
-                    date: dateStr
+                    date: dateStr,
+                    sourceType: habit.sourceType || '',
+                    sourceId: habit.sourceId || '',
+                    habitMode: habit.habitMode || ''
                 });
                 this.showGamificationToast(award);
             }
@@ -6348,7 +6873,10 @@ const app = {
                 id: habit.id,
                 title: habit.title,
                 dimension: habit.dimension,
-                date: dateStr
+                date: dateStr,
+                sourceType: habit.sourceType || '',
+                sourceId: habit.sourceId || '',
+                habitMode: habit.habitMode || ''
             });
             this.showGamificationToast(award);
         }
@@ -6380,7 +6908,10 @@ const app = {
                     id: habit.id,
                     title: habit.title,
                     dimension: habit.dimension,
-                    date: dateStr
+                    date: dateStr,
+                    sourceType: habit.sourceType || '',
+                    sourceId: habit.sourceId || '',
+                    habitMode: habit.habitMode || ''
                 });
                 this.showGamificationToast(award);
             }
@@ -6887,6 +7418,8 @@ const app = {
 
             app.renderPainelDiagnostics();
             app.renderPainelDecision();
+            app.renderPersonalEvolutionPanel();
+            app.renderWellbeingTrendsPanel();
         },
         renderFocusDistribution: function(containerId) {
             const container = document.getElementById(containerId);
@@ -7445,6 +7978,7 @@ const app = {
                                 <div class="overflow-hidden pr-2">
                                     <p class="font-medium text-on-surface text-sm ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
                                     ${linkedMetaHtml}
+                                    ${app.renderHabitIdentityChip(habit)}
                                     ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight truncate">Gatilho: ${habit.trigger}</p>` : ''}
                                     ${habit.routine ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Rotina: ${habit.routine}</p>` : ''}
                                     ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight truncate">Recompensa: ${habit.reward}</p>` : ''}
@@ -9122,6 +9656,15 @@ const app = {
                     linkedSel.value = item.linkedMetaId;
                 }
             }
+            const identitySel = document.getElementById('habit-identity-source');
+            const identityMode = document.getElementById('habit-identity-mode');
+            const identityType = item.sourceType === 'strength' ? 'strengths' : item.sourceType === 'shadow' ? 'shadows' : '';
+            if (identitySel && identityType && item.sourceId) {
+                const value = `${identityType}:${item.sourceId}`;
+                if (identitySel.querySelector(`option[value="${value}"]`)) identitySel.value = value;
+                this.onHabitIdentitySourceChange(identitySel.value);
+            }
+            if (identityMode && item.habitMode) identityMode.value = item.habitMode;
         }
         
         // Seta o pai após popular a lista
@@ -10155,6 +10698,7 @@ const app = {
         });
 
         // Tarefa 3: Persistência Explícita e Atualização Padronizada
+        this.recordWellbeingSnapshot('perma');
         this.saveState(true);
         this.closePermaModal();
         this.switchView('proposito'); // Força re-render completo

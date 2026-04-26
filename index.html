@@ -864,6 +864,29 @@
                         </select>
                         <p class="text-[10px] text-outline">Conecta este hábito a uma Meta estratégica para mostrar o impacto no Hoje.</p>
                     </div>
+
+                    <div class="flex flex-col gap-3 rounded-xl bg-primary/5 border border-primary/15 p-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-identity-source"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Conectar à Identidade (opcional)</label>
+                            <select id="habit-identity-source"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                onchange="window.app.onHabitIdentitySourceChange(this.value)">
+                                <option value="">— Sem conexão —</option>
+                            </select>
+                            <p class="text-[10px] text-outline">Use o hábito para praticar uma força ou transformar uma sombra.</p>
+                        </div>
+                        <div id="habit-identity-mode-wrap" class="hidden flex flex-col gap-1.5">
+                            <label for="habit-identity-mode"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de transformação</label>
+                            <select id="habit-identity-mode"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                                <option value="build">Reforçar / construir</option>
+                                <option value="reduce">Reduzir padrão</option>
+                                <option value="replace">Substituir por resposta melhor</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </form>
 
@@ -1170,6 +1193,41 @@
                         próxima semana</label>
                     <textarea id="rev-q5" rows="2"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+
+                <div class="rounded-2xl border border-primary/15 bg-primary/5 p-4 space-y-4">
+                    <div>
+                        <p class="text-xs uppercase text-primary font-bold tracking-wider">Autoconhecimento aplicado</p>
+                        <p id="review-identity-suggestion" class="text-[11px] text-outline mt-1 leading-relaxed">Opcional: conecte a semana às suas forças e sombras.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="rev-strength" class="text-[10px] uppercase tracking-widest text-outline font-bold">Força usada</label>
+                            <select id="rev-strength"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface">
+                                <option value="">— Opcional —</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="rev-shadow" class="text-[10px] uppercase tracking-widest text-outline font-bold">Sombra observada</label>
+                            <select id="rev-shadow"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface">
+                                <option value="">— Opcional —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label for="rev-response" class="text-[10px] uppercase tracking-widest text-outline font-bold">Resposta melhor praticada</label>
+                        <textarea id="rev-response" rows="2"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none"
+                            placeholder="Qual resposta mais madura você praticou ou quer praticar?"></textarea>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label for="rev-habit-adjust" class="text-[10px] uppercase tracking-widest text-outline font-bold">Hábito a ajustar</label>
+                        <textarea id="rev-habit-adjust" rows="2"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none"
+                            placeholder="Qual hábito precisa mudar de dose, gatilho ou rotina?"></textarea>
+                    </div>
                 </div>
             </form>
 
