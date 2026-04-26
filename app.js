@@ -5374,6 +5374,184 @@ const app = {
         `).join('');
     },
 
+    hasEnoughData: function(metric, minDays = 14) {
+        const profile = window.sistemaVidaState.profile || {};
+        if (metric === 'checkin') {
+            const uniqueDates = new Set((profile.dailyCheckins || []).map(entry => entry.date).filter(Boolean));
+            return { ok: uniqueDates.size >= minDays, count: uniqueDates.size, minDays };
+        }
+        return { ok: false, count: 0, minDays };
+    },
+
+    getDailyMicroExecutionRate: function(dateKey) {
+        const micros = window.sistemaVidaState.entities?.micros || [];
+        const dueOrActive = micros.filter(m => {
+            const start = m.inicioDate || m.prazo || '';
+            const due = m.prazo || '';
+            if (!due) return false;
+            return start <= dateKey && due >= dateKey;
+        });
+        const done = dueOrActive.filter(m =>
+            m.status === 'done' && (!m.completedDate || m.completedDate <= dateKey)
+        ).length;
+        return dueOrActive.length ? done / dueOrActive.length : null;
+    },
+
+    getDailyHabitAdherenceRate: function(dateKey) {
+        const habits = window.sistemaVidaState.habits || [];
+        const day = String(new Date(dateKey + 'T00:00:00').getDay());
+        const expected = habits.filter(h => {
+            const days = Array.isArray(h.specificDays) ? h.specificDays.map(String) : [];
+            return h.frequency !== 'specific' || !days.length || days.includes(day);
+        });
+        const done = expected.filter(h => this.isHabitDoneOnDate(h, dateKey)).length;
+        return expected.length ? done / expected.length : null;
+    },
+
+    getCheckinJoinedRows: function(days = 28) {
+        this.ensureDailyCheckinState();
+        const entries = (window.sistemaVidaState.profile?.dailyCheckins || []).slice(0, days);
+        return entries.map(entry => ({
+            ...entry,
+            microRate: this.getDailyMicroExecutionRate(entry.date),
+            habitRate: this.getDailyHabitAdherenceRate(entry.date)
+        })).sort((a, b) => a.date.localeCompare(b.date));
+    },
+
+    splitAverage: function(rows, predicate, accessor) {
+        const group = rows.filter(predicate).map(accessor).filter(v => Number.isFinite(Number(v)));
+        if (!group.length) return null;
+        return group.reduce((sum, n) => sum + Number(n), 0) / group.length;
+    },
+
+    renderMiniTrend: function(values, tone = 'primary') {
+        const nums = values.filter(v => Number.isFinite(Number(v))).map(Number).slice(-14);
+        if (!nums.length) return '<div class="h-10 rounded-lg bg-surface-container-high"></div>';
+        const bars = nums.map(v => {
+            const pct = Math.max(8, Math.min(100, Math.round(v * 100)));
+            const color = tone === 'error' ? 'bg-error' : tone === 'warn' ? 'bg-amber-500' : 'bg-primary';
+            return `<span class="flex-1 rounded-t ${color}" style="height:${pct}%"></span>`;
+        }).join('');
+        return `<div class="h-12 flex items-end gap-1 rounded-lg bg-surface-container-high px-2 pt-2 overflow-hidden">${bars}</div>`;
+    },
+
+    renderPatternsPanel: function() {
+        const container = document.getElementById('patterns-panel');
+        if (!container) return;
+        const gate = this.hasEnoughData('checkin', 14);
+        if (!gate.ok) {
+            container.innerHTML = `
+                <div class="lg:col-span-3 rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-5">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Dados insuficientes</p>
+                    <h4 class="mt-2 font-headline text-xl font-bold text-on-surface">Precisa de ${gate.minDays} dias de check-in</h4>
+                    <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Hoje existem ${gate.count}. Quando houver base suficiente, o Painel cruza sono, humor, estresse, execução de micros e hábitos. Correlação não é causalidade.</p>
+                </div>`;
+            return;
+        }
+        const rows = this.getCheckinJoinedRows(28);
+        const sleepGood = this.splitAverage(rows, r => Number(r.sleepQuality) >= 4 || Number(r.sleepHours) >= 7, r => r.microRate);
+        const sleepLow = this.splitAverage(rows, r => Number(r.sleepQuality) <= 2 || Number(r.sleepHours) < 6, r => r.microRate);
+        const moodGood = this.splitAverage(rows, r => Number(r.mood) >= 4, r => r.habitRate);
+        const moodLow = this.splitAverage(rows, r => Number(r.mood) <= 2, r => r.habitRate);
+        const stressHigh = this.splitAverage(rows, r => Number(r.stress) >= 4, r => r.microRate);
+        const stressLow = this.splitAverage(rows, r => Number(r.stress) <= 2, r => r.microRate);
+        const fmtPct = (n) => Number.isFinite(Number(n)) ? `${Math.round(Number(n) * 100)}%` : '--';
+        const deltaText = (a, b, labelA, labelB) => {
+            if (!Number.isFinite(Number(a)) || !Number.isFinite(Number(b))) return 'Ainda faltam dias em um dos grupos.';
+            const delta = Math.round((Number(a) - Number(b)) * 100);
+            if (Math.abs(delta) < 5) return `${labelA} e ${labelB} estao parecidos.`;
+            return `${labelA} esta ${delta > 0 ? '+' : ''}${delta} pts vs ${labelB}.`;
+        };
+        const cards = [
+            {
+                icon: 'bedtime',
+                title: 'Sono vs micros',
+                value: `${fmtPct(sleepGood)} / ${fmtPct(sleepLow)}`,
+                body: deltaText(sleepGood, sleepLow, 'Sono melhor', 'sono baixo'),
+                trend: rows.map(r => r.microRate)
+            },
+            {
+                icon: 'mood',
+                title: 'Humor vs habitos',
+                value: `${fmtPct(moodGood)} / ${fmtPct(moodLow)}`,
+                body: deltaText(moodGood, moodLow, 'Humor alto', 'humor baixo'),
+                trend: rows.map(r => r.habitRate)
+            },
+            {
+                icon: 'stress_management',
+                title: 'Estresse vs execucao',
+                value: `${fmtPct(stressLow)} / ${fmtPct(stressHigh)}`,
+                body: deltaText(stressLow, stressHigh, 'Estresse baixo', 'estresse alto'),
+                trend: rows.map(r => Math.max(0, 1 - (Number(r.stress || 1) - 1) / 4)),
+                tone: 'warn'
+            }
+        ];
+        container.innerHTML = cards.map(card => `
+            <article class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">${this.escapeHtml(card.title)}</p>
+                        <p class="mt-2 font-headline text-2xl font-bold text-on-surface">${this.escapeHtml(card.value)}</p>
+                    </div>
+                    <span class="material-symbols-outlined notranslate text-primary">${this.escapeHtml(card.icon)}</span>
+                </div>
+                <div class="mt-4">${this.renderMiniTrend(card.trend, card.tone || 'primary')}</div>
+                <p class="mt-3 text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(card.body)} Correlação não é causalidade.</p>
+            </article>
+        `).join('');
+    },
+
+    getLoadRecoverySignal: function() {
+        const gate = this.hasEnoughData('checkin', 7);
+        if (!gate.ok) return { show: false, reason: 'insufficient', gate };
+        const rows = this.getCheckinJoinedRows(10).slice(-7);
+        const last3 = rows.slice(-3);
+        const lowEnergy3 = last3.length === 3 && last3.every(r => Number(r.energy) <= 2);
+        const highStress3 = last3.length === 3 && last3.every(r => Number(r.stress) >= 4);
+        const recentMicro = this.splitAverage(rows.slice(-3), () => true, r => r.microRate);
+        const priorMicro = this.splitAverage(rows.slice(0, 4), () => true, r => r.microRate);
+        const fallingExecution = Number.isFinite(Number(recentMicro)) && Number.isFinite(Number(priorMicro)) && recentMicro + 0.15 < priorMicro;
+        const weekKey = this._getWeekKey();
+        const weekPlan = (window.sistemaVidaState.weekPlans || {})[weekKey];
+        const plannedCount = Array.isArray(weekPlan?.selectedMicros) ? weekPlan.selectedMicros.length : 0;
+        const activeHabits = (window.sistemaVidaState.habits || []).length;
+        const heavyLoad = plannedCount + activeHabits >= 10;
+        const show = (lowEnergy3 || highStress3 || fallingExecution) && heavyLoad;
+        return { show, lowEnergy3, highStress3, fallingExecution, plannedCount, activeHabits };
+    },
+
+    dismissLoadRecoveryAlert: function() {
+        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+        window.sistemaVidaState.profile.dismissedLoadAlertDate = this.getLocalDateKey();
+        this.saveState(true);
+        this.renderLoadRecoveryPanel();
+    },
+
+    renderLoadRecoveryPanel: function() {
+        const container = document.getElementById('load-recovery-panel');
+        if (!container) return;
+        const dismissed = window.sistemaVidaState.profile?.dismissedLoadAlertDate === this.getLocalDateKey();
+        const signal = this.getLoadRecoverySignal();
+        if (!signal.show || dismissed) {
+            container.innerHTML = '';
+            return;
+        }
+        const reasons = [
+            signal.lowEnergy3 ? 'energia baixa por 3 dias' : '',
+            signal.highStress3 ? 'estresse alto por 3 dias' : '',
+            signal.fallingExecution ? 'execucao de micros caindo' : ''
+        ].filter(Boolean).join(', ');
+        container.innerHTML = `
+            <div class="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">Sinais de sobrecarga</p>
+                    <h4 class="mt-1 font-headline text-xl font-bold text-on-surface">Considere reduzir o ritmo desta semana</h4>
+                    <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Detectei ${this.escapeHtml(reasons || 'carga alta')} com ${signal.plannedCount} micros planejadas e ${signal.activeHabits} habitos ativos.</p>
+                </div>
+                <button type="button" onclick="window.app.dismissLoadRecoveryAlert()" class="shrink-0 px-4 py-2 rounded-xl bg-surface-container-high text-xs font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container-highest">Dispensar</button>
+            </div>`;
+    },
+
     renderWellbeingTrendsPanel: function() {
         const container = document.getElementById('wellbeing-trends-panel');
         if (!container) return;
@@ -8226,6 +8404,38 @@ const app = {
                 'No Painel, observe tendências, não dias isolados — métricas voláteis enganam.'
             ],
             cta: { label: 'Abrir Painel', view: 'painel' }
+        },
+        {
+            id: 'padroes',
+            icon: 'query_stats',
+            title: 'Lendo seus Padroes',
+            subtitle: 'Cruzamentos sem confundir correlacao com causa',
+            what: 'O Painel cruza check-ins diarios com execucao de micros e adesao a habitos. A secao so aparece com leitura completa depois de dados suficientes, para evitar conclusoes precipitadas.',
+            why: 'Dados pessoais sao ruidosos. Um padrao util nasce de repeticao: sono, humor e estresse precisam de historico antes de orientar decisoes. O sistema usa gating minimo e sempre lembra que correlacao nao e causalidade.',
+            refs: ['Ecological Momentary Assessment (EMA)', 'Personal informatics', 'Behavioral self-tracking'],
+            how: [
+                'Faça check-in por pelo menos 14 dias para liberar os primeiros cruzamentos.',
+                'Leia diferencas como hipoteses praticas, nao como diagnostico.',
+                'Se sono baixo coincidir com pouca execucao, ajuste carga antes de culpar disciplina.',
+                'Use a Revisao Semanal para decidir um experimento pequeno para a proxima semana.'
+            ],
+            cta: { label: 'Abrir Painel', view: 'painel' }
+        },
+        {
+            id: 'carga-recuperacao',
+            icon: 'health_and_safety',
+            title: 'Carga e Recuperacao',
+            subtitle: 'Melhorar sem ultrapassar o limite saudavel',
+            what: 'O alerta de carga observa energia, estresse, execucao e volume planejado. Quando sinais ruins aparecem junto com carga alta, o app sugere reduzir o ritmo em vez de empurrar mais tarefas.',
+            why: 'Produtividade sustentavel depende de recuperacao. Carga alostatica acumulada aumenta risco de fadiga, abandono e burnout. O sistema deve proteger consistencia de longo prazo, nao maximizar volume a qualquer custo.',
+            refs: ['Allostatic load', 'Ultradian rhythms', 'Cal Newport — Deep Work'],
+            how: [
+                'Se o alerta aparecer, reduza micros, simplifique habitos ou escolha uma semana de manutencao.',
+                'Nao trate alerta como falha: ele e um instrumento de regulacao.',
+                'Combine com a Revisao Semanal para ajustar energia prevista e prioridades.',
+                'Depois de dispensar o alerta, ele fica silencioso pelo dia.'
+            ],
+            cta: { label: 'Abrir Painel', view: 'painel' }
         }
     ],
 
@@ -8465,6 +8675,8 @@ const app = {
             app.renderPersonalEvolutionPanel();
             app.renderHabitMaturityPanel();
             app.renderWellbeingTrendsPanel();
+            app.renderLoadRecoveryPanel();
+            app.renderPatternsPanel();
         },
         renderFocusDistribution: function(containerId) {
             const container = document.getElementById(containerId);
