@@ -1102,14 +1102,28 @@
                         <div id="wp-inline-new-micro" class="hidden mt-2 rounded-xl bg-surface-container p-3 flex flex-col gap-3">
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Macro pai *</label>
-                                <select id="wp-new-macro-id" class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20">
+                                <select id="wp-new-macro-id" onchange="window.app.updateInlineNewMicroDimension()"
+                                    class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20">
                                     <option value="">Selecione um macro...</option>
                                 </select>
+                                <p id="wp-new-micro-dimension" class="text-[10px] text-outline">Dimensão herdada do macro selecionado.</p>
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Título *</label>
                                 <input type="text" id="wp-new-micro-title" placeholder="Descreva a ação..."
                                     class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20" />
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Início</label>
+                                    <input type="date" id="wp-new-micro-start"
+                                        class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Prazo *</label>
+                                    <input type="date" id="wp-new-micro-deadline"
+                                        class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20" />
+                                </div>
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Esforço</label>

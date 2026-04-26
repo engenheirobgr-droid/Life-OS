@@ -100,16 +100,34 @@
 </select>
 </div>
 <!-- Splash Bússola -->
-<div onclick="window.app.toggleSplashSetting()" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors border-t border-outline-variant/10 cursor-pointer group">
+<div class="p-4 hover:bg-surface-container-high transition-colors border-t border-outline-variant/10 group">
+<div class="flex items-center justify-between gap-4">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined notranslate text-primary">explore</span>
 <div>
 <p class="text-sm font-medium text-on-surface">Bússola Inicial</p>
-<p class="text-[11px] text-outline">Mostra a frase do dia ao abrir o app (1× por dia)</p>
+<p class="text-[11px] text-outline">Mostra a frase do dia ao abrir o app</p>
 </div>
 </div>
+<button type="button" onclick="window.app.toggleSplashSetting()" class="shrink-0" aria-label="Alternar Bussola Inicial">
 <div id="splash-toggle-track" class="w-10 h-5 rounded-full relative flex items-center px-1 transition-colors bg-primary/30">
 <div id="splash-toggle-knob" class="w-3 h-3 rounded-full absolute transition-all right-1 bg-primary"></div>
+</div>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-3 mt-3">
+<div>
+<label for="splash-mode-select" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Frequencia</label>
+<select id="splash-mode-select" onchange="window.app.setSplashModeSetting(this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none">
+<option value="daily">1x por dia</option>
+<option value="twice_daily">2x por dia</option>
+<option value="always">Toda abertura</option>
+</select>
+</div>
+<div>
+<label for="splash-duration-input" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Tempo (s)</label>
+<input id="splash-duration-input" type="number" min="1" max="20" step="1" onchange="window.app.setSplashDurationSetting(this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
+</div>
 </div>
 </div>
 <!-- Sons de gamificação -->
@@ -198,5 +216,3 @@
         </div>
     </div>
 </div>
-
-

@@ -862,6 +862,15 @@ const app = {
         if (typeof window.sistemaVidaState.settings.splashEnabled !== 'boolean') {
             window.sistemaVidaState.settings.splashEnabled = true;
         }
+        if (!['daily', 'twice_daily', 'always'].includes(window.sistemaVidaState.settings.splashMode)) {
+            window.sistemaVidaState.settings.splashMode = 'daily';
+        }
+        const splashDuration = Number(window.sistemaVidaState.settings.splashDurationSec);
+        if (!Number.isFinite(splashDuration) || splashDuration < 1 || splashDuration > 20) {
+            window.sistemaVidaState.settings.splashDurationSec = 3;
+        } else {
+            window.sistemaVidaState.settings.splashDurationSec = Math.round(splashDuration);
+        }
         if (typeof window.sistemaVidaState.settings.soundEnabled !== 'boolean') {
             window.sistemaVidaState.settings.soundEnabled = false;
         }
@@ -1078,17 +1087,73 @@ const app = {
         const on = !window.sistemaVidaState.settings.splashEnabled;
         window.sistemaVidaState.settings.splashEnabled = on;
         this.saveState(true);
-        const track = document.getElementById('splash-toggle-track');
-        const knob = document.getElementById('splash-toggle-knob');
-        if (track) track.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${on ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
-        if (knob) knob.className = `w-3 h-3 rounded-full absolute transition-all ${on ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
+        this.updateSplashSettingsControls();
         this.showToast(on ? 'Bússola inicial ativada.' : 'Bússola inicial desativada.', 'success');
     },
+    setSplashModeSetting: function(mode) {
+        this.ensureSettingsState();
+        window.sistemaVidaState.settings.splashMode = ['daily', 'twice_daily', 'always'].includes(mode) ? mode : 'daily';
+        this.saveState(true);
+        this.updateSplashSettingsControls();
+        this.showToast('Frequência da bússola atualizada.', 'success');
+    },
+    setSplashDurationSetting: function(raw) {
+        this.ensureSettingsState();
+        const duration = Math.max(1, Math.min(20, Math.round(Number(raw) || 3)));
+        window.sistemaVidaState.settings.splashDurationSec = duration;
+        this.saveState(true);
+        this.updateSplashSettingsControls();
+        this.showToast('Tempo da bússola atualizado.', 'success');
+    },
+    updateSplashSettingsControls: function() {
+        this.ensureSettingsState();
+        const settings = window.sistemaVidaState.settings;
+        const on = settings.splashEnabled !== false;
+        const track = document.getElementById('splash-toggle-track');
+        const knob = document.getElementById('splash-toggle-knob');
+        const modeSelect = document.getElementById('splash-mode-select');
+        const durationInput = document.getElementById('splash-duration-input');
+        if (track) track.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${on ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
+        if (knob) knob.className = `w-3 h-3 rounded-full absolute transition-all ${on ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
+        if (modeSelect) {
+            modeSelect.value = settings.splashMode || 'daily';
+            modeSelect.disabled = !on;
+            modeSelect.classList.toggle('opacity-50', !on);
+        }
+        if (durationInput) {
+            durationInput.value = settings.splashDurationSec || 3;
+            durationInput.disabled = !on;
+            durationInput.classList.toggle('opacity-50', !on);
+        }
+    },
+    shouldShowSplashOnOpen: function() {
+        this.ensureSettingsState();
+        const settings = window.sistemaVidaState.settings;
+        if (settings.splashEnabled === false) return false;
+        if (settings.splashMode === 'always') return true;
+
+        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
+        let log = {};
+        try { log = JSON.parse(localStorage.getItem('lifeos_splash_log') || '{}') || {}; } catch (_) { log = {}; }
+        const todayCount = Number(log.date === todayKey ? log.count : 0) || 0;
+        const maxCount = settings.splashMode === 'twice_daily' ? 2 : 1;
+        return todayCount < maxCount;
+    },
+    registerSplashShown: function() {
+        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
+        try {
+            const raw = JSON.parse(localStorage.getItem('lifeos_splash_log') || '{}') || {};
+            const count = raw.date === todayKey ? Number(raw.count || 0) + 1 : 1;
+            localStorage.setItem('lifeos_splash_log', JSON.stringify({ date: todayKey, count }));
+            localStorage.setItem('lifeos_last_splash', todayKey);
+        } catch (_) {}
+    },
     showDailySplash: function() {
+        this.ensureSettingsState();
         const compass = this.getDailyCompass();
         const quote = compass.quote;
-        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
-        try { localStorage.setItem('lifeos_last_splash', todayKey); } catch (_) {}
+        this.registerSplashShown();
+        const duration = Math.max(1, Math.min(20, Number(window.sistemaVidaState.settings.splashDurationSec || 3)));
 
         const el = document.createElement('div');
         el.id = 'daily-splash-screen';
@@ -1104,12 +1169,12 @@ const app = {
                 <button onclick="event.stopPropagation();window.app.dismissSplash()" style="margin-top:2.5rem;padding:0.75rem 2.5rem;background:var(--md-sys-color-primary);color:var(--md-sys-color-on-primary);border:none;border-radius:9999px;font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;cursor:pointer;">
                     Começar o dia
                 </button>
-                <p id="splash-countdown" style="font-size:0.65rem;color:var(--md-sys-color-outline);margin-top:0.6rem;">Continua em 3s</p>
+                <p id="splash-countdown" style="font-size:0.65rem;color:var(--md-sys-color-outline);margin-top:0.6rem;">Continua em ${duration}s</p>
             </div>`;
         el.addEventListener('click', () => this.dismissSplash());
         document.body.appendChild(el);
 
-        let secs = 3;
+        let secs = duration;
         const countdownEl = el.querySelector('#splash-countdown');
         this._splashTimer = setInterval(() => {
             secs--;
@@ -2019,6 +2084,13 @@ const app = {
                 <div class="h-full bg-primary rounded-full transition-all duration-700" style="width: ${completionPct}%"></div>
             </div>` : ''}
 
+            ${isCurrent ? `
+            <button onclick="window.app.openWeeklyPlanModal()"
+                class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-dashed border-outline-variant/40 text-outline text-xs font-bold uppercase tracking-wider hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all">
+                <span class="material-symbols-outlined notranslate text-[16px]">add_task</span>
+                Adicionar micro ao plano
+            </button>` : ''}
+
             ${(() => {
                 if (!isCurrent) return '';
                 const todayDow = new Date().getDay();
@@ -2083,10 +2155,7 @@ const app = {
         if (!window.sistemaVidaState.onboardingComplete) {
             this.switchView('onboarding');
         } else {
-            const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
-            const lastSplash = (() => { try { return localStorage.getItem('lifeos_last_splash'); } catch (_) { return null; } })();
-            const splashEnabled = window.sistemaVidaState.settings?.splashEnabled !== false;
-            if (splashEnabled && lastSplash !== todayKey) {
+            if (this.shouldShowSplashOnOpen()) {
                 this.showDailySplash();
             } else {
                 this.switchView('hoje');
@@ -4645,10 +4714,15 @@ const app = {
                 microsContainer.innerHTML = activeMicros.map(m => {
                     const checked = ((existing.selectedMicros || []).includes(m.id) || suggestedMicros.includes(m.id)) ? 'checked' : '';
                     const macroTitle = state.entities.macros?.find(ma => ma.id === m.macroId)?.title || '';
-                    const sub = macroTitle ? `<span class="text-[10px] text-outline block">${macroTitle}</span>` : '';
+                    const details = [
+                        m.dimension || '',
+                        macroTitle,
+                        m.prazo ? `prazo ${this._formatTrailDate ? this._formatTrailDate(m.prazo) : m.prazo}` : ''
+                    ].filter(Boolean).join(' · ');
+                    const sub = details ? `<span class="text-[10px] text-outline block">${this.escapeHtml(details)}</span>` : '';
                     return `<label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-primary/5 transition-colors">
                         <input type="checkbox" class="wp-micro-check mt-0.5 accent-primary" value="${m.id}" ${checked}>
-                        <span class="text-sm text-on-surface leading-snug">${m.title}${sub}</span>
+                        <span class="text-sm text-on-surface leading-snug">${this.escapeHtml(m.title)}${sub}</span>
                     </label>`;
                 }).join('');
             }
@@ -4684,11 +4758,24 @@ const app = {
                 const activeMacros = (window.sistemaVidaState.entities?.macros || [])
                     .filter(m => m.status !== 'done' && m.status !== 'abandoned');
                 select.innerHTML = '<option value="">Selecione um macro...</option>' +
-                    activeMacros.map(m => `<option value="${m.id}">${this.escapeHtml(m.title)}</option>`).join('');
+                    activeMacros.map(m => {
+                        const dim = this.escapeHtml(m.dimension || 'Sem dimensão');
+                        const title = this.escapeHtml(m.title);
+                        return `<option value="${m.id}">${dim} · ${title}</option>`;
+                    }).join('');
                 if (activeMacros.length === 0) {
                     select.innerHTML = '<option value="">Nenhum macro ativo — crie um primeiro</option>';
                 }
             }
+            const todayKey = this.getLocalDateKey();
+            const weekEnd = new Date(this._getWeekKey() + 'T00:00:00');
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            const weekEndKey = this.getLocalDateKey(weekEnd);
+            const startEl = document.getElementById('wp-new-micro-start');
+            const deadlineEl = document.getElementById('wp-new-micro-deadline');
+            if (startEl && !startEl.value) startEl.value = todayKey;
+            if (deadlineEl && !deadlineEl.value) deadlineEl.value = weekEndKey;
+            this.updateInlineNewMicroDimension();
             form.classList.remove('hidden');
             setTimeout(() => document.getElementById('wp-new-micro-title')?.focus(), 50);
         } else {
@@ -4696,35 +4783,62 @@ const app = {
         }
     },
 
+    updateInlineNewMicroDimension: function() {
+        const macroId = document.getElementById('wp-new-macro-id')?.value || '';
+        const label = document.getElementById('wp-new-micro-dimension');
+        if (!label) return;
+        const macro = (window.sistemaVidaState.entities?.macros || []).find(m => m.id === macroId);
+        if (!macro) {
+            label.textContent = 'Dimensão herdada do macro selecionado.';
+            return;
+        }
+        label.textContent = `Dimensão: ${macro.dimension || 'Sem dimensão'}`;
+    },
+
     cancelInlineNewMicro: function() {
         const form = document.getElementById('wp-inline-new-micro');
         if (form) form.classList.add('hidden');
         const titleEl = document.getElementById('wp-new-micro-title');
         if (titleEl) titleEl.value = '';
+        const startEl = document.getElementById('wp-new-micro-start');
+        const deadlineEl = document.getElementById('wp-new-micro-deadline');
+        if (startEl) startEl.value = '';
+        if (deadlineEl) deadlineEl.value = '';
+        this.updateInlineNewMicroDimension();
     },
 
     saveInlineNewMicro: function() {
         const macroId = document.getElementById('wp-new-macro-id')?.value || '';
         const title = (document.getElementById('wp-new-micro-title')?.value || '').trim();
         const effort = document.getElementById('wp-new-micro-effort')?.value || 'medio';
+        const inicioDate = document.getElementById('wp-new-micro-start')?.value || this.getLocalDateKey();
+        const prazo = document.getElementById('wp-new-micro-deadline')?.value || '';
 
         if (!macroId) { this.showToast('Selecione um macro pai.', 'error'); return; }
         if (!title) { this.showToast('Informe o título da micro ação.', 'error'); return; }
+        if (!prazo) { this.showToast('Informe o prazo da micro ação.', 'error'); return; }
 
         const state = window.sistemaVidaState;
         const macro = (state.entities?.macros || []).find(m => m.id === macroId);
         if (!macro) { this.showToast('Macro não encontrado.', 'error'); return; }
+        const windowValidation = this.validateEntityTimeWindow('micros', { inicioDate, prazo });
+        if (!windowValidation.ok) { this.showToast(windowValidation.message, 'error'); return; }
 
         const newMicro = {
             id: `micro-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             title,
             macroId,
+            okrId: macro.okrId || '',
+            metaId: macro.metaId || '',
             dimension: macro.dimension || '',
+            inicioDate,
+            prazo,
             status: 'pending',
             completed: false,
             progress: 0,
             effort,
-            createdAt: new Date().toISOString()
+            indicator: 'Criada no planejamento semanal',
+            createdAt: this.getLocalDateKey()
         };
 
         if (!state.entities) state.entities = {};
@@ -4737,12 +4851,20 @@ const app = {
         const plan = state.weekPlans[weekKey] || {};
         const selected = Array.isArray(plan.selectedMicros) ? [...plan.selectedMicros] : [];
         if (!selected.includes(newMicro.id)) selected.push(newMicro.id);
-        state.weekPlans[weekKey] = { ...plan, selectedMicros: selected };
+        state.weekPlans[weekKey] = {
+            ...plan,
+            weekKey,
+            intention: document.getElementById('wp-intention')?.value.trim() || plan.intention || '',
+            energyForecast: Number(document.getElementById('wp-energy')?.value || plan.energyForecast || 3),
+            selectedMicros: selected,
+            savedAt: Date.now()
+        };
 
         // Refresh list in modal
         this._refreshWpMicrosList();
         this.cancelInlineNewMicro();
         this.saveState(true);
+        if (this.renderWeeklyPlans) this.renderWeeklyPlans();
         this.showToast(`"${title}" criada e adicionada ao plano.`, 'success');
     },
 
@@ -4762,7 +4884,12 @@ const app = {
         container.innerHTML = activeMicros.map(m => {
             const checked = selectedIds.includes(m.id) ? 'checked' : '';
             const macroTitle = (state.entities.macros || []).find(ma => ma.id === m.macroId)?.title || '';
-            const sub = macroTitle ? `<span class="text-[10px] text-outline block">${this.escapeHtml(macroTitle)}</span>` : '';
+            const details = [
+                m.dimension || '',
+                macroTitle,
+                m.prazo ? `prazo ${this._formatTrailDate ? this._formatTrailDate(m.prazo) : m.prazo}` : ''
+            ].filter(Boolean).join(' · ');
+            const sub = details ? `<span class="text-[10px] text-outline block">${this.escapeHtml(details)}</span>` : '';
             return `<label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-primary/5 transition-colors">
                 <input type="checkbox" class="wp-micro-check mt-0.5 accent-primary" value="${m.id}" ${checked}>
                 <span class="text-sm text-on-surface leading-snug">${this.escapeHtml(m.title)}${sub}</span>
@@ -7707,13 +7834,7 @@ const app = {
 
             const themeSelect = document.getElementById('theme-select');
             if (themeSelect) themeSelect.value = state.settings.theme || 'auto';
-            const splashTrack = document.getElementById('splash-toggle-track');
-            const splashKnob = document.getElementById('splash-toggle-knob');
-            if (splashTrack && splashKnob) {
-                const splashOn = state.settings.splashEnabled !== false;
-                splashTrack.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${splashOn ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
-                splashKnob.className = `w-3 h-3 rounded-full absolute transition-all ${splashOn ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
-            }
+            app.updateSplashSettingsControls();
             const soundTrack = document.getElementById('sound-toggle-track');
             const soundKnob = document.getElementById('sound-toggle-knob');
             if (soundTrack && soundKnob) {
