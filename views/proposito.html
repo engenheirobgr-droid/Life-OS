@@ -17,20 +17,55 @@
 </section>
 
 <section>
+    <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">Quem eu sou</p>
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
         <div class="flex items-start justify-between mb-6">
             <div>
-                <h3 class="text-xl font-headline font-bold text-on-background">Meus Valores Base</h3>
-                <p class="text-sm text-outline mt-1">Os princípios inegociáveis que guiam as suas decisões.</p>
+                <h3 class="text-xl font-headline font-bold text-on-background">Identidade Base</h3>
+                <p class="text-sm text-outline mt-1">Valores, forças e sombras para orientar decisões e evolução pessoal.</p>
             </div>
             <button onclick="document.getElementById('values-selection-tool').classList.remove('hidden'); document.getElementById('values-selection-tool').scrollIntoView({behavior: 'smooth'})" class="material-symbols-outlined notranslate text-outline text-2xl hover:text-primary transition-colors cursor-pointer" title="Editar Valores">edit</button>
         </div>
-        <div id="top-values-banner" class="flex flex-wrap gap-2 min-h-[32px]"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Valores</p>
+                        <p class="text-xs text-outline mt-1">Princípios inegociáveis.</p>
+                    </div>
+                    <span class="material-symbols-outlined notranslate text-outline">workspace_premium</span>
+                </div>
+                <div id="top-values-banner" class="flex flex-wrap gap-2 min-h-[32px]"></div>
+            </div>
+            <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Forças</p>
+                        <p class="text-xs text-outline mt-1">O que quero expressar mais.</p>
+                    </div>
+                    <button onclick="window.app.addCustomIdentityItem('strengths')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar força">add_circle</button>
+                </div>
+                <div id="identity-strengths-list" class="flex flex-wrap gap-2 min-h-[32px] mb-4"></div>
+                <div id="identity-strengths-options" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Sombras</p>
+                        <p class="text-xs text-outline mt-1">Padrões que quero transformar.</p>
+                    </div>
+                    <button onclick="window.app.addCustomIdentityItem('shadows')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar sombra">add_circle</button>
+                </div>
+                <div id="identity-shadows-list" class="flex flex-wrap gap-2 min-h-[32px] mb-4"></div>
+                <div id="identity-shadows-options" class="flex flex-wrap gap-2"></div>
+            </div>
+        </div>
     </div>
 </section>
 
 <!-- Roda da Vida Section -->
 <section class="mt-8">
+    <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">Como estou</p>
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
         <div class="flex items-start justify-between mb-6">
             <div>
@@ -200,6 +235,7 @@
 
 <!-- Meu Ikigai Section -->
 <section class="mt-8">
+    <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">Quem eu quero ser</p>
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col relative">
         <div class="space-y-6 w-full">
             <div class="flex items-start justify-between mb-8">

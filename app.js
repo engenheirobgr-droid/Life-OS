@@ -53,7 +53,8 @@ window.sistemaVidaState = {
         legacyObj: { familia: "", profissao: "", mundo: "", familiaResumo: "", profissaoResumo: "", mundoResumo: "" },
         vision: { saude: "", carreira: "", intelecto: "", quote: "", saudeResumo: "", carreiraResumo: "", intelectoResumo: "" },
         odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" },
-        odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" }
+        odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" },
+        identity: { strengths: [], shadows: [] }
     },
     energy: 5,
     dimensions: {
@@ -880,6 +881,7 @@ const app = {
         if (!Array.isArray(window.sistemaVidaState.profile.values)) {
             window.sistemaVidaState.profile.values = [];
         }
+        this.ensureIdentityState();
         if (typeof window.sistemaVidaState.profile.legacy !== 'string') {
             window.sistemaVidaState.profile.legacy = '';
         }
@@ -1891,11 +1893,143 @@ const app = {
 
         // Também atualiza o banner no Propósito se estiver visível
         const valuesBanner = document.getElementById('top-values-banner');
-        if (valuesBanner && values.length > 0) {
-            valuesBanner.innerHTML = values.map(v => 
-                `<span class="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in">${v}</span>`
-            ).join('');
+        if (valuesBanner) {
+            if (values.length > 0) {
+                valuesBanner.innerHTML = values.map(v =>
+                    `<span class="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in">${v}</span>`
+                ).join('');
+            } else {
+                valuesBanner.innerHTML = '<p class="text-xs text-outline italic">Escolha os valores que guiam suas decisões.</p>';
+            }
         }
+    },
+
+    ensureIdentityState: function() {
+        const profile = window.sistemaVidaState.profile || {};
+        if (!profile.identity || typeof profile.identity !== 'object') {
+            profile.identity = { strengths: [], shadows: [] };
+        }
+        const normalizeList = (list, type) => {
+            if (!Array.isArray(list)) return [];
+            return list.map((item) => {
+                const title = String(item?.title || item?.name || item || '').trim();
+                if (!title) return null;
+                return {
+                    id: String(item?.id || `${type}-${title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-')}`),
+                    title,
+                    description: String(item?.description || ''),
+                    evidence: String(item?.evidence || ''),
+                    excessRisk: String(item?.excessRisk || ''),
+                    trigger: String(item?.trigger || ''),
+                    impact: String(item?.impact || ''),
+                    desiredResponse: String(item?.desiredResponse || ''),
+                    linkedHabitIds: Array.isArray(item?.linkedHabitIds) ? item.linkedHabitIds.map(String) : [],
+                    createdAt: String(item?.createdAt || this.getLocalDateKey()),
+                    updatedAt: String(item?.updatedAt || '')
+                };
+            }).filter(Boolean);
+        };
+        profile.identity.strengths = normalizeList(profile.identity.strengths, 'strength');
+        profile.identity.shadows = normalizeList(profile.identity.shadows, 'shadow');
+        window.sistemaVidaState.profile = profile;
+    },
+
+    getIdentityCatalog: function(type) {
+        const strengths = [
+            'Clareza', 'Disciplina', 'Coragem', 'Criatividade', 'Empatia',
+            'Pensamento analítico', 'Resiliência', 'Comunicação', 'Autonomia', 'Curiosidade',
+            'Organização', 'Liderança', 'Foco', 'Aprendizado rápido', 'Responsabilidade'
+        ];
+        const shadows = [
+            'Impaciência', 'Procrastinação', 'Perfeccionismo', 'Autocrítica excessiva', 'Dispersão',
+            'Dificuldade de pedir ajuda', 'Reatividade', 'Evitação de conflito', 'Ansiedade de controle', 'Rigidez',
+            'Inconstância', 'Sobrecarga', 'Comparação', 'Dificuldade de dizer não', 'Paralisia por análise'
+        ];
+        return type === 'strengths' ? strengths : shadows;
+    },
+
+    addIdentityItem: function(type, title) {
+        this.ensureIdentityState();
+        const list = window.sistemaVidaState.profile.identity[type];
+        if (!Array.isArray(list)) return;
+        const cleanTitle = String(title || '').trim();
+        if (!cleanTitle) return;
+        if (list.some(item => item.title.toLowerCase() === cleanTitle.toLowerCase())) {
+            this.showToast('Esse item já está na sua identidade.', 'success');
+            return;
+        }
+        const prefix = type === 'strengths' ? 'strength' : 'shadow';
+        list.push({
+            id: `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            title: cleanTitle,
+            description: '',
+            evidence: '',
+            excessRisk: '',
+            trigger: '',
+            impact: '',
+            desiredResponse: '',
+            linkedHabitIds: [],
+            createdAt: this.getLocalDateKey(),
+            updatedAt: this.getLocalDateKey()
+        });
+        this.saveState(true);
+        this.renderIdentityBase();
+        this.showToast(type === 'strengths' ? 'Força adicionada.' : 'Sombra adicionada.', 'success');
+    },
+
+    addCustomIdentityItem: function(type) {
+        const label = type === 'strengths' ? 'força' : 'sombra';
+        const title = window.prompt(`Nome da ${label}:`);
+        if (!title || !title.trim()) return;
+        this.addIdentityItem(type, title.trim());
+    },
+
+    removeIdentityItem: function(type, id) {
+        this.ensureIdentityState();
+        const list = window.sistemaVidaState.profile.identity[type];
+        if (!Array.isArray(list)) return;
+        window.sistemaVidaState.profile.identity[type] = list.filter(item => item.id !== id);
+        this.saveState(true);
+        this.renderIdentityBase();
+        this.showToast(type === 'strengths' ? 'Força removida.' : 'Sombra removida.', 'success');
+    },
+
+    renderIdentityBase: function() {
+        this.ensureIdentityState();
+        this.renderSidebarValues();
+        const identity = window.sistemaVidaState.profile.identity;
+        const jsArg = (value) => this.escapeHtml(JSON.stringify(String(value)));
+        const renderSelected = (type, emptyText) => {
+            const container = document.getElementById(type === 'strengths' ? 'identity-strengths-list' : 'identity-shadows-list');
+            if (!container) return;
+            const items = identity[type] || [];
+            if (!items.length) {
+                container.innerHTML = `<p class="text-xs text-outline italic">${emptyText}</p>`;
+                return;
+            }
+            container.innerHTML = items.map(item => `
+                <span class="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+                    ${this.escapeHtml(item.title)}
+                    <button type="button" onclick="event.stopPropagation(); window.app.removeIdentityItem(${jsArg(type)}, ${jsArg(item.id)})" class="material-symbols-outlined notranslate text-[13px] leading-none hover:text-error" title="Remover">close</button>
+                </span>
+            `).join('');
+        };
+        const renderOptions = (type) => {
+            const container = document.getElementById(type === 'strengths' ? 'identity-strengths-options' : 'identity-shadows-options');
+            if (!container) return;
+            const chosen = new Set((identity[type] || []).map(item => item.title.toLowerCase()));
+            container.innerHTML = this.getIdentityCatalog(type).map(title => {
+                const active = chosen.has(title.toLowerCase());
+                return `<button type="button" onclick="window.app.addIdentityItem(${jsArg(type)}, ${jsArg(title)})"
+                    class="px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-wider transition-colors ${active ? 'border-primary/30 bg-primary/10 text-primary opacity-60' : 'border-outline-variant/30 text-outline hover:border-primary/40 hover:text-primary hover:bg-primary/5'}">
+                    ${this.escapeHtml(title)}
+                </button>`;
+            }).join('');
+        };
+        renderSelected('strengths', 'Escolha forças que aparecem quando você está no seu melhor.');
+        renderSelected('shadows', 'Escolha padrões que você quer observar e transformar.');
+        renderOptions('strengths');
+        renderOptions('shadows');
     },
 
     renderProfileChrome: function() {
@@ -5261,7 +5395,8 @@ const app = {
           legacyObj: { familia: '', profissao: '', mundo: '', familiaResumo: '', profissaoResumo: '', mundoResumo: '' },
           vision: { saude: '', carreira: '', intelecto: '', quote: '', saudeResumo: '', carreiraResumo: '', intelectoResumo: '' },
           odyssey: { cenarioA: '', cenarioB: '', cenarioC: '' },
-          odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' }
+          odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' },
+          identity: { strengths: [], shadows: [] }
         },
         energy: 5,
         dimensions: {
@@ -5309,6 +5444,17 @@ const app = {
             carreira: 'Liderar meu próprio produto com autonomia e impacto real.',
             intelecto: 'Aprender continuamente. Ler 1 livro por mês e criar com frequência.',
             quote: 'A disciplina é a ponte entre metas e realizações. — Jim Rohn'
+          },
+          identity: {
+            strengths: [
+              { id: 'strength-clareza', title: 'Clareza' },
+              { id: 'strength-pensamento-analitico', title: 'Pensamento analítico' },
+              { id: 'strength-responsabilidade', title: 'Responsabilidade' }
+            ],
+            shadows: [
+              { id: 'shadow-sobrecarga', title: 'Sobrecarga' },
+              { id: 'shadow-perfeccionismo', title: 'Perfeccionismo' }
+            ]
           }
         },
         dimensions: {
@@ -8140,15 +8286,11 @@ const app = {
                     // Controle de visibilidade da ferramenta de valores
                     const valuesTool = document.getElementById('values-selection-tool');
                     if (valuesTool) {
-                        if (profile.values && profile.values.length > 0) {
-                            valuesTool.classList.add('hidden');
-                        } else {
-                            valuesTool.classList.remove('hidden');
-                        }
+                        valuesTool.classList.add('hidden');
                     }
 
-                    // Valores Essenciais (Sincronizado)
-                    window.app.renderSidebarValues();
+                    // Identidade Base (valores, forças e sombras)
+                    window.app.renderIdentityBase();
 
                     // 3. Preenchimento de Textos do Perfil (Padrao de Exibicao)
                         // Helper para Placeholders (Standard Sênior)
