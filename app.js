@@ -1959,13 +1959,9 @@ const app = {
         const weekPlans = state.weekPlans || {};
         const weekKey = this._getWeekKey();
 
-        // Rótulo da semana atual
-        const weekStart = new Date(weekKey + 'T00:00:00');
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
         const fmt = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
         const labelEl = document.getElementById('semanal-week-label');
-        if (labelEl) labelEl.textContent = `Semana de ${fmt(weekStart)} a ${fmt(weekEnd)}`;
+        if (labelEl) labelEl.textContent = this._formatWeekRange(weekKey).toUpperCase();
 
         // Card da semana atual
         const currentCard = document.getElementById('semanal-current-card');
@@ -1975,11 +1971,17 @@ const app = {
         if (primaryLabel) primaryLabel.textContent = currentPlan ? 'Editar Plano' : 'Criar Plano da Semana';
         if (primaryIcon) primaryIcon.textContent = currentPlan ? 'edit_calendar' : 'event_available';
         if (currentCard) {
-            if (currentPlan) {
-                currentCard.innerHTML = this._renderWeekPlanCard(currentPlan, state, true);
-            } else {
-                currentCard.innerHTML = '<p class="text-sm text-outline italic">Nenhum plano para esta semana ainda. Clique em "Criar Plano da Semana" para começar.</p>';
-            }
+            currentCard.className = 'mb-10';
+            currentCard.innerHTML = this._renderWeeklyPlanShell({
+                weekKey,
+                plan: currentPlan,
+                label: 'Semana Atual',
+                actionLabel: currentPlan ? 'Editar Plano' : 'Criar Plano',
+                actionIcon: currentPlan ? 'edit_calendar' : 'event_available',
+                actionOptions: '',
+                isCurrent: true,
+                emptyText: 'Nenhum plano para esta semana ainda. Clique em "Criar Plano" para começar.'
+            });
         }
 
         const nextCard = document.getElementById('semanal-next-card');
@@ -1988,48 +1990,38 @@ const app = {
             const nextPlan = weekPlans[nextWeekKey];
             const suggestions = this.getNextWeekCarryoverSuggestions(weekKey);
             if (nextPlan) {
-                nextCard.innerHTML = `
-                <div class="bg-surface-container-lowest rounded-2xl border border-primary/15 shadow-sm p-6">
-                    <div class="flex items-start justify-between gap-4 mb-4">
-                        <div>
-                            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Próxima Semana</p>
-                            <h4 class="font-headline text-xl font-bold italic mt-1">${this._formatWeekRange(nextWeekKey)}</h4>
-                        </div>
-                        <button onclick="window.app.openWeeklyPlanModal({ weekKey: '${nextWeekKey}', nextWeek: true })"
-                            class="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
-                            <span class="material-symbols-outlined notranslate text-[16px]">edit_calendar</span>
-                            Editar
-                        </button>
-                    </div>
-                    ${this._renderWeekPlanCard(nextPlan, state, false)}
-                </div>`;
+                nextCard.innerHTML = this._renderWeeklyPlanShell({
+                    weekKey: nextWeekKey,
+                    plan: nextPlan,
+                    label: 'Próxima Semana',
+                    actionLabel: 'Editar Plano',
+                    actionIcon: 'edit_calendar',
+                    actionOptions: `weekKey: '${nextWeekKey}', nextWeek: true`,
+                    isCurrent: false,
+                    emptyText: ''
+                });
             } else if (suggestions.length > 0) {
-                nextCard.innerHTML = `
-                <div class="bg-primary/5 rounded-2xl border border-primary/20 shadow-sm p-5 flex flex-col md:flex-row md:items-center gap-4">
-                    <span class="material-symbols-outlined notranslate text-primary text-2xl shrink-0">tips_and_updates</span>
-                    <div class="flex-1">
-                        <p class="text-sm font-bold text-on-surface">Há ${suggestions.length} micro${suggestions.length > 1 ? 's' : ''} pendente${suggestions.length > 1 ? 's' : ''} para considerar na próxima semana.</p>
-                        <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">Priorizei o que ficou planejado e não concluído, está atrasado ou já estava em andamento.</p>
-                    </div>
-                    <button onclick="window.app.openWeeklyPlanModal({ weekKey: '${nextWeekKey}', nextWeek: true, suggestCarryover: true })"
-                        class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
-                        <span class="material-symbols-outlined notranslate text-[16px]">auto_awesome</span>
-                        Planejar próxima
-                    </button>
-                </div>`;
+                nextCard.innerHTML = this._renderWeeklyPlanShell({
+                    weekKey: nextWeekKey,
+                    plan: null,
+                    label: 'Próxima Semana',
+                    actionLabel: 'Planejar Próxima',
+                    actionIcon: 'auto_awesome',
+                    actionOptions: `weekKey: '${nextWeekKey}', nextWeek: true, suggestCarryover: true`,
+                    isCurrent: false,
+                    emptyText: `<span class="font-bold text-primary">Há ${suggestions.length} micro${suggestions.length > 1 ? 's' : ''} pendente${suggestions.length > 1 ? 's' : ''} para considerar.</span> Priorizei o que ficou planejado e não concluído, está atrasado ou já estava em andamento.`
+                });
             } else {
-                nextCard.innerHTML = `
-                <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 flex flex-col md:flex-row md:items-center gap-4">
-                    <div class="flex-1">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Próxima Semana</p>
-                        <p class="text-sm text-on-surface mt-1">Quando fechar esta semana, prepare o próximo plano aqui.</p>
-                    </div>
-                    <button onclick="window.app.openWeeklyPlanModal({ weekKey: '${nextWeekKey}', nextWeek: true })"
-                        class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-outline-variant/30 text-outline text-xs font-bold uppercase tracking-wider hover:bg-surface-container-high transition-colors">
-                        <span class="material-symbols-outlined notranslate text-[16px]">event_upcoming</span>
-                        Planejar próxima
-                    </button>
-                </div>`;
+                nextCard.innerHTML = this._renderWeeklyPlanShell({
+                    weekKey: nextWeekKey,
+                    plan: null,
+                    label: 'Próxima Semana',
+                    actionLabel: 'Planejar Próxima',
+                    actionIcon: 'event_upcoming',
+                    actionOptions: `weekKey: '${nextWeekKey}', nextWeek: true`,
+                    isCurrent: false,
+                    emptyText: 'Quando fechar esta semana, prepare o próximo plano aqui.'
+                });
             }
         }
 
@@ -2092,6 +2084,28 @@ const app = {
                 }).join('');
             }
         }
+    },
+
+    _renderWeeklyPlanShell: function({ weekKey, plan, label, actionLabel, actionIcon, actionOptions = '', isCurrent = false, emptyText = '' } = {}) {
+        const options = actionOptions ? `{ ${actionOptions} }` : '{}';
+        const body = plan
+            ? this._renderWeekPlanCard(plan, window.sistemaVidaState, isCurrent)
+            : `<div class="mt-4 rounded-xl bg-surface-container-low p-4 text-sm text-on-surface-variant leading-relaxed">${emptyText}</div>`;
+        return `
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-6 flex flex-col gap-4">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-primary">${this.escapeHtml(label || 'Semana')}</p>
+                    <h4 class="font-headline text-xl font-bold italic mt-1 text-on-background">${this.escapeHtml(this._formatWeekRange(weekKey || this._getWeekKey()))}</h4>
+                </div>
+                <button onclick="window.app.openWeeklyPlanModal(${options})"
+                    class="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
+                    <span class="material-symbols-outlined notranslate text-[16px]">${this.escapeHtml(actionIcon || 'edit_calendar')}</span>
+                    ${this.escapeHtml(actionLabel || 'Editar')}
+                </button>
+            </div>
+            ${body}
+        </div>`;
     },
 
     _renderWeekPlanCard: function(plan, state, isCurrent) {
