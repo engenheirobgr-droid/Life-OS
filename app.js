@@ -859,6 +859,9 @@ const app = {
         if (!window.sistemaVidaState.settings.theme) {
             window.sistemaVidaState.settings.theme = 'auto';
         }
+        if (typeof window.sistemaVidaState.settings.splashEnabled !== 'boolean') {
+            window.sistemaVidaState.settings.splashEnabled = true;
+        }
         if (typeof window.sistemaVidaState.profile.avatarUrl !== 'string') {
             window.sistemaVidaState.profile.avatarUrl = '';
         }
@@ -1024,6 +1027,61 @@ const app = {
         this.saveState(true);
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
         this.showToast(enabled ? 'Notificações diárias ativadas.' : 'Notificações diárias desativadas.', 'success');
+    },
+    toggleSplashSetting: function() {
+        this.ensureSettingsState();
+        const on = !window.sistemaVidaState.settings.splashEnabled;
+        window.sistemaVidaState.settings.splashEnabled = on;
+        this.saveState(true);
+        const track = document.getElementById('splash-toggle-track');
+        const knob = document.getElementById('splash-toggle-knob');
+        if (track) track.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${on ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
+        if (knob) knob.className = `w-3 h-3 rounded-full absolute transition-all ${on ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
+        this.showToast(on ? 'Bússola inicial ativada.' : 'Bússola inicial desativada.', 'success');
+    },
+    showDailySplash: function() {
+        const compass = this.getDailyCompass();
+        const quote = compass.quote;
+        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
+        try { localStorage.setItem('lifeos_last_splash', todayKey); } catch (_) {}
+
+        const el = document.createElement('div');
+        el.id = 'daily-splash-screen';
+        el.style.cssText = 'position:fixed;inset:0;z-index:10000;background:var(--md-sys-color-background);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;cursor:pointer;';
+        const quoteHtml = quote ? `<p style="font-size:1.25rem;font-style:italic;font-weight:700;color:var(--md-sys-color-on-background);margin-top:1.5rem;line-height:1.5;max-width:360px;">"${this.escapeHtml(quote.quote)}"</p>` : '';
+        const authorHtml = quote?.author ? `<p style="font-size:0.75rem;color:var(--md-sys-color-outline);margin-top:0.5rem;">— ${this.escapeHtml(quote.author)}</p>` : '';
+        const reflectionHtml = quote?.reflection ? `<p style="font-size:0.85rem;color:var(--md-sys-color-on-surface-variant);margin-top:1.25rem;line-height:1.65;max-width:320px;">${this.escapeHtml(quote.reflection)}</p>` : '';
+        el.innerHTML = `
+            <div style="max-width:400px;width:100%;text-align:center;animation:fadeIn 0.7s ease-out;">
+                <span class="material-symbols-outlined notranslate" style="font-size:2.25rem;color:var(--md-sys-color-primary);display:block;">explore</span>
+                <p style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.22em;color:var(--md-sys-color-outline);margin-top:1rem;">Bússola do Dia · ${this.escapeHtml(compass.theme)}</p>
+                ${quoteHtml}${authorHtml}${reflectionHtml}
+                <button onclick="event.stopPropagation();window.app.dismissSplash()" style="margin-top:2.5rem;padding:0.75rem 2.5rem;background:var(--md-sys-color-primary);color:var(--md-sys-color-on-primary);border:none;border-radius:9999px;font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;cursor:pointer;">
+                    Começar o dia
+                </button>
+                <p id="splash-countdown" style="font-size:0.65rem;color:var(--md-sys-color-outline);margin-top:0.6rem;">Continua em 3s</p>
+            </div>`;
+        el.addEventListener('click', () => this.dismissSplash());
+        document.body.appendChild(el);
+
+        let secs = 3;
+        const countdownEl = el.querySelector('#splash-countdown');
+        this._splashTimer = setInterval(() => {
+            secs--;
+            if (countdownEl) countdownEl.textContent = secs > 0 ? `Continua em ${secs}s` : '';
+            if (secs <= 0) { clearInterval(this._splashTimer); this._splashTimer = null; this.dismissSplash(); }
+        }, 1000);
+    },
+    dismissSplash: function() {
+        if (this._splashTimer) { clearInterval(this._splashTimer); this._splashTimer = null; }
+        const el = document.getElementById('daily-splash-screen');
+        if (el) {
+            el.style.transition = 'opacity 0.3s ease-out';
+            el.style.opacity = '0';
+            setTimeout(() => { el.remove(); this.switchView('hoje'); }, 320);
+        } else {
+            this.switchView('hoje');
+        }
     },
     openAvatarPicker: function() {
         const input = document.getElementById('profile-photo-input');
@@ -1980,7 +2038,14 @@ const app = {
         if (!window.sistemaVidaState.onboardingComplete) {
             this.switchView('onboarding');
         } else {
-            this.switchView('hoje');
+            const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
+            const lastSplash = (() => { try { return localStorage.getItem('lifeos_last_splash'); } catch (_) { return null; } })();
+            const splashEnabled = window.sistemaVidaState.settings?.splashEnabled !== false;
+            if (splashEnabled && lastSplash !== todayKey) {
+                this.showDailySplash();
+            } else {
+                this.switchView('hoje');
+            }
         }
 
         // Tarefa 2: Filtro Inteligente - Listener de Dimensão
@@ -7597,6 +7662,13 @@ const app = {
 
             const themeSelect = document.getElementById('theme-select');
             if (themeSelect) themeSelect.value = state.settings.theme || 'auto';
+            const splashTrack = document.getElementById('splash-toggle-track');
+            const splashKnob = document.getElementById('splash-toggle-knob');
+            if (splashTrack && splashKnob) {
+                const splashOn = state.settings.splashEnabled !== false;
+                splashTrack.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${splashOn ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
+                splashKnob.className = `w-3 h-3 rounded-full absolute transition-all ${splashOn ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
+            }
             app.renderGamificationProfile();
             app.updateProfileAppVersion();
         },
