@@ -862,6 +862,9 @@ const app = {
         if (typeof window.sistemaVidaState.settings.splashEnabled !== 'boolean') {
             window.sistemaVidaState.settings.splashEnabled = true;
         }
+        if (typeof window.sistemaVidaState.settings.soundEnabled !== 'boolean') {
+            window.sistemaVidaState.settings.soundEnabled = false;
+        }
         if (typeof window.sistemaVidaState.profile.avatarUrl !== 'string') {
             window.sistemaVidaState.profile.avatarUrl = '';
         }
@@ -1027,6 +1030,48 @@ const app = {
         this.saveState(true);
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
         this.showToast(enabled ? 'Notificações diárias ativadas.' : 'Notificações diárias desativadas.', 'success');
+    },
+    _getAudioContext: function() {
+        if (!this._audioCtx) {
+            try { this._audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {}
+        }
+        return this._audioCtx || null;
+    },
+    playXpSound: function(type = 'xp') {
+        if (!window.sistemaVidaState.settings?.soundEnabled) return;
+        const ctx = this._getAudioContext();
+        if (!ctx) return;
+        const sequences = {
+            xp:      [{ f: 523, t: 0,    d: 0.09 }, { f: 659, t: 0.11, d: 0.13 }],
+            levelup: [{ f: 523, t: 0,    d: 0.08 }, { f: 659, t: 0.10, d: 0.08 }, { f: 784, t: 0.20, d: 0.18 }],
+            tierup:  [{ f: 523, t: 0,    d: 0.07 }, { f: 659, t: 0.09, d: 0.07 }, { f: 784, t: 0.18, d: 0.07 }, { f: 1047, t: 0.27, d: 0.22 }]
+        };
+        const seq = sequences[type] || sequences.xp;
+        const now = ctx.currentTime;
+        seq.forEach(({ f, t, d }) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = f;
+            gain.gain.setValueAtTime(0.16, now + t);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + t + d);
+            osc.start(now + t);
+            osc.stop(now + t + d + 0.05);
+        });
+    },
+    toggleSoundSetting: function() {
+        this.ensureSettingsState();
+        const on = !window.sistemaVidaState.settings.soundEnabled;
+        window.sistemaVidaState.settings.soundEnabled = on;
+        this.saveState(true);
+        if (on) setTimeout(() => this.playXpSound('xp'), 80);
+        const track = document.getElementById('sound-toggle-track');
+        const knob = document.getElementById('sound-toggle-knob');
+        if (track) track.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${on ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
+        if (knob) knob.className = `w-3 h-3 rounded-full absolute transition-all ${on ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
+        this.showToast(on ? 'Sons de gamificação ativados.' : 'Sons de gamificação desativados.', 'success');
     },
     toggleSplashSetting: function() {
         this.ensureSettingsState();
@@ -7669,6 +7714,13 @@ const app = {
                 splashTrack.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${splashOn ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
                 splashKnob.className = `w-3 h-3 rounded-full absolute transition-all ${splashOn ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
             }
+            const soundTrack = document.getElementById('sound-toggle-track');
+            const soundKnob = document.getElementById('sound-toggle-knob');
+            if (soundTrack && soundKnob) {
+                const soundOn = !!state.settings.soundEnabled;
+                soundTrack.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${soundOn ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
+                soundKnob.className = `w-3 h-3 rounded-full absolute transition-all ${soundOn ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
+            }
             app.renderGamificationProfile();
             app.updateProfileAppVersion();
         },
@@ -8340,8 +8392,13 @@ const app = {
           if (award) {
               this.showFloatingXp(award.xp);
               this.flashMicroCard(micro.id);
-              if (award.tierPromotion && award.identity) {
+              if (award.tierPromotion) {
+                  this.playXpSound('tierup');
                   setTimeout(() => this.showTierPromotionOverlay(award.dimension, award.identity.title, award.identity.icon), 600);
+              } else if (award.dimensionLeveledUp || award.totalLeveledUp) {
+                  this.playXpSound('levelup');
+              } else {
+                  this.playXpSound('xp');
               }
           }
         } else {
