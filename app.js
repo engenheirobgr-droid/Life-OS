@@ -2988,15 +2988,12 @@ const app = {
         return { dateKey, checkin, log, habitsDone, microsDone, notes, dwSessions, dwMinutes, xpEarned, achievements };
     },
 
-    renderTimelineHistory: function(showAll) {
+    renderTimelineHistory: function() {
         const container = document.getElementById('timeline-history-container');
         if (!container) return;
         const allDates = this.getAllActiveDates();
-        const PAGE = 30;
-        const dates = showAll ? allDates : allDates.slice(0, PAGE);
-        const hasMore = !showAll && allDates.length > PAGE;
 
-        if (!dates.length) {
+        if (!allDates.length) {
             container.innerHTML = '<p class="text-sm text-outline italic p-4 text-center">Nenhum registro ainda. Use o app por alguns dias para construir sua linha do tempo.</p>';
             return;
         }
@@ -3007,11 +3004,21 @@ const app = {
         const habitIconMap = { 'Saúde':'fitness_center','Mente':'psychology','Carreira':'work','Finanças':'payments','Relacionamentos':'groups','Família':'family_restroom','Lazer':'sports_esports','Propósito':'auto_awesome' };
         const macros = (window.sistemaVidaState.entities?.macros) || [];
         const todayKey = this.getLocalDateKey();
+        const currentMonth = todayKey.slice(0, 7);
         const dots = (n, col) => Array.from({length:5}, (_,i) =>
             `<span class="inline-block w-2 h-2 rounded-full ${i < n ? col : 'bg-surface-container-high'}"></span>`
         ).join('');
 
-        const cards = dates.map(dateKey => {
+        // Group dates by YYYY-MM (already sorted descending)
+        const byMonth = {};
+        allDates.forEach(dateKey => {
+            const ym = dateKey.slice(0, 7);
+            if (!byMonth[ym]) byMonth[ym] = [];
+            byMonth[ym].push(dateKey);
+        });
+        const sortedMonths = Object.keys(byMonth).sort((a, b) => b.localeCompare(a));
+
+        const renderCard = (dateKey) => {
             const d = this.getAggregatedDayData(dateKey);
             const dateObj = new Date(dateKey + 'T12:00:00');
             const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
@@ -3082,7 +3089,10 @@ const app = {
             let notesHtml = '';
             if (d.notes.length) {
                 notesHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Anotações</p><ul class="space-y-1.5">${
-                    d.notes.map(n => `<li class="text-xs"><span class="font-medium text-on-surface">${this.escapeHtml(n.title)}</span>${n.body ? `<span class="text-on-surface-variant"> — ${this.escapeHtml(n.body.slice(0, 100))}${n.body.length > 100 ? '…' : ''}</span>` : ''}</li>`).join('')
+                    d.notes.map(n => {
+                        const linkLabel = this.getNoteLinkLabel(n.linkedTo);
+                        return `<li class="text-xs flex flex-wrap items-baseline gap-1.5"><span class="font-medium text-on-surface">${this.escapeHtml(n.title)}</span>${linkLabel ? `<span class="inline-flex rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-secondary">${this.escapeHtml(linkLabel)}</span>` : ''}${n.body ? `<span class="text-on-surface-variant"> — ${this.escapeHtml(n.body.slice(0, 100))}${n.body.length > 100 ? '…' : ''}</span>` : ''}</li>`;
+                    }).join('')
                 }</ul></div>`;
             }
 
@@ -3103,7 +3113,6 @@ const app = {
                     <div class="text-center shrink-0 w-9">
                         <span class="block text-[9px] uppercase font-bold text-outline leading-tight">${weekday}</span>
                         <span class="block text-xl font-bold text-primary leading-tight">${dayNum}</span>
-                        <span class="block text-[9px] uppercase text-outline">${monthStr}</span>
                     </div>
                     <div class="w-px h-10 bg-outline-variant/20 shrink-0"></div>
                     <div class="flex-1 min-w-0">
@@ -3119,12 +3128,38 @@ const app = {
                 </button>
                 ${sections.length ? `<div id="tl-expand-${safeKey}" class="hidden px-4 pb-5 pt-4 border-t border-outline-variant/10 space-y-4">${sections.join('<div class="h-px bg-outline-variant/10"></div>')}</div>` : ''}
             </div>`;
+        };
+
+        // Render grouped by month, current month expanded by default
+        const monthHtml = sortedMonths.map(ym => {
+            const [year, month] = ym.split('-');
+            const monthLabel = new Date(ym + '-15').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            const isCurrentMonth = ym === currentMonth;
+            const safeYm = ym.replace('-', '');
+            const cards = byMonth[ym].map(dk => renderCard(dk)).join('');
+            return `<div class="rounded-2xl border border-outline-variant/10 bg-surface-container-low overflow-hidden">
+                <button type="button" onclick="window.app.toggleTimelineMonth('${safeYm}')"
+                    class="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-container-high transition-colors text-left">
+                    <span class="text-sm font-bold text-on-surface capitalize">${monthLabel}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-outline">${byMonth[ym].length} dia${byMonth[ym].length > 1 ? 's' : ''}</span>
+                        <span class="material-symbols-outlined notranslate text-outline text-[18px] tl-month-chev-${safeYm} transition-transform ${isCurrentMonth ? 'rotate-180' : ''}">expand_more</span>
+                    </div>
+                </button>
+                <div id="tl-month-${safeYm}" class="${isCurrentMonth ? '' : 'hidden'} px-2 pb-2 space-y-2">${cards}</div>
+            </div>`;
         }).join('');
 
-        const moreBtn = hasMore
-            ? `<div class="text-center pt-2"><button type="button" onclick="window.app.renderTimelineHistory(true)" class="text-xs font-bold text-primary hover:underline">Ver mais (${allDates.length - PAGE} dias restantes)</button></div>`
-            : '';
-        container.innerHTML = cards + moreBtn;
+        container.innerHTML = monthHtml;
+    },
+
+    toggleTimelineMonth: function(safeYm) {
+        const panel = document.getElementById(`tl-month-${safeYm}`);
+        if (!panel) return;
+        const opening = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !opening);
+        const chev = document.querySelector(`.tl-month-chev-${safeYm}`);
+        if (chev) chev.classList.toggle('rotate-180', opening);
     },
 
     toggleTimelineCard: function(safeKey) {
@@ -5317,21 +5352,23 @@ const app = {
                 ? `<a href="${this.escapeHtml(note.url)}" target="_blank" rel="noopener" class="text-[11px] text-primary hover:underline truncate">${this.escapeHtml(note.url)}</a>`
                 : '';
             return `
-                <article class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4 flex flex-col gap-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <h4 class="text-sm font-bold text-on-surface leading-snug">${this.escapeHtml(note.title)}</h4>
-                            ${linkLabel ? `<p class="mt-1 text-[10px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(linkLabel)}</p>` : ''}
+                <article class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-3 flex flex-col gap-2">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-baseline gap-1.5">
+                                <h4 class="text-xs font-bold text-on-surface leading-snug">${this.escapeHtml(note.title)}</h4>
+                                ${linkLabel ? `<span class="inline-flex rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-secondary">${this.escapeHtml(linkLabel)}</span>` : ''}
+                            </div>
                             ${dateStr ? `<p class="mt-0.5 text-[10px] text-outline">${dateStr}</p>` : ''}
                         </div>
-                        <div class="flex items-center gap-1 shrink-0">
-                            <button type="button" onclick="window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[17px] hover:text-primary" title="Editar">edit</button>
-                            <button type="button" onclick="window.app.deleteProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[17px] hover:text-error" title="Excluir">delete</button>
+                        <div class="flex items-center gap-0.5 shrink-0">
+                            <button type="button" onclick="window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[15px] hover:text-primary p-0.5" title="Editar">edit</button>
+                            <button type="button" onclick="window.app.deleteProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[15px] hover:text-error p-0.5" title="Excluir">delete</button>
                         </div>
                     </div>
-                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line line-clamp-4">${this.escapeHtml(note.body)}</p>` : ''}
+                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line line-clamp-2">${this.escapeHtml(note.body)}</p>` : ''}
                     ${url}
-                    ${tags ? `<div class="flex flex-wrap gap-1.5">${tags}</div>` : ''}
+                    ${tags ? `<div class="flex flex-wrap gap-1">${tags}</div>` : ''}
                 </article>`;
         }).join('');
         const moreBtn = hasMore
@@ -11517,6 +11554,43 @@ const app = {
 
         XLSX.writeFile(wb, "SISTEMA_VIDA_PADRAO_OURO.xlsx");
         console.log("Exportação Excel Padrão Ouro concluída.");
+    },
+
+    exportStateJson: function() {
+        const state = this.getPersistableState('full');
+        const ts = new Date().toISOString().slice(0, 10);
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `life-os-backup-${ts}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.showToast('Backup JSON exportado.', 'success');
+    },
+
+    importStateJson: function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const parsed = JSON.parse(e.target.result);
+                if (!parsed || typeof parsed !== 'object' || !parsed.entities || !parsed.profile) {
+                    this.showToast('Arquivo inválido — estrutura não reconhecida.', 'error');
+                    return;
+                }
+                if (!confirm('Isso vai substituir todos os seus dados pelo conteúdo do arquivo. Continuar?')) return;
+                Object.assign(window.sistemaVidaState, parsed);
+                await this.saveState(true);
+                this.showToast('Dados importados com sucesso.', 'success');
+                if (this.currentView) this.render[this.currentView]?.();
+            } catch (err) {
+                this.showToast('Erro ao ler o arquivo JSON.', 'error');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
     },
 
     importFromExcel: async function(event) {

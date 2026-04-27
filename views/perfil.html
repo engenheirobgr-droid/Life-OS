@@ -104,7 +104,7 @@
         <input id="notes-search" type="search" oninput="window.app.renderNotesPanel()" class="h-10 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 flex-1" placeholder="Buscar em notas">
         <button type="button" onclick="var s=document.getElementById('notes-search'); if(s){s.value='';} window.app.renderNotesPanel();" class="h-10 px-4 rounded-xl bg-surface-container-high text-xs font-bold uppercase tracking-wider text-outline hover:text-on-surface">Limpar</button>
     </div>
-    <div id="notes-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    <div id="notes-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"></div>
 </section>
 <!-- Manual de Uso (Trilha Interativa) -->
 <section id="manual-guide-section" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
@@ -219,13 +219,36 @@
 <span class="material-symbols-outlined notranslate text-outline text-sm" data-icon="add">add</span>
 </div>
 <input type="file" id="file-import" accept=".xlsx, .xls" class="hidden" onchange="window.app.importFromExcel(event)">
-<!-- Export -->
+<!-- Export Excel -->
 <div onclick="window.app.exportToExcel()" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined notranslate text-primary" data-icon="download">download</span>
 <p class="text-sm font-medium text-on-surface">Exportar Planilha (.xlsx)</p>
 </div>
 <span class="material-symbols-outlined notranslate text-outline text-sm" data-icon="open_in_new">open_in_new</span>
+</div>
+<!-- Import JSON -->
+<label for="file-import-json" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined notranslate text-primary">upload</span>
+<div>
+    <p class="text-sm font-medium text-on-surface">Importar Backup (.json)</p>
+    <p class="text-[10px] text-outline mt-0.5">Substitui todos os dados pelo arquivo</p>
+</div>
+</div>
+<span class="material-symbols-outlined notranslate text-outline text-sm">add</span>
+</label>
+<input type="file" id="file-import-json" accept=".json" class="hidden" onchange="window.app.importStateJson(event)">
+<!-- Export JSON -->
+<div onclick="window.app.exportStateJson()" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined notranslate text-primary">backup</span>
+<div>
+    <p class="text-sm font-medium text-on-surface">Exportar Backup (.json)</p>
+    <p class="text-[10px] text-outline mt-0.5">Snapshot completo do sistema</p>
+</div>
+</div>
+<span class="material-symbols-outlined notranslate text-outline text-sm">open_in_new</span>
 </div>
 </div>
 </div>
