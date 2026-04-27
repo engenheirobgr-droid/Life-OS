@@ -49,15 +49,9 @@
             </div>
             <!-- Qualidade do sono -->
             <div class="flex items-center gap-2">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-outline w-24 shrink-0">Qualidade</span>
-                <input type="hidden" id="daily-checkin-sleep-quality" value="3">
-                <div class="flex gap-1.5 flex-1" data-checkin-group="daily-checkin-sleep-quality">
-                    <button type="button" data-val="1" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',1,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Péssima">😵</button>
-                    <button type="button" data-val="2" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',2,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Ruim">😫</button>
-                    <button type="button" data-val="3" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',3,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Ok">😐</button>
-                    <button type="button" data-val="4" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',4,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Boa">😊</button>
-                    <button type="button" data-val="5" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',5,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Ótima">😊</button>
-                </div>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-outline w-24 shrink-0">Qualidade <b id="daily-checkin-sleep-quality-val" class="text-primary">3</b></span>
+                <input id="daily-checkin-sleep-quality" type="range" min="1" max="5" value="3" class="accent-primary flex-1"
+                    oninput="document.getElementById('daily-checkin-sleep-quality-val').textContent=this.value">
             </div>
             <!-- Energia -->
             <div class="flex items-center gap-2">
