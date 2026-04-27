@@ -5296,6 +5296,22 @@ const app = {
         }
     },
 
+    toggleDiarioDimensionChip: function(btn) {
+        const dim = btn.getAttribute('data-dim');
+        const hidden = document.getElementById('diario-dimension');
+        const current = hidden ? (hidden.value ? hidden.value.split(',') : []) : [];
+        const idx = current.indexOf(dim);
+        if (idx >= 0) current.splice(idx, 1); else current.push(dim);
+        if (hidden) hidden.value = current.join(',');
+        document.querySelectorAll('.diario-dim-chip').forEach(chip => {
+            const active = current.includes(chip.getAttribute('data-dim'));
+            chip.classList.toggle('bg-primary/20', active);
+            chip.classList.toggle('border-primary', active);
+            chip.classList.toggle('text-primary', active);
+            chip.classList.toggle('font-bold', active);
+        });
+    },
+
     toggleEmotionChip: function(btn) {
         const emotion = btn.getAttribute('data-emotion');
         const hidden = document.getElementById('daily-checkin-emotion');
@@ -7978,6 +7994,9 @@ const app = {
         const focoInput = document.getElementById('diario-foco');
         if (focoInput) window.sistemaVidaState.dailyLogs[today].focus = focoInput.value.trim();
 
+        const dimInput = document.getElementById('diario-dimension');
+        if (dimInput) window.sistemaVidaState.dailyLogs[today].dimensions = dimInput.value ? dimInput.value.split(',').filter(Boolean) : [];
+
         this.markCadence('diary', today);
         this.saveState(true);
 
@@ -9104,6 +9123,10 @@ const app = {
                 let streak = 0;
                 const check = new Date();
                 check.setHours(0, 0, 0, 0);
+                // Se hoje ainda não tem atividade, começa a contar de ontem
+                if (!app.hasDayActivity(app.getLocalDateKey(check))) {
+                    check.setDate(check.getDate() - 1);
+                }
                 while (true) {
                     const key = app.getLocalDateKey(check);
                     if (app.hasDayActivity(key)) {
@@ -9224,6 +9247,16 @@ const app = {
                 const s1 = document.getElementById('diario-shutdown-1');
                 const shutdown = Array.isArray(log.shutdown) ? (log.shutdown[0] || '') : (log.shutdown || '');
                 if (s1) s1.value = shutdown;
+                const savedDims = Array.isArray(log.dimensions) ? log.dimensions : [];
+                const dimHidden = document.getElementById('diario-dimension');
+                if (dimHidden) dimHidden.value = savedDims.join(',');
+                document.querySelectorAll('.diario-dim-chip').forEach(chip => {
+                    const active = savedDims.includes(chip.getAttribute('data-dim'));
+                    chip.classList.toggle('bg-primary/20', active);
+                    chip.classList.toggle('border-primary', active);
+                    chip.classList.toggle('text-primary', active);
+                    chip.classList.toggle('font-bold', active);
+                });
             }
 
 
@@ -9306,8 +9339,32 @@ const app = {
                     let progressText = '';
                     if (mode === 'numeric') progressText = `${currentVal}/${target}`;
                     if (mode === 'timer') progressText = `${currentVal}m/${target}m`;
-                    if (hasSteps) progressText = `${todayStepsDone}/${steps.length} passos`;
-                    
+
+                    // Expandable steps section
+                    let stepsHtml = '';
+                    if (hasSteps) {
+                        const stepsListItems = steps.map((step, idx) => {
+                            const done = !!(todayStepMap[idx] || todayStepMap[String(idx)]);
+                            return `<label class="flex items-center gap-2 cursor-pointer py-1" onclick="event.stopPropagation(); window.app.toggleHabitStepLog('${habit.id}', '${todayStr}', ${idx})">
+                                <div class="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${done ? 'bg-primary border-primary' : 'border-outline-variant'}">
+                                    ${done ? '<span class="material-symbols-outlined notranslate text-white text-[10px]" style="font-variation-settings: \\\'wght\\\' 700;">check</span>' : ''}
+                                </div>
+                                <span class="text-xs ${done ? 'line-through text-outline' : 'text-on-surface-variant'}">${app.escapeHtml(step)}</span>
+                            </label>`;
+                        }).join('');
+                        stepsHtml = `
+                        <div class="mt-2 pt-2 border-t border-outline-variant/10" onclick="event.stopPropagation()">
+                            <button class="flex items-center gap-1 w-full text-left"
+                                onclick="event.stopPropagation(); var list=this.nextElementSibling; list.classList.toggle('hidden'); this.querySelector('.chev').textContent=list.classList.contains('hidden')?'expand_more':'expand_less';">
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-primary">${todayStepsDone}/${steps.length} passos</span>
+                                <span class="material-symbols-outlined notranslate text-primary text-[14px] chev ml-auto">expand_more</span>
+                            </button>
+                            <div class="hidden mt-1 space-y-0.5">
+                                ${stepsListItems}
+                            </div>
+                        </div>`;
+                    }
+
                     // Meta vinculada (opcional)
                     let linkedMetaHtml = '';
                     if (habit.linkedMetaId) {
@@ -9348,6 +9405,7 @@ const app = {
                                 ${progressText ? `<span class="text-xs font-bold text-primary shrink-0">${progressText}</span>` : ''}
                             </div>
                             ${weekHtml}
+                            ${stepsHtml}
                         </div>
                     </div>`;
                 });

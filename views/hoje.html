@@ -172,6 +172,20 @@
 </div>
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
         <div class="space-y-2">
+            <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dimensão em foco <span class="normal-case font-normal italic text-outline">(opcional)</span></label>
+            <input type="hidden" id="diario-dimension" value="">
+            <div class="flex flex-wrap gap-2" id="diario-dimension-chips">
+                <button type="button" data-dim="Saúde" onclick="window.app.toggleDiarioDimensionChip(this)" class="diario-dim-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">Saúde</button>
+                <button type="button" data-dim="Mente" onclick="window.app.toggleDiarioDimensionChip(this)" class="diario-dim-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">Mente</button>
+                <button type="button" data-dim="Carreira" onclick="window.app.toggleDiarioDimensionChip(this)" class="diario-dim-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">Carreira</button>
+                <button type="button" data-dim="Finanças" onclick="window.app.toggleDiarioDimensionChip(this)" class="diario-dim-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">Finanças</button>
+                <button type="button" data-dim="Relacionamentos" onclick="window.app.toggleDiarioDimensionChip(this)" class="diario-dim-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">Relacionamentos</button>
+                <button type="button" data-dim="Família" onclick="window.app.toggleDiarioDimensionChip(this)" class="diario-dim-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">Família</button>
+                <button type="button" data-dim="Lazer" onclick="window.app.toggleDiarioDimensionChip(this)" class="diario-dim-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">Lazer</button>
+                <button type="button" data-dim="Propósito" onclick="window.app.toggleDiarioDimensionChip(this)" class="diario-dim-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">Propósito</button>
+            </div>
+        </div>
+        <div class="space-y-2">
             <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Pelo que sou grato hoje?</label>
             <textarea id="diario-gratidao" class="w-full bg-transparent border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none" placeholder="Escreva aqui..." rows="3"></textarea>
         </div>
