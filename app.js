@@ -2860,10 +2860,20 @@ const app = {
                 const [dia, de, mes] = dateStr.split(' ');
                 
                 const energyColor = log.energy >= 4 ? 'text-emerald-600 dark:text-emerald-400' : log.energy >= 3 ? 'text-amber-600 dark:text-amber-400' : 'text-error';
-                const gratidaoBlock = log.gratidao ? `<p class="text-[11px] text-on-surface-variant mt-2">Gratidão: ${log.gratidao}</p>` : '';
-                const funcionouBlock = log.funcionou ? `<p class="text-[11px] text-on-surface-variant mt-1">Funcionou: ${log.funcionou}</p>` : '';
-                const shutdownText = Array.isArray(log.shutdown) ? (log.shutdown[0] || '') : (log.shutdown || '');
-                const shutdownBlock = shutdownText ? `<p class="text-[11px] text-on-surface-variant mt-1">Shutdown: ${shutdownText}</p>` : '';
+                const gratidaoBlock = log.gratidao ? `<p class="text-[11px] text-on-surface-variant mt-2"><span class="font-bold text-outline">Gratidão:</span> ${this.escapeHtml(log.gratidao)}</p>` : '';
+                const funcionouBlock = log.funcionou ? `<p class="text-[11px] text-on-surface-variant mt-1"><span class="font-bold text-outline">Funcionou:</span> ${this.escapeHtml(log.funcionou)}</p>` : '';
+                const dimIcons = { 'Saúde':'💪','Mente':'🧠','Carreira':'💼','Finanças':'💰','Relacionamentos':'🤝','Família':'🏠','Lazer':'🎨','Propósito':'✨' };
+                const dimNotes = log.dimensionNotes || {};
+                const dimEntries = Object.entries(dimNotes).filter(([,v]) => v && v.trim());
+                const shutdownBlock = dimEntries.length ? `
+                    <div class="mt-2 space-y-1.5 rounded-lg bg-primary/[0.04] border border-primary/10 px-3 py-2.5">
+                        <p class="text-[9px] uppercase font-bold text-primary tracking-wider mb-1.5">Ritual de Shutdown</p>
+                        ${dimEntries.map(([dim, text]) => `
+                            <div>
+                                <span class="text-[10px] font-bold text-on-surface">${dimIcons[dim] || '⭐'} ${this.escapeHtml(dim)}</span>
+                                <p class="text-[11px] text-on-surface-variant leading-snug mt-0.5">${this.escapeHtml(text)}</p>
+                            </div>`).join('')}
+                    </div>` : '';
                 
                 // Seção Flash Reflexão
                 let flashBlock = '';
