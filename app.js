@@ -8094,7 +8094,13 @@ const app = {
             }
         }
 
-        const linkedNotes = this.getLinkedNotes(type, entity.id);
+        let linkedNotes = this.getLinkedNotes(type, entity.id);
+        if (!linkedNotes.length) {
+            linkedNotes = (window.sistemaVidaState.profile.notes || []).filter(note =>
+                note.linkedTo?.entityId === entity.id
+            );
+        }
+
         const notesList = document.getElementById('review-entity-notes-list');
         const notesEmpty = document.getElementById('review-entity-notes-empty');
         if (notesList) {
