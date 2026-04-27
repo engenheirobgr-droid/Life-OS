@@ -5555,6 +5555,7 @@ const app = {
         this.saveState(true);
         this.renderDailyCheckinPanel();
         this.renderProfileCadence();
+        if (this.currentView === 'painel' && this.render.painel) this.render.painel();
         if (this.showToast) this.showToast('Check-in do dia salvo.', 'success');
     },
 
@@ -8067,6 +8068,25 @@ const app = {
             }
         }
 
+        const linkedNotes = this.getLinkedNotes(type, entity.id);
+        const notesList = document.getElementById('review-entity-notes-list');
+        const notesEmpty = document.getElementById('review-entity-notes-empty');
+        if (notesList) {
+            notesList.innerHTML = linkedNotes.length ? linkedNotes.map(note => `
+                <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-low p-4">
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <span class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(note.title || 'Nota')}</span>
+                        <span class="text-[10px] uppercase tracking-wider text-outline">${this.escapeHtml(note.linkedTo?.entityType || 'Nota')}</span>
+                    </div>
+                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(note.body)}</p>` : ''}
+                </div>
+            `).join('') : '';
+        }
+        if (notesEmpty) {
+            notesEmpty.textContent = linkedNotes.length ? `${linkedNotes.length} nota${linkedNotes.length > 1 ? 's' : ''} vinculada${linkedNotes.length > 1 ? 's' : ''}.` : 'Nenhuma nota vinculada a esta entidade ainda.';
+            notesEmpty.classList.toggle('hidden', linkedNotes.length > 0);
+        }
+
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     },
@@ -9855,6 +9875,9 @@ const app = {
                     </div>`;
                 }
                 if (micro.status === 'done' || micro.completed) {
+                    const notesCount = app.getLinkedNotes('micros', micro.id).length;
+                    const notesBadge = notesCount ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high rounded-full px-2 py-1">` +
+                        `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</span>` : '';
                     const isRecentCompletion = micro.id === app.recentCompletedMicroId;
                     html += `
                     <div class="relative overflow-hidden bg-emerald-500/[0.04] border border-emerald-500/25 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm shadow-emerald-500/5 ${isRecentCompletion ? 'micro-complete-feedback' : ''}">
@@ -9866,7 +9889,10 @@ const app = {
                             <span class="material-symbols-outlined notranslate text-white leading-none" style="font-size:13px; font-variation-settings: 'wght' 700;">check</span>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm text-on-surface font-semibold leading-snug line-through">${micro.title}</p>
+                            <div class="flex items-center gap-2">
+                                <p class="text-sm text-on-surface font-semibold leading-snug line-through truncate">${micro.title}</p>
+                                ${notesBadge}
+                            </div>
                             <span class="inline-flex items-center mt-1 px-1.5 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-[9px] font-bold uppercase tracking-wide rounded-md leading-none area-tag">${dimensionLabel}</span>
                         </div>
                     </div>`;
@@ -9876,6 +9902,9 @@ const app = {
                     const okr = state.entities.okrs.find(o => o.id === macro.okrId) || {};
                     const meta = state.entities.metas.find(m => m.id === okr.metaId) || {};
                     const dimIcon = iconMap[micro.dimension] || 'stars';
+                    const notesCount = app.getLinkedNotes('micros', micro.id).length;
+                    const notesBadge = notesCount ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high rounded-full px-2 py-1">` +
+                        `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</span>` : '';
                     
                     const startDate = micro.inicioDate || micro.prazo || '';
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
@@ -9900,7 +9929,8 @@ const app = {
                                 <div class="w-5 h-5 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
                                 <div class="flex-1 min-w-0 space-y-1.5">
                                     <div class="flex items-center gap-3">
-                                        <p class="text-sm font-semibold text-on-surface leading-snug flex-1 min-w-0">${micro.title}</p>
+                                        <p class="text-sm font-semibold text-on-surface leading-snug flex-1 min-w-0 truncate">${micro.title}</p>
+                                        ${notesBadge}
                                         <div class="flex items-center gap-1 shrink-0">
                                             ${startBtn}
                                             <button type="button" title="Adiar para amanhã" onclick="event.stopPropagation(); app.postponeMicroOneDay('${micro.id}');" class="w-7 h-7 flex items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-90">
@@ -11484,7 +11514,7 @@ const app = {
         const state = window.sistemaVidaState;
 
         // 1. Aba: Planos
-        const planosCol = ["ID", "Tipo", "Dimensão", "Título", "Contexto_Indicador", "Prazo", "Progresso", "ID_Pai", "Critério_Sucesso", "Desafio", "Comprometimento", "Key_Results"];
+        const planosCol = ["ID", "Tipo", "Dimensão", "Título", "Contexto_Indicador", "Prazo", "Progresso", "ID_Pai", "Critério_Sucesso", "Desafio", "Comprometimento", "Key_Results", "Notas"];
         const planosData = [planosCol];
         const types = ['metas', 'okrs', 'macros', 'micros'];
         types.forEach(t => {
@@ -11492,14 +11522,18 @@ const app = {
                 const context = e.purpose || e.description || e.indicator || "";
                 const parentId = e.metaId || e.okrId || e.macroId || "";
                 const keyResultsText = this.serializeKeyResultsText(e.keyResults);
+                const linkedNoteTitles = this.getLinkedNotes(t, e.id)
+                    .map(n => n.title || '')
+                    .filter(Boolean)
+                    .join('; ');
                 planosData.push([
                     e.id, t.slice(0, -1), e.dimension || "Geral", e.title, context, e.prazo || "", e.progress || 0, parentId,
-                    e.successCriteria || "", e.challengeLevel || "", e.commitmentLevel || "", keyResultsText
+                    e.successCriteria || "", e.challengeLevel || "", e.commitmentLevel || "", keyResultsText, linkedNoteTitles
                 ]);
             });
         });
         const wsPlanos = XLSX.utils.aoa_to_sheet(planosData);
-        wsPlanos['!cols'] = [{wch:15}, {wch:10}, {wch:15}, {wch:40}, {wch:40}, {wch:15}, {wch:10}, {wch:15}, {wch:30}, {wch:12}, {wch:16}, {wch:42}];
+        wsPlanos['!cols'] = [{wch:15}, {wch:10}, {wch:15}, {wch:40}, {wch:40}, {wch:15}, {wch:10}, {wch:15}, {wch:30}, {wch:12}, {wch:16}, {wch:42}, {wch:30}];
         XLSX.utils.book_append_sheet(wb, wsPlanos, "Planos");
 
         // 2. Aba: Propósito

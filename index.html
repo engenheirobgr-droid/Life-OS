@@ -1734,6 +1734,16 @@
                     </button>
                 </div>
 
+                <!-- Notas vinculadas -->
+                <div id="linked-notes-section" class="space-y-3">
+                    <div class="flex items-center gap-2 text-primary">
+                        <span class="material-symbols-outlined notranslate text-lg">sticky_note_2</span>
+                        <h4 class="text-xs font-bold uppercase tracking-wider">Notas vinculadas</h4>
+                    </div>
+                    <p id="review-entity-notes-empty" class="text-xs text-outline italic">Nenhuma nota vinculada a esta entidade ainda.</p>
+                    <div id="review-entity-notes-list" class="space-y-3"></div>
+                </div>
+
                 <!-- Exclusão -->
                 <div class="pt-4 border-t border-outline-variant/10">
                     <button id="btn-delete-review" onclick="window.app.deleteEntityFromReview()"
