@@ -4079,6 +4079,9 @@ const app = {
         if (ifThenInput) ifThenInput.value = '';
         this.toggleCrudWoop(false);
 
+        const notesWrapper = document.getElementById('crud-linked-notes-wrapper');
+        if (notesWrapper) notesWrapper.classList.add('hidden');
+
         document.getElementById('crud-type').value = type;
         this.onTypeChange(type);
         document.getElementById('crud-modal').classList.remove('hidden');
@@ -8106,31 +8109,6 @@ const app = {
             }
         }
 
-        let linkedNotes = this.getLinkedNotes(type, entity.id);
-        if (!linkedNotes.length) {
-            linkedNotes = (window.sistemaVidaState.profile.notes || []).filter(note =>
-                note.linkedTo?.entityId === entity.id
-            );
-        }
-
-        const notesList = document.getElementById('review-entity-notes-list');
-        const notesEmpty = document.getElementById('review-entity-notes-empty');
-        if (notesList) {
-            notesList.innerHTML = linkedNotes.length ? linkedNotes.map(note => `
-                <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-low p-4">
-                    <div class="flex items-center justify-between gap-3 mb-2">
-                        <span class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(note.title || 'Nota')}</span>
-                        <span class="text-[10px] uppercase tracking-wider text-outline">${this.escapeHtml(note.linkedTo?.entityType || 'Nota')}</span>
-                    </div>
-                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(note.body)}</p>` : ''}
-                </div>
-            `).join('') : '';
-        }
-        if (notesEmpty) {
-            notesEmpty.textContent = linkedNotes.length ? `${linkedNotes.length} nota${linkedNotes.length > 1 ? 's' : ''} vinculada${linkedNotes.length > 1 ? 's' : ''}.` : 'Nenhuma nota vinculada a esta entidade ainda.';
-            notesEmpty.classList.toggle('hidden', linkedNotes.length > 0);
-        }
-
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     },
@@ -11548,6 +11526,33 @@ const app = {
             parentSelect.value = parentId;
         }
         if (type === 'micros') this.syncMicroWeekPlanToggle(id);
+
+        // Notas vinculadas
+        const notesWrapper = document.getElementById('crud-linked-notes-wrapper');
+        const notesList = document.getElementById('crud-notes-list');
+        const notesEmpty = document.getElementById('crud-notes-empty');
+        if (notesWrapper && notesList && notesEmpty) {
+            let linkedNotes = this.getLinkedNotes(type, id);
+            if (!linkedNotes.length) {
+                linkedNotes = (window.sistemaVidaState.profile.notes || []).filter(note =>
+                    note.linkedTo?.entityId === id
+                );
+            }
+            notesList.innerHTML = linkedNotes.length ? linkedNotes.map(note => `
+                <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-low p-4">
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <span class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(note.title || 'Nota')}</span>
+                        <span class="text-[10px] uppercase tracking-wider text-outline">${this.escapeHtml(note.linkedTo?.entityType || 'Nota')}</span>
+                    </div>
+                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(note.body)}</p>` : ''}
+                </div>
+            `).join('') : '';
+            notesEmpty.textContent = linkedNotes.length
+                ? `${linkedNotes.length} nota${linkedNotes.length > 1 ? 's' : ''} vinculada${linkedNotes.length > 1 ? 's' : ''}.`
+                : 'Nenhuma nota vinculada a esta entidade ainda.';
+            notesEmpty.classList.toggle('hidden', linkedNotes.length > 0);
+            notesWrapper.classList.remove('hidden');
+        }
     },
 
     // ------------------------------------------------------------------------
