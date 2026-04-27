@@ -5336,45 +5336,84 @@ const app = {
             return haystack.includes(query);
         });
         if (!allNotes.length) {
-            container.innerHTML = '<p class="md:col-span-2 text-sm text-outline italic rounded-xl bg-surface-container-low p-4">Nenhuma nota encontrada.</p>';
+            container.innerHTML = '<p class="col-span-full text-sm text-outline italic rounded-xl bg-surface-container-low p-4">Nenhuma nota encontrada.</p>';
             return;
         }
-        const PAGE = 8;
-        const notes = (showAll || query) ? allNotes : allNotes.slice(0, PAGE);
-        const hasMore = !showAll && !query && allNotes.length > PAGE;
-        const noteCards = notes.map(note => {
+
+        const renderCard = (note) => {
             const linkLabel = this.getNoteLinkLabel(note.linkedTo);
             const dateStr = note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
             const tags = (note.tags || []).map(tag =>
-                `<span class="inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`
+                `<span class="inline-flex rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`
             ).join('');
             const url = note.url
-                ? `<a href="${this.escapeHtml(note.url)}" target="_blank" rel="noopener" class="text-[11px] text-primary hover:underline truncate">${this.escapeHtml(note.url)}</a>`
+                ? `<a href="${this.escapeHtml(note.url)}" target="_blank" rel="noopener" class="text-[10px] text-primary hover:underline truncate">${this.escapeHtml(note.url)}</a>`
                 : '';
-            return `
-                <article class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-3 flex flex-col gap-2">
-                    <div class="flex items-start justify-between gap-2">
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-baseline gap-1.5">
-                                <h4 class="text-xs font-bold text-on-surface leading-snug">${this.escapeHtml(note.title)}</h4>
-                                ${linkLabel ? `<span class="inline-flex rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-secondary">${this.escapeHtml(linkLabel)}</span>` : ''}
-                            </div>
-                            ${dateStr ? `<p class="mt-0.5 text-[10px] text-outline">${dateStr}</p>` : ''}
+            return `<article class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-3 flex flex-col gap-2">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-baseline gap-1.5">
+                            <h4 class="text-xs font-bold text-on-surface leading-snug">${this.escapeHtml(note.title)}</h4>
+                            ${linkLabel ? `<span class="inline-flex rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-secondary">${this.escapeHtml(linkLabel)}</span>` : ''}
                         </div>
-                        <div class="flex items-center gap-0.5 shrink-0">
-                            <button type="button" onclick="window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[15px] hover:text-primary p-0.5" title="Editar">edit</button>
-                            <button type="button" onclick="window.app.deleteProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[15px] hover:text-error p-0.5" title="Excluir">delete</button>
-                        </div>
+                        ${dateStr ? `<p class="mt-0.5 text-[10px] text-outline">${dateStr}</p>` : ''}
                     </div>
-                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line line-clamp-2">${this.escapeHtml(note.body)}</p>` : ''}
-                    ${url}
-                    ${tags ? `<div class="flex flex-wrap gap-1">${tags}</div>` : ''}
-                </article>`;
+                    <div class="flex items-center gap-0.5 shrink-0">
+                        <button type="button" onclick="window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[15px] hover:text-primary p-0.5" title="Editar">edit</button>
+                        <button type="button" onclick="window.app.deleteProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[15px] hover:text-error p-0.5" title="Excluir">delete</button>
+                    </div>
+                </div>
+                ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line line-clamp-2">${this.escapeHtml(note.body)}</p>` : ''}
+                ${url}
+                ${tags ? `<div class="flex flex-wrap gap-1">${tags}</div>` : ''}
+            </article>`;
+        };
+
+        // When searching: flat grid. Otherwise: month groups.
+        if (query) {
+            container.innerHTML = `<div class="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">${allNotes.map(renderCard).join('')}</div>`;
+            return;
+        }
+
+        // Group by YYYY-MM (sorted descending by createdAt)
+        const sorted = [...allNotes].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        const byMonth = {};
+        sorted.forEach(note => {
+            const ym = note.createdAt ? note.createdAt.slice(0, 7) : 'sem-data';
+            if (!byMonth[ym]) byMonth[ym] = [];
+            byMonth[ym].push(note);
+        });
+        const currentYm = new Date().toISOString().slice(0, 7);
+        const monthKeys = Object.keys(byMonth).sort((a, b) => b.localeCompare(a));
+
+        const monthSections = monthKeys.map(ym => {
+            const isCurrentMonth = ym === currentYm;
+            const safeYm = ym.replace('-', '');
+            const label = ym === 'sem-data' ? 'Sem data' : new Date(ym + '-15').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            const cards = byMonth[ym].map(renderCard).join('');
+            return `<div class="col-span-full rounded-2xl border border-outline-variant/10 bg-surface-container-low overflow-hidden">
+                <button type="button" onclick="window.app.toggleNotesMonth('${safeYm}')"
+                    class="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-container-high transition-colors text-left">
+                    <span class="text-sm font-bold text-on-surface capitalize">${label}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-outline">${byMonth[ym].length} nota${byMonth[ym].length > 1 ? 's' : ''}</span>
+                        <span class="material-symbols-outlined notranslate text-outline text-[18px] notes-month-chev-${safeYm} transition-transform ${isCurrentMonth ? 'rotate-180' : ''}">expand_more</span>
+                    </div>
+                </button>
+                <div id="notes-month-${safeYm}" class="${isCurrentMonth ? '' : 'hidden'} px-3 pb-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">${cards}</div>
+            </div>`;
         }).join('');
-        const moreBtn = hasMore
-            ? `<div class="md:col-span-2 text-center pt-1"><button type="button" onclick="window.app.renderNotesPanel(true)" class="text-xs font-bold text-primary hover:underline">Ver mais (${allNotes.length - PAGE} restantes)</button></div>`
-            : '';
-        container.innerHTML = noteCards + moreBtn;
+
+        container.innerHTML = monthSections;
+    },
+
+    toggleNotesMonth: function(safeYm) {
+        const panel = document.getElementById(`notes-month-${safeYm}`);
+        if (!panel) return;
+        const opening = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !opening);
+        const chev = document.querySelector(`.notes-month-chev-${safeYm}`);
+        if (chev) chev.classList.toggle('rotate-180', opening);
     },
 
     getLinkedNotes: function(entityType, entityId) {
@@ -5558,7 +5597,9 @@ const app = {
         document.querySelectorAll('.emotion-chip').forEach(chip => {
             const active = chip.getAttribute('data-emotion') === emotionVal;
             chip.classList.toggle('bg-primary/20', active);
+            chip.classList.toggle('bg-surface-container-low', !active);
             chip.classList.toggle('border-primary', active);
+            chip.classList.toggle('border-outline-variant/30', !active);
             chip.classList.toggle('text-primary', active);
             chip.classList.toggle('font-bold', active);
         });
@@ -5630,7 +5671,9 @@ const app = {
         document.querySelectorAll('.emotion-chip').forEach(chip => {
             const active = chip.getAttribute('data-emotion') === newVal;
             chip.classList.toggle('bg-primary/20', active);
+            chip.classList.toggle('bg-surface-container-low', !active);
             chip.classList.toggle('border-primary', active);
+            chip.classList.toggle('border-outline-variant/30', !active);
             chip.classList.toggle('text-primary', active);
             chip.classList.toggle('font-bold', active);
         });
@@ -9375,45 +9418,58 @@ const app = {
             const cycleStart = new Date((state.cycleStartDate || app.getLocalDateKey()) + 'T00:00:00');
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const elapsedDays = Math.max(0, Math.min(84, Math.floor((today - cycleStart) / (1000 * 60 * 60 * 24)) + 1));
+            const elapsedDays = Math.max(0, Math.floor((today - cycleStart) / (1000 * 60 * 60 * 24)));
             const daysLabel = document.getElementById('painel-exec-days');
-            if (daysLabel) daysLabel.textContent = `${elapsedDays}/84 dias`;
+            if (daysLabel) daysLabel.textContent = `dia ${elapsedDays + 1} de 84`;
 
-            let html = '<div class="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-12 gap-2">';
-            for (let week = 0; week < 12; week++) {
-                const weekStart = new Date(cycleStart);
-                weekStart.setDate(cycleStart.getDate() + (week * 7));
-                let weekDone = 0;
-                let weekElapsed = 0;
-                for (let day = 0; day < 7; day++) {
-                    const offset = (week * 7) + day;
-                    const d = new Date(cycleStart);
-                    d.setDate(cycleStart.getDate() + offset);
-                    const key = app.getLocalDateKey(d);
-                    if (d <= today) weekElapsed += 1;
-                    if (app.hasDayActivity(key)) weekDone += 1;
-                }
-                const isCurrentWeek = elapsedDays >= (week * 7) + 1 && elapsedDays <= (week + 1) * 7;
-                const weekPct = weekElapsed > 0 ? Math.round((weekDone / weekElapsed) * 100) : 0;
-                const isFutureWeek = weekElapsed === 0;
-                const fillClass = isFutureWeek ? 'bg-transparent' : (weekDone > 0 ? 'bg-primary' : 'bg-surface-container-highest');
-                const cardClass = isCurrentWeek
-                    ? 'border-primary/35 bg-primary/[0.04] shadow-sm'
-                    : 'border-outline-variant/10 bg-surface-container-low';
-                html += `
-                    <div class="rounded-xl border ${cardClass} p-2 min-w-0" title="Semana ${week + 1}: ${weekDone}/${weekElapsed || 7} dias ativos">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[9px] font-bold uppercase tracking-widest text-outline">S${week + 1}</span>
-                            <span class="text-[9px] font-bold ${isCurrentWeek ? 'text-primary' : 'text-outline'}">${isFutureWeek ? '--' : weekPct + '%'}</span>
-                        </div>
-                        <div class="h-12 rounded-lg bg-surface-container-highest/70 overflow-hidden flex items-end">
-                            <div class="w-full ${fillClass} transition-all duration-500" style="height:${isFutureWeek ? 0 : Math.max(8, weekPct)}%"></div>
-                        </div>
-                    </div>`;
+            // Count active days in this cycle
+            let cycleActiveDays = 0;
+            for (let i = 0; i <= elapsedDays; i++) {
+                const d = new Date(cycleStart);
+                d.setDate(cycleStart.getDate() + i);
+                if (app.hasDayActivity(app.getLocalDateKey(d))) cycleActiveDays++;
             }
-            html += '</div>';
-            html += '<div class="mt-4 flex items-center justify-between text-[10px] text-on-surface-variant"><span>Dias ativos por semana</span><span class="font-bold text-primary">12 semanas</span></div>';
-            heatmap.innerHTML = html;
+
+            // Active days in the last 7 days
+            let weekActiveDays = 0;
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                if (app.hasDayActivity(app.getLocalDateKey(d))) weekActiveDays++;
+            }
+
+            // Current streak (from streak counter logic already elsewhere)
+            let streak = 0;
+            const check = new Date(today);
+            check.setDate(check.getDate() - 1);
+            while (streak < 365) {
+                if (app.hasDayActivity(app.getLocalDateKey(check))) {
+                    streak++;
+                    check.setDate(check.getDate() - 1);
+                } else break;
+            }
+
+            const cycleTotal = elapsedDays + 1;
+            const cyclePct = cycleTotal > 0 ? Math.round((cycleActiveDays / cycleTotal) * 100) : 0;
+
+            heatmap.innerHTML = `
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center space-y-1">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Esta semana</p>
+                        <p class="font-headline text-3xl italic text-primary">${weekActiveDays}<span class="text-base text-outline">/7</span></p>
+                        <p class="text-[10px] text-on-surface-variant">dias com atividade</p>
+                    </div>
+                    <div class="text-center space-y-1">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">No ciclo</p>
+                        <p class="font-headline text-3xl italic text-secondary">${cycleActiveDays}<span class="text-base text-outline">/${cycleTotal}</span></p>
+                        <p class="text-[10px] text-on-surface-variant">${cyclePct}% de consistência</p>
+                    </div>
+                    <div class="text-center space-y-1">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Sequência</p>
+                        <p class="font-headline text-3xl italic text-tertiary">${streak}</p>
+                        <p class="text-[10px] text-on-surface-variant">dias consecutivos</p>
+                    </div>
+                </div>`;
         },
 
         hoje: function() {
@@ -11449,26 +11505,30 @@ const app = {
         // 2. Aba: Propósito
         const propCol = ["Categoria", "Chave", "Texto_Preenchido"];
         const propData = [propCol];
-        
-        // Perfil / Valores
+
         propData.push(["Identidade", "Valores Pessoais", (state.profile.values || []).join(", ")]);
-        
-        // Ikigai
+
         const ikigaiM = { missao: "Missão", vocacao: "Vocação", love: "Paixão (O que ama)", good: "Bom em (O que é bom)", need: "O que o Mundo Precisa", paid: "Pelo que pode ser Pago", sintese: "Síntese Ikigai" };
         Object.entries(ikigaiM).forEach(([k, label]) => {
             propData.push(["Ikigai", label, state.profile.ikigai?.[k] || ""]);
         });
 
-        // Visão
         const visionM = { saude: "Visão Saúde", carreira: "Visão Carreira", intelecto: "Visão Intelectual", quote: "Citação Inspiradora" };
         Object.entries(visionM).forEach(([k, label]) => {
             propData.push(["Visão", label, state.profile.vision?.[k] || ""]);
         });
 
-        // Legado
         const legacyM = { familia: "Legado Família", profissao: "Legado Profissional", mundo: "Legado Mundo" };
         Object.entries(legacyM).forEach(([k, label]) => {
             propData.push(["Legado", label, state.profile.legacyObj?.[k] || ""]);
+        });
+
+        // Forças e Sombras (Identidade)
+        (state.profile.identity?.strengths || []).forEach(s => {
+            propData.push(["Força", s.title || "", s.description || s.quote || ""]);
+        });
+        (state.profile.identity?.shadows || []).forEach(s => {
+            propData.push(["Sombra", s.title || "", s.description || s.desiredResponse || ""]);
         });
 
         // Roda da Vida
@@ -11476,13 +11536,11 @@ const app = {
             propData.push(["Roda da Vida", dim, data.score || 0]);
         });
 
-        // PERMA
         const permaM = { P: "Emoções Positivas (P)", E: "Engajamento (E)", R: "Relacionamentos (R)", M: "Significado (M)", A: "Realização (A)" };
         Object.entries(permaM).forEach(([k, label]) => {
             propData.push(["PERMA", label, state.perma?.[k] || 0]);
         });
-        
-        // SWLS
+
         const swls = state.swls || { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
         propData.push(["SWLS", "Score", swls.lastScore || 0]);
         propData.push(["SWLS", "Data", swls.lastDate || ""]);
@@ -11493,6 +11551,18 @@ const app = {
         const wsProp = XLSX.utils.aoa_to_sheet(propData);
         wsProp['!cols'] = [{wch:15}, {wch:30}, {wch:60}];
         XLSX.utils.book_append_sheet(wb, wsProp, "Propósito");
+
+        // 2b. Aba: Odyssey
+        const odyCol = ["Cenário", "Texto"];
+        const odyData = [odyCol];
+        const ody = state.profile.odyssey || {};
+        const odyLabels = { cenarioA: "Cenário A — Caminho Principal", cenarioB: "Cenário B — Plano Alternativo", cenarioC: "Cenário C — E se tudo mudasse?" };
+        Object.entries(odyLabels).forEach(([k, label]) => {
+            odyData.push([label, ody[k] || ""]);
+        });
+        const wsOdy = XLSX.utils.aoa_to_sheet(odyData);
+        wsOdy['!cols'] = [{wch:40}, {wch:80}];
+        XLSX.utils.book_append_sheet(wb, wsOdy, "Odyssey");
 
         // 3. Aba: Hábitos
         const habCol = ["ID", "Dimensão", "Título", "Gatilho", "Rotina", "Recompensa", "Status"];
@@ -11512,28 +11582,55 @@ const app = {
         wsHabits['!cols'] = [{wch:15}, {wch:15}, {wch:32}, {wch:26}, {wch:32}, {wch:24}, {wch:10}];
         XLSX.utils.book_append_sheet(wb, wsHabits, "Hábitos");
 
-        // 4. Aba: Diário
-        const logCol = ["Data", "Energia", "Gratidão", "O_Que_Funcionou", "O_Que_Aprendi", "Shutdown_1", "Shutdown_2", "Shutdown_3"];
+        // 4. Aba: Diário (inclui check-in + shutdown por dimensão)
+        const dims = ['Saúde','Mente','Carreira','Finanças','Relacionamentos','Família','Lazer','Propósito'];
+        const logCol = ["Data", "Sono_h", "Qualidade_Sono", "Energia", "Humor", "Estresse", "Emoção", "Intenção", "Gratidão", "O_Que_Funcionou",
+            ...dims.map(d => `Shutdown_${d}`)];
         const logData = [logCol];
-        Object.entries(state.dailyLogs || {}).sort().forEach(([date, log]) => {
-            const shutdown = Array.isArray(log.shutdown)
-                ? log.shutdown
-                : (typeof log.shutdown === 'string' ? [log.shutdown] : []);
-            const row = [
+        // Merge checkins and logs by date
+        const allDates = new Set([
+            ...Object.keys(state.dailyLogs || {}),
+            ...(state.profile.dailyCheckins || []).map(c => c.date)
+        ]);
+        [...allDates].sort().forEach(date => {
+            const log = (state.dailyLogs || {})[date] || {};
+            const checkin = (state.profile.dailyCheckins || []).find(c => c.date === date) || {};
+            const dimNotes = log.dimensionNotes || {};
+            logData.push([
                 date,
-                log.energy || 5,
+                checkin.sleepHours || "",
+                checkin.sleepQuality || "",
+                checkin.energy || log.energy || "",
+                checkin.mood || "",
+                checkin.stress || "",
+                checkin.emotion || "",
+                log.focus || "",
                 log.gratidao || "",
                 log.funcionou || "",
-                log.aprendi || "",
-                shutdown[0] || "",
-                shutdown[1] || "",
-                shutdown[2] || ""
-            ];
-            logData.push(row);
+                ...dims.map(d => dimNotes[d] || "")
+            ]);
         });
         const wsDiario = XLSX.utils.aoa_to_sheet(logData);
-        wsDiario['!cols'] = [{wch:12}, {wch:10}, {wch:40}, {wch:40}, {wch:40}, {wch:30}, {wch:30}, {wch:30}];
+        wsDiario['!cols'] = [{wch:12}, {wch:8}, {wch:10}, {wch:8}, {wch:8}, {wch:8}, {wch:12}, {wch:40}, {wch:40}, {wch:40},
+            ...dims.map(() => ({wch:30}))];
         XLSX.utils.book_append_sheet(wb, wsDiario, "Diário");
+
+        // 4b. Aba: Hábitos — com histórico dos últimos 30 dias
+        const habDays = Array.from({length:30}, (_, i) => {
+            const d = new Date(); d.setDate(d.getDate() - i);
+            return app.getLocalDateKey(d);
+        }).reverse();
+        const habCol2 = ["ID", "Dimensão", "Título", "Gatilho", "Rotina", "Recompensa", ...habDays];
+        const habData2 = [habCol2];
+        (state.habits || []).forEach(h => {
+            habData2.push([
+                h.id, h.dimension || "Geral", h.title, h.trigger || "", h.routine || h.context || "", h.reward || "",
+                ...habDays.map(dk => app.isHabitDoneOnDate(h, dk) ? 1 : 0)
+            ]);
+        });
+        const wsHab2 = XLSX.utils.aoa_to_sheet(habData2);
+        wsHab2['!cols'] = [{wch:15},{wch:15},{wch:32},{wch:26},{wch:32},{wch:24},...habDays.map(()=>({wch:10}))];
+        XLSX.utils.book_append_sheet(wb, wsHab2, "Hábitos_Histórico");
 
         // 5. Aba: Revisões
         const revCol = ["Data", "O_Que_Planejei", "O_Que_Executei", "Aprendizado", "Ajuste", "Intencao_Proxima"];
