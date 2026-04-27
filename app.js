@@ -2930,6 +2930,214 @@ const app = {
         }
     },
 
+    // ── LINHA DO TEMPO ──────────────────────────────────────────────────────────
+
+    getAllActiveDates: function() {
+        const state = window.sistemaVidaState;
+        const dates = new Set();
+        Object.keys(state.dailyLogs || {}).forEach(d => dates.add(d));
+        (state.profile?.dailyCheckins || []).forEach(c => { if (c.date) dates.add(c.date); });
+        (state.entities?.micros || []).forEach(m => {
+            if (m.completedDate) dates.add(m.completedDate);
+            else if (m.doneDate) dates.add(m.doneDate);
+        });
+        (state.profile?.notes || []).forEach(n => {
+            const d = (n.createdAt || '').slice(0, 10);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(d)) dates.add(d);
+        });
+        (state.deepWork?.sessions || []).forEach(s => {
+            const d = (s.endedAt || '').slice(0, 10);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(d)) dates.add(d);
+        });
+        return Array.from(dates)
+            .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
+            .sort((a, b) => b.localeCompare(a));
+    },
+
+    getAggregatedDayData: function(dateKey) {
+        const state = window.sistemaVidaState;
+        const checkin = (state.profile?.dailyCheckins || []).find(c => c.date === dateKey) || null;
+        const log = (state.dailyLogs || {})[dateKey] || null;
+        const habitsDone = (state.habits || []).filter(h => {
+            const steps = Array.isArray(h.steps) ? h.steps.filter(Boolean) : [];
+            if (steps.length) {
+                const stepMap = (h.stepLogs || {})[dateKey] || {};
+                const done = steps.reduce((acc, _, i) => acc + (stepMap[i] || stepMap[String(i)] ? 1 : 0), 0);
+                return done === steps.length;
+            }
+            const val = (h.logs || {})[dateKey] || 0;
+            const mode = h.trackMode || 'boolean';
+            return mode === 'boolean' ? val > 0 : val >= (h.targetValue || 1);
+        });
+        const microsDone = (state.entities?.micros || []).filter(m =>
+            m.completedDate === dateKey || m.doneDate === dateKey
+        );
+        const notes = (state.profile?.notes || []).filter(n =>
+            (n.createdAt || '').slice(0, 10) === dateKey
+        );
+        const dwSessions = (state.deepWork?.sessions || []).filter(s =>
+            (s.endedAt || '').slice(0, 10) === dateKey
+        );
+        const dwMinutes = dwSessions.reduce((acc, s) => acc + Math.round((Number(s.focusSec) || 0) / 60), 0);
+        const xpEarned = Object.values((state.gamification?.events) || {})
+            .filter(e => (e.at || '').slice(0, 10) === dateKey)
+            .reduce((acc, e) => acc + (Number(e.xp) || 0), 0);
+        const achievements = (state.gamification?.achievements || []).filter(a =>
+            (a.unlockedAt || '').slice(0, 10) === dateKey
+        );
+        return { dateKey, checkin, log, habitsDone, microsDone, notes, dwSessions, dwMinutes, xpEarned, achievements };
+    },
+
+    renderTimelineHistory: function(showAll) {
+        const container = document.getElementById('timeline-history-container');
+        if (!container) return;
+        const allDates = this.getAllActiveDates();
+        const PAGE = 30;
+        const dates = showAll ? allDates : allDates.slice(0, PAGE);
+        const hasMore = !showAll && allDates.length > PAGE;
+
+        if (!dates.length) {
+            container.innerHTML = '<p class="text-sm text-outline italic p-4 text-center">Nenhum registro ainda. Use o app por alguns dias para construir sua linha do tempo.</p>';
+            return;
+        }
+
+        const emotionEmojis = { calmo:'😌', ansioso:'😰', animado:'🥳', focado:'🎯', cansado:'😴', sobrecarregado:'🤯', esperancoso:'🌟', irritado:'😤', grato:'🙏', motivado:'🚀', triste:'😔', confiante:'💪' };
+        const energyEmojis = ['', '🪫', '😩', '😐', '⚡', '🔥'];
+        const dimIcons = { 'Saúde':'💪','Mente':'🧠','Carreira':'💼','Finanças':'💰','Relacionamentos':'🤝','Família':'🏠','Lazer':'🎨','Propósito':'✨' };
+        const habitIconMap = { 'Saúde':'fitness_center','Mente':'psychology','Carreira':'work','Finanças':'payments','Relacionamentos':'groups','Família':'family_restroom','Lazer':'sports_esports','Propósito':'auto_awesome' };
+        const macros = (window.sistemaVidaState.entities?.macros) || [];
+        const todayKey = this.getLocalDateKey();
+        const dots = (n, col) => Array.from({length:5}, (_,i) =>
+            `<span class="inline-block w-2 h-2 rounded-full ${i < n ? col : 'bg-surface-container-high'}"></span>`
+        ).join('');
+
+        const cards = dates.map(dateKey => {
+            const d = this.getAggregatedDayData(dateKey);
+            const dateObj = new Date(dateKey + 'T12:00:00');
+            const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+            const dayNum = dateObj.toLocaleDateString('pt-BR', { day: '2-digit' });
+            const monthStr = dateObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+            const isToday = dateKey === todayKey;
+            const emotionEmoji = d.checkin?.emotion ? (emotionEmojis[d.checkin.emotion] || '') : '';
+            const energyEmoji = d.checkin?.energy ? (energyEmojis[d.checkin.energy] || '') : '';
+
+            // Resumo rápido para o card colapsado
+            const stats = [];
+            if (d.microsDone.length) stats.push(`${d.microsDone.length} micro${d.microsDone.length > 1 ? 's' : ''}`);
+            if (d.habitsDone.length) stats.push(`${d.habitsDone.length} hábito${d.habitsDone.length > 1 ? 's' : ''}`);
+            if (d.dwMinutes) stats.push(`${d.dwMinutes}min foco`);
+            if (d.notes.length) stats.push(`${d.notes.length} nota${d.notes.length > 1 ? 's' : ''}`);
+            if (d.xpEarned) stats.push(`+${d.xpEarned} XP`);
+
+            // ── Seções expandidas ──
+            let checkinHtml = '';
+            if (d.checkin) {
+                const c = d.checkin;
+                checkinHtml = `<div class="space-y-2">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Como estava</p>
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                        ${c.sleepHours ? `<div class="flex items-center gap-2 text-xs"><span class="text-outline w-20 shrink-0">Sono</span><span class="font-semibold text-on-surface">${c.sleepHours}h</span></div>` : ''}
+                        ${c.sleepQuality ? `<div class="flex items-center gap-2 text-xs"><span class="text-outline w-20 shrink-0">Qualidade</span><div class="flex gap-1">${dots(c.sleepQuality,'bg-tertiary')}</div></div>` : ''}
+                        ${c.energy ? `<div class="flex items-center gap-2 text-xs"><span class="text-outline w-20 shrink-0">Energia</span><div class="flex gap-1">${dots(c.energy,'bg-primary')}</div></div>` : ''}
+                        ${c.mood ? `<div class="flex items-center gap-2 text-xs"><span class="text-outline w-20 shrink-0">Humor</span><div class="flex gap-1">${dots(c.mood,'bg-secondary')}</div></div>` : ''}
+                        ${c.stress ? `<div class="flex items-center gap-2 text-xs"><span class="text-outline w-20 shrink-0">Estresse</span><div class="flex gap-1">${dots(c.stress,'bg-error')}</div></div>` : ''}
+                        ${c.emotion ? `<div class="flex items-center gap-2 text-xs col-span-2"><span class="text-outline w-20 shrink-0">Emoção</span><span class="font-medium">${emotionEmoji} ${this.escapeHtml(c.emotion)}</span></div>` : ''}
+                    </div>
+                </div>`;
+            }
+
+            let diaryHtml = '';
+            if (d.log) {
+                const parts = [];
+                if (d.log.focus) parts.push(`<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Intenção</p><p class="text-xs italic text-on-surface">"${this.escapeHtml(d.log.focus)}"</p></div>`);
+                if (d.log.gratidao) parts.push(`<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Gratidão</p><p class="text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(d.log.gratidao)}</p></div>`);
+                if (d.log.funcionou) parts.push(`<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">O que funcionou</p><p class="text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(d.log.funcionou)}</p></div>`);
+                const dimEntries = Object.entries(d.log.dimensionNotes || {}).filter(([,v]) => v?.trim());
+                if (dimEntries.length) parts.push(`<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Shutdown</p><div class="space-y-2">${dimEntries.map(([dim, text]) => `<div><p class="text-xs font-bold text-on-surface">${dimIcons[dim] || '⭐'} ${this.escapeHtml(dim)}</p><p class="text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(text)}</p></div>`).join('')}</div></div>`);
+                if (parts.length) diaryHtml = `<div class="space-y-3">${parts.join('')}</div>`;
+            }
+
+            let habitsHtml = '';
+            if (d.habitsDone.length) {
+                habitsHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Hábitos concluídos</p><ul class="space-y-1">${
+                    d.habitsDone.map(h => `<li class="flex items-center gap-2 text-xs text-on-surface-variant"><span class="material-symbols-outlined notranslate text-primary text-[14px]">${habitIconMap[h.dimension] || 'stars'}</span>${this.escapeHtml(h.title)}</li>`).join('')
+                }</ul></div>`;
+            }
+
+            let microsHtml = '';
+            if (d.microsDone.length) {
+                microsHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Micro-ações concluídas</p><ul class="space-y-1">${
+                    d.microsDone.map(m => {
+                        const macro = macros.find(mc => mc.id === m.macroId);
+                        return `<li class="flex items-start gap-2 text-xs"><span class="material-symbols-outlined notranslate text-secondary text-[14px] mt-0.5 shrink-0">check_circle</span><span class="text-on-surface-variant">${this.escapeHtml(m.title)}${macro ? `<span class="ml-1 text-outline">· ${this.escapeHtml(macro.title)}</span>` : ''}</span></li>`;
+                    }).join('')
+                }</ul></div>`;
+            }
+
+            let dwHtml = '';
+            if (d.dwSessions.length) {
+                dwHtml = `<div class="flex items-center gap-3"><span class="material-symbols-outlined notranslate text-tertiary text-[18px]">timer</span><div><p class="text-[10px] font-bold uppercase tracking-widest text-outline">Foco profundo</p><p class="text-xs text-on-surface-variant">${d.dwSessions.length} sessão${d.dwSessions.length > 1 ? 'ões' : ''} · ${d.dwMinutes} min</p></div></div>`;
+            }
+
+            let notesHtml = '';
+            if (d.notes.length) {
+                notesHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Anotações</p><ul class="space-y-1.5">${
+                    d.notes.map(n => `<li class="text-xs"><span class="font-medium text-on-surface">${this.escapeHtml(n.title)}</span>${n.body ? `<span class="text-on-surface-variant"> — ${this.escapeHtml(n.body.slice(0, 100))}${n.body.length > 100 ? '…' : ''}</span>` : ''}</li>`).join('')
+                }</ul></div>`;
+            }
+
+            let xpHtml = '';
+            if (d.xpEarned || d.achievements.length) {
+                xpHtml = `<div class="flex flex-wrap gap-2">
+                    ${d.xpEarned ? `<span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">+${d.xpEarned} XP</span>` : ''}
+                    ${d.achievements.map(a => `<span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-600"><span class="material-symbols-outlined notranslate text-[12px]">${this.escapeHtml(a.icon || 'military_tech')}</span>${this.escapeHtml(a.title)}</span>`).join('')}
+                </div>`;
+            }
+
+            const sections = [checkinHtml, diaryHtml, habitsHtml, microsHtml, dwHtml, notesHtml, xpHtml].filter(Boolean);
+            const safeKey = dateKey.replace(/-/g, '');
+
+            return `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest shadow-sm overflow-hidden">
+                <button type="button" onclick="window.app.toggleTimelineCard('${safeKey}')"
+                    class="w-full flex items-center gap-3 p-4 text-left hover:bg-surface-container-low transition-colors">
+                    <div class="text-center shrink-0 w-9">
+                        <span class="block text-[9px] uppercase font-bold text-outline leading-tight">${weekday}</span>
+                        <span class="block text-xl font-bold text-primary leading-tight">${dayNum}</span>
+                        <span class="block text-[9px] uppercase text-outline">${monthStr}</span>
+                    </div>
+                    <div class="w-px h-10 bg-outline-variant/20 shrink-0"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            ${isToday ? '<span class="text-[10px] font-bold text-primary">Hoje</span>' : ''}
+                            ${emotionEmoji ? `<span>${emotionEmoji}</span>` : ''}
+                            ${energyEmoji ? `<span>${energyEmoji}</span>` : ''}
+                            ${d.log?.focus ? `<span class="text-xs text-on-surface-variant italic truncate">${this.escapeHtml(d.log.focus.slice(0, 60))}${d.log.focus.length > 60 ? '…' : ''}</span>` : ''}
+                        </div>
+                        ${stats.length ? `<p class="mt-0.5 text-[10px] text-outline">${stats.join(' · ')}</p>` : ''}
+                    </div>
+                    ${sections.length ? `<span class="material-symbols-outlined notranslate text-outline text-[18px] shrink-0 tl-chev-${safeKey}">expand_more</span>` : ''}
+                </button>
+                ${sections.length ? `<div id="tl-expand-${safeKey}" class="hidden px-4 pb-5 pt-4 border-t border-outline-variant/10 space-y-4">${sections.join('<div class="h-px bg-outline-variant/10"></div>')}</div>` : ''}
+            </div>`;
+        }).join('');
+
+        const moreBtn = hasMore
+            ? `<div class="text-center pt-2"><button type="button" onclick="window.app.renderTimelineHistory(true)" class="text-xs font-bold text-primary hover:underline">Ver mais (${allDates.length - PAGE} dias restantes)</button></div>`
+            : '';
+        container.innerHTML = cards + moreBtn;
+    },
+
+    toggleTimelineCard: function(safeKey) {
+        const panel = document.getElementById(`tl-expand-${safeKey}`);
+        if (!panel) return;
+        const opening = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !opening);
+        const chev = document.querySelector(`.tl-chev-${safeKey}`);
+        if (chev) chev.textContent = opening ? 'expand_less' : 'expand_more';
+    },
+
+    // ── FIM LINHA DO TEMPO ──────────────────────────────────────────────────────
+
     setPlanosFilter: function(dim) {
         this.planosFilter = dim;
         if (this.render.planos) this.render.planos();
@@ -8864,6 +9072,7 @@ const app = {
             app.renderWellbeingTrendsPanel();
             app.renderLoadRecoveryPanel();
             app.renderPatternsPanel();
+            app.renderTimelineHistory();
         },
         renderFocusDistribution: function(containerId) {
             const container = document.getElementById(containerId);
