@@ -5053,6 +5053,11 @@ const app = {
         this.populateNoteLinkedSelect();
         const linked = document.getElementById('note-linked');
         if (linked) linked.value = note.linkedTo ? `${note.linkedTo.entityType}:${note.linkedTo.entityId}` : '';
+        const titleEl = document.getElementById('note-title');
+        if (titleEl) {
+            titleEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            titleEl.focus();
+        }
     },
 
     deleteProfileNote: function(noteId) {
@@ -5065,25 +5070,28 @@ const app = {
         if (this.showToast) this.showToast('Nota removida.', 'success');
     },
 
-    renderNotesPanel: function() {
+    renderNotesPanel: function(showAll) {
         const container = document.getElementById('notes-list');
         if (!container) return;
         this.ensureNotesState();
         this.populateNoteLinkedSelect();
         const query = String(document.getElementById('notes-search')?.value || '').trim().toLowerCase();
-        const notes = (window.sistemaVidaState.profile.notes || []).filter(note => {
+        const allNotes = (window.sistemaVidaState.profile.notes || []).filter(note => {
             if (!query) return true;
             const haystack = [note.title, note.body, note.url, ...(note.tags || []), this.getNoteLinkLabel(note.linkedTo)]
-                .join(' ')
-                .toLowerCase();
+                .join(' ').toLowerCase();
             return haystack.includes(query);
         });
-        if (!notes.length) {
+        if (!allNotes.length) {
             container.innerHTML = '<p class="md:col-span-2 text-sm text-outline italic rounded-xl bg-surface-container-low p-4">Nenhuma nota encontrada.</p>';
             return;
         }
-        container.innerHTML = notes.map(note => {
+        const PAGE = 8;
+        const notes = (showAll || query) ? allNotes : allNotes.slice(0, PAGE);
+        const hasMore = !showAll && !query && allNotes.length > PAGE;
+        const noteCards = notes.map(note => {
             const linkLabel = this.getNoteLinkLabel(note.linkedTo);
+            const dateStr = note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
             const tags = (note.tags || []).map(tag =>
                 `<span class="inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`
             ).join('');
@@ -5096,17 +5104,22 @@ const app = {
                         <div class="min-w-0">
                             <h4 class="text-sm font-bold text-on-surface leading-snug">${this.escapeHtml(note.title)}</h4>
                             ${linkLabel ? `<p class="mt-1 text-[10px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(linkLabel)}</p>` : ''}
+                            ${dateStr ? `<p class="mt-0.5 text-[10px] text-outline">${dateStr}</p>` : ''}
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
                             <button type="button" onclick="window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[17px] hover:text-primary" title="Editar">edit</button>
                             <button type="button" onclick="window.app.deleteProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[17px] hover:text-error" title="Excluir">delete</button>
                         </div>
                     </div>
-                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line">${this.escapeHtml(note.body)}</p>` : ''}
+                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line line-clamp-4">${this.escapeHtml(note.body)}</p>` : ''}
                     ${url}
                     ${tags ? `<div class="flex flex-wrap gap-1.5">${tags}</div>` : ''}
                 </article>`;
         }).join('');
+        const moreBtn = hasMore
+            ? `<div class="md:col-span-2 text-center pt-1"><button type="button" onclick="window.app.renderNotesPanel(true)" class="text-xs font-bold text-primary hover:underline">Ver mais (${allNotes.length - PAGE} restantes)</button></div>`
+            : '';
+        container.innerHTML = noteCards + moreBtn;
     },
 
     getLinkedNotes: function(entityType, entityId) {
@@ -5251,23 +5264,39 @@ const app = {
         if (this.showToast) this.showToast('Check-in do dia salvo.', 'success');
     },
 
+    setCheckinVal: function(inputId, val, btn) {
+        const hidden = document.getElementById(inputId);
+        if (hidden) hidden.value = val;
+        if (inputId === 'daily-checkin-energy') {
+            window.sistemaVidaState.energy = val;
+            if (this.renderDailyCompass) this.renderDailyCompass();
+        }
+        const group = btn ? btn.closest('[data-checkin-group]') : document.querySelector(`[data-checkin-group="${inputId}"]`);
+        if (group) {
+            group.querySelectorAll('.checkin-emoji-btn').forEach(b => {
+                const active = parseInt(b.dataset.val) === val;
+                b.classList.toggle('ring-2', active);
+                b.classList.toggle('ring-primary', active);
+                b.classList.toggle('bg-primary/10', active);
+            });
+        }
+    },
+
     renderDailyCheckinPanel: function() {
         const root = document.getElementById('daily-checkin-panel');
         if (!root) return;
         this.ensureDailyCheckinState();
         const todayEntry = this.getTodayCheckin();
         const defaults = todayEntry || { sleepHours: '', sleepQuality: 3, energy: window.sistemaVidaState.energy || 3, mood: 3, stress: 3, emotion: '' };
-        const setVal = (id, value) => {
-            const el = document.getElementById(id);
-            if (el) el.value = value;
-            const label = document.getElementById(`${id}-val`);
-            if (label) label.textContent = String(value || '--');
-        };
-        setVal('daily-checkin-sleep-hours', defaults.sleepHours || '');
-        setVal('daily-checkin-sleep-quality', defaults.sleepQuality);
-        setVal('daily-checkin-energy', defaults.energy);
-        setVal('daily-checkin-mood', defaults.mood);
-        setVal('daily-checkin-stress', defaults.stress);
+        const sleepEl = document.getElementById('daily-checkin-sleep-hours');
+        if (sleepEl) sleepEl.value = defaults.sleepHours || '';
+        ['daily-checkin-sleep-quality', 'daily-checkin-energy', 'daily-checkin-mood', 'daily-checkin-stress'].forEach(id => {
+            const key = id.replace('daily-checkin-', '').replace('-', '');
+            const fieldMap = { 'sleepquality': 'sleepQuality', 'energy': 'energy', 'mood': 'mood', 'stress': 'stress' };
+            const field = fieldMap[key] || key;
+            const val = Number(defaults[field] || 3);
+            this.setCheckinVal(id, val, null);
+        });
         const emotionVal = defaults.emotion || '';
         const emotionHidden = document.getElementById('daily-checkin-emotion');
         if (emotionHidden) emotionHidden.value = emotionVal;
@@ -5293,6 +5322,31 @@ const app = {
                     <span title="Estresse">S${this.escapeHtml(String(item.stress))}</span>
                 </div>
             `).join('') : '<p class="text-xs text-outline italic">Sem histórico ainda. O primeiro check-in já cria a linha base.</p>';
+        }
+    },
+
+    toggleDiaryDimensionArea: function(dim) {
+        const container = document.getElementById('dim-diary-areas');
+        if (!container) return;
+        const safeId = 'dim-note-' + dim.replace(/[^a-zA-Z0-9]/g, '-');
+        const existing = document.getElementById(safeId);
+        const btn = document.querySelector(`.dim-diary-toggle[data-dim="${CSS.escape(dim)}"]`);
+        const dimIcons = { 'Saúde': '💪', 'Mente': '🧠', 'Carreira': '💼', 'Finanças': '💰', 'Relacionamentos': '🤝', 'Família': '🏠', 'Lazer': '🎨', 'Propósito': '✨' };
+        if (existing) {
+            existing.remove();
+            if (btn) btn.classList.remove('bg-secondary/20', 'border-secondary', 'text-secondary', 'font-bold');
+        } else {
+            const div = document.createElement('div');
+            div.id = safeId;
+            div.className = 'rounded-xl border border-outline-variant/20 overflow-hidden';
+            div.innerHTML = `<div class="flex items-center gap-2 bg-surface-container px-4 py-2.5">
+                <span class="text-base">${dimIcons[dim] || '⭐'}</span>
+                <span class="text-xs font-bold text-on-surface uppercase tracking-widest">${this.escapeHtml(dim)}</span>
+            </div>
+            <textarea data-dim-note="${this.escapeHtml(dim)}" class="w-full bg-transparent px-4 py-3 text-sm text-on-surface resize-none focus:outline-none focus:bg-primary/[0.02]" rows="3" placeholder="Como foi ${this.escapeHtml(dim.toLowerCase())} hoje?"></textarea>`;
+            container.appendChild(div);
+            if (btn) btn.classList.add('bg-secondary/20', 'border-secondary', 'text-secondary', 'font-bold');
+            div.querySelector('textarea').focus();
         }
     },
 
@@ -7994,8 +8048,12 @@ const app = {
         const focoInput = document.getElementById('diario-foco');
         if (focoInput) window.sistemaVidaState.dailyLogs[today].focus = focoInput.value.trim();
 
-        const dimInput = document.getElementById('diario-dimension');
-        if (dimInput) window.sistemaVidaState.dailyLogs[today].dimensions = dimInput.value ? dimInput.value.split(',').filter(Boolean) : [];
+        const dimensionNotes = {};
+        document.querySelectorAll('[data-dim-note]').forEach(ta => {
+            const dim = ta.getAttribute('data-dim-note');
+            if (ta.value.trim()) dimensionNotes[dim] = ta.value.trim();
+        });
+        window.sistemaVidaState.dailyLogs[today].dimensionNotes = dimensionNotes;
 
         this.markCadence('diary', today);
         this.saveState(true);
@@ -9123,10 +9181,8 @@ const app = {
                 let streak = 0;
                 const check = new Date();
                 check.setHours(0, 0, 0, 0);
-                // Se hoje ainda não tem atividade, começa a contar de ontem
-                if (!app.hasDayActivity(app.getLocalDateKey(check))) {
-                    check.setDate(check.getDate() - 1);
-                }
+                // Conta apenas dias passados completos (hoje não conta)
+                check.setDate(check.getDate() - 1);
                 while (true) {
                     const key = app.getLocalDateKey(check);
                     if (app.hasDayActivity(key)) {
@@ -9247,15 +9303,13 @@ const app = {
                 const s1 = document.getElementById('diario-shutdown-1');
                 const shutdown = Array.isArray(log.shutdown) ? (log.shutdown[0] || '') : (log.shutdown || '');
                 if (s1) s1.value = shutdown;
-                const savedDims = Array.isArray(log.dimensions) ? log.dimensions : [];
-                const dimHidden = document.getElementById('diario-dimension');
-                if (dimHidden) dimHidden.value = savedDims.join(',');
-                document.querySelectorAll('.diario-dim-chip').forEach(chip => {
-                    const active = savedDims.includes(chip.getAttribute('data-dim'));
-                    chip.classList.toggle('bg-primary/20', active);
-                    chip.classList.toggle('border-primary', active);
-                    chip.classList.toggle('text-primary', active);
-                    chip.classList.toggle('font-bold', active);
+                const dimNotes = log.dimensionNotes || {};
+                Object.entries(dimNotes).forEach(([dim, text]) => {
+                    if (!text || !text.trim()) return;
+                    app.toggleDiaryDimensionArea(dim);
+                    const safeId = 'dim-note-' + dim.replace(/[^a-zA-Z0-9]/g, '-');
+                    const ta = document.querySelector(`#${safeId} textarea`);
+                    if (ta) ta.value = text;
                 });
             }
 
