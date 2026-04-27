@@ -10417,6 +10417,11 @@ const app = {
                                         <span class="shrink-0 bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-label font-bold uppercase tracking-wider">${item.dimension || 'Geral'}</span>
                                         ${microPlanChip}
                                         ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold">ALINHADO</span>' : ''}
+                                        ${entityType === 'micros' ? (() => {
+                                            const notesCount = app.getLinkedNotes('micros', item.id).length;
+                                            return notesCount ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high rounded-full px-2 py-1">` +
+                                                `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</span>` : '';
+                                        })() : ''}
                                     </div>
                                     <h4 class="font-headline text-lg md:text-xl font-semibold leading-tight line-clamp-2">${item.title}</h4>
                                     ${subMetaText ? `<p class="text-[11px] text-outline">${subMetaText}</p>` : ''}
