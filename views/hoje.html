@@ -52,10 +52,10 @@
                 <span class="text-[10px] font-bold uppercase tracking-widest text-outline w-24 shrink-0">Qualidade</span>
                 <input type="hidden" id="daily-checkin-sleep-quality" value="3">
                 <div class="flex gap-1.5 flex-1" data-checkin-group="daily-checkin-sleep-quality">
-                    <button type="button" data-val="1" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',1,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Péssima">😴</button>
-                    <button type="button" data-val="2" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',2,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Ruim">😕</button>
+                    <button type="button" data-val="1" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',1,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Péssima">😵</button>
+                    <button type="button" data-val="2" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',2,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Ruim">😫</button>
                     <button type="button" data-val="3" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',3,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Ok">😐</button>
-                    <button type="button" data-val="4" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',4,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Boa">🙂</button>
+                    <button type="button" data-val="4" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',4,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Boa">😊</button>
                     <button type="button" data-val="5" onclick="window.app.setCheckinVal('daily-checkin-sleep-quality',5,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Ótima">😊</button>
                 </div>
             </div>
@@ -210,14 +210,12 @@
             <textarea id="diario-funcionou" class="w-full bg-transparent border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none" placeholder="Vindas do dia..." rows="3"></textarea>
         </div>
 
-        <!-- Diário por dimensão -->
-        <div class="space-y-3 pt-2 border-t border-outline-variant/10">
+        <div class="space-y-4 pt-2 border-t border-outline-variant/10">
             <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined notranslate text-secondary text-sm">auto_stories</span>
-                <label class="text-xs font-label uppercase tracking-widest text-secondary font-bold">Diário por dimensão</label>
-                <span class="normal-case font-normal italic text-outline text-xs">(opcional)</span>
+                <span class="material-symbols-outlined notranslate text-primary text-sm">auto_awesome</span>
+                <label class="text-xs font-label uppercase tracking-widest text-primary font-bold">Ritual de Shutdown</label>
             </div>
-            <p class="text-xs text-outline italic">Abra as dimensões que quer registrar hoje.</p>
+            <p class="text-xs text-outline italic">Abra as dimensões que viveu hoje e registre como foi.</p>
             <div class="flex flex-wrap gap-2">
                 <button type="button" data-dim="Saúde" onclick="window.app.toggleDiaryDimensionArea('Saúde')" class="dim-diary-toggle px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">💪 Saúde</button>
                 <button type="button" data-dim="Mente" onclick="window.app.toggleDiaryDimensionArea('Mente')" class="dim-diary-toggle px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">🧠 Mente</button>
@@ -229,15 +227,6 @@
                 <button type="button" data-dim="Propósito" onclick="window.app.toggleDiaryDimensionArea('Propósito')" class="dim-diary-toggle px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">✨ Propósito</button>
             </div>
             <div id="dim-diary-areas" class="space-y-3"></div>
-        </div>
-
-        <div class="space-y-4 pt-2 border-t border-outline-variant/10">
-            <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined notranslate text-primary text-sm">auto_awesome</span>
-                <label class="text-xs font-label uppercase tracking-widest text-primary font-bold">Ritual de Shutdown</label>
-            </div>
-            <p class="text-xs text-outline italic">O que você deixa para trás agora para descansar em paz.</p>
-            <textarea id="diario-shutdown-1" class="w-full bg-transparent border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none" placeholder="Encerrando o dia..." rows="3"></textarea>
         </div>
 <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
 <div class="flex items-center gap-2 text-primary">
