@@ -1793,10 +1793,22 @@ const app = {
             const dailyBackup = JSON.parse(localStorage.getItem('lifeos_daily_checkins_backup') || 'null');
             if (Array.isArray(dailyBackup) && dailyBackup.length) {
                 const today = this.getLocalDateKey();
-                const hasTodayBackup = dailyBackup.some(entry => entry?.date === today);
-                if (hasTodayBackup) {
+                const todayBackupEntry = dailyBackup.find(entry => entry?.date === today);
+                if (todayBackupEntry) {
                     if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                    window.sistemaVidaState.profile.dailyCheckins = dailyBackup;
+                    const checkins = window.sistemaVidaState.profile.dailyCheckins || [];
+                    const hasCloudToday = checkins.some(e => e.date === today);
+                    // Only restore today's entry if cloud doesn't have it (prevents overwriting future syncs)
+                    if (!hasCloudToday) {
+                        checkins.unshift(todayBackupEntry);
+                        window.sistemaVidaState.profile.dailyCheckins = checkins.sort((a,b) => b.date.localeCompare(a.date)).slice(0, 180);
+                    } else {
+                        // Cloud has today but might be missing emotion — use backup if backup has more data
+                        const cloudToday = checkins.find(e => e.date === today);
+                        if (!cloudToday.emotion && todayBackupEntry.emotion) {
+                            Object.assign(cloudToday, todayBackupEntry);
+                        }
+                    }
                 }
             }
         } catch (_) {}
