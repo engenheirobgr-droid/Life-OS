@@ -979,7 +979,7 @@
 
     <!-- Modal: Nova Nota Rápida -->
     <div id="quick-note-modal" class="hidden fixed inset-0 z-[108] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-        <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+        <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[92vh]">
             <div class="p-5 border-b border-outline-variant/20 flex items-center justify-between gap-4 shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined notranslate text-primary">sticky_note_2</span>
@@ -992,17 +992,26 @@
             </div>
             <div class="p-5 space-y-3 overflow-y-auto flex-1">
                 <input id="quick-note-title" type="text" maxlength="120"
-                    class="w-full h-11 rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                    class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
                     placeholder="Título (opcional)">
                 <textarea id="quick-note-body" rows="4"
-                    class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-low p-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                    class="w-full rounded-lg border-none bg-surface-container-low p-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none resize-none"
                     placeholder="Conteúdo da nota..."></textarea>
                 <input id="quick-note-url" type="url"
-                    class="w-full h-11 rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                    class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
                     placeholder="URL (opcional)">
                 <input id="quick-note-tags" type="text"
-                    class="w-full h-11 rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                    class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
                     placeholder="Tags separadas por vírgula (opcional)">
+                <select id="quick-note-linked"
+                    class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none">
+                    <option value="">Sem vínculo (nota avulsa)</option>
+                </select>
+                <input type="hidden" id="quick-note-edit-id">
+                <p class="text-[10px] text-outline leading-relaxed flex items-center gap-1.5">
+                    <span class="material-symbols-outlined notranslate text-[13px]">info</span>
+                    Notas ficam salvas em <button type="button" onclick="window.app.closeQuickNoteModal(); window.app.switchView('perfil')" class="underline hover:text-primary transition-colors">Perfil → Notas</button>, onde você pode buscar, editar e vincular.
+                </p>
             </div>
             <div class="p-5 border-t border-outline-variant/20 flex gap-3 shrink-0">
                 <button type="button" onclick="window.app.closeQuickNoteModal()"
@@ -1360,6 +1369,16 @@
 
             <form id="weekly-plan-form" onsubmit="event.preventDefault()"
                 class="p-6 flex flex-col gap-5 overflow-y-auto no-scrollbar flex-1">
+
+                <div id="wp-no-current-plan-warning" class="hidden rounded-xl border border-amber-400/40 bg-amber-400/10 p-3 flex items-start gap-2">
+                    <span class="material-symbols-outlined notranslate text-amber-500 text-[18px] shrink-0 mt-0.5">warning</span>
+                    <div>
+                        <p class="text-xs font-bold text-amber-700 dark:text-amber-400">Semana atual sem plano</p>
+                        <p class="text-[11px] text-on-surface-variant mt-0.5 leading-relaxed">Você ainda não planejou a semana em curso. Considere planejar a semana atual antes para manter a continuidade.</p>
+                        <button type="button" onclick="window.app.closeWeeklyPlanModal(); setTimeout(()=> window.app.openWeeklyPlanModal(), 50)"
+                            class="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 hover:underline">Planejar semana atual</button>
+                    </div>
+                </div>
 
                 <div class="flex flex-col gap-2">
                     <label for="wp-intention" class="text-xs uppercase text-primary font-bold tracking-wider">Intenção da Semana</label>

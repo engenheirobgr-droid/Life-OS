@@ -3902,7 +3902,10 @@ const app = {
             if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério de Sucesso';
             if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
             if (type === 'micros') setGroupVisible(effortGroup, true);
-            if (['macros', 'micros'].includes(type)) setGroupVisible(woopGroup, true, 'block');
+            if (['macros', 'micros'].includes(type)) {
+                setGroupVisible(woopGroup, true, 'block');
+                this.toggleCrudWoop(type === 'micros');
+            }
             this.updateParentList(type);
         }
 
@@ -4969,10 +4972,27 @@ const app = {
         this.closeFabMenu();
         const modal = document.getElementById('quick-note-modal');
         if (!modal) return;
-        ['quick-note-title', 'quick-note-body', 'quick-note-url', 'quick-note-tags'].forEach(id => {
+        ['quick-note-title', 'quick-note-body', 'quick-note-url', 'quick-note-tags', 'quick-note-edit-id'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
+        const linkedSel = document.getElementById('quick-note-linked');
+        if (linkedSel) {
+            const groups = {};
+            this.getNoteLinkOptions().forEach(opt => {
+                if (!groups[opt.group]) groups[opt.group] = [];
+                groups[opt.group].push(opt);
+            });
+            let html = '<option value="">Sem vínculo (nota avulsa)</option>';
+            Object.keys(groups).forEach(group => {
+                html += `<optgroup label="${this.escapeHtml(group)}">`;
+                groups[group].forEach(opt => {
+                    html += `<option value="${this.escapeHtml(opt.value)}">${this.escapeHtml(opt.label)}</option>`;
+                });
+                html += '</optgroup>';
+            });
+            linkedSel.innerHTML = html;
+        }
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         setTimeout(() => document.getElementById('quick-note-body')?.focus(), 50);
@@ -4991,23 +5011,30 @@ const app = {
             return;
         }
         this.ensureNotesState();
+        const editId = String(document.getElementById('quick-note-edit-id')?.value || '').trim();
+        const linkedRaw = String(document.getElementById('quick-note-linked')?.value || '');
+        const [entityType, ...entityIdParts] = linkedRaw.split(':');
+        const entityId = entityIdParts.join(':');
         const now = new Date().toISOString();
         const note = {
-            id: `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
+            id: editId || `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
             title: title || 'Nota sem título',
             body,
             url: String(document.getElementById('quick-note-url')?.value || '').trim(),
             tags: String(document.getElementById('quick-note-tags')?.value || '').split(',').map(t => t.trim()).filter(Boolean),
-            linkedTo: null,
+            linkedTo: entityType && entityId ? { entityType, entityId } : null,
             createdAt: now,
             updatedAt: now
         };
-        (window.sistemaVidaState.profile.notes || (window.sistemaVidaState.profile.notes = [])).unshift(note);
+        const list = window.sistemaVidaState.profile.notes || (window.sistemaVidaState.profile.notes = []);
+        const idx = editId ? list.findIndex(item => item.id === editId) : -1;
+        if (idx >= 0) { note.createdAt = list[idx].createdAt || now; list[idx] = note; }
+        else list.unshift(note);
         this.ensureNotesState();
         this.saveState(true);
         this.closeQuickNoteModal();
         this.renderNotesPanel();
-        if (this.showToast) this.showToast('Nota salva.', 'success');
+        if (this.showToast) this.showToast('Nota salva em Perfil → Notas.', 'success');
     },
 
     editProfileNote: function(noteId) {
@@ -6332,6 +6359,13 @@ const app = {
         const label = document.getElementById('weekly-plan-week-label');
         if (title) title.textContent = isNextWeek ? 'Planejar Próxima Semana' : 'Planejamento Semanal';
         if (label) label.textContent = this._formatWeekRange(weekKey);
+
+        const noCurrentPlanWarning = document.getElementById('wp-no-current-plan-warning');
+        if (noCurrentPlanWarning) {
+            const currentWeekPlan = (state.weekPlans || {})[this._getWeekKey()];
+            const currentWeekHasPlan = currentWeekPlan && (currentWeekPlan.selectedMicros?.length > 0 || currentWeekPlan.intention?.trim());
+            noCurrentPlanWarning.classList.toggle('hidden', !isNextWeek || !!currentWeekHasPlan);
+        }
 
         // Pré-preenche com plano existente para esta semana (se houver)
         const existing = (state.weekPlans || {})[weekKey] || {};
@@ -8332,7 +8366,7 @@ const app = {
             icon: 'account_tree',
             title: 'Planos: Hierarquia Meta → OKR → Macro → Micro',
             subtitle: 'Cascata de objetivos com weekly planning',
-            what: 'A hierarquia decompõe ambição em ação: <strong>Meta</strong> (1-5 anos) → <strong>OKR</strong> (trimestral, com Key Results mensuráveis) → <strong>Macro</strong> (semanal/mensal) → <strong>Micro</strong> (atômico, ~1 sessão). O <strong>Planejamento Semanal</strong> seleciona quais Micros entram na semana com previsão de energia.',
+            what: 'A hierarquia decompõe ambição em ação: <strong>Meta</strong> (1-5 anos) → <strong>OKR</strong> (trimestral, com Key Results mensuráveis) → <strong>Macro</strong> (mensal, 2-6 semanas) → <strong>Micro</strong> (atômico, ~1 sessão). O <strong>Planejamento Semanal</strong> seleciona quais Micros entram na semana com previsão de energia.',
             why: 'OKRs (Andy Grove, popularizado por John Doerr) separam objetivo qualitativo (Objective) de medidas (Key Results), evitando metas vagas. Decomposição em Micros respeita a teoria da auto-eficácia (Bandura): vitórias pequenas alimentam crença de competência. Weekly planning aplica o "12 Week Year" — comprimir o foco em ciclos curtos aumenta execução.',
             refs: ['John Doerr — Measure What Matters (OKRs)', 'Brian Moran — The 12 Week Year', 'Albert Bandura — Self-Efficacy Theory'],
             how: [
@@ -8401,7 +8435,7 @@ const app = {
             why: 'Mudança pessoal melhora quando dados de estado são coletados perto do momento real, princípio usado em EMA (Ecological Momentary Assessment). Revisões semanais sustentam OKRs e execução; escalas como PERMA/SWLS pedem cadência mais espaçada para evitar ruído e fadiga de medição.',
             refs: ['Ecological Momentary Assessment (EMA)', 'Brian Moran — 12 Week Year', 'Diener — SWLS', 'Seligman — PERMA'],
             how: [
-                'Faça o check-in diário no Painel: sono, energia, humor e estresse.',
+                'Faça o check-in diário na aba Hoje (topo da página): sono, qualidade do sono, energia, humor e estresse.',
                 'Use os badges de cadência como sinal visual, nunca como punição.',
                 'Roda da Vida e PERMA: mensal. SWLS: trimestral. Odyssey/Visão: semestral.',
                 'Quando algo atrasar, retome com a menor ação possível em vez de compensar tudo de uma vez.'
