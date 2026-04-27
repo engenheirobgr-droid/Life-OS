@@ -4965,6 +4965,51 @@ const app = {
         if (this.showToast) this.showToast('Nota salva.', 'success');
     },
 
+    openQuickNoteFromFab: function() {
+        this.closeFabMenu();
+        const modal = document.getElementById('quick-note-modal');
+        if (!modal) return;
+        ['quick-note-title', 'quick-note-body', 'quick-note-url', 'quick-note-tags'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => document.getElementById('quick-note-body')?.focus(), 50);
+    },
+
+    closeQuickNoteModal: function() {
+        const modal = document.getElementById('quick-note-modal');
+        if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    },
+
+    saveQuickNote: function() {
+        const title = String(document.getElementById('quick-note-title')?.value || '').trim();
+        const body = String(document.getElementById('quick-note-body')?.value || '').trim();
+        if (!title && !body) {
+            if (this.showToast) this.showToast('Escreva um título ou conteúdo para salvar a nota.', 'error');
+            return;
+        }
+        this.ensureNotesState();
+        const now = new Date().toISOString();
+        const note = {
+            id: `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
+            title: title || 'Nota sem título',
+            body,
+            url: String(document.getElementById('quick-note-url')?.value || '').trim(),
+            tags: String(document.getElementById('quick-note-tags')?.value || '').split(',').map(t => t.trim()).filter(Boolean),
+            linkedTo: null,
+            createdAt: now,
+            updatedAt: now
+        };
+        (window.sistemaVidaState.profile.notes || (window.sistemaVidaState.profile.notes = [])).unshift(note);
+        this.ensureNotesState();
+        this.saveState(true);
+        this.closeQuickNoteModal();
+        this.renderNotesPanel();
+        if (this.showToast) this.showToast('Nota salva.', 'success');
+    },
+
     editProfileNote: function(noteId) {
         this.ensureNotesState();
         const note = (window.sistemaVidaState.profile.notes || []).find(item => item.id === noteId);
@@ -5175,7 +5220,7 @@ const app = {
         this.markCadence('checkin', today);
         this.saveState(true);
         this.renderDailyCheckinPanel();
-        this.renderCadencePanel();
+        this.renderProfileCadence();
         if (this.showToast) this.showToast('Check-in do dia salvo.', 'success');
     },
 
@@ -5196,8 +5241,16 @@ const app = {
         setVal('daily-checkin-energy', defaults.energy);
         setVal('daily-checkin-mood', defaults.mood);
         setVal('daily-checkin-stress', defaults.stress);
-        const emotion = document.getElementById('daily-checkin-emotion');
-        if (emotion) emotion.value = defaults.emotion || '';
+        const emotionVal = defaults.emotion || '';
+        const emotionHidden = document.getElementById('daily-checkin-emotion');
+        if (emotionHidden) emotionHidden.value = emotionVal;
+        document.querySelectorAll('.emotion-chip').forEach(chip => {
+            const active = chip.getAttribute('data-emotion') === emotionVal;
+            chip.classList.toggle('bg-primary/20', active);
+            chip.classList.toggle('border-primary', active);
+            chip.classList.toggle('text-primary', active);
+            chip.classList.toggle('font-bold', active);
+        });
 
         const empty = document.getElementById('daily-checkin-empty');
         if (empty) empty.classList.toggle('hidden', !!todayEntry);
@@ -5214,6 +5267,21 @@ const app = {
                 </div>
             `).join('') : '<p class="text-xs text-outline italic">Sem histórico ainda. O primeiro check-in já cria a linha base.</p>';
         }
+    },
+
+    toggleEmotionChip: function(btn) {
+        const emotion = btn.getAttribute('data-emotion');
+        const hidden = document.getElementById('daily-checkin-emotion');
+        const currentVal = hidden ? hidden.value : '';
+        const newVal = currentVal === emotion ? '' : emotion;
+        if (hidden) hidden.value = newVal;
+        document.querySelectorAll('.emotion-chip').forEach(chip => {
+            const active = chip.getAttribute('data-emotion') === newVal;
+            chip.classList.toggle('bg-primary/20', active);
+            chip.classList.toggle('border-primary', active);
+            chip.classList.toggle('text-primary', active);
+            chip.classList.toggle('font-bold', active);
+        });
     },
 
     getIdentityPracticeStats: function(weekKey = this._getWeekKey()) {
@@ -8670,8 +8738,6 @@ const app = {
 
             app.renderPainelDiagnostics();
             app.renderPainelDecision();
-            app.renderDailyCheckinPanel();
-            app.renderCadencePanel();
             app.renderPersonalEvolutionPanel();
             app.renderHabitMaturityPanel();
             app.renderWellbeingTrendsPanel();
@@ -9260,27 +9326,7 @@ const app = {
             }
 
             
-            // Energy Emojis Logic
-            const energyInput = document.getElementById('daily-energy');
-            const energyValue = state.energy || 0;
-            if (energyInput) energyInput.value = energyValue;
-
-            const emojiBtns = document.querySelectorAll('.energy-emoji-btn');
-            emojiBtns.forEach(btn => {
-                const val = parseInt(btn.getAttribute('data-value'));
-                if (val === energyValue) {
-                    btn.classList.add('bg-primary/20', 'ring-2', 'ring-primary');
-                } else {
-                    btn.classList.remove('bg-primary/20', 'ring-2', 'ring-primary');
-                }
-
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    state.energy = val;
-                    app.render.hoje();
-                };
-            });
-
+            app.renderDailyCheckinPanel();
             app.renderDailyCompass();
             app.renderNextBestAction();
 

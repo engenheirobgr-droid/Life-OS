@@ -966,6 +966,54 @@
                     <span class="block text-[10px] font-medium text-outline mt-1">Registrar uma ação avulsa sem entrar na trilha</span>
                 </span>
             </button>
+            <button type="button" onclick="window.app.openQuickNoteFromFab()"
+                class="w-full text-left px-4 py-3 rounded-xl bg-surface-container-high border border-outline-variant/20 text-on-surface font-bold text-sm hover:bg-surface-container-highest transition-colors flex items-start gap-3">
+                <span class="material-symbols-outlined notranslate text-lg mt-0.5">sticky_note_2</span>
+                <span class="leading-tight">
+                    <span class="block">Nova nota</span>
+                    <span class="block text-[10px] font-medium text-outline mt-1">Registrar contexto, links ou informações de qualquer tarefa</span>
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Nova Nota Rápida -->
+    <div id="quick-note-modal" class="hidden fixed inset-0 z-[108] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-outline-variant/20 flex items-center justify-between gap-4 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined notranslate text-primary">sticky_note_2</span>
+                    <h3 class="font-headline text-xl font-bold text-on-background">Nova nota</h3>
+                </div>
+                <button type="button" onclick="window.app.closeQuickNoteModal()"
+                    class="text-outline hover:text-on-surface rounded-lg p-1 transition-colors">
+                    <span class="material-symbols-outlined notranslate">close</span>
+                </button>
+            </div>
+            <div class="p-5 space-y-3 overflow-y-auto flex-1">
+                <input id="quick-note-title" type="text" maxlength="120"
+                    class="w-full h-11 rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                    placeholder="Título (opcional)">
+                <textarea id="quick-note-body" rows="4"
+                    class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-low p-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                    placeholder="Conteúdo da nota..."></textarea>
+                <input id="quick-note-url" type="url"
+                    class="w-full h-11 rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                    placeholder="URL (opcional)">
+                <input id="quick-note-tags" type="text"
+                    class="w-full h-11 rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                    placeholder="Tags separadas por vírgula (opcional)">
+            </div>
+            <div class="p-5 border-t border-outline-variant/20 flex gap-3 shrink-0">
+                <button type="button" onclick="window.app.closeQuickNoteModal()"
+                    class="flex-1 border border-outline-variant text-outline py-2.5 rounded-xl text-sm font-bold hover:bg-surface-container transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" onclick="window.app.saveQuickNote()"
+                    class="flex-1 bg-primary text-on-primary py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
+                    Salvar nota
+                </button>
+            </div>
         </div>
     </div>
 
