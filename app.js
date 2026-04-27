@@ -1789,6 +1789,17 @@ const app = {
         else console.log('[SYNC] Using cloud state (source of truth).');
 
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
+        try {
+            const dailyBackup = JSON.parse(localStorage.getItem('lifeos_daily_checkins_backup') || 'null');
+            if (Array.isArray(dailyBackup) && dailyBackup.length) {
+                const today = this.getLocalDateKey();
+                const hasTodayBackup = dailyBackup.some(entry => entry?.date === today);
+                if (hasTodayBackup) {
+                    if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                    window.sistemaVidaState.profile.dailyCheckins = dailyBackup;
+                }
+            }
+        } catch (_) {}
         if (!shouldKeepLocal && window.sistemaVidaState._pendingLocalChanges) {
             window.sistemaVidaState._pendingLocalChanges = false;
         }
@@ -5090,7 +5101,7 @@ const app = {
                 const body = String(note?.body || '').trim();
                 if (!title && !body) return null;
                 const rawLinked = note?.linkedTo && typeof note.linkedTo === 'object' ? note.linkedTo : {};
-                const entityType = String(rawLinked.entityType || '').trim();
+                const entityType = this.normalizeEntityType(String(rawLinked.entityType || '').trim());
                 const entityId = String(rawLinked.entityId || '').trim();
                 return {
                     id: String(note?.id || `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`),
@@ -5216,6 +5227,7 @@ const app = {
         window.sistemaVidaState.profile.notes = list;
         this.ensureNotesState();
         this.saveState(true);
+        try { localStorage.setItem('lifeos_notes_backup', JSON.stringify(window.sistemaVidaState.profile.notes || [])); } catch (_) {}
         this.clearNoteForm();
         this.renderNotesPanel();
         if (this.showToast) this.showToast('Nota salva.', 'success');
@@ -5416,10 +5428,23 @@ const app = {
         if (chev) chev.classList.toggle('rotate-180', opening);
     },
 
+    normalizeEntityType: function(entityType) {
+        if (!entityType) return '';
+        const raw = String(entityType).toLowerCase().trim();
+        const map = {
+            meta: 'metas', metas: 'metas', okr: 'okrs', okrs: 'okrs',
+            macro: 'macros', macros: 'macros', micro: 'micros', micros: 'micros',
+            habit: 'habits', habits: 'habits', strength: 'strengths', strengths: 'strengths',
+            shadow: 'shadows', shadows: 'shadows'
+        };
+        return map[raw] || raw;
+    },
+
     getLinkedNotes: function(entityType, entityId) {
         this.ensureNotesState();
+        const normalizedType = this.normalizeEntityType(entityType);
         return (window.sistemaVidaState.profile.notes || []).filter(note =>
-            note.linkedTo?.entityType === entityType && note.linkedTo?.entityId === entityId
+            this.normalizeEntityType(note.linkedTo?.entityType) === normalizedType && note.linkedTo?.entityId === entityId
         );
     },
 
@@ -5553,6 +5578,7 @@ const app = {
         window.sistemaVidaState.energy = entry.energy;
         this.markCadence('checkin', today);
         this.saveState(true);
+        try { localStorage.setItem('lifeos_daily_checkins_backup', JSON.stringify(window.sistemaVidaState.profile.dailyCheckins || [])); } catch (_) {}
         this.renderDailyCheckinPanel();
         this.renderProfileCadence();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
