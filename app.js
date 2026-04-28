@@ -4375,7 +4375,10 @@ const app = {
             if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
             if (type === 'micros') setGroupVisible(effortGroup, true);
             if (['macros', 'micros'].includes(type)) {
-                setGroupVisible(woopGroup, true, 'block');
+                if (woopGroup) {
+                    woopGroup.classList.remove('hidden');
+                    woopGroup.style.cssText = 'display: block;';
+                }
                 this.toggleCrudWoop(type === 'micros');
             }
             this.updateParentList(type);
