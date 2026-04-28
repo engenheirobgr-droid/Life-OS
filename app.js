@@ -10054,7 +10054,7 @@ const app = {
                 }
                 if (micro.status === 'done' || micro.completed) {
                     const notesCount = app.getLinkedNotes('micros', micro.id).length;
-                    const notesBadge = notesCount ? `<button type="button" onclick="event.stopPropagation(); window.app.openEntityNotesModal('micros','${micro.id}',${JSON.stringify(micro.title)})" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
+                    const notesBadge = notesCount ? `<button type="button" data-type="micros" data-id="${micro.id}" data-title="${app.escapeHtml(micro.title)}" onclick="event.stopPropagation(); window.app.openEntityNotesModal(this.dataset.type, this.dataset.id, this.dataset.title)" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
                         `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</button>` : '';
                     const isRecentCompletion = micro.id === app.recentCompletedMicroId;
                     html += `
@@ -10081,7 +10081,7 @@ const app = {
                     const meta = state.entities.metas.find(m => m.id === okr.metaId) || {};
                     const dimIcon = iconMap[micro.dimension] || 'stars';
                     const notesCount = app.getLinkedNotes('micros', micro.id).length;
-                    const notesBadge = notesCount ? `<button type="button" onclick="event.stopPropagation(); window.app.openEntityNotesModal('micros','${micro.id}',${JSON.stringify(micro.title)})" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
+                    const notesBadge = notesCount ? `<button type="button" data-type="micros" data-id="${micro.id}" data-title="${app.escapeHtml(micro.title)}" onclick="event.stopPropagation(); window.app.openEntityNotesModal(this.dataset.type, this.dataset.id, this.dataset.title)" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
                         `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</button>` : '';
 
                     const startDate = micro.inicioDate || micro.prazo || '';
@@ -10597,7 +10597,7 @@ const app = {
                                         ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold">ALINHADO</span>' : ''}
                                         ${entityType === 'micros' ? (() => {
                                             const notesCount = app.getLinkedNotes('micros', item.id).length;
-                                            return notesCount ? `<button type="button" onclick="event.stopPropagation(); window.app.openEntityNotesModal('micros','${item.id}',${JSON.stringify(item.title)})" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
+                                            return notesCount ? `<button type="button" data-type="micros" data-id="${item.id}" data-title="${app.escapeHtml(item.title)}" onclick="event.stopPropagation(); window.app.openEntityNotesModal(this.dataset.type, this.dataset.id, this.dataset.title)" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
                                                 `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</button>` : '';
                                         })() : ''}
                                     </div>
