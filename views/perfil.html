@@ -191,6 +191,33 @@
 </div>
 </div>
 </div>
+    <!-- Splash Odyssey -->
+    <div class="p-4 hover:bg-surface-container-high transition-colors border-t border-outline-variant/10 group">
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <span class="material-symbols-outlined notranslate text-primary">photo_library</span>
+                <div>
+                    <p class="text-sm font-medium text-on-surface">Splash Odyssey</p>
+                    <p class="text-[11px] text-outline">Slides visuais dos cenários com imagens ao abrir o app</p>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <div>
+                <label for="odyssey-splash-filter-select" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Mostrar</label>
+                <select id="odyssey-splash-filter-select" onchange="window.app.setOdysseySplashFilter(this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none">
+                    <option value="all">Todos</option>
+                    <option value="cenarioA">Cenário A</option>
+                    <option value="cenarioB">Cenário B</option>
+                    <option value="cenarioC">Cenário C</option>
+                </select>
+            </div>
+            <div>
+                <label for="odyssey-splash-duration-input" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Tempo por slide (s)</label>
+                <input id="odyssey-splash-duration-input" type="number" min="1" max="20" step="1" onchange="window.app.setOdysseySplashDurationSetting(this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
+            </div>
+        </div>
+    </div>
 <!-- Sons de gamificação -->
 <div onclick="window.app.toggleSoundSetting()" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors border-t border-outline-variant/10 cursor-pointer group">
 <div class="flex items-center gap-4">

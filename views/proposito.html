@@ -374,7 +374,7 @@
             <!-- Scenario 1 -->
             <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário A', 'odyssey', 'cenarioA')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-label font-bold uppercase tracking-wider">Cenário A</div>
-                <h4 class="font-headline text-xl font-bold mb-4">A Via Consolidada</h4>
+                <h4 id="odyssey-title-cenarioA" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário A', 'odysseyTitles', 'cenarioA')" title="Clique para editar o título do cenário">A Via Consolidada</h4>
                 <div class="mb-3 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50">
                     <img id="odyssey-image-cenarioA" class="hidden w-full h-28 object-cover" alt="Cenário A">
                 </div>
@@ -388,7 +388,7 @@
             <!-- Scenario 2 -->
             <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário B', 'odyssey', 'cenarioB')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-secondary/10 text-secondary text-[10px] font-label font-bold uppercase tracking-wider">Cenário B</div>
-                <h4 class="font-headline text-xl font-bold mb-4">O Salto Criativo</h4>
+                <h4 id="odyssey-title-cenarioB" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário B', 'odysseyTitles', 'cenarioB')" title="Clique para editar o título do cenário">O Salto Criativo</h4>
                 <div class="mb-3 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50">
                     <img id="odyssey-image-cenarioB" class="hidden w-full h-28 object-cover" alt="Cenário B">
                 </div>
@@ -402,7 +402,7 @@
             <!-- Scenario 3 -->
             <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário C', 'odyssey', 'cenarioC')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary text-[10px] font-label font-bold uppercase tracking-wider">Cenário C</div>
-                <h4 class="font-headline text-xl font-bold mb-4">A Vida Acadêmica</h4>
+                <h4 id="odyssey-title-cenarioC" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário C', 'odysseyTitles', 'cenarioC')" title="Clique para editar o título do cenário">A Vida Acadêmica</h4>
                 <div class="mb-3 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50">
                     <img id="odyssey-image-cenarioC" class="hidden w-full h-28 object-cover" alt="Cenário C">
                 </div>

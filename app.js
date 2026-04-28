@@ -54,6 +54,7 @@ window.sistemaVidaState = {
         vision: { saude: "", carreira: "", intelecto: "", quote: "", saudeResumo: "", carreiraResumo: "", intelectoResumo: "" },
         odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" },
         odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" },
+        odysseyTitles: { cenarioA: "A Via Consolidada", cenarioB: "O Salto Criativo", cenarioC: "A Vida Acadêmica" },
         identity: { strengths: [], shadows: [] },
         dailyCheckins: [],
         cadence: {},
@@ -1158,6 +1159,25 @@ const app = {
         if (!window.sistemaVidaState.profile.odysseyImages) {
             window.sistemaVidaState.profile.odysseyImages = { cenarioA: "", cenarioB: "", cenarioC: "" };
         }
+        if (!window.sistemaVidaState.profile.odysseyTitles || typeof window.sistemaVidaState.profile.odysseyTitles !== 'object') {
+            window.sistemaVidaState.profile.odysseyTitles = {
+                cenarioA: "A Via Consolidada",
+                cenarioB: "O Salto Criativo",
+                cenarioC: "A Vida Acadêmica"
+            };
+        }
+        if (typeof window.sistemaVidaState.settings.odysseySplashFilter !== 'string') {
+            window.sistemaVidaState.settings.odysseySplashFilter = 'all';
+        }
+        if (!['all', 'cenarioA', 'cenarioB', 'cenarioC'].includes(window.sistemaVidaState.settings.odysseySplashFilter)) {
+            window.sistemaVidaState.settings.odysseySplashFilter = 'all';
+        }
+        const odysseySplashDuration = Number(window.sistemaVidaState.settings.odysseySplashDurationSec);
+        if (!Number.isFinite(odysseySplashDuration) || odysseySplashDuration < 1 || odysseySplashDuration > 20) {
+            window.sistemaVidaState.settings.odysseySplashDurationSec = 3;
+        } else {
+            window.sistemaVidaState.settings.odysseySplashDurationSec = Math.round(odysseySplashDuration);
+        }
         if (!window.sistemaVidaState.perma) {
             window.sistemaVidaState.perma = { P: 0, E: 0, R: 0, M: 0, A: 0 };
         }
@@ -1345,6 +1365,21 @@ const app = {
         this.updateSplashSettingsControls();
         this.showToast('Tempo da bússola atualizado.', 'success');
     },
+    setOdysseySplashFilter: function(value) {
+        this.ensureSettingsState();
+        window.sistemaVidaState.settings.odysseySplashFilter = ['all', 'cenarioA', 'cenarioB', 'cenarioC'].includes(value) ? value : 'all';
+        this.saveState(true);
+        this.updateSplashSettingsControls();
+        this.showToast('Filtro do Splash Odyssey atualizado.', 'success');
+    },
+    setOdysseySplashDurationSetting: function(raw) {
+        this.ensureSettingsState();
+        const duration = Math.max(1, Math.min(20, Math.round(Number(raw) || 3)));
+        window.sistemaVidaState.settings.odysseySplashDurationSec = duration;
+        this.saveState(true);
+        this.updateSplashSettingsControls();
+        this.showToast('Tempo do Splash Odyssey atualizado.', 'success');
+    },
     updateSplashSettingsControls: function() {
         this.ensureSettingsState();
         const settings = window.sistemaVidaState.settings;
@@ -1364,6 +1399,14 @@ const app = {
             durationInput.value = settings.splashDurationSec || 3;
             durationInput.disabled = !on;
             durationInput.classList.toggle('opacity-50', !on);
+        }
+        const odysseyFilterSelect = document.getElementById('odyssey-splash-filter-select');
+        if (odysseyFilterSelect) {
+            odysseyFilterSelect.value = settings.odysseySplashFilter || 'all';
+        }
+        const odysseyDurationInput = document.getElementById('odyssey-splash-duration-input');
+        if (odysseyDurationInput) {
+            odysseyDurationInput.value = settings.odysseySplashDurationSec || 3;
         }
     },
     shouldShowSplashOnOpen: function() {
@@ -1393,6 +1436,7 @@ const app = {
         const compass = this.getDailyCompass();
         const quote = compass.quote;
         this.registerSplashShown();
+        this._nextSplashAfterDismiss = this.shouldShowOdysseySplashOnOpen() ? 'odyssey' : null;
         const duration = Math.max(1, Math.min(20, Number(window.sistemaVidaState.settings.splashDurationSec || 3)));
 
         const el = document.createElement('div');
@@ -1428,12 +1472,110 @@ const app = {
     dismissSplash: function() {
         if (this._splashTimer) { clearInterval(this._splashTimer); this._splashTimer = null; }
         const el = document.getElementById('daily-splash-screen');
+        const shouldShowOdyssey = this._nextSplashAfterDismiss === 'odyssey';
+        this._nextSplashAfterDismiss = null;
         if (el) {
             el.style.transition = 'opacity 0.3s ease-out';
             el.style.opacity = '0';
-            setTimeout(() => { el.remove(); this.switchView('hoje'); }, 320);
+            setTimeout(() => {
+                el.remove();
+                this.switchView('hoje');
+                if (shouldShowOdyssey) this.showOdysseySplashIfEligible();
+            }, 320);
         } else {
             this.switchView('hoje');
+            if (shouldShowOdyssey) this.showOdysseySplashIfEligible();
+        }
+    },
+    getOdysseySplashFilter: function() {
+        this.ensureSettingsState();
+        const filter = String(window.sistemaVidaState.settings.odysseySplashFilter || 'all');
+        return ['all', 'cenarioA', 'cenarioB', 'cenarioC'].includes(filter) ? filter : 'all';
+    },
+    getOdysseySplashDurationSec: function() {
+        this.ensureSettingsState();
+        const duration = Number(window.sistemaVidaState.settings.odysseySplashDurationSec);
+        if (!Number.isFinite(duration) || duration < 1 || duration > 20) return 3;
+        return Math.round(duration);
+    },
+    getOdysseySplashSlides: function() {
+        const images = window.sistemaVidaState.profile.odysseyImages || {};
+        const titles = window.sistemaVidaState.profile.odysseyTitles || {};
+        const filter = this.getOdysseySplashFilter();
+        const slides = [
+            { key: 'cenarioA', label: 'Cenário A', title: titles.cenarioA || 'A Via Consolidada', src: images.cenarioA || '' },
+            { key: 'cenarioB', label: 'Cenário B', title: titles.cenarioB || 'O Salto Criativo', src: images.cenarioB || '' },
+            { key: 'cenarioC', label: 'Cenário C', title: titles.cenarioC || 'A Vida Acadêmica', src: images.cenarioC || '' }
+        ].filter(item => item.src && item.src.length > 10);
+        return filter === 'all' ? slides : slides.filter(item => item.key === filter);
+    },
+    shouldShowOdysseySplashOnOpen: function() {
+        if (document.getElementById('odyssey-splash-screen')) return false;
+        const slides = this.getOdysseySplashSlides();
+        if (slides.length === 0) return false;
+        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
+        return localStorage.getItem('lifeos_odyssey_splash_last') !== todayKey;
+    },
+    registerOdysseySplashShown: function() {
+        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
+        try {
+            localStorage.setItem('lifeos_odyssey_splash_last', todayKey);
+        } catch (_) {}
+    },
+    showOdysseySplashIfEligible: function() {
+        if (!this.shouldShowOdysseySplashOnOpen()) return false;
+        this.showOdysseySplash();
+        return true;
+    },
+    showOdysseySplash: function() {
+        const slides = this.getOdysseySplashSlides();
+        if (slides.length === 0) return;
+        this.registerOdysseySplashShown();
+        const duration = Math.max(1, Math.min(20, this.getOdysseySplashDurationSec()));
+        const el = document.createElement('div');
+        el.id = 'odyssey-splash-screen';
+        el.className = 'lifeos-odyssey-splash';
+        el.innerHTML = `
+            <div class="lifeos-odyssey-splash__frame" onclick="event.stopPropagation();">
+                <div class="lifeos-odyssey-splash__slides">
+                    ${slides.map((slide, idx) => `
+                        <div class="lifeos-odyssey-slide" data-slide-index="${idx}" style="opacity: ${idx === 0 ? 1 : 0};">
+                            <img class="lifeos-odyssey-slide__image" src="${this.escapeHtml(slide.src)}" alt="${this.escapeHtml(slide.label)}" />
+                            <div class="lifeos-odyssey-slide__overlay"></div>
+                            <div class="lifeos-odyssey-slide__header">
+                                <span class="lifeos-odyssey-slide__badge">${this.escapeHtml(slide.label)}</span>
+                                <h2 class="lifeos-odyssey-slide__title">${this.escapeHtml(slide.title)}</h2>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="lifeos-odyssey-button" onclick="event.stopPropagation();window.app.dismissOdysseySplash()">Começar o dia</button>
+            </div>
+        `;
+        el.addEventListener('click', () => this.dismissOdysseySplash());
+        document.body.appendChild(el);
+
+        let currentIndex = 0;
+        const slideEls = Array.from(el.querySelectorAll('.lifeos-odyssey-slide'));
+        const nextSlide = () => {
+            if (slideEls.length < 2) return;
+            const nextIndex = (currentIndex + 1) % slideEls.length;
+            slideEls[currentIndex].style.opacity = '0';
+            slideEls[nextIndex].style.opacity = '1';
+            currentIndex = nextIndex;
+        };
+        this._odysseySplashTimer = setInterval(nextSlide, duration * 1000);
+    },
+    dismissOdysseySplash: function() {
+        if (this._odysseySplashTimer) {
+            clearInterval(this._odysseySplashTimer);
+            this._odysseySplashTimer = null;
+        }
+        const el = document.getElementById('odyssey-splash-screen');
+        if (el) {
+            el.style.transition = 'opacity 0.25s ease-out';
+            el.style.opacity = '0';
+            setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 280);
         }
     },
     openAvatarPicker: function() {
@@ -2747,6 +2889,7 @@ const app = {
                 this.showDailySplash();
             } else {
                 this.switchView('hoje');
+                this.showOdysseySplashIfEligible();
             }
         }
 
@@ -9670,6 +9813,40 @@ const app = {
                 console.log("Data 'Hoje' atualizada:", dateStr);
             }
 
+            // Renderizar saudação com foto e nome
+            const welcomeAvatar = document.getElementById('welcome-avatar');
+            const welcomeMessage = document.getElementById('welcome-message');
+            const welcomeGreeting = document.getElementById('welcome-greeting');
+            if (welcomeAvatar && welcomeMessage && welcomeGreeting) {
+                const profile = state.profile || {};
+                const name = profile.name || 'Bruno';
+                const avatarUrl = profile.avatarUrl || '';
+
+                // Configurar avatar
+                if (avatarUrl) {
+                    welcomeAvatar.src = avatarUrl;
+                    welcomeAvatar.style.display = 'block';
+                } else {
+                    welcomeAvatar.src = '';
+                    welcomeAvatar.style.display = 'none';
+                }
+
+                // Configurar nome
+                welcomeMessage.textContent = `Olá, ${name}!`;
+
+                // Configurar saudação baseada no horário
+                const hour = new Date().getHours();
+                let greeting = '';
+                if (hour >= 5 && hour < 12) {
+                    greeting = 'Bom dia! Bem-vindo de volta.';
+                } else if (hour >= 12 && hour < 18) {
+                    greeting = 'Boa tarde! Bem-vindo de volta.';
+                } else {
+                    greeting = 'Boa noite! Bem-vindo de volta.';
+                }
+                welcomeGreeting.textContent = greeting;
+            }
+
             const streakEl = document.getElementById('streak-count');
             if (streakEl) {
                 let streak = 0;
@@ -10856,6 +11033,15 @@ const app = {
                         renderField('display-cenarioA', prof.odyssey.cenarioA, "Cenário A: Descreva aqui sua visão de 5 anos (Vida Atual)...");
                         renderField('display-cenarioB', prof.odyssey.cenarioB, "Cenário B: Descreva aqui sua visão de 5 anos (Plano B)...");
                         renderField('display-cenarioC', prof.odyssey.cenarioC, "Cenário C: Descreva aqui sua visão de 5 anos (Vida Radical)...");
+                        const odysseyTitles = prof.odysseyTitles || {};
+                        const setOdysseyTitle = (id, value, fallback) => {
+                            const titleEl = document.getElementById(id);
+                            if (!titleEl) return;
+                            titleEl.textContent = value && value.trim() ? value : fallback;
+                        };
+                        setOdysseyTitle('odyssey-title-cenarioA', odysseyTitles.cenarioA, 'A Via Consolidada');
+                        setOdysseyTitle('odyssey-title-cenarioB', odysseyTitles.cenarioB, 'O Salto Criativo');
+                        setOdysseyTitle('odyssey-title-cenarioC', odysseyTitles.cenarioC, 'A Vida Acadêmica');
                         const odysseyImages = prof.odysseyImages || {};
                         ['cenarioA', 'cenarioB', 'cenarioC'].forEach(key => {
                             const img = document.getElementById(`odyssey-image-${key}`);
