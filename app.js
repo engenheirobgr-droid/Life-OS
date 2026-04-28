@@ -1726,6 +1726,34 @@ const app = {
             input.value = '';
         });
     },
+    viewOdysseyImage: function(cenarioKey) {
+        const images = window.sistemaVidaState.profile?.odysseyImages || {};
+        const src = images[cenarioKey];
+        if (!src) return;
+
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-50000 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4';
+        modal.id = 'odyssey-image-viewer';
+        modal.onclick = (e) => {
+            if (e.target === modal) this.closeOdysseyImageViewer();
+        };
+        modal.innerHTML = `
+            <div class="relative max-w-4xl max-h-[90vh] flex flex-col">
+                <button onclick="window.app.closeOdysseyImageViewer()" class="absolute -top-10 right-0 text-white hover:text-gray-300 transition text-2xl font-bold" aria-label="Fechar">✕</button>
+                <img src="${this.escapeHtml(src)}" alt="Imagem do cenário" class="max-w-full max-h-[85vh] object-contain rounded-lg">
+            </div>
+        `;
+        document.body.appendChild(modal);
+    },
+    closeOdysseyImageViewer: function() {
+        const modal = document.getElementById('odyssey-image-viewer');
+        if (modal) {
+            modal.style.animation = 'fadeOut 0.2s ease-out';
+            setTimeout(() => {
+                if (modal.parentNode) modal.parentNode.removeChild(modal);
+            }, 200);
+        }
+    },
 
     showToast: function(message, type = 'success') {
         const container = document.getElementById('global-toast-container');
