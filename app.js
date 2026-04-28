@@ -1380,6 +1380,13 @@ const app = {
         this.updateSplashSettingsControls();
         this.showToast('Tempo do Splash Odyssey atualizado.', 'success');
     },
+    setOdysseySplashModeSetting: function(mode) {
+        this.ensureSettingsState();
+        window.sistemaVidaState.settings.odysseySplashMode = ['daily', 'twice_daily', 'always'].includes(mode) ? mode : 'daily';
+        this.saveState(true);
+        this.updateSplashSettingsControls();
+        this.showToast('Frequência do Splash Odyssey atualizada.', 'success');
+    },
     updateSplashSettingsControls: function() {
         this.ensureSettingsState();
         const settings = window.sistemaVidaState.settings;
@@ -1403,6 +1410,10 @@ const app = {
         const odysseyFilterSelect = document.getElementById('odyssey-splash-filter-select');
         if (odysseyFilterSelect) {
             odysseyFilterSelect.value = settings.odysseySplashFilter || 'all';
+        }
+        const odysseyModeSelect = document.getElementById('odyssey-splash-mode-select');
+        if (odysseyModeSelect) {
+            odysseyModeSelect.value = settings.odysseySplashMode || 'daily';
         }
         const odysseyDurationInput = document.getElementById('odyssey-splash-duration-input');
         if (odysseyDurationInput) {
@@ -1510,15 +1521,25 @@ const app = {
         return filter === 'all' ? slides : slides.filter(item => item.key === filter);
     },
     shouldShowOdysseySplashOnOpen: function() {
+        this.ensureSettingsState();
         if (document.getElementById('odyssey-splash-screen')) return false;
+        const settings = window.sistemaVidaState.settings;
+        if (settings.odysseySplashMode === 'always') return true;
         const slides = this.getOdysseySplashSlides();
         if (slides.length === 0) return false;
         const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
-        return localStorage.getItem('lifeos_odyssey_splash_last') !== todayKey;
+        let log = {};
+        try { log = JSON.parse(localStorage.getItem('lifeos_odyssey_splash_log') || '{}') || {}; } catch (_) { log = {}; }
+        const todayCount = Number(log.date === todayKey ? log.count : 0) || 0;
+        const maxCount = settings.odysseySplashMode === 'twice_daily' ? 2 : 1;
+        return todayCount < maxCount;
     },
     registerOdysseySplashShown: function() {
         const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
         try {
+            const raw = JSON.parse(localStorage.getItem('lifeos_odyssey_splash_log') || '{}') || {};
+            const count = raw.date === todayKey ? Number(raw.count || 0) + 1 : 1;
+            localStorage.setItem('lifeos_odyssey_splash_log', JSON.stringify({ date: todayKey, count }));
             localStorage.setItem('lifeos_odyssey_splash_last', todayKey);
         } catch (_) {}
     },

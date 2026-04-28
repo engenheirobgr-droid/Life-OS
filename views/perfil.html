@@ -202,7 +202,7 @@
                 </div>
             </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
             <div>
                 <label for="odyssey-splash-filter-select" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Mostrar</label>
                 <select id="odyssey-splash-filter-select" onchange="window.app.setOdysseySplashFilter(this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none">
@@ -210,6 +210,14 @@
                     <option value="cenarioA">Cenário A</option>
                     <option value="cenarioB">Cenário B</option>
                     <option value="cenarioC">Cenário C</option>
+                </select>
+            </div>
+            <div>
+                <label for="odyssey-splash-mode-select" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Frequência</label>
+                <select id="odyssey-splash-mode-select" onchange="window.app.setOdysseySplashModeSetting(this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none">
+                    <option value="daily">1x por dia</option>
+                    <option value="twice_daily">2x por dia</option>
+                    <option value="always">Toda abertura</option>
                 </select>
             </div>
             <div>
