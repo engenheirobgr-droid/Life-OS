@@ -4862,13 +4862,20 @@ const app = {
         const e = state.entities;
         if (entityType === 'metas') {
             const okrs = (e.okrs || []).filter(o => o.metaId === entityId);
-            const macros = (e.macros || []).filter(m => m.metaId === entityId);
-            const micros = (e.micros || []).filter(m => m.metaId === entityId);
+            const okrIds = new Set(okrs.map(o => o.id));
+            const macros = (e.macros || []).filter(m => m.metaId === entityId || okrIds.has(m.okrId));
+            const macroIds = new Set(macros.map(m => m.id));
+            const micros = (e.micros || []).filter(m =>
+                m.metaId === entityId || okrIds.has(m.okrId) || macroIds.has(m.macroId)
+            );
             return { okrs: okrs.length, macros: macros.length, micros: micros.length };
         }
         if (entityType === 'okrs') {
             const macros = (e.macros || []).filter(m => m.okrId === entityId);
-            const micros = (e.micros || []).filter(m => m.okrId === entityId);
+            const macroIds = new Set(macros.map(m => m.id));
+            const micros = (e.micros || []).filter(m =>
+                m.okrId === entityId || macroIds.has(m.macroId)
+            );
             return { macros: macros.length, micros: micros.length };
         }
         if (entityType === 'macros') {
@@ -9472,11 +9479,13 @@ const app = {
                 if (app.hasDayActivity(app.getLocalDateKey(d))) cycleActiveDays++;
             }
 
-            // Active days in the last 7 days
+            // Active days this calendar week (Sunday → today)
             let weekActiveDays = 0;
-            for (let i = 0; i < 7; i++) {
-                const d = new Date(today);
-                d.setDate(today.getDate() - i);
+            const weekSun = new Date(today);
+            weekSun.setDate(today.getDate() - today.getDay());
+            for (let i = 0; i <= today.getDay(); i++) {
+                const d = new Date(weekSun);
+                d.setDate(weekSun.getDate() + i);
                 if (app.hasDayActivity(app.getLocalDateKey(d))) weekActiveDays++;
             }
 
@@ -9498,7 +9507,7 @@ const app = {
                 <div class="grid grid-cols-3 gap-4">
                     <div class="text-center space-y-1">
                         <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Esta semana</p>
-                        <p class="font-headline text-3xl italic text-primary">${weekActiveDays}<span class="text-base text-outline">/7</span></p>
+                        <p class="font-headline text-3xl italic text-primary">${weekActiveDays}<span class="text-base text-outline">/${today.getDay() + 1}</span></p>
                         <p class="text-[10px] text-on-surface-variant">dias com atividade</p>
                     </div>
                     <div class="text-center space-y-1">
@@ -9535,8 +9544,10 @@ const app = {
                 let streak = 0;
                 const check = new Date();
                 check.setHours(0, 0, 0, 0);
-                // Conta apenas dias passados completos (hoje não conta)
-                check.setDate(check.getDate() - 1);
+                // Sequência consecutiva: inclui hoje se já tiver atividade, senão começa de ontem
+                if (!app.hasDayActivity(app.getLocalDateKey(check))) {
+                    check.setDate(check.getDate() - 1);
+                }
                 while (true) {
                     const key = app.getLocalDateKey(check);
                     if (app.hasDayActivity(key)) {
@@ -9547,8 +9558,22 @@ const app = {
                     }
                 }
                 streakEl.textContent = `${streak} ${streak === 1 ? 'Dia' : 'Dias'} de sequência`;
+
+                // Badge no header: dias ativos nesta semana (Dom → hoje), alinha com os círculos
                 const headerStreak = document.getElementById('header-streak');
-                if (headerStreak) headerStreak.textContent = streak + ' dias';
+                if (headerStreak) {
+                    const todayMidnight = new Date();
+                    todayMidnight.setHours(0, 0, 0, 0);
+                    const weekSunday = new Date(todayMidnight);
+                    weekSunday.setDate(todayMidnight.getDate() - todayMidnight.getDay());
+                    let weekDaysActive = 0;
+                    for (let i = 0; i <= todayMidnight.getDay(); i++) {
+                        const d = new Date(weekSunday);
+                        d.setDate(weekSunday.getDate() + i);
+                        if (app.hasDayActivity(app.getLocalDateKey(d))) weekDaysActive++;
+                    }
+                    headerStreak.textContent = weekDaysActive + ' dias';
+                }
             }
 
             // Progresso semanal — usa plano selecionado; fallback por datas se não houver plano
