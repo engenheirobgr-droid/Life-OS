@@ -10999,6 +10999,25 @@ const app = {
                 }
             }, 170);
 
+            // Atualiza visibilidade de imagens e botões de Odyssey (sincronamente, sem delay)
+            const prof = window.sistemaVidaState.profile || {};
+            const odysseyImages = prof.odysseyImages || {};
+            ['cenarioA', 'cenarioB', 'cenarioC'].forEach(key => {
+                const img = document.getElementById(`odyssey-image-${key}`);
+                const btn = document.getElementById(`odyssey-image-button-${key}`);
+                if (!img) return;
+                const src = odysseyImages[key] || '';
+                if (src) {
+                    img.src = src;
+                    img.classList.remove('hidden');
+                    if (btn) btn.classList.add('hidden');
+                } else {
+                    img.src = '';
+                    img.classList.add('hidden');
+                    if (btn) btn.classList.remove('hidden');
+                }
+            });
+
             // 3. Renderização de Textos do Propósito (Ikigai, Valores, Visão, Legado)
             setTimeout(() => {
                 try {
@@ -11063,22 +11082,6 @@ const app = {
                         setOdysseyTitle('odyssey-title-cenarioA', odysseyTitles.cenarioA, 'A Via Consolidada');
                         setOdysseyTitle('odyssey-title-cenarioB', odysseyTitles.cenarioB, 'O Salto Criativo');
                         setOdysseyTitle('odyssey-title-cenarioC', odysseyTitles.cenarioC, 'A Vida Acadêmica');
-                        const odysseyImages = prof.odysseyImages || {};
-                        ['cenarioA', 'cenarioB', 'cenarioC'].forEach(key => {
-                            const img = document.getElementById(`odyssey-image-${key}`);
-                            const btn = document.getElementById(`odyssey-image-button-${key}`);
-                            if (!img) return;
-                            const src = odysseyImages[key] || '';
-                            if (src) {
-                                img.src = src;
-                                img.classList.remove('hidden');
-                                if (btn) btn.classList.add('hidden');
-                            } else {
-                                img.src = '';
-                                img.classList.add('hidden');
-                                if (btn) btn.classList.remove('hidden');
-                            }
-                        });
                 } catch(e) {
                     console.error("Erro ao renderizar textos do Propósito:", e);
                 }
