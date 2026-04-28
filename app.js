@@ -1732,7 +1732,8 @@ const app = {
         if (!src) return;
 
         const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 z-50000 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4';
+        modal.className = 'fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4';
+        modal.style.zIndex = '100050';
         modal.id = 'odyssey-image-viewer';
         modal.onclick = (e) => {
             if (e.target === modal) this.closeOdysseyImageViewer();
@@ -11035,14 +11036,17 @@ const app = {
                 const btn = document.getElementById(`odyssey-image-button-${key}`);
                 if (!img) return;
                 const src = odysseyImages[key] || '';
-                if (src) {
+                const hasImage = Boolean(src && src.length > 10);
+                if (hasImage) {
                     img.src = src;
                     img.classList.remove('hidden');
-                    if (btn) btn.classList.add('hidden');
                 } else {
                     img.src = '';
                     img.classList.add('hidden');
-                    if (btn) btn.classList.remove('hidden');
+                }
+                if (btn) {
+                    btn.textContent = hasImage ? 'Alterar imagem do cenário' : 'Inserir imagem do cenário';
+                    btn.classList.remove('hidden');
                 }
             });
 
