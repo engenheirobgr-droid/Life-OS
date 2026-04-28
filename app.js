@@ -11066,14 +11066,17 @@ const app = {
                         const odysseyImages = prof.odysseyImages || {};
                         ['cenarioA', 'cenarioB', 'cenarioC'].forEach(key => {
                             const img = document.getElementById(`odyssey-image-${key}`);
+                            const btn = document.getElementById(`odyssey-image-button-${key}`);
                             if (!img) return;
                             const src = odysseyImages[key] || '';
                             if (src) {
                                 img.src = src;
                                 img.classList.remove('hidden');
+                                if (btn) btn.classList.add('hidden');
                             } else {
                                 img.src = '';
                                 img.classList.add('hidden');
+                                if (btn) btn.classList.remove('hidden');
                             }
                         });
                 } catch(e) {
