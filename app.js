@@ -4079,8 +4079,8 @@ const app = {
         if (ifThenInput) ifThenInput.value = '';
         this.toggleCrudWoop(false);
 
-        const notesWrapper = document.getElementById('crud-linked-notes-wrapper');
-        if (notesWrapper) notesWrapper.classList.add('hidden');
+        const notesBtn = document.getElementById('crud-notes-btn');
+        if (notesBtn) { notesBtn.classList.add('hidden'); notesBtn.classList.remove('flex'); }
 
         document.getElementById('crud-type').value = type;
         this.onTypeChange(type);
@@ -5288,6 +5288,137 @@ const app = {
     closeQuickNoteModal: function() {
         const modal = document.getElementById('quick-note-modal');
         if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    },
+
+    openEntityNotesModal: function(type, id, entityTitle) {
+        // Pode ser chamado pelo botão do crud-modal (sem args) ou direto com args
+        if (!type || !id) {
+            const btn = document.getElementById('crud-notes-btn');
+            if (!btn) return;
+            type = btn.dataset.entityType;
+            id = btn.dataset.entityId;
+            entityTitle = btn.dataset.entityTitle;
+        }
+        this._entityNotesContext = { type, id, entityTitle };
+
+        let notes = this.getLinkedNotes(type, id);
+        if (!notes.length) {
+            notes = (window.sistemaVidaState.profile.notes || []).filter(n => n.linkedTo?.entityId === id);
+        }
+
+        const modal = document.getElementById('entity-notes-modal');
+        const titleEl = document.getElementById('entity-notes-modal-title');
+        const listEl = document.getElementById('entity-notes-modal-list');
+        if (!modal || !listEl) return;
+
+        if (titleEl) titleEl.textContent = entityTitle || 'Entidade';
+
+        if (notes.length) {
+            listEl.innerHTML = notes.map(note => `
+                <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-low p-4 space-y-1">
+                    <div class="flex items-start justify-between gap-2">
+                        <span class="text-sm font-semibold text-on-surface leading-snug">${this.escapeHtml(note.title || 'Nota')}</span>
+                        <button type="button" onclick="window.app.openNoteForEdit('${note.id}')"
+                            class="shrink-0 p-1 rounded-md hover:bg-surface-container-highest text-outline transition-colors">
+                            <span class="material-symbols-outlined notranslate text-[16px]">edit</span>
+                        </button>
+                    </div>
+                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(note.body)}</p>` : ''}
+                    ${note.tags?.length ? `<div class="flex flex-wrap gap-1 pt-1">${note.tags.map(t => `<span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">${this.escapeHtml(t)}</span>`).join('')}</div>` : ''}
+                </div>
+            `).join('');
+        } else {
+            listEl.innerHTML = `<p class="text-sm text-outline italic text-center py-6">Nenhuma nota vinculada a esta entidade ainda.</p>`;
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    },
+
+    closeEntityNotesModal: function() {
+        const modal = document.getElementById('entity-notes-modal');
+        if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        this._entityNotesContext = null;
+    },
+
+    openNewNoteFromEntityModal: function() {
+        const ctx = this._entityNotesContext;
+        this.closeEntityNotesModal();
+        const modal = document.getElementById('quick-note-modal');
+        if (!modal) return;
+
+        ['quick-note-title', 'quick-note-body', 'quick-note-url', 'quick-note-tags', 'quick-note-edit-id'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+
+        const linkedSel = document.getElementById('quick-note-linked');
+        if (linkedSel) {
+            const groups = {};
+            this.getNoteLinkOptions().forEach(opt => {
+                if (!groups[opt.group]) groups[opt.group] = [];
+                groups[opt.group].push(opt);
+            });
+            let html = '<option value="">Sem vínculo (nota avulsa)</option>';
+            Object.keys(groups).forEach(group => {
+                html += `<optgroup label="${this.escapeHtml(group)}">`;
+                groups[group].forEach(opt => {
+                    html += `<option value="${this.escapeHtml(opt.value)}">${this.escapeHtml(opt.label)}</option>`;
+                });
+                html += '</optgroup>';
+            });
+            linkedSel.innerHTML = html;
+            // Pré-selecionar a entidade
+            if (ctx?.type && ctx?.id) {
+                const targetVal = `${ctx.type}:${ctx.id}`;
+                if (linkedSel.querySelector(`option[value="${targetVal}"]`)) linkedSel.value = targetVal;
+            }
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => document.getElementById('quick-note-body')?.focus(), 50);
+    },
+
+    openNoteForEdit: function(noteId) {
+        const note = (window.sistemaVidaState.profile.notes || []).find(n => n.id === noteId);
+        if (!note) return;
+        this.closeEntityNotesModal();
+        const modal = document.getElementById('quick-note-modal');
+        if (!modal) return;
+
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+        set('quick-note-title', note.title || '');
+        set('quick-note-body', note.body || '');
+        set('quick-note-url', note.url || '');
+        set('quick-note-tags', (note.tags || []).join(', '));
+        set('quick-note-edit-id', note.id);
+
+        const linkedSel = document.getElementById('quick-note-linked');
+        if (linkedSel) {
+            const groups = {};
+            this.getNoteLinkOptions().forEach(opt => {
+                if (!groups[opt.group]) groups[opt.group] = [];
+                groups[opt.group].push(opt);
+            });
+            let html = '<option value="">Sem vínculo (nota avulsa)</option>';
+            Object.keys(groups).forEach(group => {
+                html += `<optgroup label="${this.escapeHtml(group)}">`;
+                groups[group].forEach(opt => {
+                    html += `<option value="${this.escapeHtml(opt.value)}">${this.escapeHtml(opt.label)}</option>`;
+                });
+                html += '</optgroup>';
+            });
+            linkedSel.innerHTML = html;
+            if (note.linkedTo) {
+                const val = `${note.linkedTo.entityType}:${note.linkedTo.entityId}`;
+                if (linkedSel.querySelector(`option[value="${val}"]`)) linkedSel.value = val;
+            }
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => document.getElementById('quick-note-title')?.focus(), 50);
     },
 
     saveQuickNote: function() {
@@ -9923,8 +10054,8 @@ const app = {
                 }
                 if (micro.status === 'done' || micro.completed) {
                     const notesCount = app.getLinkedNotes('micros', micro.id).length;
-                    const notesBadge = notesCount ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high rounded-full px-2 py-1">` +
-                        `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</span>` : '';
+                    const notesBadge = notesCount ? `<button type="button" onclick="event.stopPropagation(); window.app.openEntityNotesModal('micros','${micro.id}',${JSON.stringify(micro.title)})" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
+                        `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</button>` : '';
                     const isRecentCompletion = micro.id === app.recentCompletedMicroId;
                     html += `
                     <div class="relative overflow-hidden bg-emerald-500/[0.04] border border-emerald-500/25 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm shadow-emerald-500/5 ${isRecentCompletion ? 'micro-complete-feedback' : ''}">
@@ -9950,9 +10081,9 @@ const app = {
                     const meta = state.entities.metas.find(m => m.id === okr.metaId) || {};
                     const dimIcon = iconMap[micro.dimension] || 'stars';
                     const notesCount = app.getLinkedNotes('micros', micro.id).length;
-                    const notesBadge = notesCount ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high rounded-full px-2 py-1">` +
-                        `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</span>` : '';
-                    
+                    const notesBadge = notesCount ? `<button type="button" onclick="event.stopPropagation(); window.app.openEntityNotesModal('micros','${micro.id}',${JSON.stringify(micro.title)})" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
+                        `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</button>` : '';
+
                     const startDate = micro.inicioDate || micro.prazo || '';
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
@@ -10466,8 +10597,8 @@ const app = {
                                         ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold">ALINHADO</span>' : ''}
                                         ${entityType === 'micros' ? (() => {
                                             const notesCount = app.getLinkedNotes('micros', item.id).length;
-                                            return notesCount ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high rounded-full px-2 py-1">` +
-                                                `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</span>` : '';
+                                            return notesCount ? `<button type="button" onclick="event.stopPropagation(); window.app.openEntityNotesModal('micros','${item.id}',${JSON.stringify(item.title)})" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
+                                                `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</button>` : '';
                                         })() : ''}
                                     </div>
                                     <h4 class="font-headline text-lg md:text-xl font-semibold leading-tight line-clamp-2">${item.title}</h4>
@@ -11552,31 +11683,17 @@ const app = {
         }
         if (type === 'micros') this.syncMicroWeekPlanToggle(id);
 
-        // Notas vinculadas
-        const notesWrapper = document.getElementById('crud-linked-notes-wrapper');
-        const notesList = document.getElementById('crud-notes-list');
-        const notesEmpty = document.getElementById('crud-notes-empty');
-        if (notesWrapper && notesList && notesEmpty) {
-            let linkedNotes = this.getLinkedNotes(type, id);
-            if (!linkedNotes.length) {
-                linkedNotes = (window.sistemaVidaState.profile.notes || []).filter(note =>
-                    note.linkedTo?.entityId === id
-                );
-            }
-            notesList.innerHTML = linkedNotes.length ? linkedNotes.map(note => `
-                <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-low p-4">
-                    <div class="flex items-center justify-between gap-3 mb-2">
-                        <span class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(note.title || 'Nota')}</span>
-                        <span class="text-[10px] uppercase tracking-wider text-outline">${this.escapeHtml(note.linkedTo?.entityType || 'Nota')}</span>
-                    </div>
-                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(note.body)}</p>` : ''}
-                </div>
-            `).join('') : '';
-            notesEmpty.textContent = linkedNotes.length
-                ? `${linkedNotes.length} nota${linkedNotes.length > 1 ? 's' : ''} vinculada${linkedNotes.length > 1 ? 's' : ''}.`
-                : 'Nenhuma nota vinculada a esta entidade ainda.';
-            notesEmpty.classList.toggle('hidden', linkedNotes.length > 0);
-            notesWrapper.classList.remove('hidden');
+        // Botão de notas no header do modal
+        const notesBtn = document.getElementById('crud-notes-btn');
+        const notesBtnCount = document.getElementById('crud-notes-btn-count');
+        if (notesBtn) {
+            const count = this.getLinkedNotes(type, id).length;
+            notesBtn.classList.remove('hidden');
+            notesBtn.classList.add('flex');
+            if (notesBtnCount) notesBtnCount.textContent = count > 0 ? `${count} nota${count > 1 ? 's' : ''}` : 'Notas';
+            notesBtn.dataset.entityType = type;
+            notesBtn.dataset.entityId = id;
+            notesBtn.dataset.entityTitle = item.title || '';
         }
     },
 

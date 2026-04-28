@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sistema-vida-v54';
+const CACHE_NAME = 'sistema-vida-v55';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
