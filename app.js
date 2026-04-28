@@ -11045,7 +11045,10 @@ const app = {
                     img.classList.add('hidden');
                 }
                 if (btn) {
-                    btn.textContent = hasImage ? 'Alterar imagem do cenário' : 'Inserir imagem do cenário';
+                    btn.innerHTML = `
+                        <span class="material-symbols-outlined notranslate text-[14px]">photo_camera</span>
+                        <span class="hidden sm:inline">${hasImage ? 'Editar' : 'Inserir'}</span>
+                    `;
                     btn.classList.remove('hidden');
                 }
             });
