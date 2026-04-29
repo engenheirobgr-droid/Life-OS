@@ -1599,8 +1599,8 @@ const app = {
         // Timer para trocar slides
         this._odysseySplashTimer = setInterval(nextSlide, duration * 1000);
         
-        // Timer para auto-dismiss: após o tempo configurado do slide
-        const totalDisplayTime = duration * 1000;
+        // Timer para auto-dismiss: mostra todos os slides filtrados antes de encerrar.
+        const totalDisplayTime = duration * Math.max(1, slides.length) * 1000;
         this._odysseySplashDismissTimer = setTimeout(() => {
             this.dismissOdysseySplash();
         }, totalDisplayTime);
@@ -1707,6 +1707,8 @@ const app = {
         const permaHistory = state.wellbeingHistory?.perma || {};
         const swlsHistory = state.swls?.history || {};
         const ninetyDaysAgo = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10);
+        const cycleStart = new Date((state.cycleStartDate || today) + 'T00:00:00');
+        const cycleAgeDays = Number.isNaN(cycleStart.getTime()) ? 0 : Math.max(0, Math.floor((new Date() - cycleStart) / 864e5));
 
         const odyssey = state.profile?.odyssey || {};
 
@@ -1732,6 +1734,7 @@ const app = {
             shutdownDone: !!(shutdownVal || shutdownNotes),
             macrosThisMonth: (state.entities.macros || []).some(m => (m.updatedAt || m.createdAt || '').startsWith(monthKey)),
             swlsThisQuarter: Object.keys(swlsHistory).some(k => k >= ninetyDaysAgo),
+            cycleReviewCurrent: cycleAgeDays < 84,
             okrsExist: (state.entities.okrs || []).length > 0,
             odysseyFilled: !!(odyssey.cenarioA || odyssey.A?.title),
             purposeFilled: !!(state.profile?.legacy || state.profile?.vision || state.profile?.ikigai),
@@ -1802,8 +1805,8 @@ const app = {
                 row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '', s.shutdownDone, 'hoje', 'hoje-diario-section')
             ) +
             section('Ritmo Semanal', 'date_range',
-                row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '', s.weekPlanDone, 'planos', '', 'semanal') +
-                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'painel', 'painel-weekly-review-section')
+                row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '', s.weekPlanDone, 'planos', 'tab-semanal', 'semanal') +
+                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'planos', 'tab-semanal', 'semanal')
             ) +
             section('Ritmo Mensal', 'calendar_month',
                 row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section') +
@@ -1812,6 +1815,7 @@ const app = {
             ) +
             section('Ritmo Trimestral', 'event_repeat',
                 row('track_changes', 'OKRs', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos', '', 'okrs') +
+                row('fact_check', 'Revisão de ciclo', 'Fechar o ciclo de 12 semanas e decidir o destino dos OKRs ativos', '', s.cycleReviewCurrent, 'planos', 'tab-ciclo', 'ciclo') +
                 row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'proposito', 'swls-section')
             ) +
             section('Horizonte Vital', 'auto_awesome',
@@ -2849,6 +2853,59 @@ const app = {
       // Reação em cadeia: renderiza conteúdo específico da tab
       if (tabId === 'timeline') this.renderTimeline();
       if (tabId === 'semanal') this.renderWeeklyPlans();
+      if (tabId === 'ciclo') this.renderCycleReviewPanel();
+    },
+
+    renderCycleReviewPanel: function() {
+        const panel = document.getElementById('cycle-review-panel');
+        if (!panel) return;
+        const state = window.sistemaVidaState;
+        const activeOkrs = (state.entities?.okrs || []).filter(o => o.status !== 'done' && o.status !== 'abandoned');
+        const today = new Date();
+        const cycleStart = new Date((state.cycleStartDate || this.getLocalDateKey()) + 'T00:00:00');
+        const elapsedDays = Math.max(0, Math.floor((today - cycleStart) / 864e5));
+        const cyclePct = Math.min(100, Math.round((elapsedDays / 84) * 100));
+        const weekNumber = Math.max(1, Math.min(12, Math.ceil(Math.max(1, elapsedDays + 1) / 7)));
+        const okrRows = activeOkrs.length
+            ? activeOkrs.map(okr => {
+                const macros = (state.entities?.macros || []).filter(m => m.okrId === okr.id);
+                const macroIds = new Set(macros.map(m => m.id));
+                const micros = (state.entities?.micros || []).filter(m => macroIds.has(m.macroId));
+                const pendingMicros = micros.filter(m => m.status !== 'done' && !m.completed).length;
+                return `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-on-surface">${this.escapeHtml(okr.title || 'OKR sem título')}</p>
+                            <p class="text-xs text-outline mt-1">${macros.length} macro${macros.length === 1 ? '' : 's'} · ${pendingMicros} micro${pendingMicros === 1 ? '' : 's'} pendente${pendingMicros === 1 ? '' : 's'}</p>
+                        </div>
+                        <span class="text-xs font-bold text-primary shrink-0">${Math.round(Number(okr.progress) || 0)}%</span>
+                    </div>
+                </div>`;
+            }).join('')
+            : '<p class="text-sm text-outline italic">Nenhum OKR ativo para revisar agora.</p>';
+
+        panel.innerHTML = `
+            <div class="space-y-2">
+                <div class="flex items-center justify-between text-sm font-medium">
+                    <span class="text-on-surface">Ciclo atual</span>
+                    <span class="text-primary">${cyclePct}%</span>
+                </div>
+                <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                    <div class="h-full bg-primary rounded-full transition-all duration-500" style="width: ${cyclePct}%"></div>
+                </div>
+                <p class="text-[11px] text-on-surface-variant uppercase tracking-widest text-center pt-1">Semana ${weekNumber} de 12 · ${elapsedDays} dias decorridos</p>
+            </div>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <h4 class="text-xs font-bold uppercase tracking-[0.18em] text-outline">OKRs ativos</h4>
+                    <button onclick="window.app.openQuarterlyModal()"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
+                        <span class="material-symbols-outlined notranslate text-[16px]">rate_review</span>
+                        Abrir revisão
+                    </button>
+                </div>
+                ${okrRows}
+            </div>`;
     },
 
     // ── Renderização da aba Semanal ─────────────────────────────────────────────
@@ -7590,9 +7647,12 @@ const app = {
     },
 
     startWeeklyReview: async function() {
-        await this.switchView('proposito');
-        await new Promise(r => setTimeout(r, 350));
-        this._showReviewPurposeAnchor();
+        await this.switchView('planos', { preserveScroll: true });
+        this.switchPlanosTab('semanal');
+        if (this.renderWeeklyPlans) this.renderWeeklyPlans();
+        const section = document.getElementById('tab-semanal');
+        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => this.openReviewModal(), 250);
     },
 
     _showReviewPurposeAnchor: function() {
@@ -11133,6 +11193,7 @@ const app = {
 
             const microC = document.getElementById('micro-container');
             if (microC) microC.innerHTML = buildCards(state.entities.micros, 'micros');
+            if (app.planosActiveTab === 'ciclo') app.renderCycleReviewPanel();
         },
 
         perfil: function() {

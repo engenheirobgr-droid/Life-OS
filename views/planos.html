@@ -41,6 +41,7 @@ A arquitetura da sua intenção: metas, OKRs, macros, micros, timeline e planeja
 <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="micro" onclick="window.app.switchPlanosTab('micro')">Micro</button>
 <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="timeline" onclick="window.app.switchPlanosTab('timeline')">Timeline</button>
 <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="semanal" onclick="window.app.switchPlanosTab('semanal')">Semanal</button>
+<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="ciclo" onclick="window.app.switchPlanosTab('ciclo')">Revisão de Ciclo</button>
 </nav>
 
 <!-- Dimension Filters -->
@@ -125,7 +126,6 @@ A arquitetura da sua intenção: metas, OKRs, macros, micros, timeline e planeja
     <div class="flex items-center justify-between mb-6">
         <div>
             <h3 class="font-headline text-2xl italic font-bold">Planejamento Semanal</h3>
-            <p id="semanal-week-label" class="text-xs text-outline uppercase tracking-widest font-bold mt-1"></p>
         </div>
         <button id="weekly-plan-primary-action" onclick="window.app.openWeeklyPlanModal()"
             class="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all">
@@ -150,6 +150,36 @@ A arquitetura da sua intenção: metas, OKRs, macros, micros, timeline e planeja
         <p class="text-sm text-outline italic">Nenhum histórico ainda.</p>
     </div>
 </section>
+
+<!-- Tab: Revisão de Ciclo -->
+<section class="mt-4 tab-content" id="tab-ciclo">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h3 class="font-headline text-2xl italic font-bold">Revisão de Ciclo</h3>
+            <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">OKRs, pendências e decisões do ciclo de 12 semanas.</p>
+        </div>
+    </div>
+    <div id="cycle-review-panel" class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-6 md:p-8 space-y-6">
+        <p class="text-sm text-outline italic">Carregando ciclo...</p>
+    </div>
+</section>
+
+<!-- Modal de Revisão Trimestral -->
+<div id="quarterly-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-md w-full p-6 shadow-xl flex flex-col max-h-[80vh]">
+        <div class="flex justify-between items-center mb-6 shrink-0">
+            <div>
+                <h3 class="font-headline text-2xl italic">Revisão de OKRs</h3>
+                <p class="text-xs text-outline mt-1">Decida o destino dos seus objetivos ativos.</p>
+            </div>
+            <button onclick="window.app.closeQuarterlyModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90">
+                <span class="material-symbols-outlined notranslate">close</span>
+            </button>
+        </div>
+        <div id="quarterly-okrs-list" class="space-y-4 overflow-y-auto no-scrollbar flex-1 mb-6"></div>
+        <button id="quarterly-save-btn" onclick="window.app.processQuarterlyReview()" class="w-full shrink-0 bg-primary text-on-primary py-3 rounded-lg font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">Salvar Novo Ciclo</button>
+    </div>
+</div>
 
 <!-- FAB -->
 <button onclick="window.app.toggleFabMenu(event)" class="fixed bottom-28 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-xl flex items-center justify-center z-50 hover:scale-105 active:scale-90 transition-transform">
