@@ -1639,15 +1639,29 @@ const app = {
     flowNavigate: function(view, sectionId = '', tabId = '') {
         this.closeFlowModal();
         this.navigate(view);
-        setTimeout(() => {
-            if (tabId) {
+
+        let attempt = 0;
+        const tryNavigate = () => {
+            if (tabId && this.currentView === 'planos') {
                 this.switchPlanosTab(tabId);
+                if (this.render.planos) this.render.planos();
             }
+
             if (sectionId) {
                 const section = document.getElementById(sectionId);
-                if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    return;
+                }
             }
-        }, 500);
+
+            if (attempt < 10) {
+                attempt += 1;
+                setTimeout(tryNavigate, 250);
+            }
+        };
+
+        setTimeout(tryNavigate, 300);
     },
 
     _getFlowState: function() {
@@ -1776,11 +1790,11 @@ const app = {
             ) +
             section('Ritmo Semanal', 'date_range',
                 row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '', s.weekPlanDone, 'planos', '', 'semanal') +
-                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'painel')
+                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'painel', 'painel-weekly-review-section')
             ) +
             section('Ritmo Mensal', 'calendar_month',
                 row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section') +
-                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito') +
+                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito', 'perma-charts-container') +
                 row('account_tree', 'Revisar Macros', 'Avaliar iniciativas mensais em andamento e criar novas', '', s.macrosThisMonth, 'planos', '', 'macro')
             ) +
             section('Ritmo Trimestral', 'event_repeat',
@@ -2847,8 +2861,8 @@ const app = {
                 weekKey,
                 plan: currentPlan,
                 label: 'Semana Atual',
-                actionLabel: currentPlan ? 'Editar Plano' : 'Criar Plano',
-                actionIcon: currentPlan ? 'edit_calendar' : 'event_available',
+                actionLabel: currentPlan ? '' : 'Criar Plano',
+                actionIcon: currentPlan ? '' : 'event_available',
                 actionOptions: '',
                 isCurrent: true,
                 emptyText: 'Nenhum plano para esta semana ainda. Clique em "Criar Plano" para começar.'
@@ -2956,11 +2970,13 @@ const app = {
                     <p class="text-[10px] font-bold uppercase tracking-widest text-primary">${this.escapeHtml(label || 'Semana')}</p>
                     <h4 class="font-headline text-xl font-bold italic mt-1 text-on-background">${this.escapeHtml(this._formatWeekRange(weekKey || this._getWeekKey()))}</h4>
                 </div>
+                ${actionLabel ? `
                 <button onclick="window.app.openWeeklyPlanModal(${options})"
                     class="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
                     <span class="material-symbols-outlined notranslate text-[16px]">${this.escapeHtml(actionIcon || 'edit_calendar')}</span>
-                    ${this.escapeHtml(actionLabel || 'Editar')}
+                    ${this.escapeHtml(actionLabel)}
                 </button>
+                ` : ''}
             </div>
             ${body}
         </div>`;
