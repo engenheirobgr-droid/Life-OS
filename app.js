@@ -1597,8 +1597,8 @@ const app = {
         // Timer para trocar slides
         this._odysseySplashTimer = setInterval(nextSlide, duration * 1000);
         
-        // Timer para auto-dismiss: após mostrar todos os slides uma vez
-        const totalDisplayTime = slideEls.length * duration * 1000;
+        // Timer para auto-dismiss: após o tempo configurado do slide
+        const totalDisplayTime = duration * 1000;
         this._odysseySplashDismissTimer = setTimeout(() => {
             this.dismissOdysseySplash();
         }, totalDisplayTime);
