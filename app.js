@@ -1558,19 +1558,20 @@ const app = {
         el.className = 'lifeos-odyssey-splash';
         el.innerHTML = `
             <div class="lifeos-odyssey-splash__frame" onclick="event.stopPropagation();">
-                <div class="lifeos-odyssey-splash__slides">
+                <div class="lifeos-odyssey-splash__slides-container">
                     ${slides.map((slide, idx) => `
                         <div class="lifeos-odyssey-slide" data-slide-index="${idx}" style="opacity: ${idx === 0 ? 1 : 0};">
                             <img class="lifeos-odyssey-slide__image" src="${this.escapeHtml(slide.src)}" alt="${this.escapeHtml(slide.label)}" />
-                            <div class="lifeos-odyssey-slide__overlay"></div>
-                            <div class="lifeos-odyssey-slide__header">
-                                <span class="lifeos-odyssey-slide__badge">${this.escapeHtml(slide.label)}</span>
-                                <h2 class="lifeos-odyssey-slide__title">${this.escapeHtml(slide.title)}</h2>
-                            </div>
                         </div>
                     `).join('')}
                 </div>
-                <button class="lifeos-odyssey-button" onclick="event.stopPropagation();window.app.dismissOdysseySplash()">Começar o dia</button>
+                <div class="lifeos-odyssey-splash__footer">
+                    <div class="lifeos-odyssey-slide__header">
+                        <span class="lifeos-odyssey-slide__badge">${this.escapeHtml(slides[0].label)}</span>
+                        <h2 class="lifeos-odyssey-slide__title">${this.escapeHtml(slides[0].title)}</h2>
+                    </div>
+                    <button class="lifeos-odyssey-button" onclick="event.stopPropagation();window.app.dismissOdysseySplash()">Começar o dia</button>
+                </div>
             </div>
         `;
         el.addEventListener('click', () => this.dismissOdysseySplash());
@@ -1578,12 +1579,18 @@ const app = {
 
         let currentIndex = 0;
         const slideEls = Array.from(el.querySelectorAll('.lifeos-odyssey-slide'));
+        const footerHeader = el.querySelector('.lifeos-odyssey-slide__header');
         const nextSlide = () => {
             if (slideEls.length < 2) return;
             const nextIndex = (currentIndex + 1) % slideEls.length;
             slideEls[currentIndex].style.opacity = '0';
             slideEls[nextIndex].style.opacity = '1';
             currentIndex = nextIndex;
+            if (footerHeader) {
+                const slide = slides[nextIndex];
+                footerHeader.querySelector('.lifeos-odyssey-slide__badge').textContent = this.escapeHtml(slide.label);
+                footerHeader.querySelector('.lifeos-odyssey-slide__title').textContent = this.escapeHtml(slide.title);
+            }
         };
         this._odysseySplashTimer = setInterval(nextSlide, duration * 1000);
     },
