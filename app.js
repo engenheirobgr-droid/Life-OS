@@ -1640,28 +1640,41 @@ const app = {
         this.closeFlowModal();
         this.navigate(view);
 
-        let attempt = 0;
-        const tryNavigate = () => {
-            if (tabId && this.currentView === 'planos') {
-                this.switchPlanosTab(tabId);
-                if (this.render.planos) this.render.planos();
-            }
+        if (tabId && this.currentView === 'planos') {
+            this.switchPlanosTab(tabId);
+            if (this.render.planos) this.render.planos();
+        }
 
-            if (sectionId) {
-                const section = document.getElementById(sectionId);
-                if (section) {
-                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    return;
+        if (sectionId) {
+            // Usa requestAnimationFrame para esperar pelo próximo ciclo de renderização
+            requestAnimationFrame(() => {
+                const scrollToSection = () => {
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        // Pequeno delay adicional para garantir que o layout esteja estável
+                        setTimeout(() => {
+                            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            // Highlight temporário para feedback visual
+                            section.classList.add('ring-2', 'ring-primary/30');
+                            setTimeout(() => section.classList.remove('ring-2', 'ring-primary/30'), 2000);
+                        }, 100);
+                        return true;
+                    }
+                    return false;
+                };
+
+                // Tenta imediatamente
+                if (!scrollToSection()) {
+                    // Se não conseguiu, tenta novamente após um delay maior
+                    setTimeout(() => {
+                        if (!scrollToSection()) {
+                            // Última tentativa com delay ainda maior
+                            setTimeout(scrollToSection, 500);
+                        }
+                    }, 300);
                 }
-            }
-
-            if (attempt < 10) {
-                attempt += 1;
-                setTimeout(tryNavigate, 250);
-            }
-        };
-
-        setTimeout(tryNavigate, 300);
+            });
+        }
     },
 
     _getFlowState: function() {
@@ -11272,6 +11285,14 @@ const app = {
                         <span class="hidden sm:inline">${hasImage ? 'Editar' : 'Inserir'}</span>
                     `;
                     btn.classList.remove('hidden');
+                    // Garante que o botão seja sempre visível e destacado quando não há imagem
+                    if (!hasImage) {
+                        btn.classList.add('bg-primary', 'text-on-primary');
+                        btn.classList.remove('bg-surface-container-high', 'text-on-surface');
+                    } else {
+                        btn.classList.remove('bg-primary', 'text-on-primary');
+                        btn.classList.add('bg-surface-container-high', 'text-on-surface');
+                    }
                 }
             });
 
