@@ -10376,14 +10376,13 @@ const app = {
                                     </div>
                                 </div>
                             </div>
+                            ${(micro.obstacle || micro.ifThen) ? `
+                            <div class="mt-2 pt-2 border-t border-amber-500/15 text-xs text-on-surface-variant leading-relaxed">
+                                <p class="text-[9px] uppercase tracking-widest font-bold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[13px]">psychology</span> WOOP / Se-então</p>
+                                ${micro.obstacle ? `<p><span class="font-semibold text-on-surface">Obstáculo:</span> ${app.escapeHtml(micro.obstacle)}</p>` : ''}
+                                ${micro.ifThen ? `<p class="mt-0.5"><span class="font-semibold text-on-surface">Plano:</span> ${app.escapeHtml(micro.ifThen)}</p>` : ''}
+                            </div>` : ''}
                         </div>
-
-                        ${(micro.obstacle || micro.ifThen) ? `
-                        <div class="rounded-lg border border-amber-500/15 bg-amber-500/5 px-3 py-2.5 text-xs text-on-surface-variant leading-relaxed">
-                            <p class="text-[9px] uppercase tracking-widest font-bold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[13px]">psychology</span> WOOP / Se-então</p>
-                            ${micro.obstacle ? `<p><span class="font-semibold text-on-surface">Obstáculo:</span> ${app.escapeHtml(micro.obstacle)}</p>` : ''}
-                            ${micro.ifThen ? `<p class="mt-0.5"><span class="font-semibold text-on-surface">Plano:</span> ${app.escapeHtml(micro.ifThen)}</p>` : ''}
-                        </div>` : ''}
 
                         <div class="hidden bg-surface-container-low rounded-lg p-4 space-y-3 relative trail-line text-on-surface-variant overflow-hidden" id="trail-${idx}">
                             <div class="absolute left-[12px] top-3 bottom-3 w-px bg-primary/10"></div>
