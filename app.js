@@ -1562,6 +1562,7 @@ const app = {
                     ${slides.map((slide, idx) => `
                         <div class="lifeos-odyssey-slide" data-slide-index="${idx}" style="opacity: ${idx === 0 ? 1 : 0};">
                             <img class="lifeos-odyssey-slide__image" src="${this.escapeHtml(slide.src)}" alt="${this.escapeHtml(slide.label)}" />
+                            <div class="lifeos-odyssey-slide__overlay"></div>
                         </div>
                     `).join('')}
                 </div>
@@ -10376,7 +10377,14 @@ const app = {
                                 </div>
                             </div>
                         </div>
-                        
+
+                        ${(micro.obstacle || micro.ifThen) ? `
+                        <div class="rounded-lg border border-amber-500/15 bg-amber-500/5 px-3 py-2.5 text-xs text-on-surface-variant leading-relaxed">
+                            <p class="text-[9px] uppercase tracking-widest font-bold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[13px]">psychology</span> WOOP / Se-então</p>
+                            ${micro.obstacle ? `<p><span class="font-semibold text-on-surface">Obstáculo:</span> ${app.escapeHtml(micro.obstacle)}</p>` : ''}
+                            ${micro.ifThen ? `<p class="mt-0.5"><span class="font-semibold text-on-surface">Plano:</span> ${app.escapeHtml(micro.ifThen)}</p>` : ''}
+                        </div>` : ''}
+
                         <div class="hidden bg-surface-container-low rounded-lg p-4 space-y-3 relative trail-line text-on-surface-variant overflow-hidden" id="trail-${idx}">
                             <div class="absolute left-[12px] top-3 bottom-3 w-px bg-primary/10"></div>
                             
@@ -10766,14 +10774,6 @@ const app = {
                         });
                         trailHtml += `</div>`;
                         
-                        // Adicionar WOOP dentro da trilha
-                        const woopHtmlTrail = (item.obstacle || item.ifThen) ? `
-                            <div class="mt-4 rounded-xl border border-primary/15 bg-primary/5 p-3 text-xs text-on-surface-variant leading-relaxed">
-                                <p class="text-[9px] uppercase tracking-widest font-bold text-primary mb-1">WOOP / Se-então</p>
-                                ${item.obstacle ? `<p><span class="font-bold text-on-surface">Obstáculo:</span> ${app.escapeHtml(item.obstacle)}</p>` : ''}
-                                ${item.ifThen ? `<p class="mt-1"><span class="font-bold text-on-surface">Plano:</span> ${app.escapeHtml(item.ifThen)}</p>` : ''}
-                            </div>` : '';
-                        trailHtml += woopHtmlTrail;
 
                         const userValues = state.profile.values || [];
                         const isAligned = userValues.includes(item.dimension);
@@ -10782,7 +10782,12 @@ const app = {
                                 ? '<span title="Micro selecionada no planejamento semanal" class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase tracking-wider">Semana</span>'
                                 : '<span title="Micro capturada fora do plano semanal" class="shrink-0 bg-surface-container-high text-on-surface-variant text-[9px] px-2 py-0.5 rounded-full border border-outline-variant/20 font-bold uppercase tracking-wider">Captura</span>')
                             : '';
-                        // WOOP removido daqui - agora está apenas na trilha;
+                        const woopCardHtml = (item.obstacle || item.ifThen) ? `
+                            <div class="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-on-surface-variant leading-relaxed">
+                                <p class="text-[9px] uppercase tracking-widest font-bold text-amber-600 dark:text-amber-400 mb-1.5 flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[13px]">psychology</span> WOOP / Se-então</p>
+                                ${item.obstacle ? `<p><span class="font-semibold text-on-surface">Obstáculo:</span> ${app.escapeHtml(item.obstacle)}</p>` : ''}
+                                ${item.ifThen ? `<p class="mt-1"><span class="font-semibold text-on-surface">Plano:</span> ${app.escapeHtml(item.ifThen)}</p>` : ''}
+                            </div>` : '';
 
                         const isInProgress = item.status === 'in_progress';
                         // Para micros (atômicas): completed/progress 100 implicam done.
@@ -10882,6 +10887,7 @@ const app = {
                                 </div>
                             </div>
 
+                            ${woopCardHtml}
                             <div class="grid grid-cols-3 gap-2">
                                 <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')"
                                     class="col-span-3 p-2.5 bg-primary/10 border border-primary/25 text-primary hover:bg-primary/15 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all">
