@@ -621,6 +621,7 @@ const app = {
         if (eventType === 'habit_complete') xp = 6;
         if (eventType === 'deep_work') xp = Math.max(10, Math.min(40, Math.round((Number(payload.focusSec) || 0) / 300)));
         if (eventType === 'weekly_review') xp = 25;
+        if (eventType === 'daily_checkin') xp = 10;
         if (eventType === 'habit_complete' && payload.sourceType) xp += payload.sourceType === 'shadow' ? 4 : 2;
         if (eventType === 'habit_complete' && payload.maturity === 'graduated') xp = Math.max(1, Math.round(xp * 0.5));
         if (eventType === 'weekly_review' && payload.identityReflection) xp += 5;
@@ -1620,6 +1621,151 @@ const app = {
             setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 280);
         }
     },
+    openFlowModal: function() {
+        const el = document.getElementById('flow-modal');
+        if (!el) return;
+        this.renderFlowModal();
+        el.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    },
+
+    closeFlowModal: function() {
+        const el = document.getElementById('flow-modal');
+        if (!el) return;
+        el.classList.add('hidden');
+        document.body.style.overflow = '';
+    },
+
+    _getFlowState: function() {
+        const state = window.sistemaVidaState;
+        const today = this.getLocalDateKey();
+        const weekKey = this._getWeekKey ? this._getWeekKey() : '';
+        const monthKey = today.slice(0, 7);
+        const todayLog = (state.dailyLogs || {})[today] || {};
+        const events = (state.gamification?.events) || {};
+
+        const microsDoneToday = (state.entities.micros || []).some(m =>
+            (m.status === 'done' || m.completed) &&
+            (m.completedDate === today || m.doneDate === today));
+
+        const habitsDoneToday = (state.habits || []).some(h => events[`habit_complete:${h.id}:${today}`]);
+
+        const focusToday = (state.deepWork?.sessions || []).some(s =>
+            (s.endedAt || s.startedAt || '').startsWith(today));
+
+        const shutdownVal = Array.isArray(todayLog.shutdown)
+            ? (todayLog.shutdown[0] || '') : (todayLog.shutdown || '');
+
+        const wheelHistory = state.wellbeingHistory?.wheel || {};
+        const permaHistory = state.wellbeingHistory?.perma || {};
+        const swlsHistory = state.swls?.history || {};
+        const ninetyDaysAgo = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10);
+
+        const odyssey = state.profile?.odyssey || {};
+
+        return {
+            checkinDone: !!this.getTodayCheckin(),
+            intentionDone: !!(todayLog.focus || '').trim(),
+            microsDoneToday,
+            habitsDoneToday,
+            focusToday,
+            diaryDone: !!(todayLog.gratidao || '').trim(),
+            shutdownDone: !!shutdownVal.trim(),
+            weekPlanDone: !!((state.weekPlans || {})[weekKey]?.selectedMicros?.length > 0 || ((state.weekPlans || {})[weekKey]?.intention || '').trim()),
+            weekReviewDone: !!events[`review:${weekKey}`],
+            wheelThisMonth: Object.keys(wheelHistory).some(k => k.startsWith(monthKey)),
+            permaThisMonth: Object.keys(permaHistory).some(k => k.startsWith(monthKey)),
+            macrosThisMonth: (state.entities.macros || []).some(m => (m.updatedAt || m.createdAt || '').startsWith(monthKey)),
+            swlsThisQuarter: Object.keys(swlsHistory).some(k => k >= ninetyDaysAgo),
+            okrsExist: (state.entities.okrs || []).length > 0,
+            odysseyFilled: !!(odyssey.cenarioA || odyssey.A?.title),
+            purposeFilled: !!(state.profile?.legacy || state.profile?.vision || state.profile?.ikigai),
+            metasExist: (state.entities.metas || []).length > 0,
+        };
+    },
+
+    renderFlowModal: function() {
+        const el = document.getElementById('flow-modal-content');
+        if (!el) return;
+        const s = this._getFlowState();
+
+        const row = (icon, title, subtitle, xpLabel, done, view) => {
+            const bg = done
+                ? 'bg-emerald-500/[0.06] border border-emerald-500/20'
+                : 'bg-surface-container-low border border-outline-variant/15';
+            const checkIcon = done ? 'check_circle' : 'radio_button_unchecked';
+            const checkColor = done ? 'text-emerald-500' : 'text-outline-variant/60';
+            const checkFill = done ? "font-variation-settings:'FILL' 1;" : '';
+            const xpEl = xpLabel
+                ? `<span class="shrink-0 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md leading-none">${xpLabel}</span>`
+                : `<span class="shrink-0 text-[9px] font-bold uppercase tracking-wider text-outline bg-surface-container-highest border border-outline-variant/20 px-1.5 py-0.5 rounded-md leading-none">ritual</span>`;
+            return `
+            <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl ${bg}">
+                <span class="material-symbols-outlined notranslate text-xl shrink-0 ${checkColor}" style="${checkFill}">${checkIcon}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="material-symbols-outlined notranslate text-[15px] text-outline shrink-0">${icon}</span>
+                        <p class="text-sm font-semibold text-on-surface leading-snug">${title}</p>
+                        ${xpEl}
+                    </div>
+                    <p class="text-[11px] text-outline mt-0.5 leading-snug">${subtitle}</p>
+                </div>
+                <button onclick="window.app.closeFlowModal();window.app.navigate('${view}');"
+                    class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-highest text-outline hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined notranslate text-[18px]">arrow_forward</span>
+                </button>
+            </div>`;
+        };
+
+        const sub = (label, icon) => `
+        <div class="flex items-center gap-2 mt-4 mb-2">
+            <span class="material-symbols-outlined notranslate text-[13px] text-outline">${icon}</span>
+            <span class="text-[9px] font-bold uppercase tracking-[0.16em] text-outline">${label}</span>
+            <span class="h-px flex-1 bg-outline-variant/20"></span>
+        </div>`;
+
+        const section = (title, icon, body) => `
+        <div class="mb-1">
+            <div class="flex items-center gap-2 mb-3 mt-5 first:mt-0">
+                <span class="material-symbols-outlined notranslate text-base text-primary">${icon}</span>
+                <h3 class="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">${title}</h3>
+            </div>
+            <div class="space-y-2">${body}</div>
+        </div>`;
+
+        el.innerHTML =
+            section('Rotina Diária', 'today',
+                sub('Manhã', 'wb_sunny') +
+                row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje') +
+                row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '', s.intentionDone, 'hoje') +
+                sub('Ao longo do dia', 'light_mode') +
+                row('task_alt', 'Executar micros', 'Avançar ao menos uma micro ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje') +
+                row('repeat', 'Registrar hábitos', 'Marcar os hábitos concluídos no dia', '+6–10 XP', s.habitsDoneToday, 'hoje') +
+                row('timer', 'Sessão de foco', 'Bloco de deep work com Pomodoro (90/20)', '+10–40 XP', s.focusToday, 'foco') +
+                sub('Noite', 'nightlight') +
+                row('auto_stories', 'Diário & Gratidão', 'Reflexão do dia e três coisas pelas quais é grato', '', s.diaryDone, 'hoje') +
+                row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '', s.shutdownDone, 'hoje')
+            ) +
+            section('Ritmo Semanal', 'date_range',
+                row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '', s.weekPlanDone, 'planos') +
+                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'painel')
+            ) +
+            section('Ritmo Mensal', 'calendar_month',
+                row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito') +
+                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'perfil') +
+                row('account_tree', 'Revisar Macros', 'Avaliar iniciativas mensais em andamento e criar novas', '', s.macrosThisMonth, 'planos')
+            ) +
+            section('Ritmo Trimestral', 'event_repeat',
+                row('track_changes', 'OKRs', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos') +
+                row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'perfil')
+            ) +
+            section('Horizonte Vital', 'auto_awesome',
+                row('flag', 'Metas de vida', 'Metas de 1 a 5 anos alinhadas ao propósito de vida', '', s.metasExist, 'planos') +
+                row('explore', 'Odyssey Plan', 'Três cenários possíveis para os próximos 5 anos da sua vida', '', s.odysseyFilled, 'proposito') +
+                row('self_improvement', 'Visão, Legado & Ikigai', 'O que você quer deixar, ser e fazer no mundo', '', s.purposeFilled, 'proposito')
+            );
+    },
+
     openAvatarPicker: function() {
         const input = document.getElementById('profile-photo-input');
         if (input) input.click();
@@ -5947,12 +6093,13 @@ const app = {
         window.sistemaVidaState.profile.dailyCheckins = list.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 180);
         window.sistemaVidaState.energy = entry.energy;
         this.markCadence('checkin', today);
+        const checkinAward = this.awardGamification('daily_checkin', { key: `daily_checkin:${today}`, date: today });
         this.saveState(true);
         try { localStorage.setItem('lifeos_daily_checkins_backup', JSON.stringify(window.sistemaVidaState.profile.dailyCheckins || [])); } catch (_) {}
         this.renderDailyCheckinPanel();
         this.renderProfileCadence();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
-        if (this.showToast) this.showToast('Check-in do dia salvo.', 'success');
+        if (this.showToast) this.showToast(checkinAward ? `Check-in salvo! +${checkinAward.xp} XP` : 'Check-in atualizado.', 'success');
     },
 
     setCheckinVal: function(inputId, val, btn) {
@@ -9042,6 +9189,7 @@ const app = {
         const rulesEl = document.getElementById('gamification-rules');
         if (rulesEl) {
             const rules = [
+                { icon: 'monitor_heart', label: 'Check-in diário', xp: '+10 XP', note: 'conta uma vez por dia' },
                 { icon: 'task_alt', label: 'Micro concluída', xp: '+12 XP', note: '+6 se está no plano da semana' },
                 { icon: 'repeat', label: 'Hábito do dia', xp: '+6 XP', note: 'automáticos recebem XP de manutenção (50%)' },
                 { icon: 'timer', label: 'Foco profundo', xp: '+10 a +40 XP', note: 'varia pela duração do bloco' },

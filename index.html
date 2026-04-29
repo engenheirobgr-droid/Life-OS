@@ -573,11 +573,17 @@
                 </div>
             </div>
         </div>
-        <button class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hover:bg-surface-container"
-            onclick="app.navigate('perfil')">
-            <img id="profile-nav-avatar-mobile" alt="Foto de perfil" class="hidden w-full h-full object-cover rounded-full">
-            <span id="profile-nav-icon-mobile" class="material-symbols-outlined notranslate text-outline">account_circle</span>
-        </button>
+        <div class="flex items-center gap-1">
+            <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-outline transition-colors"
+                onclick="app.openFlowModal()" title="Flow — Fluxo de trabalho">
+                <span class="material-symbols-outlined notranslate">account_tree</span>
+            </button>
+            <button class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hover:bg-surface-container"
+                onclick="app.navigate('perfil')">
+                <img id="profile-nav-avatar-mobile" alt="Foto de perfil" class="hidden w-full h-full object-cover rounded-full">
+                <span id="profile-nav-icon-mobile" class="material-symbols-outlined notranslate text-outline">account_circle</span>
+            </button>
+        </div>
     </header>
 
     <div class="flex flex-1 overflow-hidden lg:overflow-visible">
@@ -642,6 +648,12 @@
                     Propósito
                 </button>
             </nav>
+
+            <button class="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
+                onclick="app.openFlowModal()">
+                <span class="material-symbols-outlined notranslate">account_tree</span>
+                Flow
+            </button>
 
             <div class="mt-auto pt-6 border-t border-outline-variant/20">
                 <button data-view="perfil"
@@ -1988,5 +2000,30 @@
             });
         }
     </script>
+
+    <!-- Flow Modal -->
+    <div id="flow-modal" class="fixed inset-0 z-[9000] hidden" aria-modal="true" role="dialog">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="app.closeFlowModal()"></div>
+        <div class="absolute inset-y-0 right-0 w-full max-w-lg bg-background flex flex-col shadow-2xl overflow-hidden">
+            <!-- Header -->
+            <div class="sticky top-0 bg-background/95 backdrop-blur-md border-b border-outline-variant/20 px-5 py-4 flex items-center justify-between shrink-0 z-10">
+                <div class="flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined notranslate text-primary text-[22px]">account_tree</span>
+                    </span>
+                    <div>
+                        <h2 class="font-headline font-bold text-lg leading-none text-on-background">Flow</h2>
+                        <p class="text-[10px] text-outline uppercase tracking-widest mt-0.5">Fluxo de trabalho</p>
+                    </div>
+                </div>
+                <button onclick="app.closeFlowModal()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container text-outline hover:text-on-surface transition-colors">
+                    <span class="material-symbols-outlined notranslate text-xl">close</span>
+                </button>
+            </div>
+            <!-- Content -->
+            <div id="flow-modal-content" class="flex-1 overflow-y-auto px-5 py-5 space-y-1">
+            </div>
+        </div>
+    </div>
 </body>
 </html>
