@@ -1636,6 +1636,20 @@ const app = {
         document.body.style.overflow = '';
     },
 
+    flowNavigate: function(view, sectionId = '', tabId = '') {
+        this.closeFlowModal();
+        this.navigate(view);
+        setTimeout(() => {
+            if (tabId) {
+                this.switchPlanosTab(tabId);
+            }
+            if (sectionId) {
+                const section = document.getElementById(sectionId);
+                if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 300);
+    },
+
     _getFlowState: function() {
         const state = window.sistemaVidaState;
         const today = this.getLocalDateKey();
@@ -1648,7 +1662,7 @@ const app = {
             (m.status === 'done' || m.completed) &&
             (m.completedDate === today || m.doneDate === today));
 
-        const habitsDoneToday = (state.habits || []).some(h => events[`habit_complete:${h.id}:${today}`]);
+        const habitsDoneToday = (state.habits || []).some(h => events[`habit:${h.id}:${today}`]);
 
         const focusToday = (state.deepWork?.sessions || []).some(s =>
             (s.endedAt || s.startedAt || '').startsWith(today));
@@ -1663,14 +1677,19 @@ const app = {
 
         const odyssey = state.profile?.odyssey || {};
 
+        // Check both saved state and live DOM values
+        const intentionDomVal = document.getElementById('diario-foco')?.value || '';
+        const diaryDomVal = document.getElementById('diario-gratidao')?.value || '';
+        const shutdownDomVal = document.getElementById('diario-shutdown-1')?.value || '';
+
         return {
             checkinDone: !!this.getTodayCheckin(),
-            intentionDone: !!(todayLog.focus || '').trim(),
+            intentionDone: !!(todayLog.focus || '').trim() || !!intentionDomVal.trim(),
             microsDoneToday,
             habitsDoneToday,
             focusToday,
-            diaryDone: !!(todayLog.gratidao || '').trim(),
-            shutdownDone: !!shutdownVal.trim(),
+            diaryDone: !!(todayLog.gratidao || '').trim() || !!diaryDomVal.trim(),
+            shutdownDone: !!shutdownVal.trim() || !!shutdownDomVal.trim(),
             weekPlanDone: !!((state.weekPlans || {})[weekKey]?.selectedMicros?.length > 0 || ((state.weekPlans || {})[weekKey]?.intention || '').trim()),
             weekReviewDone: !!events[`review:${weekKey}`],
             wheelThisMonth: Object.keys(wheelHistory).some(k => k.startsWith(monthKey)),
@@ -1689,7 +1708,7 @@ const app = {
         if (!el) return;
         const s = this._getFlowState();
 
-        const row = (icon, title, subtitle, xpLabel, done, view) => {
+        const row = (icon, title, subtitle, xpLabel, done, view, sectionId = '', tabId = '') => {
             const bg = done
                 ? 'bg-emerald-500/[0.06] border border-emerald-500/20'
                 : 'bg-surface-container-low border border-outline-variant/15';
@@ -1710,7 +1729,7 @@ const app = {
                     </div>
                     <p class="text-[11px] text-outline mt-0.5 leading-snug">${subtitle}</p>
                 </div>
-                <button onclick="window.app.closeFlowModal();window.app.navigate('${view}');"
+                <button onclick="window.app.flowNavigate('${view}','${sectionId}','${tabId}');"
                     class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-highest text-outline hover:text-primary transition-colors">
                     <span class="material-symbols-outlined notranslate text-[18px]">arrow_forward</span>
                 </button>
@@ -1736,31 +1755,31 @@ const app = {
         el.innerHTML =
             section('Rotina Diária', 'today',
                 sub('Manhã', 'wb_sunny') +
-                row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje') +
-                row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '', s.intentionDone, 'hoje') +
+                row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'hoje-intencao-section') +
+                row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '', s.intentionDone, 'hoje', 'hoje-intencao-section') +
                 sub('Ao longo do dia', 'light_mode') +
-                row('task_alt', 'Executar micros', 'Avançar ao menos uma micro ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje') +
-                row('repeat', 'Registrar hábitos', 'Marcar os hábitos concluídos no dia', '+6–10 XP', s.habitsDoneToday, 'hoje') +
+                row('task_alt', 'Executar micros', 'Avançar ao menos uma micro ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
+                row('repeat', 'Registrar hábitos', 'Marcar os hábitos concluídos no dia', '+6–10 XP', s.habitsDoneToday, 'hoje', 'hoje-habits-section') +
                 row('timer', 'Sessão de foco', 'Bloco de deep work com Pomodoro (90/20)', '+10–40 XP', s.focusToday, 'foco') +
                 sub('Noite', 'nightlight') +
-                row('auto_stories', 'Diário & Gratidão', 'Reflexão do dia e três coisas pelas quais é grato', '', s.diaryDone, 'hoje') +
-                row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '', s.shutdownDone, 'hoje')
+                row('auto_stories', 'Diário & Gratidão', 'Reflexão do dia e três coisas pelas quais é grato', '', s.diaryDone, 'hoje', 'hoje-diario-section') +
+                row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '', s.shutdownDone, 'hoje', 'hoje-diario-section')
             ) +
             section('Ritmo Semanal', 'date_range',
-                row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '', s.weekPlanDone, 'planos') +
+                row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '', s.weekPlanDone, 'planos', '', 'semanal') +
                 row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'painel')
             ) +
             section('Ritmo Mensal', 'calendar_month',
-                row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito') +
+                row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section') +
                 row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'perfil') +
-                row('account_tree', 'Revisar Macros', 'Avaliar iniciativas mensais em andamento e criar novas', '', s.macrosThisMonth, 'planos')
+                row('account_tree', 'Revisar Macros', 'Avaliar iniciativas mensais em andamento e criar novas', '', s.macrosThisMonth, 'planos', '', 'macro')
             ) +
             section('Ritmo Trimestral', 'event_repeat',
-                row('track_changes', 'OKRs', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos') +
+                row('track_changes', 'OKRs', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos', '', 'okrs') +
                 row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'perfil')
             ) +
             section('Horizonte Vital', 'auto_awesome',
-                row('flag', 'Metas de vida', 'Metas de 1 a 5 anos alinhadas ao propósito de vida', '', s.metasExist, 'planos') +
+                row('flag', 'Metas de vida', 'Metas de 1 a 5 anos alinhadas ao propósito de vida', '', s.metasExist, 'planos', '', 'metas') +
                 row('explore', 'Odyssey Plan', 'Três cenários possíveis para os próximos 5 anos da sua vida', '', s.odysseyFilled, 'proposito') +
                 row('self_improvement', 'Visão, Legado & Ikigai', 'O que você quer deixar, ser e fazer no mundo', '', s.purposeFilled, 'proposito')
             );
