@@ -1589,8 +1589,8 @@ const app = {
             currentIndex = nextIndex;
             if (footerHeader) {
                 const slide = slides[nextIndex];
-                footerHeader.querySelector('.lifeos-odyssey-slide__badge').textContent = this.escapeHtml(slide.label);
-                footerHeader.querySelector('.lifeos-odyssey-slide__title').textContent = this.escapeHtml(slide.title);
+                footerHeader.querySelector('.lifeos-odyssey-slide__badge').textContent = slide.label;
+                footerHeader.querySelector('.lifeos-odyssey-slide__title').textContent = slide.title;
             }
         };
         
