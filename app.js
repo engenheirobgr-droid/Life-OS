@@ -1653,8 +1653,14 @@ const app = {
         const focusToday = (state.deepWork?.sessions || []).some(s =>
             (s.endedAt || s.startedAt || '').startsWith(today));
 
-        const shutdownVal = Array.isArray(todayLog.shutdown)
-            ? (todayLog.shutdown[0] || '') : (todayLog.shutdown || '');
+        const shutdownLines = Array.isArray(todayLog.shutdown)
+            ? todayLog.shutdown.filter(value => typeof value === 'string' ? value.trim() !== '' : Boolean(value)).map(String)
+            : [todayLog.shutdown].filter(value => typeof value === 'string' ? value.trim() !== '' : Boolean(value)).map(String);
+        const shutdownVal = shutdownLines.find(line => line.trim()) || '';
+        const shutdownNotes = Object.values(todayLog.dimensionNotes || {})
+            .filter(value => typeof value === 'string' ? value.trim() !== '' : Boolean(value))
+            .map(String)
+            .find(note => note.trim()) || '';
 
         const wheelHistory = state.wellbeingHistory?.wheel || {};
         const permaHistory = state.wellbeingHistory?.perma || {};
@@ -1670,11 +1676,11 @@ const app = {
             habitsDoneToday,
             focusToday,
             diaryDone: !!(todayLog.gratidao || '').trim(),
-            shutdownDone: !!shutdownVal.trim(),
             weekPlanDone: !!((state.weekPlans || {})[weekKey]?.selectedMicros?.length > 0 || ((state.weekPlans || {})[weekKey]?.intention || '').trim()),
             weekReviewDone: !!events[`review:${weekKey}`],
             wheelThisMonth: Object.keys(wheelHistory).some(k => k.startsWith(monthKey)),
             permaThisMonth: Object.keys(permaHistory).some(k => k.startsWith(monthKey)),
+            shutdownDone: !!(shutdownVal || shutdownNotes),
             macrosThisMonth: (state.entities.macros || []).some(m => (m.updatedAt || m.createdAt || '').startsWith(monthKey)),
             swlsThisQuarter: Object.keys(swlsHistory).some(k => k >= ninetyDaysAgo),
             okrsExist: (state.entities.okrs || []).length > 0,

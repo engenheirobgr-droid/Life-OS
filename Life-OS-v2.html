@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="pt-br" class="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life OS | Sistema Vida</title>
+
+    <!-- PWA Setup -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#01696f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="icon" type="image/png" href="./favicon.png">
+
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet">
+
+    <!-- Tailwind for rapid premium layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#01696f',
+                        'on-primary': '#ffffff',
+                        'primary-container': '#9cf1f6',
+                        'on-primary-container': '#002022',
+                        secondary: '#4a6365',
+                        'on-secondary': '#ffffff',
+                        'secondary-container': '#cce8ea',
+                        'on-secondary-container': '#051f21',
+                        tertiary: '#4e5f7d',
+                        'on-tertiary': '#ffffff',
+                        'tertiary-container': '#d6e3ff',
+                        'on-tertiary-container': '#081c36',
+                        error: '#ba1a1a',
+                        'on-error': '#ffffff',
+                        'error-container': '#ffdad6',
+                        'on-error-container': '#410002',
+                        background: '#f8fafc',
+                        'on-background': '#191c1d',
+                        surface: '#f8fafc',
+                        'on-surface': '#191c1d',
+                        'surface-variant': '#dae4e5',
+                        'on-surface-variant': '#3f484a',
+                        outline: '#6f797a',
+                        'outline-variant': '#bec8ca',
+                        'surface-container-lowest': '#ffffff',
+                        'surface-container-low': '#f0f4f5',
+                        'surface-container': '#e9eff0',
+                        'surface-container-high': '#e3e9eb',
+                        'surface-container-highest': '#dee4e5',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        headline: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @layer base {
+            body {
+                @apply font-sans bg-background text-on-background antialiased selection:bg-primary/20;
+            }
+
+            h1,
+            h2,
+            h3,
+            h4 {
+                @apply font-headline;
+            }
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .manual-ch-read {
+            opacity: 0.85;
+            border-color: rgb(var(--md-sys-color-primary) / 0.25);
+        }
+        .manual-ch-read .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .glass-card {
+            @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
+        }
+
+        /* Material Symbols Fill Animation */
+        .nav-item-link[data-active="true"] .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        /* Smooth View Transitions */
+        #app-content {
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        #app-content.loading {
+            opacity: 0;
+        }
+
+        /* Toast Animation */
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-animate-in {
+            animation: slideUp 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        @keyframes microCompletePulse {
+            0% { opacity: 0; transform: scale(0.94); }
+            35% { opacity: 1; transform: scale(1.015); }
+            100% { opacity: 0.92; transform: scale(1); }
+        }
+
+        .micro-complete-feedback {
+            animation: microCompletePulse 0.55s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .micro-complete-check {
+            animation: microCompletePulse 0.45s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        @keyframes xpFloat {
+            0%   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+            70%  { opacity: 0.9; transform: translateX(-50%) translateY(-52px) scale(1.1); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-72px) scale(0.9); }
+        }
+
+        @keyframes cardSuccessPulse {
+            0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--md-sys-color-primary) 40%, transparent); }
+            50%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--md-sys-color-primary) 0%, transparent); transform: scale(1.01); }
+            100% { box-shadow: 0 0 0 0 transparent; transform: scale(1); }
+        }
+
+        .card-success-pulse {
+            animation: cardSuccessPulse 0.55s ease-out;
+        }
+
+        @keyframes splashEnter {
+            from { opacity: 0; transform: translateY(18px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .lifeos-splash {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            background:
+                radial-gradient(circle at 50% 12%, rgba(1, 105, 111, 0.10), transparent 34%),
+                linear-gradient(180deg, #ffffff 0%, #f8fafc 56%, #eef5f6 100%);
+            color: #191c1d;
+            cursor: pointer;
+        }
+
+        .lifeos-splash__content {
+            width: min(100%, 420px);
+            min-height: min(620px, calc(100dvh - 4rem));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            animation: splashEnter 0.65s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .lifeos-splash__mark {
+            width: 56px;
+            height: 56px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #01696f;
+            background: rgba(1, 105, 111, 0.10);
+            border: 1px solid rgba(1, 105, 111, 0.18);
+            box-shadow: 0 16px 44px rgba(1, 105, 111, 0.12);
+        }
+
+        .lifeos-splash__eyebrow {
+            margin-top: 1.25rem;
+            font-size: 0.64rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: #01696f;
+        }
+
+        .lifeos-splash__theme {
+            margin-top: 0.6rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 1.5rem;
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            background: rgba(74, 99, 101, 0.10);
+            color: #4a6365;
+            font-size: 0.62rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+        }
+
+        .lifeos-splash__quote {
+            margin-top: 1.75rem;
+            max-width: 360px;
+            font-family: Outfit, Inter, sans-serif;
+            font-size: clamp(1.45rem, 9vw, 2.15rem);
+            line-height: 1.08;
+            font-weight: 800;
+            font-style: italic;
+            letter-spacing: 0;
+            text-wrap: balance;
+            color: #101415;
+        }
+
+        .lifeos-splash__author {
+            margin-top: 0.9rem;
+            color: #6f797a;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
+        .lifeos-splash__reflection {
+            margin-top: 1.6rem;
+            max-width: 320px;
+            color: #3f484a;
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        .lifeos-splash__button {
+            margin-top: 2.4rem;
+            min-height: 44px;
+            padding: 0 1.5rem;
+            border: 0;
+            border-radius: 999px;
+            background: #01696f;
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            box-shadow: 0 12px 28px rgba(1, 105, 111, 0.18);
+        }
+
+        .lifeos-splash__countdown {
+            min-height: 1rem;
+            margin-top: 0.8rem;
+            color: #6f797a;
+            font-size: 0.68rem;
+            font-weight: 600;
+        }
+
+        .lifeos-odyssey-splash {
+            position: fixed;
+            inset: 0;
+            z-index: 100000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(18px);
+            cursor: pointer;
+        }
+
+        .lifeos-odyssey-splash__frame {
+            position: relative;
+            width: min(100%, 960px);
+            max-width: 100%;
+            height: min(580px, calc(100dvh - 3rem));
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.25);
+            background: rgba(16, 24, 40, 0.96);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .lifeos-odyssey-splash__slides {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .lifeos-odyssey-splash__slides-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            min-height: 200px;
+        }
+
+        .lifeos-odyssey-slide {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.9s ease;
+        }
+
+        .lifeos-odyssey-slide__image {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            filter: saturate(1.05) contrast(1.05);
+            z-index: 0;
+        }
+
+        .lifeos-odyssey-slide__overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(6, 10, 17, 0.92) 0%, rgba(6, 10, 17, 0.55) 38%, rgba(6, 10, 17, 0.08) 68%);
+            z-index: 1;
+        }
+
+        .lifeos-odyssey-slide__header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .lifeos-odyssey-slide__badge {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            padding: 0.3rem 0.8rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(6px);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+        }
+
+        .lifeos-odyssey-slide__title {
+            margin: 0;
+            color: #ffffff;
+            font-size: clamp(1.5rem, 5vw, 2.4rem);
+            line-height: 1.05;
+            font-weight: 800;
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.55);
+        }
+
+        .lifeos-odyssey-button {
+            flex-shrink: 0;
+            align-self: flex-end;
+            width: auto;
+            min-width: 130px;
+            height: 40px;
+            padding: 0 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: none;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lifeos-odyssey-button:hover {
+            background: rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .lifeos-odyssey-splash__footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 3;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1.5rem;
+            padding: 1.5rem 1.75rem 1.75rem;
+        }
+
+        html.dark .lifeos-splash {
+            background:
+                radial-gradient(circle at 50% 12%, rgba(156, 241, 246, 0.13), transparent 34%),
+                linear-gradient(180deg, #0b1220 0%, #101827 58%, #0f172a 100%);
+            color: #e2e8f0;
+        }
+
+        html.dark .lifeos-splash__quote { color: #f8fafc; }
+        html.dark .lifeos-splash__reflection { color: #cbd5e1; }
+        html.dark .lifeos-splash__author { color: #94a3b8; }
+        html.dark .lifeos-splash__theme {
+            background: rgba(156, 241, 246, 0.10);
+            color: #9cf1f6;
+        }
+
+        @keyframes tierUpFade {
+            0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+            12%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            78%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.06); }
+        }
+
+        /* Animações do Onboarding */
+        .step-transition {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .step-hidden-right {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(30px);
+            visibility: hidden;
+        }
+
+        .step-hidden-left {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-30px);
+            visibility: hidden;
+        }
+
+        .step-active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(0);
+            position: relative !important;
+            z-index: 10;
+            visibility: visible;
+        }
+
+        /* Abas de Planos */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Previne scroll acidental ao arrastar sliders (mobile) */
+        input[type="range"] {
+            touch-action: pan-y;
+            overscroll-behavior: contain;
+        }
+
+        /* Dark Theme Harmonization */
+        html.dark {
+            color-scheme: dark;
+        }
+
+        html.dark body {
+            background: #0b1220 !important;
+            color: #e5e7eb !important;
+        }
+
+        html.dark [class*="bg-background"] { background-color: #0b1220 !important; }
+        html.dark [class*="bg-surface"] { background-color: #0f172a !important; }
+        html.dark [class*="bg-surface-container-lowest"] { background-color: #111827 !important; }
+        html.dark [class*="bg-surface-container-low"] { background-color: #1a2332 !important; }
+        html.dark [class*="bg-surface-container"] { background-color: #1f2937 !important; }
+        html.dark [class*="bg-surface-container-high"] { background-color: #243244 !important; }
+        html.dark [class*="bg-surface-container-highest"] { background-color: #334155 !important; }
+        html.dark [class*="text-on-surface"], html.dark [class*="text-on-background"] { color: #e2e8f0 !important; }
+        html.dark [class*="text-outline"], html.dark [class*="text-on-surface-variant"] { color: #94a3b8 !important; }
+        html.dark [class*="border-outline-variant"] { border-color: rgba(148, 163, 184, 0.28) !important; }
+        html.dark input,
+        html.dark textarea,
+        html.dark select {
+            color: #e2e8f0 !important;
+        }
+        html.dark input::placeholder,
+        html.dark textarea::placeholder {
+            color: #94a3b8 !important;
+        }
+        html.dark .bg-white,
+        html.dark .bg-white\/70 {
+            background-color: #111827 !important;
+        }
+        html.dark .text-stone-500,
+        html.dark .text-stone-400 {
+            color: #94a3b8 !important;
+        }
+        html.dark .gantt-stripe-bg {
+            opacity: 0.45;
+            filter: saturate(0.85);
+        }
+    </style>
+
+    <!-- ═══════════════════════════════════════════════
+         LIFE OS — THEME SYSTEM v2
+         Commit: 4388f9f90c07
+         3 temas: teal · amber · rose
+         Sem alterações em app.js ou views.
+    ═══════════════════════════════════════════════ -->
+    <style id="lo-theme-system">
+
+        /* ══════════════════════════════════════════════
+           TEMA: variáveis por [data-theme]
+        ══════════════════════════════════════════════ */
+
+        /* ── Teal (padrão) ──────────────────────────── */
+        :root, [data-theme="teal"] {
+            --lo-p:            #0d9488;
+            --lo-p-dark:       #2dd4bf;
+            --lo-p-tint:       rgba(13,148,136,0.09);
+            --lo-p-tint2:      rgba(13,148,136,0.15);
+            --lo-p-border:     rgba(13,148,136,0.18);
+            --lo-p-shadow:     rgba(13,148,136,0.28);
+            --lo-bg:           #fafffe;
+            --lo-bg-subtle:    #f0fdfb;
+            --lo-dark-bg:      #0f0e0b;
+            --lo-dark-card:    #111e1d;
+            --lo-dark-card2:   #162120;
+        }
+
+        /* ── Amber vivo ─────────────────────────────── */
+        [data-theme="amber"] {
+            --lo-p:            #f59e0b;
+            --lo-p-dark:       #fcd34d;
+            --lo-p-tint:       rgba(245,158,11,0.09);
+            --lo-p-tint2:      rgba(245,158,11,0.16);
+            --lo-p-border:     rgba(245,158,11,0.22);
+            --lo-p-shadow:     rgba(245,158,11,0.32);
+            --lo-bg:           #fffdf5;
+            --lo-bg-subtle:    #fffbeb;
+            --lo-dark-bg:      #0f0e0b;
+            --lo-dark-card:    #1c1a10;
+            --lo-dark-card2:   #242111;
+        }
+
+        /* ── Rose ───────────────────────────────────── */
+        [data-theme="rose"] {
+            --lo-p:            #e11d48;
+            --lo-p-dark:       #fb7185;
+            --lo-p-tint:       rgba(225,29,72,0.08);
+            --lo-p-tint2:      rgba(225,29,72,0.14);
+            --lo-p-border:     rgba(225,29,72,0.18);
+            --lo-p-shadow:     rgba(225,29,72,0.26);
+            --lo-bg:           #fff9fb;
+            --lo-bg-subtle:    #fff1f5;
+            --lo-dark-bg:      #0f0b0c;
+            --lo-dark-card:    #1e1114;
+            --lo-dark-card2:   #251519;
+        }
+
+        /* ── Tokens compartilhados ──────────────────── */
+        :root {
+            --lo-surface:          #ffffff;
+            --lo-surface-mid:      #e8eaeb;
+            --lo-border:           rgba(0,0,0,0.07);
+            --lo-border-md:        rgba(0,0,0,0.10);
+            --lo-shadow-sm:        0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03);
+            --lo-shadow-md:        0 6px 20px rgba(0,0,0,0.07), 0 2px 6px rgba(0,0,0,0.04);
+            --lo-shadow-lg:        0 12px 40px rgba(0,0,0,0.09), 0 4px 12px rgba(0,0,0,0.04);
+            --lo-dark-text:        #f5f0eb;
+            --lo-dark-muted:       #c4bdb6;
+            --lo-dark-border:      rgba(255,255,255,0.07);
+        }
+
+        /* ══════════════════════════════════════════════
+           LIGHT MODE
+        ══════════════════════════════════════════════ */
+
+        html:not(.dark) body {
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            background: var(--lo-bg) !important;
+            font-size: 15px !important;
+            -webkit-font-smoothing: antialiased !important;
+        }
+        html:not(.dark) [class*="bg-background"] { background-color: var(--lo-bg) !important; }
+        html:not(.dark) [class*="bg-surface"]:not([class*="bg-surface-container"]) { background-color: var(--lo-surface) !important; }
+        html:not(.dark) [class*="bg-surface-container-lowest"] { background-color: var(--lo-surface) !important; }
+        html:not(.dark) [class*="bg-surface-container-low"] { background-color: var(--lo-bg-subtle) !important; }
+        html:not(.dark) [class*="bg-surface-container-high"],
+        html:not(.dark) [class*="bg-surface-container-highest"] { background-color: var(--lo-surface-mid) !important; }
+        html:not(.dark) [class*="border-outline-variant"] { border-color: var(--lo-p-border) !important; }
+
+        /* Cards */
+        html:not(.dark) .rounded-2xl { border-radius: 20px !important; }
+        html:not(.dark) .rounded-xl  { border-radius: 14px !important; }
+        html:not(.dark) .rounded-2xl.border {
+            border-color: var(--lo-p-border) !important;
+            box-shadow: var(--lo-shadow-sm) !important;
+        }
+        html:not(.dark) .shadow-sm  { box-shadow: var(--lo-shadow-sm) !important; }
+        html:not(.dark) .shadow-xl, html:not(.dark) .shadow-2xl { box-shadow: var(--lo-shadow-lg) !important; }
+
+        /* Header mobile */
+        html:not(.dark) header.lg\:hidden {
+            background: rgba(255,255,255,0.94) !important;
+            border-bottom: 1px solid var(--lo-p-border) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important;
+        }
+
+        /* Sidebar */
+        html:not(.dark) aside.hidden.lg\:flex {
+            background: var(--lo-bg-subtle) !important;
+            border-right: 1px solid var(--lo-p-border) !important;
+        }
+
+        /* Nav links */
+        html:not(.dark) .nav-item-link {
+            color: #555e60 !important;
+            font-weight: 500 !important;
+            border-radius: 12px !important;
+            transition: background 0.15s, color 0.15s !important;
+        }
+        html:not(.dark) .nav-item-link:hover { background: var(--lo-bg-subtle) !important; color: #191c1d !important; }
+        html:not(.dark) .nav-item-link[data-active="true"] {
+            background: var(--lo-p-tint) !important;
+            color: var(--lo-p) !important;
+            font-weight: 700 !important;
+        }
+        html:not(.dark) .nav-item-link[data-active="true"] .material-symbols-outlined {
+            color: var(--lo-p) !important;
+            font-variation-settings: 'FILL' 1 !important;
+        }
+
+        /* Bottom nav floating */
+        html:not(.dark) nav.lg\:hidden.fixed {
+            left: 12px !important; right: 12px !important;
+            bottom: 10px !important; height: 64px !important;
+            border-radius: 22px !important;
+            background: rgba(255,255,255,0.97) !important;
+            border: 1px solid var(--lo-p-border) !important;
+            backdrop-filter: blur(28px) saturate(200%) !important;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.05) !important;
+        }
+        html:not(.dark) .nav-item-link[data-active="true"] > div.w-12 {
+            background: var(--lo-p-tint) !important; border-radius: 999px !important;
+        }
+        html:not(.dark) .nav-item-link[data-active="true"] > div.w-12 .material-symbols-outlined {
+            color: var(--lo-p) !important; font-variation-settings: 'FILL' 1 !important;
+        }
+        html:not(.dark) .nav-item-link[data-active="true"] > span { color: var(--lo-p) !important; }
+        html:not(.dark) .pb-20 { padding-bottom: 88px !important; }
+
+        /* Inputs */
+        html:not(.dark) input:not([type="range"]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+        html:not(.dark) textarea, html:not(.dark) select {
+            background: var(--lo-bg-subtle) !important;
+            border: 1px solid var(--lo-border-md) !important;
+            border-radius: 12px !important; color: #191c1d !important;
+        }
+        html:not(.dark) input:focus, html:not(.dark) textarea:focus, html:not(.dark) select:focus {
+            border-color: var(--lo-p-border) !important;
+            box-shadow: 0 0 0 3px var(--lo-p-tint) !important;
+            outline: none !important; background: var(--lo-surface) !important;
+        }
+
+        /* Botões */
+        html:not(.dark) .bg-primary {
+            background-color: var(--lo-p) !important;
+            box-shadow: 0 2px 12px var(--lo-p-shadow) !important;
+        }
+        html:not(.dark) .bg-primary:hover { filter: brightness(1.07) !important; }
+
+        /* Cores primary */
+        html:not(.dark) .text-primary { color: var(--lo-p) !important; }
+        html:not(.dark) [class*="bg-primary/10"] { background-color: var(--lo-p-tint) !important; }
+        html:not(.dark) [class*="bg-primary/5"]  { background-color: color-mix(in srgb, var(--lo-p) 5%, transparent) !important; }
+        html:not(.dark) [class*="border-primary"] { border-color: var(--lo-p-border) !important; }
+        html:not(.dark) .accent-primary { accent-color: var(--lo-p) !important; }
+
+        /* Splash */
+        html:not(.dark) .lifeos-splash { background: linear-gradient(160deg, var(--lo-bg) 0%, var(--lo-bg-subtle) 100%) !important; }
+        html:not(.dark) .lifeos-splash__mark {
+            background: var(--lo-p-tint) !important; border-color: var(--lo-p-border) !important;
+            box-shadow: 0 12px 40px var(--lo-p-shadow) !important; color: var(--lo-p) !important;
+        }
+        html:not(.dark) .lifeos-splash__eyebrow { color: var(--lo-p) !important; }
+        html:not(.dark) .lifeos-splash__button {
+            background: var(--lo-p) !important; border-radius: 14px !important;
+            box-shadow: 0 4px 20px var(--lo-p-shadow) !important;
+        }
+        html:not(.dark) .lifeos-splash__theme { background: var(--lo-p-tint) !important; color: var(--lo-p) !important; }
+
+        /* Modal */
+        html:not(.dark) #crud-modal > div {
+            background: var(--lo-surface) !important; border: none !important;
+            box-shadow: var(--lo-shadow-lg) !important; border-radius: 24px !important;
+        }
+
+        /* Chips */
+        html:not(.dark) .emotion-chip, html:not(.dark) .dim-diary-toggle {
+            border-color: var(--lo-p-border) !important;
+            background: var(--lo-bg-subtle) !important; border-radius: 999px !important;
+        }
+        html:not(.dark) .emotion-chip:hover, html:not(.dark) .dim-diary-toggle:hover {
+            background: var(--lo-p-tint) !important; color: var(--lo-p) !important;
+        }
+
+        /* Tipografia */
+        html:not(.dark) h1, html:not(.dark) h2,
+        html:not(.dark) h3, html:not(.dark) h4 { letter-spacing: -0.022em !important; }
+        html:not(.dark) .font-headline { font-family: 'Outfit', sans-serif !important; }
+        html:not(.dark) #data-hoje, html:not(.dark) #painel-title {
+            font-size: clamp(2.2rem, 7vw, 3.4rem) !important;
+            font-weight: 800 !important; letter-spacing: -0.035em !important; line-height: 1.0 !important;
+        }
+        html:not(.dark) .font-headline.text-2xl {
+            font-size: 1.3rem !important; font-weight: 700 !important; letter-spacing: -0.02em !important;
+        }
+        html:not(.dark) [class*="text-[10px]"][class*="uppercase"] {
+            font-size: 10.5px !important; font-weight: 600 !important;
+            letter-spacing: 0.10em !important; opacity: 0.55 !important;
+        }
+        html:not(.dark) [class*="text-[10px]"][class*="uppercase"].text-primary { opacity: 0.9 !important; }
+
+        /* Scrollbar */
+        html:not(.dark) ::-webkit-scrollbar { width: 3px; height: 3px; }
+        html:not(.dark) ::-webkit-scrollbar-track { background: transparent; }
+        html:not(.dark) ::-webkit-scrollbar-thumb { background: var(--lo-p-tint2); border-radius: 99px; }
+        html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: var(--lo-p-border); }
+
+        /* ══════════════════════════════════════════════
+           DARK MODE
+        ══════════════════════════════════════════════ */
+
+        html.dark body {
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            background: var(--lo-dark-bg, #0f0e0b) !important;
+            color: var(--lo-dark-text) !important;
+            font-size: 15px !important;
+            -webkit-font-smoothing: antialiased !important;
+        }
+        html.dark [class*="bg-background"] { background-color: var(--lo-dark-bg, #0f0e0b) !important; }
+        html.dark [class*="bg-surface"]:not([class*="bg-surface-container"]) { background-color: color-mix(in srgb, var(--lo-dark-bg, #0f0e0b) 60%, #1a1a1a) !important; }
+        html.dark [class*="bg-surface-container-lowest"] { background-color: var(--lo-dark-card, #111e1d) !important; }
+        html.dark [class*="bg-surface-container-low"] { background-color: var(--lo-dark-card2, #162120) !important; }
+        html.dark [class*="bg-surface-container"],
+        html.dark [class*="bg-surface-container-high"],
+        html.dark [class*="bg-surface-container-highest"] { background-color: color-mix(in srgb, var(--lo-dark-card, #111e1d) 70%, #2a2a2a) !important; }
+        html.dark [class*="text-on-surface"],
+        html.dark [class*="text-on-background"] { color: var(--lo-dark-text) !important; }
+        html.dark [class*="text-outline"],
+        html.dark [class*="text-on-surface-variant"] { color: var(--lo-dark-muted) !important; }
+        html.dark [class*="border-outline-variant"] { border-color: var(--lo-dark-border) !important; }
+
+        html.dark .text-primary { color: var(--lo-p-dark, #2dd4bf) !important; }
+        html.dark .bg-primary { background-color: var(--lo-p) !important; box-shadow: 0 4px 20px var(--lo-p-shadow) !important; }
+        html.dark [class*="bg-primary/10"] { background-color: var(--lo-p-tint) !important; }
+        html.dark [class*="border-primary"] { border-color: var(--lo-p-border) !important; }
+
+        html.dark .rounded-2xl { border-radius: 20px !important; }
+        html.dark .rounded-xl  { border-radius: 14px !important; }
+        html.dark .rounded-2xl.border {
+            border-color: var(--lo-dark-border) !important;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.25) !important;
+        }
+
+        html.dark header.lg\:hidden {
+            background: rgba(15,14,11,0.94) !important;
+            border-bottom: 1px solid var(--lo-dark-border) !important;
+            backdrop-filter: blur(24px) !important;
+        }
+        html.dark aside.hidden.lg\:flex {
+            background: color-mix(in srgb, var(--lo-dark-bg, #0f0e0b) 80%, #000) !important;
+            border-right: 1px solid var(--lo-dark-border) !important;
+        }
+
+        html.dark .nav-item-link { color: var(--lo-dark-muted) !important; border-radius: 12px !important; }
+        html.dark .nav-item-link:hover { background: rgba(255,255,255,0.05) !important; color: var(--lo-dark-text) !important; }
+        html.dark .nav-item-link[data-active="true"] {
+            background: var(--lo-p-tint) !important; color: var(--lo-p-dark, #2dd4bf) !important; font-weight: 700 !important;
+        }
+        html.dark .nav-item-link[data-active="true"] .material-symbols-outlined {
+            color: var(--lo-p-dark, #2dd4bf) !important; font-variation-settings: 'FILL' 1 !important;
+        }
+
+        html.dark nav.lg\:hidden.fixed {
+            left: 12px !important; right: 12px !important;
+            bottom: 10px !important; height: 64px !important;
+            border-radius: 22px !important;
+            background: color-mix(in srgb, var(--lo-dark-card, #111e1d) 98%, transparent) !important;
+            border: 1px solid var(--lo-dark-border) !important;
+            backdrop-filter: blur(28px) !important;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.40) !important;
+        }
+        html.dark .nav-item-link[data-active="true"] > div.w-12 {
+            background: var(--lo-p-tint) !important; border-radius: 999px !important;
+        }
+        html.dark .nav-item-link[data-active="true"] > div.w-12 .material-symbols-outlined {
+            color: var(--lo-p-dark, #2dd4bf) !important; font-variation-settings: 'FILL' 1 !important;
+        }
+        html.dark .nav-item-link[data-active="true"] > span { color: var(--lo-p-dark, #2dd4bf) !important; }
+        html.dark .pb-20 { padding-bottom: 88px !important; }
+
+        html.dark input:not([type="range"]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+        html.dark textarea, html.dark select {
+            background: var(--lo-dark-card2, #162120) !important;
+            border: 1px solid var(--lo-dark-border) !important;
+            border-radius: 12px !important; color: var(--lo-dark-text) !important;
+        }
+        html.dark input:focus, html.dark textarea:focus, html.dark select:focus {
+            border-color: var(--lo-p-border) !important;
+            box-shadow: 0 0 0 3px var(--lo-p-tint) !important;
+        }
+        html.dark input::placeholder, html.dark textarea::placeholder { color: #6b6560 !important; }
+
+        html.dark #crud-modal > div {
+            background: var(--lo-dark-card, #111e1d) !important;
+            border: 1px solid var(--lo-dark-border) !important;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.55) !important;
+            border-radius: 24px !important;
+        }
+        html.dark .bg-white, html.dark .bg-white\/70 { background-color: var(--lo-dark-card, #111e1d) !important; }
+
+        html.dark .emotion-chip, html.dark .dim-diary-toggle {
+            background: var(--lo-dark-card2, #162120) !important;
+            border-color: var(--lo-dark-border) !important; border-radius: 999px !important;
+        }
+        html.dark .emotion-chip:hover, html.dark .dim-diary-toggle:hover {
+            background: var(--lo-p-tint) !important; color: var(--lo-p-dark, #2dd4bf) !important;
+        }
+
+        html.dark .lifeos-splash { background: linear-gradient(160deg, var(--lo-dark-bg, #0f0e0b) 0%, var(--lo-dark-card, #111e1d) 100%) !important; color: var(--lo-dark-text) !important; }
+        html.dark .lifeos-splash__quote, html.dark .lifeos-splash__reflection { color: var(--lo-dark-text) !important; }
+        html.dark .lifeos-splash__author { color: var(--lo-dark-muted) !important; }
+        html.dark .lifeos-splash__mark { background: var(--lo-p-tint) !important; border-color: var(--lo-p-border) !important; color: var(--lo-p-dark, #2dd4bf) !important; }
+        html.dark .lifeos-splash__eyebrow { color: var(--lo-p-dark, #2dd4bf) !important; }
+        html.dark .lifeos-splash__theme { background: var(--lo-p-tint) !important; color: var(--lo-p-dark, #2dd4bf) !important; }
+        html.dark .lifeos-splash__button { background: var(--lo-p) !important; box-shadow: 0 4px 20px var(--lo-p-shadow) !important; border-radius: 14px !important; }
+
+        html.dark [class*="text-[10px]"][class*="uppercase"] {
+            color: var(--lo-dark-muted) !important; opacity: 0.75 !important;
+        }
+        html.dark [class*="text-[10px]"][class*="uppercase"].text-primary,
+        html.dark span.text-primary, html.dark p.text-primary,
+        html.dark label.text-primary, html.dark div.text-primary { color: var(--lo-p-dark, #2dd4bf) !important; opacity: 1 !important; }
+        html.dark .font-headline { font-family: 'Outfit', sans-serif !important; }
+        html.dark #data-hoje, html.dark #painel-title {
+            font-size: clamp(2.2rem, 7vw, 3.4rem) !important;
+            font-weight: 800 !important; letter-spacing: -0.035em !important; line-height: 1.0 !important;
+            color: var(--lo-dark-text) !important;
+        }
+
+        html.dark ::-webkit-scrollbar { width: 3px; height: 3px; }
+        html.dark ::-webkit-scrollbar-track { background: transparent; }
+        html.dark ::-webkit-scrollbar-thumb { background: var(--lo-p-tint2, rgba(13,148,136,0.15)); border-radius: 99px; }
+
+        /* ══════════════════════════════════════════════
+           METRIC HIGHLIGHT SYSTEM
+           Aplicado via JS — classes lo-metric-*
+        ══════════════════════════════════════════════ */
+        .lo-metric-high   { color: #16a34a !important; font-weight: 800 !important; }
+        .lo-metric-mid    { color: #d97706 !important; font-weight: 800 !important; }
+        .lo-metric-low    { color: #dc2626 !important; font-weight: 800 !important; }
+        html.dark .lo-metric-high { color: #34d399 !important; }
+        html.dark .lo-metric-mid  { color: #fbbf24 !important; }
+        html.dark .lo-metric-low  { color: #f87171 !important; }
+
+        /* ══════════════════════════════════════════════
+           THEME SWITCHER — pill flutuante
+        ══════════════════════════════════════════════ */
+        #lo-theme-switcher {
+            position: fixed;
+            bottom: 86px;
+            right: 16px;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        #lo-theme-switcher .lo-ts-btn {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.8);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        #lo-theme-switcher .lo-ts-btn:hover { transform: scale(1.12); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+        #lo-theme-switcher .lo-ts-btn.active { border-color: white; box-shadow: 0 0 0 2px currentColor, 0 4px 16px rgba(0,0,0,0.20); transform: scale(1.08); }
+        #lo-ts-toggle {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.25);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #555;
+        }
+        html.dark #lo-ts-toggle { color: #ccc; background: rgba(0,0,0,0.30); }
+        #lo-theme-switcher .lo-ts-dots { display: none; flex-direction: column; gap: 8px; align-items: center; }
+        #lo-theme-switcher.open .lo-ts-dots { display: flex; }
+    </style>
+
+    <script>
+    // ── Theme Switcher ─────────────────────────────
+    (function() {
+        const THEMES = {
+            teal:  { label: 'Teal',  color: '#0d9488' },
+            amber: { label: 'Amber', color: '#f59e0b' },
+            rose:  { label: 'Rose',  color: '#e11d48' },
+        };
+        const saved = localStorage.getItem('lo-theme') || 'teal';
+
+        function applyTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            localStorage.setItem('lo-theme', t);
+            // Sync Tailwind primary var via inline override
+            const p = THEMES[t].color;
+            document.documentElement.style.setProperty('--tw-primary', p);
+            document.querySelectorAll('.lo-ts-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.t === t);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            applyTheme(saved);
+
+            // Build switcher UI
+            const sw = document.createElement('div');
+            sw.id = 'lo-theme-switcher';
+            sw.innerHTML = `
+                <button id="lo-ts-toggle" title="Temas" onclick="document.getElementById('lo-theme-switcher').classList.toggle('open')">
+                    <span class="material-symbols-outlined notranslate" style="font-size:18px">palette</span>
+                </button>
+                <div class="lo-ts-dots">
+                    ${Object.entries(THEMES).map(([k,v]) =>
+                        `<button class="lo-ts-btn" data-t="${k}" style="background:${v.color}" title="${v.label}" onclick="window.loSetTheme('${k}')"></button>`
+                    ).join('')}
+                </div>`;
+            document.body.appendChild(sw);
+
+            window.loSetTheme = function(t) {
+                applyTheme(t);
+                document.getElementById('lo-theme-switcher').classList.remove('open');
+            };
+
+            // Apply active state
+            document.querySelectorAll('.lo-ts-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.t === saved);
+            });
+        });
+    })();
+
+    // ── Metric Highlighter ─────────────────────────
+    // Roda após renderização e classifica números-chave
+    (function() {
+        function classify(val) {
+            if (val >= 75) return 'lo-metric-high';
+            if (val >= 40) return 'lo-metric-mid';
+            return 'lo-metric-low';
+        }
+
+        function applyMetricColors() {
+            // IDs de métricas numéricas no Painel
+            const metricIds = [
+                'painel-foco-val', 'painel-exec-val',
+                'weekly-health-score',
+                'painel-concluidas-val'
+            ];
+            metricIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const raw = parseFloat(el.textContent.replace('%','').replace(',','.'));
+                if (isNaN(raw)) return;
+                el.classList.remove('lo-metric-high','lo-metric-mid','lo-metric-low');
+                // concluídas: classifica por valor absoluto diferente
+                if (id === 'painel-concluidas-val') {
+                    el.classList.add(raw >= 5 ? 'lo-metric-high' : raw >= 2 ? 'lo-metric-mid' : 'lo-metric-low');
+                } else {
+                    el.classList.add(classify(raw));
+                }
+            });
+
+            // Scores das dimensões (dim-score-text)
+            document.querySelectorAll('.dim-score-text').forEach(el => {
+                const raw = parseFloat(el.textContent);
+                if (isNaN(raw)) return;
+                el.classList.remove('lo-metric-high','lo-metric-mid','lo-metric-low');
+                el.classList.add(classify(raw * 10)); // scores são 0-10
+            });
+        }
+
+        // Roda na inicialização e depois a cada 2s (app carrega async)
+        document.addEventListener('DOMContentLoaded', function() {
+            applyMetricColors();
+            setInterval(applyMetricColors, 2000);
+        });
+    })();
+    </script>
+</head>
+
+<body class="flex flex-col min-h-screen">
+
+    <!-- Mobile Header -->
+    <header
+        class="lg:hidden px-6 py-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-md z-40 border-b border-outline-variant/30">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <span class="material-symbols-outlined notranslate text-white text-xl">temp_preferences_custom</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="font-headline font-bold text-lg tracking-tight text-on-background leading-none">Life OS</span>
+                <!-- Sync status badge (mobile header) -->
+                <div class="lifeos-sync-badge flex items-center gap-0.5 text-outline text-[9px] font-bold">
+                    <span class="material-symbols-outlined notranslate" style="font-size:11px">cloud_sync</span>
+                    <span>Conectando…</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-1">
+            <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-outline transition-colors"
+                onclick="app.openFlowModal()" title="Flow — Fluxo de trabalho">
+                <span class="material-symbols-outlined notranslate">account_tree</span>
+            </button>
+            <button class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hover:bg-surface-container"
+                onclick="app.navigate('perfil')">
+                <img id="profile-nav-avatar-mobile" alt="Foto de perfil" class="hidden w-full h-full object-cover rounded-full">
+                <span id="profile-nav-icon-mobile" class="material-symbols-outlined notranslate text-outline">account_circle</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden lg:overflow-visible">
+        <!-- Desktop Sidebar -->
+        <aside
+            class="hidden lg:flex w-72 flex-col border-r border-outline-variant/30 bg-surface px-4 py-8 sticky top-0 h-screen">
+            <div class="px-4 mb-10 flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                    <span
+                        class="material-symbols-outlined notranslate text-white text-2xl">temp_preferences_custom</span>
+                </div>
+                <div>
+                    <h1 class="font-headline font-bold text-xl tracking-tight leading-none text-on-background">Life OS
+                    </h1>
+                    <p class="text-[10px] text-outline uppercase tracking-widest mt-1 font-bold">Arquitetura Vital</p>
+                </div>
+            </div>
+
+            <!-- Sidebar Values Banner -->
+            <div class="mb-10 px-4">
+                <h2 class="text-[10px] font-bold text-outline uppercase tracking-[0.2em] mb-3">Meus Valores</h2>
+                <div id="sidebar-values-container" class="flex flex-wrap gap-2">
+                    <span
+                        class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic opacity-50">v1</span>
+                    <span
+                        class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic opacity-50">v2</span>
+                    <span
+                        class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic opacity-50">v3</span>
+                </div>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <button data-view="hoje"
+                    class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
+                    onclick="app.navigate('hoje')">
+                    <span class="material-symbols-outlined notranslate">today</span>
+                    Hoje
+                </button>
+                <button data-view="painel"
+                    class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
+                    onclick="app.navigate('painel')">
+                    <span class="material-symbols-outlined notranslate">dashboard</span>
+                    Painel
+                </button>
+                <button data-view="planos"
+                    class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
+                    onclick="app.navigate('planos')">
+                    <span class="material-symbols-outlined notranslate">assignment</span>
+                    Planos
+                </button>
+                <button data-view="foco"
+                    class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
+                    onclick="app.navigate('foco')">
+                    <span class="material-symbols-outlined notranslate">timer</span>
+                    Foco
+                </button>
+                <button data-view="proposito"
+                    class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
+                    onclick="app.navigate('proposito')">
+                    <span class="material-symbols-outlined notranslate">auto_awesome</span>
+                    Propósito
+                </button>
+            </nav>
+
+            <button class="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
+                onclick="app.openFlowModal()">
+                <span class="material-symbols-outlined notranslate">account_tree</span>
+                Flow
+            </button>
+
+            <div class="mt-auto pt-6 border-t border-outline-variant/20">
+                <button data-view="perfil"
+                    class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
+                    onclick="app.navigate('perfil')">
+                    <span class="w-7 h-7 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center shrink-0">
+                        <img id="profile-sidebar-avatar" alt="Foto de perfil" class="hidden w-full h-full object-cover">
+                        <span id="profile-sidebar-icon" class="material-symbols-outlined notranslate text-[22px]">account_circle</span>
+                    </span>
+                    <div class="flex flex-col text-left">
+                        <span class="text-sm font-bold text-on-background" id="perfil-sidebar-name">Bruno</span>
+                        <span class="text-[10px] text-outline uppercase tracking-wider">Ver Perfil</span>
+                    </div>
+                </button>
+            </div>
+            <!-- Sync status badge (desktop sidebar) -->
+            <div class="px-4 pb-4">
+                <div class="lifeos-sync-badge flex items-center gap-1 text-outline text-[10px] font-bold">
+                    <span class="material-symbols-outlined notranslate text-sm">cloud_sync</span>
+                    <span>Conectando…</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content area -->
+        <section class="flex-1 overflow-y-auto min-h-screen pb-4 lg:pb-2 bg-background relative">
+            <div id="app-content" class="fade-in">
+                <!-- Views loaded here -->
+                <div class="flex flex-col items-center justify-center min-h-[60vh] text-outline animate-pulse" id="loading-placeholder">
+                    <span class="material-symbols-outlined notranslate text-4xl mb-4">refresh</span>
+                    <p class="font-medium" id="loading-msg">Carregando sua jornada...</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav
+        class="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface/90 backdrop-blur-xl border-t border-outline-variant/30 px-6 flex items-center justify-between z-50">
+        <button data-view="hoje" class="nav-item-link flex flex-col items-center gap-1 transition-all"
+            onclick="app.navigate('hoje')">
+            <div
+                class="w-12 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-primary-container/30">
+                <span class="material-symbols-outlined notranslate text-outline">today</span>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Hoje</span>
+        </button>
+        <button data-view="painel" class="nav-item-link flex flex-col items-center gap-1 transition-all"
+            onclick="app.navigate('painel')">
+            <div class="w-12 h-8 rounded-full flex items-center justify-center transition-colors">
+                <span class="material-symbols-outlined notranslate text-outline">dashboard</span>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Painel</span>
+        </button>
+        <button data-view="planos" class="nav-item-link flex flex-col items-center gap-1 transition-all"
+            onclick="app.navigate('planos')">
+            <div class="w-12 h-8 rounded-full flex items-center justify-center transition-colors">
+                <span class="material-symbols-outlined notranslate text-outline">assignment</span>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Planos</span>
+        </button>
+        <button data-view="foco" class="nav-item-link flex flex-col items-center gap-1 transition-all"
+            onclick="app.navigate('foco')">
+            <div class="w-12 h-8 rounded-full flex items-center justify-center transition-colors">
+                <span class="material-symbols-outlined notranslate text-outline">timer</span>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Foco</span>
+        </button>
+        <button data-view="proposito" class="nav-item-link flex flex-col items-center gap-1 transition-all"
+            onclick="app.navigate('proposito')">
+            <div class="w-12 h-8 rounded-full flex items-center justify-center transition-colors">
+                <span class="material-symbols-outlined notranslate text-outline">auto_awesome</span>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Propósito</span>
+        </button>
+    </nav>
+
+    <!-- CRUD Modal Universal -->
+    <div id="crud-modal"
+        class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-outline-variant/20 flex items-center justify-between gap-3">
+                <h3 id="modal-title" class="font-headline text-xl font-bold text-on-background">Novo Item</h3>
+                <button id="crud-notes-btn" type="button" onclick="window.app.openEntityNotesModal()"
+                    class="hidden items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant text-xs font-bold transition-colors">
+                    <span class="material-symbols-outlined notranslate text-[16px]">sticky_note_2</span>
+                    <span id="crud-notes-btn-count">Notas</span>
+                </button>
+            </div>
+
+            <form id="crud-form" onsubmit="event.preventDefault()" class="p-6 flex flex-col gap-4 overflow-y-auto no-scrollbar">
+                <div id="crud-blocking-message" class="hidden rounded-xl border border-error/30 bg-error/10 text-error px-4 py-3 text-sm font-medium leading-relaxed"></div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="crud-title"
+                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Título</label>
+                    <input type="text" id="crud-title"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                        required>
+                </div>
+
+                <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="crud-type"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Tipo</label>
+                        <select id="crud-type"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                            required onchange="window.app.onTypeChange(this.value)">
+                            <option value="metas">Metas</option>
+                            <option value="okrs">OKRs</option>
+                            <option value="macros">Macro Ações</option>
+                            <option value="micros">Micro Ações</option>
+                            <option value="habits">Hábito Recorrente</option>
+                        </select>
+                    </div>
+
+                    <div id="crud-dimension-group" class="flex flex-col gap-1.5">
+                        <label for="crud-dimension"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dimensão</label>
+                        <select id="crud-dimension"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                            required onchange="window.app.updateParentList(document.getElementById('crud-type').value); window.app.updatePurposePanel(this.value, document.getElementById('crud-type').value)">
+                            <option value="Saúde">Saúde</option>
+                            <option value="Mente">Mente</option>
+                            <option value="Carreira">Carreira</option>
+                            <option value="Finanças">Finanças</option>
+                            <option value="Relacionamentos">Relacionamentos</option>
+                            <option value="Família">Família</option>
+                            <option value="Lazer">Lazer</option>
+                            <option value="Propósito">Propósito</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
+                    <div id="prazo-deadline-group" class="flex flex-col gap-1.5">
+                        <label for="create-prazo"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Prazo</label>
+                        <input type="date" id="create-prazo"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                    </div>
+
+                    <div id="crud-meta-horizon-group" class="hidden flex flex-col gap-1.5">
+                        <label for="crud-meta-horizon"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Horizonte da Meta</label>
+                        <select id="crud-meta-horizon"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                            onchange="window.app.updateParentList(document.getElementById('crud-type').value)">
+                            <option value="1">1 ano</option>
+                            <option value="2.5">2,5 anos</option>
+                            <option value="5">5 anos</option>
+                        </select>
+                    </div>
+
+                    <div id="prazo-agendamento-group" class="hidden flex flex-col gap-2">
+                        <label class="text-xs font-bold uppercase tracking-widest text-outline">
+                            Janela de Execução
+                        </label>
+                        <div class="flex flex-col sm:grid sm:grid-cols-2 gap-2">
+                            <div class="flex flex-col gap-1.5">
+                                <label for="crud-inicio-date" class="text-xs text-outline font-bold uppercase tracking-widest">Início</label>
+                                <input type="date" id="crud-inicio-date"
+                                    class="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface">
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label for="crud-prazo-date" class="text-xs text-outline font-bold uppercase tracking-widest">Prazo</label>
+                                <input type="date" id="crud-prazo-date"
+                                    class="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="crud-parent-group" class="space-y-1">
+                        <label class="text-[10px] font-label tracking-widest uppercase text-outline">Vincular a
+                            (Hierarquia)</label>
+                        <select id="create-parent"
+                            class="w-full bg-transparent border border-outline-variant rounded-xl p-3 text-sm outline-none cursor-pointer"
+                            onchange="window.app.onParentChange(this.value)"></select>
+                    </div>
+                </div>
+
+                <div id="crud-effort-group" class="hidden flex-col gap-1.5">
+                    <label for="crud-effort"
+                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Esforço</label>
+                    <select id="crud-effort"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                        <option value="leve">Leve — cabe em energia baixa</option>
+                        <option value="medio" selected>Médio — exige presença normal</option>
+                        <option value="denso">Denso — exige foco alto</option>
+                    </select>
+                    <p class="text-[10px] text-outline">Usado pela Próxima Melhor Ação para combinar tarefa e energia do dia.</p>
+                </div>
+
+                <!-- Seletor de Propósito — apenas para Metas, usa resumos do perfil -->
+                <div id="crud-purpose-selector-group" class="hidden flex-col gap-2">
+                    <label class="text-xs font-bold uppercase tracking-widest text-outline">Vincular ao Propósito</label>
+                    <p class="text-[11px] text-outline -mt-1">Selecione o propósito do seu perfil que esta meta serve.</p>
+                    <div id="crud-purpose-options" class="flex flex-wrap gap-2"></div>
+                    <p id="crud-purpose-none" class="hidden text-xs text-outline italic">Nenhum resumo de propósito encontrado. Preencha Ikigai, Legado e Visão na aba Propósito.</p>
+                </div>
+
+                <!-- Painel de Propósito — mostra valores/ikigai/legado filtrados pela dimensão -->
+                <div id="crud-purpose-panel" class="hidden flex-col gap-2 rounded-xl bg-primary/5 border border-primary/15 p-3">
+                    <button type="button" id="crud-purpose-toggle"
+                        onclick="window.app.togglePurposePanel()"
+                        class="flex items-center justify-between w-full text-left">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-primary/70">💡 Seu Propósito nesta Dimensão</span>
+                        <span id="crud-purpose-chevron" class="text-primary/50 text-xs transition-transform">▼</span>
+                    </button>
+                    <div id="crud-purpose-body" class="flex flex-col gap-2 text-xs text-on-surface/70">
+                        <div id="crud-purpose-values" class="hidden flex-col gap-0.5">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-0.5">Seus Valores</p>
+                            <p id="crud-purpose-values-text" class="leading-relaxed"></p>
+                        </div>
+                        <div id="crud-purpose-ikigai" class="hidden flex-col gap-0.5">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-0.5">Ikigai</p>
+                            <p id="crud-purpose-ikigai-text" class="leading-relaxed italic"></p>
+                        </div>
+                        <div id="crud-purpose-legacy" class="hidden flex-col gap-0.5">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-0.5">Legado</p>
+                            <p id="crud-purpose-legacy-text" class="leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="crud-context-group" class="flex flex-col gap-1.5">
+                    <label for="crud-context" id="crud-context-label"
+                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Contexto /
+                        Detalhe</label>
+                    <input type="text" id="crud-context"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
+                        placeholder="Contexto, propósito ou observação" required>
+                </div>
+
+                <div id="crud-success-criteria-group" class="hidden flex-col gap-1.5">
+                    <label for="crud-success-criteria"
+                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Critério de Sucesso</label>
+                    <input type="text" id="crud-success-criteria"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
+                        placeholder="Como vamos saber que foi bem-sucedido?">
+                </div>
+
+                <div id="crud-woop-group" class="hidden rounded-xl border border-primary/15 bg-primary/5">
+                    <button type="button" onclick="window.app.toggleCrudWoop()"
+                        class="w-full flex items-center justify-between gap-3 p-3 text-left text-primary hover:bg-primary/5 transition-colors rounded-xl">
+                        <span class="flex items-center gap-2">
+                            <span class="material-symbols-outlined notranslate text-[18px]">psychology_alt</span>
+                            <span class="text-xs font-bold uppercase tracking-widest">Antecipar obstáculo</span>
+                        </span>
+                        <span id="crud-woop-chevron" class="material-symbols-outlined notranslate text-[18px] transition-transform">expand_more</span>
+                    </button>
+                    <div id="crud-woop-body" class="hidden p-3 pt-0 space-y-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="crud-obstacle" class="text-[10px] font-bold uppercase tracking-widest text-outline">Obstáculo previsto</label>
+                            <input type="text" id="crud-obstacle"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                                placeholder="O que provavelmente vai atrapalhar?">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="crud-ifthen" class="text-[10px] font-bold uppercase tracking-widest text-outline">Plano se-então</label>
+                            <input type="text" id="crud-ifthen"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                                placeholder="Se X acontecer, então farei Y.">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="crud-goal-rigor-group" class="hidden flex-col sm:grid sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="crud-challenge-level"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Nível de Desafio (1-5)</label>
+                        <select id="crud-challenge-level"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                            <option value="1">1 - Muito baixo</option>
+                            <option value="2">2 - Baixo</option>
+                            <option value="3" selected>3 - Moderado</option>
+                            <option value="4">4 - Alto</option>
+                            <option value="5">5 - Muito alto</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="crud-commitment-level"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Comprometimento (1-5)</label>
+                        <select id="crud-commitment-level"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                            <option value="1">1 - Muito baixo</option>
+                            <option value="2">2 - Baixo</option>
+                            <option value="3" selected>3 - Moderado</option>
+                            <option value="4">4 - Alto</option>
+                            <option value="5">5 - Muito alto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="crud-key-results-group" class="hidden flex-col gap-2">
+                    <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Key Results</label>
+                    <!-- Cabeçalho das colunas -->
+                    <div id="kr-rows-header" class="hidden grid gap-2 px-1" style="grid-template-columns: 1fr 72px 72px 32px;">
+                        <span class="text-[10px] font-label uppercase tracking-widest text-outline">Resultado</span>
+                        <span class="text-[10px] font-label uppercase tracking-widest text-outline text-center">Atual</span>
+                        <span class="text-[10px] font-label uppercase tracking-widest text-outline text-center">Meta</span>
+                        <span></span>
+                    </div>
+                    <div id="kr-rows-container" class="flex flex-col gap-2"></div>
+                    <button type="button" onclick="window.app.addKrRow()"
+                        class="flex items-center gap-1.5 text-[11px] text-primary font-bold uppercase tracking-widest py-2 px-3 rounded-lg border border-primary/20 hover:bg-primary/5 transition-colors w-fit">
+                        <span class="material-symbols-outlined notranslate text-[15px]">add</span> Adicionar KR
+                    </button>
+                    <p class="text-[10px] text-outline">O progresso do OKR passa a ser calculado com base nesses indicadores.</p>
+                </div>
+
+                <div id="crud-trigger-container" class="flex-col gap-1.5" style="display: none;">
+                    <label for="crud-trigger"
+                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Gatilho</label>
+                    <input type="text" id="crud-trigger"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
+                        placeholder="Ex: Depois de escovar os dentes, eu farei...">
+                    <p class="text-[10px] text-outline mt-0.5">Ancore este novo hábito a uma ação que você já faz todos os dias.</p>
+                </div>
+
+                <div id="crud-habit-identity" class="hidden flex-col gap-3">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-routine"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Rotina do Hábito</label>
+                        <input type="text" id="habit-routine"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: Ler 10 páginas após o café">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-reward"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Recompensa do Dia</label>
+                        <input type="text" id="habit-reward"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: 20 minutos de lazer sem culpa">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-steps"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Passos da Rotina (Opcional)</label>
+                        <textarea id="habit-steps" rows="3"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface placeholder-outline-variant resize-none"
+                            placeholder="Um passo por linha. Ex:&#10;1) Separar roupa&#10;2) Calçar tênis&#10;3) Caminhar 20 minutos"></textarea>
+                    </div>
+                    <div id="habit-steps-checklist-wrap" class="hidden"></div>
+                    <div id="habit-steps-checklist" class="hidden"></div>
+                </div>
+
+                <!-- Custom Habit Controls -->
+                <div id="crud-habit-controls" class="flex-col gap-4" style="display: none;">
+                    <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-track-mode"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de
+                                Acompanhamento</label>
+                            <select id="habit-track-mode"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                onchange="window.app.onHabitModeChange(this.value)">
+                                <option value="boolean">Check (Feito / Não Feito)</option>
+                                <option value="numeric">Quantidade (Nº de páginas, copos)</option>
+                                <option value="timer">Tempo (Minutos por dia)</option>
+                            </select>
+                        </div>
+                        <div id="habit-target-container" class="flex-col gap-1.5" style="display: none;">
+                            <label for="habit-target"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Meta Diária
+                                (Alvo)</label>
+                            <input type="number" id="habit-target"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                value="1" min="1">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-frequency"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Frequência</label>
+                            <select id="habit-frequency"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                onchange="window.app.onHabitFreqChange(this.value)">
+                                <option value="daily">Todos os dias</option>
+                                <option value="specific">Dias Específicos</option>
+                            </select>
+                        </div>
+                        <div id="habit-days-container" class="flex-col gap-1.5" style="display: none;">
+                            <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dias da
+                                Semana</label>
+                            <select id="habit-days" multiple
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm px-4 text-on-surface h-20">
+                                <option value="0">Domingo</option>
+                                <option value="1">Segunda</option>
+                                <option value="2">Terça</option>
+                                <option value="3">Quarta</option>
+                                <option value="4">Quinta</option>
+                                <option value="5">Sexta</option>
+                                <option value="6">Sábado</option>
+                            </select>
+                            <p class="text-[10px] text-outline">Segure Ctrl (ou Cmd) para selecionar vários.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-linked-meta"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Vincular a Meta (opcional)</label>
+                        <select id="habit-linked-meta"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                            <option value="">— Sem vínculo —</option>
+                        </select>
+                        <p class="text-[10px] text-outline">Conecta este hábito a uma Meta estratégica para mostrar o impacto no Hoje.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-3 rounded-xl bg-primary/5 border border-primary/15 p-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-identity-source"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Conectar à Identidade (opcional)</label>
+                            <div id="habit-identity-empty-notice" class="hidden rounded-lg bg-surface-container-low border border-outline-variant/20 p-3 flex items-start gap-2">
+                                <span class="material-symbols-outlined notranslate text-outline text-[18px] shrink-0 mt-0.5">info</span>
+                                <div class="min-w-0">
+                                    <p class="text-[11px] text-on-surface-variant leading-relaxed">Nenhuma força ou sombra cadastrada.</p>
+                                    <button type="button" onclick="window.app.closeModal(); window.app.switchView('proposito')"
+                                        class="mt-1 text-[11px] font-bold text-primary hover:underline">Definir minha identidade →</button>
+                                </div>
+                            </div>
+                            <select id="habit-identity-source"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                onchange="window.app.onHabitIdentitySourceChange(this.value)">
+                                <option value="">— Sem conexão —</option>
+                            </select>
+                            <p class="text-[10px] text-outline">Use o hábito para praticar uma força ou transformar uma sombra.</p>
+                        </div>
+                        <div id="habit-identity-mode-wrap" class="hidden flex flex-col gap-1.5">
+                            <label for="habit-identity-mode"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de transformação</label>
+                            <select id="habit-identity-mode"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                                <option value="build">Reforçar / construir</option>
+                                <option value="reduce">Reduzir padrão</option>
+                                <option value="replace">Substituir por resposta melhor</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div
+                class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30">
+                <button type="button" onclick="window.app.closeModal()"
+                    class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
+                    Cancelar
+                </button>
+                <button type="button" onclick="window.app.saveNewEntity()"
+                    class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
+                    Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entity Notes Modal -->
+    <div id="entity-notes-modal"
+        class="hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center">
+        <div class="bg-surface-container-lowest w-full max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh]">
+            <div class="p-5 border-b border-outline-variant/20 flex items-start justify-between gap-3">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="material-symbols-outlined notranslate text-primary text-xl shrink-0">sticky_note_2</span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Notas vinculadas</p>
+                        <h4 id="entity-notes-modal-title" class="font-headline text-base font-bold text-on-background truncate"></h4>
+                    </div>
+                </div>
+                <button type="button" onclick="window.app.closeEntityNotesModal()"
+                    class="shrink-0 p-1.5 rounded-lg hover:bg-surface-container-high text-outline transition-colors">
+                    <span class="material-symbols-outlined notranslate text-xl">close</span>
+                </button>
+            </div>
+            <div id="entity-notes-modal-list" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+            <div class="p-4 border-t border-outline-variant/20 bg-surface-container-low/50">
+                <button type="button" onclick="window.app.openNewNoteFromEntityModal()"
+                    class="w-full py-3 bg-primary text-on-primary rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:shadow-md active:scale-95 transition-all">
+                    <span class="material-symbols-outlined notranslate text-[18px]">add</span>
+                    Nova nota vinculada
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAB Context Menu -->
+    <div id="fab-context-menu" class="hidden fixed inset-0 z-[96]">
+        <button type="button" aria-label="Fechar menu rápido" onclick="window.app.closeFabMenu()"
+            class="absolute inset-0 bg-black/20 backdrop-blur-[1px]"></button>
+        <div class="absolute bottom-28 right-6 w-72 bg-surface-container-lowest border border-outline-variant/20 rounded-2xl shadow-2xl p-3 space-y-2">
+            <button type="button" onclick="window.app.openMetaTrailWizard()"
+                class="w-full text-left px-4 py-3 rounded-xl bg-primary text-on-primary font-bold text-sm hover:shadow-md transition-all flex items-start gap-3">
+                <span class="material-symbols-outlined notranslate text-lg mt-0.5">alt_route</span>
+                <span class="leading-tight">
+                    <span class="block">Nova Meta (trilha)</span>
+                    <span class="block text-[10px] font-medium opacity-90 mt-1">Fluxo guiado: Meta, OKRs, Macros e Micros iniciais</span>
+                </span>
+            </button>
+            <button type="button" onclick="window.app.openQuickCaptureFromFab()"
+                class="w-full text-left px-4 py-3 rounded-xl bg-surface-container-high border border-outline-variant/20 text-on-surface font-bold text-sm hover:bg-surface-container-highest transition-colors flex items-start gap-3">
+                <span class="material-symbols-outlined notranslate text-lg mt-0.5">bolt</span>
+                <span class="leading-tight">
+                    <span class="block">Captura rápida</span>
+                    <span class="block text-[10px] font-medium text-outline mt-1">Registrar uma ação avulsa sem entrar na trilha</span>
+                </span>
+            </button>
+            <button type="button" onclick="window.app.openQuickNoteFromFab()"
+                class="w-full text-left px-4 py-3 rounded-xl bg-surface-container-high border border-outline-variant/20 text-on-surface font-bold text-sm hover:bg-surface-container-highest transition-colors flex items-start gap-3">
+                <span class="material-symbols-outlined notranslate text-lg mt-0.5">sticky_note_2</span>
+                <span class="leading-tight">
+                    <span class="block">Nova nota</span>
+                    <span class="block text-[10px] font-medium text-outline mt-1">Registrar contexto, links ou informações de qualquer tarefa</span>
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Nova Nota Rápida -->
+    <div id="quick-note-modal" class="hidden fixed inset-0 z-[108] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[92vh]">
+            <div class="p-5 border-b border-outline-variant/20 flex items-center justify-between gap-4 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined notranslate text-primary">sticky_note_2</span>
+                    <h3 class="font-headline text-xl font-bold text-on-background">Nova nota</h3>
+                </div>
+                <button type="button" onclick="window.app.closeQuickNoteModal()"
+                    class="text-outline hover:text-on-surface rounded-lg p-1 transition-colors">
+                    <span class="material-symbols-outlined notranslate">close</span>
+                </button>
+            </div>
+            <div class="p-5 space-y-3 overflow-y-auto flex-1">
+                <input id="quick-note-title" type="text" maxlength="120"
+                    class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                    placeholder="Título (opcional)">
+                <textarea id="quick-note-body" rows="4"
+                    class="w-full rounded-lg border-none bg-surface-container-low p-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                    placeholder="Conteúdo da nota..."></textarea>
+                <input id="quick-note-url" type="url"
+                    class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                    placeholder="URL (opcional)">
+                <input id="quick-note-tags" type="text"
+                    class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
+                    placeholder="Tags separadas por vírgula (opcional)">
+                <select id="quick-note-linked"
+                    class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none">
+                    <option value="">Sem vínculo (nota avulsa)</option>
+                </select>
+                <input type="hidden" id="quick-note-edit-id">
+                <p class="text-[10px] text-outline leading-relaxed flex items-center gap-1.5">
+                    <span class="material-symbols-outlined notranslate text-[13px]">info</span>
+                    Notas ficam salvas em <button type="button" onclick="window.app.closeQuickNoteModal(); window.app.switchView('perfil')" class="underline hover:text-primary transition-colors">Perfil → Notas</button>, onde você pode buscar, editar e vincular.
+                </p>
+            </div>
+            <div class="p-5 border-t border-outline-variant/20 flex gap-3 shrink-0">
+                <button type="button" onclick="window.app.closeQuickNoteModal()"
+                    class="flex-1 border border-outline-variant text-outline py-2.5 rounded-xl text-sm font-bold hover:bg-surface-container transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" onclick="window.app.saveQuickNote()"
+                    class="flex-1 bg-primary text-on-primary py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
+                    Salvar nota
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wizard: Trilha de Nova Meta -->
+    <div id="meta-trail-modal"
+        class="hidden fixed inset-0 z-[108] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-3xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div class="p-6 border-b border-outline-variant/20 flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <h3 class="font-headline text-2xl font-bold text-on-background">Nova Meta (trilha guiada)</h3>
+                    <p id="trail-step-label" class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Passo 1 de 5</p>
+                </div>
+                <button type="button" onclick="window.app.closeMetaTrailWizard()"
+                    class="text-outline hover:text-on-surface rounded-lg p-1">
+                    <span class="material-symbols-outlined notranslate">close</span>
+                </button>
+            </div>
+
+            <div class="px-6 pt-4 pb-1 border-b border-outline-variant/10">
+                <div class="grid grid-cols-5 gap-2">
+                    <div data-trail-step-dot="1" class="h-1.5 rounded-full bg-primary"></div>
+                    <div data-trail-step-dot="2" class="h-1.5 rounded-full bg-surface-container-high"></div>
+                    <div data-trail-step-dot="3" class="h-1.5 rounded-full bg-surface-container-high"></div>
+                    <div data-trail-step-dot="4" class="h-1.5 rounded-full bg-surface-container-high"></div>
+                    <div data-trail-step-dot="5" class="h-1.5 rounded-full bg-surface-container-high"></div>
+                </div>
+            </div>
+
+            <div class="p-6 overflow-y-auto no-scrollbar flex-1 space-y-6">
+                <section id="meta-trail-step-1" class="meta-trail-step space-y-4">
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 1 — Intenção</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5 md:col-span-2">
+                            <label for="trail-meta-title" class="text-xs uppercase tracking-widest font-bold text-outline">Nome da Meta</label>
+                            <input id="trail-meta-title" type="text"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                placeholder="Ex.: Dobrar minha produção técnica com consistência">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="trail-meta-dimension" class="text-xs uppercase tracking-widest font-bold text-outline">Dimensão</label>
+                            <select id="trail-meta-dimension" onchange="window.app.updateTrailPurposePanel(); window.app.refreshTrailSummary()"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                                <option value="">Selecione...</option>
+                                <option value="Saúde">Saúde</option>
+                                <option value="Mente">Mente</option>
+                                <option value="Carreira">Carreira</option>
+                                <option value="Finanças">Finanças</option>
+                                <option value="Relacionamentos">Relacionamentos</option>
+                                <option value="Família">Família</option>
+                                <option value="Lazer">Lazer</option>
+                                <option value="Propósito">Propósito</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="trail-meta-prazo" class="text-xs uppercase tracking-widest font-bold text-outline">Prazo da Meta</label>
+                            <input id="trail-meta-prazo" type="date"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="trail-meta-horizon" class="text-xs uppercase tracking-widest font-bold text-outline">Horizonte</label>
+                            <select id="trail-meta-horizon"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                                <option value="1">1 ano</option>
+                                <option value="2.5">2,5 anos</option>
+                                <option value="5">5 anos</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="trail-meta-success" class="text-xs uppercase tracking-widest font-bold text-outline">Critério de Sucesso</label>
+                            <input id="trail-meta-success" type="text"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                placeholder="Como saberemos que essa meta foi alcançada?">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="trail-meta-challenge" class="text-xs uppercase tracking-widest font-bold text-outline">Nível de Desafio (1-5)</label>
+                            <select id="trail-meta-challenge"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                                <option value="1">1 - Muito baixo</option>
+                                <option value="2">2 - Baixo</option>
+                                <option value="3" selected>3 - Moderado</option>
+                                <option value="4">4 - Alto</option>
+                                <option value="5">5 - Muito alto</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="trail-meta-commitment" class="text-xs uppercase tracking-widest font-bold text-outline">Comprometimento (1-5)</label>
+                            <select id="trail-meta-commitment"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                                <option value="1">1 - Muito baixo</option>
+                                <option value="2">2 - Baixo</option>
+                                <option value="3" selected>3 - Moderado</option>
+                                <option value="4">4 - Alto</option>
+                                <option value="5">5 - Muito alto</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="trail-meta-why" class="text-xs uppercase tracking-widest font-bold text-outline">Por quê (motivação)</label>
+                        <textarea id="trail-meta-why" rows="3"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"
+                            placeholder="Qual transformação essa meta gera na sua vida?"></textarea>
+                    </div>
+                    <div id="trail-purpose-panel" class="hidden rounded-xl bg-primary/5 border border-primary/15 p-3 space-y-2">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Referência de Propósito da Dimensão</p>
+                        <div id="trail-purpose-values" class="hidden">
+                            <p class="text-[10px] uppercase tracking-widest text-outline font-bold">Valores</p>
+                            <p id="trail-purpose-values-text" class="text-xs text-on-surface/80 leading-relaxed"></p>
+                        </div>
+                        <div id="trail-purpose-ikigai" class="hidden">
+                            <p class="text-[10px] uppercase tracking-widest text-outline font-bold">Ikigai</p>
+                            <p id="trail-purpose-ikigai-text" class="text-xs text-on-surface/80 italic leading-relaxed"></p>
+                        </div>
+                        <div id="trail-purpose-legacy" class="hidden">
+                            <p class="text-[10px] uppercase tracking-widest text-outline font-bold">Legado relacionado</p>
+                            <p id="trail-purpose-legacy-text" class="text-xs text-on-surface/80 leading-relaxed"></p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="meta-trail-step-2" class="meta-trail-step hidden space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 2 — Resultados (OKRs)</h4>
+                        <button type="button" onclick="window.app.addTrailOkrRow()"
+                            class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors">
+                            + Adicionar OKR
+                        </button>
+                    </div>
+                    <p class="text-xs text-outline">Defina de 1 a 3 OKRs com métrica e prazo (início opcional) em janela máxima de 92 dias.</p>
+                    <div id="trail-okrs-list" class="space-y-3"></div>
+                </section>
+
+                <section id="meta-trail-step-3" class="meta-trail-step hidden space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 3 — Projetos (Macros)</h4>
+                        <button type="button" onclick="window.app.addTrailMacroRow()"
+                            class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors">
+                            + Adicionar Macro
+                        </button>
+                    </div>
+                    <p class="text-xs text-outline">Liste de 2 a 5 iniciativas, vincule ao OKR e defina início/prazo (máx. 31 dias).</p>
+                    <div id="trail-macros-list" class="space-y-3"></div>
+                </section>
+
+                <section id="meta-trail-step-4" class="meta-trail-step hidden space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 4 — Primeiros passos (Micros)</h4>
+                        <button type="button" onclick="window.app.addTrailMicroRow()"
+                            class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors">
+                            + Adicionar Micro
+                        </button>
+                    </div>
+                    <p class="text-xs text-outline">Defina ações concretas para as próximas 2 semanas, já linkadas às Macros (máx. 7 dias por micro).</p>
+                    <div id="trail-micros-list" class="space-y-3"></div>
+                </section>
+
+                <section id="meta-trail-step-5" class="meta-trail-step hidden space-y-4">
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 5 — Confirmação</h4>
+                    <p class="text-xs text-outline">Revise o que será criado antes de iniciar a semana.</p>
+                    <div id="trail-summary" class="space-y-3"></div>
+                </section>
+            </div>
+
+            <div class="p-6 border-t border-outline-variant/20 bg-surface-container-low/30 flex items-center justify-between gap-3">
+                <button type="button" id="trail-prev-btn" onclick="window.app.metaTrailPrevStep()"
+                    class="px-5 py-2.5 rounded-lg text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors">
+                    Voltar
+                </button>
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="window.app.closeMetaTrailWizard()"
+                        class="px-5 py-2.5 rounded-lg text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="button" id="trail-next-btn" onclick="window.app.metaTrailNextStep()"
+                        class="px-5 py-2.5 rounded-lg bg-primary text-on-primary text-sm font-bold shadow-md hover:shadow-lg active:scale-95 transition-all">
+                        Próximo
+                    </button>
+                    <button type="button" id="trail-finish-btn" onclick="window.app.finishMetaTrailWizard()"
+                        class="hidden px-5 py-2.5 rounded-lg bg-primary text-on-primary text-sm font-bold shadow-md hover:shadow-lg active:scale-95 transition-all">
+                        Começar a semana
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Text Edit Modal -->
+    <div id="text-edit-modal"
+        class="hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-outline-variant/20">
+                <h3 id="text-edit-title" class="font-headline text-xl font-bold"></h3>
+            </div>
+            <div class="p-6 flex flex-col gap-4 overflow-y-auto no-scrollbar">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold uppercase tracking-widest text-outline">Texto completo</label>
+                    <textarea id="text-edit-input" rows="5"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+                <!-- Campo resumo — visível apenas quando o campo tem resumo associado -->
+                <div id="text-edit-resumo-group" class="hidden flex-col gap-1.5">
+                    <label class="text-xs font-bold uppercase tracking-widest text-outline">
+                        Resumo para trilha <span class="text-primary">*</span>
+                    </label>
+                    <textarea id="text-edit-resumo" rows="2" maxlength="80"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"
+                        placeholder="Versão curta (máx. 80 caracteres) — aparece nos cards e na trilha"
+                        oninput="document.getElementById('text-edit-resumo-count').textContent = this.value.length"></textarea>
+                    <p class="text-[10px] text-outline text-right"><span id="text-edit-resumo-count">0</span>/80</p>
+                </div>
+            </div>
+            <div
+                class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30 shrink-0">
+                <button type="button" onclick="window.app.closeTextModal()"
+                    class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
+                    Cancelar
+                </button>
+                <button type="button" onclick="window.app.saveTextEdit()"
+                    class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
+                    Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="review-modal"
+        class="hidden fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-outline-variant/20 flex flex-col">
+                <h3 class="font-headline text-xl font-bold text-on-background">Revisão Semanal</h3>
+                <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Fechamento de Ciclo</p>
+            </div>
+
+            <form id="review-form" onsubmit="event.preventDefault()"
+                class="p-6 flex flex-col gap-6 overflow-y-auto no-scrollbar flex-1">
+                <div class="flex flex-col gap-2">
+                    <label for="rev-q1" class="text-xs uppercase text-primary font-bold tracking-wider">O que
+                        planejei?</label>
+                    <textarea id="rev-q1" rows="2"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="rev-q2" class="text-xs uppercase text-primary font-bold tracking-wider">O que
+                        executei?</label>
+                    <textarea id="rev-q2" rows="2"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="rev-q3" class="text-xs uppercase text-primary font-bold tracking-wider">O que
+                        aprendi?</label>
+                    <textarea id="rev-q3" rows="2"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="rev-q4" class="text-xs uppercase text-primary font-bold tracking-wider">O que
+                        ajustar?</label>
+                    <textarea id="rev-q4" rows="2"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="rev-q5" class="text-xs uppercase text-primary font-bold tracking-wider">Intenção da
+                        próxima semana</label>
+                    <textarea id="rev-q5" rows="2"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
+                </div>
+
+                <div class="rounded-2xl border border-primary/15 bg-primary/5 p-4 space-y-4">
+                    <div>
+                        <p class="text-xs uppercase text-primary font-bold tracking-wider">Autoconhecimento aplicado</p>
+                        <p id="review-identity-suggestion" class="text-[11px] text-outline mt-1 leading-relaxed">Opcional: conecte a semana às suas forças e sombras.</p>
+                    </div>
+                    <div id="review-identity-cta" class="hidden rounded-xl bg-surface-container-low border border-primary/10 p-3 flex items-start gap-3">
+                        <span class="material-symbols-outlined notranslate text-primary text-[20px] shrink-0 mt-0.5">person_pin</span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-bold text-on-surface">Identidade não definida</p>
+                            <p class="text-[11px] text-outline mt-0.5 leading-relaxed">Definir forças e sombras torna esta revisão muito mais poderosa.</p>
+                            <button type="button" onclick="window.app.closeReviewModal(); window.app.switchView('proposito')"
+                                class="mt-2 text-[11px] font-bold text-primary hover:underline">Configurar identidade →</button>
+                        </div>
+                    </div>
+                    <div id="review-identity-selects" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="rev-strength" class="text-[10px] uppercase tracking-widest text-outline font-bold">Força usada</label>
+                            <select id="rev-strength"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface">
+                                <option value="">— Opcional —</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="rev-shadow" class="text-[10px] uppercase tracking-widest text-outline font-bold">Sombra observada</label>
+                            <select id="rev-shadow"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface">
+                                <option value="">— Opcional —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label for="rev-response" class="text-[10px] uppercase tracking-widest text-outline font-bold">Resposta melhor praticada</label>
+                        <textarea id="rev-response" rows="2"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none"
+                            placeholder="Qual resposta mais madura você praticou ou quer praticar?"></textarea>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label for="rev-habit-adjust" class="text-[10px] uppercase tracking-widest text-outline font-bold">Hábito a ajustar</label>
+                        <textarea id="rev-habit-adjust" rows="2"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none"
+                            placeholder="Qual hábito precisa mudar de dose, gatilho ou rotina?"></textarea>
+                    </div>
+                </div>
+            </form>
+
+            <div
+                class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30 rounded-b-2xl shrink-0">
+                <button type="button" onclick="window.app.closeReviewModal()"
+                    class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
+                    Cancelar
+                </button>
+                <button type="button" id="btn-save-review" onclick="window.app.saveReview()"
+                    class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
+                    Salvar Revisão
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Planning Modal -->
+    <div id="weekly-plan-modal"
+        class="hidden fixed inset-0 z-[125] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-outline-variant/20 flex items-center justify-between">
+                <div>
+                    <h3 id="weekly-plan-modal-title" class="font-headline text-xl font-bold text-on-background">Planejamento Semanal</h3>
+                    <p id="weekly-plan-week-label" class="text-xs text-outline uppercase tracking-widest font-bold mt-1"></p>
+                </div>
+                <button type="button" onclick="window.app.closeWeeklyPlanModal()"
+                    class="text-outline hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form id="weekly-plan-form" onsubmit="event.preventDefault()"
+                class="p-6 flex flex-col gap-5 overflow-y-auto no-scrollbar flex-1">
+
+                <div id="wp-no-current-plan-warning" class="hidden rounded-xl border border-amber-400/40 bg-amber-400/10 p-3 flex items-start gap-2">
+                    <span class="material-symbols-outlined notranslate text-amber-500 text-[18px] shrink-0 mt-0.5">warning</span>
+                    <div>
+                        <p class="text-xs font-bold text-amber-700 dark:text-amber-400">Semana atual sem plano</p>
+                        <p class="text-[11px] text-on-surface-variant mt-0.5 leading-relaxed">Você ainda não planejou a semana em curso. Considere planejar a semana atual antes para manter a continuidade.</p>
+                        <button type="button" onclick="window.app.closeWeeklyPlanModal(); setTimeout(()=> window.app.openWeeklyPlanModal(), 50)"
+                            class="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 hover:underline">Planejar semana atual</button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="wp-intention" class="text-xs uppercase text-primary font-bold tracking-wider">Intenção da Semana</label>
+                    <textarea id="wp-intention" rows="2"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"
+                        placeholder="Qual é o foco principal desta semana?"></textarea>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs uppercase text-primary font-bold tracking-wider">Micros da Semana</label>
+                    <p class="text-[11px] text-outline -mt-1">Selecione os itens que planeja trabalhar esta semana.</p>
+                    <div id="wp-micros-list" class="flex flex-col gap-2 max-h-52 overflow-y-auto no-scrollbar rounded-xl bg-surface-container p-3">
+                        <p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>
+                    </div>
+                    <div id="wp-load-meter" class="flex items-center justify-between gap-3 rounded-lg bg-surface-container-low px-3 py-2 mt-1">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-outline">Carga planejada</span>
+                            <span id="wp-load-hint" class="text-[10px] text-outline">—</span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="wp-load-count" class="text-lg font-bold text-primary">0</span>
+                            <span class="text-xs text-outline">/ <span id="wp-load-average">—</span> média</span>
+                        </div>
+                    </div>
+                    <!-- Criar micro inline -->
+                    <div class="mt-1">
+                        <button type="button" onclick="window.app.toggleInlineNewMicro()"
+                            class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-outline-variant/40 text-outline text-xs font-bold uppercase tracking-wider hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all">
+                            <span class="material-symbols-outlined notranslate text-[15px]">add</span>
+                            Criar micro novo
+                        </button>
+                        <div id="wp-inline-new-micro" class="hidden mt-2 rounded-xl bg-surface-container p-3 flex flex-col gap-3">
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Macro pai *</label>
+                                <select id="wp-new-macro-id" onchange="window.app.updateInlineNewMicroDimension()"
+                                    class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20">
+                                    <option value="">Selecione um macro...</option>
+                                </select>
+                                <p id="wp-new-micro-dimension" class="text-[10px] text-outline">Dimensão herdada do macro selecionado.</p>
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Título *</label>
+                                <input type="text" id="wp-new-micro-title" placeholder="Descreva a ação..."
+                                    class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20" />
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Início</label>
+                                    <input type="date" id="wp-new-micro-start"
+                                        class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20" />
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Prazo *</label>
+                                    <input type="date" id="wp-new-micro-deadline"
+                                        class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20" />
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Esforço</label>
+                                <select id="wp-new-micro-effort" class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20">
+                                    <option value="rapido">⚡ Rápido</option>
+                                    <option value="medio" selected>💪 Médio</option>
+                                    <option value="pesado">🔥 Pesado</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-2 pt-1">
+                                <button type="button" onclick="window.app.cancelInlineNewMicro()"
+                                    class="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-outline hover:bg-surface-container-high transition-colors uppercase tracking-wider">
+                                    Cancelar
+                                </button>
+                                <button type="button" onclick="window.app.saveInlineNewMicro()"
+                                    class="flex-1 px-3 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
+                                    Criar e marcar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="wp-energy" class="text-xs uppercase text-primary font-bold tracking-wider">Previsão de Energia (1–5)</label>
+                    <select id="wp-energy"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                        <option value="1">1 — Semana leve</option>
+                        <option value="2">2 — Abaixo do normal</option>
+                        <option value="3" selected>3 — Normal</option>
+                        <option value="4">4 — Energia alta</option>
+                        <option value="5">5 — Semana de pico</option>
+                    </select>
+                </div>
+
+            </form>
+
+            <div class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30 rounded-b-2xl shrink-0">
+                <button type="button" onclick="window.app.closeWeeklyPlanModal()"
+                    class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
+                    Cancelar
+                </button>
+                <button type="button" onclick="window.app.saveWeeklyPlan()"
+                    class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
+                    Salvar Plano
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Reavaliação PERMA (Migrado) -->
+    <div id="perma-modal"
+        class="fixed inset-0 bg-black/60 z-[130] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div
+            class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-sm w-full p-8 shadow-xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-headline text-2xl italic font-bold">Reavaliar PERMA</h3>
+                <button onclick="window.app.closePermaModal()"
+                    class="text-outline hover:text-on-surface transform transition-transform active:scale-90">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="space-y-5">
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
+                            for="p-slider">P - Emoção Positiva (0-10)</label><span id="val-p" class="text-primary">8.5</span>
+                    </div>
+                    <input type="range" id="p-slider" min="0" max="10" step="0.1" value="8.5" class="w-full accent-primary"
+                        oninput="document.getElementById('val-p').textContent = this.value"
+                        style="touch-action: pan-y; overscroll-behavior: contain;">
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
+                            for="e-slider">E - Engajamento (0-10)</label><span id="val-e" class="text-primary">7.0</span></div>
+                    <input type="range" id="e-slider" min="0" max="10" step="0.1" value="7.0" class="w-full accent-primary"
+                        oninput="document.getElementById('val-e').textContent = this.value"
+                        style="touch-action: pan-y; overscroll-behavior: contain;">
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
+                            for="r-slider">R - Relacionamentos (0-10)</label><span id="val-r" class="text-primary">9.2</span>
+                    </div>
+                    <input type="range" id="r-slider" min="0" max="10" step="0.1" value="9.2" class="w-full accent-primary"
+                        oninput="document.getElementById('val-r').textContent = this.value"
+                        style="touch-action: pan-y; overscroll-behavior: contain;">
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
+                            for="m-slider">M - Significado (0-10)</label><span id="val-m" class="text-primary">6.0</span></div>
+                    <input type="range" id="m-slider" min="0" max="10" step="0.1" value="6.0" class="w-full accent-primary"
+                        oninput="document.getElementById('val-m').textContent = this.value"
+                        style="touch-action: pan-y; overscroll-behavior: contain;">
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
+                            for="a-slider">A - Realização (0-10)</label><span id="val-a" class="text-primary">7.5</span></div>
+                    <input type="range" id="a-slider" min="0" max="10" step="0.1" value="7.5" class="w-full accent-primary"
+                        oninput="document.getElementById('val-a').textContent = this.value"
+                        style="touch-action: pan-y; overscroll-behavior: contain;">
+                </div>
+            </div>
+
+            <button onclick="window.app.savePerma()"
+                class="w-full mt-8 bg-primary text-on-primary py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">
+                Salvar Avaliação
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal SWLS -->
+    <div id="swls-modal"
+        class="fixed inset-0 bg-black/60 z-[131] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-2xl w-full p-6 md:p-8 shadow-xl max-h-[90vh] overflow-y-auto no-scrollbar">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="font-headline text-2xl italic font-bold">Avaliação SWLS</h3>
+                    <p class="text-xs text-outline mt-1 uppercase tracking-widest font-bold">Escala de 1 (discordo) a 7 (concordo)</p>
+                </div>
+                <button onclick="window.app.closeSwlsModal()"
+                    class="text-outline hover:text-on-surface transform transition-transform active:scale-90">
+                    <span class="material-symbols-outlined notranslate">close</span>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="space-y-2">
+                    <label for="swls-q1" class="text-sm text-on-surface-variant">1. Em muitos aspectos, minha vida está próxima do ideal.</label>
+                    <input id="swls-q1" type="range" min="1" max="7" step="1" value="4" class="w-full accent-primary"
+                        oninput="document.getElementById('swls-q1-val').textContent=this.value">
+                    <p class="text-xs text-primary font-bold">Resposta: <span id="swls-q1-val">4</span></p>
+                </div>
+                <div class="space-y-2">
+                    <label for="swls-q2" class="text-sm text-on-surface-variant">2. As condições da minha vida são excelentes.</label>
+                    <input id="swls-q2" type="range" min="1" max="7" step="1" value="4" class="w-full accent-primary"
+                        oninput="document.getElementById('swls-q2-val').textContent=this.value">
+                    <p class="text-xs text-primary font-bold">Resposta: <span id="swls-q2-val">4</span></p>
+                </div>
+                <div class="space-y-2">
+                    <label for="swls-q3" class="text-sm text-on-surface-variant">3. Estou satisfeito com a minha vida.</label>
+                    <input id="swls-q3" type="range" min="1" max="7" step="1" value="4" class="w-full accent-primary"
+                        oninput="document.getElementById('swls-q3-val').textContent=this.value">
+                    <p class="text-xs text-primary font-bold">Resposta: <span id="swls-q3-val">4</span></p>
+                </div>
+                <div class="space-y-2">
+                    <label for="swls-q4" class="text-sm text-on-surface-variant">4. Até agora, consegui as coisas importantes que quero na vida.</label>
+                    <input id="swls-q4" type="range" min="1" max="7" step="1" value="4" class="w-full accent-primary"
+                        oninput="document.getElementById('swls-q4-val').textContent=this.value">
+                    <p class="text-xs text-primary font-bold">Resposta: <span id="swls-q4-val">4</span></p>
+                </div>
+                <div class="space-y-2">
+                    <label for="swls-q5" class="text-sm text-on-surface-variant">5. Se eu pudesse viver minha vida de novo, mudaria quase nada.</label>
+                    <input id="swls-q5" type="range" min="1" max="7" step="1" value="4" class="w-full accent-primary"
+                        oninput="document.getElementById('swls-q5-val').textContent=this.value">
+                    <p class="text-xs text-primary font-bold">Resposta: <span id="swls-q5-val">4</span></p>
+                </div>
+            </div>
+
+            <button onclick="window.app.saveSwls()"
+                class="w-full mt-6 bg-primary text-on-primary py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">
+                Salvar SWLS
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Roda da Vida -->
+    <div id="wheel-modal"
+        class="hidden fixed inset-0 z-[130] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-outline-variant/20 flex justify-between items-center shrink-0">
+                <div>
+                    <h3 class="font-headline text-xl font-bold text-on-background">Roda da Vida</h3>
+                    <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Ajuste o seu momento atual
+                    </p>
+                </div>
+                <button onclick="window.app.closeWheelModal()"
+                    class="text-outline hover:text-on-surface transform transition-transform active:scale-90"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="p-6 overflow-y-auto no-scrollbar flex-1 space-y-6">
+                <div id="wheel-sliders-container" class="space-y-4"></div>
+            </div>
+            <div class="p-6 border-t border-outline-variant/20 bg-surface-container-lowest shrink-0">
+                <button onclick="window.app.saveWheel()"
+                    class="w-full bg-primary text-on-primary py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">
+                    Salvar Roda da Vida
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Histórico do Diário -->
+    <div id="history-log-modal"
+        class="hidden fixed inset-0 z-[125] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-outline-variant/20 flex flex-col">
+                <h3 class="font-headline text-xl font-bold text-on-background">Diário de Bordo</h3>
+                <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Histórico de Reflexões</p>
+            </div>
+
+            <div id="history-log-list" class="p-6 flex flex-col gap-4 overflow-y-auto no-scrollbar flex-1">
+                <!-- Cards injectados via JS -->
+            </div>
+
+            <div
+                class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30 rounded-b-2xl shrink-0">
+                <button type="button" onclick="window.app.closeDailyLogHistory()"
+                    class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div id="odyssey-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div
+            class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-lg w-full p-6 shadow-xl flex flex-col">
+            <h3 class="font-headline text-2xl italic mb-4">Editar Cenário Odyssey</h3>
+            <input type="hidden" id="odyssey-id">
+            <div class="space-y-4 mb-6">
+                <div><label class="text-[10px] font-bold uppercase text-outline">Título do Cenário</label><input
+                        type="text" id="odyssey-title"
+                        class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm">
+                </div>
+                <div><label class="text-[10px] font-bold uppercase text-outline">Descrição / Foco</label><textarea
+                        id="odyssey-desc" rows="2"
+                        class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm resize-none"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-1"><label class="text-[10px] font-bold uppercase text-outline">Confiança
+                            (1-5)</label><input type="number" id="odyssey-conf" min="1" max="5"
+                            class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm">
+                    </div>
+                    <div class="flex-1"><label class="text-[10px] font-bold uppercase text-outline">Energia
+                            (1-5)</label><input type="number" id="odyssey-nrg" min="1" max="5"
+                            class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm">
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('odyssey-modal').classList.add('hidden')"
+                    class="px-5 py-2.5 text-sm font-bold text-outline rounded-lg">Cancelar</button>
+                <button type="button" onclick="window.app.saveOdyssey()"
+                    class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md active:scale-95 transition-all">Salvar
+                    Cenário</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gerir Entidade (Review Próximo Nível) -->
+    <div id="review-entity-modal"
+        class="fixed inset-0 bg-black/60 z-[150] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div
+            class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-md w-full shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-outline-variant/10 bg-surface-container-low/30">
+                <h3 id="review-entity-title" class="font-headline text-xl font-bold text-on-surface">Gerir Entidade</h3>
+                <p class="text-[10px] text-outline uppercase tracking-widest font-bold mt-1">Review de Fluxo e
+                    Hierarquia</p>
+            </div>
+
+            <div class="p-6 space-y-8 overflow-y-auto max-h-[70vh] no-scrollbar">
+                <!-- Promoção -->
+                <div id="promote-section" class="space-y-3">
+                    <div class="flex items-center gap-2 text-primary">
+                        <span class="material-symbols-outlined notranslate text-lg">upgrade</span>
+                        <h4 class="text-xs font-bold uppercase tracking-wider">Promover para Nível Superior</h4>
+                    </div>
+                    <p class="text-xs text-outline leading-relaxed">Eleve esta intenção para o próximo patamar na sua
+                        hierarquia estratégica.</p>
+                    <button id="btn-promote-entity" onclick="window.app.promoteEntity()"
+                        class="w-full py-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-sm font-bold border border-primary/20 transition-all flex items-center justify-center gap-2 group">
+                        <span id="promote-label">Promover</span>
+                        <span
+                            class="material-symbols-outlined notranslate text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                    </button>
+                </div>
+
+                <!-- Reatribuição (Mesma Hierarquia) -->
+                <div id="reassign-section" class="space-y-3">
+                    <div class="flex items-center gap-2 text-secondary">
+                        <span class="material-symbols-outlined notranslate text-lg">rebase_edit</span>
+                        <h4 class="text-xs font-bold uppercase tracking-wider">Mudar para Mesma Hierarquia</h4>
+                    </div>
+                    <p class="text-xs text-outline leading-relaxed">Mova esta entidade para uma referência (pai)
+                        diferente no mesmo nível.</p>
+                    <div class="space-y-2">
+                        <label id="reassign-parent-label"
+                            class="text-[10px] font-bold text-outline-variant uppercase">Pai Atual</label>
+                        <select id="reassign-parent-select"
+                            class="w-full p-3 bg-surface-container-high border border-outline-variant/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 shadow-inner">
+                            <!-- Options via JS -->
+                        </select>
+                    </div>
+                    <button id="btn-save-reassign" onclick="window.app.reassignEntity()"
+                        class="w-full py-3 bg-secondary/10 hover:bg-secondary/20 text-secondary rounded-xl text-sm font-bold border border-secondary/20 transition-all">
+                        Salvar Nova Referência
+                    </button>
+                </div>
+
+                <!-- Exclusão -->
+                <div class="pt-4 border-t border-outline-variant/10">
+                    <button id="btn-delete-review" onclick="window.app.deleteEntityFromReview()"
+                        class="w-full py-2.5 text-error hover:bg-error/10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined notranslate text-lg">delete</span>
+                        Excluir Permanentemente
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4 bg-surface-container-low/50 flex justify-end px-6">
+                <button onclick="document.getElementById('review-entity-modal').classList.add('hidden')"
+                    class="px-6 py-2.5 text-sm font-bold text-outline hover:text-on-surface transition-colors">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SPA Logic entry -->
+    <script type="module" src="app.js"></script>
+
+    <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
+    <script>
+    (function() {
+        var t = setTimeout(function() {
+            var ph = document.getElementById('loading-placeholder');
+            if (!ph) return;
+            ph.classList.remove('animate-pulse');
+            ph.innerHTML = '<div style="padding:28px 24px;font-family:sans-serif;max-width:360px;margin:0 auto;text-align:center">' +
+                '<div style="font-size:2rem;margin-bottom:12px">\u26a0\ufe0f</div>' +
+                '<p style="font-weight:700;font-size:1rem;color:#191c1d;margin-bottom:8px">App n\u00e3o carregou</p>' +
+                '<p style="font-size:.85rem;color:#6f797a;margin-bottom:20px">Pode ser cache desatualizado do Service Worker.</p>' +
+                '<button onclick="(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}).then(function(){location.reload(true)}),this.textContent=\'Limpando...\')" ' +
+                'style="padding:12px 24px;background:#01696f;color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;width:100%">' +
+                'Limpar cache e recarregar</button></div>';
+            document.querySelectorAll('.lifeos-sync-badge span:last-child').forEach(function(el){ el.textContent='Erro de carregamento'; });
+        }, 18000);
+        document.addEventListener('lifeos-app-ready', function(){ clearTimeout(t); });
+    })();
+    </script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            var swRefreshed = false;
+            // When a new SW takes control, reload once so the page gets fresh files
+            navigator.serviceWorker.addEventListener('controllerchange', function() {
+                if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
+            });
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js')
+                    .then(function(registration) {
+                        console.log('[SW] Registered, scope:', registration.scope);
+                        if (registration.waiting) {
+                            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                        registration.addEventListener('updatefound', function() {
+                            var newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', function() {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(err) {
+                        console.warn('[SW] Registration failed:', err);
+                    });
+            });
+        }
+    </script>
+
+    <!-- Flow Modal -->
+    <div id="flow-modal" class="fixed inset-0 z-[9000] hidden" aria-modal="true" role="dialog">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="app.closeFlowModal()"></div>
+        <div class="absolute inset-y-0 right-0 w-full max-w-lg bg-background flex flex-col shadow-2xl overflow-hidden">
+            <!-- Header -->
+            <div class="sticky top-0 bg-background/95 backdrop-blur-md border-b border-outline-variant/20 px-5 py-4 flex items-center justify-between shrink-0 z-10">
+                <div class="flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined notranslate text-primary text-[22px]">account_tree</span>
+                    </span>
+                    <div>
+                        <h2 class="font-headline font-bold text-lg leading-none text-on-background">Flow</h2>
+                        <p class="text-[10px] text-outline uppercase tracking-widest mt-0.5">Fluxo de trabalho</p>
+                    </div>
+                </div>
+                <button onclick="app.closeFlowModal()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container text-outline hover:text-on-surface transition-colors">
+                    <span class="material-symbols-outlined notranslate text-xl">close</span>
+                </button>
+            </div>
+            <!-- Content -->
+            <div id="flow-modal-content" class="flex-1 overflow-y-auto px-5 py-5 space-y-1">
+            </div>
+        </div>
+    </div>
+</body>
+</html>
