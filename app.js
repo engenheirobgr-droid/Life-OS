@@ -4375,11 +4375,10 @@ const app = {
             if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
             if (type === 'micros') setGroupVisible(effortGroup, true);
             if (['macros', 'micros'].includes(type)) {
-                console.log('[WOOP] type:', type, 'woopGroup:', woopGroup, 'classes before:', woopGroup && woopGroup.className);
                 if (woopGroup) {
                     woopGroup.classList.remove('hidden');
                     woopGroup.style.cssText = 'display: block;';
-                    console.log('[WOOP] after show — display:', window.getComputedStyle(woopGroup).display, 'classes:', woopGroup.className);
+                    requestAnimationFrame(() => woopGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
                 }
                 this.toggleCrudWoop(type === 'micros');
             }
