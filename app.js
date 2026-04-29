@@ -10765,6 +10765,15 @@ const app = {
                             </div>`;
                         });
                         trailHtml += `</div>`;
+                        
+                        // Adicionar WOOP dentro da trilha
+                        const woopHtmlTrail = (item.obstacle || item.ifThen) ? `
+                            <div class="mt-4 rounded-xl border border-primary/15 bg-primary/5 p-3 text-xs text-on-surface-variant leading-relaxed">
+                                <p class="text-[9px] uppercase tracking-widest font-bold text-primary mb-1">WOOP / Se-então</p>
+                                ${item.obstacle ? `<p><span class="font-bold text-on-surface">Obstáculo:</span> ${app.escapeHtml(item.obstacle)}</p>` : ''}
+                                ${item.ifThen ? `<p class="mt-1"><span class="font-bold text-on-surface">Plano:</span> ${app.escapeHtml(item.ifThen)}</p>` : ''}
+                            </div>` : '';
+                        trailHtml += woopHtmlTrail;
 
                         const userValues = state.profile.values || [];
                         const isAligned = userValues.includes(item.dimension);
@@ -10773,12 +10782,7 @@ const app = {
                                 ? '<span title="Micro selecionada no planejamento semanal" class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase tracking-wider">Semana</span>'
                                 : '<span title="Micro capturada fora do plano semanal" class="shrink-0 bg-surface-container-high text-on-surface-variant text-[9px] px-2 py-0.5 rounded-full border border-outline-variant/20 font-bold uppercase tracking-wider">Captura</span>')
                             : '';
-                        const woopHtml = (item.obstacle || item.ifThen) ? `
-                            <div class="mb-3 rounded-xl border border-primary/15 bg-primary/5 p-3 text-xs text-on-surface-variant leading-relaxed">
-                                <p class="text-[9px] uppercase tracking-widest font-bold text-primary mb-1">WOOP / Se-então</p>
-                                ${item.obstacle ? `<p><span class="font-bold text-on-surface">Obstáculo:</span> ${app.escapeHtml(item.obstacle)}</p>` : ''}
-                                ${item.ifThen ? `<p class="mt-1"><span class="font-bold text-on-surface">Plano:</span> ${app.escapeHtml(item.ifThen)}</p>` : ''}
-                            </div>` : '';
+                        // WOOP removido daqui - agora está apenas na trilha;
 
                         const isInProgress = item.status === 'in_progress';
                         // Para micros (atômicas): completed/progress 100 implicam done.
@@ -10877,8 +10881,6 @@ const app = {
                                     <div class="h-full ${progressColor} rounded-full transition-all" style="width: ${visualProg}%"></div>
                                 </div>
                             </div>
-
-                            ${woopHtml}
 
                             <div class="grid grid-cols-3 gap-2">
                                 <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')"
