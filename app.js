@@ -4378,7 +4378,6 @@ const app = {
                 if (woopGroup) {
                     woopGroup.classList.remove('hidden');
                     woopGroup.style.cssText = 'display: block;';
-                    requestAnimationFrame(() => woopGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
                 }
                 this.toggleCrudWoop(type === 'micros');
             }
