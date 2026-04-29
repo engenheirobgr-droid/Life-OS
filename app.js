@@ -11633,7 +11633,8 @@ const app = {
         if (isCompleting) {
           micro.completedDate = this.getLocalDateKey();
           const award = this.awardGamification('micro_complete', {
-              key: `micro:${micro.id}:complete`,
+              key: `micro:${micro.id}:complete:${micro.completedDate}`,
+              date: micro.completedDate,
               id: micro.id,
               title: micro.title,
               dimension: micro.dimension,
