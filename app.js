@@ -1636,9 +1636,9 @@ const app = {
         document.body.style.overflow = '';
     },
 
-    flowNavigate: function(view, sectionId = '', tabId = '') {
+    flowNavigate: async function(view, sectionId = '', tabId = '') {
         this.closeFlowModal();
-        this.navigate(view);
+        await this.switchView(view, { preserveScroll: !!sectionId });
 
         if (tabId && this.currentView === 'planos') {
             this.switchPlanosTab(tabId);
@@ -1796,7 +1796,7 @@ const app = {
                 sub('Ao longo do dia', 'light_mode') +
                 row('task_alt', 'Executar micros', 'Avançar ao menos uma micro ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
                 row('repeat', 'Registrar hábitos', 'Marcar os hábitos concluídos no dia', '+6–10 XP', s.habitsDoneToday, 'hoje', 'hoje-habits-section') +
-                row('timer', 'Sessão de foco', 'Bloco de deep work com Pomodoro (90/20)', '+10–40 XP', s.focusToday, 'foco') +
+                row('timer', 'Sessão de foco', 'Bloco de deep work com Pomodoro (90/20)', '+10–40 XP', s.focusToday, 'foco', 'deep-work-panel') +
                 sub('Noite', 'nightlight') +
                 row('auto_stories', 'Diário & Gratidão', 'Reflexão do dia e três coisas pelas quais é grato', '', s.diaryDone, 'hoje', 'hoje-diario-section') +
                 row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '', s.shutdownDone, 'hoje', 'hoje-diario-section')
@@ -1807,17 +1807,17 @@ const app = {
             ) +
             section('Ritmo Mensal', 'calendar_month',
                 row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section') +
-                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito', 'perma-charts-container') +
+                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito', 'perma-section') +
                 row('account_tree', 'Revisar Macros', 'Avaliar iniciativas mensais em andamento e criar novas', '', s.macrosThisMonth, 'planos', '', 'macro')
             ) +
             section('Ritmo Trimestral', 'event_repeat',
                 row('track_changes', 'OKRs', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos', '', 'okrs') +
-                row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'perfil')
+                row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'proposito', 'swls-section')
             ) +
             section('Horizonte Vital', 'auto_awesome',
                 row('flag', 'Metas de vida', 'Metas de 1 a 5 anos alinhadas ao propósito de vida', '', s.metasExist, 'planos', '', 'metas') +
-                row('explore', 'Odyssey Plan', 'Três cenários possíveis para os próximos 5 anos da sua vida', '', s.odysseyFilled, 'proposito') +
-                row('self_improvement', 'Visão, Legado & Ikigai', 'O que você quer deixar, ser e fazer no mundo', '', s.purposeFilled, 'proposito')
+                row('explore', 'Odyssey Plan', 'Três cenários possíveis para os próximos 5 anos da sua vida', '', s.odysseyFilled, 'proposito', 'odyssey-section') +
+                row('self_improvement', 'Visão, Legado & Ikigai', 'O que você quer deixar, ser e fazer no mundo', '', s.purposeFilled, 'proposito', 'proposito-ikigai-section')
             );
     },
 
@@ -3179,7 +3179,7 @@ const app = {
         } catch (_) {}
     },
 
-    switchView: async function(viewName) {
+    switchView: async function(viewName, options = {}) {
         if (!viewName) return;
         this.currentView = viewName;
         this.closeFabMenu();
@@ -3205,6 +3205,7 @@ const app = {
         }
         if (!html) html = this.getFallbackTemplate(viewName);
 
+        return new Promise((resolve) => {
         setTimeout(() => {
             if (container) {
                 container.innerHTML = html;
@@ -3214,13 +3215,15 @@ const app = {
             if (this.render[viewName]) {
                 try { this.render[viewName](); } catch (e) { console.warn('render error:', e); }
             }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+            resolve();
         }, 200);
+        });
     },
 
     // Alias para compatibilidade com as chamadas do index.html
     navigate: function(viewName) {
-        this.switchView(viewName);
+        return this.switchView(viewName);
     },
 
     openTimelineEntity: function(entityId, entityType) {
