@@ -1580,6 +1580,7 @@ const app = {
         let currentIndex = 0;
         const slideEls = Array.from(el.querySelectorAll('.lifeos-odyssey-slide'));
         const footerHeader = el.querySelector('.lifeos-odyssey-slide__header');
+        
         const nextSlide = () => {
             if (slideEls.length < 2) return;
             const nextIndex = (currentIndex + 1) % slideEls.length;
@@ -1592,12 +1593,24 @@ const app = {
                 footerHeader.querySelector('.lifeos-odyssey-slide__title').textContent = this.escapeHtml(slide.title);
             }
         };
+        
+        // Timer para trocar slides
         this._odysseySplashTimer = setInterval(nextSlide, duration * 1000);
+        
+        // Timer para auto-dismiss: após mostrar todos os slides uma vez
+        const totalDisplayTime = slideEls.length * duration * 1000;
+        this._odysseySplashDismissTimer = setTimeout(() => {
+            this.dismissOdysseySplash();
+        }, totalDisplayTime);
     },
     dismissOdysseySplash: function() {
         if (this._odysseySplashTimer) {
             clearInterval(this._odysseySplashTimer);
             this._odysseySplashTimer = null;
+        }
+        if (this._odysseySplashDismissTimer) {
+            clearTimeout(this._odysseySplashDismissTimer);
+            this._odysseySplashDismissTimer = null;
         }
         const el = document.getElementById('odyssey-splash-screen');
         if (el) {
