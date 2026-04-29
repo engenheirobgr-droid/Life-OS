@@ -1647,7 +1647,7 @@ const app = {
                 const section = document.getElementById(sectionId);
                 if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-        }, 300);
+        }, 500);
     },
 
     _getFlowState: function() {
@@ -1764,7 +1764,7 @@ const app = {
         el.innerHTML =
             section('Rotina Diária', 'today',
                 sub('Manhã', 'wb_sunny') +
-                row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'hoje-intencao-section') +
+                row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'daily-checkin-panel') +
                 row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '', s.intentionDone, 'hoje', 'hoje-intencao-section') +
                 sub('Ao longo do dia', 'light_mode') +
                 row('task_alt', 'Executar micros', 'Avançar ao menos uma micro ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
@@ -1780,7 +1780,7 @@ const app = {
             ) +
             section('Ritmo Mensal', 'calendar_month',
                 row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section') +
-                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'perfil') +
+                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito') +
                 row('account_tree', 'Revisar Macros', 'Avaliar iniciativas mensais em andamento e criar novas', '', s.macrosThisMonth, 'planos', '', 'macro')
             ) +
             section('Ritmo Trimestral', 'event_repeat',
