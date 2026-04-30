@@ -1,7 +1,7 @@
 {
   "name": "Sistema Vida",
   "short_name": "Vida",
-  "start_url": "./index.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#01696f",

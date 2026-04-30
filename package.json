@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/engenheirobgr-droid/Life-OS#readme",
   "dependencies": {
-    "firebase-tools": "^15.12.0"
+    "firebase-admin": "^12.7.0",
+    "firebase-tools": "^15.12.0",
+    "web-push": "^3.6.7"
   }
 }

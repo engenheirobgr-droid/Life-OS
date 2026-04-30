@@ -59,8 +59,8 @@ self.addEventListener('push', (event) => {
     }
     const options = {
         body: data.body || '',
-        icon: './icons/icon-192.png',
-        badge: './icons/icon-96.png',
+        icon: './icon-192.png',
+        badge: './icon-192.png',
         tag: data.tag || 'lifeos-push',
         data: { url: data.url || './' },
         requireInteraction: false

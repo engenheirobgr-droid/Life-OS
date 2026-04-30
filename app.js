@@ -4,7 +4,7 @@
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
@@ -1297,11 +1297,84 @@ const app = {
         }
         window.sistemaVidaState.settings.notificationsEnabled = enabled;
         try { localStorage.setItem('lifeos_notif_enabled', enabled ? '1' : '0'); } catch (_) {}
+        if (enabled) {
+            try { await this.registerPushSubscription(); } catch (err) { console.warn('[PUSH] Falha ao registrar assinatura:', err); }
+        } else {
+            try { await this.unregisterPushSubscription(); } catch (err) { console.warn('[PUSH] Falha ao remover assinatura:', err); }
+        }
         this.saveState(true);
         if (enabled) this.scheduleHabitReminders();
         else if (this._habitReminderTimers) this._habitReminderTimers.forEach(timerId => clearTimeout(timerId));
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
         this.showToast(enabled ? 'Notificações diárias ativadas.' : 'Notificações diárias desativadas.', 'success');
+    },
+    urlBase64ToUint8Array: function(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        const rawData = atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+        return outputArray;
+    },
+    getPushSubscriptionDocId: function(endpoint = '') {
+        try {
+            return btoa(endpoint).replace(/[+/=]/g, '').slice(-80) || `sub_${Date.now()}`;
+        } catch (_) {
+            return `sub_${Date.now()}`;
+        }
+    },
+    getWebPushPublicKey: async function() {
+        if (this.webPushPublicKey) return this.webPushPublicKey;
+        const res = await fetch('/api/push-public-key');
+        if (!res.ok) throw new Error('push_public_key_unavailable');
+        const data = await res.json();
+        if (!data?.publicKey) throw new Error('push_public_key_missing');
+        this.webPushPublicKey = String(data.publicKey);
+        return this.webPushPublicKey;
+    },
+    registerPushSubscription: async function() {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+        if (typeof Notification === 'undefined') return false;
+        if (Notification.permission === 'denied') return false;
+        if (Notification.permission === 'default') {
+            const p = await Notification.requestPermission();
+            if (p !== 'granted') return false;
+        }
+        await this.withTimeout(getAuthReady(), 8000, 'auth_ready_push');
+        const publicKey = await this.getWebPushPublicKey();
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+            sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: this.urlBase64ToUint8Array(publicKey)
+            });
+        }
+        const subJson = sub.toJSON();
+        const docId = this.getPushSubscriptionDocId(subJson.endpoint || '');
+        const ref = doc(db, 'users', 'meu-sistema-vida', 'push_subscriptions', docId);
+        await setDoc(ref, {
+            endpoint: subJson.endpoint || '',
+            keys: subJson.keys || {},
+            ua: navigator.userAgent || '',
+            updatedAt: Date.now(),
+            createdAt: Date.now()
+        }, { merge: true });
+        return true;
+    },
+    unregisterPushSubscription: async function() {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (!sub) return true;
+        const subJson = sub.toJSON();
+        const docId = this.getPushSubscriptionDocId(subJson.endpoint || '');
+        try {
+            const ref = doc(db, 'users', 'meu-sistema-vida', 'push_subscriptions', docId);
+            await deleteDoc(ref);
+        } catch (_) {}
+        try { await sub.unsubscribe(); } catch (_) {}
+        return true;
     },
     _getAudioContext: function() {
         if (!this._audioCtx) {
@@ -3275,6 +3348,9 @@ const app = {
         try { this.applyThemePreference(); } catch (_) {}
         try { this.checkAlerts(); } catch (_) {}
         try { this.startHabitReminderWatcher(); } catch (_) {}
+        if (window.sistemaVidaState?.settings?.notificationsEnabled) {
+            try { this.registerPushSubscription(); } catch (_) {}
+        }
         try { this.ensureDeepWorkTicking(); } catch (_) {}
         try { this.setupRealtimeSync(); } catch (_) {} // real-time cross-device sync
 
@@ -13553,3 +13629,4 @@ window.app = app;
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
+    webPushPublicKey: null,
