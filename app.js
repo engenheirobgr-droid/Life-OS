@@ -6209,17 +6209,6 @@ const app = {
         list.unshift(entry);
         window.sistemaVidaState.profile.dailyCheckins = list.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 180);
         window.sistemaVidaState.energy = entry.energy;
-        
-        // Também salva a intenção do dia como parte do check-in
-        const focoInput = document.getElementById('diario-foco');
-        const intention = focoInput ? focoInput.value.trim() : '';
-        if (!window.sistemaVidaState.dailyLogs[today]) {
-            window.sistemaVidaState.dailyLogs[today] = {};
-        }
-        if (intention) {
-            window.sistemaVidaState.dailyLogs[today].focus = intention;
-        }
-        
         this.markCadence('checkin', today);
         const checkinAward = this.awardGamification('daily_checkin', { key: `daily_checkin:${today}`, date: today });
         this.saveState(true);
