@@ -1025,9 +1025,9 @@
             </div>
         </div>
         <div class="flex items-center gap-1">
-            <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-outline transition-colors"
+            <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-primary/15 text-primary hover:text-primary transition-colors border border-primary/20 shadow-sm shadow-primary/10"
                 onclick="app.openFlowModal()" title="Flow — Fluxo de trabalho">
-                <span class="material-symbols-outlined notranslate">account_tree</span>
+                <span class="material-symbols-outlined notranslate font-bold">account_tree</span>
             </button>
             <button class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hover:bg-surface-container"
                 onclick="app.navigate('perfil')">
@@ -1100,10 +1100,11 @@
                 </button>
             </nav>
 
-            <button class="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium mt-4"
+            <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/30 hover:border-primary/50 hover:from-primary/20 hover:to-primary/10 text-primary font-bold mt-4 shadow-sm shadow-primary/10"
                 onclick="app.openFlowModal()">
-                <span class="material-symbols-outlined notranslate">account_tree</span>
-                Flow
+                <span class="material-symbols-outlined notranslate text-lg">account_tree</span>
+                <span>Flow</span>
+                <span class="material-symbols-outlined notranslate text-xs ml-auto">arrow_forward</span>
             </button>
 
             <div class="mt-auto pt-6 border-t border-outline-variant/20">
@@ -1181,6 +1182,12 @@
             <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Propósito</span>
         </button>
     </nav>
+
+    <!-- Global FAB (Floating Action Button) -->
+    <button onclick="window.app.toggleFabMenu(event)" 
+        class="fixed bottom-28 right-6 lg:bottom-8 w-14 h-14 bg-gradient-to-br from-secondary to-tertiary text-on-primary rounded-full shadow-2xl shadow-secondary/40 flex items-center justify-center z-[51] hover:scale-110 active:scale-90 transition-transform border border-secondary/30 group">
+        <span class="material-symbols-outlined notranslate text-2xl group-hover:rotate-90 transition-transform duration-300" style="font-variation-settings: 'wght' 600;">add</span>
+    </button>
 
     <!-- CRUD Modal Universal -->
     <div id="crud-modal"
@@ -2457,17 +2464,17 @@
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="app.closeFlowModal()"></div>
         <div class="absolute inset-y-0 right-0 w-full max-w-lg bg-background flex flex-col shadow-2xl overflow-hidden">
             <!-- Header -->
-            <div class="sticky top-0 bg-background/95 backdrop-blur-md border-b border-outline-variant/20 px-5 py-4 flex items-center justify-between shrink-0 z-10">
+            <div class="sticky top-0 bg-gradient-to-r from-primary/15 to-primary/5 backdrop-blur-md border-b border-primary/20 px-5 py-5 flex items-center justify-between shrink-0 z-10">
                 <div class="flex items-center gap-3">
-                    <span class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <span class="material-symbols-outlined notranslate text-primary text-[22px]">account_tree</span>
-                    </span>
+                    <div class="w-10 h-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined notranslate text-primary text-[22px] font-bold">account_tree</span>
+                    </div>
                     <div>
-                        <h2 class="font-headline font-bold text-lg leading-none text-on-background">Flow</h2>
-                        <p class="text-[10px] text-outline uppercase tracking-widest mt-0.5">Fluxo de trabalho</p>
+                        <h2 class="font-headline font-bold text-lg leading-none text-primary">Flow</h2>
+                        <p class="text-[10px] text-outline uppercase tracking-widest mt-1">Fluxo de trabalho</p>
                     </div>
                 </div>
-                <button onclick="app.closeFlowModal()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container text-outline hover:text-on-surface transition-colors">
+                <button onclick="app.closeFlowModal()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-primary/20 text-primary hover:text-on-primary transition-colors">
                     <span class="material-symbols-outlined notranslate text-xl">close</span>
                 </button>
             </div>
