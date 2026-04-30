@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron-habit-reminders",
-      "schedule": "*/5 * * * *"
-    }
-  ]
-}
