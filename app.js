@@ -1797,7 +1797,7 @@ const app = {
             section('Rotina Diária', 'today',
                 sub('Manhã', 'wb_sunny') +
                 row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'daily-checkin-panel') +
-                row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '', s.intentionDone, 'hoje', 'hoje-intencao-section') +
+                row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '', s.intentionDone, 'hoje', 'daily-checkin-panel') +
                 sub('Ao longo do dia', 'light_mode') +
                 row('task_alt', 'Executar micros', 'Avançar ao menos uma micro ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
                 row('repeat', 'Registrar hábitos', 'Marcar os hábitos concluídos no dia', '+6–10 XP', s.habitsDoneToday, 'hoje', 'hoje-habits-section') +
@@ -2494,6 +2494,36 @@ const app = {
                 notify();
             }
         });
+    },
+
+    startHabitReminderWatcher: function() {
+        if (this._habitReminderWatcher) return;
+        this._habitReminderWatcher = setInterval(() => {
+            try {
+                const state = window.sistemaVidaState;
+                if (!state?.settings?.notificationsEnabled) return;
+                if (!Array.isArray(state.habits) || state.habits.length === 0) return;
+                const now = new Date();
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                const nowHHMM = `${hh}:${mm}`;
+                const dayIndex = String(now.getDay());
+                const todayKey = this.getLocalDateKey();
+                let sent = {};
+                try { sent = JSON.parse(localStorage.getItem('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
+
+                state.habits.forEach(habit => {
+                    if (!habit || !habit.reminderEnabled || !habit.reminderTime) return;
+                    if (habit.frequency === 'specific' && Array.isArray(habit.specificDays) && habit.specificDays.length > 0 && !habit.specificDays.includes(dayIndex)) return;
+                    if (String(habit.reminderTime).slice(0, 5) !== nowHHMM) return;
+                    const reminderKey = `${habit.id}:${todayKey}`;
+                    if (sent[reminderKey]) return;
+                    sent[reminderKey] = true;
+                    try { localStorage.setItem('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
+                    this.showNotification(`Lembrete de hábito: ${habit.title}`);
+                });
+            } catch (_) {}
+        }, 30000);
     },
 
     proposito: function() {
@@ -3241,6 +3271,7 @@ const app = {
         try { this.ensureSettingsState(); } catch (_) {}
         try { this.applyThemePreference(); } catch (_) {}
         try { this.checkAlerts(); } catch (_) {}
+        try { this.startHabitReminderWatcher(); } catch (_) {}
         try { this.ensureDeepWorkTicking(); } catch (_) {}
         try { this.setupRealtimeSync(); } catch (_) {} // real-time cross-device sync
 
@@ -6247,6 +6278,7 @@ const app = {
             mood: Math.max(1, Math.min(5, Math.round(read('daily-checkin-mood')))),
             stress: Math.max(1, Math.min(5, Math.round(read('daily-checkin-stress')))),
             emotion: String(document.getElementById('daily-checkin-emotion')?.value || '').trim().slice(0, 40),
+            intention: String(document.getElementById('diario-foco')?.value || '').trim(),
             savedAt: new Date().toISOString()
         };
         const list = window.sistemaVidaState.profile.dailyCheckins.filter(item => item.date !== today);
@@ -6307,6 +6339,9 @@ const app = {
         const emotionVal = defaults.emotion || '';
         const emotionHidden = document.getElementById('daily-checkin-emotion');
         if (emotionHidden) emotionHidden.value = emotionVal;
+        const todayLog = (window.sistemaVidaState.dailyLogs || {})[this.getLocalDateKey()] || {};
+        const focoInput = document.getElementById('diario-foco');
+        if (focoInput) focoInput.value = (todayLog.focus || defaults.intention || '').trim();
         document.querySelectorAll('.emotion-chip').forEach(chip => {
             const active = chip.getAttribute('data-emotion') === emotionVal;
             chip.classList.toggle('bg-primary/20', active);
@@ -8641,6 +8676,9 @@ const app = {
             obj.startTime = document.getElementById('habit-start-time') ? document.getElementById('habit-start-time').value : '';
             obj.reminderEnabled = !!(document.getElementById('habit-reminder-enabled') && document.getElementById('habit-reminder-enabled').checked);
             obj.reminderTime = obj.startTime || '';
+            if (obj.reminderEnabled && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
             const daysSelect = document.getElementById('habit-days');
             if (daysSelect && obj.frequency === 'specific') {
                 obj.specificDays = Array.from(daysSelect.selectedOptions).map(o => o.value);
