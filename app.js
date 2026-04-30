@@ -112,6 +112,7 @@ const app = {
         viewsPath: 'views/',
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
+    webPushPublicKey: null,
     getLocalDateKey: function(date = new Date()) {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     },
@@ -13629,4 +13630,3 @@ window.app = app;
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
-    webPushPublicKey: null,
