@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sistema-vida-v72';
+const CACHE_NAME = 'sistema-vida-v73';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -59,10 +59,10 @@ self.addEventListener('push', (event) => {
     }
     const options = {
         body: data.body || '',
-        icon: './icon-192.png',
-        badge: './icon-192.png',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
         tag: data.tag || 'lifeos-push',
-        data: { url: data.url || './' },
+        data: { url: data.url || '/' },
         requireInteraction: false
     };
     event.waitUntil(
@@ -72,7 +72,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const url = (event.notification.data && event.notification.data.url) ? event.notification.data.url : './';
+    const url = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/';
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
             for (const client of clientList) {

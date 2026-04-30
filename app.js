@@ -1243,13 +1243,25 @@ const app = {
     },
     applyThemePreference: function() {
         this.ensureSettingsState();
-        const pref = window.sistemaVidaState.settings.theme || 'auto';
+        const cachedTheme = (() => {
+            try {
+                const v = localStorage.getItem('lifeos_theme_pref');
+                return ['light', 'dark', 'auto'].includes(v) ? v : null;
+            } catch (_) {
+                return null;
+            }
+        })();
+        const pref = cachedTheme || window.sistemaVidaState.settings.theme || 'auto';
+        if (window.sistemaVidaState.settings.theme !== pref) {
+            window.sistemaVidaState.settings.theme = pref;
+        }
         const root = document.documentElement;
         const hour = new Date().getHours();
         const isNightByHour = hour < 6 || hour >= 18;
         const useDark = pref === 'dark' || (pref === 'auto' && isNightByHour);
         root.classList.toggle('dark', useDark);
         root.classList.toggle('light', !useDark);
+        root.style.colorScheme = useDark ? 'dark' : 'light';
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) themeMeta.setAttribute('content', useDark ? '#0b1220' : '#01696f');
         if (!this._themeAutoTickBound) {
@@ -2474,13 +2486,13 @@ const app = {
                     navigator.serviceWorker.ready.then(reg => {
                         reg.showNotification('Life OS', {
                             body: msg,
-                            icon: './icons/icon-192.png',
-                            badge: './icons/icon-96.png',
+                            icon: '/icon-192.png',
+                            badge: '/icon-192.png',
                             tag: 'lifeos-alert'
                         });
                     }).catch(() => {});
                 } else {
-                    new Notification('Life OS', { body: msg, icon: './icons/icon-192.png' });
+                    new Notification('Life OS', { body: msg, icon: '/icon-192.png' });
                 }
             } catch (_) {}
         }
@@ -2506,7 +2518,7 @@ const app = {
                 navigator.serviceWorker.ready.then(reg => {
                     reg.showNotification('Life OS — Planejar Semana', {
                         body: '📅 Segunda-feira! Que tal definir sua intenção e micros para esta semana?',
-                        icon: './icons/icon-192.png',
+                        icon: '/icon-192.png',
                         tag: 'lifeos-weekly-plan',
                         requireInteraction: false
                     });
@@ -2520,7 +2532,7 @@ const app = {
                 navigator.serviceWorker.ready.then(reg => {
                     reg.showNotification('Life OS — Revisão Semanal', {
                         body: '✍️ Fim de semana! Hora de revisar o que foi feito e fechar o ciclo semanal.',
-                        icon: './icons/icon-192.png',
+                        icon: '/icon-192.png',
                         tag: 'lifeos-weekly-review',
                         requireInteraction: false
                     });
