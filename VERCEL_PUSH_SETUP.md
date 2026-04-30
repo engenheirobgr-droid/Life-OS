@@ -12,6 +12,19 @@ Configure these Environment Variables in Vercel (Project -> Settings -> Environm
 - `FIREBASE_CLIENT_EMAIL`
 - `FIREBASE_PRIVATE_KEY` (with `\n` preserved)
 
+## GitHub Actions scheduler (used instead of Vercel Cron)
+
+Create these repository secrets in GitHub (`Settings -> Secrets and variables -> Actions`):
+
+- `LIFEOS_CRON_URL` = `https://<seu-deploy>.vercel.app/api/cron-habit-reminders`
+- `LIFEOS_CRON_SECRET` = same value used in Vercel `CRON_SECRET`
+
+Workflow file already included:
+
+- `.github/workflows/habit-reminders-cron.yml`
+
+It runs every 5 minutes and can be triggered manually in GitHub Actions (`Run workflow`).
+
 ## Generate VAPID keys
 
 Run once locally:
@@ -24,11 +37,7 @@ Use the generated `publicKey` and `privateKey` in Vercel env vars.
 
 ## Cron auth
 
-Vercel cron requests should include:
-
 `Authorization: Bearer <CRON_SECRET>`
-
-Use the same value in `CRON_SECRET`.
 
 ## Test endpoint
 
