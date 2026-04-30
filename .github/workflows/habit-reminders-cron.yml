@@ -11,15 +11,15 @@ jobs:
     steps:
       - name: Trigger Vercel reminder endpoint
         env:
-          CRON_URL: ${{ secrets.LIFEOS_CRON_URL }}
+          CRON_URL: https://life-os-mu-ashy.vercel.app/api/cron-habit-reminders
           CRON_SECRET: ${{ secrets.LIFEOS_CRON_SECRET }}
         run: |
-          if [ -z "$CRON_URL" ] || [ -z "$CRON_SECRET" ]; then
-            echo "Missing required secrets: LIFEOS_CRON_URL and/or LIFEOS_CRON_SECRET"
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing required secret: LIFEOS_CRON_SECRET"
             exit 1
           fi
 
           echo "Pinging $CRON_URL"
-          curl -sS -X GET "$CRON_URL" \
+          curl --fail-with-body -sS -X GET "$CRON_URL" \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "User-Agent: lifeos-github-cron/1.0"

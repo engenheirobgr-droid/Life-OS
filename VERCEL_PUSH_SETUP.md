@@ -16,7 +16,6 @@ Configure these Environment Variables in Vercel (Project -> Settings -> Environm
 
 Create these repository secrets in GitHub (`Settings -> Secrets and variables -> Actions`):
 
-- `LIFEOS_CRON_URL` = `https://<seu-deploy>.vercel.app/api/cron-habit-reminders`
 - `LIFEOS_CRON_SECRET` = same value used in Vercel `CRON_SECRET`
 
 Workflow file already included:
@@ -24,6 +23,11 @@ Workflow file already included:
 - `.github/workflows/habit-reminders-cron.yml`
 
 It runs every 5 minutes and can be triggered manually in GitHub Actions (`Run workflow`).
+The workflow uses the official production URL directly:
+
+- `https://life-os-mu-ashy.vercel.app/api/cron-habit-reminders`
+
+If this URL changes, update the workflow file. Do not point the scheduler to a temporary preview deployment URL.
 
 ## Generate VAPID keys
 
