@@ -2565,7 +2565,8 @@ const app = {
             if (!Number.isFinite(hh) || !Number.isFinite(mm)) return;
 
             const trigger = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hh, mm, 0, 0);
-            const reminderKey = `${habit.id}:${todayKey}`;
+            const reminderHHMM = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+            const reminderKey = `${habit.id}:${todayKey}:${reminderHHMM}`;
             const delay = trigger.getTime() - Date.now();
             const notify = () => {
                 if (sent[reminderKey]) return;
@@ -2615,7 +2616,7 @@ const app = {
                     if (nowMinutes == null || reminderMinutes == null) return;
                     const diff = nowMinutes - reminderMinutes;
                     if (diff < 0 || diff > 2) return; // tolera atraso de timer/background
-                    const reminderKey = `${habit.id}:${todayKey}`;
+                    const reminderKey = `${habit.id}:${todayKey}:${reminderHHMM}`;
                     if (sent[reminderKey]) return;
                     sent[reminderKey] = true;
                     try { localStorage.setItem('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
