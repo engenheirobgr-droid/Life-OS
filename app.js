@@ -2543,6 +2543,9 @@ const app = {
 
     checkAlerts: function() {
         const state = window.sistemaVidaState;
+        if (state?.settings?.notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+            Notification.requestPermission().catch(() => {});
+        }
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         
@@ -10493,11 +10496,15 @@ const app = {
                         `;
                     }
 
-                    // Week progress strip
+                    // Week progress strip (semana fixa: domingo -> sábado)
+                    const nowForWeek = new Date();
+                    const weekStart = new Date(nowForWeek);
+                    weekStart.setHours(0, 0, 0, 0);
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // domingo
                     let weekHtml = '<div class="flex gap-1 mt-3">';
-                    for (let i = 6; i >= 0; i--) {
-                        const d = new Date();
-                        d.setDate(d.getDate() - i);
+                    for (let i = 0; i < 7; i++) {
+                        const d = new Date(weekStart);
+                        d.setDate(weekStart.getDate() + i);
                         const ds = app.getLocalDateKey(d);
                         const val = logs[ds] || 0;
                         const dayStepMap = stepLogs[ds] || {};
@@ -10507,8 +10514,13 @@ const app = {
                             dDone = dCount === steps.length;
                         } else if (mode === 'boolean') dDone = val > 0;
                         else dDone = val >= target;
-                        
-                        weekHtml += `<div class="flex-1 h-1.5 rounded-full ${dDone ? 'bg-primary' : 'bg-surface-container-high'}" title="${ds}"></div>`;
+
+                        const isTodayBar = ds === todayStr;
+                        const isFutureBar = d > nowForWeek;
+                        let barClass = 'bg-surface-container-high';
+                        if (dDone) barClass = 'bg-primary';
+                        else if (isFutureBar) barClass = 'bg-surface-container-low';
+                        weekHtml += `<div class="flex-1 h-1.5 rounded-full ${barClass} ${isTodayBar ? 'ring-1 ring-primary/40' : ''}" title="${ds}"></div>`;
                     }
                     weekHtml += '</div>';
 
