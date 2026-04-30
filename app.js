@@ -2559,7 +2559,7 @@ const app = {
         state.habits.forEach(habit => {
             if (!habit || !habit.reminderEnabled || !habit.reminderTime) return;
             if (habit.frequency === 'specific' && Array.isArray(habit.specificDays) && habit.specificDays.length > 0 && !habit.specificDays.includes(dayIndex)) return;
-            const [hhRaw, mmRaw] = String(habit.reminderTime).split(':');
+            const [hhRaw, mmRaw] = String(habit.reminderTime).slice(0, 5).split(':');
             const hh = Number(hhRaw);
             const mm = Number(mmRaw);
             if (!Number.isFinite(hh) || !Number.isFinite(mm)) return;
@@ -2584,15 +2584,24 @@ const app = {
 
     startHabitReminderWatcher: function() {
         if (this._habitReminderWatcher) return;
+        const toMinutes = (hhmm) => {
+            const [h, m] = String(hhmm || '').slice(0, 5).split(':');
+            const hh = Number(h);
+            const mm = Number(m);
+            if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+            return hh * 60 + mm;
+        };
         this._habitReminderWatcher = setInterval(() => {
             try {
                 const state = window.sistemaVidaState;
                 if (!state?.settings?.notificationsEnabled) return;
+                if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
                 if (!Array.isArray(state.habits) || state.habits.length === 0) return;
                 const now = new Date();
                 const hh = String(now.getHours()).padStart(2, '0');
                 const mm = String(now.getMinutes()).padStart(2, '0');
                 const nowHHMM = `${hh}:${mm}`;
+                const nowMinutes = toMinutes(nowHHMM);
                 const dayIndex = String(now.getDay());
                 const todayKey = this.getLocalDateKey();
                 let sent = {};
@@ -2601,7 +2610,11 @@ const app = {
                 state.habits.forEach(habit => {
                     if (!habit || !habit.reminderEnabled || !habit.reminderTime) return;
                     if (habit.frequency === 'specific' && Array.isArray(habit.specificDays) && habit.specificDays.length > 0 && !habit.specificDays.includes(dayIndex)) return;
-                    if (String(habit.reminderTime).slice(0, 5) !== nowHHMM) return;
+                    const reminderHHMM = String(habit.reminderTime).slice(0, 5);
+                    const reminderMinutes = toMinutes(reminderHHMM);
+                    if (nowMinutes == null || reminderMinutes == null) return;
+                    const diff = nowMinutes - reminderMinutes;
+                    if (diff < 0 || diff > 2) return; // tolera atraso de timer/background
                     const reminderKey = `${habit.id}:${todayKey}`;
                     if (sent[reminderKey]) return;
                     sent[reminderKey] = true;

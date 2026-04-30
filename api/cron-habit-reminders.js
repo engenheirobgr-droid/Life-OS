@@ -25,6 +25,14 @@ function weekdayToIndex(weekdayShort) {
   return map[weekdayShort] || '0';
 }
 
+function hhmmToMinutes(hhmm) {
+  const [hhRaw, mmRaw] = String(hhmm || '').slice(0, 5).split(':');
+  const hh = Number(hhRaw);
+  const mm = Number(mmRaw);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+  return hh * 60 + mm;
+}
+
 module.exports = async function handler(req, res) {
   try {
     const authHeader = req.headers.authorization || '';
@@ -34,8 +42,10 @@ module.exports = async function handler(req, res) {
     }
     const db = getFirestoreAdmin();
     const tz = process.env.DEFAULT_TZ || 'America/Bahia';
+    const toleranceMin = Math.max(1, Number(process.env.CRON_TOLERANCE_MINUTES || 6));
     const now = nowInTimeZoneParts(tz);
     const todayDow = weekdayToIndex(now.weekdayShort);
+    const nowMinutes = hhmmToMinutes(now.hhmm);
 
     const stateRef = db.collection('users').doc('meu-sistema-vida');
     const stateSnap = await stateRef.get();
@@ -49,7 +59,10 @@ module.exports = async function handler(req, res) {
 
     const dueHabits = habits.filter((h) => {
       if (!h || !h.reminderEnabled || !h.reminderTime) return false;
-      if (String(h.reminderTime).slice(0, 5) !== now.hhmm) return false;
+      const reminderMinutes = hhmmToMinutes(h.reminderTime);
+      if (nowMinutes == null || reminderMinutes == null) return false;
+      const diff = nowMinutes - reminderMinutes;
+      if (diff < 0 || diff > toleranceMin) return false;
       if (h.frequency === 'specific' && Array.isArray(h.specificDays) && h.specificDays.length > 0) {
         return h.specificDays.map(String).includes(todayDow);
       }
