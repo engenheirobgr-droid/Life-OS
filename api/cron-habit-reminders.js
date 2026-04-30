@@ -33,6 +33,14 @@ function hhmmToMinutes(hhmm) {
   return hh * 60 + mm;
 }
 
+function normalizeHHMM(hhmm) {
+  const [hhRaw, mmRaw] = String(hhmm || '').slice(0, 5).split(':');
+  const hh = Number(hhRaw);
+  const mm = Number(mmRaw);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return '';
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
 module.exports = async function handler(req, res) {
   try {
     const authHeader = req.headers.authorization || '';
@@ -42,7 +50,7 @@ module.exports = async function handler(req, res) {
     }
     const db = getFirestoreAdmin();
     const tz = process.env.DEFAULT_TZ || 'America/Bahia';
-    const toleranceMin = Math.max(1, Number(process.env.CRON_TOLERANCE_MINUTES || 6));
+    const toleranceMin = Math.max(1, Number(process.env.CRON_TOLERANCE_MINUTES || 15));
     const now = nowInTimeZoneParts(tz);
     const todayDow = weekdayToIndex(now.weekdayShort);
     const nowMinutes = hhmmToMinutes(now.hhmm);
@@ -57,18 +65,19 @@ module.exports = async function handler(req, res) {
     const habits = Array.isArray(state.habits) ? state.habits : [];
     if (!habits.length) return res.status(200).json({ ok: true, sent: 0, reason: 'no_habits' });
 
-    const dueHabits = habits.filter((h) => {
-      if (!h || !h.reminderEnabled || !h.reminderTime) return false;
+    const dueItems = habits.map((h) => {
+      if (!h || !h.reminderEnabled || !h.reminderTime) return null;
       const reminderMinutes = hhmmToMinutes(h.reminderTime);
-      if (nowMinutes == null || reminderMinutes == null) return false;
+      const reminderHHMM = normalizeHHMM(h.reminderTime);
+      if (nowMinutes == null || reminderMinutes == null || !reminderHHMM) return null;
       const diff = nowMinutes - reminderMinutes;
-      if (diff < 0 || diff > toleranceMin) return false;
+      if (diff < 0 || diff > toleranceMin) return null;
       if (h.frequency === 'specific' && Array.isArray(h.specificDays) && h.specificDays.length > 0) {
-        return h.specificDays.map(String).includes(todayDow);
+        if (!h.specificDays.map(String).includes(todayDow)) return null;
       }
-      return true;
-    });
-    if (!dueHabits.length) return res.status(200).json({ ok: true, sent: 0, reason: 'no_due_habits' });
+      return { habit: h, reminderHHMM };
+    }).filter(Boolean);
+    if (!dueItems.length) return res.status(200).json({ ok: true, sent: 0, reason: 'no_due_habits', hhmm: now.hhmm, toleranceMin });
 
     const subsSnap = await stateRef.collection('push_subscriptions').get();
     if (subsSnap.empty) return res.status(200).json({ ok: true, sent: 0, reason: 'no_subscriptions' });
@@ -76,8 +85,9 @@ module.exports = async function handler(req, res) {
     let sent = 0;
     let removed = 0;
     const sentLogRef = stateRef.collection('push_logs');
-    for (const habit of dueHabits) {
-      const dedupeId = `${now.dateKey}_${habit.id || habit.title || 'habit'}_${now.hhmm}`.replace(/[^\w-]/g, '_');
+    for (const item of dueItems) {
+      const habit = item.habit;
+      const dedupeId = `${now.dateKey}_${habit.id || habit.title || 'habit'}_${item.reminderHHMM}`.replace(/[^\w-]/g, '_');
       const dedupeRef = sentLogRef.doc(dedupeId);
       const dedupeSnap = await dedupeRef.get();
       if (dedupeSnap.exists) continue;
@@ -105,13 +115,14 @@ module.exports = async function handler(req, res) {
       await dedupeRef.set({
         habitId: habit.id || '',
         title: habit.title || '',
-        hhmm: now.hhmm,
+        scheduledHHMM: item.reminderHHMM,
+        sentAtHHMM: now.hhmm,
         dateKey: now.dateKey,
         createdAt: Date.now()
       }, { merge: false });
     }
 
-    return res.status(200).json({ ok: true, sent, removed, dueHabits: dueHabits.length, hhmm: now.hhmm, dateKey: now.dateKey });
+    return res.status(200).json({ ok: true, sent, removed, dueHabits: dueItems.length, hhmm: now.hhmm, dateKey: now.dateKey, toleranceMin });
   } catch (error) {
     return res.status(500).json({ error: 'cron_habit_reminders_error', detail: String(error?.message || error) });
   }
