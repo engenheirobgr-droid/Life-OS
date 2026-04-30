@@ -880,8 +880,14 @@
         html.dark .lo-metric-low  { color: #f87171 !important; }
 
         /* ══════════════════════════════════════════════
-           THEME SWITCHER — header compact
+           THEME SWITCHER
         ══════════════════════════════════════════════ */
+        #header-theme-switcher {
+            position: fixed;
+            right: 16px;
+            bottom: 86px;
+            z-index: 200;
+        }
         .lo-theme-switcher {
             position: relative;
         }
@@ -923,19 +929,6 @@
         }
         .lo-theme-switcher .lo-ts-btn:hover { transform: scale(1.08); }
         .lo-theme-switcher .lo-ts-btn.active { box-shadow: 0 0 0 2px currentColor, 0 2px 8px rgba(2,8,23,0.2); }
-        .lo-theme-switcher.lo-theme-switcher--mini .lo-ts-toggle {
-            width: 24px;
-            height: 24px;
-            border-radius: 999px;
-            border-width: 1px;
-        }
-        .lo-theme-switcher.lo-theme-switcher--mini .lo-ts-toggle .material-symbols-outlined {
-            font-size: 14px !important;
-        }
-        .lo-theme-switcher.lo-theme-switcher--mini .lo-ts-dots {
-            right: -4px;
-            top: calc(100% + 6px);
-        }
     </style>
 
     <script>
@@ -961,12 +954,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             applyTheme(saved);
 
-            const mountSwitcher = (hostId, opts = {}) => {
+            const mountSwitcher = (hostId) => {
                 const host = document.getElementById(hostId);
                 if (!host) return;
-                const miniClass = opts.mini ? ' lo-theme-switcher--mini' : '';
                 host.innerHTML = `
-                    <div class="lo-theme-switcher${miniClass}" id="lo-theme-switcher-${hostId}">
+                    <div class="lo-theme-switcher" id="lo-theme-switcher-${hostId}">
                         <button class="lo-ts-toggle" title="Temas" type="button">
                             <span class="material-symbols-outlined notranslate" style="font-size:18px">palette</span>
                         </button>
@@ -989,7 +981,7 @@
                 }
             };
 
-            mountSwitcher('profile-theme-switcher', { mini: true });
+            mountSwitcher('header-theme-switcher');
             mountSwitcher('sidebar-theme-switcher');
 
             window.loSetTheme = function(t) {
@@ -1068,25 +1060,22 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <button class="h-10 px-3 rounded-full flex items-center justify-center gap-1.5 bg-primary/10 text-primary border border-primary/25 hover:bg-primary/15 transition-all"
+            <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-outline transition-colors"
                 onclick="app.openFlowModal()" title="Flow — Fluxo de trabalho">
-                <span class="material-symbols-outlined notranslate">account_tree</span>
-                <span class="text-[11px] font-bold uppercase tracking-wider">Flow</span>
+                <span class="material-symbols-outlined notranslate text-[20px]">account_tree</span>
             </button>
             <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-outline transition-colors"
                 onclick="app.flowNavigate('perfil','manual-guide-section')" title="Manual do app">
                 <span class="material-symbols-outlined notranslate text-[20px]">menu_book</span>
             </button>
-            <div class="relative">
-                <button class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hover:bg-surface-container"
+            <button class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hover:bg-surface-container"
                 onclick="app.navigate('perfil')">
                 <img id="profile-nav-avatar-mobile" alt="Foto de perfil" class="hidden w-full h-full object-cover rounded-full">
                 <span id="profile-nav-icon-mobile" class="material-symbols-outlined notranslate text-outline">account_circle</span>
-                </button>
-                <div id="profile-theme-switcher" class="absolute -left-2 bottom-0"></div>
-            </div>
+            </button>
         </div>
     </header>
+    <div id="header-theme-switcher"></div>
 
     <div class="flex flex-1 overflow-hidden lg:overflow-visible">
         <!-- Desktop Sidebar -->
