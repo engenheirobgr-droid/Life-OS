@@ -880,40 +880,49 @@
         html.dark .lo-metric-low  { color: #f87171 !important; }
 
         /* ══════════════════════════════════════════════
-           THEME SWITCHER — pill flutuante
+           THEME SWITCHER — header compact
         ══════════════════════════════════════════════ */
-        #lo-theme-switcher {
-            position: fixed;
-            bottom: 86px;
-            right: 16px;
-            z-index: 200;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            align-items: flex-end;
+        .lo-theme-switcher {
+            position: relative;
         }
-        #lo-theme-switcher .lo-ts-btn {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            border: 3px solid rgba(255,255,255,0.8);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.18);
-            cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
-        #lo-theme-switcher .lo-ts-btn:hover { transform: scale(1.12); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
-        #lo-theme-switcher .lo-ts-btn.active { border-color: white; box-shadow: 0 0 0 2px currentColor, 0 4px 16px rgba(0,0,0,0.20); transform: scale(1.08); }
-        #lo-ts-toggle {
-            width: 36px; height: 36px; border-radius: 50%;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.25);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        .lo-theme-switcher .lo-ts-toggle {
+            width: 40px; height: 40px;
+            border-radius: 999px;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; color: #555;
+            background: color-mix(in srgb, var(--tw-primary) 10%, transparent);
+            border: 1px solid color-mix(in srgb, var(--tw-primary) 28%, transparent);
+            color: var(--tw-primary);
+            transition: all 0.18s ease;
         }
-        html.dark #lo-ts-toggle { color: #ccc; background: rgba(0,0,0,0.30); }
-        #lo-theme-switcher .lo-ts-dots { display: none; flex-direction: column; gap: 8px; align-items: center; }
-        #lo-theme-switcher.open .lo-ts-dots { display: flex; }
+        .lo-theme-switcher .lo-ts-toggle:hover {
+            background: color-mix(in srgb, var(--tw-primary) 18%, transparent);
+            transform: translateY(-1px);
+        }
+        .lo-theme-switcher .lo-ts-dots {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 132px;
+            background: var(--tw-surface-container-lowest);
+            border: 1px solid rgba(148,163,184,0.18);
+            border-radius: 12px;
+            box-shadow: 0 10px 26px rgba(2,8,23,0.18);
+            padding: 8px;
+            display: none;
+            gap: 8px;
+            z-index: 55;
+        }
+        .lo-theme-switcher.open .lo-ts-dots { display: flex; }
+        .lo-theme-switcher .lo-ts-btn {
+            width: 32px; height: 32px;
+            border-radius: 999px;
+            border: 2px solid rgba(255,255,255,0.75);
+            box-shadow: 0 2px 8px rgba(2,8,23,0.2);
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .lo-theme-switcher .lo-ts-btn:hover { transform: scale(1.08); }
+        .lo-theme-switcher .lo-ts-btn.active { box-shadow: 0 0 0 2px currentColor, 0 2px 8px rgba(2,8,23,0.2); }
     </style>
 
     <script>
@@ -939,26 +948,46 @@
         document.addEventListener('DOMContentLoaded', function() {
             applyTheme(saved);
 
-            const sw = document.createElement('div');
-            sw.id = 'lo-theme-switcher';
-            sw.innerHTML = `
-                <button id="lo-ts-toggle" title="Temas" onclick="document.getElementById('lo-theme-switcher').classList.toggle('open')">
-                    <span class="material-symbols-outlined notranslate" style="font-size:18px">palette</span>
-                </button>
-                <div class="lo-ts-dots">
-                    ${Object.entries(THEMES).map(([k,v]) =>
-                        `<button class="lo-ts-btn" data-t="${k}" style="background:${v.color}" title="${v.label}" onclick="window.loSetTheme('${k}')"></button>`
-                    ).join('')}
-                </div>`;
-            document.body.appendChild(sw);
+            const mountSwitcher = (hostId) => {
+                const host = document.getElementById(hostId);
+                if (!host) return;
+                host.innerHTML = `
+                    <div class="lo-theme-switcher" id="lo-theme-switcher-${hostId}">
+                        <button class="lo-ts-toggle" title="Temas" type="button">
+                            <span class="material-symbols-outlined notranslate" style="font-size:18px">palette</span>
+                        </button>
+                        <div class="lo-ts-dots">
+                            ${Object.entries(THEMES).map(([k,v]) =>
+                                `<button class="lo-ts-btn" data-t="${k}" style="background:${v.color}" title="${v.label}" type="button" onclick="window.loSetTheme('${k}')"></button>`
+                            ).join('')}
+                        </div>
+                    </div>`;
+                const switcher = host.querySelector('.lo-theme-switcher');
+                const toggle = host.querySelector('.lo-ts-toggle');
+                if (toggle && switcher) {
+                    toggle.addEventListener('click', (ev) => {
+                        ev.stopPropagation();
+                        document.querySelectorAll('.lo-theme-switcher.open').forEach(el => {
+                            if (el !== switcher) el.classList.remove('open');
+                        });
+                        switcher.classList.toggle('open');
+                    });
+                }
+            };
+
+            mountSwitcher('header-theme-switcher');
+            mountSwitcher('sidebar-theme-switcher');
 
             window.loSetTheme = function(t) {
                 applyTheme(t);
-                document.getElementById('lo-theme-switcher').classList.remove('open');
+                document.querySelectorAll('.lo-theme-switcher.open').forEach(el => el.classList.remove('open'));
             };
 
             document.querySelectorAll('.lo-ts-btn').forEach(b => {
                 b.classList.toggle('active', b.dataset.t === saved);
+            });
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.lo-theme-switcher.open').forEach(el => el.classList.remove('open'));
             });
         });
     })();
@@ -1024,11 +1053,13 @@
                 </div>
             </div>
         </div>
-        <div class="flex items-center gap-1">
-            <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-outline transition-colors"
+        <div class="flex items-center gap-2">
+            <button class="h-10 px-3 rounded-full flex items-center justify-center gap-1.5 bg-primary/10 text-primary border border-primary/25 hover:bg-primary/15 transition-all"
                 onclick="app.openFlowModal()" title="Flow — Fluxo de trabalho">
                 <span class="material-symbols-outlined notranslate">account_tree</span>
+                <span class="text-[11px] font-bold uppercase tracking-wider">Flow</span>
             </button>
+            <div id="header-theme-switcher"></div>
             <button class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hover:bg-surface-container"
                 onclick="app.navigate('perfil')">
                 <img id="profile-nav-avatar-mobile" alt="Foto de perfil" class="hidden w-full h-full object-cover rounded-full">
@@ -1100,11 +1131,14 @@
                 </button>
             </nav>
 
-            <button class="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium mt-4"
+            <div class="mt-4 px-4 flex items-center justify-between">
+                <button class="h-10 px-3 rounded-full flex items-center gap-1.5 bg-primary/10 text-primary border border-primary/25 hover:bg-primary/15 transition-all font-bold text-xs uppercase tracking-wider"
                 onclick="app.openFlowModal()">
                 <span class="material-symbols-outlined notranslate">account_tree</span>
                 Flow
-            </button>
+                </button>
+                <div id="sidebar-theme-switcher"></div>
+            </div>
 
             <div class="mt-auto pt-6 border-t border-outline-variant/20">
                 <button data-view="perfil"
@@ -1499,6 +1533,20 @@
                                 <option value="6">Sábado</option>
                             </select>
                             <p class="text-[10px] text-outline">Segure Ctrl (ou Cmd) para selecionar vários.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-start-time"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Horário de início</label>
+                            <input type="time" id="habit-start-time"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                        </div>
+                        <div class="flex items-end">
+                            <label class="h-12 w-full px-4 rounded-lg border border-outline-variant/20 bg-surface-container-low flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" id="habit-reminder-enabled" class="accent-primary">
+                                <span class="text-xs font-label uppercase tracking-widest text-on-surface font-bold">Lembrete no celular</span>
+                            </label>
                         </div>
                     </div>
 

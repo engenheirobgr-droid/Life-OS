@@ -1298,6 +1298,8 @@ const app = {
         window.sistemaVidaState.settings.notificationsEnabled = enabled;
         try { localStorage.setItem('lifeos_notif_enabled', enabled ? '1' : '0'); } catch (_) {}
         this.saveState(true);
+        if (enabled) this.scheduleHabitReminders();
+        else if (this._habitReminderTimers) this._habitReminderTimers.forEach(timerId => clearTimeout(timerId));
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
         this.showToast(enabled ? 'Notificações diárias ativadas.' : 'Notificações diárias desativadas.', 'success');
     },
@@ -1806,7 +1808,7 @@ const app = {
             ) +
             section('Ritmo Semanal', 'date_range',
                 row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '', s.weekPlanDone, 'planos', 'tab-semanal', 'semanal') +
-                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'planos', 'tab-semanal', 'semanal')
+                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'planos', 'weekly-plan-primary-action', 'semanal')
             ) +
             section('Ritmo Mensal', 'calendar_month',
                 row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section') +
@@ -2453,6 +2455,47 @@ const app = {
         }
     },
 
+    scheduleHabitReminders: function() {
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+        const state = window.sistemaVidaState;
+        if (!state.settings?.notificationsEnabled) return;
+        if (!Array.isArray(state.habits)) return;
+        if (!this._habitReminderTimers) this._habitReminderTimers = [];
+        this._habitReminderTimers.forEach(timerId => clearTimeout(timerId));
+        this._habitReminderTimers = [];
+
+        const today = new Date();
+        const todayKey = this.getLocalDateKey();
+        const dayIndex = String(today.getDay());
+        let sent = {};
+        try { sent = JSON.parse(localStorage.getItem('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
+
+        state.habits.forEach(habit => {
+            if (!habit || !habit.reminderEnabled || !habit.reminderTime) return;
+            if (habit.frequency === 'specific' && Array.isArray(habit.specificDays) && habit.specificDays.length > 0 && !habit.specificDays.includes(dayIndex)) return;
+            const [hhRaw, mmRaw] = String(habit.reminderTime).split(':');
+            const hh = Number(hhRaw);
+            const mm = Number(mmRaw);
+            if (!Number.isFinite(hh) || !Number.isFinite(mm)) return;
+
+            const trigger = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hh, mm, 0, 0);
+            const reminderKey = `${habit.id}:${todayKey}`;
+            const delay = trigger.getTime() - Date.now();
+            const notify = () => {
+                if (sent[reminderKey]) return;
+                sent[reminderKey] = true;
+                try { localStorage.setItem('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
+                this.showNotification(`Lembrete de hábito: ${habit.title}`);
+            };
+
+            if (delay > 0) {
+                this._habitReminderTimers.push(setTimeout(notify, delay));
+            } else if (delay > -90 * 60 * 1000) {
+                notify();
+            }
+        });
+    },
+
     proposito: function() {
         const state = window.sistemaVidaState;
         
@@ -2499,6 +2542,7 @@ const app = {
         }
         // Agenda notificações locais do SO (apenas se permissão concedida)
         setTimeout(() => this.scheduleLocalNotifications(), 5000);
+        setTimeout(() => this.scheduleHabitReminders(), 5200);
 
         const diffDaysCycle = Math.floor((today - new Date(state.cycleStartDate)) / (1000 * 60 * 60 * 24));
         if (diffDaysCycle >= 84) setTimeout(() => this.showNotification("🔄 Ciclo concluído! Reavalie a Roda da Vida e o PERMA na aba Propósito."), 4000);
@@ -6209,6 +6253,14 @@ const app = {
         list.unshift(entry);
         window.sistemaVidaState.profile.dailyCheckins = list.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 180);
         window.sistemaVidaState.energy = entry.energy;
+        const focoInput = document.getElementById('diario-foco');
+        if (focoInput) {
+            if (!window.sistemaVidaState.dailyLogs) window.sistemaVidaState.dailyLogs = {};
+            window.sistemaVidaState.dailyLogs[today] = {
+                ...window.sistemaVidaState.dailyLogs[today],
+                focus: focoInput.value.trim()
+            };
+        }
         this.markCadence('checkin', today);
         const checkinAward = this.awardGamification('daily_checkin', { key: `daily_checkin:${today}`, date: today });
         this.saveState(true);
@@ -8586,6 +8638,9 @@ const app = {
             obj.trackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
             obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
             obj.frequency = document.getElementById('habit-frequency') ? document.getElementById('habit-frequency').value : 'daily';
+            obj.startTime = document.getElementById('habit-start-time') ? document.getElementById('habit-start-time').value : '';
+            obj.reminderEnabled = !!(document.getElementById('habit-reminder-enabled') && document.getElementById('habit-reminder-enabled').checked);
+            obj.reminderTime = obj.startTime || '';
             const daysSelect = document.getElementById('habit-days');
             if (daysSelect && obj.frequency === 'specific') {
                 obj.specificDays = Array.from(daysSelect.selectedOptions).map(o => o.value);
@@ -8651,6 +8706,7 @@ const app = {
         if (type === 'habits') {
             this.syncIdentityLinkedHabits();
             this.evaluateIdentityAchievements();
+            this.scheduleHabitReminders();
         }
         this.closeModal();
         this.saveState(false); // Feedback ativo para criação/edição manual
@@ -10483,6 +10539,7 @@ const app = {
                                     ${app.renderHabitIdentityChip(habit)}
                                     ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight truncate">Gatilho: ${habit.trigger}</p>` : ''}
                                     ${habit.routine ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Rotina: ${habit.routine}</p>` : ''}
+                                    ${habit.startTime ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Horário: ${habit.startTime}${habit.reminderEnabled ? ' · Lembrete ativo' : ''}</p>` : ''}
                                     ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight truncate">Recompensa: ${habit.reward}</p>` : ''}
                                 </div>
                                 ${progressText ? `<span class="text-xs font-bold text-primary shrink-0">${progressText}</span>` : ''}
@@ -12191,6 +12248,8 @@ const app = {
             if (document.getElementById('habit-track-mode')) document.getElementById('habit-track-mode').value = item.trackMode || 'boolean';
             if (document.getElementById('habit-target')) document.getElementById('habit-target').value = item.targetValue || 1;
             if (document.getElementById('habit-frequency')) document.getElementById('habit-frequency').value = item.frequency || 'daily';
+            if (document.getElementById('habit-start-time')) document.getElementById('habit-start-time').value = item.startTime || item.reminderTime || '';
+            if (document.getElementById('habit-reminder-enabled')) document.getElementById('habit-reminder-enabled').checked = !!item.reminderEnabled;
             if (document.getElementById('habit-days') && item.specificDays) {
                 Array.from(document.getElementById('habit-days').options).forEach(opt => {
                     opt.selected = item.specificDays.includes(opt.value);
