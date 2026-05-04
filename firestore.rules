@@ -9,19 +9,15 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
-    function legacyMigrationDoc(userId) {
-      return signedIn() && (userId == 'meu-sistema-vida' || userId == 'meu-sistema-vida-images');
-    }
-
     match /users/{userId} {
-      allow read, write: if owns(userId) || legacyMigrationDoc(userId);
+      allow read, write: if owns(userId);
 
       match /push_subscriptions/{subscriptionId} {
-        allow read, write: if owns(userId) || legacyMigrationDoc(userId);
+        allow read, write: if owns(userId);
       }
 
       match /push_logs/{logId} {
-        allow read: if owns(userId) || legacyMigrationDoc(userId);
+        allow read: if owns(userId);
         allow write: if false;
       }
     }

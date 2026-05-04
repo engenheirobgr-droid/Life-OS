@@ -21,8 +21,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const auth = getAuth(firebaseApp);
 const storage = getStorage(firebaseApp);
-const LEGACY_USER_DOC_ID = 'meu-sistema-vida';
-const LEGACY_IMAGES_DOC_ID = 'meu-sistema-vida-images';
+const LOCAL_USER_SCOPE = 'guest';
 // getAuthReady() cria uma Promise fresca a cada chamada.
 // Isso evita que uma falha de auth transitória (ex: rede lenta na abertura do app)
 // deixe o authReady permanentemente rejeitado, bloqueando todos os saves futuros.
@@ -116,7 +115,7 @@ const app = {
     },
     webPushPublicKey: null,
     getActiveUserId: function(user = auth.currentUser) {
-        return user?.uid || LEGACY_USER_DOC_ID;
+        return user?.uid || LOCAL_USER_SCOPE;
     },
     isRealAccount: function(user = auth.currentUser) {
         return !!(user && !user.isAnonymous);
@@ -127,31 +126,16 @@ const app = {
     getImagesDocRef: function(userId = this.getActiveUserId()) {
         return doc(db, 'user_images', userId);
     },
-    getLegacyStateDocRef: function() {
-        return doc(db, 'users', LEGACY_USER_DOC_ID);
-    },
-    getLegacyImagesDocRef: function() {
-        return doc(db, 'users', LEGACY_IMAGES_DOC_ID);
-    },
     getPushSubscriptionDocRef: function(docId, userId = this.getActiveUserId()) {
         return doc(db, 'users', userId, 'push_subscriptions', docId);
     },
-    shouldUseLegacyFallback: function(userId, localData) {
-        if (!userId || userId === LEGACY_USER_DOC_ID) return false;
-        if (!localData) return false;
-        return localStorage.getItem('lifeos_legacy_local_claimed') !== userId;
-    },
     getLocalKey: function(baseKey) {
         const uid = this.getActiveUserId();
-        return `${baseKey}:${uid || LEGACY_USER_DOC_ID}`;
+        return `${baseKey}:${uid || LOCAL_USER_SCOPE}`;
     },
     localGet: function(baseKey) {
         try {
-            const scoped = localStorage.getItem(this.getLocalKey(baseKey));
-            if (scoped !== null) return scoped;
-            if (!localStorage.getItem('lifeos_legacy_local_claimed')) {
-                return localStorage.getItem(baseKey);
-            }
+            return localStorage.getItem(this.getLocalKey(baseKey));
         } catch (_) {}
         return null;
     },
@@ -161,13 +145,6 @@ const app = {
     localRemove: function(baseKey) {
         try { localStorage.removeItem(this.getLocalKey(baseKey)); } catch (_) {}
         try { localStorage.removeItem(baseKey); } catch (_) {}
-    },
-    markLegacyLocalClaimed: function() {
-        try {
-            if (!localStorage.getItem('lifeos_legacy_local_claimed')) {
-                localStorage.setItem('lifeos_legacy_local_claimed', this.getActiveUserId());
-            }
-        } catch (_) {}
     },
     getLocalDateKey: function(date = new Date()) {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -185,7 +162,6 @@ const app = {
             const completed = !!window.sistemaVidaState?.onboardingComplete;
             this.localSet('lifeos_onboarding_complete', completed ? '1' : '0');
         } catch (_) {}
-        this.markLegacyLocalClaimed();
     },
     updateSyncBadge: function(state) {
         // state: 'ok' | 'error' | 'syncing' | 'offline'
@@ -1790,12 +1766,6 @@ const app = {
             updatedAt: Date.now(),
             createdAt: Date.now()
         }, { merge: true });
-        if (this.getActiveUserId() !== LEGACY_USER_DOC_ID) {
-            try {
-                const legacyRef = doc(db, 'users', LEGACY_USER_DOC_ID, 'push_subscriptions', docId);
-                await deleteDoc(legacyRef);
-            } catch (_) {}
-        }
         return true;
     },
     unregisterPushSubscription: async function() {
@@ -2572,7 +2542,7 @@ const app = {
         const snapshot = JSON.parse(JSON.stringify(raw));
         if (mode === 'cloud') {
             if (snapshot.profile) {
-                // Images are stored in a separate Firestore document (meu-sistema-vida-images).
+                // Images are stored in a separate Firestore document.
                 // Always strip them from the main state document to keep it slim.
                 delete snapshot.profile.avatarUrl;
                 delete snapshot.profile.odysseyImages;
@@ -2698,22 +2668,8 @@ const app = {
                 console.log("Estado encontrado na Nuvem, mesclando dados...");
                 cloudData = docSnap.data();
             } else {
-                if (this.shouldUseLegacyFallback(activeUserId, localData)) {
-                    try {
-                        const legacySnap = await this.withTimeout(getDoc(this.getLegacyStateDocRef()), 8000, 'firestore_getLegacyDoc');
-                        if (legacySnap.exists()) {
-                            console.log('[SYNC] Documento legado encontrado para migração controlada.');
-                            cloudData = legacySnap.data();
-                            shouldSeedCloudAfterLoad = true;
-                        }
-                    } catch (legacyErr) {
-                        console.warn('[SYNC] Falha ao consultar documento legado:', legacyErr);
-                    }
-                }
-                if (!cloudData) {
-                    console.log("Primeiro acesso deste usuário. Documento será criado após normalização.");
-                    shouldSeedCloudAfterLoad = true;
-                }
+                console.log("Primeiro acesso deste usuário. Documento será criado após normalização.");
+                shouldSeedCloudAfterLoad = true;
             }
         } catch (error) {
             console.error("Erro ao carregar o estado do Firestore:", error);
@@ -2770,14 +2726,6 @@ const app = {
             const activeUserId = this.getActiveUserId();
             const imagesRef = this.getImagesDocRef(activeUserId);
             let imagesSnap = await this.withTimeout(getDoc(imagesRef), 8000, 'firestore_getImages');
-            if (!imagesSnap.exists() && this.shouldUseLegacyFallback(activeUserId, localData)) {
-                try {
-                    const legacyImagesSnap = await this.withTimeout(getDoc(this.getLegacyImagesDocRef()), 8000, 'firestore_getLegacyImages');
-                    if (legacyImagesSnap.exists()) imagesSnap = legacyImagesSnap;
-                } catch (legacyImgErr) {
-                    console.warn('[Images] Falha ao consultar imagens legadas:', legacyImgErr);
-                }
-            }
             if (imagesSnap.exists()) {
                 const imgData = imagesSnap.data();
                 if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
@@ -9968,15 +9916,15 @@ const app = {
         if (bar) bar.style.width = `${progress}%`;
         
         const indicator = document.getElementById('onboarding-step-indicator');
-        if (indicator) indicator.textContent = `${step + 1}/6`;
+        if (indicator) indicator.textContent = `${step + 1}/${steps.length}`;
 
         // Renderização especial do resumo
-        if (step === 5) {
+        if (step === steps.length - 1) {
             const state = window.sistemaVidaState;
             const nameEl = document.getElementById('conclusao-nome');
             const valuesEl = document.getElementById('conclusao-valores');
-            if (nameEl) nameEl.textContent = state.profile.name;
-            if (valuesEl) valuesEl.textContent = (state.profile.values || []).join(', ');
+            if (nameEl) nameEl.textContent = state.profile.name || 'Viajante';
+            if (valuesEl) valuesEl.textContent = (state.profile.values || []).join(', ') || 'seus valores';
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -10087,7 +10035,8 @@ const app = {
 
     onboardingNext: function() {
         this.onboardingSaveCurrentStep();
-        if (this.onboardingStep < 5) {
+        const total = document.querySelectorAll('.onboarding-step').length;
+        if (this.onboardingStep < total - 1) {
             this.onboardingGoTo(this.onboardingStep + 1);
         }
     },
@@ -10103,6 +10052,9 @@ const app = {
         window.sistemaVidaState.onboardingComplete = true;
         this.saveState();
         this.navigate('hoje');
+        setTimeout(() => {
+            this.showToast('Onboarding concluido. Manual e Flow ficam sempre no cabecalho/perfil.', 'success');
+        }, 400);
     },
 
     onboardingUpdateSlider: function(dim, val) {

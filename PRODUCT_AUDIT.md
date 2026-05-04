@@ -8,13 +8,13 @@ O app evoluiu bastante como PWA pessoal: tem planejamento, check-in, diario, pro
 
 1. Usuarios e privacidade
    - Antes desta fase, todos os dados eram gravados no mesmo documento `users/meu-sistema-vida`.
-   - A nova base usa documentos por usuario, mas ainda mantem leitura do legado para migracao controlada.
-   - Proximo passo: remover o acesso legado quando os dados do Bruno estiverem migrados.
+   - A nova base usa documentos por usuario e o acesso legado foi removido apos a migracao dos dados do Bruno.
+   - Proximo passo: testar duas contas reais no mesmo navegador e em dispositivos diferentes.
 
 2. Regras de seguranca
    - As regras antigas permitiam qualquer usuario autenticado ler/escrever tudo.
-   - As regras agora restringem documentos por `auth.uid`, com excecao temporaria para migracao.
-   - Proximo passo: publicar regras no Firebase e testar com duas contas.
+   - As regras agora restringem documentos por `auth.uid`, sem excecao para documento legado.
+   - Proximo passo: manter as regras publicadas no Firebase sempre alinhadas ao repositorio.
 
 3. Sincronizacao e conflitos
    - O app usa um estado grande e quase monolitico no Firestore.
@@ -32,8 +32,8 @@ O app evoluiu bastante como PWA pessoal: tem planejamento, check-in, diario, pro
    - Proximo passo: criar uma central de notificacoes com categorias, prioridade, historico e preferencias.
 
 6. Produto e onboarding
-   - O app ja tem onboarding funcional, mas ainda nao diferencia bem "primeiro uso" de "usuario voltando".
-   - Proximo passo: onboarding adaptativo, com checklist inicial e importacao/migracao guiada.
+   - O onboarding agora apresenta Manual e Flow ao usuario inicial.
+   - Proximo passo: criar um checklist pos-onboarding para guiar as primeiras 24 horas de uso.
 
 7. Manutencao
    - `app.js` esta grande demais.
@@ -47,8 +47,8 @@ O app evoluiu bastante como PWA pessoal: tem planejamento, check-in, diario, pro
 
 Prioridade de produto:
 
-1. Finalizar usuarios reais e testar duas contas.
-2. Remover dependencia do documento legado.
+1. Testar duas contas reais com dados isolados.
+2. Criar checklist pos-onboarding.
 3. Separar imagens para Storage.
 4. Modularizar `app.js`.
 5. Criar central de notificacoes.
