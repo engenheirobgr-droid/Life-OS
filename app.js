@@ -1389,6 +1389,7 @@ const app = {
         this.normalizeSwlsState();
         this.normalizeDailyLogsState();
         this.normalizeDeepWorkState();
+        this.ensureCadenceState();
         this.ensureGamificationState();
         this.syncIdentityLinkedHabits();
     },
@@ -1976,7 +1977,7 @@ const app = {
             cycleReviewCurrent: cycleAgeDays < 84,
             okrsExist: (state.entities.okrs || []).length > 0,
             odysseyFilled: cadenceOk('odyssey'),
-            purposeFilled: !!(state.profile?.legacy || state.profile?.vision || state.profile?.ikigai),
+            purposeFilled: cadenceOk('purpose'),
             metasExist: (state.entities.metas || []).length > 0,
         };
     },
@@ -1986,13 +1987,17 @@ const app = {
         if (!el) return;
         const s = this._getFlowState();
 
-        const row = (icon, title, subtitle, xpLabel, done, view, sectionId = '', tabId = '') => {
+        const row = (icon, title, subtitle, xpLabel, done, view, sectionId = '', tabId = '', cadenceKey = '') => {
             const bg = done
                 ? 'bg-emerald-500/[0.06] border border-emerald-500/20'
                 : 'bg-surface-container-low border border-outline-variant/15';
             const checkIcon = done ? 'check_circle' : 'radio_button_unchecked';
             const checkColor = done ? 'text-emerald-500' : 'text-outline-variant/60';
             const checkFill = done ? "font-variation-settings:'FILL' 1;" : '';
+            const cadenceConfig = cadenceKey ? this.getCadenceConfig()[cadenceKey] : null;
+            const cadenceMeta = cadenceConfig
+                ? `<p class="text-[10px] text-outline mt-1 leading-snug">Frequência: ${this.escapeHtml(this.getCadenceFrequencyLabel(cadenceConfig.expectedDays))}</p>`
+                : '';
             const xpEl = xpLabel
                 ? `<span class="shrink-0 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md leading-none">${xpLabel}</span>`
                 : `<span class="shrink-0 text-[9px] font-bold uppercase tracking-wider text-outline bg-surface-container-highest border border-outline-variant/20 px-1.5 py-0.5 rounded-md leading-none">ritual</span>`;
@@ -2006,6 +2011,7 @@ const app = {
                         ${xpEl}
                     </div>
                     <p class="text-[11px] text-outline mt-0.5 leading-snug">${subtitle}</p>
+                    ${cadenceMeta}
                 </div>
                 <button onclick="window.app.flowNavigate('${view}','${sectionId}','${tabId}');"
                     class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-highest text-outline hover:text-primary transition-colors">
@@ -2033,34 +2039,34 @@ const app = {
         el.innerHTML =
             section('Rotina Diária', 'today',
                 sub('Manhã', 'wb_sunny') +
-                row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'daily-checkin-panel') +
+                row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'daily-checkin-panel', '', 'checkin') +
                 row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '+5 XP', s.intentionDone, 'hoje', 'daily-checkin-panel') +
                 sub('Ao longo do dia', 'light_mode') +
                 row('task_alt', 'Executar micros', 'Avançar ao menos uma micro ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
                 row('repeat', 'Registrar hábitos', 'Marcar os hábitos concluídos no dia', '+6–10 XP', s.habitsDoneToday, 'hoje', 'hoje-habits-section') +
                 row('timer', 'Sessão de foco', 'Bloco de deep work com Pomodoro (90/20)', '+10–40 XP', s.focusToday, 'foco', 'deep-work-panel') +
                 sub('Noite', 'nightlight') +
-                row('auto_stories', 'Diário & Gratidão', 'Reflexão do dia e três coisas pelas quais é grato', '+8 XP', s.diaryDone, 'hoje', 'hoje-diario-section') +
-                row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '+8 XP', s.shutdownDone, 'hoje', 'hoje-diario-section')
+                row('auto_stories', 'Diário & Gratidão', 'Reflexão do dia e três coisas pelas quais é grato', '+8 XP', s.diaryDone, 'hoje', 'hoje-diario-section', '', 'diary') +
+                row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '+8 XP', s.shutdownDone, 'hoje', 'hoje-diario-section', '', 'diary')
             ) +
             section('Ritmo Semanal', 'date_range',
-                row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '+15 XP', s.weekPlanDone, 'planos', 'tab-semanal', 'semanal') +
-                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'planos', 'weekly-plan-primary-action', 'semanal')
+                row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '+15 XP', s.weekPlanDone, 'planos', 'tab-semanal', 'semanal', 'weeklyPlan') +
+                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'planos', 'weekly-plan-primary-action', 'semanal', 'weeklyReview')
             ) +
             section('Ritmo Mensal', 'calendar_month',
-                row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section') +
-                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito', 'perma-section') +
+                row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section', '', 'wheel') +
+                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito', 'perma-section', '', 'perma') +
                 row('account_tree', 'Revisar Macros', 'Avaliar iniciativas mensais em andamento e criar novas', '', s.macrosThisMonth, 'planos', '', 'macro')
             ) +
             section('Ritmo Trimestral', 'event_repeat',
                 row('track_changes', 'OKRs', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos', '', 'okrs') +
                 row('fact_check', 'Revisão de ciclo', 'Fechar o ciclo de 12 semanas e decidir o destino dos OKRs ativos', '', s.cycleReviewCurrent, 'planos', 'tab-ciclo', 'ciclo') +
-                row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'proposito', 'swls-section')
+                row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'proposito', 'swls-section', '', 'swls')
             ) +
             section('Horizonte Vital', 'auto_awesome',
                 row('flag', 'Metas de vida', 'Metas de 1 a 5 anos alinhadas ao propósito de vida', '', s.metasExist, 'planos', '', 'metas') +
-                row('explore', 'Odyssey Plan', 'Três cenários possíveis para os próximos 5 anos da sua vida', '', s.odysseyFilled, 'proposito', 'odyssey-section') +
-                row('self_improvement', 'Visão, Legado & Ikigai', 'O que você quer deixar, ser e fazer no mundo', '', s.purposeFilled, 'proposito', 'proposito-ikigai-section')
+                row('explore', 'Odyssey Plan', 'Três cenários possíveis para os próximos 5 anos da sua vida', '', s.odysseyFilled, 'proposito', 'odyssey-section', '', 'odyssey') +
+                row('self_improvement', 'Visão, Legado & Ikigai', 'O que você quer deixar, ser e fazer no mundo', '', s.purposeFilled, 'proposito', 'proposito-ikigai-section', '', 'purpose')
             );
     },
 
@@ -3510,6 +3516,10 @@ const app = {
             await this.withTimeout(this.loadState(), 12000, 'loadState');
         } catch (err) {
             console.warn('Falha/timeout no carregamento da nuvem. Iniciando com backup local.', err);
+        }
+        if (this._cadenceNeedsMigrationSave) {
+            this._cadenceNeedsMigrationSave = false;
+            try { await this.saveState(true); } catch (err) { console.warn('[Cadence] Falha ao persistir migração de propósito:', err); }
         }
         if (!this._localFlushBound) {
             this._localFlushBound = true;
@@ -5612,6 +5622,9 @@ const app = {
                 window.sistemaVidaState.profile[this.currentTextGroup] = {};
             }
             window.sistemaVidaState.profile[this.currentTextGroup][this.currentTextKey] = val;
+            if (['ikigai', 'legacyObj', 'vision'].includes(this.currentTextGroup)) {
+                this.markCadence('purpose');
+            }
             this.saveState(true);
             this.closeTextModal();
             if (this.currentView === 'proposito' && this.render.proposito) {
@@ -5923,6 +5936,52 @@ const app = {
                 profile.cadence[key].lastAt = String(profile.cadence[key].lastAt);
             }
         });
+        if (!profile.cadence.purpose?.lastAt && this.hasPurposeContent()) {
+            const fallbackLastAt = profile.cadence.odyssey?.lastAt || this.getLocalDateKey();
+            profile.cadence.purpose = {
+                ...(profile.cadence.purpose || {}),
+                lastAt: fallbackLastAt,
+                updatedAt: new Date().toISOString(),
+                migratedFromContent: true
+            };
+            this._cadenceNeedsMigrationSave = true;
+        }
+    },
+
+    hasPurposeContent: function() {
+        const profile = window.sistemaVidaState.profile || {};
+        const ikigai = profile.ikigai || {};
+        const legacyObj = profile.legacyObj || {};
+        const vision = profile.vision || {};
+        const fields = [
+            profile.legacy,
+            profile.purpose,
+            ikigai.missao,
+            ikigai.vocacao,
+            ikigai.love,
+            ikigai.good,
+            ikigai.need,
+            ikigai.paid,
+            ikigai.sintese,
+            legacyObj.familia,
+            legacyObj.profissao,
+            legacyObj.mundo,
+            vision.saude,
+            vision.carreira,
+            vision.intelecto,
+            vision.quote
+        ];
+        return fields.some((value) => typeof value === 'string' ? value.trim() !== '' : Boolean(value));
+    },
+
+    getCadenceFrequencyLabel: function(expectedDays) {
+        const safeDays = Math.max(0, Number(expectedDays) || 0);
+        if (safeDays <= 1) return 'Diário';
+        if (safeDays === 7) return 'Semanal';
+        if (safeDays === 30) return 'Mensal';
+        if (safeDays === 90) return 'Trimestral';
+        if (safeDays === 180) return 'Semestral';
+        return `${safeDays} dias`;
     },
 
     ensureNotesState: function() {
@@ -6422,7 +6481,8 @@ const app = {
             wheel: { label: 'Roda da Vida', expectedDays: 30, icon: 'pie_chart', why: 'Termômetro mensal das áreas.' },
             perma: { label: 'PERMA', expectedDays: 30, icon: 'psychology', why: 'Florescimento mensal.' },
             swls: { label: 'SWLS', expectedDays: 90, icon: 'monitoring', why: 'Satisfação global trimestral.' },
-            odyssey: { label: 'Odyssey / Visão', expectedDays: 180, icon: 'explore', why: 'Revisão semestral dos cenários.' }
+            odyssey: { label: 'Odyssey Plan', expectedDays: 180, icon: 'explore', why: 'Revisão semestral dos cenários de vida.' },
+            purpose: { label: 'Visão, Legado & Ikigai', expectedDays: 180, icon: 'self_improvement', why: 'Revisão semestral do norte existencial e do legado desejado.' }
         };
     },
 
@@ -6498,7 +6558,7 @@ const app = {
         const keys = Object.keys(this.getCadenceConfig());
         container.innerHTML = keys.map(key => {
             const status = this.getCadenceStatus(key);
-            const freq = status.expectedFreq === 1 ? 'Diário' : `${status.expectedFreq} dias`;
+            const freq = this.getCadenceFrequencyLabel(status.expectedFreq);
             return `
             <div class="flex items-start justify-between gap-4 rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
                 <div class="min-w-0">
@@ -8278,6 +8338,17 @@ const app = {
         habits: [],
         reviews: {},
         weekPlans: {},
+        gamification: {
+          totalXp: 0,
+          dimensionXp: {},
+          achievements: [],
+          events: {},
+          recentEvents: []
+        },
+        settings: {
+          notificationsEnabled: false,
+          theme: 'auto'
+        },
         onboardingComplete: false
       };
     
@@ -8430,6 +8501,15 @@ const app = {
         // ── Apaga backups locais para evitar que estado antigo sobreponha o reset ─
         try { localStorage.removeItem('lifeos_state_backup'); } catch (_) {}
         try { localStorage.removeItem('lifeos_state_backup_core'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_daily_checkins_backup'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_notes_backup'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_habit_reminders_sent'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_splash_log'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_last_splash'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_odyssey_splash_log'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_odyssey_splash_last'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_theme_pref'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_notif_enabled'); } catch (_) {}
         // ── Se for reset total (sem mockup), força onboarding na próxima carga ─
         if (!useMockup) {
           try { localStorage.setItem('lifeos_onboarding_complete', '0'); } catch (_) {}
