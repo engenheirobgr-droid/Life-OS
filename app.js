@@ -5,7 +5,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 const firebaseConfig = {
@@ -182,6 +182,7 @@ const app = {
     getAuthErrorMessage: function(error) {
         const code = String(error?.code || error?.message || '');
         if (code.includes('auth/email-already-in-use')) return 'Este e-mail já tem uma conta. Use Entrar.';
+        if (code.includes('auth/credential-already-in-use')) return 'Este e-mail já está vinculado a outra conta. Use Entrar.';
         if (code.includes('auth/invalid-email')) return 'Confira o e-mail informado.';
         if (code.includes('auth/weak-password')) return 'Use uma senha com pelo menos 6 caracteres.';
         if (code.includes('auth/invalid-credential') || code.includes('auth/wrong-password') || code.includes('auth/user-not-found')) return 'E-mail ou senha inválidos.';
@@ -203,8 +204,8 @@ const app = {
 
         if (statusEl) {
             statusEl.textContent = isAccount
-                ? 'Conta ativa. Seus dados ficam separados por usuário.'
-                : 'Modo visitante. Crie uma conta para isolar seus dados e usar em outros dispositivos.';
+                ? 'Conta registrada. Este cofre pode ser recuperado por e-mail e usado em outros dispositivos.'
+                : 'Modo visitante. O app usa um acesso anônimo neste aparelho: funciona agora, mas você pode perder acesso se limpar dados ou trocar de dispositivo.';
         }
         if (idEl) idEl.textContent = isAccount ? uid : 'visitante';
         if (emailEl) emailEl.textContent = email || 'Sem e-mail vinculado';
@@ -233,7 +234,10 @@ const app = {
         try {
             this.updateSyncBadge('syncing');
             const currentState = this.getPersistableState('full');
-            const credential = await createUserWithEmailAndPassword(auth, email, password);
+            const currentUser = await this.withTimeout(getAuthReady(), 8000, 'auth_ready_account');
+            const credential = currentUser?.isAnonymous
+                ? await linkWithCredential(currentUser, EmailAuthProvider.credential(email, password))
+                : await createUserWithEmailAndPassword(auth, email, password);
             if (name) {
                 try { await updateProfile(credential.user, { displayName: name }); } catch (_) {}
                 if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
@@ -246,7 +250,7 @@ const app = {
             this.setupRealtimeSync();
             this.renderAccountPanel();
             this.renderProfileChrome();
-            this.showToast('Conta criada e dados vinculados a ela.', 'success');
+            this.showToast('Conta registrada. Seus dados continuam no mesmo cofre.', 'success');
         } catch (error) {
             console.error('[AUTH] Falha ao criar conta:', error);
             this.updateSyncBadge('error');
@@ -1680,6 +1684,19 @@ const app = {
         this.showToast(`Tema aplicado: ${next === 'auto' ? 'Automático' : (next === 'dark' ? 'Escuro' : 'Claro')}.`, 'success');
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
     },
+    getPushErrorMessage: function(error) {
+        const msg = String(error?.message || error?.code || error || '');
+        if (msg.includes('push_public_key') || msg.includes('Unexpected token') || msg.includes('api')) {
+            return 'chave push indisponivel. Use o link da Vercel para notificacoes em segundo plano.';
+        }
+        if (msg.includes('permission') || msg.includes('denied')) {
+            return 'permissao bloqueada no navegador.';
+        }
+        if (msg.includes('PushManager') || msg.includes('serviceWorker')) {
+            return 'este navegador nao oferece push para PWA neste contexto.';
+        }
+        return msg || 'falha desconhecida ao registrar push.';
+    },
     toggleDailyNotifications: async function() {
         this.ensureSettingsState();
         const enabled = !window.sistemaVidaState.settings.notificationsEnabled;
@@ -1702,16 +1719,31 @@ const app = {
         }
         window.sistemaVidaState.settings.notificationsEnabled = enabled;
         try { this.localSet('lifeos_notif_enabled', enabled ? '1' : '0'); } catch (_) {}
+        this.lastPushRegistrationOk = null;
+        this.lastPushRegistrationError = '';
         if (enabled) {
-            try { await this.registerPushSubscription(); } catch (err) { console.warn('[PUSH] Falha ao registrar assinatura:', err); }
+            try {
+                const pushOk = await this.registerPushSubscription();
+                this.lastPushRegistrationOk = !!pushOk;
+                this.lastPushRegistrationError = pushOk ? '' : 'Push em segundo plano indisponivel neste navegador.';
+            } catch (err) {
+                this.lastPushRegistrationOk = false;
+                this.lastPushRegistrationError = this.getPushErrorMessage(err);
+                console.warn('[PUSH] Falha ao registrar assinatura:', err);
+            }
         } else {
             try { await this.unregisterPushSubscription(); } catch (err) { console.warn('[PUSH] Falha ao remover assinatura:', err); }
+            this.lastPushRegistrationOk = false;
         }
-        this.saveState(true);
+        await this.saveState(true);
         if (enabled) this.scheduleHabitReminders();
         else if (this._habitReminderTimers) this._habitReminderTimers.forEach(timerId => clearTimeout(timerId));
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
-        this.showToast(enabled ? 'Notificações diárias ativadas.' : 'Notificações diárias desativadas.', 'success');
+        if (enabled && this.lastPushRegistrationOk === false) {
+            this.showToast('Notificações no app ativadas, mas push em segundo plano falhou: ' + this.lastPushRegistrationError, 'error');
+        } else {
+            this.showToast(enabled ? 'Notificações ativadas.' : 'Notificações desativadas.', 'success');
+        }
     },
     urlBase64ToUint8Array: function(base64String) {
         const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -1738,12 +1770,13 @@ const app = {
         return this.webPushPublicKey;
     },
     registerPushSubscription: async function() {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
-        if (typeof Notification === 'undefined') return false;
-        if (Notification.permission === 'denied') return false;
+        if (!('serviceWorker' in navigator)) throw new Error('serviceWorker_unavailable');
+        if (!('PushManager' in window)) throw new Error('PushManager_unavailable');
+        if (typeof Notification === 'undefined') throw new Error('notification_api_unavailable');
+        if (Notification.permission === 'denied') throw new Error('notification_permission_denied');
         if (Notification.permission === 'default') {
             const p = await Notification.requestPermission();
-            if (p !== 'granted') return false;
+            if (p !== 'granted') throw new Error('notification_permission_not_granted');
         }
         await this.withTimeout(getAuthReady(), 8000, 'auth_ready_push');
         const publicKey = await this.getWebPushPublicKey();
@@ -12128,6 +12161,23 @@ const app = {
                 const on = !!state.settings.notificationsEnabled;
                 notifTrack.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${on ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
                 notifKnob.className = `w-3 h-3 rounded-full absolute transition-all ${on ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
+            }
+            const pushStatus = document.getElementById('push-status-text');
+            if (pushStatus) {
+                const on = !!state.settings.notificationsEnabled;
+                if (!on) {
+                    pushStatus.textContent = 'Desativadas.';
+                    pushStatus.className = 'text-[10px] text-outline mt-1 leading-snug';
+                } else if (app.lastPushRegistrationOk === false) {
+                    pushStatus.textContent = 'Ativas no app. Push em segundo plano pendente: ' + (app.lastPushRegistrationError || 'verifique permissoes.');
+                    pushStatus.className = 'text-[10px] text-amber-500 mt-1 leading-snug';
+                } else if (app.lastPushRegistrationOk === true) {
+                    pushStatus.textContent = 'Ativas, incluindo push em segundo plano.';
+                    pushStatus.className = 'text-[10px] text-emerald-500 mt-1 leading-snug';
+                } else {
+                    pushStatus.textContent = 'Ativas quando permitidas pelo navegador.';
+                    pushStatus.className = 'text-[10px] text-outline mt-1 leading-snug';
+                }
             }
 
             const themeSelect = document.getElementById('theme-select');

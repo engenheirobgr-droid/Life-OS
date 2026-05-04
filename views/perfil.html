@@ -56,7 +56,7 @@
             <button type="button" onclick="window.app.sendPasswordResetFromProfile()" class="h-11 rounded-xl bg-surface-container-high text-outline text-xs font-bold uppercase tracking-wider hover:text-on-surface transition-colors">Recuperar senha</button>
         </div>
         <div id="account-signed-actions" class="hidden flex flex-col md:flex-row md:items-center gap-3">
-            <p class="text-xs text-outline flex-1">Ao sair, este dispositivo volta para modo visitante ate voce entrar novamente.</p>
+            <p class="text-xs text-outline flex-1">Ao sair, o app volta ao modo visitante neste aparelho ate voce entrar novamente.</p>
             <button type="button" onclick="window.app.sendPasswordResetFromProfile()" class="h-10 px-4 rounded-xl bg-surface-container-high text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Enviar recuperacao</button>
             <button type="button" onclick="window.app.signOutFromProfile()" class="h-10 px-4 rounded-xl bg-error/10 text-error border border-error/25 text-xs font-bold uppercase tracking-wider hover:bg-error hover:text-white transition-colors">Sair</button>
         </div>
@@ -173,8 +173,9 @@
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined notranslate text-primary" data-icon="notifications_active">notifications_active</span>
 <div>
-<p class="text-sm font-medium text-on-surface">Notificações Diárias</p>
-<p class="text-[11px] text-outline">Lembretes às 08:00 e 20:00</p>
+<p class="text-sm font-medium text-on-surface">Notificacoes</p>
+<p class="text-[11px] text-outline">Alertas do app, habitos e lembretes em segundo plano</p>
+<p id="push-status-text" class="text-[10px] text-outline mt-1 leading-snug"></p>
 </div>
 </div>
 <div id="notif-toggle-track" class="w-10 h-5 bg-primary/20 rounded-full relative flex items-center px-1">
