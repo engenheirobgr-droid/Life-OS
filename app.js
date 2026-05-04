@@ -2718,25 +2718,191 @@ const app = {
     },
 
 
-    showNotification: function(msg) {
-        this.showToast(msg, 'success');
+    showNotification: function(messageOrOptions, toastType = 'success') {
+        const payload = typeof messageOrOptions === 'string'
+            ? { body: messageOrOptions }
+            : (messageOrOptions || {});
+        const body = String(payload.body || payload.message || '').trim();
+        if (!body) return;
+        const title = String(payload.title || 'Life OS');
+        const tag = String(payload.tag || `lifeos-alert-${Date.now()}`);
+        const url = String(payload.url || '/');
+        const requireInteraction = !!payload.requireInteraction;
+
+        this.showToast(body, payload.toastType || toastType);
         // Mostra notificação real do SO se permissão concedida e app aberto
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             try {
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.ready.then(reg => {
-                        reg.showNotification('Life OS', {
-                            body: msg,
+                        reg.showNotification(title, {
+                            body,
                             icon: '/icon-192.png',
                             badge: '/icon-192.png',
-                            tag: 'lifeos-alert'
+                            tag,
+                            data: { url },
+                            requireInteraction
                         });
                     }).catch(() => {});
                 } else {
-                    new Notification('Life OS', { body: msg, icon: '/icon-192.png' });
+                    new Notification(title, { body, icon: '/icon-192.png', tag });
                 }
             } catch (_) {}
         }
+    },
+
+    getOpenNudgeLog: function() {
+        try {
+            return JSON.parse(localStorage.getItem('lifeos_open_nudges_log') || '{}') || {};
+        } catch (_) {
+            return {};
+        }
+    },
+
+    wasOpenNudgeShownToday: function(id, dateKey = this.getLocalDateKey()) {
+        const log = this.getOpenNudgeLog();
+        return log?.[id] === dateKey;
+    },
+
+    markOpenNudgeShownToday: function(id, dateKey = this.getLocalDateKey()) {
+        const log = this.getOpenNudgeLog();
+        log[id] = dateKey;
+        try { localStorage.setItem('lifeos_open_nudges_log', JSON.stringify(log)); } catch (_) {}
+    },
+
+    isMockupPurposeValue: function(value) {
+        const sampleTexts = new Set([
+            'Criar sistemas que ajudam pessoas a viverem com mais intenção.',
+            'Desenvolvimento de software, pensamento sistêmico e design de produto.',
+            'Ferramentas práticas de autogestão e produtividade com propósito.',
+            'Desenvolvimento de apps, consultoria de produto e software sob medida.',
+            'Construir tecnologia que transforma rotinas em jornadas com sentido.',
+            'Ser presença constante e inspiração de integridade para minha família.',
+            'Criar produtos que simplificam a vida de milhares de pessoas.',
+            'Contribuir para uma cultura de autoconhecimento e intencionalidade.',
+            'Energia alta e consistente. Treinar 4x por semana e dormir bem.',
+            'Liderar meu próprio produto com autonomia e impacto real.',
+            'Aprender continuamente. Ler 1 livro por mês e criar com frequência.',
+            'A disciplina é a ponte entre metas e realizações. — Jim Rohn'
+        ]);
+        return sampleTexts.has(String(value || '').trim());
+    },
+
+    getPurposeMockupCount: function() {
+        const profile = window.sistemaVidaState.profile || {};
+        const ikigai = profile.ikigai || {};
+        const legacyObj = profile.legacyObj || {};
+        const vision = profile.vision || {};
+        const values = [
+            ikigai.love, ikigai.good, ikigai.need, ikigai.paid, ikigai.sintese,
+            legacyObj.familia, legacyObj.profissao, legacyObj.mundo,
+            vision.saude, vision.carreira, vision.intelecto, vision.quote
+        ];
+        return values.filter((value) => this.isMockupPurposeValue(value)).length;
+    },
+
+    buildOpenNudges: function() {
+        const state = window.sistemaVidaState;
+        const today = new Date();
+        const dow = today.getDay();
+        const weekKey = this._getWeekKey();
+        const cadence = (key) => this.getCadenceStatus(key);
+        const nudges = [];
+        const hasPlan = !!(state.weekPlans || {})[weekKey];
+        const hasReview = !!(state.reviews || {})[weekKey];
+        const purposeMockupCount = this.getPurposeMockupCount();
+
+        if (cadence('weeklyPlan').state === 'overdue' && [1, 2, 3, 4].includes(dow)) {
+            nudges.push({
+                id: 'weekly-plan-open',
+                priority: 100,
+                title: 'Life OS — Planejamento semanal',
+                body: hasPlan
+                    ? 'Sua semana já tem plano, mas está na hora de revisitar a carga e a intenção.'
+                    : 'Sua semana ainda não foi planejada. Defina a intenção e escolha os micros prioritários.',
+                tag: 'lifeos-weekly-plan-open'
+            });
+        }
+
+        if (cadence('weeklyReview').state === 'overdue' && [5, 6, 0].includes(dow) && (hasPlan || !hasReview)) {
+            nudges.push({
+                id: 'weekly-review-open',
+                priority: 95,
+                title: 'Life OS — Revisão semanal',
+                body: 'Fim de semana pede fechamento. Revise execução, padrões e próximos ajustes.',
+                tag: 'lifeos-weekly-review-open'
+            });
+        }
+
+        if (purposeMockupCount >= 3) {
+            nudges.push({
+                id: 'purpose-mockup-open',
+                priority: 92,
+                title: 'Life OS — Propósito',
+                body: 'Sua aba Propósito ainda está com textos de exemplo. Vale personalizar Visão, Legado e Ikigai.',
+                tag: 'lifeos-purpose-mockup-open'
+            });
+        } else if (cadence('purpose').state === 'overdue') {
+            nudges.push({
+                id: 'purpose-cadence-open',
+                priority: 84,
+                title: 'Life OS — Visão, Legado & Ikigai',
+                body: 'Seu norte existencial está pedindo revisão. Releia e ajuste quem você quer ser e deixar no mundo.',
+                tag: 'lifeos-purpose-cadence-open'
+            });
+        }
+
+        if (cadence('lifeGoals').state === 'overdue') {
+            nudges.push({
+                id: 'life-goals-open',
+                priority: 80,
+                title: 'Life OS — Metas de vida',
+                body: 'Suas metas de 1 a 5 anos merecem uma revisão. Confira se o rumo de longo prazo continua fazendo sentido.',
+                tag: 'lifeos-life-goals-open'
+            });
+        }
+
+        if (cadence('odyssey').state === 'overdue') {
+            nudges.push({
+                id: 'odyssey-open',
+                priority: 78,
+                title: 'Life OS — Odyssey Plan',
+                body: 'Já faz tempo desde a última revisão dos seus cenários de vida. Atualize os próximos 5 anos possíveis.',
+                tag: 'lifeos-odyssey-open'
+            });
+        }
+
+        if (cadence('wheel').state === 'overdue') {
+            nudges.push({
+                id: 'wheel-open',
+                priority: 74,
+                title: 'Life OS — Roda da Vida',
+                body: 'A Roda da Vida está atrasada. Vale medir novamente como estão suas 8 áreas.',
+                tag: 'lifeos-wheel-open'
+            });
+        }
+
+        if (cadence('perma').state === 'overdue') {
+            nudges.push({
+                id: 'perma-open',
+                priority: 72,
+                title: 'Life OS — PERMA',
+                body: 'Seu diagnóstico de florescimento está desatualizado. Reavalie o PERMA para recalibrar o bem-estar.',
+                tag: 'lifeos-perma-open'
+            });
+        }
+
+        if (cadence('swls').state === 'overdue') {
+            nudges.push({
+                id: 'swls-open',
+                priority: 70,
+                title: 'Life OS — SWLS',
+                body: 'A satisfação com a vida ainda não foi revisitada neste ciclo. Responder o SWLS ajuda a checar o panorama geral.',
+                tag: 'lifeos-swls-open'
+            });
+        }
+
+        return nudges.sort((a, b) => b.priority - a.priority);
     },
 
     // Agenda notificações locais relevantes para o contexto do dia
@@ -2745,41 +2911,22 @@ const app = {
         if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
         const state = window.sistemaVidaState;
         if (!state.settings?.notificationsEnabled) return;
-        if (!('serviceWorker' in navigator)) return;
+        const todayKey = this.getLocalDateKey();
+        const nudges = this.buildOpenNudges()
+            .filter((item) => !this.wasOpenNudgeShownToday(item.id, todayKey))
+            .slice(0, 3);
 
-        const today = new Date();
-        const dow = today.getDay(); // 0=Dom, 1=Seg...6=Sáb
-        const weekKey = this._getWeekKey();
-        const hasPlan = !!(state.weekPlans || {})[weekKey];
-        const hasReview = !!(state.reviews || {})[weekKey];
-
-        // Segunda-feira sem plano → lembrar de planejar a semana
-        if (dow === 1 && !hasPlan) {
+        nudges.forEach((nudge, idx) => {
             setTimeout(() => {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification('Life OS — Planejar Semana', {
-                        body: '📅 Segunda-feira! Que tal definir sua intenção e micros para esta semana?',
-                        icon: '/icon-192.png',
-                        tag: 'lifeos-weekly-plan',
-                        requireInteraction: false
-                    });
-                }).catch(() => {});
-            }, 3000);
-        }
-
-        // Sexta/Sáb/Dom com plano mas sem revisão → lembrar de revisar
-        if ([5, 6, 0].includes(dow) && hasPlan && !hasReview) {
-            setTimeout(() => {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification('Life OS — Revisão Semanal', {
-                        body: '✍️ Fim de semana! Hora de revisar o que foi feito e fechar o ciclo semanal.',
-                        icon: '/icon-192.png',
-                        tag: 'lifeos-weekly-review',
-                        requireInteraction: false
-                    });
-                }).catch(() => {});
-            }, 3500);
-        }
+                this.showNotification({
+                    title: nudge.title,
+                    body: nudge.body,
+                    tag: nudge.tag,
+                    url: '/'
+                }, 'info');
+                this.markOpenNudgeShownToday(nudge.id, todayKey);
+            }, 2500 + (idx * 1800));
+        });
     },
 
     scheduleHabitReminders: function() {
@@ -2912,7 +3059,6 @@ const app = {
                     catch (_) { return false; }
                 });
             this.needsReview = hasPlan && !hasReviewThisWeek;
-            if (this.needsReview) setTimeout(() => this.showNotification("✍️ Fim de semana! Que tal fazer a revisão da semana?"), 2500);
         }
         // Agenda notificações locais do SO (apenas se permissão concedida)
         setTimeout(() => this.scheduleLocalNotifications(), 5000);
@@ -8603,6 +8749,7 @@ const app = {
         try { localStorage.removeItem('lifeos_daily_checkins_backup'); } catch (_) {}
         try { localStorage.removeItem('lifeos_notes_backup'); } catch (_) {}
         try { localStorage.removeItem('lifeos_habit_reminders_sent'); } catch (_) {}
+        try { localStorage.removeItem('lifeos_open_nudges_log'); } catch (_) {}
         try { localStorage.removeItem('lifeos_splash_log'); } catch (_) {}
         try { localStorage.removeItem('lifeos_last_splash'); } catch (_) {}
         try { localStorage.removeItem('lifeos_odyssey_splash_log'); } catch (_) {}
