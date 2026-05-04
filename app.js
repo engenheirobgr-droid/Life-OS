@@ -557,7 +557,7 @@ const app = {
                     ['architecture', 'Construtor'],
                     ['verified', 'Especialista'],
                     ['supervisor_account', 'Líder'],
-                    ['briefcase', 'Diretor'],
+                    ['business_center', 'Diretor'],
                     ['rocket_launch', 'Visionário'],
                     ['military_tech', 'Referência']
                 ]
