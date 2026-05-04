@@ -1211,7 +1211,10 @@ const app = {
             <div class="gamification-level-row ${idx < evo.currentIndex ? 'done' : ''} ${idx === evo.currentIndex ? 'current' : ''}">
                 <span class="gamification-level-badge">${idx + 1}</span>
                 <span class="material-symbols-outlined notranslate">${this.escapeHtml(stageIcon)}</span>
-                <strong>${this.escapeHtml(label)}</strong>
+                <div class="gamification-level-copy">
+                    <strong>${this.escapeHtml(label)}</strong>
+                    <small>Nível ${idx + 1} · ${this.escapeHtml(String(this.getXpThresholdForLevel(idx + 1)))} XP acumulados</small>
+                </div>
             </div>
         `).join('');
         const overlay = document.createElement('div');
@@ -9822,7 +9825,10 @@ const app = {
                     <div class="gamification-level-row ${idx < evolution.currentIndex ? 'done' : ''} ${idx === evolution.currentIndex ? 'current' : ''}">
                         <span class="gamification-level-badge">${idx + 1}</span>
                         <span class="material-symbols-outlined notranslate">${this.escapeHtml(stageIcon)}</span>
-                        <strong>${this.escapeHtml(label)}</strong>
+                        <div class="gamification-level-copy">
+                            <strong>${this.escapeHtml(label)}</strong>
+                            <small>Nível ${idx + 1} · ${this.escapeHtml(String(this.getXpThresholdForLevel(idx + 1)))} XP acumulados</small>
+                        </div>
                         ${idx === evolution.currentIndex ? '<span class="gamification-level-state">Atual</span>' : ''}
                     </div>
                 `).join('');
