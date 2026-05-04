@@ -513,23 +513,164 @@ const app = {
     },
     getTierFromLevel: function(level) {
         const lv = Math.max(1, Number(level) || 1);
-        return lv <= 2 ? 0 : lv <= 5 ? 1 : lv <= 9 ? 2 : lv <= 14 ? 3 : 4;
+        return Math.min(4, Math.floor((lv - 1) / 2));
+    },
+    getDimensionProgressionCatalog: function() {
+        return {
+            'Saúde': {
+                tone: '#10b981',
+                stages: [
+                    ['airline_seat_recline_normal', 'Sedentário'],
+                    ['self_improvement', 'Despertando'],
+                    ['directions_walk', 'Em movimento'],
+                    ['exercise', 'Ritmo'],
+                    ['fitness_center', 'Treinando'],
+                    ['monitor_heart', 'Condicionado'],
+                    ['bolt', 'Energizado'],
+                    ['directions_run', 'Atlético'],
+                    ['favorite', 'Vital'],
+                    ['workspace_premium', 'Imparável']
+                ]
+            },
+            'Mente': {
+                tone: '#0ea5e9',
+                stages: [
+                    ['search', 'Curioso'],
+                    ['menu_book', 'Leitor'],
+                    ['school', 'Estudioso'],
+                    ['psychology_alt', 'Analítico'],
+                    ['lightbulb', 'Reflexivo'],
+                    ['neurology', 'Criativo'],
+                    ['schema', 'Estrategista'],
+                    ['psychology', 'Sábio'],
+                    ['explore', 'Visionário'],
+                    ['auto_awesome', 'Luminar']
+                ]
+            },
+            'Carreira': {
+                tone: '#6366f1',
+                stages: [
+                    ['school', 'Aprendiz'],
+                    ['build', 'Executor'],
+                    ['inventory_2', 'Criador'],
+                    ['assignment', 'Organizador'],
+                    ['architecture', 'Construtor'],
+                    ['verified', 'Especialista'],
+                    ['supervisor_account', 'Líder'],
+                    ['briefcase', 'Diretor'],
+                    ['rocket_launch', 'Visionário'],
+                    ['military_tech', 'Referência']
+                ]
+            },
+            'Finanças': {
+                tone: '#059669',
+                stages: [
+                    ['account_balance_wallet', 'Administrador'],
+                    ['savings', 'Poupador'],
+                    ['receipt_long', 'Controlado'],
+                    ['calculate', 'Planejador'],
+                    ['shield', 'Estável'],
+                    ['monitoring', 'Estrategista'],
+                    ['trending_up', 'Investidor'],
+                    ['paid', 'Multiplicador'],
+                    ['diamond', 'Próspero'],
+                    ['account_balance', 'Patrimonial']
+                ]
+            },
+            'Relacionamentos': {
+                tone: '#ec4899',
+                stages: [
+                    ['visibility', 'Presente'],
+                    ['chat_bubble', 'Acessível'],
+                    ['handshake', 'Confiável'],
+                    ['groups', 'Vinculado'],
+                    ['favorite', 'Afetuoso'],
+                    ['diversity_2', 'Parceiro'],
+                    ['hub', 'Conector'],
+                    ['campaign', 'Influente'],
+                    ['support_agent', 'Mentor'],
+                    ['emoji_people', 'Catalisador']
+                ]
+            },
+            'Família': {
+                tone: '#f59e0b',
+                stages: [
+                    ['home', 'Presente'],
+                    ['family_restroom', 'Cuidador'],
+                    ['shield', 'Protetor'],
+                    ['volunteer_activism', 'Apoio'],
+                    ['night_shelter', 'Guardião'],
+                    ['foundation', 'Pilar'],
+                    ['workspace_premium', 'Referência'],
+                    ['diversity_1', 'Elo'],
+                    ['account_tree', 'Raiz'],
+                    ['emoji_events', 'Legado']
+                ]
+            },
+            'Lazer': {
+                tone: '#8b5cf6',
+                stages: [
+                    ['tv', 'Espectador'],
+                    ['sentiment_satisfied', 'Curioso'],
+                    ['sports_esports', 'Brincante'],
+                    ['explore', 'Explorador'],
+                    ['hiking', 'Aventureiro'],
+                    ['palette', 'Criativo'],
+                    ['celebration', 'Entusiasta'],
+                    ['music_note', 'Celebrador'],
+                    ['theater_comedy', 'Artista'],
+                    ['stars', 'Maestro']
+                ]
+            },
+            'Propósito': {
+                tone: '#0d9488',
+                stages: [
+                    ['search', 'Buscador'],
+                    ['quiz', 'Questionador'],
+                    ['travel_explore', 'Explorador'],
+                    ['near_me', 'Direcionado'],
+                    ['my_location', 'Alinhado'],
+                    ['flag', 'Missionário'],
+                    ['shield_with_heart', 'Guardião'],
+                    ['flare', 'Guia'],
+                    ['wb_incandescent', 'Inspirador'],
+                    ['auto_awesome', 'Legado vivo']
+                ]
+            }
+        };
     },
     getDimensionIdentity: function(dimension, level) {
         const lv = Math.max(1, Number(level) || 1);
         const tier = this.getTierFromLevel(lv);
-        const tiers = {
-            'Saúde':          { titles: ['Sedentário', 'Ativo', 'Atleta', 'Guerreiro', 'Lendário'], icon: 'fitness_center' },
-            'Mente':          { titles: ['Curioso', 'Estudioso', 'Pensador', 'Sábio', 'Iluminado'], icon: 'psychology' },
-            'Carreira':       { titles: ['Aprendiz', 'Criador', 'Construtor', 'Mestre', 'Visionário'], icon: 'work' },
-            'Finanças':       { titles: ['Administrador', 'Poupador', 'Estrategista', 'Investidor', 'Patriarca'], icon: 'payments' },
-            'Relacionamentos':{ titles: ['Presente', 'Conector', 'Influente', 'Mentor', 'Catalisador'], icon: 'groups' },
-            'Família':        { titles: ['Cuidador', 'Guardião', 'Pilar', 'Âncora', 'Legado'], icon: 'family_restroom' },
-            'Lazer':          { titles: ['Espectador', 'Explorador', 'Aventureiro', 'Criativo', 'Maestro'], icon: 'sports_esports' },
-            'Propósito':      { titles: ['Buscador', 'Visionário', 'Missionário', 'Guia', 'Sábio'], icon: 'auto_awesome' }
+        const catalog = this.getDimensionProgressionCatalog();
+        const def = catalog[dimension] || {
+            tone: '#0d9488',
+            stages: [
+                ['stars', 'Iniciante'],
+                ['trending_up', 'Em avanço'],
+                ['verified', 'Consistente'],
+                ['rocket_launch', 'Destaque'],
+                ['auto_awesome', 'Lendário'],
+                ['stars', 'Ascendente'],
+                ['stars', 'Ascendente II'],
+                ['stars', 'Ascendente III'],
+                ['stars', 'Ascendente IV'],
+                ['stars', 'Ascendente V']
+            ]
         };
-        const def = tiers[dimension] || { titles: ['Iniciante', 'Integrador', 'Mestre', 'Líder', 'Lendário'], icon: 'stars' };
-        return { title: def.titles[tier], icon: def.icon, tier, tierMax: 4 };
+        const stageIndex = Math.min(def.stages.length - 1, Math.max(0, lv - 1));
+        const [icon, title] = def.stages[stageIndex];
+        const isBeyondCatalog = lv > def.stages.length;
+        const nextStage = stageIndex < def.stages.length - 1 ? def.stages[stageIndex + 1] : null;
+        return {
+            title: isBeyondCatalog ? `${title}+` : title,
+            icon,
+            tier,
+            tierMax: 4,
+            stageIndex,
+            stageCount: def.stages.length,
+            nextTitle: nextStage ? nextStage[1] : null
+        };
     },
     getXpForLevelStep: function(level) {
         const lv = Math.max(1, Number(level) || 1);
@@ -568,90 +709,29 @@ const app = {
     },
     getDimensionEvolution: function(dimension, level) {
         const identity = this.getDimensionIdentity(dimension, level);
-        const catalog = {
-            'Saúde': {
-                tone: '#10b981',
-                stages: [
-                    ['self_improvement', 'Acordar'],
-                    ['directions_walk', 'Mover'],
-                    ['fitness_center', 'Treinar'],
-                    ['vital_signs', 'Vigor'],
-                    ['workspace_premium', 'Potência']
-                ]
-            },
-            'Mente': {
-                tone: '#0ea5e9',
-                stages: [
-                    ['eco', 'Semente'],
-                    ['local_florist', 'Broto'],
-                    ['park', 'Árvore'],
-                    ['psychology', 'Clareza'],
-                    ['auto_awesome', 'Sabedoria']
-                ]
-            },
-            'Carreira': {
-                tone: '#6366f1',
-                stages: [
-                    ['school', 'Aprender'],
-                    ['engineering', 'Executar'],
-                    ['work', 'Entregar'],
-                    ['domain', 'Liderar'],
-                    ['military_tech', 'Referência']
-                ]
-            },
-            'Finanças': {
-                tone: '#059669',
-                stages: [
-                    ['savings', 'Base'],
-                    ['account_balance_wallet', 'Controle'],
-                    ['payments', 'Fluxo'],
-                    ['monitoring', 'Estratégia'],
-                    ['account_balance', 'Patrimônio']
-                ]
-            },
-            'Relacionamentos': {
-                tone: '#ec4899',
-                stages: [
-                    ['waving_hand', 'Contato'],
-                    ['forum', 'Diálogo'],
-                    ['groups', 'Vínculo'],
-                    ['diversity_3', 'Comunidade'],
-                    ['hub', 'Influência']
-                ]
-            },
-            'Família': {
-                tone: '#f59e0b',
-                stages: [
-                    ['home', 'Presença'],
-                    ['family_restroom', 'Cuidado'],
-                    ['shield', 'Proteção'],
-                    ['real_estate_agent', 'Base'],
-                    ['foundation', 'Legado']
-                ]
-            },
-            'Lazer': {
-                tone: '#8b5cf6',
-                stages: [
-                    ['sports_esports', 'Brincar'],
-                    ['palette', 'Criar'],
-                    ['explore', 'Explorar'],
-                    ['celebration', 'Celebrar'],
-                    ['theater_comedy', 'Maestria']
-                ]
-            },
-            'Propósito': {
-                tone: '#0d9488',
-                stages: [
-                    ['search', 'Busca'],
-                    ['explore', 'Direção'],
-                    ['flag', 'Missão'],
-                    ['flare', 'Guia'],
-                    ['auto_awesome', 'Legado']
-                ]
-            }
+        const catalog = this.getDimensionProgressionCatalog();
+        const fallback = {
+            tone: '#0d9488',
+            stages: [
+                ['stars', 'Iniciante'],
+                ['trending_up', 'Em avanço'],
+                ['verified', 'Consistente'],
+                ['rocket_launch', 'Destaque'],
+                ['auto_awesome', 'Lendário'],
+                ['stars', 'Ascendente'],
+                ['stars', 'Ascendente II'],
+                ['stars', 'Ascendente III'],
+                ['stars', 'Ascendente IV'],
+                ['stars', 'Ascendente V']
+            ]
         };
-        const fallback = { tone: '#0d9488', stages: [['stars', 'Início'], ['trending_up', 'Ritmo'], ['workspace_premium', 'Força'], ['rocket_launch', 'Impulso'], ['auto_awesome', 'Legado']] };
-        return { ...(catalog[dimension] || fallback), tier: identity.tier, identity };
+        const data = catalog[dimension] || fallback;
+        return {
+            ...data,
+            currentIndex: identity.stageIndex,
+            totalStages: data.stages.length,
+            identity
+        };
     },
     getMicroEffort: function(micro) {
         const raw = String(micro?.effort || micro?.esforco || 'medio').toLowerCase();
@@ -1128,20 +1208,21 @@ const app = {
     showTierPromotionOverlay: function(dimension, title, icon, level = 1) {
         const evo = this.getDimensionEvolution(dimension, level || 1);
         const stages = evo.stages.map(([stageIcon, label], idx) => `
-            <div class="evo-step ${idx <= evo.tier ? 'active' : ''}">
-                <span class="material-symbols-outlined notranslate">${stageIcon}</span>
-                <small>${this.escapeHtml(label)}</small>
+            <div class="gamification-level-row ${idx < evo.currentIndex ? 'done' : ''} ${idx === evo.currentIndex ? 'current' : ''}">
+                <span class="gamification-level-badge">${idx + 1}</span>
+                <span class="material-symbols-outlined notranslate">${this.escapeHtml(stageIcon)}</span>
+                <strong>${this.escapeHtml(label)}</strong>
             </div>
         `).join('');
         const overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;inset:0;z-index:10001;pointer-events:none;';
         overlay.innerHTML = `
             <div class="gamification-level-overlay" style="--evo-tone:${evo.tone};">
-                <div class="gamification-evo-track overlay-track">${stages}</div>
                 <span class="material-symbols-outlined notranslate level-main-icon">${icon}</span>
                 <p style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.18em;color:var(--md-sys-color-outline);margin-top:0.75rem;">${this.escapeHtml(dimension)}</p>
                 <p style="font-size:1.4rem;font-weight:800;color:var(--md-sys-color-on-surface);margin-top:0.2rem;">${this.escapeHtml(title)}</p>
                 <p style="font-size:0.7rem;color:var(--md-sys-color-outline);margin-top:0.2rem;">Nível ${this.escapeHtml(String(level || 1))} desbloqueado</p>
+                <div class="gamification-level-list overlay-list" style="margin-top:1rem;">${stages}</div>
             </div>`;
         document.body.appendChild(overlay);
         setTimeout(() => overlay.remove(), 2300);
@@ -9736,25 +9817,32 @@ const app = {
                 const progress = this.getLevelProgress(xp);
                 const identity = this.getDimensionIdentity(dim, progress.level);
                 const evolution = this.getDimensionEvolution(dim, progress.level);
-                const tierNames = ['I', 'II', 'III', 'IV', 'V'];
-                const tierLabel = tierNames[identity.tier] || 'I';
+                const expanded = !!(this._gamificationExpandedTrails && this._gamificationExpandedTrails[dim]);
                 const stageNodes = evolution.stages.map(([stageIcon, label], idx) => `
-                    <div class="evo-step ${idx <= evolution.tier ? 'active' : ''}">
+                    <div class="gamification-level-row ${idx < evolution.currentIndex ? 'done' : ''} ${idx === evolution.currentIndex ? 'current' : ''}">
+                        <span class="gamification-level-badge">${idx + 1}</span>
                         <span class="material-symbols-outlined notranslate">${this.escapeHtml(stageIcon)}</span>
-                        <small>${this.escapeHtml(label)}</small>
+                        <strong>${this.escapeHtml(label)}</strong>
+                        ${idx === evolution.currentIndex ? '<span class="gamification-level-state">Atual</span>' : ''}
                     </div>
                 `).join('');
+                const nextCopy = identity.nextTitle
+                    ? `Próximo: ${this.escapeHtml(identity.nextTitle)}`
+                    : 'Você está no topo desta trilha';
                 return `
                 <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4 min-w-0 gamification-dim-card" style="--evo-tone:${evolution.tone};">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline truncate">${this.escapeHtml(dim)}</p>
                             <p class="mt-1 text-sm font-bold text-on-surface truncate">${this.escapeHtml(identity.title)}</p>
-                            <p class="text-[10px] text-outline mt-0.5">Tier ${tierLabel} · Nível ${progress.level}</p>
+                            <p class="text-[10px] text-outline mt-0.5">Nível ${progress.level} · Etapa ${Math.min(identity.stageCount, Math.max(1, progress.level))} de ${identity.stageCount}</p>
                         </div>
                         <span class="material-symbols-outlined notranslate text-primary text-xl">${identity.icon}</span>
                     </div>
-                    <div class="gamification-evo-track mt-4">${stageNodes}</div>
+                    <div class="mt-3 rounded-xl border border-outline-variant/10 bg-surface-container-lowest px-3 py-2">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">Jornada</p>
+                        <p class="mt-1 text-xs text-on-surface">${nextCopy}</p>
+                    </div>
                     <div class="mt-3 flex items-center justify-between text-[11px] text-outline">
                         <span>Próximo nível</span>
                         <span>${progress.current}/${progress.next} XP</span>
@@ -9762,6 +9850,13 @@ const app = {
                     <div class="mt-2 h-1.5 rounded-full bg-outline-variant/20 overflow-hidden">
                         <div class="h-full rounded-full bg-primary" style="width:${progress.pct}%"></div>
                     </div>
+                    <button type="button"
+                        onclick="window.app.toggleGamificationDimensionTrail('${dim}')"
+                        class="mt-3 w-full flex items-center justify-between gap-3 rounded-xl border border-outline-variant/10 bg-surface-container-lowest px-3 py-2 text-left hover:bg-surface-container-high transition-colors">
+                        <span class="text-[11px] font-bold uppercase tracking-[0.14em] text-outline">Ver trilha completa</span>
+                        <span class="material-symbols-outlined notranslate text-outline transition-transform ${expanded ? 'rotate-180' : ''}">expand_more</span>
+                    </button>
+                    <div class="gamification-level-list mt-3 ${expanded ? '' : 'hidden'}">${stageNodes}</div>
                 </div>`;
             }).join('');
         }
@@ -9806,6 +9901,13 @@ const app = {
                 </div>
             `).join('');
         }
+    },
+    toggleGamificationDimensionTrail: function(dimension) {
+        if (!this._gamificationExpandedTrails || typeof this._gamificationExpandedTrails !== 'object') {
+            this._gamificationExpandedTrails = {};
+        }
+        this._gamificationExpandedTrails[dimension] = !this._gamificationExpandedTrails[dimension];
+        this.renderGamificationProfile();
     },
     toggleGamificationRules: function() {
         const wrap = document.getElementById('gamification-rules-wrap');
