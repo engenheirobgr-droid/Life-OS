@@ -26,6 +26,42 @@
     <p class="font-label text-xs uppercase tracking-[0.15em] text-outline">Sistema Vida · 2026</p>
 </div>
 </section>
+<!-- Account -->
+<section id="account-section" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-2">Conta</p>
+            <h3 class="font-headline text-2xl md:text-3xl font-bold text-on-surface">Usuario</h3>
+            <p id="account-status-text" class="text-xs text-outline mt-2 leading-relaxed">Carregando status da conta...</p>
+        </div>
+        <span class="material-symbols-outlined notranslate text-primary text-2xl">verified_user</span>
+    </div>
+    <div class="rounded-xl bg-surface-container-low p-4 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div>
+                <p class="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Conta atual</p>
+                <p id="account-current-email" class="font-semibold text-on-surface break-all">Visitante</p>
+            </div>
+            <div>
+                <p class="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Cofre de dados</p>
+                <p id="account-user-id" class="font-mono text-[11px] text-outline break-all">visitante</p>
+            </div>
+        </div>
+        <div id="account-auth-form" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input id="account-name-input" type="text" class="h-11 rounded-lg border-none bg-surface-container-high px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" placeholder="Nome">
+            <input id="account-email-input" type="email" class="h-11 rounded-lg border-none bg-surface-container-high px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" placeholder="email@exemplo.com">
+            <input id="account-password-input" type="password" class="h-11 rounded-lg border-none bg-surface-container-high px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" placeholder="Senha">
+            <button type="button" onclick="window.app.createAccountFromProfile()" class="h-11 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Criar conta</button>
+            <button type="button" onclick="window.app.signInFromProfile()" class="h-11 rounded-xl bg-surface-container-high text-primary border border-primary/20 text-xs font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Entrar</button>
+            <button type="button" onclick="window.app.sendPasswordResetFromProfile()" class="h-11 rounded-xl bg-surface-container-high text-outline text-xs font-bold uppercase tracking-wider hover:text-on-surface transition-colors">Recuperar senha</button>
+        </div>
+        <div id="account-signed-actions" class="hidden flex flex-col md:flex-row md:items-center gap-3">
+            <p class="text-xs text-outline flex-1">Ao sair, este dispositivo volta para modo visitante ate voce entrar novamente.</p>
+            <button type="button" onclick="window.app.sendPasswordResetFromProfile()" class="h-10 px-4 rounded-xl bg-surface-container-high text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Enviar recuperacao</button>
+            <button type="button" onclick="window.app.signOutFromProfile()" class="h-10 px-4 rounded-xl bg-error/10 text-error border border-error/25 text-xs font-bold uppercase tracking-wider hover:bg-error hover:text-white transition-colors">Sair</button>
+        </div>
+    </div>
+</section>
 <!-- Gamification -->
 <section id="gamification-profile-panel" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-6">
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">

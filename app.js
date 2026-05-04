@@ -5,7 +5,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 const firebaseConfig = {
@@ -21,6 +21,8 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const auth = getAuth(firebaseApp);
 const storage = getStorage(firebaseApp);
+const LEGACY_USER_DOC_ID = 'meu-sistema-vida';
+const LEGACY_IMAGES_DOC_ID = 'meu-sistema-vida-images';
 // getAuthReady() cria uma Promise fresca a cada chamada.
 // Isso evita que uma falha de auth transitória (ex: rede lenta na abertura do app)
 // deixe o authReady permanentemente rejeitado, bloqueando todos os saves futuros.
@@ -113,6 +115,60 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
+    getActiveUserId: function(user = auth.currentUser) {
+        return user?.uid || LEGACY_USER_DOC_ID;
+    },
+    isRealAccount: function(user = auth.currentUser) {
+        return !!(user && !user.isAnonymous);
+    },
+    getStateDocRef: function(userId = this.getActiveUserId()) {
+        return doc(db, 'users', userId);
+    },
+    getImagesDocRef: function(userId = this.getActiveUserId()) {
+        return doc(db, 'user_images', userId);
+    },
+    getLegacyStateDocRef: function() {
+        return doc(db, 'users', LEGACY_USER_DOC_ID);
+    },
+    getLegacyImagesDocRef: function() {
+        return doc(db, 'users', LEGACY_IMAGES_DOC_ID);
+    },
+    getPushSubscriptionDocRef: function(docId, userId = this.getActiveUserId()) {
+        return doc(db, 'users', userId, 'push_subscriptions', docId);
+    },
+    shouldUseLegacyFallback: function(userId, localData) {
+        if (!userId || userId === LEGACY_USER_DOC_ID) return false;
+        if (!localData) return false;
+        return localStorage.getItem('lifeos_legacy_local_claimed') !== userId;
+    },
+    getLocalKey: function(baseKey) {
+        const uid = this.getActiveUserId();
+        return `${baseKey}:${uid || LEGACY_USER_DOC_ID}`;
+    },
+    localGet: function(baseKey) {
+        try {
+            const scoped = localStorage.getItem(this.getLocalKey(baseKey));
+            if (scoped !== null) return scoped;
+            if (!localStorage.getItem('lifeos_legacy_local_claimed')) {
+                return localStorage.getItem(baseKey);
+            }
+        } catch (_) {}
+        return null;
+    },
+    localSet: function(baseKey, value) {
+        try { localStorage.setItem(this.getLocalKey(baseKey), value); } catch (_) {}
+    },
+    localRemove: function(baseKey) {
+        try { localStorage.removeItem(this.getLocalKey(baseKey)); } catch (_) {}
+        try { localStorage.removeItem(baseKey); } catch (_) {}
+    },
+    markLegacyLocalClaimed: function() {
+        try {
+            if (!localStorage.getItem('lifeos_legacy_local_claimed')) {
+                localStorage.setItem('lifeos_legacy_local_claimed', this.getActiveUserId());
+            }
+        } catch (_) {}
+    },
     getLocalDateKey: function(date = new Date()) {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     },
@@ -123,12 +179,13 @@ const app = {
     },
     persistLocalMirror: function() {
         try {
-            localStorage.setItem('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')));
+            this.localSet('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')));
         } catch (_) {}
         try {
             const completed = !!window.sistemaVidaState?.onboardingComplete;
-            localStorage.setItem('lifeos_onboarding_complete', completed ? '1' : '0');
+            this.localSet('lifeos_onboarding_complete', completed ? '1' : '0');
         } catch (_) {}
+        this.markLegacyLocalClaimed();
     },
     updateSyncBadge: function(state) {
         // state: 'ok' | 'error' | 'syncing' | 'offline'
@@ -144,6 +201,129 @@ const app = {
                          + '<span class="text-[10px] font-bold">' + d.text + '</span>';
             el.className = 'lifeos-sync-badge flex items-center gap-1 ' + d.cls;
         });
+    },
+
+    getAuthErrorMessage: function(error) {
+        const code = String(error?.code || error?.message || '');
+        if (code.includes('auth/email-already-in-use')) return 'Este e-mail já tem uma conta. Use Entrar.';
+        if (code.includes('auth/invalid-email')) return 'Confira o e-mail informado.';
+        if (code.includes('auth/weak-password')) return 'Use uma senha com pelo menos 6 caracteres.';
+        if (code.includes('auth/invalid-credential') || code.includes('auth/wrong-password') || code.includes('auth/user-not-found')) return 'E-mail ou senha inválidos.';
+        if (code.includes('auth/operation-not-allowed')) return 'O login por e-mail/senha precisa ser ativado no Firebase Authentication.';
+        return 'Não foi possível concluir a operação da conta.';
+    },
+
+    renderAccountPanel: function() {
+        const user = auth.currentUser;
+        const isAccount = this.isRealAccount(user);
+        const email = user?.email || '';
+        const uid = this.getActiveUserId(user);
+        const statusEl = document.getElementById('account-status-text');
+        const idEl = document.getElementById('account-user-id');
+        const formEl = document.getElementById('account-auth-form');
+        const signedEl = document.getElementById('account-signed-actions');
+        const emailEl = document.getElementById('account-current-email');
+        const nameInput = document.getElementById('account-name-input');
+
+        if (statusEl) {
+            statusEl.textContent = isAccount
+                ? 'Conta ativa. Seus dados ficam separados por usuário.'
+                : 'Modo visitante. Crie uma conta para isolar seus dados e usar em outros dispositivos.';
+        }
+        if (idEl) idEl.textContent = isAccount ? uid : 'visitante';
+        if (emailEl) emailEl.textContent = email || 'Sem e-mail vinculado';
+        if (formEl) formEl.classList.toggle('hidden', isAccount);
+        if (signedEl) signedEl.classList.toggle('hidden', !isAccount);
+        if (nameInput && !nameInput.value) nameInput.value = window.sistemaVidaState?.profile?.name || '';
+    },
+
+    teardownRealtimeSync: function() {
+        try { if (this._realtimeSyncUnsub) this._realtimeSyncUnsub(); } catch (_) {}
+        try { if (this._imagesSyncUnsub) this._imagesSyncUnsub(); } catch (_) {}
+        try { if (this._periodicSyncId) clearInterval(this._periodicSyncId); } catch (_) {}
+        this._realtimeSyncUnsub = null;
+        this._imagesSyncUnsub = null;
+        this._periodicSyncId = null;
+    },
+
+    createAccountFromProfile: async function() {
+        const name = String(document.getElementById('account-name-input')?.value || '').trim();
+        const email = String(document.getElementById('account-email-input')?.value || '').trim();
+        const password = String(document.getElementById('account-password-input')?.value || '');
+        if (!email || !password) {
+            this.showToast('Informe e-mail e senha para criar a conta.', 'error');
+            return;
+        }
+        try {
+            this.updateSyncBadge('syncing');
+            const currentState = this.getPersistableState('full');
+            const credential = await createUserWithEmailAndPassword(auth, email, password);
+            if (name) {
+                try { await updateProfile(credential.user, { displayName: name }); } catch (_) {}
+                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+                window.sistemaVidaState.profile.name = name;
+            }
+            window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, currentState);
+            this.teardownRealtimeSync();
+            await this.saveState(false);
+            try { await this.registerPushSubscription(); } catch (_) {}
+            this.setupRealtimeSync();
+            this.renderAccountPanel();
+            this.renderProfileChrome();
+            this.showToast('Conta criada e dados vinculados a ela.', 'success');
+        } catch (error) {
+            console.error('[AUTH] Falha ao criar conta:', error);
+            this.updateSyncBadge('error');
+            this.showToast(this.getAuthErrorMessage(error), 'error');
+        }
+    },
+
+    signInFromProfile: async function() {
+        const email = String(document.getElementById('account-email-input')?.value || '').trim();
+        const password = String(document.getElementById('account-password-input')?.value || '');
+        if (!email || !password) {
+            this.showToast('Informe e-mail e senha para entrar.', 'error');
+            return;
+        }
+        try {
+            this.updateSyncBadge('syncing');
+            await signInWithEmailAndPassword(auth, email, password);
+            this.teardownRealtimeSync();
+            this.showToast('Conta carregada com sucesso.', 'success');
+            setTimeout(() => window.location.reload(), 600);
+        } catch (error) {
+            console.error('[AUTH] Falha ao entrar:', error);
+            this.updateSyncBadge('error');
+            this.showToast(this.getAuthErrorMessage(error), 'error');
+        }
+    },
+
+    sendPasswordResetFromProfile: async function() {
+        const email = String(document.getElementById('account-email-input')?.value || auth.currentUser?.email || '').trim();
+        if (!email) {
+            this.showToast('Informe o e-mail para recuperar a senha.', 'error');
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, email);
+            this.showToast('E-mail de recuperação enviado.', 'success');
+        } catch (error) {
+            console.error('[AUTH] Falha ao enviar recuperação:', error);
+            this.showToast(this.getAuthErrorMessage(error), 'error');
+        }
+    },
+
+    signOutFromProfile: async function() {
+        try {
+            this.persistLocalMirror();
+            this.teardownRealtimeSync();
+            await signOut(auth);
+            this.showToast('Você saiu da conta.', 'success');
+            setTimeout(() => window.location.reload(), 600);
+        } catch (error) {
+            console.error('[AUTH] Falha ao sair:', error);
+            this.showToast('Não foi possível sair da conta.', 'error');
+        }
     },
 
     withTimeout: function(promise, ms, label = 'operation') {
@@ -1444,19 +1624,19 @@ const app = {
             window.sistemaVidaState.onboardingComplete = false;
         }
         try {
-            const cachedTheme = localStorage.getItem('lifeos_theme_pref');
+            const cachedTheme = this.localGet('lifeos_theme_pref');
             if (cachedTheme && ['light', 'dark', 'auto'].includes(cachedTheme)) {
                 window.sistemaVidaState.settings.theme = cachedTheme;
             }
-            const cachedNotif = localStorage.getItem('lifeos_notif_enabled');
+            const cachedNotif = this.localGet('lifeos_notif_enabled');
             if (cachedNotif === '1' || cachedNotif === '0') {
                 window.sistemaVidaState.settings.notificationsEnabled = cachedNotif === '1';
             }
             if (!window.sistemaVidaState.profile.avatarUrl) {
-                const cached = localStorage.getItem('lifeos_profile_avatar') || '';
+                const cached = this.localGet('lifeos_profile_avatar') || '';
                 if (cached) window.sistemaVidaState.profile.avatarUrl = cached;
             }
-            const cachedOdyssey = localStorage.getItem('lifeos_odyssey_images');
+            const cachedOdyssey = this.localGet('lifeos_odyssey_images');
             if (cachedOdyssey) {
                 const parsed = JSON.parse(cachedOdyssey);
                 window.sistemaVidaState.profile.odysseyImages = {
@@ -1464,7 +1644,7 @@ const app = {
                     ...parsed
                 };
             }
-            const onboardingFlag = localStorage.getItem('lifeos_onboarding_complete');
+            const onboardingFlag = this.localGet('lifeos_onboarding_complete');
             if (onboardingFlag === '1') window.sistemaVidaState.onboardingComplete = true;
             if (onboardingFlag === '0') window.sistemaVidaState.onboardingComplete = false;
         } catch (_) {}
@@ -1481,7 +1661,7 @@ const app = {
         this.ensureSettingsState();
         const cachedTheme = (() => {
             try {
-                const v = localStorage.getItem('lifeos_theme_pref');
+                const v = this.localGet('lifeos_theme_pref');
                 return ['light', 'dark', 'auto'].includes(v) ? v : null;
             } catch (_) {
                 return null;
@@ -1518,7 +1698,7 @@ const app = {
         this.ensureSettingsState();
         const next = ['light', 'dark', 'auto'].includes(theme) ? theme : 'auto';
         window.sistemaVidaState.settings.theme = next;
-        try { localStorage.setItem('lifeos_theme_pref', next); } catch (_) {}
+        try { this.localSet('lifeos_theme_pref', next); } catch (_) {}
         this.applyThemePreference();
         this.saveState(true);
         this.showToast(`Tema aplicado: ${next === 'auto' ? 'Automático' : (next === 'dark' ? 'Escuro' : 'Claro')}.`, 'success');
@@ -1545,7 +1725,7 @@ const app = {
             }
         }
         window.sistemaVidaState.settings.notificationsEnabled = enabled;
-        try { localStorage.setItem('lifeos_notif_enabled', enabled ? '1' : '0'); } catch (_) {}
+        try { this.localSet('lifeos_notif_enabled', enabled ? '1' : '0'); } catch (_) {}
         if (enabled) {
             try { await this.registerPushSubscription(); } catch (err) { console.warn('[PUSH] Falha ao registrar assinatura:', err); }
         } else {
@@ -1601,14 +1781,21 @@ const app = {
         }
         const subJson = sub.toJSON();
         const docId = this.getPushSubscriptionDocId(subJson.endpoint || '');
-        const ref = doc(db, 'users', 'meu-sistema-vida', 'push_subscriptions', docId);
+        const ref = this.getPushSubscriptionDocRef(docId);
         await setDoc(ref, {
             endpoint: subJson.endpoint || '',
             keys: subJson.keys || {},
+            userId: this.getActiveUserId(),
             ua: navigator.userAgent || '',
             updatedAt: Date.now(),
             createdAt: Date.now()
         }, { merge: true });
+        if (this.getActiveUserId() !== LEGACY_USER_DOC_ID) {
+            try {
+                const legacyRef = doc(db, 'users', LEGACY_USER_DOC_ID, 'push_subscriptions', docId);
+                await deleteDoc(legacyRef);
+            } catch (_) {}
+        }
         return true;
     },
     unregisterPushSubscription: async function() {
@@ -1619,7 +1806,7 @@ const app = {
         const subJson = sub.toJSON();
         const docId = this.getPushSubscriptionDocId(subJson.endpoint || '');
         try {
-            const ref = doc(db, 'users', 'meu-sistema-vida', 'push_subscriptions', docId);
+            const ref = this.getPushSubscriptionDocRef(docId);
             await deleteDoc(ref);
         } catch (_) {}
         try { await sub.unsubscribe(); } catch (_) {}
@@ -1753,7 +1940,7 @@ const app = {
 
         const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
         let log = {};
-        try { log = JSON.parse(localStorage.getItem('lifeos_splash_log') || '{}') || {}; } catch (_) { log = {}; }
+        try { log = JSON.parse(this.localGet('lifeos_splash_log') || '{}') || {}; } catch (_) { log = {}; }
         const todayCount = Number(log.date === todayKey ? log.count : 0) || 0;
         const maxCount = settings.splashMode === 'twice_daily' ? 2 : 1;
         return todayCount < maxCount;
@@ -1761,10 +1948,10 @@ const app = {
     registerSplashShown: function() {
         const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
         try {
-            const raw = JSON.parse(localStorage.getItem('lifeos_splash_log') || '{}') || {};
+            const raw = JSON.parse(this.localGet('lifeos_splash_log') || '{}') || {};
             const count = raw.date === todayKey ? Number(raw.count || 0) + 1 : 1;
-            localStorage.setItem('lifeos_splash_log', JSON.stringify({ date: todayKey, count }));
-            localStorage.setItem('lifeos_last_splash', todayKey);
+            this.localSet('lifeos_splash_log', JSON.stringify({ date: todayKey, count }));
+            this.localSet('lifeos_last_splash', todayKey);
         } catch (_) {}
     },
     showDailySplash: function() {
@@ -1854,7 +2041,7 @@ const app = {
         if (slides.length === 0) return false;
         const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
         let log = {};
-        try { log = JSON.parse(localStorage.getItem('lifeos_odyssey_splash_log') || '{}') || {}; } catch (_) { log = {}; }
+        try { log = JSON.parse(this.localGet('lifeos_odyssey_splash_log') || '{}') || {}; } catch (_) { log = {}; }
         const todayCount = Number(log.date === todayKey ? log.count : 0) || 0;
         const maxCount = settings.odysseySplashMode === 'twice_daily' ? 2 : 1;
         return todayCount < maxCount;
@@ -1862,10 +2049,10 @@ const app = {
     registerOdysseySplashShown: function() {
         const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
         try {
-            const raw = JSON.parse(localStorage.getItem('lifeos_odyssey_splash_log') || '{}') || {};
+            const raw = JSON.parse(this.localGet('lifeos_odyssey_splash_log') || '{}') || {};
             const count = raw.date === todayKey ? Number(raw.count || 0) + 1 : 1;
-            localStorage.setItem('lifeos_odyssey_splash_log', JSON.stringify({ date: todayKey, count }));
-            localStorage.setItem('lifeos_odyssey_splash_last', todayKey);
+            this.localSet('lifeos_odyssey_splash_log', JSON.stringify({ date: todayKey, count }));
+            this.localSet('lifeos_odyssey_splash_last', todayKey);
         } catch (_) {}
     },
     showOdysseySplashIfEligible: function() {
@@ -2207,7 +2394,7 @@ const app = {
             }
         }
         if (!hasAny) return false;
-        const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
+        const imagesRef = this.getImagesDocRef();
         await this.withTimeout(setDoc(imagesRef, imagesData, { merge: true }), 15000, 'firestore_saveImages');
         console.log('[Images] Imagens sincronizadas com Firestore.');
         return true;
@@ -2222,7 +2409,7 @@ const app = {
         this.fileToOptimizedDataUrl(file, 400, 0.70).then(async (dataUrl) => {
             this.ensureSettingsState();
             window.sistemaVidaState.profile.avatarUrl = dataUrl;
-            try { localStorage.setItem('lifeos_profile_avatar', dataUrl); } catch (_) {}
+            try { this.localSet('lifeos_profile_avatar', dataUrl); } catch (_) {}
             this.renderProfileChrome();
             // Feedback imediato
             if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
@@ -2262,7 +2449,7 @@ const app = {
             const current = window.sistemaVidaState.profile.odysseyImages || {};
             window.sistemaVidaState.profile.odysseyImages = { ...current, [key]: dataUrl };
             try {
-                localStorage.setItem('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
+                this.localSet('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages));
             } catch (_) {}
             // Feedback imediato
             if (this.render.proposito) this.render.proposito();
@@ -2431,11 +2618,11 @@ const app = {
         const fullSnapshot = this.getPersistableState('full');
         const coreSnapshot = this.getPersistableState('core');
         try {
-            localStorage.setItem('lifeos_state_backup', JSON.stringify(fullSnapshot));
+            this.localSet('lifeos_state_backup', JSON.stringify(fullSnapshot));
         } catch (backupErr) {
             console.warn('Falha ao gravar backup local do estado:', backupErr);
             try {
-                localStorage.setItem('lifeos_state_backup_core', JSON.stringify(coreSnapshot));
+                this.localSet('lifeos_state_backup_core', JSON.stringify(coreSnapshot));
             } catch (_) {}
         }
         this.persistLocalMirror();
@@ -2455,7 +2642,7 @@ const app = {
                 } catch (imageError) {
                     console.warn('Falha ao sincronizar imagens com Firestore (ignorado):', imageError);
                 }
-                const stateRef = doc(db, "users", "meu-sistema-vida");
+                const stateRef = this.getStateDocRef();
                 const cloudSnapshot = this.getPersistableState('cloud');
                 const cloudTs = Number(window.sistemaVidaState?._lastUpdatedAt || enqueueTs || this.getSafeMonotonicTs());
                 cloudSnapshot._lastUpdatedAt = cloudTs;
@@ -2493,24 +2680,40 @@ const app = {
     loadState: async function() {
         let cloudData = null;
         let localData = null;
+        let shouldSeedCloudAfterLoad = false;
         try {
-            const rawLocal = localStorage.getItem('lifeos_state_backup');
-            const rawCore = localStorage.getItem('lifeos_state_backup_core');
+            await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
+            const activeUserId = this.getActiveUserId();
+            const rawLocal = this.localGet('lifeos_state_backup');
+            const rawCore = this.localGet('lifeos_state_backup_core');
             if (rawLocal) {
                 try { localData = JSON.parse(rawLocal); } catch (_) { localData = null; }
             } else if (rawCore) {
                 try { localData = JSON.parse(rawCore); } catch (_) { localData = null; }
             }
-            await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
-            const stateRef = doc(db, "users", "meu-sistema-vida");
+            const stateRef = this.getStateDocRef(activeUserId);
             const docSnap = await this.withTimeout(getDoc(stateRef), 10000, 'firestore_getDoc');
-            
+
             if (docSnap.exists()) {
                 console.log("Estado encontrado na Nuvem, mesclando dados...");
                 cloudData = docSnap.data();
             } else {
-                console.log("Primeiro acesso. Criando documento base na Nuvem...");
-                await this.saveState(true);
+                if (this.shouldUseLegacyFallback(activeUserId, localData)) {
+                    try {
+                        const legacySnap = await this.withTimeout(getDoc(this.getLegacyStateDocRef()), 8000, 'firestore_getLegacyDoc');
+                        if (legacySnap.exists()) {
+                            console.log('[SYNC] Documento legado encontrado para migração controlada.');
+                            cloudData = legacySnap.data();
+                            shouldSeedCloudAfterLoad = true;
+                        }
+                    } catch (legacyErr) {
+                        console.warn('[SYNC] Falha ao consultar documento legado:', legacyErr);
+                    }
+                }
+                if (!cloudData) {
+                    console.log("Primeiro acesso deste usuário. Documento será criado após normalização.");
+                    shouldSeedCloudAfterLoad = true;
+                }
             }
         } catch (error) {
             console.error("Erro ao carregar o estado do Firestore:", error);
@@ -2537,7 +2740,7 @@ const app = {
 
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
         try {
-            const dailyBackup = JSON.parse(localStorage.getItem('lifeos_daily_checkins_backup') || 'null');
+            const dailyBackup = JSON.parse(this.localGet('lifeos_daily_checkins_backup') || 'null');
             if (Array.isArray(dailyBackup) && dailyBackup.length) {
                 const today = this.getLocalDateKey();
                 const todayBackupEntry = dailyBackup.find(entry => entry?.date === today);
@@ -2564,33 +2767,42 @@ const app = {
         }
         // Load images from dedicated Firestore document (Firestore-native image storage)
         try {
-            const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
-            const imagesSnap = await this.withTimeout(getDoc(imagesRef), 8000, 'firestore_getImages');
+            const activeUserId = this.getActiveUserId();
+            const imagesRef = this.getImagesDocRef(activeUserId);
+            let imagesSnap = await this.withTimeout(getDoc(imagesRef), 8000, 'firestore_getImages');
+            if (!imagesSnap.exists() && this.shouldUseLegacyFallback(activeUserId, localData)) {
+                try {
+                    const legacyImagesSnap = await this.withTimeout(getDoc(this.getLegacyImagesDocRef()), 8000, 'firestore_getLegacyImages');
+                    if (legacyImagesSnap.exists()) imagesSnap = legacyImagesSnap;
+                } catch (legacyImgErr) {
+                    console.warn('[Images] Falha ao consultar imagens legadas:', legacyImgErr);
+                }
+            }
             if (imagesSnap.exists()) {
                 const imgData = imagesSnap.data();
                 if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
                 if (imgData.avatarUrl && typeof imgData.avatarUrl === 'string') {
                     window.sistemaVidaState.profile.avatarUrl = imgData.avatarUrl;
-                    try { localStorage.setItem('lifeos_profile_avatar', imgData.avatarUrl); } catch (_) {}
+                    try { this.localSet('lifeos_profile_avatar', imgData.avatarUrl); } catch (_) {}
                 }
                 if (imgData.odysseyImages && typeof imgData.odysseyImages === 'object') {
                     if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
                     Object.entries(imgData.odysseyImages).forEach(([k, v]) => {
                         if (v && typeof v === 'string') window.sistemaVidaState.profile.odysseyImages[k] = v;
                     });
-                    try { localStorage.setItem('lifeos_odyssey_images', JSON.stringify(imgData.odysseyImages)); } catch (_) {}
+                    try { this.localSet('lifeos_odyssey_images', JSON.stringify(imgData.odysseyImages)); } catch (_) {}
                 }
                 console.log('[Images] Imagens carregadas do Firestore.');
             }
         } catch (imgErr) {
             // Fallback to local cache if Firestore images doc unavailable
             try {
-                const cachedAvatar = localStorage.getItem('lifeos_profile_avatar');
+                const cachedAvatar = this.localGet('lifeos_profile_avatar');
                 if (cachedAvatar && !window.sistemaVidaState.profile?.avatarUrl) {
                     if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
                     window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
                 }
-                const cachedOdyssey = localStorage.getItem('lifeos_odyssey_images');
+                const cachedOdyssey = this.localGet('lifeos_odyssey_images');
                 if (cachedOdyssey) {
                     const parsed = JSON.parse(cachedOdyssey);
                     if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
@@ -2610,7 +2822,10 @@ const app = {
         this.normalizeDailyLogsState();
         this.normalizeDeepWorkState();
         this.renderSidebarValues();
-        if (window.sistemaVidaState._pendingLocalChanges) {
+        if (shouldSeedCloudAfterLoad) {
+            window.sistemaVidaState._pendingLocalChanges = true;
+        }
+        if (window.sistemaVidaState._pendingLocalChanges || shouldSeedCloudAfterLoad) {
             this.saveState(true).catch((err) => {
                 console.warn('[SYNC] Retry cloud sync after load failed:', err);
             });
@@ -2621,7 +2836,7 @@ const app = {
         const self = this;
         const trySetup = function() {
             self.withTimeout(getAuthReady(), 10000, 'auth_ready').then(() => {
-                const stateRef = doc(db, 'users', 'meu-sistema-vida');
+                const stateRef = self.getStateDocRef();
                 self._realtimeSyncUnsub = onSnapshot(stateRef, (docSnap) => {
                     if (!docSnap.exists()) return;
                     if (self._isSaving) return; // mid-save, skip echo
@@ -2657,7 +2872,7 @@ const app = {
                 });
                 // ---- images document real-time listener ----
                 if (!self._imagesSyncUnsub) {
-                    const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
+                    const imagesRef = self.getImagesDocRef();
                     self._imagesSyncUnsub = onSnapshot(imagesRef, (imgSnap) => {
                         if (!imgSnap.exists()) return;
                         if (self._isSaving) return;
@@ -2686,7 +2901,7 @@ const app = {
                     self._periodicSyncId = setInterval(function() {
                         if (self._isSaving || window.sistemaVidaState?._pendingLocalChanges) return;
                         self.withTimeout(getAuthReady(), 5000, 'auth_periodic').then(() => {
-                            const ref = doc(db, 'users', 'meu-sistema-vida');
+                            const ref = self.getStateDocRef();
                             return self.withTimeout(getDoc(ref), 8000, 'periodic_getDoc');
                         }).then((snap) => {
                             if (!snap || !snap.exists()) return;
@@ -2753,7 +2968,7 @@ const app = {
 
     getOpenNudgeLog: function() {
         try {
-            return JSON.parse(localStorage.getItem('lifeos_open_nudges_log') || '{}') || {};
+            return JSON.parse(this.localGet('lifeos_open_nudges_log') || '{}') || {};
         } catch (_) {
             return {};
         }
@@ -2767,7 +2982,7 @@ const app = {
     markOpenNudgeShownToday: function(id, dateKey = this.getLocalDateKey()) {
         const log = this.getOpenNudgeLog();
         log[id] = dateKey;
-        try { localStorage.setItem('lifeos_open_nudges_log', JSON.stringify(log)); } catch (_) {}
+        try { this.localSet('lifeos_open_nudges_log', JSON.stringify(log)); } catch (_) {}
     },
 
     isMockupPurposeValue: function(value) {
@@ -2942,7 +3157,7 @@ const app = {
         const todayKey = this.getLocalDateKey();
         const dayIndex = String(today.getDay());
         let sent = {};
-        try { sent = JSON.parse(localStorage.getItem('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
+        try { sent = JSON.parse(this.localGet('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
 
         state.habits.forEach(habit => {
             if (!habit || !habit.reminderEnabled || !habit.reminderTime) return;
@@ -2959,7 +3174,7 @@ const app = {
             const notify = () => {
                 if (sent[reminderKey]) return;
                 sent[reminderKey] = true;
-                try { localStorage.setItem('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
+                try { this.localSet('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
                 this.showNotification(`Lembrete de hábito: ${habit.title}`);
             };
 
@@ -2994,7 +3209,7 @@ const app = {
                 const dayIndex = String(now.getDay());
                 const todayKey = this.getLocalDateKey();
                 let sent = {};
-                try { sent = JSON.parse(localStorage.getItem('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
+                try { sent = JSON.parse(this.localGet('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
 
                 state.habits.forEach(habit => {
                     if (!habit || !habit.reminderEnabled || !habit.reminderTime) return;
@@ -3007,7 +3222,7 @@ const app = {
                     const reminderKey = `${habit.id}:${todayKey}:${reminderHHMM}`;
                     if (sent[reminderKey]) return;
                     sent[reminderKey] = true;
-                    try { localStorage.setItem('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
+                    try { this.localSet('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
                     this.showNotification(`Lembrete de hábito: ${habit.title}`);
                 });
             } catch (_) {}
@@ -6364,7 +6579,7 @@ const app = {
         window.sistemaVidaState.profile.notes = list;
         this.ensureNotesState();
         this.saveState(true);
-        try { localStorage.setItem('lifeos_notes_backup', JSON.stringify(window.sistemaVidaState.profile.notes || [])); } catch (_) {}
+        try { this.localSet('lifeos_notes_backup', JSON.stringify(window.sistemaVidaState.profile.notes || [])); } catch (_) {}
         this.clearNoteForm();
         this.renderNotesPanel();
         if (this.showToast) this.showToast('Nota salva.', 'success');
@@ -6861,7 +7076,7 @@ const app = {
             ? this.awardGamification('daily_intention', { key: `daily_intention:${today}`, date: today })
             : null;
         this.saveState(true);
-        try { localStorage.setItem('lifeos_daily_checkins_backup', JSON.stringify(window.sistemaVidaState.profile.dailyCheckins || [])); } catch (_) {}
+        try { this.localSet('lifeos_daily_checkins_backup', JSON.stringify(window.sistemaVidaState.profile.dailyCheckins || [])); } catch (_) {}
         this.renderDailyCheckinPanel();
         this.renderProfileCadence();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
@@ -8732,7 +8947,7 @@ const app = {
       try {
         // ── Apaga imagens do Firestore ──────────────────────────────────────────
         try {
-          const imagesRef = doc(db, 'users', 'meu-sistema-vida-images');
+          const imagesRef = this.getImagesDocRef();
           await this.withTimeout(
             setDoc(imagesRef, { avatarUrl: '', odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' } }),
             8000, 'firestore_clearImages'
@@ -8741,31 +8956,31 @@ const app = {
           console.warn('[Reset] Falha ao limpar imagens do Firestore (ignorado):', imgErr);
         }
         // ── Apaga imagens do localStorage ──────────────────────────────────────
-        try { localStorage.removeItem('lifeos_profile_avatar'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_odyssey_images'); } catch (_) {}
+        this.localRemove('lifeos_profile_avatar');
+        this.localRemove('lifeos_odyssey_images');
         // ── Apaga backups locais para evitar que estado antigo sobreponha o reset ─
-        try { localStorage.removeItem('lifeos_state_backup'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_state_backup_core'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_daily_checkins_backup'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_notes_backup'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_habit_reminders_sent'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_open_nudges_log'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_splash_log'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_last_splash'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_odyssey_splash_log'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_odyssey_splash_last'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_theme_pref'); } catch (_) {}
-        try { localStorage.removeItem('lifeos_notif_enabled'); } catch (_) {}
+        this.localRemove('lifeos_state_backup');
+        this.localRemove('lifeos_state_backup_core');
+        this.localRemove('lifeos_daily_checkins_backup');
+        this.localRemove('lifeos_notes_backup');
+        this.localRemove('lifeos_habit_reminders_sent');
+        this.localRemove('lifeos_open_nudges_log');
+        this.localRemove('lifeos_splash_log');
+        this.localRemove('lifeos_last_splash');
+        this.localRemove('lifeos_odyssey_splash_log');
+        this.localRemove('lifeos_odyssey_splash_last');
+        this.localRemove('lifeos_theme_pref');
+        this.localRemove('lifeos_notif_enabled');
         // ── Se for reset total (sem mockup), força onboarding na próxima carga ─
         if (!useMockup) {
-          try { localStorage.setItem('lifeos_onboarding_complete', '0'); } catch (_) {}
+          try { this.localSet('lifeos_onboarding_complete', '0'); } catch (_) {}
         }
         // ── Desliga listeners em tempo real ──
         try { if (this._realtimeSyncUnsub) { this._realtimeSyncUnsub(); this._realtimeSyncUnsub = null; } } catch (_) {}
         try { if (this._imagesSyncUnsub) { this._imagesSyncUnsub(); this._imagesSyncUnsub = null; } } catch (_) {}
         // ── Grava o novo estado SEM merge ──
         await getAuthReady();
-        const stateRef = doc(db, 'users', 'meu-sistema-vida');
+        const stateRef = this.getStateDocRef();
         const newCloudState = JSON.parse(JSON.stringify(window.sistemaVidaState));
         delete newCloudState.profile?.avatarUrl;
         delete newCloudState.profile?.odysseyImages;
@@ -11974,6 +12189,7 @@ const app = {
                 soundKnob.className = `w-3 h-3 rounded-full absolute transition-all ${soundOn ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
             }
             app.renderGamificationProfile();
+            app.renderAccountPanel();
             app.renderProfileCadence();
             app.renderNotesPanel();
             app.renderManualGuide();
