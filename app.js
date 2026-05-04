@@ -1978,7 +1978,7 @@ const app = {
             okrsExist: (state.entities.okrs || []).length > 0,
             odysseyFilled: cadenceOk('odyssey'),
             purposeFilled: cadenceOk('purpose'),
-            metasExist: (state.entities.metas || []).length > 0,
+            lifeGoalsFilled: this.hasLifeGoalsContent() && cadenceOk('lifeGoals'),
         };
     },
 
@@ -1987,7 +1987,7 @@ const app = {
         if (!el) return;
         const s = this._getFlowState();
 
-        const row = (icon, title, subtitle, xpLabel, done, view, sectionId = '', tabId = '', cadenceKey = '') => {
+        const row = (icon, title, subtitle, xpLabel, done, view, sectionId = '', tabId = '', cadenceKey = '', showCadenceMeta = false) => {
             const bg = done
                 ? 'bg-emerald-500/[0.06] border border-emerald-500/20'
                 : 'bg-surface-container-low border border-outline-variant/15';
@@ -1995,8 +1995,8 @@ const app = {
             const checkColor = done ? 'text-emerald-500' : 'text-outline-variant/60';
             const checkFill = done ? "font-variation-settings:'FILL' 1;" : '';
             const cadenceConfig = cadenceKey ? this.getCadenceConfig()[cadenceKey] : null;
-            const cadenceMeta = cadenceConfig
-                ? `<p class="text-[10px] text-outline mt-1 leading-snug">Frequência: ${this.escapeHtml(this.getCadenceFrequencyLabel(cadenceConfig.expectedDays))}</p>`
+            const cadenceMeta = cadenceConfig && showCadenceMeta
+                ? `<p class="text-[10px] text-outline mt-1 leading-snug">Revisitar: ${this.escapeHtml(this.getCadenceFrequencyLabel(cadenceConfig.expectedDays).toLowerCase())}</p>`
                 : '';
             const xpEl = xpLabel
                 ? `<span class="shrink-0 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md leading-none">${xpLabel}</span>`
@@ -2064,9 +2064,9 @@ const app = {
                 row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'proposito', 'swls-section', '', 'swls')
             ) +
             section('Horizonte Vital', 'auto_awesome',
-                row('flag', 'Metas de vida', 'Metas de 1 a 5 anos alinhadas ao propósito de vida', '', s.metasExist, 'planos', '', 'metas') +
-                row('explore', 'Odyssey Plan', 'Três cenários possíveis para os próximos 5 anos da sua vida', '', s.odysseyFilled, 'proposito', 'odyssey-section', '', 'odyssey') +
-                row('self_improvement', 'Visão, Legado & Ikigai', 'O que você quer deixar, ser e fazer no mundo', '', s.purposeFilled, 'proposito', 'proposito-ikigai-section', '', 'purpose')
+                row('flag', 'Metas de vida', 'Metas de 1 a 5 anos alinhadas ao propósito de vida', '', s.lifeGoalsFilled, 'planos', '', 'metas', 'lifeGoals', true) +
+                row('explore', 'Odyssey Plan', 'Três cenários possíveis para os próximos 5 anos da sua vida', '', s.odysseyFilled, 'proposito', 'odyssey-section', '', 'odyssey', true) +
+                row('self_improvement', 'Visão, Legado & Ikigai', 'O que você quer deixar, ser e fazer no mundo', '', s.purposeFilled, 'proposito', 'proposito-ikigai-section', '', 'purpose', true)
             );
     },
 
@@ -4761,6 +4761,7 @@ const app = {
             progress: 0,
             completed: false
         });
+        this.markCadence('lifeGoals', todayKey);
 
         const okrMap = {};
         okrs.forEach(okr => {
@@ -5936,6 +5937,15 @@ const app = {
                 profile.cadence[key].lastAt = String(profile.cadence[key].lastAt);
             }
         });
+        if (!profile.cadence.lifeGoals?.lastAt && this.hasLifeGoalsContent()) {
+            profile.cadence.lifeGoals = {
+                ...(profile.cadence.lifeGoals || {}),
+                lastAt: this.getLocalDateKey(),
+                updatedAt: new Date().toISOString(),
+                migratedFromContent: true
+            };
+            this._cadenceNeedsMigrationSave = true;
+        }
         if (!profile.cadence.purpose?.lastAt && this.hasPurposeContent()) {
             const fallbackLastAt = profile.cadence.odyssey?.lastAt || this.getLocalDateKey();
             profile.cadence.purpose = {
@@ -5946,6 +5956,10 @@ const app = {
             };
             this._cadenceNeedsMigrationSave = true;
         }
+    },
+
+    hasLifeGoalsContent: function() {
+        return Array.isArray(window.sistemaVidaState.entities?.metas) && window.sistemaVidaState.entities.metas.length > 0;
     },
 
     hasPurposeContent: function() {
@@ -6481,6 +6495,7 @@ const app = {
             wheel: { label: 'Roda da Vida', expectedDays: 30, icon: 'pie_chart', why: 'Termômetro mensal das áreas.' },
             perma: { label: 'PERMA', expectedDays: 30, icon: 'psychology', why: 'Florescimento mensal.' },
             swls: { label: 'SWLS', expectedDays: 90, icon: 'monitoring', why: 'Satisfação global trimestral.' },
+            lifeGoals: { label: 'Metas de vida', expectedDays: 180, icon: 'flag', why: 'Revisão semestral das metas de 1 a 5 anos e do rumo de longo prazo.' },
             odyssey: { label: 'Odyssey Plan', expectedDays: 180, icon: 'explore', why: 'Revisão semestral dos cenários de vida.' },
             purpose: { label: 'Visão, Legado & Ikigai', expectedDays: 180, icon: 'self_improvement', why: 'Revisão semestral do norte existencial e do legado desejado.' }
         };
@@ -9068,6 +9083,9 @@ const app = {
                 window.sistemaVidaState.entities[type].push(obj);
                 if (['micros', 'macros', 'okrs', 'metas'].includes(type)) this.updateCascadeProgress(obj.id, type);
             }
+        }
+        if (type === 'metas') {
+            this.markCadence('lifeGoals');
         }
 
         // Sincroniza seleção do micro no plano da semana (novo e edição).
