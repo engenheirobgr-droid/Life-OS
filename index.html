@@ -177,6 +177,81 @@
             animation: cardSuccessPulse 0.55s ease-out;
         }
 
+        .gamification-dim-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gamification-dim-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--evo-tone, var(--md-sys-color-primary)) 10%, transparent), transparent 58%);
+            pointer-events: none;
+            opacity: 0.85;
+        }
+
+        .gamification-dim-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .gamification-evo-track {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.35rem;
+        }
+
+        .gamification-evo-track .evo-step {
+            min-width: 0;
+            border-radius: 0.75rem;
+            border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 70%, transparent);
+            background: color-mix(in srgb, var(--md-sys-color-surface-container-highest) 70%, transparent);
+            color: var(--md-sys-color-outline);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.15rem;
+            min-height: 54px;
+            padding: 0.35rem 0.2rem;
+            transform-origin: bottom center;
+            transition: transform 0.22s ease, background 0.22s ease, border-color 0.22s ease;
+        }
+
+        .gamification-evo-track .evo-step .material-symbols-outlined {
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .gamification-evo-track .evo-step small {
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 0.54rem;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .gamification-evo-track .evo-step.active {
+            background: color-mix(in srgb, var(--evo-tone, var(--md-sys-color-primary)) 14%, var(--md-sys-color-surface-container-lowest));
+            border-color: color-mix(in srgb, var(--evo-tone, var(--md-sys-color-primary)) 38%, transparent);
+            color: var(--evo-tone, var(--md-sys-color-primary));
+            animation: evoNodeGrow 0.52s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .gamification-evo-track .evo-step.active:last-child {
+            box-shadow: 0 8px 24px color-mix(in srgb, var(--evo-tone, var(--md-sys-color-primary)) 16%, transparent);
+        }
+
+        @keyframes evoNodeGrow {
+            0% { transform: translateY(6px) scale(0.86); opacity: 0.55; }
+            70% { transform: translateY(-1px) scale(1.04); opacity: 1; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
         @keyframes splashEnter {
             from { opacity: 0; transform: translateY(18px) scale(0.98); }
             to { opacity: 1; transform: translateY(0) scale(1); }
@@ -466,6 +541,31 @@
             12%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
             78%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
             100% { opacity: 0; transform: translate(-50%, -50%) scale(1.06); }
+        }
+
+        .gamification-level-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            animation: tierUpFade 2.1s cubic-bezier(0.19,1,0.22,1) forwards;
+            background: var(--md-sys-color-surface-container-highest);
+            border: 1px solid color-mix(in srgb, var(--evo-tone, var(--md-sys-color-primary)) 34%, var(--md-sys-color-outline-variant));
+            border-radius: 1.5rem;
+            padding: 1.4rem 1.4rem 1.6rem;
+            text-align: center;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+            width: min(92vw, 420px);
+        }
+
+        .gamification-level-overlay .overlay-track {
+            margin-bottom: 1rem;
+        }
+
+        .gamification-level-overlay .level-main-icon {
+            font-size: 2.7rem;
+            color: var(--evo-tone, var(--md-sys-color-primary));
+            display: block;
+            font-variation-settings: 'FILL' 1;
         }
 
         /* Animações do Onboarding */

@@ -531,18 +531,127 @@ const app = {
         const def = tiers[dimension] || { titles: ['Iniciante', 'Integrador', 'Mestre', 'Líder', 'Lendário'], icon: 'stars' };
         return { title: def.titles[tier], icon: def.icon, tier, tierMax: 4 };
     },
+    getXpForLevelStep: function(level) {
+        const lv = Math.max(1, Number(level) || 1);
+        return 80 + ((lv - 1) * 25);
+    },
+    getXpThresholdForLevel: function(level) {
+        const target = Math.max(1, Number(level) || 1);
+        let total = 0;
+        for (let lv = 1; lv < target; lv += 1) total += this.getXpForLevelStep(lv);
+        return total;
+    },
     getLevelFromXp: function(xp) {
-        return Math.floor(Math.max(0, Number(xp) || 0) / 100) + 1;
+        const safeXp = Math.max(0, Number(xp) || 0);
+        let level = 1;
+        let remaining = safeXp;
+        while (level < 200) {
+            const step = this.getXpForLevelStep(level);
+            if (remaining < step) break;
+            remaining -= step;
+            level += 1;
+        }
+        return level;
     },
     getLevelProgress: function(xp) {
         const safeXp = Math.max(0, Number(xp) || 0);
-        const current = safeXp % 100;
+        const level = this.getLevelFromXp(safeXp);
+        const floor = this.getXpThresholdForLevel(level);
+        const next = this.getXpForLevelStep(level);
+        const current = Math.max(0, safeXp - floor);
         return {
-            level: this.getLevelFromXp(safeXp),
+            level,
             current,
-            next: 100,
-            pct: Math.max(0, Math.min(100, current))
+            next,
+            pct: Math.max(0, Math.min(100, (current / Math.max(1, next)) * 100))
         };
+    },
+    getDimensionEvolution: function(dimension, level) {
+        const identity = this.getDimensionIdentity(dimension, level);
+        const catalog = {
+            'Saúde': {
+                tone: '#10b981',
+                stages: [
+                    ['self_improvement', 'Acordar'],
+                    ['directions_walk', 'Mover'],
+                    ['fitness_center', 'Treinar'],
+                    ['vital_signs', 'Vigor'],
+                    ['workspace_premium', 'Potência']
+                ]
+            },
+            'Mente': {
+                tone: '#0ea5e9',
+                stages: [
+                    ['eco', 'Semente'],
+                    ['local_florist', 'Broto'],
+                    ['park', 'Árvore'],
+                    ['psychology', 'Clareza'],
+                    ['auto_awesome', 'Sabedoria']
+                ]
+            },
+            'Carreira': {
+                tone: '#6366f1',
+                stages: [
+                    ['school', 'Aprender'],
+                    ['engineering', 'Executar'],
+                    ['work', 'Entregar'],
+                    ['domain', 'Liderar'],
+                    ['military_tech', 'Referência']
+                ]
+            },
+            'Finanças': {
+                tone: '#059669',
+                stages: [
+                    ['savings', 'Base'],
+                    ['account_balance_wallet', 'Controle'],
+                    ['payments', 'Fluxo'],
+                    ['monitoring', 'Estratégia'],
+                    ['account_balance', 'Patrimônio']
+                ]
+            },
+            'Relacionamentos': {
+                tone: '#ec4899',
+                stages: [
+                    ['waving_hand', 'Contato'],
+                    ['forum', 'Diálogo'],
+                    ['groups', 'Vínculo'],
+                    ['diversity_3', 'Comunidade'],
+                    ['hub', 'Influência']
+                ]
+            },
+            'Família': {
+                tone: '#f59e0b',
+                stages: [
+                    ['home', 'Presença'],
+                    ['family_restroom', 'Cuidado'],
+                    ['shield', 'Proteção'],
+                    ['real_estate_agent', 'Base'],
+                    ['foundation', 'Legado']
+                ]
+            },
+            'Lazer': {
+                tone: '#8b5cf6',
+                stages: [
+                    ['sports_esports', 'Brincar'],
+                    ['palette', 'Criar'],
+                    ['explore', 'Explorar'],
+                    ['celebration', 'Celebrar'],
+                    ['theater_comedy', 'Maestria']
+                ]
+            },
+            'Propósito': {
+                tone: '#0d9488',
+                stages: [
+                    ['search', 'Busca'],
+                    ['explore', 'Direção'],
+                    ['flag', 'Missão'],
+                    ['flare', 'Guia'],
+                    ['auto_awesome', 'Legado']
+                ]
+            }
+        };
+        const fallback = { tone: '#0d9488', stages: [['stars', 'Início'], ['trending_up', 'Ritmo'], ['workspace_premium', 'Força'], ['rocket_launch', 'Impulso'], ['auto_awesome', 'Legado']] };
+        return { ...(catalog[dimension] || fallback), tier: identity.tier, identity };
     },
     getMicroEffort: function(micro) {
         const raw = String(micro?.effort || micro?.esforco || 'medio').toLowerCase();
@@ -956,6 +1065,36 @@ const app = {
             parts.push(`Conquista: ${result.achievementsUnlocked[0].title}`);
         }
         this.showToast(parts.join(' · '), 'success');
+        this.showGamificationAwardEffects(result);
+    },
+    showGamificationAwardEffects: function(result) {
+        if (!result) return;
+        this.showFloatingXp(result.xp);
+        this.playGamificationLevelEffect(result);
+    },
+    playGamificationLevelEffect: function(result) {
+        if (!result) return;
+        if (result.tierPromotion) {
+            this.playXpSound('tierup');
+            setTimeout(() => this.showTierPromotionOverlay(result.dimension, result.identity?.title || '', result.identity?.icon || 'auto_awesome', result.dimensionLevel), 450);
+        } else if (result.dimensionLeveledUp || result.totalLeveledUp) {
+            this.playXpSound('levelup');
+            if (result.dimension) {
+                setTimeout(() => this.showTierPromotionOverlay(result.dimension, result.identity?.title || '', result.identity?.icon || 'trending_up', result.dimensionLevel), 450);
+            }
+        } else {
+            this.playXpSound('xp');
+        }
+    },
+    showGamificationBatchEffects: function(results, xpTotal = 0) {
+        const awards = (Array.isArray(results) ? results : [results]).filter(Boolean);
+        if (!awards.length) return;
+        this.showFloatingXp(xpTotal || awards.reduce((sum, item) => sum + (Number(item.xp) || 0), 0));
+        const levelAward = awards.find(item => item.tierPromotion)
+            || awards.find(item => item.dimensionLeveledUp)
+            || awards.find(item => item.totalLeveledUp)
+            || awards[0];
+        this.playGamificationLevelEffect(levelAward);
     },
     showFloatingXp: function(xp) {
         if (!xp || xp <= 0) return;
@@ -986,15 +1125,23 @@ const app = {
         card.classList.add('card-success-pulse');
         card.addEventListener('animationend', () => card.classList.remove('card-success-pulse'), { once: true });
     },
-    showTierPromotionOverlay: function(dimension, title, icon) {
+    showTierPromotionOverlay: function(dimension, title, icon, level = 1) {
+        const evo = this.getDimensionEvolution(dimension, level || 1);
+        const stages = evo.stages.map(([stageIcon, label], idx) => `
+            <div class="evo-step ${idx <= evo.tier ? 'active' : ''}">
+                <span class="material-symbols-outlined notranslate">${stageIcon}</span>
+                <small>${this.escapeHtml(label)}</small>
+            </div>
+        `).join('');
         const overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;inset:0;z-index:10001;pointer-events:none;';
         overlay.innerHTML = `
-            <div style="position:absolute;top:50%;left:50%;animation:tierUpFade 2.1s cubic-bezier(0.19,1,0.22,1) forwards;background:var(--md-sys-color-surface-container-highest);border:1px solid var(--md-sys-color-outline-variant);border-radius:1.5rem;padding:2rem 3rem;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.25);min-width:220px;">
-                <span class="material-symbols-outlined notranslate" style="font-size:2.5rem;color:var(--md-sys-color-primary);display:block;">${icon}</span>
+            <div class="gamification-level-overlay" style="--evo-tone:${evo.tone};">
+                <div class="gamification-evo-track overlay-track">${stages}</div>
+                <span class="material-symbols-outlined notranslate level-main-icon">${icon}</span>
                 <p style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.18em;color:var(--md-sys-color-outline);margin-top:0.75rem;">${this.escapeHtml(dimension)}</p>
                 <p style="font-size:1.4rem;font-weight:800;color:var(--md-sys-color-on-surface);margin-top:0.2rem;">${this.escapeHtml(title)}</p>
-                <p style="font-size:0.7rem;color:var(--md-sys-color-outline);margin-top:0.2rem;">Novo título desbloqueado</p>
+                <p style="font-size:0.7rem;color:var(--md-sys-color-outline);margin-top:0.2rem;">Nível ${this.escapeHtml(String(level || 1))} desbloqueado</p>
             </div>`;
         document.body.appendChild(overlay);
         setTimeout(() => overlay.remove(), 2300);
@@ -6414,6 +6561,7 @@ const app = {
         this.renderProfileCadence();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
         const xpEarned = (checkinAward?.xp || 0) + (intentionAward?.xp || 0);
+        this.showGamificationBatchEffects([checkinAward, intentionAward], xpEarned);
         if (this.showToast) this.showToast(xpEarned ? `Check-in salvo! +${xpEarned} XP` : 'Check-in atualizado.', 'success');
     },
 
@@ -7837,6 +7985,7 @@ const app = {
         this.saveState(true);
         const isNextWeek = weekKey > this._getWeekKey();
         this.closeWeeklyPlanModal();
+        if (award) this.showGamificationAwardEffects(award);
         this.showNotification(award
             ? `${isNextWeek ? 'Plano da próxima semana salvo' : 'Plano semanal salvo'}! +${award.xp} XP`
             : (isNextWeek ? 'Plano da próxima semana salvo!' : 'Plano semanal salvo!'));
@@ -9243,6 +9392,7 @@ const app = {
         if (btn) {
             const originalText = btn.innerHTML;
             const xpEarned = (diaryAward?.xp || 0) + (shutdownAward?.xp || 0);
+            this.showGamificationBatchEffects([diaryAward, shutdownAward], xpEarned);
             btn.innerHTML = xpEarned ? `Salvo! +${xpEarned} XP` : "Salvo!";
             setTimeout(() => {
                 btn.innerHTML = originalText;
@@ -9487,10 +9637,17 @@ const app = {
                 const xp = Math.max(0, Number(gamification.dimensionXp[dim]) || 0);
                 const progress = this.getLevelProgress(xp);
                 const identity = this.getDimensionIdentity(dim, progress.level);
+                const evolution = this.getDimensionEvolution(dim, progress.level);
                 const tierNames = ['I', 'II', 'III', 'IV', 'V'];
                 const tierLabel = tierNames[identity.tier] || 'I';
+                const stageNodes = evolution.stages.map(([stageIcon, label], idx) => `
+                    <div class="evo-step ${idx <= evolution.tier ? 'active' : ''}">
+                        <span class="material-symbols-outlined notranslate">${this.escapeHtml(stageIcon)}</span>
+                        <small>${this.escapeHtml(label)}</small>
+                    </div>
+                `).join('');
                 return `
-                <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4 min-w-0">
+                <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4 min-w-0 gamification-dim-card" style="--evo-tone:${evolution.tone};">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline truncate">${this.escapeHtml(dim)}</p>
@@ -9499,9 +9656,10 @@ const app = {
                         </div>
                         <span class="material-symbols-outlined notranslate text-primary text-xl">${identity.icon}</span>
                     </div>
+                    <div class="gamification-evo-track mt-4">${stageNodes}</div>
                     <div class="mt-3 flex items-center justify-between text-[11px] text-outline">
                         <span>Próximo nível</span>
-                        <span>${progress.current}/100 XP</span>
+                        <span>${progress.current}/${progress.next} XP</span>
                     </div>
                     <div class="mt-2 h-1.5 rounded-full bg-outline-variant/20 overflow-hidden">
                         <div class="h-full rounded-full bg-primary" style="width:${progress.pct}%"></div>
@@ -12160,16 +12318,7 @@ const app = {
           this.showGamificationToast(award);
           this.recentCompletedMicroId = micro.id;
           if (award) {
-              this.showFloatingXp(award.xp);
               this.flashMicroCard(micro.id);
-              if (award.tierPromotion) {
-                  this.playXpSound('tierup');
-                  setTimeout(() => this.showTierPromotionOverlay(award.dimension, award.identity.title, award.identity.icon), 600);
-              } else if (award.dimensionLeveledUp || award.totalLeveledUp) {
-                  this.playXpSound('levelup');
-              } else {
-                  this.playXpSound('xp');
-              }
           }
         } else {
           delete micro.completedDate;
