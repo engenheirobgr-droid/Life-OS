@@ -982,7 +982,6 @@
             };
 
             mountSwitcher('header-theme-switcher');
-            mountSwitcher('sidebar-theme-switcher');
 
             window.loSetTheme = function(t) {
                 applyTheme(t);
@@ -1141,12 +1140,14 @@
             </nav>
 
             <div class="mt-4 px-4 flex items-center justify-between">
-                <button class="h-10 px-3 rounded-full flex items-center gap-1.5 bg-primary/10 text-primary border border-primary/25 hover:bg-primary/15 transition-all font-bold text-xs uppercase tracking-wider"
-                onclick="app.openFlowModal()">
+                <button class="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary border border-primary/25 hover:bg-primary/15 transition-all"
+                onclick="app.openFlowModal()" title="Flow">
                 <span class="material-symbols-outlined notranslate">account_tree</span>
-                Flow
                 </button>
-                <div id="sidebar-theme-switcher"></div>
+                <button class="w-10 h-10 rounded-full flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container transition-all"
+                    onclick="app.flowNavigate('perfil','manual-guide-section')" title="Manual do app">
+                    <span class="material-symbols-outlined notranslate">menu_book</span>
+                </button>
             </div>
 
             <div class="mt-auto pt-6 border-t border-outline-variant/20">

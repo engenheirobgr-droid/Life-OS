@@ -623,6 +623,10 @@ const app = {
         if (eventType === 'deep_work') xp = Math.max(10, Math.min(40, Math.round((Number(payload.focusSec) || 0) / 300)));
         if (eventType === 'weekly_review') xp = 25;
         if (eventType === 'daily_checkin') xp = 10;
+        if (eventType === 'daily_intention') xp = 5;
+        if (eventType === 'daily_diary') xp = 8;
+        if (eventType === 'daily_shutdown') xp = 8;
+        if (eventType === 'weekly_plan') xp = 15;
         if (eventType === 'habit_complete' && payload.sourceType) xp += payload.sourceType === 'shadow' ? 4 : 2;
         if (eventType === 'habit_complete' && payload.maturity === 'graduated') xp = Math.max(1, Math.round(xp * 0.5));
         if (eventType === 'weekly_review' && payload.identityReflection) xp += 5;
@@ -1772,6 +1776,7 @@ const app = {
         const monthKey = today.slice(0, 7);
         const todayLog = (state.dailyLogs || {})[today] || {};
         const events = (state.gamification?.events) || {};
+        const cadenceOk = (key) => this.getCadenceStatus(key).state === 'ok';
 
         const microsDoneToday = (state.entities.micros || []).some(m =>
             (m.status === 'done' || m.completed) &&
@@ -1806,25 +1811,24 @@ const app = {
         const shutdownDomVal = document.getElementById('diario-shutdown-1')?.value || '';
 
         return {
-            checkinDone: !!this.getTodayCheckin(),
+            checkinDone: cadenceOk('checkin'),
             intentionDone: !!(todayLog.focus || '').trim() || !!intentionDomVal.trim(),
             microsDoneToday,
             habitsDoneToday,
             focusToday,
             habitsDoneToday,
             focusToday,
-            diaryDone: !!(todayLog.gratidao || '').trim() || !!diaryDomVal.trim(),
-            shutdownDone: !!(shutdownVal || shutdownNotes),
-            weekPlanDone: !!((state.weekPlans || {})[weekKey]?.selectedMicros?.length > 0 || ((state.weekPlans || {})[weekKey]?.intention || '').trim()),
-            weekReviewDone: !!events[`review:${weekKey}`],
-            wheelThisMonth: Object.keys(wheelHistory).some(k => k.startsWith(monthKey)),
-            permaThisMonth: Object.keys(permaHistory).some(k => k.startsWith(monthKey)),
-            shutdownDone: !!(shutdownVal || shutdownNotes),
+            diaryDone: cadenceOk('diary'),
+            shutdownDone: cadenceOk('diary'),
+            weekPlanDone: cadenceOk('weeklyPlan'),
+            weekReviewDone: cadenceOk('weeklyReview'),
+            wheelThisMonth: cadenceOk('wheel'),
+            permaThisMonth: cadenceOk('perma'),
             macrosThisMonth: (state.entities.macros || []).some(m => (m.updatedAt || m.createdAt || '').startsWith(monthKey)),
-            swlsThisQuarter: Object.keys(swlsHistory).some(k => k >= ninetyDaysAgo),
+            swlsThisQuarter: cadenceOk('swls'),
             cycleReviewCurrent: cycleAgeDays < 84,
             okrsExist: (state.entities.okrs || []).length > 0,
-            odysseyFilled: !!(odyssey.cenarioA || odyssey.A?.title),
+            odysseyFilled: cadenceOk('odyssey'),
             purposeFilled: !!(state.profile?.legacy || state.profile?.vision || state.profile?.ikigai),
             metasExist: (state.entities.metas || []).length > 0,
         };
@@ -1883,17 +1887,17 @@ const app = {
             section('Rotina Diária', 'today',
                 sub('Manhã', 'wb_sunny') +
                 row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'daily-checkin-panel') +
-                row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '', s.intentionDone, 'hoje', 'daily-checkin-panel') +
+                row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '+5 XP', s.intentionDone, 'hoje', 'daily-checkin-panel') +
                 sub('Ao longo do dia', 'light_mode') +
                 row('task_alt', 'Executar micros', 'Avançar ao menos uma micro ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
                 row('repeat', 'Registrar hábitos', 'Marcar os hábitos concluídos no dia', '+6–10 XP', s.habitsDoneToday, 'hoje', 'hoje-habits-section') +
                 row('timer', 'Sessão de foco', 'Bloco de deep work com Pomodoro (90/20)', '+10–40 XP', s.focusToday, 'foco', 'deep-work-panel') +
                 sub('Noite', 'nightlight') +
-                row('auto_stories', 'Diário & Gratidão', 'Reflexão do dia e três coisas pelas quais é grato', '', s.diaryDone, 'hoje', 'hoje-diario-section') +
-                row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '', s.shutdownDone, 'hoje', 'hoje-diario-section')
+                row('auto_stories', 'Diário & Gratidão', 'Reflexão do dia e três coisas pelas quais é grato', '+8 XP', s.diaryDone, 'hoje', 'hoje-diario-section') +
+                row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '+8 XP', s.shutdownDone, 'hoje', 'hoje-diario-section')
             ) +
             section('Ritmo Semanal', 'date_range',
-                row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '', s.weekPlanDone, 'planos', 'tab-semanal', 'semanal') +
+                row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '+15 XP', s.weekPlanDone, 'planos', 'tab-semanal', 'semanal') +
                 row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'planos', 'weekly-plan-primary-action', 'semanal')
             ) +
             section('Ritmo Mensal', 'calendar_month',
@@ -6401,12 +6405,16 @@ const app = {
         }
         this.markCadence('checkin', today);
         const checkinAward = this.awardGamification('daily_checkin', { key: `daily_checkin:${today}`, date: today });
+        const intentionAward = entry.intention
+            ? this.awardGamification('daily_intention', { key: `daily_intention:${today}`, date: today })
+            : null;
         this.saveState(true);
         try { localStorage.setItem('lifeos_daily_checkins_backup', JSON.stringify(window.sistemaVidaState.profile.dailyCheckins || [])); } catch (_) {}
         this.renderDailyCheckinPanel();
         this.renderProfileCadence();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
-        if (this.showToast) this.showToast(checkinAward ? `Check-in salvo! +${checkinAward.xp} XP` : 'Check-in atualizado.', 'success');
+        const xpEarned = (checkinAward?.xp || 0) + (intentionAward?.xp || 0);
+        if (this.showToast) this.showToast(xpEarned ? `Check-in salvo! +${xpEarned} XP` : 'Check-in atualizado.', 'success');
     },
 
     setCheckinVal: function(inputId, val, btn) {
@@ -7825,10 +7833,13 @@ const app = {
         };
 
         this.markCadence('weeklyPlan');
+        const award = this.awardGamification('weekly_plan', { key: `weekly_plan:${weekKey}`, date: weekKey });
         this.saveState(true);
         const isNextWeek = weekKey > this._getWeekKey();
         this.closeWeeklyPlanModal();
-        this.showNotification(isNextWeek ? 'Plano da próxima semana salvo!' : 'Plano semanal salvo!');
+        this.showNotification(award
+            ? `${isNextWeek ? 'Plano da próxima semana salvo' : 'Plano semanal salvo'}! +${award.xp} XP`
+            : (isNextWeek ? 'Plano da próxima semana salvo!' : 'Plano semanal salvo!'));
         if (this.renderWeeklyPlans) this.renderWeeklyPlans();
         if (this.currentView === 'planos' && this.render.planos) {
             this.render.planos();
@@ -9218,12 +9229,21 @@ const app = {
         window.sistemaVidaState.dailyLogs[today].dimensionNotes = dimensionNotes;
 
         this.markCadence('diary', today);
+        const hasDiary = !!(gratidao.trim() || funcionou.trim());
+        const hasShutdown = !!(s1.trim() || Object.keys(dimensionNotes).length);
+        const diaryAward = hasDiary
+            ? this.awardGamification('daily_diary', { key: `daily_diary:${today}`, date: today })
+            : null;
+        const shutdownAward = hasShutdown
+            ? this.awardGamification('daily_shutdown', { key: `daily_shutdown:${today}`, date: today })
+            : null;
         this.saveState(true);
 
         const btn = document.getElementById('btn-salvar-diario');
         if (btn) {
             const originalText = btn.innerHTML;
-            btn.innerHTML = "✔ Salvo!";
+            const xpEarned = (diaryAward?.xp || 0) + (shutdownAward?.xp || 0);
+            btn.innerHTML = xpEarned ? `Salvo! +${xpEarned} XP` : "Salvo!";
             setTimeout(() => {
                 btn.innerHTML = originalText;
             }, 2000);
@@ -9510,6 +9530,10 @@ const app = {
         if (rulesEl) {
             const rules = [
                 { icon: 'monitor_heart', label: 'Check-in diário', xp: '+10 XP', note: 'conta uma vez por dia' },
+                { icon: 'my_location', label: 'Intenção do dia', xp: '+5 XP', note: 'conta uma vez por dia' },
+                { icon: 'auto_stories', label: 'Diário / gratidão', xp: '+8 XP', note: 'conta uma vez por dia' },
+                { icon: 'power_settings_new', label: 'Shutdown', xp: '+8 XP', note: 'conta uma vez por dia' },
+                { icon: 'edit_calendar', label: 'Planejamento semanal', xp: '+15 XP', note: 'conta uma vez por semana' },
                 { icon: 'task_alt', label: 'Micro concluída', xp: '+12 XP', note: '+6 se está no plano da semana' },
                 { icon: 'repeat', label: 'Hábito do dia', xp: '+6 XP', note: 'automáticos recebem XP de manutenção (50%)' },
                 { icon: 'timer', label: 'Foco profundo', xp: '+10 a +40 XP', note: 'varia pela duração do bloco' },
