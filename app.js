@@ -192,7 +192,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-onboarding-scroll-fix-v86',
+    appBuildVersion: '20260505-onboarding-copy-layout-v87',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -10535,9 +10535,16 @@ const app = {
     },
 
     onboardingUpdateSlider: function(dim, val) {
-        if (window.sistemaVidaState.dimensions[dim]) {
-            window.sistemaVidaState.dimensions[dim].score = parseInt(val);
-            const valEl = document.getElementById(`slider-val-${dim}`);
+        const aliases = {
+            Saude: 'Saúde',
+            Financas: 'Finanças',
+            Familia: 'Família',
+            Proposito: 'Propósito'
+        };
+        const canonicalDim = aliases[dim] || dim;
+        if (window.sistemaVidaState.dimensions[canonicalDim]) {
+            window.sistemaVidaState.dimensions[canonicalDim].score = parseInt(val);
+            const valEl = document.getElementById(`slider-val-${dim}`) || document.getElementById(`slider-val-${canonicalDim}`);
             if (valEl) valEl.textContent = val;
         }
     },

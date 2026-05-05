@@ -677,6 +677,8 @@
         .step-hidden-right {
             opacity: 0;
             pointer-events: none;
+            position: absolute;
+            inset-inline: 0;
             transform: translateX(30px);
             visibility: hidden;
         }
@@ -684,6 +686,8 @@
         .step-hidden-left {
             opacity: 0;
             pointer-events: none;
+            position: absolute;
+            inset-inline: 0;
             transform: translateX(-30px);
             visibility: hidden;
         }
@@ -2660,7 +2664,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260505-onboarding-scroll-fix-v86"></script>
+    <script type="module" src="app.js?v=20260505-onboarding-copy-layout-v87"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>

@@ -2,7 +2,7 @@
     <div id="onboarding-progress-bar" class="h-full bg-primary transition-all duration-500 ease-out" style="width: 0%"></div>
 </div>
 
-<main class="pt-16 md:pt-20 pb-24 md:pb-32 px-4 sm:px-6 max-w-4xl mx-auto min-h-[100dvh] md:min-h-screen flex flex-col justify-start md:justify-center relative overflow-x-hidden">
+<main class="pt-16 md:pt-20 pb-24 md:pb-32 px-4 sm:px-6 max-w-4xl mx-auto min-h-[100dvh] md:min-h-screen flex flex-col justify-start relative overflow-x-hidden">
 
     <div class="absolute top-4 left-4 sm:top-8 sm:left-6 flex items-center gap-2 text-outline">
         <span class="text-[10px] font-bold uppercase tracking-widest" id="onboarding-step-indicator">1/7</span>
@@ -17,9 +17,26 @@
             Bem-vindo ao seu <span class="text-primary italic">Life OS</span>.
         </h1>
         <p class="text-on-surface-variant text-lg leading-relaxed max-w-lg">
-            Vamos configurar a base do seu sistema: identidade, dimensoes de vida, valores, proposito e o caminho para usar o app sem se perder.
+            Um app para transformar rotina em sistema: voce organiza seu dia, acompanha metas, cria habitos, revisa sua vida e usa seus valores como bussola.
         </p>
-        <button onclick="app.onboardingNext()" class="mt-8 bg-primary text-on-primary py-4 px-8 rounded-2xl font-bold font-label uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-fit">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
+            <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4">
+                <span class="material-symbols-outlined text-primary text-2xl mb-2">today</span>
+                <p class="text-sm font-bold text-on-surface">Clareza diaria</p>
+                <p class="text-xs text-outline mt-1">Check-in, foco, intencao e diario.</p>
+            </div>
+            <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4">
+                <span class="material-symbols-outlined text-primary text-2xl mb-2">flag</span>
+                <p class="text-sm font-bold text-on-surface">Planos vivos</p>
+                <p class="text-xs text-outline mt-1">Metas, OKRs, semana e revisoes.</p>
+            </div>
+            <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4">
+                <span class="material-symbols-outlined text-primary text-2xl mb-2">auto_awesome</span>
+                <p class="text-sm font-bold text-on-surface">Proposito pratico</p>
+                <p class="text-xs text-outline mt-1">Valores, legado, visao e Flow.</p>
+            </div>
+        </div>
+        <button onclick="app.onboardingNext()" class="mt-4 bg-primary text-on-primary py-4 px-8 rounded-2xl font-bold font-label uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-fit">
             Comecar jornada
         </button>
     </div>
@@ -27,7 +44,7 @@
     <!-- PASSO 1: IDENTIDADE -->
     <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-6" id="step-1">
         <h2 class="text-3xl font-headline font-bold italic text-on-background">Crie seu cofre Life OS</h2>
-        <p class="text-outline">Comece com uma conta para sincronizar seus dados na nuvem e usar o app em outros dispositivos.</p>
+        <p class="text-outline">Seu cofre guarda sua jornada. Com conta, seus dados sincronizam na nuvem; no modo local, ficam apenas neste aparelho.</p>
         <div class="mt-4">
             <input type="text" id="onboarding-nome" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-2xl p-6 text-2xl font-headline focus:border-primary transition-colors outline-none" placeholder="Seu nome ou apelido...">
         </div>
@@ -50,22 +67,24 @@
 
     <!-- PASSO 2: RODA DA VIDA -->
     <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-6" id="step-2">
-        <h2 class="text-3xl font-headline font-bold italic text-on-background">Sua Roda da Vida</h2>
-        <p class="text-outline text-sm">Avalie sua satisfacao atual em cada area. Isso vira seu primeiro mapa de equilibrio.</p>
+        <h2 class="text-3xl font-headline font-bold italic text-on-background">Como voce esta hoje?</h2>
+        <p class="text-outline text-sm">Marque como voce se sente em cada area da sua vida agora. Nao precisa ser perfeito: e apenas o primeiro retrato.</p>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-2">
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Saude</span>
-                    <span id="slider-val-Saúde" class="text-primary">50</span>
+                    <span id="slider-val-Saude" class="text-primary">50</span>
                 </div>
-                <input type="range" id="onboarding-slider-saude" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Saúde', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <p class="text-xs text-outline">Quanta energia e cuidado com o corpo voce sente hoje?</p>
+                <input type="range" id="onboarding-slider-saude" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Saude', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Mente</span>
                     <span id="slider-val-Mente" class="text-primary">50</span>
                 </div>
+                <p class="text-xs text-outline">O quanto sua mente esta clara, curiosa e aprendendo?</p>
                 <input type="range" id="onboarding-slider-mente" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Mente', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
@@ -73,42 +92,48 @@
                     <span>Carreira</span>
                     <span id="slider-val-Carreira" class="text-primary">50</span>
                 </div>
+                <p class="text-xs text-outline">O quanto voce se sente realizado e em movimento na carreira?</p>
                 <input type="range" id="onboarding-slider-carreira" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Carreira', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Financas</span>
-                    <span id="slider-val-Finanças" class="text-primary">50</span>
+                    <span id="slider-val-Financas" class="text-primary">50</span>
                 </div>
-                <input type="range" id="onboarding-slider-financas" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Finanças', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <p class="text-xs text-outline">Quanta seguranca e controle financeiro voce percebe?</p>
+                <input type="range" id="onboarding-slider-financas" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Financas', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Relacionamentos</span>
                     <span id="slider-val-Relacionamentos" class="text-primary">50</span>
                 </div>
+                <p class="text-xs text-outline">O quanto suas conexoes estao presentes e nutritivas?</p>
                 <input type="range" id="onboarding-slider-relacionamentos" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Relacionamentos', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Familia</span>
-                    <span id="slider-val-Família" class="text-primary">50</span>
+                    <span id="slider-val-Familia" class="text-primary">50</span>
                 </div>
-                <input type="range" id="onboarding-slider-familia" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Família', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <p class="text-xs text-outline">O quanto voce se sente presente e em paz com sua familia?</p>
+                <input type="range" id="onboarding-slider-familia" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Familia', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Lazer</span>
                     <span id="slider-val-Lazer" class="text-primary">50</span>
                 </div>
+                <p class="text-xs text-outline">O quanto voce tem espaco para descanso, prazer e leveza?</p>
                 <input type="range" id="onboarding-slider-lazer" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Lazer', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Proposito</span>
-                    <span id="slider-val-Propósito" class="text-primary">50</span>
+                    <span id="slider-val-Proposito" class="text-primary">50</span>
                 </div>
-                <input type="range" id="onboarding-slider-proposito" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Propósito', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
+                <p class="text-xs text-outline">O quanto sua vida parece apontar para algo com sentido?</p>
+                <input type="range" id="onboarding-slider-proposito" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Proposito', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
         </div>
 
@@ -152,32 +177,32 @@
     <!-- PASSO 4: PROPOSITO -->
     <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-5" id="step-4">
         <h2 class="text-3xl font-headline font-bold italic text-on-background">Qual e o seu proposito?</h2>
-        <p class="text-outline text-sm">Preencha o essencial. Depois voce pode aprofundar tudo em Proposito.</p>
+        <p class="text-outline text-sm">Rascunhe sem pressao. Exemplos ajudam: voce pode editar e aprofundar tudo depois em Proposito.</p>
 
         <div class="grid grid-cols-1 gap-4">
             <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Missao</label>
-            <input type="text" id="onboarding-ikigai-missao" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Minha missao e...">
+            <input type="text" id="onboarding-ikigai-missao" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Ex.: criar solucoes que simplificam a vida das pessoas">
 
             <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Vocacao</label>
-            <input type="text" id="onboarding-ikigai-vocacao" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Minha vocacao e...">
+            <input type="text" id="onboarding-ikigai-vocacao" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Ex.: unir tecnologia, estrategia e cuidado humano">
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input type="text" id="onboarding-ikigai-love" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="O que eu amo fazer">
-            <input type="text" id="onboarding-ikigai-good" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="No que sou bom">
-            <input type="text" id="onboarding-ikigai-need" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="O que o mundo precisa">
-            <input type="text" id="onboarding-ikigai-paid" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Pelo que posso ser pago">
+            <input type="text" id="onboarding-ikigai-love" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Amo: aprender, construir, ensinar...">
+            <input type="text" id="onboarding-ikigai-good" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Sou bom em: resolver problemas, liderar...">
+            <input type="text" id="onboarding-ikigai-need" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="O mundo precisa de: clareza, ferramentas...">
+            <input type="text" id="onboarding-ikigai-paid" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Posso ser pago por: produto, consultoria...">
         </div>
 
         <div class="space-y-3">
             <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Sintese do Ikigai</label>
-            <textarea id="onboarding-proposito" rows="3" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-2xl p-4 text-base italic focus:border-primary transition-colors outline-none resize-none" placeholder="Eu existo para..."></textarea>
+            <textarea id="onboarding-proposito" rows="3" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-2xl p-4 text-base italic focus:border-primary transition-colors outline-none resize-none" placeholder="Ex.: Eu existo para construir sistemas que ajudam pessoas a viver com mais clareza."></textarea>
         </div>
 
         <div class="grid grid-cols-1 gap-3">
-            <textarea id="onboarding-legacy-familia" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Legado para familia"></textarea>
-            <textarea id="onboarding-legacy-profissao" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Legado para profissao"></textarea>
-            <textarea id="onboarding-legacy-mundo" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Legado para o mundo"></textarea>
+            <textarea id="onboarding-legacy-familia" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Familia: ser presenca confiavel, amorosa e inspiradora."></textarea>
+            <textarea id="onboarding-legacy-profissao" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Profissao: criar trabalhos uteis, bem feitos e com impacto real."></textarea>
+            <textarea id="onboarding-legacy-mundo" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Mundo: deixar mais clareza, coragem e boas ferramentas."></textarea>
         </div>
 
         <div class="flex gap-4 mt-6">
