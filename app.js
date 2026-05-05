@@ -23,6 +23,7 @@ const auth = getAuth(firebaseApp);
 const storage = getStorage(firebaseApp);
 const LOCAL_USER_SCOPE = 'guest';
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
+const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
 const authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch((err) => {
     console.warn('[AUTH] Falha ao configurar persistência local:', err);
 });
@@ -37,6 +38,41 @@ function setSignedOutIntentionally(value) {
     try {
         if (value) localStorage.setItem(AUTH_SIGNED_OUT_KEY, '1');
         else localStorage.removeItem(AUTH_SIGNED_OUT_KEY);
+    } catch (_) {}
+}
+
+function setForceCloudLoadForUser(uid) {
+    try {
+        if (uid) localStorage.setItem(AUTH_FORCE_CLOUD_UID_KEY, JSON.stringify({ uid, ts: Date.now() }));
+    } catch (_) {}
+}
+
+function shouldForceCloudLoadForUser(uid) {
+    try {
+        if (!uid) return false;
+        const raw = localStorage.getItem(AUTH_FORCE_CLOUD_UID_KEY) || '';
+        if (!raw) return false;
+        let parsed = null;
+        try { parsed = JSON.parse(raw); } catch (_) { parsed = { uid: raw, ts: Date.now() }; }
+        const ageMs = Date.now() - Number(parsed.ts || 0);
+        if (ageMs > 15 * 60 * 1000) {
+            localStorage.removeItem(AUTH_FORCE_CLOUD_UID_KEY);
+            return false;
+        }
+        return parsed.uid === uid;
+    } catch (_) {}
+    return false;
+}
+
+function clearForceCloudLoadForUser(uid) {
+    try {
+        if (!uid) return;
+        const raw = localStorage.getItem(AUTH_FORCE_CLOUD_UID_KEY) || '';
+        if (!raw) return;
+        let parsed = null;
+        try { parsed = JSON.parse(raw); } catch (_) { parsed = { uid: raw }; }
+        if (parsed.uid !== uid) return;
+        localStorage.removeItem(AUTH_FORCE_CLOUD_UID_KEY);
     } catch (_) {}
 }
 
@@ -156,7 +192,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-local-guest-v83',
+    appBuildVersion: '20260505-force-cloud-login-v84',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -393,6 +429,7 @@ const app = {
             const credential = await signInWithEmailAndPassword(auth, email, password);
             initialAuthStatePromise = Promise.resolve(credential.user);
             setSignedOutIntentionally(false);
+            setForceCloudLoadForUser(credential.user.uid);
             authInteractiveOperation = false;
             await this.withTimeout(this.waitForAuthUser(credential.user.uid), 6000, 'auth_user_ready_after_login');
             try { await credential.user.getIdToken(true); } catch (_) {}
@@ -2835,6 +2872,25 @@ const app = {
         }
         return target;
     },
+    getEmptyOdysseyImages: function() {
+        return { cenarioA: '', cenarioB: '', cenarioC: '' };
+    },
+    applyRemoteImagesDoc: function(imgData = {}, options = {}) {
+        const replace = options.replace !== false;
+        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+        const remoteOdyssey = (imgData.odysseyImages && typeof imgData.odysseyImages === 'object') ? imgData.odysseyImages : {};
+        const currentOdyssey = window.sistemaVidaState.profile.odysseyImages || this.getEmptyOdysseyImages();
+        window.sistemaVidaState.profile.avatarUrl = (imgData.avatarUrl && typeof imgData.avatarUrl === 'string')
+            ? imgData.avatarUrl
+            : (replace ? '' : (window.sistemaVidaState.profile.avatarUrl || ''));
+        window.sistemaVidaState.profile.odysseyImages = {
+            cenarioA: typeof remoteOdyssey.cenarioA === 'string' ? remoteOdyssey.cenarioA : (replace ? '' : (currentOdyssey.cenarioA || '')),
+            cenarioB: typeof remoteOdyssey.cenarioB === 'string' ? remoteOdyssey.cenarioB : (replace ? '' : (currentOdyssey.cenarioB || '')),
+            cenarioC: typeof remoteOdyssey.cenarioC === 'string' ? remoteOdyssey.cenarioC : (replace ? '' : (currentOdyssey.cenarioC || ''))
+        };
+        try { this.localSet('lifeos_profile_avatar', window.sistemaVidaState.profile.avatarUrl); } catch (_) {}
+        try { this.localSet('lifeos_odyssey_images', JSON.stringify(window.sistemaVidaState.profile.odysseyImages)); } catch (_) {}
+    },
 
     saveState: function(silent = true) {
         const state = window.sistemaVidaState;
@@ -2925,6 +2981,7 @@ const app = {
         let shouldSeedCloudAfterLoad = false;
         let cloudLoadFailed = false;
         let localOnlyLoad = false;
+        let forceCloudLoad = false;
         try {
             try {
                 await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
@@ -2939,12 +2996,17 @@ const app = {
                 }
             }
             const activeUserId = this.getActiveUserId();
+            forceCloudLoad = !localOnlyLoad && this.isRealAccount(auth.currentUser) && shouldForceCloudLoadForUser(activeUserId);
             const rawLocal = this.localGet('lifeos_state_backup');
             const rawCore = this.localGet('lifeos_state_backup_core');
-            if (rawLocal) {
-                try { localData = JSON.parse(rawLocal); } catch (_) { localData = null; }
-            } else if (rawCore) {
-                try { localData = JSON.parse(rawCore); } catch (_) { localData = null; }
+            if (!forceCloudLoad) {
+                if (rawLocal) {
+                    try { localData = JSON.parse(rawLocal); } catch (_) { localData = null; }
+                } else if (rawCore) {
+                    try { localData = JSON.parse(rawCore); } catch (_) { localData = null; }
+                }
+            } else {
+                console.log('[SYNC] Login recente detectado; ignorando backup local e usando nuvem como fonte.');
             }
             if (!localOnlyLoad) {
                 const stateRef = this.getStateDocRef(activeUserId);
@@ -2953,9 +3015,13 @@ const app = {
                 if (docSnap.exists()) {
                     console.log("Estado encontrado na Nuvem, mesclando dados...");
                     cloudData = docSnap.data();
+                    if (forceCloudLoad) clearForceCloudLoadForUser(activeUserId);
                 } else {
                     console.log("Primeiro acesso deste usuário. Documento será criado após normalização.");
-                    shouldSeedCloudAfterLoad = true;
+                    shouldSeedCloudAfterLoad = !forceCloudLoad;
+                    if (forceCloudLoad) {
+                        this.showToast('Conta autenticada, mas ainda não encontrei dados salvos na nuvem. Evitei misturar dados locais.', 'error');
+                    }
                 }
             }
         } catch (error) {
@@ -2987,6 +3053,11 @@ const app = {
         else console.log('[SYNC] Using cloud state (source of truth).');
 
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
+        if (forceCloudLoad && cloudData) {
+            if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+            window.sistemaVidaState.profile.avatarUrl = '';
+            window.sistemaVidaState.profile.odysseyImages = this.getEmptyOdysseyImages();
+        }
         if (cloudLoadFailed && !preferred && this.showToast) {
             this.showToast('Não consegui carregar seus dados da nuvem agora. Evitei sobrescrever a conta; tente recarregar em instantes.', 'error');
         }
@@ -3023,23 +3094,14 @@ const app = {
             let imagesSnap = await this.withTimeout(getDoc(imagesRef), 8000, 'firestore_getImages');
             if (imagesSnap.exists()) {
                 const imgData = imagesSnap.data();
-                if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                if (imgData.avatarUrl && typeof imgData.avatarUrl === 'string') {
-                    window.sistemaVidaState.profile.avatarUrl = imgData.avatarUrl;
-                    try { this.localSet('lifeos_profile_avatar', imgData.avatarUrl); } catch (_) {}
-                }
-                if (imgData.odysseyImages && typeof imgData.odysseyImages === 'object') {
-                    if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
-                    Object.entries(imgData.odysseyImages).forEach(([k, v]) => {
-                        if (v && typeof v === 'string') window.sistemaVidaState.profile.odysseyImages[k] = v;
-                    });
-                    try { this.localSet('lifeos_odyssey_images', JSON.stringify(imgData.odysseyImages)); } catch (_) {}
-                }
+                this.applyRemoteImagesDoc(imgData, { replace: this.isRealAccount() || forceCloudLoad });
                 console.log('[Images] Imagens carregadas do Firestore.');
+            } else if (this.isRealAccount()) {
+                this.applyRemoteImagesDoc({}, { replace: true });
             }
         } catch (imgErr) {
             // Fallback to local cache if Firestore images doc unavailable
-            try {
+            if (!forceCloudLoad) try {
                 const cachedAvatar = this.localGet('lifeos_profile_avatar');
                 if (cachedAvatar && !window.sistemaVidaState.profile?.avatarUrl) {
                     if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
@@ -3121,16 +3183,7 @@ const app = {
                         if (self._isSaving) return;
                         const imgData = imgSnap.data();
                         try {
-                            if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
-                            if (imgData.avatarUrl && typeof imgData.avatarUrl === 'string') {
-                                window.sistemaVidaState.profile.avatarUrl = imgData.avatarUrl;
-                            }
-                            if (imgData.odysseyImages && typeof imgData.odysseyImages === 'object') {
-                                if (!window.sistemaVidaState.profile.odysseyImages) window.sistemaVidaState.profile.odysseyImages = {};
-                                Object.entries(imgData.odysseyImages).forEach(([k, v]) => {
-                                    if (v && typeof v === 'string') window.sistemaVidaState.profile.odysseyImages[k] = v;
-                                });
-                            }
+                            app.applyRemoteImagesDoc(imgData, { replace: app.isRealAccount() });
                         } catch (_) {}
                         app.persistLocalMirror();
                         console.log('[Images] Atualização de imagens recebida em tempo real.');
