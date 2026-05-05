@@ -1811,10 +1811,17 @@ const app = {
         if (msg.includes('PushManager') || msg.includes('serviceWorker')) {
             return 'este navegador nao oferece push para PWA neste contexto.';
         }
+        if (msg.includes('auth_signed_out') || msg.includes('modo_local_sem_conta')) {
+            return 'entre em uma conta para receber push em segundo plano.';
+        }
         return msg || 'falha desconhecida ao registrar push.';
     },
     toggleDailyNotifications: async function() {
         this.ensureSettingsState();
+        if (this._notificationToggleBusy) {
+            this.showToast('Aguarde, atualizando notificacoes...', 'error');
+            return;
+        }
         const enabled = !window.sistemaVidaState.settings.notificationsEnabled;
         if (enabled && typeof Notification !== 'undefined') {
             try {
@@ -1833,32 +1840,38 @@ const app = {
                 return;
             }
         }
+        this._notificationToggleBusy = true;
         window.sistemaVidaState.settings.notificationsEnabled = enabled;
         try { this.localSet('lifeos_notif_enabled', enabled ? '1' : '0'); } catch (_) {}
         this.lastPushRegistrationOk = null;
         this.lastPushRegistrationError = '';
-        if (enabled) {
-            try {
-                const pushOk = await this.registerPushSubscription();
-                this.lastPushRegistrationOk = !!pushOk;
-                this.lastPushRegistrationError = pushOk ? '' : 'Push em segundo plano indisponivel neste navegador.';
-            } catch (err) {
-                this.lastPushRegistrationOk = false;
-                this.lastPushRegistrationError = this.getPushErrorMessage(err);
-                console.warn('[PUSH] Falha ao registrar assinatura:', err);
-            }
-        } else {
-            try { await this.unregisterPushSubscription(); } catch (err) { console.warn('[PUSH] Falha ao remover assinatura:', err); }
-            this.lastPushRegistrationOk = false;
-        }
-        await this.saveState(true);
         if (enabled) this.scheduleHabitReminders();
         else if (this._habitReminderTimers) this._habitReminderTimers.forEach(timerId => clearTimeout(timerId));
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
-        if (enabled && this.lastPushRegistrationOk === false) {
-            this.showToast('Notificações no app ativadas, mas push em segundo plano falhou: ' + this.lastPushRegistrationError, 'error');
-        } else {
-            this.showToast(enabled ? 'Notificações ativadas.' : 'Notificações desativadas.', 'success');
+        this.showToast(enabled ? 'Notificações ativadas.' : 'Notificações desativadas.', 'success');
+
+        try {
+            if (enabled) {
+                try {
+                    const pushOk = await this.withTimeout(this.registerPushSubscription(), 10000, 'push_register');
+                    this.lastPushRegistrationOk = !!pushOk;
+                    this.lastPushRegistrationError = pushOk ? '' : 'Push em segundo plano indisponivel neste navegador.';
+                } catch (err) {
+                    this.lastPushRegistrationOk = false;
+                    this.lastPushRegistrationError = this.getPushErrorMessage(err);
+                    console.warn('[PUSH] Falha ao registrar assinatura:', err);
+                }
+            } else {
+                try { await this.withTimeout(this.unregisterPushSubscription(), 6000, 'push_unregister'); } catch (err) { console.warn('[PUSH] Falha ao remover assinatura:', err); }
+                this.lastPushRegistrationOk = false;
+            }
+            try { await this.saveState(true); } catch (err) { console.warn('[PUSH] Falha ao salvar preferência de notificações:', err); }
+        } finally {
+            this._notificationToggleBusy = false;
+            if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+            if (enabled && this.lastPushRegistrationOk === false) {
+                this.showToast('Notificações no app ativadas, mas push em segundo plano falhou: ' + this.lastPushRegistrationError, 'error');
+            }
         }
     },
     urlBase64ToUint8Array: function(base64String) {
