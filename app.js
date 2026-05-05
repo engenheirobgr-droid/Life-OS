@@ -156,7 +156,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-accounts-cache-v77',
+    appBuildVersion: '20260505-notifications-v78',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1816,10 +1816,10 @@ const app = {
     getPushErrorMessage: function(error) {
         const msg = String(error?.message || error?.code || error || '');
         if (msg.includes('push_public_key') || msg.includes('Unexpected token') || msg.includes('api')) {
-            return 'chave push indisponivel. Use o link da Vercel para notificacoes em segundo plano.';
+            return 'nao consegui conectar ao servico de push. Recarregue o app e tente novamente.';
         }
         if (msg.includes('permission') || msg.includes('denied')) {
-            return 'permissao bloqueada no navegador.';
+            return 'permissao bloqueada no Android/Chrome. Reative em Informacoes do app > Notificacoes.';
         }
         if (msg.includes('PushManager') || msg.includes('serviceWorker')) {
             return 'este navegador nao oferece push para PWA neste contexto.';
@@ -1829,6 +1829,19 @@ const app = {
         }
         return msg || 'falha desconhecida ao registrar push.';
     },
+    getNotificationPermission: function() {
+        if (typeof Notification === 'undefined') return 'unsupported';
+        return Notification.permission || 'default';
+    },
+    requestNotificationPermission: async function() {
+        const current = this.getNotificationPermission();
+        if (current === 'unsupported') throw new Error('notification_api_unavailable');
+        if (current === 'granted') return 'granted';
+        if (current === 'denied') throw new Error('notification_permission_denied');
+        const result = await Notification.requestPermission();
+        if (result !== 'granted') throw new Error('notification_permission_not_granted');
+        return result;
+    },
     toggleDailyNotifications: async function() {
         this.ensureSettingsState();
         if (this._notificationToggleBusy) {
@@ -1836,20 +1849,14 @@ const app = {
             return;
         }
         const enabled = !window.sistemaVidaState.settings.notificationsEnabled;
-        if (enabled && typeof Notification !== 'undefined') {
+        if (enabled) {
             try {
-                if (Notification.permission === 'default') {
-                    const result = await Notification.requestPermission();
-                    if (result !== 'granted') {
-                        this.showToast('Permissão de notificações não concedida no navegador.', 'error');
-                        return;
-                    }
-                } else if (Notification.permission === 'denied') {
-                    this.showToast('Notificações bloqueadas no navegador. Ative nas permissões do site.', 'error');
-                    return;
-                }
-            } catch (_) {
-                this.showToast('Não foi possível solicitar a permissão de notificações.', 'error');
+                await this.requestNotificationPermission();
+            } catch (err) {
+                this.lastPushRegistrationOk = false;
+                this.lastPushRegistrationError = this.getPushErrorMessage(err);
+                if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+                this.showToast(this.lastPushRegistrationError, 'error');
                 return;
             }
         }
@@ -1904,22 +1911,33 @@ const app = {
     },
     getWebPushPublicKey: async function() {
         if (this.webPushPublicKey) return this.webPushPublicKey;
-        const res = await fetch('/api/push-public-key');
-        if (!res.ok) throw new Error('push_public_key_unavailable');
-        const data = await res.json();
-        if (!data?.publicKey) throw new Error('push_public_key_missing');
-        this.webPushPublicKey = String(data.publicKey);
-        return this.webPushPublicKey;
+        const currentOrigin = (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin : '';
+        const endpoints = [
+            '/api/push-public-key',
+            'https://life-os-mu-ashy.vercel.app/api/push-public-key'
+        ].filter((url, index, arr) => {
+            if (url.startsWith('https://') && currentOrigin && url.startsWith(currentOrigin)) return index === 1;
+            return arr.indexOf(url) === index;
+        });
+        let lastError = null;
+        for (const endpoint of endpoints) {
+            try {
+                const res = await fetch(endpoint, { cache: 'no-store' });
+                if (!res.ok) throw new Error('push_public_key_unavailable_' + res.status);
+                const data = await res.json();
+                if (!data?.publicKey) throw new Error('push_public_key_missing');
+                this.webPushPublicKey = String(data.publicKey);
+                return this.webPushPublicKey;
+            } catch (err) {
+                lastError = err;
+            }
+        }
+        throw lastError || new Error('push_public_key_unavailable');
     },
     registerPushSubscription: async function() {
         if (!('serviceWorker' in navigator)) throw new Error('serviceWorker_unavailable');
         if (!('PushManager' in window)) throw new Error('PushManager_unavailable');
-        if (typeof Notification === 'undefined') throw new Error('notification_api_unavailable');
-        if (Notification.permission === 'denied') throw new Error('notification_permission_denied');
-        if (Notification.permission === 'default') {
-            const p = await Notification.requestPermission();
-            if (p !== 'granted') throw new Error('notification_permission_not_granted');
-        }
+        await this.requestNotificationPermission();
         await this.withTimeout(getAuthReady(), 8000, 'auth_ready_push');
         const publicKey = await this.getWebPushPublicKey();
         const reg = await navigator.serviceWorker.ready;
@@ -12342,17 +12360,26 @@ const app = {
             const pushStatus = document.getElementById('push-status-text');
             if (pushStatus) {
                 const on = !!state.settings.notificationsEnabled;
+                const permission = app.getNotificationPermission();
                 if (!on) {
-                    pushStatus.textContent = 'Desativadas.';
-                    pushStatus.className = 'text-[10px] text-outline mt-1 leading-snug';
+                    if (permission === 'default') {
+                        pushStatus.textContent = 'Desativadas. Ao ativar, o app vai pedir permissao.';
+                        pushStatus.className = 'text-[10px] text-outline mt-1 leading-snug';
+                    } else if (permission === 'denied') {
+                        pushStatus.textContent = 'Desativadas. Permissao bloqueada no Android/Chrome.';
+                        pushStatus.className = 'text-[10px] text-error mt-1 leading-snug';
+                    } else {
+                        pushStatus.textContent = 'Desativadas.';
+                        pushStatus.className = 'text-[10px] text-outline mt-1 leading-snug';
+                    }
                 } else if (app.lastPushRegistrationOk === false) {
-                    pushStatus.textContent = 'Ativas no app. Push em segundo plano pendente: ' + (app.lastPushRegistrationError || 'verifique permissoes.');
+                    pushStatus.textContent = 'Ativas no app. Push em segundo plano pendente: ' + (app.lastPushRegistrationError || 'verifique permissoes do Android/Chrome.');
                     pushStatus.className = 'text-[10px] text-amber-500 mt-1 leading-snug';
                 } else if (app.lastPushRegistrationOk === true) {
                     pushStatus.textContent = 'Ativas, incluindo push em segundo plano.';
                     pushStatus.className = 'text-[10px] text-emerald-500 mt-1 leading-snug';
                 } else {
-                    pushStatus.textContent = 'Ativas quando permitidas pelo navegador.';
+                    pushStatus.textContent = permission === 'granted' ? 'Ativas no app. Registrando push em segundo plano...' : 'Ativas no app; permissao ainda pendente.';
                     pushStatus.className = 'text-[10px] text-outline mt-1 leading-snug';
                 }
             }
