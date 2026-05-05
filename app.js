@@ -193,7 +193,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-guided-onboarding-starter-v88',
+    appBuildVersion: '20260505-purpose-journey-v89',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -8514,6 +8514,139 @@ const app = {
         if (actions[itemId]) actions[itemId]();
     },
 
+    getPurposeJourneyState: function() {
+        const profile = window.sistemaVidaState.profile || {};
+        const values = profile.values || [];
+        const identity = profile.identity || { strengths: [], shadows: [] };
+        const ikigai = profile.ikigai || {};
+        const legacyObj = profile.legacyObj || {};
+        const vision = profile.vision || {};
+        const odyssey = profile.odyssey || {};
+        const dimensions = window.sistemaVidaState.dimensions || {};
+
+        const wheelCount = Object.values(dimensions).filter((entry) => Number(entry?.score) > 0).length;
+        const ikigaiBaseCount = [ikigai.love, ikigai.good, ikigai.need, ikigai.paid].filter((value) => String(value || '').trim()).length;
+        const legacyCount = [legacyObj.familia, legacyObj.profissao, legacyObj.mundo].filter((value) => String(value || '').trim()).length;
+        const visionCount = [vision.saude, vision.carreira, vision.intelecto, vision.quote].filter((value) => String(value || '').trim()).length;
+        const odysseyCount = [odyssey.cenarioA, odyssey.cenarioB, odyssey.cenarioC].filter((value) => String(value || '').trim()).length;
+
+        const items = [
+            {
+                id: 'identity',
+                label: 'Identidade base',
+                hint: 'Valores, forcas e sombras',
+                done: values.length > 0 && (((identity.strengths || []).length + (identity.shadows || []).length) > 0)
+            },
+            {
+                id: 'wheel',
+                label: 'Roda da vida',
+                hint: `${wheelCount}/8 dimensoes pontuadas`,
+                done: wheelCount === 8
+            },
+            {
+                id: 'ikigai-base',
+                label: 'Base do Ikigai',
+                hint: `${ikigaiBaseCount}/4 blocos preenchidos`,
+                done: ikigaiBaseCount === 4
+            },
+            {
+                id: 'ikigai-synthesis',
+                label: 'Sintese do Ikigai',
+                hint: 'Frase central de direcao',
+                done: !!String(ikigai.sintese || '').trim()
+            },
+            {
+                id: 'legacy',
+                label: 'Legado',
+                hint: `${legacyCount}/3 frentes preenchidas`,
+                done: legacyCount === 3
+            },
+            {
+                id: 'vision',
+                label: 'Visao de vida',
+                hint: `${visionCount}/4 blocos preenchidos`,
+                done: visionCount === 4
+            },
+            {
+                id: 'odyssey',
+                label: 'Odyssey plans',
+                hint: `${odysseyCount}/3 cenarios descritos`,
+                done: odysseyCount === 3
+            }
+        ];
+        const doneCount = items.filter((item) => item.done).length;
+        return {
+            items,
+            doneCount,
+            total: items.length,
+            pct: Math.round((doneCount / items.length) * 100)
+        };
+    },
+
+    renderPurposeJourney: function() {
+        const container = document.getElementById('purpose-journey-container');
+        if (!container) return;
+        const journey = this.getPurposeJourneyState();
+        const nextPending = journey.items.find((item) => !item.done);
+        const itemHtml = journey.items.map((item) => `
+            <button type="button" onclick="window.app.openPurposeJourneyStep('${item.id}')"
+                class="text-left rounded-xl border ${item.done ? 'border-emerald-500/20 bg-emerald-500/[0.06]' : 'border-outline-variant/15 bg-surface-container-low'} px-3 py-3 hover:bg-surface-container-high transition-colors">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined notranslate text-[16px] ${item.done ? 'text-emerald-500' : 'text-outline'}" ${item.done ? "style=\"font-variation-settings:'FILL' 1;\"" : ''}>${item.done ? 'check_circle' : 'radio_button_unchecked'}</span>
+                            <p class="text-xs font-semibold text-on-surface truncate">${this.escapeHtml(item.label)}</p>
+                        </div>
+                        <p class="mt-1 text-[11px] text-outline">${this.escapeHtml(item.hint)}</p>
+                    </div>
+                    <span class="material-symbols-outlined notranslate text-outline text-[18px] shrink-0">arrow_forward</span>
+                </div>
+            </button>
+        `).join('');
+
+        container.innerHTML = `
+            <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest shadow-sm p-5 md:p-6">
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div class="max-w-2xl">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Jornada de proposito</p>
+                        <h3 class="mt-2 font-headline text-2xl font-bold text-on-background">Transforme esta area em uma sequencia, nao em um formulario.</h3>
+                        <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Primeiro voce se observa, depois encontra sentido, depois escreve impacto e por fim explora futuros possiveis. O app continua igual por dentro, mas agora a tela te mostra melhor a ordem de construcao.</p>
+                    </div>
+                    <div class="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 min-w-[160px]">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Progresso</p>
+                        <p class="mt-2 text-2xl font-headline font-bold text-on-background">${journey.doneCount}/${journey.total}</p>
+                        <p class="text-xs text-outline mt-1">${journey.pct}% da bussola montada</p>
+                    </div>
+                </div>
+                <div class="mt-4 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+                    <div class="h-full rounded-full bg-primary transition-all duration-500" style="width:${journey.pct}%"></div>
+                </div>
+                ${nextPending ? `<p class="mt-3 text-xs text-outline">Proximo passo recomendado: <span class="font-semibold text-on-surface">${this.escapeHtml(nextPending.label)}</span>.</p>` : ''}
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${itemHtml}</div>
+            </div>
+        `;
+    },
+
+    openPurposeJourneyStep: function(stepId) {
+        const map = {
+            identity: 'top-values-banner',
+            wheel: 'proposito-roda-section',
+            'ikigai-base': 'proposito-ikigai-section',
+            'ikigai-synthesis': 'display-ikigai-sintese',
+            legacy: 'proposito-legado-section',
+            vision: 'proposito-visao-section',
+            odyssey: 'odyssey-section'
+        };
+        const targetId = map[stepId];
+        if (!targetId) return;
+        const el = document.getElementById(targetId);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            el.classList.add('ring-2', 'ring-primary/30');
+            setTimeout(() => el.classList.remove('ring-2', 'ring-primary/30'), 1800);
+        }
+    },
+
     renderPainelDiagnostics: function() {
         const container = document.getElementById('painel-diagnostics');
         if (!container) return;
@@ -13107,6 +13240,7 @@ const app = {
 
         proposito: function() {
             const state = window.sistemaVidaState;
+            app.renderPurposeJourney();
 
             // Limpa o banner de valores para evitar duplicidade visual
             const valuesBannerTop = document.getElementById('top-values-banner');
