@@ -5,7 +5,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, EmailAuthProvider, linkWithCredential, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 const firebaseConfig = {
@@ -22,22 +22,45 @@ const db = getFirestore(firebaseApp);
 const auth = getAuth(firebaseApp);
 const storage = getStorage(firebaseApp);
 const LOCAL_USER_SCOPE = 'guest';
+const authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch((err) => {
+    console.warn('[AUTH] Falha ao configurar persistência local:', err);
+});
+let initialAuthStatePromise = null;
+
+function waitInitialAuthState() {
+    if (initialAuthStatePromise) return initialAuthStatePromise;
+    initialAuthStatePromise = authPersistenceReady.then(() => new Promise((resolve, reject) => {
+        let settled = false;
+        const timeoutId = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            try { unsub(); } catch (_) {}
+            resolve(auth.currentUser || null);
+        }, 4000);
+        const unsub = onAuthStateChanged(auth, (user) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            unsub();
+            resolve(user || null);
+        }, (err) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            try { unsub(); } catch (_) {}
+            reject(err);
+        });
+    }));
+    return initialAuthStatePromise;
+}
 // getAuthReady() cria uma Promise fresca a cada chamada.
 // Isso evita que uma falha de auth transitória (ex: rede lenta na abertura do app)
 // deixe o authReady permanentemente rejeitado, bloqueando todos os saves futuros.
 function getAuthReady() {
     if (auth.currentUser) return Promise.resolve(auth.currentUser);
-    return new Promise((resolve, reject) => {
-        const unsub = onAuthStateChanged(auth, (user) => {
-            if (user) { unsub(); resolve(user); }
-        }, (err) => { reject(err); });
-        // Só chama signInAnonymously se ainda não há usuário
-        if (!auth.currentUser) {
-            signInAnonymously(auth).catch((err) => {
-                // Não reject direto — o onAuthStateChanged vai tratar
-                console.warn('[AUTH] signInAnonymously falhou, aguardando onAuthStateChanged:', err);
-            });
-        }
+    return waitInitialAuthState().then((user) => {
+        if (user) return user;
+        return signInAnonymously(auth);
     });
 }
 // authReady: mantido para compatibilidade com onSnapshot (que precisa de uma promise inicial)
@@ -201,17 +224,30 @@ const app = {
         const signedEl = document.getElementById('account-signed-actions');
         const emailEl = document.getElementById('account-current-email');
         const nameInput = document.getElementById('account-name-input');
+        const syncEl = document.getElementById('account-sync-status');
 
         if (statusEl) {
             statusEl.textContent = isAccount
                 ? 'Conta registrada. Este cofre pode ser recuperado por e-mail e usado em outros dispositivos.'
                 : 'Modo visitante. O app usa um acesso anônimo neste aparelho: funciona agora, mas você pode perder acesso se limpar dados ou trocar de dispositivo.';
         }
-        if (idEl) idEl.textContent = isAccount ? uid : 'visitante';
+        if (idEl) idEl.textContent = isAccount ? uid : `${uid} (visitante)`;
         if (emailEl) emailEl.textContent = email || 'Sem e-mail vinculado';
         if (formEl) formEl.classList.toggle('hidden', isAccount);
         if (signedEl) signedEl.classList.toggle('hidden', !isAccount);
         if (nameInput && !nameInput.value) nameInput.value = window.sistemaVidaState?.profile?.name || '';
+        if (syncEl) {
+            if (this.lastCloudSyncOk === false) {
+                syncEl.textContent = 'Ultima sincronizacao falhou: ' + (this.lastCloudSyncErrorCode || 'erro desconhecido') + '.';
+                syncEl.className = 'text-[10px] text-error leading-snug';
+            } else if (this.lastCloudSyncOk === true) {
+                syncEl.textContent = 'Ultima sincronizacao com a nuvem concluida.';
+                syncEl.className = 'text-[10px] text-emerald-500 leading-snug';
+            } else {
+                syncEl.textContent = 'Aguardando sincronizacao com a nuvem.';
+                syncEl.className = 'text-[10px] text-outline leading-snug';
+            }
+        }
     },
 
     teardownRealtimeSync: function() {
@@ -240,10 +276,12 @@ const app = {
                 : await createUserWithEmailAndPassword(auth, email, password);
             if (name) {
                 try { await updateProfile(credential.user, { displayName: name }); } catch (_) {}
+            }
+            window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, currentState);
+            if (name) {
                 if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
                 window.sistemaVidaState.profile.name = name;
             }
-            window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, currentState);
             this.teardownRealtimeSync();
             await this.saveState(false);
             try { await this.registerPushSubscription(); } catch (_) {}
@@ -14396,6 +14434,15 @@ const app = {
 };
 
 window.app = app;
+
+onAuthStateChanged(auth, (user) => {
+    app.lastAuthUserId = user?.uid || '';
+    app.lastAuthIsAnonymous = !!user?.isAnonymous;
+    if (app.currentView === 'perfil') {
+        try { app.renderAccountPanel(); } catch (_) {}
+    }
+    try { app.renderProfileChrome(); } catch (_) {}
+});
 
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
