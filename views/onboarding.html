@@ -216,8 +216,52 @@
         <div class="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-2">
             <span class="material-symbols-outlined text-4xl">route</span>
         </div>
-        <h2 class="text-3xl font-headline font-bold italic text-on-background">Como usar o Life OS no dia a dia</h2>
-        <p class="text-outline text-sm max-w-2xl">Voce nao precisa descobrir tudo sozinho. O app tem dois guias permanentes: um para aprender o sistema e outro para seguir a ordem certa das praticas.</p>
+        <h2 class="text-3xl font-headline font-bold italic text-on-background">Seu plano de arranque</h2>
+        <p class="text-outline text-sm max-w-2xl">Vamos sair do onboarding com uma trilha inicial (Meta, OKR, Macro e Micro) e um habito pronto para hoje. Depois voce ajusta com calma.</p>
+
+        <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-5 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Area foco inicial</label>
+                    <select id="onboarding-starter-dimension" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface">
+                        <option value="Carreira">Carreira</option>
+                        <option value="Saúde">Saúde</option>
+                        <option value="Mente">Mente</option>
+                        <option value="Finanças">Finanças</option>
+                        <option value="Relacionamentos">Relacionamentos</option>
+                        <option value="Família">Família</option>
+                        <option value="Lazer">Lazer</option>
+                        <option value="Propósito">Propósito</option>
+                    </select>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Habito ancora (obrigatorio)</label>
+                    <input type="text" id="onboarding-starter-habit" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface" placeholder="Ex.: 15 min de planejamento da manha">
+                </div>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Meta inicial (obrigatorio)</label>
+                <input type="text" id="onboarding-starter-goal" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface" placeholder="Ex.: Organizar minha rotina de foco e entrega nas proximas 12 semanas">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Horario do habito</label>
+                    <input type="time" id="onboarding-starter-time" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Forca para treinar</label>
+                    <input type="text" id="onboarding-strength" list="onboarding-strength-catalog" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface" placeholder="Ex.: Disciplina">
+                    <datalist id="onboarding-strength-catalog"></datalist>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Sombra para reduzir</label>
+                    <input type="text" id="onboarding-shadow" list="onboarding-shadow-catalog" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface" placeholder="Ex.: Procrastinacao">
+                    <datalist id="onboarding-shadow-catalog"></datalist>
+                </div>
+            </div>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
             <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-5 space-y-3">
@@ -241,11 +285,11 @@
         </div>
 
         <div class="rounded-2xl bg-primary/5 border border-primary/15 p-5">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Primeiro uso recomendado</p>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Sistema de evolucao (gamificacao)</p>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-on-surface">
-                <div class="flex gap-2 items-start"><span class="material-symbols-outlined text-primary text-lg">check_circle</span><span>Fazer o check-in de hoje</span></div>
-                <div class="flex gap-2 items-start"><span class="material-symbols-outlined text-primary text-lg">flag</span><span>Criar metas e OKRs iniciais</span></div>
-                <div class="flex gap-2 items-start"><span class="material-symbols-outlined text-primary text-lg">repeat</span><span>Configurar habitos e lembretes</span></div>
+                <div class="flex gap-2 items-start"><span class="material-symbols-outlined text-primary text-lg">trending_up</span><span>Check-in, diario e habitos geram XP</span></div>
+                <div class="flex gap-2 items-start"><span class="material-symbols-outlined text-primary text-lg">workspace_premium</span><span>Cada area da vida sobe nivel proprio</span></div>
+                <div class="flex gap-2 items-start"><span class="material-symbols-outlined text-primary text-lg">auto_awesome</span><span>Flow e Cadencia mostram o proximo ritual certo</span></div>
             </div>
         </div>
 
@@ -277,6 +321,11 @@
             <div class="flex gap-4 items-center">
                 <span class="material-symbols-outlined text-primary">account_tree</span>
                 <p class="text-sm font-medium">O Flow mostra o proximo ritual certo.</p>
+            </div>
+            <div class="rounded-xl bg-primary/5 border border-primary/15 p-4">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Plano inicial criado</p>
+                <p id="onboarding-summary-trail" class="mt-1 text-xs text-on-surface-variant">Trilha inicial pronta.</p>
+                <p id="onboarding-summary-habit" class="mt-1 text-xs text-on-surface-variant">Habito ancora pronto.</p>
             </div>
         </div>
 

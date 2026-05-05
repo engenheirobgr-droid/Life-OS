@@ -135,6 +135,7 @@ window.sistemaVidaState = {
         odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" },
         odysseyTitles: { cenarioA: "A Via Consolidada", cenarioB: "O Salto Criativo", cenarioC: "A Vida Acadêmica" },
         identity: { strengths: [], shadows: [] },
+        onboardingStarter: { dimension: 'Carreira', goalTitle: '', habitTitle: '', habitTime: '', strength: '', shadow: '' },
         dailyCheckins: [],
         cadence: {},
         notes: []
@@ -192,7 +193,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-onboarding-copy-layout-v87',
+    appBuildVersion: '20260505-guided-onboarding-starter-v88',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -7351,6 +7352,63 @@ const app = {
         return (window.sistemaVidaState.profile.dailyCheckins || []).find(entry => entry.date === today) || null;
     },
 
+    getCheckinScaleText: function(kind, value) {
+        const n = Math.max(1, Math.min(5, Number(value) || 3));
+        const maps = {
+            sleep: {
+                1: 'Sono muito ruim: acordei quebrado e sem recuperar.',
+                2: 'Sono abaixo do ideal: descanso parcial.',
+                3: 'Sono ok: funcional, mas ainda melhoravel.',
+                4: 'Sono bom: acordei recuperado.',
+                5: 'Sono excelente: corpo e mente renovados.'
+            },
+            energy: {
+                1: 'Energia minima: so o essencial.',
+                2: 'Energia baixa: manter simples hoje.',
+                3: 'Energia media: ritmo sustentavel.',
+                4: 'Energia boa: da para avancar bem.',
+                5: 'Energia alta: aproveite para atacar o importante.'
+            },
+            mood: {
+                1: 'Humor muito baixo: cuide da base primeiro.',
+                2: 'Humor baixo: ajuste expectativa e carga.',
+                3: 'Humor neutro: siga o plano com calma.',
+                4: 'Humor bom: bom momento para interacoes e entrega.',
+                5: 'Humor excelente: use a maré a seu favor.'
+            },
+            stress: {
+                1: 'Estresse leve: mente sob controle.',
+                2: 'Estresse administravel: manter pausas curtas.',
+                3: 'Estresse moderado: priorize e simplifique.',
+                4: 'Estresse alto: reduzir volume e proteger foco.',
+                5: 'Estresse critico: pare, respire e recorte o dia.'
+            }
+        };
+        return maps[kind]?.[n] || '';
+    },
+
+    renderDailyCheckinGuidance: function() {
+        const read = (id, fallback = 3) => {
+            const n = Number(document.getElementById(id)?.value);
+            return Number.isFinite(n) ? n : fallback;
+        };
+        const sleepValue = read('daily-checkin-sleep-quality', 3);
+        const energyValue = read('daily-checkin-energy', 3);
+        const moodValue = read('daily-checkin-mood', 3);
+        const stressValue = read('daily-checkin-stress', 3);
+
+        const sleepValEl = document.getElementById('daily-checkin-sleep-quality-val');
+        if (sleepValEl) sleepValEl.textContent = String(sleepValue);
+        const bind = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+        bind('daily-checkin-sleep-quality-help', this.getCheckinScaleText('sleep', sleepValue));
+        bind('daily-checkin-energy-help', this.getCheckinScaleText('energy', energyValue));
+        bind('daily-checkin-mood-help', this.getCheckinScaleText('mood', moodValue));
+        bind('daily-checkin-stress-help', this.getCheckinScaleText('stress', stressValue));
+    },
+
     saveDailyCheckin: function() {
         this.ensureDailyCheckinState();
         const today = this.getLocalDateKey();
@@ -7413,6 +7471,7 @@ const app = {
                 b.classList.toggle('bg-primary/10', active);
             });
         }
+        this.renderDailyCheckinGuidance();
     },
 
     renderDailyCheckinPanel: function() {
@@ -7423,6 +7482,14 @@ const app = {
         const defaults = todayEntry || { sleepHours: '', sleepQuality: 3, energy: window.sistemaVidaState.energy || 3, mood: 3, stress: 3, emotion: '' };
         const sleepEl = document.getElementById('daily-checkin-sleep-hours');
         if (sleepEl) sleepEl.value = defaults.sleepHours || '';
+        const sleepRangeEl = document.getElementById('daily-checkin-sleep-quality');
+        if (sleepRangeEl) {
+            sleepRangeEl.value = String(Number(defaults.sleepQuality || 3));
+            if (!sleepRangeEl.dataset.guidanceBound) {
+                sleepRangeEl.addEventListener('input', () => this.renderDailyCheckinGuidance());
+                sleepRangeEl.dataset.guidanceBound = '1';
+            }
+        }
         ['daily-checkin-sleep-quality', 'daily-checkin-energy', 'daily-checkin-mood', 'daily-checkin-stress'].forEach(id => {
             const key = id.replace('daily-checkin-', '').replace('-', '');
             const fieldMap = { 'sleepquality': 'sleepQuality', 'energy': 'energy', 'mood': 'mood', 'stress': 'stress' };
@@ -7461,6 +7528,7 @@ const app = {
                 </div>
             `).join('') : '<p class="text-xs text-outline italic">Sem histórico ainda. O primeiro check-in já cria a linha base.</p>';
         }
+        this.renderDailyCheckinGuidance();
     },
 
     toggleDiaryDimensionArea: function(dim) {
@@ -8373,6 +8441,79 @@ const app = {
         container.innerHTML = this._renderNextActionCard(this.getNextBestAction({ scope: 'today' }), 'today');
     },
 
+    getStarterJourneyState: function() {
+        const today = this.getLocalDateKey();
+        const weekKey = this._getWeekKey();
+        const cadence = window.sistemaVidaState.profile?.cadence || {};
+        const weekPlan = (window.sistemaVidaState.weekPlans || {})[weekKey];
+        const hasTrail = (window.sistemaVidaState.entities?.metas || []).length > 0 &&
+            (window.sistemaVidaState.entities?.okrs || []).length > 0 &&
+            (window.sistemaVidaState.entities?.macros || []).length > 0 &&
+            (window.sistemaVidaState.entities?.micros || []).length > 0;
+        const hasHabit = (window.sistemaVidaState.habits || []).length > 0;
+        const checkinToday = cadence.checkin?.lastAt === today;
+        const weeklyPlanned = !!(weekPlan && Array.isArray(weekPlan.selectedMicros) && weekPlan.selectedMicros.length > 0);
+        const items = [
+            { id: 'trail', label: 'Trilha inicial', done: hasTrail, action: () => this.navigate('planos') },
+            { id: 'habit', label: 'Habito ancora', done: hasHabit, action: () => this.navigate('hoje') },
+            { id: 'checkin', label: 'Check-in do dia', done: checkinToday, action: () => this.flowNavigate('hoje', 'daily-checkin-panel') },
+            { id: 'weekly', label: 'Plano da semana', done: weeklyPlanned, action: () => this.flowNavigate('planos', 'tab-semanal', 'semanal') }
+        ];
+        const doneCount = items.filter((item) => item.done).length;
+        return { items, doneCount, total: items.length, pct: Math.round((doneCount / items.length) * 100) };
+    },
+
+    renderStarterJourneyCard: function() {
+        const container = document.getElementById('starter-journey-container');
+        if (!container) return;
+        const journey = this.getStarterJourneyState();
+        if (journey.doneCount >= journey.total) {
+            container.innerHTML = `
+                <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+                    <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                        <span class="material-symbols-outlined notranslate text-[18px]">check_circle</span>
+                        <p class="text-xs font-bold uppercase tracking-widest">Base inicial concluida</p>
+                    </div>
+                </div>`;
+            return;
+        }
+        const nextPending = journey.items.find((item) => !item.done);
+        const list = journey.items.map((item) => `
+            <div class="flex items-center justify-between gap-3 rounded-xl px-3 py-2 ${item.done ? 'bg-emerald-500/[0.06]' : 'bg-surface-container-low'} border ${item.done ? 'border-emerald-500/20' : 'border-outline-variant/15'}">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="material-symbols-outlined notranslate text-[16px] ${item.done ? 'text-emerald-500' : 'text-outline'}" ${item.done ? "style=\"font-variation-settings:'FILL' 1;\"" : ''}>${item.done ? 'check_circle' : 'radio_button_unchecked'}</span>
+                    <p class="text-xs font-semibold text-on-surface truncate">${this.escapeHtml(item.label)}</p>
+                </div>
+                ${item.done ? '' : `<button type="button" onclick="window.app.onStarterJourneyAction('${item.id}')" class="shrink-0 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors">Abrir</button>`}
+            </div>
+        `).join('');
+        container.innerHTML = `
+            <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest shadow-sm p-4 md:p-5 space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Jornada guiada</p>
+                        <p class="text-xs text-outline mt-1">${journey.doneCount}/${journey.total} passos base concluidos</p>
+                    </div>
+                    <span class="text-xs font-bold text-primary">${journey.pct}%</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+                    <div class="h-full rounded-full bg-primary transition-all duration-500" style="width:${journey.pct}%"></div>
+                </div>
+                <div class="space-y-2">${list}</div>
+                ${nextPending ? `<p class="text-[11px] text-outline">Proximo passo recomendado: <span class="font-semibold text-on-surface">${this.escapeHtml(nextPending.label)}</span>.</p>` : ''}
+            </div>`;
+    },
+
+    onStarterJourneyAction: function(itemId) {
+        const actions = {
+            trail: () => this.navigate('planos'),
+            habit: () => this.flowNavigate('hoje', 'hoje-habits-section'),
+            checkin: () => this.flowNavigate('hoje', 'daily-checkin-panel'),
+            weekly: () => this.flowNavigate('planos', 'tab-semanal', 'semanal')
+        };
+        if (actions[itemId]) actions[itemId]();
+    },
+
     renderPainelDiagnostics: function() {
         const container = document.getElementById('painel-diagnostics');
         if (!container) return;
@@ -9087,6 +9228,7 @@ const app = {
           odyssey: { cenarioA: '', cenarioB: '', cenarioC: '' },
           odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' },
           identity: { strengths: [], shadows: [] },
+          onboardingStarter: { dimension: 'Carreira', goalTitle: '', habitTitle: '', habitTime: '', strength: '', shadow: '' },
           dailyCheckins: [],
           cadence: {},
           notes: []
@@ -10294,8 +10436,21 @@ const app = {
             const state = window.sistemaVidaState;
             const nameEl = document.getElementById('conclusao-nome');
             const valuesEl = document.getElementById('conclusao-valores');
+            const trailEl = document.getElementById('onboarding-summary-trail');
+            const habitEl = document.getElementById('onboarding-summary-habit');
+            const starter = this.onboardingGetStarterDraft();
             if (nameEl) nameEl.textContent = state.profile.name || 'Viajante';
             if (valuesEl) valuesEl.textContent = (state.profile.values || []).join(', ') || 'seus valores';
+            if (trailEl) {
+                const dim = starter.dimension || 'Carreira';
+                const goal = starter.goalTitle || 'Meta inicial';
+                trailEl.textContent = `${dim}: ${goal} (com OKR, Macro e Micro criadas automaticamente).`;
+            }
+            if (habitEl) {
+                const habit = starter.habitTitle || 'Habito ancora';
+                const at = starter.habitTime ? ` as ${starter.habitTime}` : '';
+                habitEl.textContent = `${habit}${at}.`;
+            }
         }
 
         this.scrollOnboardingToTop();
@@ -10305,6 +10460,61 @@ const app = {
         const el = document.getElementById(id);
         if (!el) return '';
         return String(el.value || '').trim();
+    },
+
+    onboardingGetStarterDraft: function() {
+        const profile = window.sistemaVidaState?.profile || {};
+        if (!profile.onboardingStarter || typeof profile.onboardingStarter !== 'object') {
+            profile.onboardingStarter = {
+                dimension: 'Carreira',
+                goalTitle: '',
+                habitTitle: '',
+                habitTime: '',
+                strength: '',
+                shadow: ''
+            };
+            window.sistemaVidaState.profile = profile;
+        }
+        return profile.onboardingStarter;
+    },
+
+    onboardingSaveStarterDraft: function() {
+        const draft = this.onboardingGetStarterDraft();
+        const read = (id, fallback = '') => String(document.getElementById(id)?.value || fallback).trim();
+        draft.dimension = read('onboarding-starter-dimension', draft.dimension || 'Carreira') || 'Carreira';
+        draft.goalTitle = read('onboarding-starter-goal', draft.goalTitle || '');
+        draft.habitTitle = read('onboarding-starter-habit', draft.habitTitle || '');
+        draft.habitTime = read('onboarding-starter-time', draft.habitTime || '');
+        draft.strength = read('onboarding-strength', draft.strength || '');
+        draft.shadow = read('onboarding-shadow', draft.shadow || '');
+        window.sistemaVidaState.profile.onboardingStarter = draft;
+        return draft;
+    },
+
+    populateOnboardingIdentityCatalogs: function() {
+        const strengthList = document.getElementById('onboarding-strength-catalog');
+        const shadowList = document.getElementById('onboarding-shadow-catalog');
+        if (strengthList) {
+            strengthList.innerHTML = this.getIdentityCatalog('strengths')
+                .map((title) => `<option value="${this.escapeHtml(title)}"></option>`)
+                .join('');
+        }
+        if (shadowList) {
+            shadowList.innerHTML = this.getIdentityCatalog('shadows')
+                .map((title) => `<option value="${this.escapeHtml(title)}"></option>`)
+                .join('');
+        }
+    },
+
+    resolveIdentityCatalogTitle: function(type, rawTitle) {
+        const clean = String(rawTitle || '').trim();
+        if (!clean) return '';
+        const normalized = clean.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const catalog = this.getIdentityCatalog(type);
+        const exact = catalog.find((item) =>
+            item.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === normalized
+        );
+        return exact || clean;
     },
 
     onboardingHydrateFields: function() {
@@ -10333,6 +10543,14 @@ const app = {
 
         const fallbackPurpose = ikigai.sintese || legacyObj.mundo || profile.legacy || profile.purpose || '';
         setValue('onboarding-proposito', fallbackPurpose);
+        const starter = this.onboardingGetStarterDraft();
+        setValue('onboarding-starter-goal', starter.goalTitle || '');
+        setValue('onboarding-starter-habit', starter.habitTitle || '');
+        setValue('onboarding-starter-time', starter.habitTime || '');
+        setValue('onboarding-strength', starter.strength || '');
+        setValue('onboarding-shadow', starter.shadow || '');
+        const starterDimension = document.getElementById('onboarding-starter-dimension');
+        if (starterDimension && starter.dimension) starterDimension.value = starter.dimension;
 
         const dimensions = [
             { key: 'Saúde', sliderId: 'onboarding-slider-saude' },
@@ -10364,6 +10582,7 @@ const app = {
                 ? Array.from(selectedValues).join(' • ')
                 : 'Selecione seus valores...';
         }
+        this.populateOnboardingIdentityCatalogs();
 
         // Adapta o Step 1 caso o usuario ja esteja logado em uma conta real:
         // esconde inputs de email/senha, troca botoes para refletir o estado.
@@ -10471,12 +10690,223 @@ const app = {
             state.profile.legacy = ikigai.sintese || legacyObj.mundo || state.profile.legacy || '';
             // Campo legado mantido por compatibilidade, agora espelhando a sintese.
             state.profile.purpose = ikigai.sintese || state.profile.legacy || '';
+        } else if (this.onboardingStep === 5) {
+            this.onboardingSaveStarterDraft();
         }
         if (persist) this.saveState();
     },
 
+    validateOnboardingStarterDraft: function(options = {}) {
+        const showError = options.showError !== false;
+        const draft = this.onboardingSaveStarterDraft();
+        if (!draft.goalTitle) {
+            if (showError) this.showToast('Defina uma meta inicial para montar sua trilha.', 'error');
+            return false;
+        }
+        if (!draft.habitTitle) {
+            if (showError) this.showToast('Defina ao menos um habito ancora para continuar.', 'error');
+            return false;
+        }
+        return true;
+    },
+
+    ensureOnboardingStarterSetup: function() {
+        const state = window.sistemaVidaState;
+        this.ensureIdentityState();
+        if (!state.entities) state.entities = { metas: [], okrs: [], macros: [], micros: [] };
+        ['metas', 'okrs', 'macros', 'micros'].forEach((type) => {
+            if (!Array.isArray(state.entities[type])) state.entities[type] = [];
+        });
+        if (!Array.isArray(state.habits)) state.habits = [];
+        if (!state.weekPlans || typeof state.weekPlans !== 'object') state.weekPlans = {};
+
+        const draft = this.onboardingSaveStarterDraft();
+        const dim = state.dimensions?.[draft.dimension] ? draft.dimension : 'Carreira';
+        const goalTitle = draft.goalTitle || `Evoluir ${dim.toLowerCase()} com consistencia`;
+        const habitTitle = draft.habitTitle || 'Habito ancora diario';
+        const todayKey = this.getLocalDateKey();
+        const nowIso = new Date().toISOString();
+        const makeId = (prefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        const datePlus = (days) => {
+            const d = new Date(todayKey + 'T00:00:00');
+            d.setDate(d.getDate() + days);
+            return this.getLocalDateKey(d);
+        };
+
+        const identity = state.profile.identity || { strengths: [], shadows: [] };
+        const ensureIdentityItem = (type, rawTitle) => {
+            const resolvedTitle = this.resolveIdentityCatalogTitle(type, rawTitle);
+            if (!resolvedTitle) return null;
+            const list = identity[type];
+            const found = (list || []).find((item) => String(item.title || '').toLowerCase() === resolvedTitle.toLowerCase());
+            if (found) return found;
+            const isStrength = type === 'strengths';
+            const item = {
+                id: `${isStrength ? 'strength' : 'shadow'}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                title: resolvedTitle,
+                dimension: dim,
+                description: '',
+                evidence: '',
+                excessRisk: '',
+                practice: '',
+                obstacle: '',
+                ifThen: '',
+                trigger: '',
+                impact: '',
+                desiredResponse: '',
+                linkedHabitIds: [],
+                weeklyLogs: {},
+                createdAt: todayKey,
+                updatedAt: todayKey
+            };
+            list.push(item);
+            return item;
+        };
+
+        const strengthItem = ensureIdentityItem('strengths', draft.strength);
+        const shadowItem = ensureIdentityItem('shadows', draft.shadow);
+        state.profile.identity = identity;
+
+        const hasAnyTrail =
+            (state.entities.metas || []).length > 0 ||
+            (state.entities.okrs || []).length > 0 ||
+            (state.entities.macros || []).length > 0 ||
+            (state.entities.micros || []).length > 0;
+
+        let createdMicroId = '';
+        if (!hasAnyTrail) {
+            const metaId = makeId('meta');
+            const okrId = makeId('okr');
+            const macroId = makeId('macro');
+            const microId = makeId('micro');
+            createdMicroId = microId;
+
+            state.entities.metas.push({
+                id: metaId,
+                title: goalTitle,
+                dimension: dim,
+                prazo: datePlus(365),
+                createdAt: todayKey,
+                purpose: (state.profile.ikigai?.sintese || state.profile.legacy || '').trim(),
+                horizonYears: 1,
+                successCriteria: 'Meta inicial definida no onboarding',
+                challengeLevel: 3,
+                commitmentLevel: 3,
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+            state.entities.okrs.push({
+                id: okrId,
+                metaId,
+                title: `OKR inicial - ${goalTitle}`,
+                dimension: dim,
+                inicioDate: todayKey,
+                prazo: datePlus(84),
+                createdAt: todayKey,
+                purpose: `Resultado das proximas 12 semanas para ${goalTitle}`,
+                successCriteria: `Resultado das proximas 12 semanas para ${goalTitle}`,
+                challengeLevel: 3,
+                commitmentLevel: 3,
+                keyResults: [],
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+            state.entities.macros.push({
+                id: macroId,
+                metaId,
+                okrId,
+                title: `Macro inicial - ${goalTitle}`,
+                dimension: dim,
+                inicioDate: todayKey,
+                prazo: datePlus(30),
+                createdAt: todayKey,
+                description: 'Macro criada automaticamente no onboarding',
+                purpose: goalTitle,
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+            state.entities.micros.push({
+                id: microId,
+                metaId,
+                okrId,
+                macroId,
+                title: `Micro inicial - primeiro passo de ${goalTitle}`,
+                dimension: dim,
+                inicioDate: todayKey,
+                prazo: datePlus(7),
+                createdAt: todayKey,
+                indicator: 'Primeiro passo da trilha',
+                purpose: goalTitle,
+                effort: 'medio',
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+
+            this.markCadence('lifeGoals', todayKey);
+            const weekKey = this._getWeekKey();
+            if (!state.weekPlans[weekKey]) {
+                state.weekPlans[weekKey] = {
+                    weekKey,
+                    intention: `Avancar: ${goalTitle}`,
+                    selectedMicros: [microId],
+                    completedMicros: [],
+                    savedAt: nowIso
+                };
+                this.markCadence('weeklyPlan', todayKey);
+            }
+        }
+
+        const hasHabit = (state.habits || []).some((habit) => String(habit.title || '').trim().toLowerCase() === habitTitle.trim().toLowerCase());
+        if (!hasHabit) {
+            const sourceType = strengthItem ? 'strength' : (shadowItem ? 'shadow' : '');
+            const sourceId = strengthItem?.id || shadowItem?.id || '';
+            const habit = {
+                id: makeId('habit'),
+                title: habitTitle,
+                dimension: dim,
+                context: '',
+                completed: false,
+                trigger: draft.habitTime ? `Quando der ${draft.habitTime}` : 'Ao iniciar o dia',
+                routine: habitTitle,
+                reward: 'Marcar o habito concluido no Life OS',
+                steps: [],
+                trackMode: 'boolean',
+                targetValue: 1,
+                frequency: 'daily',
+                startTime: draft.habitTime || '',
+                reminderEnabled: !!draft.habitTime,
+                reminderTime: draft.habitTime || '',
+                specificDays: [],
+                logs: {},
+                stepLogs: {},
+                maturity: 'forming',
+                maturityMeta: {},
+                linkedMetaId: null,
+                sourceType,
+                sourceId,
+                habitMode: sourceType === 'shadow' ? 'replace' : (sourceType === 'strength' ? 'build' : ''),
+                obstacle: shadowItem ? `Sombra alvo: ${shadowItem.title}` : '',
+                ifThen: shadowItem ? `Se perceber ${shadowItem.title.toLowerCase()}, entao inicio este habito por 5 minutos.` : '',
+                createdAt: todayKey
+            };
+            state.habits.push(habit);
+        }
+
+        this.normalizeEntitiesState();
+        if (createdMicroId) this.updateCascadeProgress(createdMicroId, 'micros');
+        this.syncIdentityLinkedHabits();
+        this.scheduleHabitReminders();
+    },
+
     onboardingNext: function() {
         this.onboardingSaveCurrentStep();
+        if (this.onboardingStep === 5 && !this.validateOnboardingStarterDraft({ showError: true })) {
+            return;
+        }
         const total = document.querySelectorAll('.onboarding-step').length;
         if (this.onboardingStep < total - 1) {
             this.onboardingGoTo(this.onboardingStep + 1);
@@ -10526,6 +10956,7 @@ const app = {
 
     onboardingComplete: function() {
         this.onboardingSaveCurrentStep(false);
+        this.ensureOnboardingStarterSetup();
         window.sistemaVidaState.onboardingComplete = true;
         this.saveState();
         this.navigate('hoje');
@@ -11903,6 +12334,7 @@ const app = {
             
             app.renderDailyCheckinPanel();
             app.renderDailyCompass();
+            app.renderStarterJourneyCard();
             app.renderNextBestAction();
 
             const container = document.getElementById('checklist-container');
