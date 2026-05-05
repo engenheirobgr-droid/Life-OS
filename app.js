@@ -156,7 +156,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-notifications-auto-v80',
+    appBuildVersion: '20260505-onboarding-cadence-v81',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -215,7 +215,12 @@ const app = {
             syncing: { icon: 'cloud_sync',    text: 'Sincronizando…',   cls: 'text-primary' },
             offline: { icon: 'cloud_off',     text: 'Modo local',       cls: 'text-amber-400' },
         };
-        const d = labels[state] || labels['ok'];
+        const d = { ...(labels[state] || labels['ok']) };
+        if (state === 'ok' && auth.currentUser?.isAnonymous) {
+            d.icon = 'cloud';
+            d.text = 'Visitante';
+            d.cls = 'text-outline';
+        }
         document.querySelectorAll('.lifeos-sync-badge').forEach(el => {
             el.innerHTML = '<span class="material-symbols-outlined notranslate text-sm">' + d.icon + '</span>'
                          + '<span class="text-[10px] font-bold">' + d.text + '</span>';
@@ -316,12 +321,12 @@ const app = {
     },
 
     createAccountFromProfile: async function() {
-        const name = String(document.getElementById('account-name-input')?.value || '').trim();
+        const name = String(document.getElementById('account-name-input')?.value || document.getElementById('onboarding-nome')?.value || '').trim();
         const email = String(document.getElementById('account-email-input')?.value || '').trim();
         const password = String(document.getElementById('account-password-input')?.value || '');
         if (!email || !password) {
             this.showToast('Informe e-mail e senha para criar a conta.', 'error');
-            return;
+            return false;
         }
         let wasSignedOut = isSignedOutIntentionally();
         try {
@@ -357,6 +362,7 @@ const app = {
             this.renderAccountPanel();
             this.renderProfileChrome();
             this.showToast('Conta registrada. Seus dados continuam no mesmo cofre.', 'success');
+            return true;
         } catch (error) {
             authInteractiveOperation = false;
             if (!auth.currentUser && wasSignedOut) {
@@ -367,6 +373,7 @@ const app = {
             this.lastAccountErrorMessage = this.getAuthErrorMessage(error);
             this.renderAccountPanel();
             this.showToast(this.lastAccountErrorMessage, 'error');
+            return false;
         }
     },
 
@@ -375,7 +382,7 @@ const app = {
         const password = String(document.getElementById('account-password-input')?.value || '');
         if (!email || !password) {
             this.showToast('Informe e-mail e senha para entrar.', 'error');
-            return;
+            return false;
         }
         let wasSignedOut = isSignedOutIntentionally();
         try {
@@ -392,6 +399,7 @@ const app = {
             this.teardownRealtimeSync();
             this.showToast('Conta carregada com sucesso.', 'success');
             setTimeout(() => window.location.reload(), 600);
+            return true;
         } catch (error) {
             authInteractiveOperation = false;
             if (!auth.currentUser && wasSignedOut) {
@@ -402,6 +410,7 @@ const app = {
             this.lastAccountErrorMessage = this.getAuthErrorMessage(error);
             this.renderAccountPanel();
             this.showToast(this.lastAccountErrorMessage, 'error');
+            return false;
         }
     },
 
@@ -7210,13 +7219,25 @@ const app = {
         const status = this.getCadenceStatus(toolKey);
         const cfg = {
             ok: { text: 'Em dia', cls: 'bg-primary/10 text-primary border-primary/20' },
-            soon: { text: 'Próximo', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' },
+            soon: { text: 'Proximo', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' },
             overdue: { text: 'Em atraso', cls: 'bg-error/10 text-error border-error/20' }
         }[status.state] || {};
-        const detail = status.daysSince === null ? 'Nunca feito' : `${status.daysSince}d`;
         return `<span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${cfg.cls}">
-            ${cfg.text} · ${detail}
+            ${cfg.text}
         </span>`;
+    },
+    renderCadenceMeta: function(toolKey) {
+        const status = this.getCadenceStatus(toolKey);
+        const freq = this.getCadenceFrequencyLabel(status.expectedFreq);
+        const lastLabel = status.daysSince === null
+            ? 'Nunca feito'
+            : status.daysSince === 0
+                ? 'Feito hoje'
+                : `Ultima vez ha ${status.daysSince} dia${status.daysSince === 1 ? '' : 's'}`;
+        return `<div class="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-outline">
+            <span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-1">${this.escapeHtml(freq)}</span>
+            <span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-1">${this.escapeHtml(lastLabel)}</span>
+        </div>`;
     },
 
     renderCadencePanel: function(containerId = 'cadence-status-panel', limit = 4) {
@@ -7238,6 +7259,7 @@ const app = {
                         ${this.escapeHtml(status.label)}
                     </p>
                     <p class="mt-1 text-[11px] text-outline leading-relaxed">${this.escapeHtml(status.why)}</p>
+                    ${this.renderCadenceMeta(key)}
                 </div>
                 <div class="shrink-0">${this.renderCadenceBadge(key)}</div>
             </div>
@@ -7250,7 +7272,6 @@ const app = {
         const keys = Object.keys(this.getCadenceConfig());
         container.innerHTML = keys.map(key => {
             const status = this.getCadenceStatus(key);
-            const freq = this.getCadenceFrequencyLabel(status.expectedFreq);
             return `
             <div class="flex items-start justify-between gap-4 rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
                 <div class="min-w-0">
@@ -7258,9 +7279,10 @@ const app = {
                         <span class="material-symbols-outlined notranslate text-primary text-[18px]">${this.escapeHtml(status.icon)}</span>
                         ${this.escapeHtml(status.label)}
                     </p>
-                    <p class="mt-1 text-xs text-outline leading-relaxed">${this.escapeHtml(status.why)} · Frequência: ${this.escapeHtml(freq)}</p>
+                    <p class="mt-1 text-xs text-outline leading-relaxed">${this.escapeHtml(status.why)}</p>
+                    ${this.renderCadenceMeta(key)}
                 </div>
-                ${this.renderCadenceBadge(key)}
+                <div class="shrink-0">${this.renderCadenceBadge(key)}</div>
             </div>`;
         }).join('');
     },
@@ -10329,6 +10351,33 @@ const app = {
         if (this.onboardingStep > 0) {
             this.onboardingGoTo(this.onboardingStep - 1);
         }
+    },
+
+    onboardingCreateAccount: async function() {
+        this.onboardingSaveCurrentStep(false);
+        const ok = await this.createAccountFromProfile();
+        if (ok) this.onboardingNext();
+    },
+
+    onboardingSignInAccount: async function() {
+        this.onboardingSaveCurrentStep(false);
+        await this.signInFromProfile();
+    },
+
+    onboardingContinueLocal: async function() {
+        this.onboardingSaveCurrentStep(false);
+        try {
+            this.persistLocalMirror();
+            this.teardownRealtimeSync();
+            setSignedOutIntentionally(true);
+            if (auth.currentUser) await signOut(auth);
+            initialAuthStatePromise = Promise.resolve(null);
+        } catch (error) {
+            console.warn('[AUTH] Falha ao alternar onboarding para modo local:', error);
+        }
+        this.updateSyncBadge('offline');
+        this.showToast('Modo local ativado. Voce pode criar uma conta depois em Perfil.', 'success');
+        this.onboardingNext();
     },
 
     onboardingComplete: function() {

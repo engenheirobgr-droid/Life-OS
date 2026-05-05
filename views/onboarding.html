@@ -26,17 +26,25 @@
 
     <!-- PASSO 1: IDENTIDADE -->
     <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-6" id="step-1">
-        <h2 class="text-3xl font-headline font-bold italic text-on-background">Como devemos te chamar?</h2>
-        <p class="text-outline">Esse nome aparece no painel, no perfil e nos rituais diarios.</p>
+        <h2 class="text-3xl font-headline font-bold italic text-on-background">Crie seu cofre Life OS</h2>
+        <p class="text-outline">Comece com uma conta para sincronizar seus dados na nuvem e usar o app em outros dispositivos.</p>
         <div class="mt-4">
             <input type="text" id="onboarding-nome" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-2xl p-6 text-2xl font-headline focus:border-primary transition-colors outline-none" placeholder="Seu nome ou apelido...">
         </div>
-        <div class="rounded-2xl bg-primary/5 border border-primary/15 p-4">
-            <p class="text-xs text-outline leading-relaxed">Depois do onboarding, crie sua conta em Perfil para manter os dados separados por usuario e usar o app em outros dispositivos.</p>
+        <div class="rounded-2xl bg-primary/5 border border-primary/15 p-4 space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input id="account-email-input" type="email" class="h-12 rounded-xl border-none bg-surface-container-lowest px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" placeholder="email@exemplo.com">
+                <input id="account-password-input" type="password" class="h-12 rounded-xl border-none bg-surface-container-lowest px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" placeholder="Senha com 6+ caracteres">
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button type="button" onclick="app.onboardingCreateAccount()" class="flex-[2] bg-primary text-on-primary py-3.5 rounded-xl font-bold uppercase text-xs tracking-widest">Criar conta e sincronizar</button>
+                <button type="button" onclick="app.onboardingSignInAccount()" class="flex-1 bg-surface-container-lowest text-primary border border-primary/20 py-3.5 rounded-xl font-bold uppercase text-xs tracking-widest">Entrar</button>
+            </div>
+            <p class="text-[11px] text-outline leading-relaxed">Preferir testar primeiro? Continue localmente. Seus dados ficam apenas neste aparelho ate voce criar uma conta em Perfil.</p>
         </div>
         <div class="flex gap-4 mt-8">
             <button onclick="app.onboardingBack()" class="flex-1 border-2 border-outline-variant/30 py-4 rounded-xl font-bold uppercase text-xs tracking-widest text-outline">Voltar</button>
-            <button onclick="app.onboardingNext()" class="flex-[2] bg-primary text-on-primary py-4 rounded-xl font-bold uppercase text-sm tracking-widest">Continuar</button>
+            <button onclick="app.onboardingContinueLocal()" class="flex-[2] bg-surface-container-high text-primary border border-primary/20 py-4 rounded-xl font-bold uppercase text-sm tracking-widest">Continuar local</button>
         </div>
     </div>
 
