@@ -156,7 +156,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-notifications-recheck-v79',
+    appBuildVersion: '20260505-notifications-auto-v80',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1894,31 +1894,6 @@ const app = {
 
         if (rerender && this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
         return { permission, enabled, pushOk: this.lastPushRegistrationOk, error: this.lastPushRegistrationError };
-    },
-    recheckNotificationsFromProfile: async function(event) {
-        if (event?.stopPropagation) event.stopPropagation();
-        this.ensureSettingsState();
-        if (!window.sistemaVidaState.settings.notificationsEnabled) {
-            await this.revalidateNotificationState({ register: false, rerender: true, force: true });
-            this.showToast('Ative o toggle para ligar as notificacoes.', 'error');
-            return;
-        }
-        try {
-            if (this.getNotificationPermission() === 'default') await this.requestNotificationPermission();
-            const result = await this.revalidateNotificationState({ register: true, rerender: true, force: true });
-            if (result.permission === 'granted' && result.pushOk === true) {
-                this.showToast('Notificacoes verificadas e push ativo.', 'success');
-            } else if (result.permission === 'granted') {
-                this.showToast('Permissao concedida. Ainda tentando registrar push em segundo plano.', 'success');
-            } else {
-                this.showToast(this.lastPushRegistrationError || 'Permissao de notificacoes ainda pendente.', 'error');
-            }
-        } catch (err) {
-            this.lastPushRegistrationOk = false;
-            this.lastPushRegistrationError = this.getPushErrorMessage(err);
-            if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
-            this.showToast(this.lastPushRegistrationError, 'error');
-        }
     },
     toggleDailyNotifications: async function() {
         this.ensureSettingsState();
