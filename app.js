@@ -156,7 +156,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-onboarding-cadence-v81',
+    appBuildVersion: '20260505-local-guest-v83',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -173,21 +173,21 @@ const app = {
     getPushSubscriptionDocRef: function(docId, userId = this.getActiveUserId()) {
         return doc(db, 'users', userId, 'push_subscriptions', docId);
     },
-    getLocalKey: function(baseKey) {
-        const uid = this.getActiveUserId();
+    getLocalKey: function(baseKey, userId = this.getActiveUserId()) {
+        const uid = userId || LOCAL_USER_SCOPE;
         return `${baseKey}:${uid || LOCAL_USER_SCOPE}`;
     },
-    localGet: function(baseKey) {
+    localGet: function(baseKey, userId = this.getActiveUserId()) {
         try {
-            return localStorage.getItem(this.getLocalKey(baseKey));
+            return localStorage.getItem(this.getLocalKey(baseKey, userId));
         } catch (_) {}
         return null;
     },
-    localSet: function(baseKey, value) {
-        try { localStorage.setItem(this.getLocalKey(baseKey), value); } catch (_) {}
+    localSet: function(baseKey, value, userId = this.getActiveUserId()) {
+        try { localStorage.setItem(this.getLocalKey(baseKey, userId), value); } catch (_) {}
     },
-    localRemove: function(baseKey) {
-        try { localStorage.removeItem(this.getLocalKey(baseKey)); } catch (_) {}
+    localRemove: function(baseKey, userId = this.getActiveUserId()) {
+        try { localStorage.removeItem(this.getLocalKey(baseKey, userId)); } catch (_) {}
         try { localStorage.removeItem(baseKey); } catch (_) {}
     },
     getLocalDateKey: function(date = new Date()) {
@@ -198,13 +198,13 @@ const app = {
         const now = Date.now();
         return Math.max(now, prev + 1);
     },
-    persistLocalMirror: function() {
+    persistLocalMirror: function(userId = this.getActiveUserId()) {
         try {
-            this.localSet('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')));
+            this.localSet('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')), userId);
         } catch (_) {}
         try {
             const completed = !!window.sistemaVidaState?.onboardingComplete;
-            this.localSet('lifeos_onboarding_complete', completed ? '1' : '0');
+            this.localSet('lifeos_onboarding_complete', completed ? '1' : '0', userId);
         } catch (_) {}
     },
     updateSyncBadge: function(state) {
@@ -2924,6 +2924,7 @@ const app = {
         let localData = null;
         let shouldSeedCloudAfterLoad = false;
         let cloudLoadFailed = false;
+        let localOnlyLoad = false;
         try {
             try {
                 await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
@@ -2932,9 +2933,10 @@ const app = {
                 if (authGateCode) {
                     console.log('[SYNC] Sessão sem auth de nuvem; carregando sem criar visitante.', authGateCode);
                     this.updateSyncBadge('offline');
-                    return;
+                    localOnlyLoad = true;
+                } else {
+                    throw authError;
                 }
-                throw authError;
             }
             const activeUserId = this.getActiveUserId();
             const rawLocal = this.localGet('lifeos_state_backup');
@@ -2944,15 +2946,17 @@ const app = {
             } else if (rawCore) {
                 try { localData = JSON.parse(rawCore); } catch (_) { localData = null; }
             }
-            const stateRef = this.getStateDocRef(activeUserId);
-            const docSnap = await this.withTimeout(getDoc(stateRef), 10000, 'firestore_getDoc');
+            if (!localOnlyLoad) {
+                const stateRef = this.getStateDocRef(activeUserId);
+                const docSnap = await this.withTimeout(getDoc(stateRef), 10000, 'firestore_getDoc');
 
-            if (docSnap.exists()) {
-                console.log("Estado encontrado na Nuvem, mesclando dados...");
-                cloudData = docSnap.data();
-            } else {
-                console.log("Primeiro acesso deste usuário. Documento será criado após normalização.");
-                shouldSeedCloudAfterLoad = true;
+                if (docSnap.exists()) {
+                    console.log("Estado encontrado na Nuvem, mesclando dados...");
+                    cloudData = docSnap.data();
+                } else {
+                    console.log("Primeiro acesso deste usuário. Documento será criado após normalização.");
+                    shouldSeedCloudAfterLoad = true;
+                }
             }
         } catch (error) {
             cloudLoadFailed = true;
@@ -2978,6 +2982,7 @@ const app = {
         if (shouldKeepLocal && cloudData && localHasPending) console.log('[SYNC] Keeping local pending state because it is newer/equal to cloud. Will retry cloud sync.');
         else if (shouldKeepLocal && !cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
         else if (localHasPending && cloudData) console.warn('[SYNC] Local pending state is older than cloud — applying cloud source of truth.');
+        else if (localOnlyLoad) console.log('[SYNC] Using local guest state.');
         else if (!cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
         else console.log('[SYNC] Using cloud state (source of truth).');
 
@@ -3012,7 +3017,7 @@ const app = {
             window.sistemaVidaState._pendingLocalChanges = false;
         }
         // Load images from dedicated Firestore document (Firestore-native image storage)
-        try {
+        if (!localOnlyLoad) try {
             const activeUserId = this.getActiveUserId();
             const imagesRef = this.getImagesDocRef(activeUserId);
             let imagesSnap = await this.withTimeout(getDoc(imagesRef), 8000, 'firestore_getImages');
@@ -10367,13 +10372,14 @@ const app = {
     onboardingContinueLocal: async function() {
         this.onboardingSaveCurrentStep(false);
         try {
-            this.persistLocalMirror();
             this.teardownRealtimeSync();
             setSignedOutIntentionally(true);
             if (auth.currentUser) await signOut(auth);
             initialAuthStatePromise = Promise.resolve(null);
+            this.persistLocalMirror(LOCAL_USER_SCOPE);
         } catch (error) {
             console.warn('[AUTH] Falha ao alternar onboarding para modo local:', error);
+            try { this.persistLocalMirror(LOCAL_USER_SCOPE); } catch (_) {}
         }
         this.updateSyncBadge('offline');
         this.showToast('Modo local ativado. Voce pode criar uma conta depois em Perfil.', 'success');
