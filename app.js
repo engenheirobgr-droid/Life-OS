@@ -156,6 +156,8 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
+    appBuildVersion: '20260505-accounts-cache-v77',
+    lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
     },
@@ -223,8 +225,8 @@ const app = {
 
     getAuthErrorMessage: function(error) {
         const code = String(error?.code || error?.message || '');
-        if (code.includes('auth/email-already-in-use')) return 'Este e-mail já tem uma conta. Use Entrar.';
-        if (code.includes('auth/credential-already-in-use')) return 'Este e-mail já está vinculado a outra conta. Use Entrar.';
+        if (code.includes('auth/email-already-in-use')) return 'Este e-mail já tem uma conta. Use Entrar; seus dados locais continuam guardados neste aparelho.';
+        if (code.includes('auth/credential-already-in-use')) return 'Este e-mail já está vinculado a outra conta. Use Entrar; seus dados locais continuam guardados neste aparelho.';
         if (code.includes('auth/invalid-email')) return 'Confira o e-mail informado.';
         if (code.includes('auth/weak-password')) return 'Use uma senha com pelo menos 6 caracteres.';
         if (code.includes('auth/invalid-credential') || code.includes('auth/wrong-password') || code.includes('auth/user-not-found')) return 'E-mail ou senha inválidos.';
@@ -259,7 +261,10 @@ const app = {
         if (signedEl) signedEl.classList.toggle('hidden', !isAccount);
         if (nameInput && !nameInput.value) nameInput.value = window.sistemaVidaState?.profile?.name || '';
         if (syncEl) {
-            if (isSignedOutLocal) {
+            if (this.lastAccountErrorMessage) {
+                syncEl.textContent = this.lastAccountErrorMessage;
+                syncEl.className = 'text-[10px] text-error leading-snug';
+            } else if (isSignedOutLocal) {
                 syncEl.textContent = 'Modo local ate entrar ou criar uma conta.';
                 syncEl.className = 'text-[10px] text-amber-500 leading-snug';
             } else if (this.lastCloudSyncOk === false) {
@@ -321,6 +326,8 @@ const app = {
         let wasSignedOut = isSignedOutIntentionally();
         try {
             this.updateSyncBadge('syncing');
+            this.lastAccountErrorMessage = '';
+            this.persistLocalMirror();
             const currentState = this.getPersistableState('full');
             authInteractiveOperation = true;
             let currentUser = auth.currentUser || null;
@@ -357,7 +364,9 @@ const app = {
             }
             console.error('[AUTH] Falha ao criar conta:', error);
             this.updateSyncBadge('error');
-            this.showToast(this.getAuthErrorMessage(error), 'error');
+            this.lastAccountErrorMessage = this.getAuthErrorMessage(error);
+            this.renderAccountPanel();
+            this.showToast(this.lastAccountErrorMessage, 'error');
         }
     },
 
@@ -371,6 +380,8 @@ const app = {
         let wasSignedOut = isSignedOutIntentionally();
         try {
             this.updateSyncBadge('syncing');
+            this.lastAccountErrorMessage = '';
+            this.persistLocalMirror();
             authInteractiveOperation = true;
             const credential = await signInWithEmailAndPassword(auth, email, password);
             initialAuthStatePromise = Promise.resolve(credential.user);
@@ -388,7 +399,9 @@ const app = {
             }
             console.error('[AUTH] Falha ao entrar:', error);
             this.updateSyncBadge('error');
-            this.showToast(this.getAuthErrorMessage(error), 'error');
+            this.lastAccountErrorMessage = this.getAuthErrorMessage(error);
+            this.renderAccountPanel();
+            this.showToast(this.lastAccountErrorMessage, 'error');
         }
     },
 
@@ -2631,8 +2644,13 @@ const app = {
     },
 
     showToast: function(message, type = 'success') {
-        const container = document.getElementById('global-toast-container');
-        if (!container) return;
+        let container = document.getElementById('global-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'global-toast-container';
+            container.className = 'fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none';
+            document.body.appendChild(container);
+        }
         
         const toast = document.createElement('div');
         const isSuccess = type === 'success';
@@ -2641,7 +2659,7 @@ const app = {
         const textColor = isSuccess ? 'text-primary' : 'text-white';
         const ringColor = isSuccess ? 'ring-primary/20' : 'ring-error/20';
         
-        toast.className = `flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl transform transition-all duration-500 translate-y-8 opacity-0 ${bgColor} border border-outline-variant/10 ring-4 ${ringColor}`;
+        toast.className = `flex max-w-sm items-center gap-3 px-5 py-3 rounded-2xl shadow-xl transform transition-all duration-500 translate-y-8 opacity-0 ${bgColor} border border-outline-variant/10 ring-4 ${ringColor}`;
         toast.innerHTML = `
             <span class="material-symbols-outlined notranslate ${textColor} text-xl">${icon}</span>
             <p class="text-sm font-semibold ${isSuccess ? 'text-on-surface' : 'text-white'}">${message}</p>
@@ -2825,6 +2843,7 @@ const app = {
         let cloudData = null;
         let localData = null;
         let shouldSeedCloudAfterLoad = false;
+        let cloudLoadFailed = false;
         try {
             try {
                 await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
@@ -2856,6 +2875,10 @@ const app = {
                 shouldSeedCloudAfterLoad = true;
             }
         } catch (error) {
+            cloudLoadFailed = true;
+            this.lastCloudSyncOk = false;
+            this.lastCloudSyncErrorCode = String(error?.code || error?.message || '').trim();
+            this.updateSyncBadge('error');
             console.error("Erro ao carregar o estado do Firestore:", error);
         }
 
@@ -2879,6 +2902,9 @@ const app = {
         else console.log('[SYNC] Using cloud state (source of truth).');
 
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
+        if (cloudLoadFailed && !preferred && this.showToast) {
+            this.showToast('Não consegui carregar seus dados da nuvem agora. Evitei sobrescrever a conta; tente recarregar em instantes.', 'error');
+        }
         try {
             const dailyBackup = JSON.parse(this.localGet('lifeos_daily_checkins_backup') || 'null');
             if (Array.isArray(dailyBackup) && dailyBackup.length) {
@@ -4085,7 +4111,7 @@ const app = {
     },
 
     init: async function() {
-        console.log("Sistema Vida OS inicializando... v35");
+        console.log("Sistema Vida OS inicializando...", this.appBuildVersion);
     // Signal dead-man's switch that the module loaded
     document.dispatchEvent(new CustomEvent('lifeos-app-ready'));
         console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
