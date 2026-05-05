@@ -192,7 +192,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-onboarding-loop-fix-v85',
+    appBuildVersion: '20260505-onboarding-scroll-fix-v86',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -10259,6 +10259,13 @@ const app = {
     // ------------------------------------------------------------------------
     // Onboarding Experience Logic
     // ------------------------------------------------------------------------
+    scrollOnboardingToTop: function() {
+        const appContent = document.getElementById(this.config.containerId);
+        const scrollContainer = appContent?.closest('section') || document.scrollingElement || document.documentElement;
+        try { scrollContainer.scrollTo({ top: 0, behavior: 'auto' }); } catch (_) { scrollContainer.scrollTop = 0; }
+        try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (_) {}
+    },
+
     onboardingGoTo: function(step) {
         const steps = document.querySelectorAll('.onboarding-step');
         if (steps.length === 0) return;
@@ -10291,7 +10298,7 @@ const app = {
             if (valuesEl) valuesEl.textContent = (state.profile.values || []).join(', ') || 'seus valores';
         }
 
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.scrollOnboardingToTop();
     },
 
     onboardingGetFieldValue: function(id) {

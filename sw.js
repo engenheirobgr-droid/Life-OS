@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v85';
+const CACHE_NAME = 'sistema-vida-v86';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260505-onboarding-loop-fix-v85',
+    './app.js?v=20260505-onboarding-scroll-fix-v86',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
