@@ -22,10 +22,30 @@ const db = getFirestore(firebaseApp);
 const auth = getAuth(firebaseApp);
 const storage = getStorage(firebaseApp);
 const LOCAL_USER_SCOPE = 'guest';
+const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch((err) => {
     console.warn('[AUTH] Falha ao configurar persistência local:', err);
 });
 let initialAuthStatePromise = null;
+let authInteractiveOperation = false;
+
+function isSignedOutIntentionally() {
+    try { return localStorage.getItem(AUTH_SIGNED_OUT_KEY) === '1'; } catch (_) { return false; }
+}
+
+function setSignedOutIntentionally(value) {
+    try {
+        if (value) localStorage.setItem(AUTH_SIGNED_OUT_KEY, '1');
+        else localStorage.removeItem(AUTH_SIGNED_OUT_KEY);
+    } catch (_) {}
+}
+
+function getAuthGateCode(error) {
+    const msg = String(error?.message || error || '');
+    if (msg.includes('auth_signed_out')) return 'modo_local_sem_conta';
+    if (msg.includes('auth_operation_pending')) return 'auth_em_andamento';
+    return '';
+}
 
 function waitInitialAuthState() {
     if (initialAuthStatePromise) return initialAuthStatePromise;
@@ -55,17 +75,16 @@ function waitInitialAuthState() {
 }
 // getAuthReady() cria uma Promise fresca a cada chamada.
 // Isso evita que uma falha de auth transitória (ex: rede lenta na abertura do app)
-// deixe o authReady permanentemente rejeitado, bloqueando todos os saves futuros.
+// deixe uma sessão antiga/rejeitada bloquear os saves futuros.
 function getAuthReady() {
     if (auth.currentUser) return Promise.resolve(auth.currentUser);
     return waitInitialAuthState().then((user) => {
         if (user) return user;
+        if (authInteractiveOperation) throw new Error('auth_operation_pending');
+        if (isSignedOutIntentionally()) throw new Error('auth_signed_out');
         return signInAnonymously(auth);
     });
 }
-// authReady: mantido para compatibilidade com onSnapshot (que precisa de uma promise inicial)
-const authReady = getAuthReady();
-
 window.sistemaVidaState = {
     profile: {
         name: "Bruno",
@@ -216,6 +235,7 @@ const app = {
     renderAccountPanel: function() {
         const user = auth.currentUser;
         const isAccount = this.isRealAccount(user);
+        const isSignedOutLocal = !user && isSignedOutIntentionally();
         const email = user?.email || '';
         const uid = this.getActiveUserId(user);
         const statusEl = document.getElementById('account-status-text');
@@ -229,15 +249,20 @@ const app = {
         if (statusEl) {
             statusEl.textContent = isAccount
                 ? 'Conta registrada. Este cofre pode ser recuperado por e-mail e usado em outros dispositivos.'
-                : 'Modo visitante. O app usa um acesso anônimo neste aparelho: funciona agora, mas você pode perder acesso se limpar dados ou trocar de dispositivo.';
+                : isSignedOutLocal
+                    ? 'Sem conta ativa. Entre ou crie uma conta para sincronizar com a nuvem; nada novo sera criado ao sair.'
+                    : 'Modo visitante. O app usa um acesso anonimo neste aparelho: funciona agora, mas voce pode perder acesso se limpar dados ou trocar de dispositivo.';
         }
-        if (idEl) idEl.textContent = isAccount ? uid : `${uid} (visitante)`;
-        if (emailEl) emailEl.textContent = email || 'Sem e-mail vinculado';
+        if (idEl) idEl.textContent = isAccount ? uid : isSignedOutLocal ? 'sem conta ativa' : `${uid} (visitante)`;
+        if (emailEl) emailEl.textContent = email || (isSignedOutLocal ? 'Entre ou crie uma conta' : 'Sem e-mail vinculado');
         if (formEl) formEl.classList.toggle('hidden', isAccount);
         if (signedEl) signedEl.classList.toggle('hidden', !isAccount);
         if (nameInput && !nameInput.value) nameInput.value = window.sistemaVidaState?.profile?.name || '';
         if (syncEl) {
-            if (this.lastCloudSyncOk === false) {
+            if (isSignedOutLocal) {
+                syncEl.textContent = 'Modo local ate entrar ou criar uma conta.';
+                syncEl.className = 'text-[10px] text-amber-500 leading-snug';
+            } else if (this.lastCloudSyncOk === false) {
                 syncEl.textContent = 'Ultima sincronizacao falhou: ' + (this.lastCloudSyncErrorCode || 'erro desconhecido') + '.';
                 syncEl.className = 'text-[10px] text-error leading-snug';
             } else if (this.lastCloudSyncOk === true) {
@@ -259,6 +284,32 @@ const app = {
         this._periodicSyncId = null;
     },
 
+    waitForAuthUser: function(uid, timeoutMs = 5000) {
+        if (auth.currentUser?.uid === uid) return Promise.resolve(auth.currentUser);
+        return new Promise((resolve, reject) => {
+            let done = false;
+            const timeoutId = setTimeout(() => {
+                if (done) return;
+                done = true;
+                try { unsub(); } catch (_) {}
+                reject(new Error('auth_user_switch_timeout'));
+            }, timeoutMs);
+            const unsub = onAuthStateChanged(auth, (user) => {
+                if (done || user?.uid !== uid) return;
+                done = true;
+                clearTimeout(timeoutId);
+                unsub();
+                resolve(user);
+            }, (err) => {
+                if (done) return;
+                done = true;
+                clearTimeout(timeoutId);
+                try { unsub(); } catch (_) {}
+                reject(err);
+            });
+        });
+    },
+
     createAccountFromProfile: async function() {
         const name = String(document.getElementById('account-name-input')?.value || '').trim();
         const email = String(document.getElementById('account-email-input')?.value || '').trim();
@@ -267,13 +318,23 @@ const app = {
             this.showToast('Informe e-mail e senha para criar a conta.', 'error');
             return;
         }
+        let wasSignedOut = isSignedOutIntentionally();
         try {
             this.updateSyncBadge('syncing');
             const currentState = this.getPersistableState('full');
-            const currentUser = await this.withTimeout(getAuthReady(), 8000, 'auth_ready_account');
+            authInteractiveOperation = true;
+            let currentUser = auth.currentUser || null;
+            if (!currentUser) {
+                try { currentUser = await this.withTimeout(waitInitialAuthState(), 5000, 'auth_initial_account'); } catch (_) { currentUser = null; }
+            }
             const credential = currentUser?.isAnonymous
                 ? await linkWithCredential(currentUser, EmailAuthProvider.credential(email, password))
                 : await createUserWithEmailAndPassword(auth, email, password);
+            initialAuthStatePromise = Promise.resolve(credential.user);
+            setSignedOutIntentionally(false);
+            authInteractiveOperation = false;
+            await this.withTimeout(this.waitForAuthUser(credential.user.uid), 6000, 'auth_user_ready_after_account');
+            try { await credential.user.getIdToken(true); } catch (_) {}
             if (name) {
                 try { await updateProfile(credential.user, { displayName: name }); } catch (_) {}
             }
@@ -290,6 +351,10 @@ const app = {
             this.renderProfileChrome();
             this.showToast('Conta registrada. Seus dados continuam no mesmo cofre.', 'success');
         } catch (error) {
+            authInteractiveOperation = false;
+            if (!auth.currentUser && wasSignedOut) {
+                setSignedOutIntentionally(true);
+            }
             console.error('[AUTH] Falha ao criar conta:', error);
             this.updateSyncBadge('error');
             this.showToast(this.getAuthErrorMessage(error), 'error');
@@ -303,13 +368,24 @@ const app = {
             this.showToast('Informe e-mail e senha para entrar.', 'error');
             return;
         }
+        let wasSignedOut = isSignedOutIntentionally();
         try {
             this.updateSyncBadge('syncing');
-            await signInWithEmailAndPassword(auth, email, password);
+            authInteractiveOperation = true;
+            const credential = await signInWithEmailAndPassword(auth, email, password);
+            initialAuthStatePromise = Promise.resolve(credential.user);
+            setSignedOutIntentionally(false);
+            authInteractiveOperation = false;
+            await this.withTimeout(this.waitForAuthUser(credential.user.uid), 6000, 'auth_user_ready_after_login');
+            try { await credential.user.getIdToken(true); } catch (_) {}
             this.teardownRealtimeSync();
             this.showToast('Conta carregada com sucesso.', 'success');
             setTimeout(() => window.location.reload(), 600);
         } catch (error) {
+            authInteractiveOperation = false;
+            if (!auth.currentUser && wasSignedOut) {
+                setSignedOutIntentionally(true);
+            }
             console.error('[AUTH] Falha ao entrar:', error);
             this.updateSyncBadge('error');
             this.showToast(this.getAuthErrorMessage(error), 'error');
@@ -335,7 +411,9 @@ const app = {
         try {
             this.persistLocalMirror();
             this.teardownRealtimeSync();
+            setSignedOutIntentionally(true);
             await signOut(auth);
+            initialAuthStatePromise = Promise.resolve(null);
             this.showToast('Você saiu da conta.', 'success');
             setTimeout(() => window.location.reload(), 600);
         } catch (error) {
@@ -2674,7 +2752,19 @@ const app = {
             this._isSaving = true;
             this.updateSyncBadge('syncing');
             try {
-                await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
+                try {
+                    await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
+                } catch (authError) {
+                    const authGateCode = getAuthGateCode(authError);
+                    if (authGateCode) {
+                        console.log('[SYNC] Auth indisponível agora; mantendo dados apenas localmente.', authGateCode);
+                        this.lastCloudSyncOk = null;
+                        this.lastCloudSyncErrorCode = authGateCode;
+                        this.updateSyncBadge('offline');
+                        return;
+                    }
+                    throw authError;
+                }
                 try {
                     const imagesChanged = await this.withTimeout(
                         this.syncImagesToFirestoreDoc(), 15000, 'sync_images'
@@ -2723,7 +2813,17 @@ const app = {
         let localData = null;
         let shouldSeedCloudAfterLoad = false;
         try {
-            await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
+            try {
+                await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
+            } catch (authError) {
+                const authGateCode = getAuthGateCode(authError);
+                if (authGateCode) {
+                    console.log('[SYNC] Sessão sem auth de nuvem; carregando sem criar visitante.', authGateCode);
+                    this.updateSyncBadge('offline');
+                    return;
+                }
+                throw authError;
+            }
             const activeUserId = this.getActiveUserId();
             const rawLocal = this.localGet('lifeos_state_backup');
             const rawCore = this.localGet('lifeos_state_backup_core');
@@ -4012,7 +4112,7 @@ const app = {
             const odysseyImgs = window.sistemaVidaState.profile?.odysseyImages || {};
             const hasOdyssey = Object.values(odysseyImgs).some(v => v && typeof v === 'string' && v.length > 10);
             if (hasAvatar || hasOdyssey) {
-                authReady.then(() => {
+                getAuthReady().then(() => {
                     this.syncImagesToFirestoreDoc().catch(e => console.warn('[Images] Falha ao sincronizar imagens na inicialização:', e));
                 }).catch(() => {});
             }
@@ -14438,6 +14538,7 @@ window.app = app;
 onAuthStateChanged(auth, (user) => {
     app.lastAuthUserId = user?.uid || '';
     app.lastAuthIsAnonymous = !!user?.isAnonymous;
+    if (user) setSignedOutIntentionally(false);
     if (app.currentView === 'perfil') {
         try { app.renderAccountPanel(); } catch (_) {}
     }
