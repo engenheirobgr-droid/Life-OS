@@ -192,7 +192,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-force-cloud-login-v84',
+    appBuildVersion: '20260505-onboarding-loop-fix-v85',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -10357,6 +10357,77 @@ const app = {
                 ? Array.from(selectedValues).join(' • ')
                 : 'Selecione seus valores...';
         }
+
+        // Adapta o Step 1 caso o usuario ja esteja logado em uma conta real:
+        // esconde inputs de email/senha, troca botoes para refletir o estado.
+        this.applyOnboardingAccountState();
+    },
+
+    applyOnboardingAccountState: function() {
+        const step1 = document.getElementById('step-1');
+        if (!step1) return;
+        const emailInput = step1.querySelector('#account-email-input');
+        const passwordInput = step1.querySelector('#account-password-input');
+        const createBtn = step1.querySelector('[onclick*="onboardingCreateAccount"]');
+        const signInBtn = step1.querySelector('[onclick*="onboardingSignInAccount"]');
+        const continueBtn = step1.querySelector('[onclick*="onboardingContinueLocal"]');
+        const noteEl = emailInput?.closest('.rounded-2xl')?.querySelector('p');
+
+        const isAccount = this.isRealAccount();
+        const email = auth.currentUser?.email || '';
+
+        if (isAccount) {
+            // Conta ja autenticada: esconder inputs e adaptar botoes
+            if (emailInput) emailInput.style.display = 'none';
+            if (passwordInput) passwordInput.style.display = 'none';
+            if (createBtn) createBtn.style.display = 'none';
+            if (signInBtn) {
+                signInBtn.textContent = 'Continuar';
+                signInBtn.classList.add('flex-[2]');
+                signInBtn.classList.remove('flex-1');
+            }
+            if (continueBtn) {
+                continueBtn.textContent = 'Trocar de conta';
+                continueBtn.setAttribute('onclick', 'app.onboardingSwitchAccount()');
+            }
+            if (noteEl) {
+                noteEl.textContent = `Voce esta logado como ${email}. Continue para configurar suas dimensoes ou troque de conta se preferir.`;
+            }
+        } else {
+            // Modo visitante / sem conta: garantir UI padrao
+            if (emailInput) emailInput.style.display = '';
+            if (passwordInput) passwordInput.style.display = '';
+            if (createBtn) createBtn.style.display = '';
+            if (signInBtn) {
+                signInBtn.textContent = 'Entrar';
+                signInBtn.classList.remove('flex-[2]');
+                signInBtn.classList.add('flex-1');
+            }
+            if (continueBtn) {
+                continueBtn.textContent = 'Continuar local';
+                continueBtn.setAttribute('onclick', 'app.onboardingContinueLocal()');
+            }
+            if (noteEl) {
+                noteEl.textContent = 'Preferir testar primeiro? Continue localmente. Seus dados ficam apenas neste aparelho ate voce criar uma conta em Perfil.';
+            }
+        }
+    },
+
+    onboardingSwitchAccount: async function() {
+        this.onboardingSaveCurrentStep(false);
+        try {
+            this.teardownRealtimeSync();
+            setSignedOutIntentionally(true);
+            if (auth.currentUser) await signOut(auth);
+            initialAuthStatePromise = Promise.resolve(null);
+            this.persistLocalMirror(LOCAL_USER_SCOPE);
+            this.showToast('Sessao encerrada. Use os campos para entrar com outra conta.', 'success');
+            // Re-renderiza onboarding sem auth para mostrar form de email/senha de novo
+            this.applyOnboardingAccountState();
+        } catch (error) {
+            console.warn('[AUTH] Falha ao trocar de conta no onboarding:', error);
+            this.showToast('Nao foi possivel sair da conta agora. Tente novamente.', 'error');
+        }
     },
 
     onboardingSaveCurrentStep: function(persist = true) {
@@ -10419,6 +10490,13 @@ const app = {
 
     onboardingSignInAccount: async function() {
         this.onboardingSaveCurrentStep(false);
+        // Se ja tem conta real autenticada, nao precisa logar novamente -
+        // apenas avanca para o proximo step (evita loop de reload no onboarding).
+        if (this.isRealAccount()) {
+            this.showToast(`Voce ja esta logado como ${auth.currentUser?.email || 'usuario'}.`, 'success');
+            this.onboardingNext();
+            return;
+        }
         await this.signInFromProfile();
     },
 
@@ -10979,8 +11057,12 @@ const app = {
     render: {
         onboarding: function() {
             app.onboardingHydrateFields();
-            // Inicializa o primeiro passo
-            app.onboardingGoTo(0);
+            // Se já tem conta autenticada (login persistido), pular Step 0 (boas-vindas)
+            // e Step 1 (criar/entrar conta) — evita loop em quem já fez login mas
+            // ainda não completou as etapas de Roda da Vida / Valores / Propósito.
+            const isAccount = app.isRealAccount();
+            const startStep = isAccount ? 2 : 0;
+            app.onboardingGoTo(startStep);
         },
         painel: function() {
             const state = window.sistemaVidaState;
