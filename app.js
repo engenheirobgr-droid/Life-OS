@@ -156,7 +156,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-notifications-v78',
+    appBuildVersion: '20260505-notifications-recheck-v79',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1829,6 +1829,10 @@ const app = {
         }
         return msg || 'falha desconhecida ao registrar push.';
     },
+    isPushPermissionError: function(message) {
+        const msg = String(message || '').toLowerCase();
+        return msg.includes('permission') || msg.includes('permiss') || msg.includes('denied') || msg.includes('bloquead');
+    },
     getNotificationPermission: function() {
         if (typeof Notification === 'undefined') return 'unsupported';
         return Notification.permission || 'default';
@@ -1841,6 +1845,80 @@ const app = {
         const result = await Notification.requestPermission();
         if (result !== 'granted') throw new Error('notification_permission_not_granted');
         return result;
+    },
+    revalidateNotificationState: async function(options = {}) {
+        this.ensureSettingsState();
+        const register = options.register !== false;
+        const rerender = options.rerender !== false;
+        const force = !!options.force;
+        const enabled = !!window.sistemaVidaState.settings.notificationsEnabled;
+        const permission = this.getNotificationPermission();
+
+        if (permission === 'granted' && this.lastPushRegistrationOk === false && this.isPushPermissionError(this.lastPushRegistrationError)) {
+            this.lastPushRegistrationOk = null;
+            this.lastPushRegistrationError = '';
+        }
+
+        if (!enabled) {
+            if (rerender && this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+            return { permission, enabled, pushOk: this.lastPushRegistrationOk };
+        }
+
+        if (permission === 'unsupported') {
+            this.lastPushRegistrationOk = false;
+            this.lastPushRegistrationError = 'este navegador nao oferece notificacoes neste contexto.';
+        } else if (permission === 'denied') {
+            this.lastPushRegistrationOk = false;
+            this.lastPushRegistrationError = this.getPushErrorMessage(new Error('notification_permission_denied'));
+        } else if (permission === 'default') {
+            this.lastPushRegistrationOk = null;
+            this.lastPushRegistrationError = '';
+        } else if (permission === 'granted' && register) {
+            if (this._pushRevalidateInFlight && !force) return { permission, enabled, pushOk: this.lastPushRegistrationOk };
+            this._pushRevalidateInFlight = true;
+            this.lastPushRegistrationOk = null;
+            this.lastPushRegistrationError = '';
+            if (rerender && this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+            try {
+                const pushOk = await this.withTimeout(this.registerPushSubscription(), 10000, 'push_revalidate');
+                this.lastPushRegistrationOk = !!pushOk;
+                this.lastPushRegistrationError = pushOk ? '' : 'Push em segundo plano indisponivel neste navegador.';
+            } catch (err) {
+                this.lastPushRegistrationOk = false;
+                this.lastPushRegistrationError = this.getPushErrorMessage(err);
+                console.warn('[PUSH] Falha ao reverificar assinatura:', err);
+            } finally {
+                this._pushRevalidateInFlight = false;
+            }
+        }
+
+        if (rerender && this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+        return { permission, enabled, pushOk: this.lastPushRegistrationOk, error: this.lastPushRegistrationError };
+    },
+    recheckNotificationsFromProfile: async function(event) {
+        if (event?.stopPropagation) event.stopPropagation();
+        this.ensureSettingsState();
+        if (!window.sistemaVidaState.settings.notificationsEnabled) {
+            await this.revalidateNotificationState({ register: false, rerender: true, force: true });
+            this.showToast('Ative o toggle para ligar as notificacoes.', 'error');
+            return;
+        }
+        try {
+            if (this.getNotificationPermission() === 'default') await this.requestNotificationPermission();
+            const result = await this.revalidateNotificationState({ register: true, rerender: true, force: true });
+            if (result.permission === 'granted' && result.pushOk === true) {
+                this.showToast('Notificacoes verificadas e push ativo.', 'success');
+            } else if (result.permission === 'granted') {
+                this.showToast('Permissao concedida. Ainda tentando registrar push em segundo plano.', 'success');
+            } else {
+                this.showToast(this.lastPushRegistrationError || 'Permissao de notificacoes ainda pendente.', 'error');
+            }
+        } catch (err) {
+            this.lastPushRegistrationOk = false;
+            this.lastPushRegistrationError = this.getPushErrorMessage(err);
+            if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+            this.showToast(this.lastPushRegistrationError, 'error');
+        }
     },
     toggleDailyNotifications: async function() {
         this.ensureSettingsState();
@@ -4142,6 +4220,9 @@ const app = {
             this._cadenceNeedsMigrationSave = false;
             try { await this.saveState(true); } catch (err) { console.warn('[Cadence] Falha ao persistir migração de propósito:', err); }
         }
+        const recheckNotifications = () => {
+            try { this.revalidateNotificationState({ register: true, rerender: true }).catch(() => {}); } catch (_) {}
+        };
         if (!this._localFlushBound) {
             this._localFlushBound = true;
             const flushLocalMirror = () => {
@@ -4151,15 +4232,15 @@ const app = {
             window.addEventListener('beforeunload', flushLocalMirror);
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'hidden') flushLocalMirror();
+                if (document.visibilityState === 'visible') recheckNotifications();
             });
+            window.addEventListener('focus', recheckNotifications);
         }
         try { this.ensureSettingsState(); } catch (_) {}
         try { this.applyThemePreference(); } catch (_) {}
         try { this.checkAlerts(); } catch (_) {}
         try { this.startHabitReminderWatcher(); } catch (_) {}
-        if (window.sistemaVidaState?.settings?.notificationsEnabled) {
-            try { this.registerPushSubscription(); } catch (_) {}
-        }
+        if (window.sistemaVidaState?.settings?.notificationsEnabled) recheckNotifications();
         try { this.ensureDeepWorkTicking(); } catch (_) {}
         try { this.setupRealtimeSync(); } catch (_) {} // real-time cross-device sync
 
@@ -12343,6 +12424,13 @@ const app = {
                 nomeDisplay.textContent = state.profile.name || "Seu Nome";
             }
             app.ensureSettingsState();
+            if (state.settings?.notificationsEnabled && !app._pushRevalidateInFlight) {
+                const now = Date.now();
+                if (!app._lastProfileNotificationRecheckAt || now - app._lastProfileNotificationRecheckAt > 30000) {
+                    app._lastProfileNotificationRecheckAt = now;
+                    setTimeout(() => app.revalidateNotificationState({ register: true, rerender: true }).catch(() => {}), 0);
+                }
+            }
 
             const profileImg = document.getElementById('profile-avatar-image');
             if (profileImg) {
@@ -12361,6 +12449,10 @@ const app = {
             if (pushStatus) {
                 const on = !!state.settings.notificationsEnabled;
                 const permission = app.getNotificationPermission();
+                if (permission === 'granted' && app.lastPushRegistrationOk === false && app.isPushPermissionError(app.lastPushRegistrationError)) {
+                    app.lastPushRegistrationOk = null;
+                    app.lastPushRegistrationError = '';
+                }
                 if (!on) {
                     if (permission === 'default') {
                         pushStatus.textContent = 'Desativadas. Ao ativar, o app vai pedir permissao.';
