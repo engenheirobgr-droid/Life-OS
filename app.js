@@ -125,7 +125,7 @@ window.sistemaVidaState = {
         vision: { saude: "", carreira: "", intelecto: "", quote: "", saudeResumo: "", carreiraResumo: "", intelectoResumo: "" },
         odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" },
         odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" },
-        odysseyTitles: { cenarioA: "A Via Consolidada", cenarioB: "O Salto Criativo", cenarioC: "A Vida Acadêmica" },
+        odysseyTitles: { cenarioA: "Cenário A", cenarioB: "Cenário B", cenarioC: "Cenário C" },
         identity: { strengths: [], shadows: [] },
         onboardingStarter: { dimension: 'Carreira', goalTitle: '', habitTitle: '', habitTime: '', strength: '', shadow: '' },
         dailyCheckins: [],
@@ -1790,9 +1790,9 @@ const app = {
         }
         if (!window.sistemaVidaState.profile.odysseyTitles || typeof window.sistemaVidaState.profile.odysseyTitles !== 'object') {
             window.sistemaVidaState.profile.odysseyTitles = {
-                cenarioA: "A Via Consolidada",
-                cenarioB: "O Salto Criativo",
-                cenarioC: "A Vida Acadêmica"
+                cenarioA: "Cenário A",
+                cenarioB: "Cenário B",
+                cenarioC: "Cenário C"
             };
         }
         if (typeof window.sistemaVidaState.settings.odysseySplashFilter !== 'string') {
@@ -2345,9 +2345,9 @@ const app = {
         const titles = window.sistemaVidaState.profile.odysseyTitles || {};
         const filter = this.getOdysseySplashFilter();
         const slides = [
-            { key: 'cenarioA', label: 'Cenário A', title: titles.cenarioA || 'A Via Consolidada', src: images.cenarioA || '' },
-            { key: 'cenarioB', label: 'Cenário B', title: titles.cenarioB || 'O Salto Criativo', src: images.cenarioB || '' },
-            { key: 'cenarioC', label: 'Cenário C', title: titles.cenarioC || 'A Vida Acadêmica', src: images.cenarioC || '' }
+            { key: 'cenarioA', label: 'Cenário A', title: titles.cenarioA || 'Cenário A', src: images.cenarioA || '' },
+            { key: 'cenarioB', label: 'Cenário B', title: titles.cenarioB || 'Cenário B', src: images.cenarioB || '' },
+            { key: 'cenarioC', label: 'Cenário C', title: titles.cenarioC || 'Cenário C', src: images.cenarioC || '' }
         ].filter(item => item.src && item.src.length > 10);
         return filter === 'all' ? slides : slides.filter(item => item.key === filter);
     },
@@ -3731,30 +3731,32 @@ const app = {
     renderSidebarValues: function() {
         const state = window.sistemaVidaState;
         const profile = state.profile || {};
-        const values = profile.values || [];
+        const essentials = profile.values || [];
+        const importants = profile.importantValues || [];
         this.renderProfileChrome();
 
         const container = document.getElementById('sidebar-values-container');
         if (container) {
-            if (values.length > 0) {
-                container.innerHTML = values.map(v => 
-                    `<span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic transition-all hover:bg-primary/20 cursor-default animate-fade-in">${v}</span>`
-                ).join('');
-            } else {
-                container.innerHTML = `<span class="text-[10px] text-outline italic">Defina seus valores no Propósito</span>`;
+            let html = '';
+            if (essentials.length > 0) {
+                html += essentials.map(v => `<span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic transition-all hover:bg-primary/20 cursor-default animate-fade-in" title="Essencial"><span class="material-symbols-outlined notranslate text-[10px] align-text-bottom">star</span>${v}</span>`).join('');
             }
+            if (importants.length > 0) {
+                html += importants.map(v => `<span class="px-2 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-lg uppercase italic transition-all hover:bg-secondary/20 cursor-default animate-fade-in" title="Importante">${v}</span>`).join('');
+            }
+            container.innerHTML = html || `<span class="text-[10px] text-outline italic">Defina seus valores no Propósito</span>`;
         }
 
-        // Também atualiza o banner no Propósito se estiver visível
         const valuesBanner = document.getElementById('top-values-banner');
         if (valuesBanner) {
-            if (values.length > 0) {
-                valuesBanner.innerHTML = values.map(v =>
-                    `<span class="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in">${v}</span>`
-                ).join('');
-            } else {
-                valuesBanner.innerHTML = '<p class="text-xs text-outline italic">Escolha os valores que guiam suas decisões.</p>';
+            let html = '';
+            if (essentials.length > 0) {
+                html += essentials.map(v => `<span class="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in" title="Essencial"><span class="material-symbols-outlined notranslate text-[11px] align-text-bottom" style="font-variation-settings:'FILL' 1;">star</span>${v}</span>`).join('');
             }
+            if (importants.length > 0) {
+                html += importants.map(v => `<span class="px-4 py-1.5 bg-secondary/10 text-secondary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in" title="Importante">${v}</span>`).join('');
+            }
+            valuesBanner.innerHTML = html || '<p class="text-xs text-outline italic">Escolha os valores que guiam suas decisões.</p>';
         }
     },
 
@@ -3858,10 +3860,85 @@ const app = {
     },
 
     addCustomIdentityItem: function(type) {
-        const label = type === 'strengths' ? 'força' : 'sombra';
-        const title = window.prompt(`Nome da ${label}:`);
-        if (!title || !title.trim()) return;
-        this.addIdentityItem(type, title.trim());
+        this.openIdentityItemModal(type, null);
+    },
+
+    openIdentityItemModal: function(type, id) {
+        const modal = document.getElementById('identity-item-modal');
+        if (!modal) return;
+        const isStrength = type === 'strengths';
+        const isEdit = !!id;
+        document.getElementById('identity-modal-type').value = type;
+        document.getElementById('identity-modal-id').value = id || '';
+        document.getElementById('identity-modal-title').textContent = isEdit
+            ? (isStrength ? 'Editar Força' : 'Editar Sombra')
+            : (isStrength ? 'Nova Força' : 'Nova Sombra');
+
+        const sFields = document.getElementById('identity-modal-strengths-fields');
+        const shFields = document.getElementById('identity-modal-shadows-fields');
+        if (sFields)  sFields.classList.toggle('hidden', !isStrength);
+        if (shFields) shFields.classList.toggle('hidden', isStrength);
+
+        // Pre-fill if editing
+        const item = id ? this.getIdentityItemById(type, id) : null;
+        const val = (key) => (item && item[key]) ? item[key] : '';
+        document.getElementById('identity-modal-name').value      = val('title');
+        document.getElementById('identity-modal-dimension').value = val('dimension');
+        if (isStrength) {
+            document.getElementById('identity-modal-evidence').value   = val('evidence');
+            document.getElementById('identity-modal-excessRisk').value = val('excessRisk');
+            document.getElementById('identity-modal-practice').value   = val('practice') || val('suggestedPractice');
+        } else {
+            document.getElementById('identity-modal-trigger').value         = val('trigger');
+            document.getElementById('identity-modal-impact').value          = val('impact');
+            document.getElementById('identity-modal-desiredResponse').value = val('desiredResponse');
+            document.getElementById('identity-modal-obstacle').value        = val('obstacle');
+            document.getElementById('identity-modal-ifThen').value          = val('ifThen');
+        }
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById('identity-modal-name')?.focus(), 80);
+    },
+
+    closeIdentityItemModal: function() {
+        const modal = document.getElementById('identity-item-modal');
+        if (modal) modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    },
+
+    saveIdentityItemModal: function() {
+        this.ensureIdentityState();
+        const type = document.getElementById('identity-modal-type').value;
+        const id   = document.getElementById('identity-modal-id').value;
+        const name = (document.getElementById('identity-modal-name').value || '').trim();
+        if (!name) return;
+        const isStrength = type === 'strengths';
+
+        const g = (elId) => (document.getElementById(elId)?.value || '').trim();
+        const extra = isStrength
+            ? { evidence: g('identity-modal-evidence'), excessRisk: g('identity-modal-excessRisk'), practice: g('identity-modal-practice') }
+            : { trigger: g('identity-modal-trigger'), impact: g('identity-modal-impact'), desiredResponse: g('identity-modal-desiredResponse'), obstacle: g('identity-modal-obstacle'), ifThen: g('identity-modal-ifThen') };
+
+        if (id) {
+            // Edit existing
+            const item = this.getIdentityItemById(type, id);
+            if (!item) return;
+            item.title     = name;
+            item.dimension = g('identity-modal-dimension');
+            Object.assign(item, extra);
+            item.updatedAt = this.getLocalDateKey();
+            this.showToast(`${isStrength ? 'Força' : 'Sombra'} atualizada.`, 'success');
+        } else {
+            // Create new
+            const dimension = g('identity-modal-dimension');
+            const list = window.sistemaVidaState.profile.identity[type];
+            const newItem = { id: this.generateId(), title: name, dimension, ...extra, createdAt: this.getLocalDateKey() };
+            list.push(newItem);
+            this.showToast(`${isStrength ? 'Força' : 'Sombra'} adicionada.`, 'success');
+        }
+        this.saveState(true);
+        this.renderIdentityBase();
+        this.closeIdentityItemModal();
     },
 
     removeIdentityItem: function(type, id) {
@@ -3875,48 +3952,7 @@ const app = {
     },
 
     editIdentityItem: function(type, id) {
-        this.ensureIdentityState();
-        const item = this.getIdentityItemById(type, id);
-        if (!item) return;
-        const isStrength = type === 'strengths';
-        const title = window.prompt(`${this.getIdentityTypeLabel(type)}: nome`, item.title);
-        if (title === null) return;
-        const dimension = window.prompt('Dimensão principal (opcional)', item.dimension || '');
-        if (dimension === null) return;
-
-        item.title = String(title || '').trim() || item.title;
-        item.dimension = String(dimension || '').trim();
-        if (isStrength) {
-            const evidence = window.prompt('Evidência real: onde essa força aparece?', item.evidence || '');
-            if (evidence === null) return;
-            const excessRisk = window.prompt('Risco de excesso: quando essa força passa do ponto?', item.excessRisk || '');
-            if (excessRisk === null) return;
-            const practice = window.prompt('Prática sugerida: como treinar essa força?', item.practice || item.suggestedPractice || '');
-            if (practice === null) return;
-            item.evidence = String(evidence || '').trim();
-            item.excessRisk = String(excessRisk || '').trim();
-            item.practice = String(practice || '').trim();
-        } else {
-            const trigger = window.prompt('Gatilho: quando essa sombra aparece?', item.trigger || '');
-            if (trigger === null) return;
-            const impact = window.prompt('Impacto: o que ela costuma gerar?', item.impact || '');
-            if (impact === null) return;
-            const desiredResponse = window.prompt('Resposta desejada: o que praticar no lugar?', item.desiredResponse || '');
-            if (desiredResponse === null) return;
-            const obstacle = window.prompt('Obstáculo previsto: o que costuma te puxar para esse padrão?', item.obstacle || item.trigger || '');
-            if (obstacle === null) return;
-            const ifThen = window.prompt('Plano se-então: se o obstáculo aparecer, então...', item.ifThen || '');
-            if (ifThen === null) return;
-            item.trigger = String(trigger || '').trim();
-            item.impact = String(impact || '').trim();
-            item.desiredResponse = String(desiredResponse || '').trim();
-            item.obstacle = String(obstacle || '').trim();
-            item.ifThen = String(ifThen || '').trim();
-        }
-        item.updatedAt = this.getLocalDateKey();
-        this.saveState(true);
-        this.renderIdentityBase();
-        this.showToast(`${this.getIdentityTypeLabel(type)} atualizada.`, 'success');
+        this.openIdentityItemModal(type, id);
     },
 
     renderIdentityBase: function() {
@@ -4915,8 +4951,10 @@ const app = {
         return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
     },
 
-    saveValues: function(newValuesArray) {
-        window.sistemaVidaState.profile.values = newValuesArray;
+    saveValues: function(essentialValues, importantValues) {
+        window.sistemaVidaState.profile.values = essentialValues || [];
+        window.sistemaVidaState.profile.importantValues = importantValues || [];
+        this.renderSidebarValues();
         if (this.render.proposito) this.render.proposito();
         app.saveState(true);
     },
@@ -6722,9 +6760,21 @@ const app = {
         const isStrength = habit.sourceType === 'strength';
         const label = isStrength ? 'Força' : 'Sombra';
         const icon = isStrength ? 'workspace_premium' : 'change_circle';
-        return `<p class="mt-1 text-[10px] ${isStrength ? 'text-primary' : 'text-secondary'} leading-tight truncate flex items-center gap-1">
+        return `<button type="button" onclick="window.app.flowNavigate('proposito','proposito-identity-section','')"
+            class="mt-1 text-[10px] ${isStrength ? 'text-primary' : 'text-secondary'} leading-tight truncate flex items-center gap-1 hover:underline" title="Ver em Propósito">
             <span class="material-symbols-outlined notranslate text-[11px]">${icon}</span>${label}: ${this.escapeHtml(item.title)}
-        </p>`;
+        </button>`;
+    },
+
+    // Returns an intent descriptor for a habit: meta / strength / shadow / loose
+    _getHabitIntent: function(habit, state) {
+        if (habit.linkedMetaId) {
+            const meta = (state?.entities?.metas || []).find(m => m.id === habit.linkedMetaId);
+            if (meta) return { key: 'meta', label: 'Sustenta meta', icon: 'flag', metaTitle: meta.title };
+        }
+        if (habit.sourceType === 'strength') return { key: 'strength', label: 'Pratica força', icon: 'workspace_premium' };
+        if (habit.sourceType === 'shadow')   return { key: 'shadow',   label: 'Protege sombra', icon: 'change_circle' };
+        return { key: 'loose', label: 'Sem vínculo', icon: 'radio_button_unchecked' };
     },
 
     // Returns an intent descriptor for a habit: meta / strength / shadow / loose
@@ -7429,9 +7479,15 @@ const app = {
             purpose:      { view: 'proposito', sectionId: 'proposito-ikigai-section', tabId: '' },
             lifeGoals:    { view: 'planos',  sectionId: '',                         tabId: 'metas' }
         };
-        // diary (Diário/Shutdown) só faz sentido no fim do dia
+        // diary só faz sentido no fim do dia; weeklyReview/Plan só nos dias certos
         const hour = new Date().getHours();
-        const keys = Object.keys(routeMap).filter(k => k !== 'diary' || hour >= 14);
+        const dow  = new Date().getDay(); // 0=dom, 1=seg, …, 5=sex, 6=sáb
+        const keys = Object.keys(routeMap).filter(k => {
+            if (k === 'diary')        return hour >= 14;
+            if (k === 'weeklyReview') return [5, 6, 0].includes(dow);
+            if (k === 'weeklyPlan')   return [0, 1].includes(dow);
+            return true;
+        });
         const statuses = keys.map(key => ({ key, route: routeMap[key], ...this.getCadenceStatus(key) }));
         const overdue = statuses.filter(s => s.state === 'overdue').sort((a, b) => {
             if (a.daysSince === null && b.daysSince === null) return 0;
@@ -11523,7 +11579,7 @@ const app = {
                 'Hábitos de sombra valem +4 XP, hábitos de força valem +2 XP — a diferença reflete o esforço cognitivo.',
                 'Na Revisão Semanal, marque qual força usou e qual sombra apareceu.'
             ],
-            cta: { label: 'Abrir Propósito', view: 'proposito' }
+            cta: { label: 'Abrir Propósito', view: 'proposito', sectionId: 'proposito-identity-section' }
         },
         {
             id: 'ikigai-odyssey',
@@ -11539,7 +11595,7 @@ const app = {
                 'Atualize a Visão de Vida a cada 6-12 meses; ela é uma bússola, não um contrato.',
                 'Quando definir Metas, pergunte: "qual cenário Odyssey isso serve?"'
             ],
-            cta: { label: 'Editar Ikigai e Odyssey', view: 'proposito' }
+            cta: { label: 'Editar Ikigai e Odyssey', view: 'proposito', sectionId: 'proposito-ikigai-section' }
         },
         {
             id: 'bem-estar',
@@ -11555,7 +11611,7 @@ const app = {
                 'SWLS deve ser preenchido a cada 3 meses; comparações curtas demais são ruído.',
                 'Cruze: dimensões baixas na Roda devem aparecer como Metas em Planos.'
             ],
-            cta: { label: 'Reavaliar bem-estar', view: 'proposito' }
+            cta: { label: 'Reavaliar bem-estar', view: 'proposito', sectionId: 'proposito-roda-section' }
         },
         {
             id: 'planos',
@@ -11734,6 +11790,71 @@ const app = {
                 'Depois de dispensar o alerta, ele fica silencioso pelo dia.'
             ],
             cta: { label: 'Abrir Painel', view: 'painel' }
+        },
+        {
+            id: 'gamificacao',
+            icon: 'emoji_events',
+            title: 'Gamificação e Progressão',
+            subtitle: 'XP, streaks, maturação e níveis',
+            what: 'O sistema atribui <strong>XP</strong> a cada ação: micros concluídos (XP pelo esforço), hábitos executados (2 XP força, 4 XP sombra, 1 XP automático), sessões de foco e rituals. XP acumula em <strong>nível</strong> e <strong>streak</strong> (dias consecutivos de atividade). Hábitos que mantêm ≥80% de consistência por 4 semanas <strong>graduam</strong> de "em formação" para "automático".',
+            why: 'Sistemas de recompensa incremental (feedback loops de curto prazo) sustentam motivação intrínseca no início de uma mudança. A maturação de hábitos aplica a Teoria da Autodeterminação: à medida que o comportamento se automatiza, a recompensa externa diminui para não suplantar a motivação interna. Streaks aproveitam o efeito de continuidade — a perda de streak é mais aversiva do que o ganho de pontos.',
+            refs: ['Deci & Ryan — Self-Determination Theory', 'B.J. Fogg — Tiny Habits (celebration)', 'Lally et al. — habit formation curve'],
+            how: [
+                'Hábitos de sombra valem o dobro de XP porque exigem mais esforço cognitivo (regulação emocional).',
+                'Não force hábitos que já são automáticos só para ganhar XP — o sistema reduz a recompensa como sinal que o comportamento está internalizado.',
+                'Streaks quebrados não apagam progresso; o nível e o histórico persistem.',
+                'Use o Painel para ver hábitos próximos de graduar e decida se quer consolidar antes de criar novos.'
+            ],
+            cta: { label: 'Abrir Painel', view: 'painel' }
+        },
+        {
+            id: 'jornada-guiada',
+            icon: 'explore_nearby',
+            title: 'Jornada Guiada',
+            subtitle: 'Sequência de onboarding e próximos passos',
+            what: 'A <strong>Jornada Guiada</strong> (aba Perfil, seção Manual) é este guia que você está lendo. Ela rastreia quais capítulos você abriu e mostra progresso. O <strong>onboarding</strong> inicial cobre: conta, Roda da Vida, valores, propósito e identidade — cada passo desbloqueia o seguinte.',
+            why: 'Novos sistemas têm curva de ativação alta: usuários abandonam antes de ver valor. Um onboarding estruturado reduz essa barreira apresentando um subconjunto mínimo de conceitos na ordem certa. Progredir no guia também cria um efeito de comprometimento (commitment escalation) — cada capítulo lido aumenta a probabilidade de continuar.',
+            refs: ['BJ Fogg — Tiny Habits (starter steps)', 'Nielsen Norman Group — Progressive disclosure'],
+            how: [
+                'Leia os capítulos na ordem sugerida para construir o modelo mental correto antes de usar cada seção.',
+                'Você pode abrir capítulos em qualquer ordem — o marcador "Lido" só registra, não bloqueia.',
+                'Use os botões "Ir para X" ao final de cada capítulo para ir diretamente à seção referenciada.',
+                'Retorne ao guia quando adicionar uma função nova (hábito, OKR, Odyssey) para revisar o capítulo relevante.'
+            ],
+            cta: null
+        },
+        {
+            id: 'ritual-sugestao',
+            icon: 'compass_calibration',
+            title: 'Ritmo e Sugestão de Ritual',
+            subtitle: 'Como o app orienta o próximo passo certo',
+            what: 'A <strong>Bússola do Dia</strong> (aba Hoje) usa o estado de cadência para sugerir o próximo ritual mais urgente: Diário Shutdown (após as 14h), Revisão Semanal (sexta a domingo), Planejamento Semanal (domingo/segunda) ou Check-in de bem-estar. Se nada estiver atrasado, ela sugere o que está "próximo do prazo".',
+            why: 'Decisão de "o que fazer agora" consome energia cognitiva (ego depletion). Um sistema que recomenda a próxima ação contextualmente reduz esse atrito. Rituals específicos a momentos do dia ou da semana (implementation intentions contextuais) têm taxa de adesão significativamente maior do que lembretes genéricos.',
+            refs: ['Gollwitzer — Implementation Intentions', 'Roy Baumeister — Ego Depletion', 'Ecological Momentary Assessment'],
+            how: [
+                'A sugestão aparece na Bússola do Dia; toque nela para ir diretamente à ferramenta recomendada.',
+                'Dias úteis (seg–qui): a bússola prioriza check-in e diário/shutdown.',
+                'Fim de semana (sex–dom): a bússola prioriza Revisão Semanal.',
+                'Segunda: a bússola prioriza Planejamento Semanal.',
+                'Se nada estiver urgente, a bússola mostra uma frase de propósito em vez de pressionar.'
+            ],
+            cta: { label: 'Ir para Hoje', view: 'hoje' }
+        },
+        {
+            id: 'hierarquia-diagnostico',
+            icon: 'account_tree',
+            title: 'Diagnóstico de Hierarquia',
+            subtitle: 'Verificar alinhamento da cascata Meta → Micro',
+            what: 'Em Planos, cada item mostra seu pai (ex: "Micro → Macro → OKR → Meta") e o número de filhos. O <strong>diagnóstico</strong> identifica: Metas sem OKRs, OKRs sem Macros ativas, Macros sem Micros — elos quebrados que impedem a cascata de funcionar.',
+            why: 'Objetivos desconexos criam esforço fragmentado: você executa tarefas que não servem metas maiores, ou tem metas que nunca viram ação. A cadeia de causalidade (Meta → KR → iniciativa → tarefa) é o mecanismo pelo qual OKRs transformam estratégia em execução real (Google, Intel).',
+            refs: ['John Doerr — Measure What Matters', 'Locke & Latham — Goal-Setting Theory', 'Andy Grove — High Output Management'],
+            how: [
+                'Ao criar uma Macro, associe-a a um OKR e Meta para fechar a hierarquia.',
+                'Ao criar um Micro, associe-o a uma Macro para que o esforço diário apareça no Painel.',
+                'Metas órfãs (sem OKR ou Macro) aparecem com aviso no Painel de hierarquia.',
+                'Revise o alinhamento na Revisão Semanal: "meus micros desta semana servem algum OKR?"'
+            ],
+            cta: { label: 'Abrir Planos', view: 'planos' }
         }
     ],
 
@@ -11770,9 +11891,26 @@ const app = {
         }
     },
 
-    manualGuideJumpTo: function(view) {
+    manualGuideJumpTo: function(view, sectionId) {
         if (!view) return;
-        this.switchView(view);
+        if (sectionId) {
+            this.flowNavigate(view, sectionId, '');
+        } else {
+            this.switchView(view);
+        }
+    },
+
+    openManualChapter: function(chapterId) {
+        this.flowNavigate('perfil', 'manual-guide-section', '');
+        // Expand the chapter after navigation settles
+        setTimeout(() => {
+            const body = document.getElementById(`manual-ch-body-${chapterId}`);
+            if (body && body.classList.contains('hidden')) {
+                this.toggleManualChapter(chapterId);
+            }
+            const card = document.getElementById(`manual-ch-card-${chapterId}`);
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 350);
     },
 
     renderManualGuideProgress: function() {
@@ -11795,8 +11933,9 @@ const app = {
             const isRead = this.isManualChapterRead(ch.id);
             const refs = (ch.refs || []).map(r => `<li>${esc(r)}</li>`).join('');
             const how = (ch.how || []).map(h => `<li>${esc(h)}</li>`).join('');
+            const ctaSectionArg = ch.cta && ch.cta.sectionId ? `,'${esc(ch.cta.sectionId)}'` : '';
             const cta = ch.cta ? `
-                <button type="button" onclick="window.app.manualGuideJumpTo('${esc(ch.cta.view)}')"
+                <button type="button" onclick="window.app.manualGuideJumpTo('${esc(ch.cta.view)}'${ctaSectionArg})"
                     class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all">
                     <span class="material-symbols-outlined notranslate text-[16px]">arrow_forward</span>
                     ${esc(ch.cta.label)}
@@ -13672,9 +13811,9 @@ const app = {
                             if (!titleEl) return;
                             titleEl.textContent = value && value.trim() ? value : fallback;
                         };
-                        setOdysseyTitle('odyssey-title-cenarioA', odysseyTitles.cenarioA, 'A Via Consolidada');
-                        setOdysseyTitle('odyssey-title-cenarioB', odysseyTitles.cenarioB, 'O Salto Criativo');
-                        setOdysseyTitle('odyssey-title-cenarioC', odysseyTitles.cenarioC, 'A Vida Acadêmica');
+                        setOdysseyTitle('odyssey-title-cenarioA', odysseyTitles.cenarioA, 'Cenário A');
+                        setOdysseyTitle('odyssey-title-cenarioB', odysseyTitles.cenarioB, 'Cenário B');
+                        setOdysseyTitle('odyssey-title-cenarioC', odysseyTitles.cenarioC, 'Cenário C');
                 } catch(e) {
                     console.error("Erro ao renderizar textos do Propósito:", e);
                 }
@@ -15602,9 +15741,9 @@ const app = {
     openOdysseyModal: function(id) {
         const state = window.sistemaVidaState;
         if (!state.profile.odyssey) state.profile.odyssey = {
-            A: { title: "A Via Consolidada", desc: "Foco em ascensão na carreira atual.", conf: 4, nrg: 4 },
-            B: { title: "O Salto Criativo", desc: "Transição para trabalho solo.", conf: 3, nrg: 5 },
-            C: { title: "A Vida Acadêmica", desc: "Doutorado e pesquisa.", conf: 2, nrg: 3 }
+            A: { title: "Cenário A", desc: "Foco em ascensão na carreira atual.", conf: 4, nrg: 4 },
+            B: { title: "Cenário B", desc: "Transição para trabalho solo.", conf: 3, nrg: 5 },
+            C: { title: "Cenário C", desc: "Doutorado e pesquisa.", conf: 2, nrg: 3 }
         };
         const plan = state.profile.odyssey[id];
         document.getElementById('odyssey-id').value = id;
