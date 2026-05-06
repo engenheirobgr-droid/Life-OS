@@ -19,6 +19,7 @@ import { attachSubjectiveScales } from './js/subjectiveScales.js';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
+const CURRENT_STATE_SCHEMA_VERSION = 2;
 let initialAuthStatePromise = null;
 let authInteractiveOperation = false;
 
@@ -114,6 +115,7 @@ function getAuthReady() {
     });
 }
 window.sistemaVidaState = {
+    stateSchemaVersion: CURRENT_STATE_SCHEMA_VERSION,
     profile: {
         name: "Bruno",
         level: 1,
@@ -185,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-phase10-architecture-v95',
+    appBuildVersion: '20260506-stability-ux-v101',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -218,6 +220,40 @@ const app = {
     localRemove: function(baseKey, userId = this.getActiveUserId()) {
         try { localStorage.removeItem(this.getLocalKey(baseKey, userId)); } catch (_) {}
         try { localStorage.removeItem(baseKey); } catch (_) {}
+    },
+    migrateStateSchema: function() {
+        const state = window.sistemaVidaState || {};
+        const profile = state.profile || (state.profile = {});
+        if (!profile.cadence || typeof profile.cadence !== 'object' || Array.isArray(profile.cadence)) {
+            profile.cadence = {};
+        }
+        let version = Number(state.stateSchemaVersion || 0);
+        if (!Number.isFinite(version) || version < 0) version = 0;
+
+        if (version < 2) {
+            const legacyDiary = profile.cadence.diary || {};
+            if (!profile.cadence.shutdown || typeof profile.cadence.shutdown !== 'object') {
+                profile.cadence.shutdown = {};
+            }
+            if (!profile.cadence.shutdown.lastAt && legacyDiary.lastAt) {
+                profile.cadence.shutdown = {
+                    ...profile.cadence.shutdown,
+                    lastAt: String(legacyDiary.lastAt),
+                    updatedAt: legacyDiary.updatedAt || new Date().toISOString(),
+                    migratedFromDiary: true
+                };
+            }
+            if (!profile.cadence.cycleReview || typeof profile.cadence.cycleReview !== 'object') {
+                profile.cadence.cycleReview = {};
+            }
+            state.stateSchemaVersion = 2;
+            this._stateSchemaNeedsSave = true;
+        }
+
+        if (Number(state.stateSchemaVersion || 0) !== CURRENT_STATE_SCHEMA_VERSION) {
+            state.stateSchemaVersion = CURRENT_STATE_SCHEMA_VERSION;
+            this._stateSchemaNeedsSave = true;
+        }
     },
     getLocalDateKey: function(date = new Date()) {
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -1701,6 +1737,7 @@ const app = {
         return options.includeDone ? micros : micros.filter(m => m.status !== 'done');
     },
     ensureSettingsState: function() {
+        this.migrateStateSchema();
         if (!window.sistemaVidaState.settings) {
             window.sistemaVidaState.settings = { notificationsEnabled: false, theme: 'auto' };
         }
@@ -2510,7 +2547,6 @@ const app = {
     _getFlowState: function() {
         const state = window.sistemaVidaState;
         const today = this.getLocalDateKey();
-        const weekKey = this._getWeekKey ? this._getWeekKey() : '';
         const monthKey = today.slice(0, 7);
         const todayLog = (state.dailyLogs || {})[today] || {};
         const events = (state.gamification?.events) || {};
@@ -2534,19 +2570,8 @@ const app = {
             .map(String)
             .find(note => note.trim()) || '';
 
-        const wheelHistory = state.wellbeingHistory?.wheel || {};
-        const permaHistory = state.wellbeingHistory?.perma || {};
-        const swlsHistory = state.swls?.history || {};
-        const ninetyDaysAgo = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10);
-        const cycleStart = new Date((state.cycleStartDate || today) + 'T00:00:00');
-        const cycleAgeDays = Number.isNaN(cycleStart.getTime()) ? 0 : Math.max(0, Math.floor((new Date() - cycleStart) / 864e5));
-
-        const odyssey = state.profile?.odyssey || {};
-
         // Check both saved state and live DOM values
         const intentionDomVal = document.getElementById('diario-foco')?.value || '';
-        const diaryDomVal = document.getElementById('diario-gratidao')?.value || '';
-        const shutdownDomVal = document.getElementById('diario-shutdown-1')?.value || '';
 
         return {
             checkinDone: cadenceOk('checkin'),
@@ -2554,17 +2579,15 @@ const app = {
             microsDoneToday,
             habitsDoneToday,
             focusToday,
-            habitsDoneToday,
-            focusToday,
             diaryDone: cadenceOk('diary'),
-            shutdownDone: cadenceOk('diary'),
+            shutdownDone: cadenceOk('shutdown'),
             weekPlanDone: cadenceOk('weeklyPlan'),
             weekReviewDone: cadenceOk('weeklyReview'),
             wheelThisMonth: cadenceOk('wheel'),
             permaThisMonth: cadenceOk('perma'),
             macrosThisMonth: (state.entities.macros || []).some(m => (m.updatedAt || m.createdAt || '').startsWith(monthKey)),
             swlsThisQuarter: cadenceOk('swls'),
-            cycleReviewCurrent: cycleAgeDays < 84,
+            cycleReviewDone: cadenceOk('cycleReview'),
             okrsExist: (state.entities.okrs || []).length > 0,
             odysseyFilled: cadenceOk('odyssey'),
             purposeFilled: cadenceOk('purpose'),
@@ -2680,7 +2703,7 @@ const app = {
                 row('timer', 'Sessão de foco', 'Bloco de deep work com Pomodoro (90/20)', '+10–40 XP', s.focusToday, 'foco', 'deep-work-panel') +
                 sub('Noite', 'nightlight') +
                 row('auto_stories', 'Diário & Gratidão', 'Reflexão do dia e três coisas pelas quais é grato', '+8 XP', s.diaryDone, 'hoje', 'hoje-diario-section', '', 'diary') +
-                row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '+8 XP', s.shutdownDone, 'hoje', 'hoje-diario-section', '', 'diary')
+                row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '+8 XP', s.shutdownDone, 'hoje', 'hoje-diario-section', '', 'shutdown')
             ) +
             section('Ritmo Semanal', 'date_range',
                 row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '+15 XP', s.weekPlanDone, 'planos', 'tab-semanal', 'semanal', 'weeklyPlan') +
@@ -2693,7 +2716,7 @@ const app = {
             ) +
             section('Ritmo Trimestral', 'event_repeat',
                 row('track_changes', 'OKRs', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos', '', 'okrs') +
-                row('fact_check', 'Revisão de ciclo', 'Fechar o ciclo de 12 semanas e decidir o destino dos OKRs ativos', '', s.cycleReviewCurrent, 'planos', 'tab-ciclo', 'ciclo') +
+                row('fact_check', 'Revisão de ciclo', 'Fechar o ciclo de 12 semanas e decidir o destino dos OKRs ativos', '', s.cycleReviewDone, 'planos', 'tab-ciclo', 'ciclo', 'cycleReview') +
                 row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'proposito', 'swls-section', '', 'swls')
             ) +
             section('Horizonte Vital', 'auto_awesome',
@@ -4397,6 +4420,10 @@ const app = {
         if (this._cadenceNeedsMigrationSave) {
             this._cadenceNeedsMigrationSave = false;
             try { await this.saveState(true); } catch (err) { console.warn('[Cadence] Falha ao persistir migração de propósito:', err); }
+        }
+        if (this._stateSchemaNeedsSave) {
+            this._stateSchemaNeedsSave = false;
+            try { await this.saveState(true); } catch (err) { console.warn('[Schema] Falha ao persistir migração de versão:', err); }
         }
         const recheckNotifications = () => {
             try { this.revalidateNotificationState({ register: true, rerender: true }).catch(() => {}); } catch (_) {}
@@ -6840,6 +6867,17 @@ const app = {
         if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
         const profile = window.sistemaVidaState.profile;
         if (!profile.cadence || typeof profile.cadence !== 'object' || Array.isArray(profile.cadence)) profile.cadence = {};
+        if (!profile.cadence.shutdown || typeof profile.cadence.shutdown !== 'object') profile.cadence.shutdown = {};
+        if (!profile.cadence.cycleReview || typeof profile.cadence.cycleReview !== 'object') profile.cadence.cycleReview = {};
+        if (!profile.cadence.shutdown.lastAt && profile.cadence.diary?.lastAt) {
+            profile.cadence.shutdown = {
+                ...profile.cadence.shutdown,
+                lastAt: String(profile.cadence.diary.lastAt),
+                updatedAt: profile.cadence.diary.updatedAt || new Date().toISOString(),
+                migratedFromDiary: true
+            };
+            this._cadenceNeedsMigrationSave = true;
+        }
         Object.keys(profile.cadence).forEach((key) => {
             const item = profile.cadence[key];
             if (!item || typeof item !== 'object') profile.cadence[key] = {};
@@ -7399,9 +7437,11 @@ const app = {
     getCadenceConfig: function() {
         return {
             checkin: { label: 'Check-in diário', expectedDays: 1, icon: 'monitor_heart', why: 'Sono, energia, humor e estresse.' },
-            diary: { label: 'Diário / Shutdown', expectedDays: 1, icon: 'edit_note', why: 'Fechamento consciente do dia.' },
+            diary: { label: 'Diário / Gratidão', expectedDays: 1, icon: 'edit_note', why: 'Reflexão e registro do dia.' },
+            shutdown: { label: 'Shutdown ritual', expectedDays: 1, icon: 'power_settings_new', why: 'Encerramento consciente do dia.' },
             weeklyPlan: { label: 'Planejamento semanal', expectedDays: 7, icon: 'edit_calendar', why: 'Escolher a carga da semana.' },
             weeklyReview: { label: 'Revisão semanal', expectedDays: 7, icon: 'rate_review', why: 'Transformar experiência em aprendizado.' },
+            cycleReview: { label: 'Revisão de ciclo', expectedDays: 84, icon: 'fact_check', why: 'Fechar o ciclo de 12 semanas e decidir destino dos OKRs.' },
             wheel: { label: 'Roda da Vida', expectedDays: 30, icon: 'pie_chart', why: 'Termômetro mensal das áreas.' },
             perma: { label: 'PERMA', expectedDays: 30, icon: 'psychology', why: 'Florescimento mensal.' },
             swls: { label: 'SWLS', expectedDays: 90, icon: 'monitoring', why: 'Satisfação global trimestral.' },
@@ -7470,8 +7510,10 @@ const app = {
         const routeMap = {
             checkin:      { view: 'hoje',    sectionId: 'daily-checkin-panel',       tabId: '' },
             diary:        { view: 'hoje',    sectionId: 'hoje-diario-section',       tabId: '' },
+            shutdown:     { view: 'hoje',    sectionId: 'hoje-diario-section',       tabId: '' },
             weeklyPlan:   { view: 'planos',  sectionId: 'tab-semanal',              tabId: 'semanal' },
             weeklyReview: { view: 'planos',  sectionId: 'weekly-plan-primary-action', tabId: 'semanal' },
+            cycleReview:  { view: 'planos',  sectionId: 'tab-ciclo',                tabId: 'ciclo' },
             wheel:        { view: 'proposito', sectionId: 'proposito-roda-section', tabId: '' },
             perma:        { view: 'proposito', sectionId: 'perma-section',          tabId: '' },
             swls:         { view: 'proposito', sectionId: 'swls-section',           tabId: '' },
@@ -7479,13 +7521,14 @@ const app = {
             purpose:      { view: 'proposito', sectionId: 'proposito-ikigai-section', tabId: '' },
             lifeGoals:    { view: 'planos',  sectionId: '',                         tabId: 'metas' }
         };
-        // diary só faz sentido no fim do dia; weeklyReview/Plan só nos dias certos
+        // diary/shutdown só fazem sentido no fim do dia; weeklyReview/Plan/cycle em dias certos
         const hour = new Date().getHours();
         const dow  = new Date().getDay(); // 0=dom, 1=seg, …, 5=sex, 6=sáb
         const keys = Object.keys(routeMap).filter(k => {
-            if (k === 'diary')        return hour >= 14;
+            if (k === 'diary' || k === 'shutdown') return hour >= 14;
             if (k === 'weeklyReview') return [5, 6, 0].includes(dow);
             if (k === 'weeklyPlan')   return [0, 1].includes(dow);
+            if (k === 'cycleReview')  return [0, 1].includes(dow);
             return true;
         });
         const statuses = keys.map(key => ({ key, route: routeMap[key], ...this.getCadenceStatus(key) }));
@@ -9643,6 +9686,7 @@ const app = {
     
       // ── Estado base virgem ──────────────────────────────────────────────────
       const baseState = {
+        stateSchemaVersion: CURRENT_STATE_SCHEMA_VERSION,
         profile: {
           name: 'Viajante', level: 1, xp: 0, values: [], legacy: '',
           ikigai: { missao: '', vocacao: '', love: '', good: '', need: '', paid: '', sintese: '', sinteseResumo: '' },
@@ -9653,7 +9697,10 @@ const app = {
           identity: { strengths: [], shadows: [] },
           onboardingStarter: { dimension: 'Carreira', goalTitle: '', habitTitle: '', habitTime: '', strength: '', shadow: '' },
           dailyCheckins: [],
-          cadence: {},
+          cadence: {
+            shutdown: {},
+            cycleReview: {}
+          },
           notes: []
         },
         energy: 5,
@@ -9848,6 +9895,7 @@ const app = {
         this.localRemove('lifeos_odyssey_splash_last');
         this.localRemove('lifeos_theme_pref');
         this.localRemove('lifeos_notif_enabled');
+        this.localRemove('lifeos_state_version');
         // ── Se for reset total (sem mockup), força onboarding na próxima carga ─
         if (!useMockup) {
           try { this.localSet('lifeos_onboarding_complete', '0'); } catch (_) {}
@@ -10003,6 +10051,7 @@ const app = {
             const items = document.querySelectorAll('#quarterly-okrs-list div[data-okr-id]');
             if (items.length === 0) {
                 state.cycleStartDate = this.getLocalDateKey();
+                this.markCadence('cycleReview', state.cycleStartDate);
                 await this.saveState(true);
                 this.closeQuarterlyModal();
                 this.showToast('Novo ciclo iniciado. Nenhum OKR ativo para revisar.', 'success');
@@ -10066,6 +10115,7 @@ const app = {
 
             // Reset do ciclo para a data atual
             state.cycleStartDate = this.getLocalDateKey();
+            this.markCadence('cycleReview', state.cycleStartDate);
             await this.saveState(true);
             this.closeQuarterlyModal();
 
@@ -10798,9 +10848,10 @@ const app = {
         });
         window.sistemaVidaState.dailyLogs[today].dimensionNotes = dimensionNotes;
 
-        this.markCadence('diary', today);
         const hasDiary = !!(gratidao.trim() || funcionou.trim());
         const hasShutdown = !!(s1.trim() || Object.keys(dimensionNotes).length);
+        if (hasDiary) this.markCadence('diary', today);
+        if (hasShutdown) this.markCadence('shutdown', today);
         const diaryAward = hasDiary
             ? this.awardGamification('daily_diary', { key: `daily_diary:${today}`, date: today })
             : null;
