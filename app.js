@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260506-stability-ux-v101',
+    appBuildVersion: '20260506-stability-ux-v102',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -2624,7 +2624,7 @@ const app = {
             }
 
             const cadenceConfig = cadenceKey ? this.getCadenceConfig()[cadenceKey] : null;
-            const cadenceMeta = cadenceConfig && showCadenceMeta
+            const cadenceMeta = cadenceConfig && (showCadenceMeta || !!cadenceKey)
                 ? `<p class="text-[10px] text-outline mt-1 leading-snug">Revisitar: ${this.escapeHtml(this.getCadenceFrequencyLabel(cadenceConfig.expectedDays).toLowerCase())}</p>`
                 : '';
             const xpEl = xpLabel
@@ -7481,11 +7481,14 @@ const app = {
 
     renderCadenceBadge: function(toolKey) {
         const status = this.getCadenceStatus(toolKey);
-        const cfg = {
-            ok: { text: 'Em dia', cls: 'bg-primary/10 text-primary border-primary/20' },
-            soon: { text: 'Proximo', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' },
-            overdue: { text: 'Em atraso', cls: 'bg-error/10 text-error border-error/20' }
-        }[status.state] || {};
+        const isNeverDone = status.state === 'overdue' && status.daysSince === null;
+        const cfg = isNeverDone
+            ? { text: 'Nunca feito', cls: 'bg-surface-container-high text-outline border-outline-variant/30' }
+            : {
+                ok: { text: 'Em dia', cls: 'bg-primary/10 text-primary border-primary/20' },
+                soon: { text: 'Próximo', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' },
+                overdue: { text: 'Atrasado', cls: 'bg-error/10 text-error border-error/20' }
+            }[status.state] || {};
         return `<span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${cfg.cls}">
             ${cfg.text}
         </span>`;
@@ -7497,7 +7500,7 @@ const app = {
             ? 'Nunca feito'
             : status.daysSince === 0
                 ? 'Feito hoje'
-                : `Ultima vez ha ${status.daysSince} dia${status.daysSince === 1 ? '' : 's'}`;
+                : `Última vez há ${status.daysSince} dia${status.daysSince === 1 ? '' : 's'}`;
         return `<div class="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-outline">
             <span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-1">${this.escapeHtml(freq)}</span>
             <span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-1">${this.escapeHtml(lastLabel)}</span>

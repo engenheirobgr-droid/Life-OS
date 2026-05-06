@@ -475,7 +475,7 @@
 <!-- Identity Item Modal -->
 <div id="identity-item-modal" class="hidden fixed inset-0 z-[12000] flex items-end sm:items-center justify-center">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="window.app.closeIdentityItemModal()"></div>
-    <div class="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-background shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[min(90vh,680px)]">
+    <div class="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-background shadow-2xl flex flex-col h-[88dvh] max-h-[88dvh] sm:h-auto sm:max-h-[min(90vh,680px)]">
         <!-- Header fixo -->
         <div class="flex items-center justify-between px-6 pt-6 pb-4 shrink-0">
             <h3 class="text-lg font-headline font-bold text-on-background" id="identity-modal-title">Nova Força</h3>
@@ -486,7 +486,7 @@
             <input type="hidden" id="identity-modal-type" value="">
             <input type="hidden" id="identity-modal-id" value="">
             <!-- Scrollable body -->
-            <div class="overflow-y-auto flex-1 px-6 space-y-4 pb-4">
+            <div class="overflow-y-auto flex-1 px-6 space-y-4 pb-28 sm:pb-6">
                 <div class="flex flex-col gap-1.5">
                     <label for="identity-modal-name" class="text-[10px] font-bold uppercase tracking-widest text-outline">Nome</label>
                     <input type="text" id="identity-modal-name" required autocomplete="off"
@@ -563,7 +563,7 @@
                 </div>
             </div>
             <!-- Footer fixo com botões -->
-            <div class="flex gap-3 px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] shrink-0 border-t border-outline-variant/10 bg-background rounded-b-3xl">
+            <div class="sticky bottom-0 z-10 flex gap-3 px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] shrink-0 border-t border-outline-variant/10 bg-background/95 backdrop-blur rounded-b-3xl">
                 <button type="button" onclick="window.app.closeIdentityItemModal()"
                     class="flex-1 py-3 rounded-xl border border-outline-variant/30 text-sm font-bold text-outline hover:bg-surface-container transition-colors">Cancelar</button>
                 <button type="submit"
