@@ -200,8 +200,13 @@
                 <span class="font-headline text-4xl md:text-5xl italic font-serif text-on-surface relative z-10" id="current-value-text">Liberdade</span>
             </div>
             
+            <!-- Vote status indicator -->
+            <div id="vote-status" class="text-[10px] font-bold uppercase tracking-widest text-center mb-3 h-4"></div>
             <!-- Action Buttons -->
-            <div class="flex gap-6 justify-center mb-12">
+            <div class="flex items-center gap-4 justify-center mb-12">
+                <button id="btn-prev-value" class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-surface-container-high hover:text-on-surface transition-all active:scale-90 disabled:opacity-30 disabled:pointer-events-none" onclick="window.goValueBack()" title="Voltar" disabled>
+                    <span class="material-symbols-outlined notranslate text-xl">arrow_back</span>
+                </button>
                 <button class="w-16 h-16 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:bg-error/10 hover:text-error hover:border-error/30 transition-all active:scale-90 group" onclick="window.handleVote('skip')" title="Descartar">
                     <span class="material-symbols-outlined notranslate text-2xl">close</span>
                 </button>
@@ -211,6 +216,7 @@
                 <button class="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md hover:shadow-xl hover:bg-primary/90 transition-all active:scale-90" onclick="window.handleVote('essential')" title="Essencial">
                     <span class="material-symbols-outlined notranslate text-2xl" style="font-variation-settings: 'FILL' 1;">star</span>
                 </button>
+                <div class="w-10 h-10"></div><!-- spacer para simetria -->
             </div>
             
             <!-- Selection Summary -->
@@ -440,89 +446,95 @@
 <!-- Identity Item Modal -->
 <div id="identity-item-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="window.app.closeIdentityItemModal()"></div>
-    <div class="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-background p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
-        <div class="flex items-center justify-between mb-6">
+    <div class="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-background shadow-2xl flex flex-col" style="max-height:min(90vh,680px)">
+        <!-- Header fixo -->
+        <div class="flex items-center justify-between px-6 pt-6 pb-4 shrink-0">
             <h3 class="text-lg font-headline font-bold text-on-background" id="identity-modal-title">Nova Força</h3>
             <button type="button" onclick="window.app.closeIdentityItemModal()" class="material-symbols-outlined notranslate text-outline hover:text-on-surface transition-colors">close</button>
         </div>
-        <input type="hidden" id="identity-modal-type" value="">
-        <input type="hidden" id="identity-modal-id" value="">
-        <form id="identity-modal-form" onsubmit="event.preventDefault(); window.app.saveIdentityItemModal();" class="space-y-4">
-            <div class="flex flex-col gap-1.5">
-                <label for="identity-modal-name" class="text-[10px] font-bold uppercase tracking-widest text-outline">Nome</label>
-                <input type="text" id="identity-modal-name" required autocomplete="off"
-                    class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                    placeholder="Ex: Resiliência">
+        <!-- Form com body scrollável e footer fixo -->
+        <form id="identity-modal-form" onsubmit="event.preventDefault(); window.app.saveIdentityItemModal();" class="flex flex-col flex-1 min-h-0">
+            <input type="hidden" id="identity-modal-type" value="">
+            <input type="hidden" id="identity-modal-id" value="">
+            <!-- Scrollable body -->
+            <div class="overflow-y-auto flex-1 px-6 space-y-4 pb-2">
+                <div class="flex flex-col gap-1.5">
+                    <label for="identity-modal-name" class="text-[10px] font-bold uppercase tracking-widest text-outline">Nome</label>
+                    <input type="text" id="identity-modal-name" required autocomplete="off"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                        placeholder="Ex: Resiliência">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="identity-modal-dimension" class="text-[10px] font-bold uppercase tracking-widest text-outline">Dimensão <span class="normal-case font-normal italic">(opcional)</span></label>
+                    <select id="identity-modal-dimension" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface">
+                        <option value="">— Sem dimensão —</option>
+                        <option value="Saúde">Saúde</option>
+                        <option value="Carreira">Carreira</option>
+                        <option value="Finanças">Finanças</option>
+                        <option value="Família">Família</option>
+                        <option value="Relacionamentos">Relacionamentos</option>
+                        <option value="Lazer">Lazer</option>
+                        <option value="Mente">Mente</option>
+                        <option value="Propósito">Propósito</option>
+                    </select>
+                </div>
+                <!-- Forças -->
+                <div id="identity-modal-strengths-fields" class="hidden space-y-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="identity-modal-evidence" class="text-[10px] font-bold uppercase tracking-widest text-outline">Evidência <span class="normal-case font-normal italic">(onde essa força aparece?)</span></label>
+                        <input type="text" id="identity-modal-evidence" autocomplete="off"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: Na liderança do time, nos momentos de crise">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="identity-modal-excessRisk" class="text-[10px] font-bold uppercase tracking-widest text-outline">Risco de excesso <span class="normal-case font-normal italic">(quando passa do ponto?)</span></label>
+                        <input type="text" id="identity-modal-excessRisk" autocomplete="off"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: Pode se tornar perfeccionismo paralisante">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="identity-modal-practice" class="text-[10px] font-bold uppercase tracking-widest text-outline">Prática sugerida <span class="normal-case font-normal italic">(como treinar?)</span></label>
+                        <input type="text" id="identity-modal-practice" autocomplete="off"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: Dedicar 30 min/dia a um projeto pessoal">
+                    </div>
+                </div>
+                <!-- Sombras -->
+                <div id="identity-modal-shadows-fields" class="hidden space-y-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="identity-modal-trigger" class="text-[10px] font-bold uppercase tracking-widest text-outline">Gatilho <span class="normal-case font-normal italic">(quando aparece?)</span></label>
+                        <input type="text" id="identity-modal-trigger" autocomplete="off"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: Quando sinto que perco o controle">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="identity-modal-impact" class="text-[10px] font-bold uppercase tracking-widest text-outline">Impacto <span class="normal-case font-normal italic">(o que costuma gerar?)</span></label>
+                        <input type="text" id="identity-modal-impact" autocomplete="off"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: Distância das pessoas que amo">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="identity-modal-desiredResponse" class="text-[10px] font-bold uppercase tracking-widest text-outline">Resposta desejada <span class="normal-case font-normal italic">(o que praticar?)</span></label>
+                        <input type="text" id="identity-modal-desiredResponse" autocomplete="off"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: Respirar e comunicar o que sinto">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="identity-modal-obstacle" class="text-[10px] font-bold uppercase tracking-widest text-outline">Obstáculo previsto</label>
+                        <input type="text" id="identity-modal-obstacle" autocomplete="off"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: Ego e medo de vulnerabilidade">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="identity-modal-ifThen" class="text-[10px] font-bold uppercase tracking-widest text-outline">Plano se-então</label>
+                        <input type="text" id="identity-modal-ifThen" autocomplete="off"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                            placeholder="Ex: Se me fechar, então vou pausar e escrever o que sinto">
+                    </div>
+                </div>
             </div>
-            <div class="flex flex-col gap-1.5">
-                <label for="identity-modal-dimension" class="text-[10px] font-bold uppercase tracking-widest text-outline">Dimensão <span class="normal-case font-normal italic">(opcional)</span></label>
-                <select id="identity-modal-dimension" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface">
-                    <option value="">— Sem dimensão —</option>
-                    <option value="Saúde">Saúde</option>
-                    <option value="Carreira">Carreira</option>
-                    <option value="Finanças">Finanças</option>
-                    <option value="Família">Família</option>
-                    <option value="Relacionamentos">Relacionamentos</option>
-                    <option value="Lazer">Lazer</option>
-                    <option value="Mente">Mente</option>
-                    <option value="Propósito">Propósito</option>
-                </select>
-            </div>
-            <!-- Forças -->
-            <div id="identity-modal-strengths-fields" class="hidden space-y-4">
-                <div class="flex flex-col gap-1.5">
-                    <label for="identity-modal-evidence" class="text-[10px] font-bold uppercase tracking-widest text-outline">Evidência <span class="normal-case font-normal italic">(onde essa força aparece?)</span></label>
-                    <input type="text" id="identity-modal-evidence" autocomplete="off"
-                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                        placeholder="Ex: Na liderança do time, nos momentos de crise">
-                </div>
-                <div class="flex flex-col gap-1.5">
-                    <label for="identity-modal-excessRisk" class="text-[10px] font-bold uppercase tracking-widest text-outline">Risco de excesso <span class="normal-case font-normal italic">(quando passa do ponto?)</span></label>
-                    <input type="text" id="identity-modal-excessRisk" autocomplete="off"
-                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                        placeholder="Ex: Pode se tornar perfeccionismo paralisante">
-                </div>
-                <div class="flex flex-col gap-1.5">
-                    <label for="identity-modal-practice" class="text-[10px] font-bold uppercase tracking-widest text-outline">Prática sugerida <span class="normal-case font-normal italic">(como treinar?)</span></label>
-                    <input type="text" id="identity-modal-practice" autocomplete="off"
-                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                        placeholder="Ex: Dedicar 30 min/dia a um projeto pessoal">
-                </div>
-            </div>
-            <!-- Sombras -->
-            <div id="identity-modal-shadows-fields" class="hidden space-y-4">
-                <div class="flex flex-col gap-1.5">
-                    <label for="identity-modal-trigger" class="text-[10px] font-bold uppercase tracking-widest text-outline">Gatilho <span class="normal-case font-normal italic">(quando aparece?)</span></label>
-                    <input type="text" id="identity-modal-trigger" autocomplete="off"
-                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                        placeholder="Ex: Quando sinto que perco o controle">
-                </div>
-                <div class="flex flex-col gap-1.5">
-                    <label for="identity-modal-impact" class="text-[10px] font-bold uppercase tracking-widest text-outline">Impacto <span class="normal-case font-normal italic">(o que costuma gerar?)</span></label>
-                    <input type="text" id="identity-modal-impact" autocomplete="off"
-                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                        placeholder="Ex: Distância das pessoas que amo">
-                </div>
-                <div class="flex flex-col gap-1.5">
-                    <label for="identity-modal-desiredResponse" class="text-[10px] font-bold uppercase tracking-widest text-outline">Resposta desejada <span class="normal-case font-normal italic">(o que praticar?)</span></label>
-                    <input type="text" id="identity-modal-desiredResponse" autocomplete="off"
-                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                        placeholder="Ex: Respirar e comunicar o que sinto">
-                </div>
-                <div class="flex flex-col gap-1.5">
-                    <label for="identity-modal-obstacle" class="text-[10px] font-bold uppercase tracking-widest text-outline">Obstáculo previsto</label>
-                    <input type="text" id="identity-modal-obstacle" autocomplete="off"
-                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                        placeholder="Ex: Ego e medo de vulnerabilidade">
-                </div>
-                <div class="flex flex-col gap-1.5">
-                    <label for="identity-modal-ifThen" class="text-[10px] font-bold uppercase tracking-widest text-outline">Plano se-então</label>
-                    <input type="text" id="identity-modal-ifThen" autocomplete="off"
-                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                        placeholder="Ex: Se me fechar, então vou pausar e escrever o que sinto">
-                </div>
-            </div>
-            <div class="flex gap-3 pt-2">
+            <!-- Footer fixo com botões -->
+            <div class="flex gap-3 px-6 py-4 shrink-0 border-t border-outline-variant/10 bg-background rounded-b-3xl">
                 <button type="button" onclick="window.app.closeIdentityItemModal()"
                     class="flex-1 py-3 rounded-xl border border-outline-variant/30 text-sm font-bold text-outline hover:bg-surface-container transition-colors">Cancelar</button>
                 <button type="submit"
@@ -534,98 +546,131 @@
 
 <script>
 (function() {
-        const valuesList = [
-            "Liberdade", "Integridade", "Curiosidade", "Impacto Social", "Estética",
-            "Família", "Aventura", "Sabedoria", "Comprometimento", "Coragem",
-            "Equilíbrio", "Inovação", "Empatia", "Autonomia", "Gratidão"
-        ];
-        
-        let currentIndex = 0;
-        const essentialValues = [];
-        const importantValues = [];
+    const valuesList = [
+        "Liberdade", "Integridade", "Curiosidade", "Impacto Social", "Estética",
+        "Família", "Aventura", "Sabedoria", "Comprometimento", "Coragem",
+        "Equilíbrio", "Inovação", "Empatia", "Autonomia", "Gratidão"
+    ];
 
-        function updateUI() {
-            const valueText = document.getElementById('current-value-text');
-            const progressText = document.getElementById('progress-text');
-            const progressBar = document.getElementById('progress-bar');
-            const essentialsContainer = document.getElementById('essentials-list');
-            const essentialsCount = document.getElementById('essentials-count');
-            const importantContainer = document.getElementById('important-list');
-            const importantCount = document.getElementById('important-count');
-            const confirmBtn = document.getElementById('confirm-values');
+    const VOTE_LABELS = { essential: 'Essencial ★', important: 'Relevante ✓', skip: 'Descartado ✕' };
+    const VOTE_COLORS = { essential: 'text-primary', important: 'text-secondary', skip: 'text-outline' };
 
-            if (currentIndex < valuesList.length) {
-                if (valueText) valueText.textContent = valuesList[currentIndex];
-                if (progressText) progressText.textContent = `${currentIndex + 1} de ${valuesList.length}`;
-                if (progressBar) progressBar.style.width = `${((currentIndex + 1) / valuesList.length) * 100}%`;
-            } else {
-                if (valueText) valueText.textContent = "Concluído!";
-                if (progressText) progressText.textContent = `${valuesList.length} de ${valuesList.length}`;
-                if (progressBar) progressBar.style.width = "100%";
-                document.querySelectorAll('button[onclick^="window.handleVote"]').forEach(btn => btn.disabled = true);
+    let currentIndex = 0;
+    const votes = []; // votes[i] = 'essential' | 'important' | 'skip' | undefined
+    let essentialValues = [];
+    let importantValues = [];
+
+    function rebuildArrays() {
+        essentialValues = [];
+        importantValues = [];
+        votes.forEach((v, i) => {
+            if (v === 'essential') essentialValues.push(valuesList[i]);
+            else if (v === 'important') importantValues.push(valuesList[i]);
+        });
+    }
+
+    function updateUI() {
+        const valueText    = document.getElementById('current-value-text');
+        const progressText = document.getElementById('progress-text');
+        const progressBar  = document.getElementById('progress-bar');
+        const voteStatus   = document.getElementById('vote-status');
+        const prevBtn      = document.getElementById('btn-prev-value');
+        const confirmBtn   = document.getElementById('confirm-values');
+        const voteButtons  = document.querySelectorAll('button[onclick^="window.handleVote"]');
+
+        const done = currentIndex >= valuesList.length;
+
+        if (!done) {
+            if (valueText) valueText.textContent = valuesList[currentIndex];
+            if (progressText) progressText.textContent = `${currentIndex + 1} de ${valuesList.length}`;
+            if (progressBar) progressBar.style.width = `${((currentIndex + 1) / valuesList.length) * 100}%`;
+            // show previous vote on this card if it exists (e.g. came back)
+            const prevVote = votes[currentIndex];
+            if (voteStatus) {
+                voteStatus.textContent = prevVote ? `Marcado: ${VOTE_LABELS[prevVote]}` : '';
+                voteStatus.className = `text-[10px] font-bold uppercase tracking-widest text-center mb-3 h-4 ${prevVote ? VOTE_COLORS[prevVote] : ''}`;
             }
-
-            if (essentialsCount) essentialsCount.textContent = `${essentialValues.length} selecionado${essentialValues.length !== 1 ? 's' : ''}`;
-            if (importantCount) importantCount.textContent = `${importantValues.length} selecionado${importantValues.length !== 1 ? 's' : ''}`;
-
-            const renderChips = (container, arr, cls) => {
-                if (!container) return;
-                container.innerHTML = '';
-                arr.forEach(val => {
-                    const chip = document.createElement('span');
-                    chip.className = cls;
-                    chip.textContent = val;
-                    container.appendChild(chip);
-                });
-            };
-            renderChips(essentialsContainer, essentialValues, "bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider");
-            renderChips(importantContainer, importantValues, "bg-secondary/10 text-secondary border border-secondary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider");
-
-            if (confirmBtn && (essentialValues.length > 0 || importantValues.length > 0) && !confirmBtn.getAttribute('data-confirmed')) {
-                confirmBtn.classList.remove('bg-surface-container-high', 'text-outline', 'cursor-not-allowed');
-                confirmBtn.classList.add('bg-primary', 'text-on-primary', 'shadow-md', 'hover:shadow-lg', 'active:scale-95');
-                confirmBtn.disabled = false;
-            }
+        } else {
+            if (valueText) valueText.textContent = 'Concluído!';
+            if (progressText) progressText.textContent = `${valuesList.length} de ${valuesList.length}`;
+            if (progressBar) progressBar.style.width = '100%';
+            if (voteStatus) { voteStatus.textContent = ''; }
+            voteButtons.forEach(btn => btn.disabled = true);
         }
 
-        window.handleVote = function(type) {
-            if (currentIndex >= valuesList.length) return;
-            const card = document.getElementById('value-card');
-            card.classList.add('opacity-0', 'scale-95');
-            if (type === 'essential') essentialValues.push(valuesList[currentIndex]);
-            else if (type === 'important') importantValues.push(valuesList[currentIndex]);
-            setTimeout(() => {
-                currentIndex++;
-                updateUI();
-                card.classList.remove('opacity-0', 'scale-95');
-            }, 150);
-        };
+        if (prevBtn) prevBtn.disabled = currentIndex <= 0;
 
-        const confirmBtn = document.getElementById('confirm-values');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', function() {
-                if (this.disabled) return;
-                this.textContent = '✓ Valores Confirmados';
-                this.classList.remove('bg-primary');
-                this.classList.add('bg-emerald-600', 'text-white');
-                this.setAttribute('data-confirmed', 'true');
-                this.disabled = true;
-                if (window.app && window.app.saveValues) {
-                    window.app.saveValues(essentialValues, importantValues);
-                }
-                const msg = document.createElement('p');
-                msg.className = 'text-xs text-on-surface-variant mt-4 italic leading-relaxed';
-                msg.textContent = 'Seus valores foram salvos e agora orientam suas decisões e prioridades no Sistema Vida.';
-                this.parentNode.appendChild(msg);
-                setTimeout(() => {
-                    const modal = document.getElementById('values-selection-tool');
-                    if (modal) modal.classList.add('hidden');
-                }, 800);
+        // rebuild and render chips
+        rebuildArrays();
+        const essentialsCount   = document.getElementById('essentials-count');
+        const importantCount    = document.getElementById('important-count');
+        const essentialsContainer = document.getElementById('essentials-list');
+        const importantContainer  = document.getElementById('important-list');
+
+        if (essentialsCount) essentialsCount.textContent = `${essentialValues.length} selecionado${essentialValues.length !== 1 ? 's' : ''}`;
+        if (importantCount)  importantCount.textContent  = `${importantValues.length} selecionado${importantValues.length !== 1 ? 's' : ''}`;
+
+        const renderChips = (container, arr, cls) => {
+            if (!container) return;
+            container.innerHTML = '';
+            arr.forEach(val => {
+                const chip = document.createElement('span');
+                chip.className = cls;
+                chip.textContent = val;
+                container.appendChild(chip);
             });
-        }
+        };
+        renderChips(essentialsContainer, essentialValues, 'bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider');
+        renderChips(importantContainer, importantValues, 'bg-secondary/10 text-secondary border border-secondary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider');
 
-        // Initialize
-        updateUI();
+        if (confirmBtn && (essentialValues.length > 0 || importantValues.length > 0) && !confirmBtn.getAttribute('data-confirmed')) {
+            confirmBtn.classList.remove('bg-surface-container-high', 'text-outline', 'cursor-not-allowed');
+            confirmBtn.classList.add('bg-primary', 'text-on-primary', 'shadow-md', 'hover:shadow-lg', 'active:scale-95');
+            confirmBtn.disabled = false;
+        }
+    }
+
+    function animateCard(fn) {
+        const card = document.getElementById('value-card');
+        card.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => { fn(); updateUI(); card.classList.remove('opacity-0', 'scale-95'); }, 150);
+    }
+
+    window.handleVote = function(type) {
+        if (currentIndex >= valuesList.length) return;
+        animateCard(() => { votes[currentIndex] = type; currentIndex++; });
+    };
+
+    window.goValueBack = function() {
+        if (currentIndex <= 0) return;
+        animateCard(() => { currentIndex--; votes[currentIndex] = undefined; });
+    };
+
+    const confirmBtn = document.getElementById('confirm-values');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            if (this.disabled) return;
+            this.textContent = '✓ Valores Confirmados';
+            this.classList.remove('bg-primary');
+            this.classList.add('bg-emerald-600', 'text-white');
+            this.setAttribute('data-confirmed', 'true');
+            this.disabled = true;
+            rebuildArrays();
+            if (window.app && window.app.saveValues) {
+                window.app.saveValues(essentialValues, importantValues);
+            }
+            const msg = document.createElement('p');
+            msg.className = 'text-xs text-on-surface-variant mt-4 italic leading-relaxed';
+            msg.textContent = 'Seus valores foram salvos e agora orientam suas decisões e prioridades no Sistema Vida.';
+            this.parentNode.appendChild(msg);
+            setTimeout(() => {
+                const modal = document.getElementById('values-selection-tool');
+                if (modal) modal.classList.add('hidden');
+            }, 800);
+        });
+    }
+
+    updateUI();
 })();
 </script>
 
