@@ -193,7 +193,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-phase8-flow-cadence-v93',
+    appBuildVersion: '20260505-phase9-contextual-xp-v94',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1192,10 +1192,38 @@ const app = {
                 const planned = this.unlockAchievement('first_planned_micro');
                 if (planned) unlocked.push(planned);
             }
+            // Progressive micro milestones
+            const microsDoneTotal = Object.values(gamification.events).filter(e => e.type === 'micro_complete').length;
+            const microMilestones = [
+                { n: 5,   key: 'micros_5',   title: '5 ações concluídas',   icon: 'task_alt' },
+                { n: 10,  key: 'micros_10',  title: '10 ações concluídas',  icon: 'task_alt' },
+                { n: 25,  key: 'micros_25',  title: '25 ações concluídas',  icon: 'local_fire_department' },
+                { n: 50,  key: 'micros_50',  title: '50 ações concluídas',  icon: 'local_fire_department' },
+                { n: 100, key: 'micros_100', title: '100 ações concluídas', icon: 'military_tech' }
+            ];
+            microMilestones.forEach(({ n, key, title, icon }) => {
+                if (microsDoneTotal >= n) {
+                    const ach = this.unlockAchievement(key, { title, icon });
+                    if (ach) unlocked.push(ach);
+                }
+            });
         }
         if (eventType === 'habit_complete') {
             const habit = this.unlockAchievement('first_habit_done');
             if (habit) unlocked.push(habit);
+            // Progressive habit milestones
+            const habitsDoneTotal = Object.values(gamification.events).filter(e => e.type === 'habit_complete').length;
+            const habitMilestones = [
+                { n: 7,   key: 'habits_7',   title: '7 registros de hábito',   icon: 'repeat' },
+                { n: 30,  key: 'habits_30',  title: '30 registros de hábito',  icon: 'repeat_on' },
+                { n: 100, key: 'habits_100', title: '100 registros de hábito', icon: 'military_tech' }
+            ];
+            habitMilestones.forEach(({ n, key, title, icon }) => {
+                if (habitsDoneTotal >= n) {
+                    const ach = this.unlockAchievement(key, { title, icon });
+                    if (ach) unlocked.push(ach);
+                }
+            });
         }
         if (eventType === 'deep_work') {
             const focus = this.unlockAchievement('first_focus_session');
@@ -1204,6 +1232,20 @@ const app = {
         if (eventType === 'weekly_review') {
             const review = this.unlockAchievement('first_weekly_review');
             if (review) unlocked.push(review);
+        }
+        if (eventType === 'daily_checkin') {
+            // Progressive check-in milestones
+            const checkinTotal = Object.values(gamification.events).filter(e => e.type === 'daily_checkin').length;
+            const checkinMilestones = [
+                { n: 7,  key: 'checkins_7',  title: '7 check-ins realizados',  icon: 'monitor_heart' },
+                { n: 30, key: 'checkins_30', title: '30 check-ins realizados', icon: 'monitor_heart' }
+            ];
+            checkinMilestones.forEach(({ n, key, title, icon }) => {
+                if (checkinTotal >= n) {
+                    const ach = this.unlockAchievement(key, { title, icon });
+                    if (ach) unlocked.push(ach);
+                }
+            });
         }
         if (this.getLevelFromXp(totalBefore) < 5 && this.getLevelFromXp(gamification.totalXp) >= 5) {
             const total = this.unlockAchievement('total_level_5');
@@ -1259,6 +1301,8 @@ const app = {
         return {
             xp,
             dimension,
+            sourceTitle: payload.title || '',
+            eventType,
             identity: this.getDimensionIdentity(dimension, dimLevelAfter),
             totalLevel: this.getLevelFromXp(gamification.totalXp),
             dimensionLevel: dimLevelAfter || null,
@@ -1463,23 +1507,43 @@ const app = {
         if (!result || !this.showToast) return;
         const tierPromotion = result.tierPromotion;
         const leveledUp = tierPromotion || result.totalLeveledUp || result.dimensionLeveledUp || result.achievementsUnlocked?.some(a => /desbloqueado|Sistema em movimento/i.test(a.title));
+
+        // Contextual "why" prefix — shows what action earned the XP
+        const sourceLabel = result.sourceTitle
+            ? this.escapeHtml(result.sourceTitle).slice(0, 48) + (result.sourceTitle.length > 48 ? '…' : '')
+            : null;
+        const whyPrefix = sourceLabel || ({
+            micro_complete: 'Ação concluída',
+            habit_complete: 'Hábito registrado',
+            daily_checkin:  'Check-in feito',
+            daily_diary:    'Diário registrado',
+            daily_shutdown: 'Shutdown feito',
+            weekly_plan:    'Semana planejada',
+            weekly_review:  'Revisão semanal',
+            deep_work:      'Sessão de foco'
+        })[result.eventType] || null;
+
         const openers = tierPromotion
             ? ['Novo título desbloqueado!', 'Você avançou de tier!', 'Promoção registrada!']
             : leveledUp
                 ? ['Subiu de nível!', 'Novo patamar!', 'Evolução registrada!']
-                : ['Boa execução!', 'Pequena vitória registrada!', 'Consistência conta!'];
+                : ['Boa execução!', 'Pequena vitória!', 'Consistência conta!'];
         const opener = openers[Math.floor(Math.random() * openers.length)];
-        const parts = [`${opener} +${result.xp} XP`];
-        if (result.dimension && result.identity) {
+
+        const parts = [];
+        if (whyPrefix) parts.push(whyPrefix);
+        parts.push(`${opener} +${result.xp} XP`);
+
+        if (result.achievementsUnlocked && result.achievementsUnlocked.length) {
+            parts.push(`Conquista: ${result.achievementsUnlocked[0].title}`);
+        } else if (result.dimension && result.identity) {
             parts.push(tierPromotion
                 ? `${result.dimension}: agora ${result.identity.title}`
                 : `${result.identity.title} · nível ${result.dimensionLevel}`);
         } else {
             parts.push(`Sistema nível ${result.totalLevel}`);
         }
-        if (result.achievementsUnlocked && result.achievementsUnlocked.length) {
-            parts.push(`Conquista: ${result.achievementsUnlocked[0].title}`);
-        }
+
         this.showToast(parts.join(' · '), 'success');
         this.showGamificationAwardEffects(result);
     },
