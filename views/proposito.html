@@ -24,6 +24,7 @@
                 <h3 class="text-xl font-headline font-bold text-on-background">Identidade Base</h3>
                 <p class="text-sm text-outline mt-1">Valores, forças e sombras para orientar decisões e evolução pessoal.</p>
             </div>
+            <button type="button" onclick="window.app.openManualChapter('identidade')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">menu_book</button>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
@@ -71,7 +72,7 @@
                 <h3 class="text-xl font-headline font-bold text-on-background">Roda da Vida</h3>
                 <p class="text-sm text-outline mt-1">Estado atual do equilíbrio nas 8 dimensões.</p>
             </div>
-            <span class="material-symbols-outlined notranslate text-outline text-2xl">pie_chart</span>
+            <button type="button" onclick="window.app.openManualChapter('bem-estar')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">pie_chart</button>
         </div>
         <div class="flex-1 flex flex-col items-center justify-center py-4 gap-12">
             <!-- Roda Container Ampliado -->
@@ -127,7 +128,7 @@
                 <h3 class="text-xl font-headline font-bold text-on-background tracking-tight">Bem-Estar PERMA</h3>
                 <p class="text-sm text-outline mt-1 font-label uppercase tracking-widest">Seu florescimento em 5 dimensões.</p>
             </div>
-            <span class="material-symbols-outlined notranslate text-outline text-2xl">psychology</span>
+            <button type="button" onclick="window.app.openManualChapter('bem-estar')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">psychology</button>
         </div>
         <div id="perma-charts-container" class="space-y-6 mt-2">
             <!-- Renderizado dinamicamente pelo app.js -->
@@ -148,7 +149,7 @@
                 <h3 class="text-xl font-headline font-bold text-on-background tracking-tight">Satisfação com a Vida (SWLS)</h3>
                 <p class="text-sm text-outline mt-1">Diagnóstico cognitivo global complementar ao PERMA.</p>
             </div>
-            <span class="material-symbols-outlined notranslate text-outline text-2xl">monitoring</span>
+            <button type="button" onclick="window.app.openManualChapter('bem-estar')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">monitoring</button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
             <div class="bg-surface-container-low p-5 rounded-xl border border-outline-variant/10">
@@ -250,7 +251,7 @@
                     <h3 class="text-xl font-headline font-bold text-on-background">Meu Ikigai</h3>
                     <p class="text-sm text-outline mt-1">Sua razão de ser e intersecção de propósito.</p>
                 </div>
-                <span class="material-symbols-outlined notranslate text-outline text-2xl">star</span>
+                <button type="button" onclick="window.app.openManualChapter('ikigai-odyssey')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">star</button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -374,14 +375,14 @@
                 <h3 class="text-xl font-headline font-bold text-on-background">Odyssey Plans</h3>
                 <p class="text-sm text-outline mt-1">Três cenários possíveis para os próximos 5 anos.</p>
             </div>
-            <span class="material-symbols-outlined notranslate text-outline text-2xl">explore_nearby</span>
+            <button type="button" onclick="window.app.openManualChapter('ikigai-odyssey')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">explore_nearby</button>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Scenario 1 -->
             <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário A', 'odyssey', 'cenarioA')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-label font-bold uppercase tracking-wider">Cenário A</div>
-                <h4 id="odyssey-title-cenarioA" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário A', 'odysseyTitles', 'cenarioA')" title="Clique para editar o título do cenário">A Via Consolidada</h4>
+                <h4 id="odyssey-title-cenarioA" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário A', 'odysseyTitles', 'cenarioA')" title="Clique para editar o título do cenário">Cenário A</h4>
                 <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
                     <img id="odyssey-image-cenarioA" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário A" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioA')">
                     <button id="odyssey-image-button-cenarioA" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioA')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
@@ -398,7 +399,7 @@
             <!-- Scenario 2 -->
             <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário B', 'odyssey', 'cenarioB')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-secondary/10 text-secondary text-[10px] font-label font-bold uppercase tracking-wider">Cenário B</div>
-                <h4 id="odyssey-title-cenarioB" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário B', 'odysseyTitles', 'cenarioB')" title="Clique para editar o título do cenário">O Salto Criativo</h4>
+                <h4 id="odyssey-title-cenarioB" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário B', 'odysseyTitles', 'cenarioB')" title="Clique para editar o título do cenário">Cenário B</h4>
                 <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
                     <img id="odyssey-image-cenarioB" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário B" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioB')">
                     <button id="odyssey-image-button-cenarioB" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioB')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
@@ -415,7 +416,7 @@
             <!-- Scenario 3 -->
             <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário C', 'odyssey', 'cenarioC')">
                 <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary text-[10px] font-label font-bold uppercase tracking-wider">Cenário C</div>
-                <h4 id="odyssey-title-cenarioC" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário C', 'odysseyTitles', 'cenarioC')" title="Clique para editar o título do cenário">A Vida Acadêmica</h4>
+                <h4 id="odyssey-title-cenarioC" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário C', 'odysseyTitles', 'cenarioC')" title="Clique para editar o título do cenário">Cenário C</h4>
                 <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
                     <img id="odyssey-image-cenarioC" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário C" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioC')">
                     <button id="odyssey-image-button-cenarioC" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioC')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
