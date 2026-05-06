@@ -9498,6 +9498,34 @@ const app = {
             : 'Opcional: conecte a semana às suas forças e sombras.';
     },
 
+    showIdentityReviewContext: function(type, id) {
+        const el = document.getElementById('review-identity-context');
+        if (!el) return;
+        if (!id) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+        const item = this.getIdentityItemById(type, id);
+        if (!item) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+        const esc = (s) => this.escapeHtml(String(s || ''));
+        const row = (label, val) => val ? `<p class="text-[11px] text-on-surface-variant leading-snug"><span class="font-bold text-on-surface">${label}:</span> ${esc(val)}</p>` : '';
+        let html = '';
+        if (type === 'strengths') {
+            html = [
+                row('Evidência', item.evidence),
+                row('Risco de excesso', item.excessRisk),
+                row('Prática', item.practice || item.suggestedPractice)
+            ].filter(Boolean).join('');
+        } else {
+            html = [
+                row('Gatilho', item.trigger),
+                row('Impacto', item.impact),
+                row('Resposta desejada', item.desiredResponse),
+                row('Se-então', item.ifThen)
+            ].filter(Boolean).join('');
+        }
+        if (!html) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+        el.innerHTML = `<div class="space-y-1">${html}</div>`;
+        el.classList.remove('hidden');
+    },
+
     closeReviewModal: function() {
         document.getElementById('review-modal').classList.add('hidden');
         document.getElementById('review-purpose-anchor')?.remove();
