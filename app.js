@@ -193,7 +193,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-phase6-gap-rules-v91',
+    appBuildVersion: '20260505-phase7-habit-intent-v92',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -6628,6 +6628,17 @@ const app = {
         </p>`;
     },
 
+    // Returns an intent descriptor for a habit: meta / strength / shadow / loose
+    _getHabitIntent: function(habit, state) {
+        if (habit.linkedMetaId) {
+            const meta = (state?.entities?.metas || []).find(m => m.id === habit.linkedMetaId);
+            if (meta) return { key: 'meta', label: 'Sustenta meta', icon: 'flag', metaTitle: meta.title };
+        }
+        if (habit.sourceType === 'strength') return { key: 'strength', label: 'Pratica força', icon: 'workspace_premium' };
+        if (habit.sourceType === 'shadow')   return { key: 'shadow',   label: 'Protege sombra', icon: 'change_circle' };
+        return { key: 'loose', label: 'Sem vínculo', icon: 'radio_button_unchecked' };
+    },
+
     syncIdentityLinkedHabits: function() {
         this.ensureIdentityState();
         const identity = window.sistemaVidaState.profile.identity || {};
@@ -8538,12 +8549,13 @@ const app = {
             (window.sistemaVidaState.entities?.okrs || []).length > 0 &&
             (window.sistemaVidaState.entities?.macros || []).length > 0 &&
             (window.sistemaVidaState.entities?.micros || []).length > 0;
-        const hasHabit = (window.sistemaVidaState.habits || []).length > 0;
+        // Require a habit with meaning (linked to a meta or identity trait) for the guided journey
+        const hasHabit = (window.sistemaVidaState.habits || []).some(h => h.linkedMetaId || h.sourceType);
         const checkinToday = cadence.checkin?.lastAt === today;
         const weeklyPlanned = !!(weekPlan && Array.isArray(weekPlan.selectedMicros) && weekPlan.selectedMicros.length > 0);
         const items = [
             { id: 'trail', label: 'Trilha inicial', done: hasTrail, action: () => this.openMetaTrailWizard() },
-            { id: 'habit', label: 'Habito ancora', done: hasHabit, action: () => this.navigate('hoje') },
+            { id: 'habit', label: 'Hábito com propósito', done: hasHabit, action: () => this.navigate('hoje') },
             { id: 'checkin', label: 'Check-in do dia', done: checkinToday, action: () => this.flowNavigate('hoje', 'daily-checkin-panel') },
             { id: 'weekly', label: 'Plano da semana', done: weeklyPlanned, action: () => this.flowNavigate('planos', 'tab-semanal', 'semanal') }
         ];
@@ -12385,7 +12397,7 @@ const app = {
             }
 
 
-            // Render Habits
+            // Render Habits — grouped by intent (sustenta meta / pratica força / protege sombra / solto)
             const habitsContainer = document.getElementById('habits-container');
             if (habitsContainer && state.habits) {
                 const habitIconMap = {
@@ -12393,15 +12405,14 @@ const app = {
                     'Finanças': 'payments', 'Relacionamentos': 'groups', 'Família': 'family_restroom',
                     'Lazer': 'sports_esports', 'Propósito': 'auto_awesome'
                 };
-                
+
                 const todayStr = app.getLocalDateKey();
                 const dayIndex = new Date().getDay().toString(); // 0(Sun) to 6(Sat)
-                
-                let habitsHtml = '';
-                state.habits.forEach(habit => {
-                    // Check if frequency allows showing today
+
+                // Build card HTML for one habit (returns '' if habit is not scheduled for today)
+                const buildHabitCard = (habit) => {
                     if (habit.frequency === 'specific' && habit.specificDays && habit.specificDays.length > 0) {
-                        if (!habit.specificDays.includes(dayIndex)) return; // skip for today
+                        if (!habit.specificDays.includes(dayIndex)) return '';
                     }
 
                     const icon = habitIconMap[habit.dimension] || 'stars';
@@ -12415,7 +12426,7 @@ const app = {
                     const todayStepMap = stepLogs[todayStr] || {};
                     const todayStepsDone = hasSteps ? steps.reduce((acc, _, idx) => acc + (todayStepMap[idx] || todayStepMap[String(idx)] ? 1 : 0), 0) : 0;
                     const allStepsDone = hasSteps && todayStepsDone === steps.length;
-                    
+
                     let isDone = false;
                     if (mode === 'boolean') isDone = currentVal > 0;
                     else isDone = currentVal >= target;
@@ -12437,15 +12448,14 @@ const app = {
                             <button class="w-6 h-6 flex justify-center items-center rounded-md hover:bg-outline-variant/20 text-on-surface" onclick="window.app.updateHabitLog('${habit.id}', '${todayStr}', Math.max(0, ${currentVal} - 1))">-</button>
                             <span class="text-xs font-semibold text-primary w-6 text-center">${currentVal}</span>
                             <button class="w-6 h-6 flex justify-center items-center rounded-md hover:bg-outline-variant/20 text-on-surface" onclick="window.app.updateHabitLog('${habit.id}', '${todayStr}', ${currentVal} + 1)">+</button>
-                        </div>
-                        `;
+                        </div>`;
                     }
 
                     // Week progress strip (semana fixa: domingo -> sábado)
                     const nowForWeek = new Date();
                     const weekStart = new Date(nowForWeek);
                     weekStart.setHours(0, 0, 0, 0);
-                    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // domingo
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
                     let weekHtml = '<div class="flex gap-1 mt-3">';
                     for (let i = 0; i < 7; i++) {
                         const d = new Date(weekStart);
@@ -12459,7 +12469,6 @@ const app = {
                             dDone = dCount === steps.length;
                         } else if (mode === 'boolean') dDone = val > 0;
                         else dDone = val >= target;
-
                         const isTodayBar = ds === todayStr;
                         const isFutureBar = d > nowForWeek;
                         let barClass = 'bg-surface-container-high';
@@ -12469,12 +12478,12 @@ const app = {
                     }
                     weekHtml += '</div>';
 
-                    // Track progress line
+                    // Track progress text
                     let progressText = '';
                     if (mode === 'numeric') progressText = `${currentVal}/${target}`;
                     if (mode === 'timer') progressText = `${currentVal}m/${target}m`;
 
-                    // Expandable steps section
+                    // Expandable steps
                     let stepsHtml = '';
                     if (hasSteps) {
                         const stepsListItems = steps.map((step, idx) => {
@@ -12493,13 +12502,11 @@ const app = {
                                 <span class="text-[10px] font-bold uppercase tracking-widest text-primary">${todayStepsDone}/${steps.length} passos</span>
                                 <span class="material-symbols-outlined notranslate text-primary text-[14px] chev ml-auto">expand_more</span>
                             </button>
-                            <div class="hidden mt-1 space-y-0.5">
-                                ${stepsListItems}
-                            </div>
+                            <div class="hidden mt-1 space-y-0.5">${stepsListItems}</div>
                         </div>`;
                     }
 
-                    // Meta vinculada (opcional)
+                    // Linked meta chip
                     let linkedMetaHtml = '';
                     if (habit.linkedMetaId) {
                         const linkedMeta = (state.entities?.metas || []).find(m => m.id === habit.linkedMetaId);
@@ -12513,7 +12520,7 @@ const app = {
                         ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
                         : 'border-transparent bg-surface-container-low';
 
-                    habitsHtml += `
+                    return `
                     <div onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer">
                         <div class="flex justify-between items-start mb-2">
                             <div class="flex items-center gap-2 min-w-0">
@@ -12543,12 +12550,49 @@ const app = {
                             ${stepsHtml}
                         </div>
                     </div>`;
+                };
+
+                // Group habits by intent
+                const intentOrder = ['meta', 'strength', 'shadow', 'loose'];
+                const intentConfig = {
+                    meta:     { label: 'Sustenta meta',   icon: 'flag',                    color: 'text-primary' },
+                    strength: { label: 'Pratica força',   icon: 'workspace_premium',       color: 'text-primary' },
+                    shadow:   { label: 'Protege sombra',  icon: 'change_circle',           color: 'text-secondary' },
+                    loose:    { label: 'Sem vínculo',     icon: 'radio_button_unchecked',  color: 'text-outline' }
+                };
+                const grouped = { meta: [], strength: [], shadow: [], loose: [] };
+                state.habits.forEach(habit => {
+                    const intent = app._getHabitIntent(habit, state);
+                    grouped[intent.key].push(habit);
                 });
-                
-                if (state.habits.length === 0) {
-                    habitsHtml = `<div class="p-4 text-xs italic text-outline">Nenhum hábito rastreado.</div>`;
+
+                let habitsHtml = '';
+                let totalRendered = 0;
+                intentOrder.forEach(key => {
+                    const cards = (grouped[key] || []).map(buildHabitCard).filter(Boolean);
+                    if (!cards.length) return;
+                    totalRendered += cards.length;
+                    const cfg = intentConfig[key];
+                    habitsHtml += `
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined notranslate ${cfg.color} text-[14px]" style="font-variation-settings:'FILL' 1">${cfg.icon}</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest ${cfg.color}">${cfg.label}</span>
+                            <span class="text-[10px] text-outline">${cards.length}</span>
+                        </div>
+                        <div class="flex gap-4 overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">${cards.join('')}</div>
+                    </div>`;
+                });
+
+                if (totalRendered === 0) {
+                    habitsHtml = `
+                    <div class="flex flex-col items-center py-6 text-center gap-3">
+                        <span class="material-symbols-outlined notranslate text-outline text-4xl">self_improvement</span>
+                        <p class="text-sm text-outline">${state.habits.length === 0 ? 'Nenhum hábito criado ainda.' : 'Nenhum hábito agendado para hoje.'}</p>
+                        ${state.habits.length === 0 ? `<button type="button" onclick="window.app.openCreateModal('habits')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all"><span class="material-symbols-outlined notranslate text-[16px]">add</span>Criar hábito</button>` : ''}
+                    </div>`;
                 }
-                
+
                 habitsContainer.innerHTML = habitsHtml;
             }
 
