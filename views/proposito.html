@@ -24,7 +24,6 @@
                 <h3 class="text-xl font-headline font-bold text-on-background">Identidade Base</h3>
                 <p class="text-sm text-outline mt-1">Valores, forças e sombras para orientar decisões e evolução pessoal.</p>
             </div>
-            <button onclick="document.getElementById('values-selection-tool').classList.remove('hidden'); document.getElementById('values-selection-tool').scrollIntoView({behavior: 'smooth'})" class="material-symbols-outlined notranslate text-outline text-2xl hover:text-primary transition-colors cursor-pointer" title="Editar Valores">edit</button>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
@@ -33,7 +32,7 @@
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Valores</p>
                         <p class="text-xs text-outline mt-1">Princípios inegociáveis.</p>
                     </div>
-                    <span class="material-symbols-outlined notranslate text-outline">workspace_premium</span>
+                    <button onclick="document.getElementById('values-selection-tool').classList.remove('hidden'); document.getElementById('values-selection-tool').scrollIntoView({behavior: 'smooth'})" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Editar Valores">edit</button>
                 </div>
                 <div id="top-values-banner" class="flex flex-wrap gap-2 min-h-[32px]"></div>
             </div>
@@ -184,11 +183,7 @@
                 <h3 class="text-2xl font-headline font-bold text-on-background tracking-tight">Escolher Meus Valores</h3>
                 <p class="text-xs text-outline mt-1 font-label uppercase tracking-widest" id="progress-text">1 de 15</p>
             </div>
-            <div class="flex items-center gap-1.5 opacity-40">
-                <span class="text-sm font-headline font-bold tracking-[0.2em]">S</span>
-                <span class="material-symbols-outlined notranslate text-xl">watch</span>
-                <span class="text-sm font-headline font-bold tracking-[0.2em]">ES</span>
-            </div>
+            <button type="button" onclick="document.getElementById('values-selection-tool').classList.add('hidden')" class="material-symbols-outlined notranslate text-outline hover:text-on-surface transition-colors" title="Fechar">close</button>
         </div>
         
         <!-- Card Container -->
@@ -218,13 +213,25 @@
             </div>
             
             <!-- Selection Summary -->
-            <div class="w-full border-t border-outline-variant/10 pt-8">
-                <div class="flex items-center justify-between mb-4">
-                    <p class="text-[10px] font-label uppercase tracking-[0.2em] text-outline">Pilar: Meus Essenciais</p>
-                    <span id="essentials-count" class="text-[10px] font-bold text-primary">0 selecionados</span>
+            <div class="w-full border-t border-outline-variant/10 pt-8 space-y-6">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-[10px] font-label uppercase tracking-[0.2em] text-outline flex items-center gap-1.5">
+                            <span class="material-symbols-outlined notranslate text-[14px] text-primary" style="font-variation-settings:'FILL' 1;">star</span>Essenciais
+                        </p>
+                        <span id="essentials-count" class="text-[10px] font-bold text-primary">0 selecionados</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 min-h-[32px] justify-center" id="essentials-list"></div>
                 </div>
-                <div class="flex flex-wrap gap-2 mb-8 min-h-[48px] justify-center" id="essentials-list"></div>
-                
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-[10px] font-label uppercase tracking-[0.2em] text-outline flex items-center gap-1.5">
+                            <span class="material-symbols-outlined notranslate text-[14px] text-secondary">check_circle</span>Importantes
+                        </p>
+                        <span id="important-count" class="text-[10px] font-bold text-secondary">0 selecionados</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 min-h-[32px] justify-center" id="important-list"></div>
+                </div>
                 <button class="w-full bg-surface-container-high text-outline py-4 rounded-xl font-bold text-xs uppercase tracking-widest cursor-not-allowed transition-all hover:bg-surface-container-highest" disabled="" id="confirm-values">
                     Finalizar Escolha de Valores
                 </button>
@@ -429,6 +436,101 @@
 
 </main>
 
+<!-- Identity Item Modal -->
+<div id="identity-item-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="window.app.closeIdentityItemModal()"></div>
+    <div class="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-background p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-headline font-bold text-on-background" id="identity-modal-title">Nova Força</h3>
+            <button type="button" onclick="window.app.closeIdentityItemModal()" class="material-symbols-outlined notranslate text-outline hover:text-on-surface transition-colors">close</button>
+        </div>
+        <input type="hidden" id="identity-modal-type" value="">
+        <input type="hidden" id="identity-modal-id" value="">
+        <form id="identity-modal-form" onsubmit="event.preventDefault(); window.app.saveIdentityItemModal();" class="space-y-4">
+            <div class="flex flex-col gap-1.5">
+                <label for="identity-modal-name" class="text-[10px] font-bold uppercase tracking-widest text-outline">Nome</label>
+                <input type="text" id="identity-modal-name" required autocomplete="off"
+                    class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                    placeholder="Ex: Resiliência">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label for="identity-modal-dimension" class="text-[10px] font-bold uppercase tracking-widest text-outline">Dimensão <span class="normal-case font-normal italic">(opcional)</span></label>
+                <select id="identity-modal-dimension" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface">
+                    <option value="">— Sem dimensão —</option>
+                    <option value="Saúde">Saúde</option>
+                    <option value="Carreira">Carreira</option>
+                    <option value="Finanças">Finanças</option>
+                    <option value="Família">Família</option>
+                    <option value="Relacionamentos">Relacionamentos</option>
+                    <option value="Lazer">Lazer</option>
+                    <option value="Mente">Mente</option>
+                    <option value="Propósito">Propósito</option>
+                </select>
+            </div>
+            <!-- Forças -->
+            <div id="identity-modal-strengths-fields" class="hidden space-y-4">
+                <div class="flex flex-col gap-1.5">
+                    <label for="identity-modal-evidence" class="text-[10px] font-bold uppercase tracking-widest text-outline">Evidência <span class="normal-case font-normal italic">(onde essa força aparece?)</span></label>
+                    <input type="text" id="identity-modal-evidence" autocomplete="off"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                        placeholder="Ex: Na liderança do time, nos momentos de crise">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="identity-modal-excessRisk" class="text-[10px] font-bold uppercase tracking-widest text-outline">Risco de excesso <span class="normal-case font-normal italic">(quando passa do ponto?)</span></label>
+                    <input type="text" id="identity-modal-excessRisk" autocomplete="off"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                        placeholder="Ex: Pode se tornar perfeccionismo paralisante">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="identity-modal-practice" class="text-[10px] font-bold uppercase tracking-widest text-outline">Prática sugerida <span class="normal-case font-normal italic">(como treinar?)</span></label>
+                    <input type="text" id="identity-modal-practice" autocomplete="off"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                        placeholder="Ex: Dedicar 30 min/dia a um projeto pessoal">
+                </div>
+            </div>
+            <!-- Sombras -->
+            <div id="identity-modal-shadows-fields" class="hidden space-y-4">
+                <div class="flex flex-col gap-1.5">
+                    <label for="identity-modal-trigger" class="text-[10px] font-bold uppercase tracking-widest text-outline">Gatilho <span class="normal-case font-normal italic">(quando aparece?)</span></label>
+                    <input type="text" id="identity-modal-trigger" autocomplete="off"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                        placeholder="Ex: Quando sinto que perco o controle">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="identity-modal-impact" class="text-[10px] font-bold uppercase tracking-widest text-outline">Impacto <span class="normal-case font-normal italic">(o que costuma gerar?)</span></label>
+                    <input type="text" id="identity-modal-impact" autocomplete="off"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                        placeholder="Ex: Distância das pessoas que amo">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="identity-modal-desiredResponse" class="text-[10px] font-bold uppercase tracking-widest text-outline">Resposta desejada <span class="normal-case font-normal italic">(o que praticar?)</span></label>
+                    <input type="text" id="identity-modal-desiredResponse" autocomplete="off"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                        placeholder="Ex: Respirar e comunicar o que sinto">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="identity-modal-obstacle" class="text-[10px] font-bold uppercase tracking-widest text-outline">Obstáculo previsto</label>
+                    <input type="text" id="identity-modal-obstacle" autocomplete="off"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                        placeholder="Ex: Ego e medo de vulnerabilidade">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="identity-modal-ifThen" class="text-[10px] font-bold uppercase tracking-widest text-outline">Plano se-então</label>
+                    <input type="text" id="identity-modal-ifThen" autocomplete="off"
+                        class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
+                        placeholder="Ex: Se me fechar, então vou pausar e escrever o que sinto">
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button type="button" onclick="window.app.closeIdentityItemModal()"
+                    class="flex-1 py-3 rounded-xl border border-outline-variant/30 text-sm font-bold text-outline hover:bg-surface-container transition-colors">Cancelar</button>
+                <button type="submit"
+                    class="flex-1 py-3 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary/90 transition-colors">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 (function() {
         const valuesList = [
@@ -439,68 +541,64 @@
         
         let currentIndex = 0;
         const essentialValues = [];
-        
+        const importantValues = [];
+
         function updateUI() {
             const valueText = document.getElementById('current-value-text');
             const progressText = document.getElementById('progress-text');
             const progressBar = document.getElementById('progress-bar');
             const essentialsContainer = document.getElementById('essentials-list');
             const essentialsCount = document.getElementById('essentials-count');
+            const importantContainer = document.getElementById('important-list');
+            const importantCount = document.getElementById('important-count');
             const confirmBtn = document.getElementById('confirm-values');
-            
+
             if (currentIndex < valuesList.length) {
                 if (valueText) valueText.textContent = valuesList[currentIndex];
                 if (progressText) progressText.textContent = `${currentIndex + 1} de ${valuesList.length}`;
                 if (progressBar) progressBar.style.width = `${((currentIndex + 1) / valuesList.length) * 100}%`;
             } else {
                 if (valueText) valueText.textContent = "Concluído!";
-                if (progressText) progressText.textContent = "15 de 15";
+                if (progressText) progressText.textContent = `${valuesList.length} de ${valuesList.length}`;
                 if (progressBar) progressBar.style.width = "100%";
                 document.querySelectorAll('button[onclick^="window.handleVote"]').forEach(btn => btn.disabled = true);
             }
-            
-            // Update counter
-            if (essentialsCount) {
-                essentialsCount.textContent = `${essentialValues.length} selecionado${essentialValues.length !== 1 ? 's' : ''}`;
-            }
 
-            // Refresh essentials list
-            if (essentialsContainer) {
-                essentialsContainer.innerHTML = '';
-                essentialValues.forEach(val => {
+            if (essentialsCount) essentialsCount.textContent = `${essentialValues.length} selecionado${essentialValues.length !== 1 ? 's' : ''}`;
+            if (importantCount) importantCount.textContent = `${importantValues.length} selecionado${importantValues.length !== 1 ? 's' : ''}`;
+
+            const renderChips = (container, arr, cls) => {
+                if (!container) return;
+                container.innerHTML = '';
+                arr.forEach(val => {
                     const chip = document.createElement('span');
-                    chip.className = "bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider animate-in fade-in zoom-in duration-300";
+                    chip.className = cls;
                     chip.textContent = val;
-                    essentialsContainer.appendChild(chip);
+                    container.appendChild(chip);
                 });
-            }
+            };
+            renderChips(essentialsContainer, essentialValues, "bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider");
+            renderChips(importantContainer, importantValues, "bg-secondary/10 text-secondary border border-secondary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider");
 
-            // Update confirm button state
-            if (confirmBtn && essentialValues.length > 0 && !confirmBtn.getAttribute('data-confirmed')) {
+            if (confirmBtn && (essentialValues.length > 0 || importantValues.length > 0) && !confirmBtn.getAttribute('data-confirmed')) {
                 confirmBtn.classList.remove('bg-surface-container-high', 'text-outline', 'cursor-not-allowed');
                 confirmBtn.classList.add('bg-primary', 'text-on-primary', 'shadow-md', 'hover:shadow-lg', 'active:scale-95');
                 confirmBtn.disabled = false;
             }
         }
-        
+
         window.handleVote = function(type) {
             if (currentIndex >= valuesList.length) return;
-            
             const card = document.getElementById('value-card');
-            
-            // Basic feedback animation
             card.classList.add('opacity-0', 'scale-95');
-            
-            if (type === 'essential') {
-                essentialValues.push(valuesList[currentIndex]);
-            }
-            
+            if (type === 'essential') essentialValues.push(valuesList[currentIndex]);
+            else if (type === 'important') importantValues.push(valuesList[currentIndex]);
             setTimeout(() => {
                 currentIndex++;
                 updateUI();
                 card.classList.remove('opacity-0', 'scale-95');
             }, 150);
-        }
+        };
 
         const confirmBtn = document.getElementById('confirm-values');
         if (confirmBtn) {
@@ -511,24 +609,20 @@
                 this.classList.add('bg-emerald-600', 'text-white');
                 this.setAttribute('data-confirmed', 'true');
                 this.disabled = true;
-                
                 if (window.app && window.app.saveValues) {
-                    window.app.saveValues(essentialValues);
+                    window.app.saveValues(essentialValues, importantValues);
                 }
-                
                 const msg = document.createElement('p');
                 msg.className = 'text-xs text-on-surface-variant mt-4 italic leading-relaxed';
-                msg.textContent = 'Seus valores essenciais foram salvos e agora servem como base para suas decisões e prioridades no Sistema Vida.';
+                msg.textContent = 'Seus valores foram salvos e agora orientam suas decisões e prioridades no Sistema Vida.';
                 this.parentNode.appendChild(msg);
-
-                // Fecha o modal após um pequeno delay para o feedback
                 setTimeout(() => {
                     const modal = document.getElementById('values-selection-tool');
                     if (modal) modal.classList.add('hidden');
                 }, 800);
             });
         }
-        
+
         // Initialize
         updateUI();
 })();

@@ -3731,30 +3731,32 @@ const app = {
     renderSidebarValues: function() {
         const state = window.sistemaVidaState;
         const profile = state.profile || {};
-        const values = profile.values || [];
+        const essentials = profile.values || [];
+        const importants = profile.importantValues || [];
         this.renderProfileChrome();
 
         const container = document.getElementById('sidebar-values-container');
         if (container) {
-            if (values.length > 0) {
-                container.innerHTML = values.map(v => 
-                    `<span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic transition-all hover:bg-primary/20 cursor-default animate-fade-in">${v}</span>`
-                ).join('');
-            } else {
-                container.innerHTML = `<span class="text-[10px] text-outline italic">Defina seus valores no Propósito</span>`;
+            let html = '';
+            if (essentials.length > 0) {
+                html += essentials.map(v => `<span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase italic transition-all hover:bg-primary/20 cursor-default animate-fade-in" title="Essencial"><span class="material-symbols-outlined notranslate text-[10px] align-text-bottom">star</span>${v}</span>`).join('');
             }
+            if (importants.length > 0) {
+                html += importants.map(v => `<span class="px-2 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-lg uppercase italic transition-all hover:bg-secondary/20 cursor-default animate-fade-in" title="Importante">${v}</span>`).join('');
+            }
+            container.innerHTML = html || `<span class="text-[10px] text-outline italic">Defina seus valores no Propósito</span>`;
         }
 
-        // Também atualiza o banner no Propósito se estiver visível
         const valuesBanner = document.getElementById('top-values-banner');
         if (valuesBanner) {
-            if (values.length > 0) {
-                valuesBanner.innerHTML = values.map(v =>
-                    `<span class="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in">${v}</span>`
-                ).join('');
-            } else {
-                valuesBanner.innerHTML = '<p class="text-xs text-outline italic">Escolha os valores que guiam suas decisões.</p>';
+            let html = '';
+            if (essentials.length > 0) {
+                html += essentials.map(v => `<span class="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in" title="Essencial"><span class="material-symbols-outlined notranslate text-[11px] align-text-bottom" style="font-variation-settings:'FILL' 1;">star</span>${v}</span>`).join('');
             }
+            if (importants.length > 0) {
+                html += importants.map(v => `<span class="px-4 py-1.5 bg-secondary/10 text-secondary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in" title="Importante">${v}</span>`).join('');
+            }
+            valuesBanner.innerHTML = html || '<p class="text-xs text-outline italic">Escolha os valores que guiam suas decisões.</p>';
         }
     },
 
@@ -3858,10 +3860,85 @@ const app = {
     },
 
     addCustomIdentityItem: function(type) {
-        const label = type === 'strengths' ? 'força' : 'sombra';
-        const title = window.prompt(`Nome da ${label}:`);
-        if (!title || !title.trim()) return;
-        this.addIdentityItem(type, title.trim());
+        this.openIdentityItemModal(type, null);
+    },
+
+    openIdentityItemModal: function(type, id) {
+        const modal = document.getElementById('identity-item-modal');
+        if (!modal) return;
+        const isStrength = type === 'strengths';
+        const isEdit = !!id;
+        document.getElementById('identity-modal-type').value = type;
+        document.getElementById('identity-modal-id').value = id || '';
+        document.getElementById('identity-modal-title').textContent = isEdit
+            ? (isStrength ? 'Editar Força' : 'Editar Sombra')
+            : (isStrength ? 'Nova Força' : 'Nova Sombra');
+
+        const sFields = document.getElementById('identity-modal-strengths-fields');
+        const shFields = document.getElementById('identity-modal-shadows-fields');
+        if (sFields)  sFields.classList.toggle('hidden', !isStrength);
+        if (shFields) shFields.classList.toggle('hidden', isStrength);
+
+        // Pre-fill if editing
+        const item = id ? this.getIdentityItemById(type, id) : null;
+        const val = (key) => (item && item[key]) ? item[key] : '';
+        document.getElementById('identity-modal-name').value      = val('title');
+        document.getElementById('identity-modal-dimension').value = val('dimension');
+        if (isStrength) {
+            document.getElementById('identity-modal-evidence').value   = val('evidence');
+            document.getElementById('identity-modal-excessRisk').value = val('excessRisk');
+            document.getElementById('identity-modal-practice').value   = val('practice') || val('suggestedPractice');
+        } else {
+            document.getElementById('identity-modal-trigger').value         = val('trigger');
+            document.getElementById('identity-modal-impact').value          = val('impact');
+            document.getElementById('identity-modal-desiredResponse').value = val('desiredResponse');
+            document.getElementById('identity-modal-obstacle').value        = val('obstacle');
+            document.getElementById('identity-modal-ifThen').value          = val('ifThen');
+        }
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById('identity-modal-name')?.focus(), 80);
+    },
+
+    closeIdentityItemModal: function() {
+        const modal = document.getElementById('identity-item-modal');
+        if (modal) modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    },
+
+    saveIdentityItemModal: function() {
+        this.ensureIdentityState();
+        const type = document.getElementById('identity-modal-type').value;
+        const id   = document.getElementById('identity-modal-id').value;
+        const name = (document.getElementById('identity-modal-name').value || '').trim();
+        if (!name) return;
+        const isStrength = type === 'strengths';
+
+        const g = (elId) => (document.getElementById(elId)?.value || '').trim();
+        const extra = isStrength
+            ? { evidence: g('identity-modal-evidence'), excessRisk: g('identity-modal-excessRisk'), practice: g('identity-modal-practice') }
+            : { trigger: g('identity-modal-trigger'), impact: g('identity-modal-impact'), desiredResponse: g('identity-modal-desiredResponse'), obstacle: g('identity-modal-obstacle'), ifThen: g('identity-modal-ifThen') };
+
+        if (id) {
+            // Edit existing
+            const item = this.getIdentityItemById(type, id);
+            if (!item) return;
+            item.title     = name;
+            item.dimension = g('identity-modal-dimension');
+            Object.assign(item, extra);
+            item.updatedAt = this.getLocalDateKey();
+            this.showToast(`${isStrength ? 'Força' : 'Sombra'} atualizada.`, 'success');
+        } else {
+            // Create new
+            const dimension = g('identity-modal-dimension');
+            const list = window.sistemaVidaState.profile.identity[type];
+            const newItem = { id: this.generateId(), title: name, dimension, ...extra, createdAt: this.getLocalDateKey() };
+            list.push(newItem);
+            this.showToast(`${isStrength ? 'Força' : 'Sombra'} adicionada.`, 'success');
+        }
+        this.saveState(true);
+        this.renderIdentityBase();
+        this.closeIdentityItemModal();
     },
 
     removeIdentityItem: function(type, id) {
@@ -3875,48 +3952,7 @@ const app = {
     },
 
     editIdentityItem: function(type, id) {
-        this.ensureIdentityState();
-        const item = this.getIdentityItemById(type, id);
-        if (!item) return;
-        const isStrength = type === 'strengths';
-        const title = window.prompt(`${this.getIdentityTypeLabel(type)}: nome`, item.title);
-        if (title === null) return;
-        const dimension = window.prompt('Dimensão principal (opcional)', item.dimension || '');
-        if (dimension === null) return;
-
-        item.title = String(title || '').trim() || item.title;
-        item.dimension = String(dimension || '').trim();
-        if (isStrength) {
-            const evidence = window.prompt('Evidência real: onde essa força aparece?', item.evidence || '');
-            if (evidence === null) return;
-            const excessRisk = window.prompt('Risco de excesso: quando essa força passa do ponto?', item.excessRisk || '');
-            if (excessRisk === null) return;
-            const practice = window.prompt('Prática sugerida: como treinar essa força?', item.practice || item.suggestedPractice || '');
-            if (practice === null) return;
-            item.evidence = String(evidence || '').trim();
-            item.excessRisk = String(excessRisk || '').trim();
-            item.practice = String(practice || '').trim();
-        } else {
-            const trigger = window.prompt('Gatilho: quando essa sombra aparece?', item.trigger || '');
-            if (trigger === null) return;
-            const impact = window.prompt('Impacto: o que ela costuma gerar?', item.impact || '');
-            if (impact === null) return;
-            const desiredResponse = window.prompt('Resposta desejada: o que praticar no lugar?', item.desiredResponse || '');
-            if (desiredResponse === null) return;
-            const obstacle = window.prompt('Obstáculo previsto: o que costuma te puxar para esse padrão?', item.obstacle || item.trigger || '');
-            if (obstacle === null) return;
-            const ifThen = window.prompt('Plano se-então: se o obstáculo aparecer, então...', item.ifThen || '');
-            if (ifThen === null) return;
-            item.trigger = String(trigger || '').trim();
-            item.impact = String(impact || '').trim();
-            item.desiredResponse = String(desiredResponse || '').trim();
-            item.obstacle = String(obstacle || '').trim();
-            item.ifThen = String(ifThen || '').trim();
-        }
-        item.updatedAt = this.getLocalDateKey();
-        this.saveState(true);
-        this.renderIdentityBase();
-        this.showToast(`${this.getIdentityTypeLabel(type)} atualizada.`, 'success');
+        this.openIdentityItemModal(type, id);
     },
 
     renderIdentityBase: function() {
@@ -4915,8 +4951,10 @@ const app = {
         return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
     },
 
-    saveValues: function(newValuesArray) {
-        window.sistemaVidaState.profile.values = newValuesArray;
+    saveValues: function(essentialValues, importantValues) {
+        window.sistemaVidaState.profile.values = essentialValues || [];
+        window.sistemaVidaState.profile.importantValues = importantValues || [];
+        this.renderSidebarValues();
         if (this.render.proposito) this.render.proposito();
         app.saveState(true);
     },
