@@ -193,7 +193,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-phase7-habit-intent-v92',
+    appBuildVersion: '20260505-phase8-flow-cadence-v93',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -2522,12 +2522,28 @@ const app = {
         const s = this._getFlowState();
 
         const row = (icon, title, subtitle, xpLabel, done, view, sectionId = '', tabId = '', cadenceKey = '', showCadenceMeta = false) => {
+            // Get rich cadence status when available
+            const cadStatus = cadenceKey ? this.getCadenceStatus(cadenceKey) : null;
             const bg = done
                 ? 'bg-emerald-500/[0.06] border border-emerald-500/20'
                 : 'bg-surface-container-low border border-outline-variant/15';
             const checkIcon = done ? 'check_circle' : 'radio_button_unchecked';
             const checkColor = done ? 'text-emerald-500' : 'text-outline-variant/60';
             const checkFill = done ? "font-variation-settings:'FILL' 1;" : '';
+
+            // Cadence state chip — shows overdue/soon context with days
+            let cadenceChip = '';
+            if (cadStatus && !done) {
+                if (cadStatus.state === 'overdue') {
+                    const daysLabel = cadStatus.daysSince === null
+                        ? 'Nunca feito'
+                        : `Atrasado há ${cadStatus.daysSince} dia${cadStatus.daysSince === 1 ? '' : 's'}`;
+                    cadenceChip = `<span class="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-error bg-error/10 border border-error/20 px-1.5 py-0.5 rounded-md leading-none">${this.escapeHtml(daysLabel)}</span>`;
+                } else if (cadStatus.state === 'soon') {
+                    cadenceChip = `<span class="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md leading-none">Em breve</span>`;
+                }
+            }
+
             const cadenceConfig = cadenceKey ? this.getCadenceConfig()[cadenceKey] : null;
             const cadenceMeta = cadenceConfig && showCadenceMeta
                 ? `<p class="text-[10px] text-outline mt-1 leading-snug">Revisitar: ${this.escapeHtml(this.getCadenceFrequencyLabel(cadenceConfig.expectedDays).toLowerCase())}</p>`
@@ -2542,7 +2558,7 @@ const app = {
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <span class="material-symbols-outlined notranslate text-[15px] text-outline shrink-0">${icon}</span>
                         <p class="text-sm font-semibold text-on-surface leading-snug">${title}</p>
-                        ${xpEl}
+                        ${cadenceChip || xpEl}
                     </div>
                     <p class="text-[11px] text-outline mt-0.5 leading-snug">${subtitle}</p>
                     ${cadenceMeta}
@@ -2570,7 +2586,34 @@ const app = {
             <div class="space-y-2">${body}</div>
         </div>`;
 
-        el.innerHTML =
+        // "Próximo ritual" card — surfaces the most urgent overdue/soon item
+        const nextRitual = this.getNextRitualSuggestion();
+        const nextRitualCard = nextRitual ? (() => {
+            const isOverdue = nextRitual.state === 'overdue';
+            const daysLabel = nextRitual.daysSince === null
+                ? 'Nunca feito'
+                : isOverdue
+                    ? `Atrasado há ${nextRitual.daysSince} dia${nextRitual.daysSince === 1 ? '' : 's'}`
+                    : `Há ${nextRitual.daysSince} dia${nextRitual.daysSince === 1 ? '' : 's'}`;
+            const colorBg = isOverdue ? 'bg-error/[0.06] border-error/20' : 'bg-amber-500/[0.06] border-amber-500/20';
+            const colorText = isOverdue ? 'text-error' : 'text-amber-600 dark:text-amber-400';
+            const colorIcon = isOverdue ? 'text-error' : 'text-amber-500';
+            return `
+            <div class="mb-5 rounded-2xl border ${colorBg} p-4 flex items-center gap-3">
+                <span class="material-symbols-outlined notranslate ${colorIcon} text-2xl shrink-0">${nextRitual.icon || 'priority_high'}</span>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-widest ${colorText} mb-0.5">Próximo ritual</p>
+                    <p class="text-sm font-semibold text-on-surface leading-snug">${this.escapeHtml(nextRitual.label || '')}</p>
+                    <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(daysLabel)}</p>
+                </div>
+                <button onclick="window.app.flowNavigate('${this.escapeHtml(nextRitual.route?.view || '')}','${this.escapeHtml(nextRitual.route?.sectionId || '')}','${this.escapeHtml(nextRitual.route?.tabId || '')}');"
+                    class="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest ${isOverdue ? 'bg-error/10 text-error hover:bg-error/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20'} active:scale-95 transition-all">
+                    Ir agora
+                </button>
+            </div>`;
+        })() : '';
+
+        el.innerHTML = nextRitualCard +
             section('Rotina Diária', 'today',
                 sub('Manhã', 'wb_sunny') +
                 row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'daily-checkin-panel', '', 'checkin') +
@@ -7313,6 +7356,34 @@ const app = {
             <span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-1">${this.escapeHtml(freq)}</span>
             <span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-1">${this.escapeHtml(lastLabel)}</span>
         </div>`;
+    },
+
+    // Returns the cadence item most in need of attention (overdue > soon).
+    // The returned object is a getCadenceStatus result augmented with a routeHint.
+    getNextRitualSuggestion: function() {
+        const routeMap = {
+            checkin:      { view: 'hoje',    sectionId: 'daily-checkin-panel',       tabId: '' },
+            diary:        { view: 'hoje',    sectionId: 'hoje-diario-section',       tabId: '' },
+            weeklyPlan:   { view: 'planos',  sectionId: 'tab-semanal',              tabId: 'semanal' },
+            weeklyReview: { view: 'planos',  sectionId: 'weekly-plan-primary-action', tabId: 'semanal' },
+            wheel:        { view: 'proposito', sectionId: 'proposito-roda-section', tabId: '' },
+            perma:        { view: 'proposito', sectionId: 'perma-section',          tabId: '' },
+            swls:         { view: 'proposito', sectionId: 'swls-section',           tabId: '' },
+            odyssey:      { view: 'proposito', sectionId: 'odyssey-section',        tabId: '' },
+            purpose:      { view: 'proposito', sectionId: 'proposito-ikigai-section', tabId: '' },
+            lifeGoals:    { view: 'planos',  sectionId: '',                         tabId: 'metas' }
+        };
+        const keys = Object.keys(routeMap);
+        const statuses = keys.map(key => ({ key, route: routeMap[key], ...this.getCadenceStatus(key) }));
+        const overdue = statuses.filter(s => s.state === 'overdue').sort((a, b) => {
+            if (a.daysSince === null && b.daysSince === null) return 0;
+            if (a.daysSince === null) return -1;
+            if (b.daysSince === null) return 1;
+            return b.daysSince - a.daysSince;
+        });
+        if (overdue.length) return overdue[0];
+        const soon = statuses.filter(s => s.state === 'soon').sort((a, b) => (b.daysSince || 0) - (a.daysSince || 0));
+        return soon[0] || null;
     },
 
     renderCadencePanel: function(containerId = 'cadence-status-panel', limit = 4) {
