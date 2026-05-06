@@ -41,6 +41,7 @@
 <!-- Bússola do Dia -->
 <section class="mt-8">
   <div id="daily-compass-container"></div>
+  <div id="starter-journey-container" class="mt-6"></div>
 </section>
 
     <!-- Check-in Diário -->
@@ -70,6 +71,7 @@
                 <input id="daily-checkin-sleep-quality" type="range" min="1" max="5" value="3" class="accent-primary flex-1"
                     oninput="document.getElementById('daily-checkin-sleep-quality-val').textContent=this.value">
             </div>
+            <p id="daily-checkin-sleep-quality-help" class="text-[11px] text-outline ml-[6.2rem] -mt-1">3 = sono ok, mas ainda melhoravel.</p>
             <!-- Energia -->
             <div class="flex items-center gap-2">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-outline w-24 shrink-0">Energia</span>
@@ -82,6 +84,7 @@
                     <button type="button" data-val="5" onclick="window.app.setCheckinVal('daily-checkin-energy',5,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Cheio de energia">🔥</button>
                 </div>
             </div>
+            <p id="daily-checkin-energy-help" class="text-[11px] text-outline ml-[6.2rem] -mt-1">Use sua sensacao fisica e mental agora.</p>
             <!-- Humor -->
             <div class="flex items-center gap-2">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-outline w-24 shrink-0">Humor</span>
@@ -94,6 +97,7 @@
                     <button type="button" data-val="5" onclick="window.app.setCheckinVal('daily-checkin-mood',5,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Ótimo">😄</button>
                 </div>
             </div>
+            <p id="daily-checkin-mood-help" class="text-[11px] text-outline ml-[6.2rem] -mt-1">Pense no tom emocional predominante do dia.</p>
             <!-- Estresse -->
             <div class="flex items-center gap-2">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-outline w-24 shrink-0">Estresse</span>
@@ -106,23 +110,30 @@
                     <button type="button" data-val="5" onclick="window.app.setCheckinVal('daily-checkin-stress',5,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Crítico">🤯</button>
                 </div>
             </div>
+            <p id="daily-checkin-stress-help" class="text-[11px] text-outline ml-[6.2rem] -mt-1">1 = leve e controlado, 5 = pressao critica.</p>
         </div>
         <div>
-            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Emoção dominante <span class="normal-case font-normal italic text-outline">(opcional)</span></p>
+            <button type="button" onclick="window.app.toggleEmotionCollapse()" class="flex items-center w-full text-left gap-2">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Emoção dominante <span class="normal-case font-normal italic text-outline">(opcional)</span></p>
+                <span id="emotion-selected-preview" class="hidden text-[10px] font-bold text-primary ml-1"></span>
+                <span id="emotion-collapse-icon" class="material-symbols-outlined notranslate text-outline text-[14px] ml-auto transition-transform duration-200">expand_more</span>
+            </button>
             <input type="hidden" id="daily-checkin-emotion" value="">
-            <div class="flex flex-wrap gap-2" id="emotion-chips">
-                <button type="button" data-emotion="calmo" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">calmo</button>
-                <button type="button" data-emotion="ansioso" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">ansioso</button>
-                <button type="button" data-emotion="animado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">animado</button>
-                <button type="button" data-emotion="focado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">focado</button>
-                <button type="button" data-emotion="cansado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">cansado</button>
-                <button type="button" data-emotion="sobrecarregado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">sobrecarregado</button>
-                <button type="button" data-emotion="esperancoso" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">esperançoso</button>
-                <button type="button" data-emotion="irritado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">irritado</button>
-                <button type="button" data-emotion="grato" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">grato</button>
-                <button type="button" data-emotion="motivado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">motivado</button>
-                <button type="button" data-emotion="triste" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">triste</button>
-                <button type="button" data-emotion="confiante" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">confiante</button>
+            <div class="hidden mt-2 flex flex-wrap gap-2" id="emotion-chips-wrapper">
+                <div class="flex flex-wrap gap-2" id="emotion-chips">
+                    <button type="button" data-emotion="calmo" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">calmo</button>
+                    <button type="button" data-emotion="ansioso" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">ansioso</button>
+                    <button type="button" data-emotion="animado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">animado</button>
+                    <button type="button" data-emotion="focado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">focado</button>
+                    <button type="button" data-emotion="cansado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">cansado</button>
+                    <button type="button" data-emotion="sobrecarregado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">sobrecarregado</button>
+                    <button type="button" data-emotion="esperancoso" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">esperançoso</button>
+                    <button type="button" data-emotion="irritado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">irritado</button>
+                    <button type="button" data-emotion="grato" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">grato</button>
+                    <button type="button" data-emotion="motivado" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">motivado</button>
+                    <button type="button" data-emotion="triste" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">triste</button>
+                    <button type="button" data-emotion="confiante" onclick="window.app.toggleEmotionChip(this)" class="emotion-chip px-3 py-1 rounded-full text-xs font-medium border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-colors">confiante</button>
+                </div>
             </div>
         </div>
         <div>
@@ -190,7 +201,7 @@
 <!-- Section: Hábitos -->
 <section id="hoje-habits-section" class="mt-8 space-y-4">
 <h3 class="font-headline text-2xl italic mb-6">Hábitos de hoje</h3>
-<div id="habits-container" class="flex gap-4 overflow-x-auto pb-4 hide-scrollbar -mx-6 px-6">
+<div id="habits-container" class="space-y-6">
 </div>
 <!-- Identity Toast (Dynamic) -->
 <div class="fixed bottom-28 left-0 right-0 z-50 flex justify-center pointer-events-none px-6">

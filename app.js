@@ -3,30 +3,22 @@
  * Vanilla JS Single Page Application Controller with Data Binding
  */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, EmailAuthProvider, linkWithCredential, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+// Firebase instances and helpers — all initialized in js/firebase.js
+import {
+    db, auth, storage, authPersistenceReady, LOCAL_USER_SCOPE,
+    doc, setDoc, getDoc, onSnapshot, deleteDoc,
+    signInAnonymously, onAuthStateChanged,
+    createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    signOut, sendPasswordResetEmail, updateProfile,
+    EmailAuthProvider, linkWithCredential,
+    storageRef, uploadString, getDownloadURL
+} from './js/firebase.js';
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDXu7ddS77_deDezWQqrLd4Ww-MRVL1bgM",
-    authDomain: "life-os-753f2.firebaseapp.com",
-    projectId: "life-os-753f2",
-    storageBucket: "life-os-753f2.firebasestorage.app",
-    messagingSenderId: "339455340566",
-    appId: "1:339455340566:web:976675a53891f365c48537"
-};
+// Phase 10 extracted modules — attached to app after object definition
+import { attachSubjectiveScales } from './js/subjectiveScales.js';
 
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
-const auth = getAuth(firebaseApp);
-const storage = getStorage(firebaseApp);
-const LOCAL_USER_SCOPE = 'guest';
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
-const authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch((err) => {
-    console.warn('[AUTH] Falha ao configurar persistência local:', err);
-});
 let initialAuthStatePromise = null;
 let authInteractiveOperation = false;
 
@@ -135,6 +127,7 @@ window.sistemaVidaState = {
         odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" },
         odysseyTitles: { cenarioA: "A Via Consolidada", cenarioB: "O Salto Criativo", cenarioC: "A Vida Acadêmica" },
         identity: { strengths: [], shadows: [] },
+        onboardingStarter: { dimension: 'Carreira', goalTitle: '', habitTitle: '', habitTime: '', strength: '', shadow: '' },
         dailyCheckins: [],
         cadence: {},
         notes: []
@@ -192,7 +185,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-onboarding-loop-fix-v85',
+    appBuildVersion: '20260505-phase10-architecture-v95',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1191,10 +1184,38 @@ const app = {
                 const planned = this.unlockAchievement('first_planned_micro');
                 if (planned) unlocked.push(planned);
             }
+            // Progressive micro milestones
+            const microsDoneTotal = Object.values(gamification.events).filter(e => e.type === 'micro_complete').length;
+            const microMilestones = [
+                { n: 5,   key: 'micros_5',   title: '5 ações concluídas',   icon: 'task_alt' },
+                { n: 10,  key: 'micros_10',  title: '10 ações concluídas',  icon: 'task_alt' },
+                { n: 25,  key: 'micros_25',  title: '25 ações concluídas',  icon: 'local_fire_department' },
+                { n: 50,  key: 'micros_50',  title: '50 ações concluídas',  icon: 'local_fire_department' },
+                { n: 100, key: 'micros_100', title: '100 ações concluídas', icon: 'military_tech' }
+            ];
+            microMilestones.forEach(({ n, key, title, icon }) => {
+                if (microsDoneTotal >= n) {
+                    const ach = this.unlockAchievement(key, { title, icon });
+                    if (ach) unlocked.push(ach);
+                }
+            });
         }
         if (eventType === 'habit_complete') {
             const habit = this.unlockAchievement('first_habit_done');
             if (habit) unlocked.push(habit);
+            // Progressive habit milestones
+            const habitsDoneTotal = Object.values(gamification.events).filter(e => e.type === 'habit_complete').length;
+            const habitMilestones = [
+                { n: 7,   key: 'habits_7',   title: '7 registros de hábito',   icon: 'repeat' },
+                { n: 30,  key: 'habits_30',  title: '30 registros de hábito',  icon: 'repeat_on' },
+                { n: 100, key: 'habits_100', title: '100 registros de hábito', icon: 'military_tech' }
+            ];
+            habitMilestones.forEach(({ n, key, title, icon }) => {
+                if (habitsDoneTotal >= n) {
+                    const ach = this.unlockAchievement(key, { title, icon });
+                    if (ach) unlocked.push(ach);
+                }
+            });
         }
         if (eventType === 'deep_work') {
             const focus = this.unlockAchievement('first_focus_session');
@@ -1203,6 +1224,20 @@ const app = {
         if (eventType === 'weekly_review') {
             const review = this.unlockAchievement('first_weekly_review');
             if (review) unlocked.push(review);
+        }
+        if (eventType === 'daily_checkin') {
+            // Progressive check-in milestones
+            const checkinTotal = Object.values(gamification.events).filter(e => e.type === 'daily_checkin').length;
+            const checkinMilestones = [
+                { n: 7,  key: 'checkins_7',  title: '7 check-ins realizados',  icon: 'monitor_heart' },
+                { n: 30, key: 'checkins_30', title: '30 check-ins realizados', icon: 'monitor_heart' }
+            ];
+            checkinMilestones.forEach(({ n, key, title, icon }) => {
+                if (checkinTotal >= n) {
+                    const ach = this.unlockAchievement(key, { title, icon });
+                    if (ach) unlocked.push(ach);
+                }
+            });
         }
         if (this.getLevelFromXp(totalBefore) < 5 && this.getLevelFromXp(gamification.totalXp) >= 5) {
             const total = this.unlockAchievement('total_level_5');
@@ -1258,6 +1293,8 @@ const app = {
         return {
             xp,
             dimension,
+            sourceTitle: payload.title || '',
+            eventType,
             identity: this.getDimensionIdentity(dimension, dimLevelAfter),
             totalLevel: this.getLevelFromXp(gamification.totalXp),
             dimensionLevel: dimLevelAfter || null,
@@ -1462,23 +1499,43 @@ const app = {
         if (!result || !this.showToast) return;
         const tierPromotion = result.tierPromotion;
         const leveledUp = tierPromotion || result.totalLeveledUp || result.dimensionLeveledUp || result.achievementsUnlocked?.some(a => /desbloqueado|Sistema em movimento/i.test(a.title));
+
+        // Contextual "why" prefix — shows what action earned the XP
+        const sourceLabel = result.sourceTitle
+            ? this.escapeHtml(result.sourceTitle).slice(0, 48) + (result.sourceTitle.length > 48 ? '…' : '')
+            : null;
+        const whyPrefix = sourceLabel || ({
+            micro_complete: 'Ação concluída',
+            habit_complete: 'Hábito registrado',
+            daily_checkin:  'Check-in feito',
+            daily_diary:    'Diário registrado',
+            daily_shutdown: 'Shutdown feito',
+            weekly_plan:    'Semana planejada',
+            weekly_review:  'Revisão semanal',
+            deep_work:      'Sessão de foco'
+        })[result.eventType] || null;
+
         const openers = tierPromotion
             ? ['Novo título desbloqueado!', 'Você avançou de tier!', 'Promoção registrada!']
             : leveledUp
                 ? ['Subiu de nível!', 'Novo patamar!', 'Evolução registrada!']
-                : ['Boa execução!', 'Pequena vitória registrada!', 'Consistência conta!'];
+                : ['Boa execução!', 'Pequena vitória!', 'Consistência conta!'];
         const opener = openers[Math.floor(Math.random() * openers.length)];
-        const parts = [`${opener} +${result.xp} XP`];
-        if (result.dimension && result.identity) {
+
+        const parts = [];
+        if (whyPrefix) parts.push(whyPrefix);
+        parts.push(`${opener} +${result.xp} XP`);
+
+        if (result.achievementsUnlocked && result.achievementsUnlocked.length) {
+            parts.push(`Conquista: ${result.achievementsUnlocked[0].title}`);
+        } else if (result.dimension && result.identity) {
             parts.push(tierPromotion
                 ? `${result.dimension}: agora ${result.identity.title}`
                 : `${result.identity.title} · nível ${result.dimensionLevel}`);
         } else {
             parts.push(`Sistema nível ${result.totalLevel}`);
         }
-        if (result.achievementsUnlocked && result.achievementsUnlocked.length) {
-            parts.push(`Conquista: ${result.achievementsUnlocked[0].title}`);
-        }
+
         this.showToast(parts.join(' · '), 'success');
         this.showGamificationAwardEffects(result);
     },
@@ -2521,12 +2578,28 @@ const app = {
         const s = this._getFlowState();
 
         const row = (icon, title, subtitle, xpLabel, done, view, sectionId = '', tabId = '', cadenceKey = '', showCadenceMeta = false) => {
+            // Get rich cadence status when available
+            const cadStatus = cadenceKey ? this.getCadenceStatus(cadenceKey) : null;
             const bg = done
                 ? 'bg-emerald-500/[0.06] border border-emerald-500/20'
                 : 'bg-surface-container-low border border-outline-variant/15';
             const checkIcon = done ? 'check_circle' : 'radio_button_unchecked';
             const checkColor = done ? 'text-emerald-500' : 'text-outline-variant/60';
             const checkFill = done ? "font-variation-settings:'FILL' 1;" : '';
+
+            // Cadence state chip — shows overdue/soon context with days
+            let cadenceChip = '';
+            if (cadStatus && !done) {
+                if (cadStatus.state === 'overdue') {
+                    const daysLabel = cadStatus.daysSince === null
+                        ? 'Nunca feito'
+                        : `Atrasado há ${cadStatus.daysSince} dia${cadStatus.daysSince === 1 ? '' : 's'}`;
+                    cadenceChip = `<span class="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-error bg-error/10 border border-error/20 px-1.5 py-0.5 rounded-md leading-none">${this.escapeHtml(daysLabel)}</span>`;
+                } else if (cadStatus.state === 'soon') {
+                    cadenceChip = `<span class="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md leading-none">Em breve</span>`;
+                }
+            }
+
             const cadenceConfig = cadenceKey ? this.getCadenceConfig()[cadenceKey] : null;
             const cadenceMeta = cadenceConfig && showCadenceMeta
                 ? `<p class="text-[10px] text-outline mt-1 leading-snug">Revisitar: ${this.escapeHtml(this.getCadenceFrequencyLabel(cadenceConfig.expectedDays).toLowerCase())}</p>`
@@ -2541,7 +2614,7 @@ const app = {
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <span class="material-symbols-outlined notranslate text-[15px] text-outline shrink-0">${icon}</span>
                         <p class="text-sm font-semibold text-on-surface leading-snug">${title}</p>
-                        ${xpEl}
+                        ${cadenceChip || xpEl}
                     </div>
                     <p class="text-[11px] text-outline mt-0.5 leading-snug">${subtitle}</p>
                     ${cadenceMeta}
@@ -2569,7 +2642,34 @@ const app = {
             <div class="space-y-2">${body}</div>
         </div>`;
 
-        el.innerHTML =
+        // "Próximo ritual" card — surfaces the most urgent overdue/soon item
+        const nextRitual = this.getNextRitualSuggestion();
+        const nextRitualCard = nextRitual ? (() => {
+            const isOverdue = nextRitual.state === 'overdue';
+            const daysLabel = nextRitual.daysSince === null
+                ? 'Nunca feito'
+                : isOverdue
+                    ? `Atrasado há ${nextRitual.daysSince} dia${nextRitual.daysSince === 1 ? '' : 's'}`
+                    : `Há ${nextRitual.daysSince} dia${nextRitual.daysSince === 1 ? '' : 's'}`;
+            const colorBg = isOverdue ? 'bg-error/[0.06] border-error/20' : 'bg-amber-500/[0.06] border-amber-500/20';
+            const colorText = isOverdue ? 'text-error' : 'text-amber-600 dark:text-amber-400';
+            const colorIcon = isOverdue ? 'text-error' : 'text-amber-500';
+            return `
+            <div class="mb-5 rounded-2xl border ${colorBg} p-4 flex items-center gap-3">
+                <span class="material-symbols-outlined notranslate ${colorIcon} text-2xl shrink-0">${nextRitual.icon || 'priority_high'}</span>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-widest ${colorText} mb-0.5">Próximo ritual</p>
+                    <p class="text-sm font-semibold text-on-surface leading-snug">${this.escapeHtml(nextRitual.label || '')}</p>
+                    <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(daysLabel)}</p>
+                </div>
+                <button onclick="window.app.flowNavigate('${this.escapeHtml(nextRitual.route?.view || '')}','${this.escapeHtml(nextRitual.route?.sectionId || '')}','${this.escapeHtml(nextRitual.route?.tabId || '')}');"
+                    class="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest ${isOverdue ? 'bg-error/10 text-error hover:bg-error/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20'} active:scale-95 transition-all">
+                    Ir agora
+                </button>
+            </div>`;
+        })() : '';
+
+        el.innerHTML = nextRitualCard +
             section('Rotina Diária', 'today',
                 sub('Manhã', 'wb_sunny') +
                 row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'daily-checkin-panel', '', 'checkin') +
@@ -5611,7 +5711,7 @@ const app = {
         setTimeout(() => openPlannerWhenReady(), this.currentView === 'planos' ? 80 : 450);
     },
 
-    openCreateModal: function(type = 'metas') {
+    openCreateModal: function(type = 'metas', parentId = null) {
         this.closeFabMenu();
         this.editingEntity = null; // Limpa estado de edição
         this.clearBlockingMessage();
@@ -5648,6 +5748,11 @@ const app = {
 
         document.getElementById('crud-type').value = type;
         this.onTypeChange(type);
+        // Pre-select parent when opening from a gap action or context CTA
+        if (parentId) {
+            const parentSelect = document.getElementById('create-parent');
+            if (parentSelect) parentSelect.value = parentId;
+        }
         document.getElementById('crud-modal').classList.remove('hidden');
         document.getElementById('crud-title').focus();
     },
@@ -6622,6 +6727,17 @@ const app = {
         </p>`;
     },
 
+    // Returns an intent descriptor for a habit: meta / strength / shadow / loose
+    _getHabitIntent: function(habit, state) {
+        if (habit.linkedMetaId) {
+            const meta = (state?.entities?.metas || []).find(m => m.id === habit.linkedMetaId);
+            if (meta) return { key: 'meta', label: 'Sustenta meta', icon: 'flag', metaTitle: meta.title };
+        }
+        if (habit.sourceType === 'strength') return { key: 'strength', label: 'Pratica força', icon: 'workspace_premium' };
+        if (habit.sourceType === 'shadow')   return { key: 'shadow',   label: 'Protege sombra', icon: 'change_circle' };
+        return { key: 'loose', label: 'Sem vínculo', icon: 'radio_button_unchecked' };
+    },
+
     syncIdentityLinkedHabits: function() {
         this.ensureIdentityState();
         const identity = window.sistemaVidaState.profile.identity || {};
@@ -7298,6 +7414,36 @@ const app = {
         </div>`;
     },
 
+    // Returns the cadence item most in need of attention (overdue > soon).
+    // The returned object is a getCadenceStatus result augmented with a routeHint.
+    getNextRitualSuggestion: function() {
+        const routeMap = {
+            checkin:      { view: 'hoje',    sectionId: 'daily-checkin-panel',       tabId: '' },
+            diary:        { view: 'hoje',    sectionId: 'hoje-diario-section',       tabId: '' },
+            weeklyPlan:   { view: 'planos',  sectionId: 'tab-semanal',              tabId: 'semanal' },
+            weeklyReview: { view: 'planos',  sectionId: 'weekly-plan-primary-action', tabId: 'semanal' },
+            wheel:        { view: 'proposito', sectionId: 'proposito-roda-section', tabId: '' },
+            perma:        { view: 'proposito', sectionId: 'perma-section',          tabId: '' },
+            swls:         { view: 'proposito', sectionId: 'swls-section',           tabId: '' },
+            odyssey:      { view: 'proposito', sectionId: 'odyssey-section',        tabId: '' },
+            purpose:      { view: 'proposito', sectionId: 'proposito-ikigai-section', tabId: '' },
+            lifeGoals:    { view: 'planos',  sectionId: '',                         tabId: 'metas' }
+        };
+        // diary (Diário/Shutdown) só faz sentido no fim do dia
+        const hour = new Date().getHours();
+        const keys = Object.keys(routeMap).filter(k => k !== 'diary' || hour >= 14);
+        const statuses = keys.map(key => ({ key, route: routeMap[key], ...this.getCadenceStatus(key) }));
+        const overdue = statuses.filter(s => s.state === 'overdue').sort((a, b) => {
+            if (a.daysSince === null && b.daysSince === null) return 0;
+            if (a.daysSince === null) return -1;
+            if (b.daysSince === null) return 1;
+            return b.daysSince - a.daysSince;
+        });
+        if (overdue.length) return overdue[0];
+        const soon = statuses.filter(s => s.state === 'soon').sort((a, b) => (b.daysSince || 0) - (a.daysSince || 0));
+        return soon[0] || null;
+    },
+
     renderCadencePanel: function(containerId = 'cadence-status-panel', limit = 4) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -7350,6 +7496,9 @@ const app = {
         const today = this.getLocalDateKey();
         return (window.sistemaVidaState.profile.dailyCheckins || []).find(entry => entry.date === today) || null;
     },
+
+    // getCheckinScaleText and renderDailyCheckinGuidance extracted to js/subjectiveScales.js (Phase 10.1)
+    // Attached to app via attachSubjectiveScales(app) at module load time.
 
     saveDailyCheckin: function() {
         this.ensureDailyCheckinState();
@@ -7413,6 +7562,7 @@ const app = {
                 b.classList.toggle('bg-primary/10', active);
             });
         }
+        this.renderDailyCheckinGuidance();
     },
 
     renderDailyCheckinPanel: function() {
@@ -7423,6 +7573,14 @@ const app = {
         const defaults = todayEntry || { sleepHours: '', sleepQuality: 3, energy: window.sistemaVidaState.energy || 3, mood: 3, stress: 3, emotion: '' };
         const sleepEl = document.getElementById('daily-checkin-sleep-hours');
         if (sleepEl) sleepEl.value = defaults.sleepHours || '';
+        const sleepRangeEl = document.getElementById('daily-checkin-sleep-quality');
+        if (sleepRangeEl) {
+            sleepRangeEl.value = String(Number(defaults.sleepQuality || 3));
+            if (!sleepRangeEl.dataset.guidanceBound) {
+                sleepRangeEl.addEventListener('input', () => this.renderDailyCheckinGuidance());
+                sleepRangeEl.dataset.guidanceBound = '1';
+            }
+        }
         ['daily-checkin-sleep-quality', 'daily-checkin-energy', 'daily-checkin-mood', 'daily-checkin-stress'].forEach(id => {
             const key = id.replace('daily-checkin-', '').replace('-', '');
             const fieldMap = { 'sleepquality': 'sleepQuality', 'energy': 'energy', 'mood': 'mood', 'stress': 'stress' };
@@ -7445,6 +7603,7 @@ const app = {
             chip.classList.toggle('text-primary', active);
             chip.classList.toggle('font-bold', active);
         });
+        this._updateEmotionPreview(emotionVal);
 
         const empty = document.getElementById('daily-checkin-empty');
         if (empty) empty.classList.toggle('hidden', !!todayEntry);
@@ -7461,6 +7620,7 @@ const app = {
                 </div>
             `).join('') : '<p class="text-xs text-outline italic">Sem histórico ainda. O primeiro check-in já cria a linha base.</p>';
         }
+        this.renderDailyCheckinGuidance();
     },
 
     toggleDiaryDimensionArea: function(dim) {
@@ -7504,6 +7664,25 @@ const app = {
         });
     },
 
+    toggleEmotionCollapse: function() {
+        const wrapper = document.getElementById('emotion-chips-wrapper');
+        const icon = document.getElementById('emotion-collapse-icon');
+        if (!wrapper) return;
+        const nowHidden = wrapper.classList.toggle('hidden');
+        if (icon) icon.style.transform = nowHidden ? '' : 'rotate(180deg)';
+    },
+
+    _updateEmotionPreview: function(val) {
+        const preview = document.getElementById('emotion-selected-preview');
+        if (!preview) return;
+        if (val) {
+            preview.textContent = val;
+            preview.classList.remove('hidden');
+        } else {
+            preview.classList.add('hidden');
+        }
+    },
+
     toggleEmotionChip: function(btn) {
         const emotion = btn.getAttribute('data-emotion');
         const hidden = document.getElementById('daily-checkin-emotion');
@@ -7519,6 +7698,17 @@ const app = {
             chip.classList.toggle('text-primary', active);
             chip.classList.toggle('font-bold', active);
         });
+        this._updateEmotionPreview(newVal);
+    },
+
+    toggleIdentityOptions: function(type) {
+        const optionsId = type === 'strengths' ? 'identity-strengths-options' : 'identity-shadows-options';
+        const iconId    = type === 'strengths' ? 'strengths-toggle-icon'       : 'shadows-toggle-icon';
+        const el   = document.getElementById(optionsId);
+        const icon = document.getElementById(iconId);
+        if (!el) return;
+        const nowHidden = el.classList.toggle('hidden');
+        if (icon) icon.style.transform = nowHidden ? '' : 'rotate(180deg)';
     },
 
     getIdentityPracticeStats: function(weekKey = this._getWeekKey()) {
@@ -8037,6 +8227,61 @@ const app = {
         return { macro, okr, meta };
     },
 
+    // Detects the highest-priority gap in the Meta→OKR→Macro→Micro hierarchy.
+    // Returns a gap descriptor object or null when no gaps exist.
+    _detectHierarchyGap: function(state) {
+        const entities = state?.entities || {};
+        const isActive = item => item && item.id && item.status !== 'done' && item.status !== 'abandoned' && !item.completed;
+        const metas   = (entities.metas  || []).filter(isActive);
+        const okrs    = (entities.okrs   || []).filter(isActive);
+        const macros  = (entities.macros || []).filter(isActive);
+        const micros  = (entities.micros || []).filter(isActive);
+
+        // Priority 1: active meta with no OKR at all
+        for (const meta of metas) {
+            if (!okrs.some(o => o.metaId === meta.id)) {
+                return {
+                    gapType: 'meta-sem-okr',
+                    entityType: 'okrs',
+                    parentId: meta.id,
+                    parentTitle: meta.title,
+                    title: 'Meta sem resultado-chave',
+                    description: `"${meta.title}" ainda não tem um OKR. Defina um resultado mensurável para que o progresso desta meta possa ser rastreado.`
+                };
+            }
+        }
+
+        // Priority 2: active OKR with no macro
+        for (const okr of okrs) {
+            if (!macros.some(m => m.okrId === okr.id)) {
+                return {
+                    gapType: 'okr-sem-macro',
+                    entityType: 'macros',
+                    parentId: okr.id,
+                    parentTitle: okr.title,
+                    title: 'OKR sem projeto vinculado',
+                    description: `"${okr.title}" ainda não tem uma macro. Crie um projeto para dar execução a este resultado esperado.`
+                };
+            }
+        }
+
+        // Priority 3: active macro with no active micro
+        for (const macro of macros) {
+            if (!micros.some(m => m.macroId === macro.id)) {
+                return {
+                    gapType: 'macro-sem-micro',
+                    entityType: 'micros',
+                    parentId: macro.id,
+                    parentTitle: macro.title,
+                    title: 'Macro sem próximo passo',
+                    description: `"${macro.title}" não tem ações ativas vinculadas. Crie uma micro ação para avançar neste projeto.`
+                };
+            }
+        }
+
+        return null;
+    },
+
     getDailyCompassQuotes: function() {
         return [
             // Saúde
@@ -8306,13 +8551,41 @@ const app = {
         });
 
         const top = ranked[0] || null;
-        if (!top) return null;
+        if (!top) {
+            // No actionable micro found — surface hierarchy gap as next best action instead
+            return this._detectHierarchyGap(state);
+        }
         if (top.reasons.length === 0) top.reasons.push('é a melhor próxima micro ativa');
         return top;
     },
 
     _renderNextActionCard: function(next, variant = 'today') {
         if (!next?.micro) {
+            // Gap in hierarchy — guide user to complete the chain
+            if (next?.gapType) {
+                const entityLabel = ({ okrs: 'OKR', macros: 'macro', micros: 'micro ação' })[next.entityType] || next.entityType;
+                const icon = ({ okrs: 'flag', macros: 'checklist', micros: 'bolt' })[next.entityType] || 'warning';
+                const parentIdSafe = this.escapeHtml(next.parentId || '');
+                const entityTypeSafe = this.escapeHtml(next.entityType || '');
+                return `
+                    <div class="bg-amber-500/[0.06] border border-amber-500/20 rounded-2xl p-5 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <span class="material-symbols-outlined notranslate text-amber-500 shrink-0 mt-0.5">${icon}</span>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-1">Trilha incompleta</p>
+                                <p class="text-sm font-bold text-on-surface">${this.escapeHtml(next.title)}</p>
+                                <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">${this.escapeHtml(next.description)}</p>
+                                <button type="button"
+                                    onclick="window.app.openCreateModal('${entityTypeSafe}', '${parentIdSafe}')"
+                                    class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[11px] font-bold uppercase tracking-widest hover:bg-amber-500/20 active:scale-95 transition-all">
+                                    <span class="material-symbols-outlined notranslate text-[14px]">add</span>
+                                    Criar ${this.escapeHtml(entityLabel)}
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
             const title = variant === 'panel' ? 'Nenhuma decisão urgente' : 'Nada urgente agora';
             const text = variant === 'panel'
                 ? 'O plano não mostra uma micro crítica neste momento. Continue executando o que já foi planejado.'
@@ -8371,6 +8644,213 @@ const app = {
         const container = document.getElementById('next-best-action-container');
         if (!container) return;
         container.innerHTML = this._renderNextActionCard(this.getNextBestAction({ scope: 'today' }), 'today');
+    },
+
+    getStarterJourneyState: function() {
+        const today = this.getLocalDateKey();
+        const weekKey = this._getWeekKey();
+        const cadence = window.sistemaVidaState.profile?.cadence || {};
+        const weekPlan = (window.sistemaVidaState.weekPlans || {})[weekKey];
+        const hasTrail = (window.sistemaVidaState.entities?.metas || []).length > 0 &&
+            (window.sistemaVidaState.entities?.okrs || []).length > 0 &&
+            (window.sistemaVidaState.entities?.macros || []).length > 0 &&
+            (window.sistemaVidaState.entities?.micros || []).length > 0;
+        // Require a habit with meaning (linked to a meta or identity trait) for the guided journey
+        const hasHabit = (window.sistemaVidaState.habits || []).some(h => h.linkedMetaId || h.sourceType);
+        const checkinToday = cadence.checkin?.lastAt === today;
+        const weeklyPlanned = !!(weekPlan && Array.isArray(weekPlan.selectedMicros) && weekPlan.selectedMicros.length > 0);
+        const items = [
+            { id: 'trail', label: 'Trilha inicial', done: hasTrail, action: () => this.openMetaTrailWizard() },
+            { id: 'habit', label: 'Hábito com propósito', done: hasHabit, action: () => this.navigate('hoje') },
+            { id: 'checkin', label: 'Check-in do dia', done: checkinToday, action: () => this.flowNavigate('hoje', 'daily-checkin-panel') },
+            { id: 'weekly', label: 'Plano da semana', done: weeklyPlanned, action: () => this.flowNavigate('planos', 'tab-semanal', 'semanal') }
+        ];
+        const doneCount = items.filter((item) => item.done).length;
+        return { items, doneCount, total: items.length, pct: Math.round((doneCount / items.length) * 100) };
+    },
+
+    renderStarterJourneyCard: function() {
+        const container = document.getElementById('starter-journey-container');
+        if (!container) return;
+        const journey = this.getStarterJourneyState();
+        if (journey.doneCount >= journey.total) {
+            container.innerHTML = `
+                <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+                    <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                        <span class="material-symbols-outlined notranslate text-[18px]">check_circle</span>
+                        <p class="text-xs font-bold uppercase tracking-widest">Base inicial concluida</p>
+                    </div>
+                </div>`;
+            return;
+        }
+        const nextPending = journey.items.find((item) => !item.done);
+        const list = journey.items.map((item) => `
+            <div class="flex items-center justify-between gap-3 rounded-xl px-3 py-2 ${item.done ? 'bg-emerald-500/[0.06]' : 'bg-surface-container-low'} border ${item.done ? 'border-emerald-500/20' : 'border-outline-variant/15'}">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="material-symbols-outlined notranslate text-[16px] ${item.done ? 'text-emerald-500' : 'text-outline'}" ${item.done ? "style=\"font-variation-settings:'FILL' 1;\"" : ''}>${item.done ? 'check_circle' : 'radio_button_unchecked'}</span>
+                    <p class="text-xs font-semibold text-on-surface truncate">${this.escapeHtml(item.label)}</p>
+                </div>
+                ${item.done ? '' : `<button type="button" onclick="window.app.onStarterJourneyAction('${item.id}')" class="shrink-0 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors">Abrir</button>`}
+            </div>
+        `).join('');
+        container.innerHTML = `
+            <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest shadow-sm p-4 md:p-5 space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Jornada guiada</p>
+                        <p class="text-xs text-outline mt-1">${journey.doneCount}/${journey.total} passos base concluidos</p>
+                    </div>
+                    <span class="text-xs font-bold text-primary">${journey.pct}%</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+                    <div class="h-full rounded-full bg-primary transition-all duration-500" style="width:${journey.pct}%"></div>
+                </div>
+                <div class="space-y-2">${list}</div>
+                ${nextPending ? `<p class="text-[11px] text-outline">Proximo passo recomendado: <span class="font-semibold text-on-surface">${this.escapeHtml(nextPending.label)}</span>.</p>` : ''}
+            </div>`;
+    },
+
+    onStarterJourneyAction: function(itemId) {
+        const actions = {
+            trail: () => this.openMetaTrailWizard(),
+            habit: () => this.flowNavigate('hoje', 'hoje-habits-section'),
+            checkin: () => this.flowNavigate('hoje', 'daily-checkin-panel'),
+            weekly: () => this.flowNavigate('planos', 'tab-semanal', 'semanal')
+        };
+        if (actions[itemId]) actions[itemId]();
+    },
+
+    getPurposeJourneyState: function() {
+        const profile = window.sistemaVidaState.profile || {};
+        const values = profile.values || [];
+        const identity = profile.identity || { strengths: [], shadows: [] };
+        const ikigai = profile.ikigai || {};
+        const legacyObj = profile.legacyObj || {};
+        const vision = profile.vision || {};
+        const odyssey = profile.odyssey || {};
+        const dimensions = window.sistemaVidaState.dimensions || {};
+
+        const wheelCount = Object.values(dimensions).filter((entry) => Number(entry?.score) > 0).length;
+        const ikigaiBaseCount = [ikigai.love, ikigai.good, ikigai.need, ikigai.paid].filter((value) => String(value || '').trim()).length;
+        const legacyCount = [legacyObj.familia, legacyObj.profissao, legacyObj.mundo].filter((value) => String(value || '').trim()).length;
+        const visionCount = [vision.saude, vision.carreira, vision.intelecto, vision.quote].filter((value) => String(value || '').trim()).length;
+        const odysseyCount = [odyssey.cenarioA, odyssey.cenarioB, odyssey.cenarioC].filter((value) => String(value || '').trim()).length;
+
+        const items = [
+            {
+                id: 'identity',
+                label: 'Identidade base',
+                hint: 'Valores, forcas e sombras',
+                done: values.length > 0 && (((identity.strengths || []).length + (identity.shadows || []).length) > 0)
+            },
+            {
+                id: 'wheel',
+                label: 'Roda da vida',
+                hint: `${wheelCount}/8 dimensoes pontuadas`,
+                done: wheelCount === 8
+            },
+            {
+                id: 'ikigai-base',
+                label: 'Base do Ikigai',
+                hint: `${ikigaiBaseCount}/4 blocos preenchidos`,
+                done: ikigaiBaseCount === 4
+            },
+            {
+                id: 'ikigai-synthesis',
+                label: 'Sintese do Ikigai',
+                hint: 'Frase central de direcao',
+                done: !!String(ikigai.sintese || '').trim()
+            },
+            {
+                id: 'legacy',
+                label: 'Legado',
+                hint: `${legacyCount}/3 frentes preenchidas`,
+                done: legacyCount === 3
+            },
+            {
+                id: 'vision',
+                label: 'Visao de vida',
+                hint: `${visionCount}/4 blocos preenchidos`,
+                done: visionCount === 4
+            },
+            {
+                id: 'odyssey',
+                label: 'Odyssey plans',
+                hint: `${odysseyCount}/3 cenarios descritos`,
+                done: odysseyCount === 3
+            }
+        ];
+        const doneCount = items.filter((item) => item.done).length;
+        return {
+            items,
+            doneCount,
+            total: items.length,
+            pct: Math.round((doneCount / items.length) * 100)
+        };
+    },
+
+    renderPurposeJourney: function() {
+        const container = document.getElementById('purpose-journey-container');
+        if (!container) return;
+        const journey = this.getPurposeJourneyState();
+        const nextPending = journey.items.find((item) => !item.done);
+        const itemHtml = journey.items.map((item) => `
+            <button type="button" onclick="window.app.openPurposeJourneyStep('${item.id}')"
+                class="text-left rounded-xl border ${item.done ? 'border-emerald-500/20 bg-emerald-500/[0.06]' : 'border-outline-variant/15 bg-surface-container-low'} px-3 py-3 hover:bg-surface-container-high transition-colors">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined notranslate text-[16px] ${item.done ? 'text-emerald-500' : 'text-outline'}" ${item.done ? "style=\"font-variation-settings:'FILL' 1;\"" : ''}>${item.done ? 'check_circle' : 'radio_button_unchecked'}</span>
+                            <p class="text-xs font-semibold text-on-surface truncate">${this.escapeHtml(item.label)}</p>
+                        </div>
+                        <p class="mt-1 text-[11px] text-outline">${this.escapeHtml(item.hint)}</p>
+                    </div>
+                    <span class="material-symbols-outlined notranslate text-outline text-[18px] shrink-0">arrow_forward</span>
+                </div>
+            </button>
+        `).join('');
+
+        container.innerHTML = `
+            <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest shadow-sm p-5 md:p-6">
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div class="max-w-2xl">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Jornada de propósito</p>
+                        <h3 class="mt-2 font-headline text-2xl font-bold text-on-background">Monte sua bússola em etapas.</h3>
+                        <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Cada passo constrói sua clareza — de quem você é até onde quer chegar.</p>
+                    </div>
+                    <div class="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 min-w-[160px]">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Progresso</p>
+                        <p class="mt-2 text-2xl font-headline font-bold text-on-background">${journey.doneCount}/${journey.total}</p>
+                        <p class="text-xs text-outline mt-1">${journey.pct}% da bussola montada</p>
+                    </div>
+                </div>
+                <div class="mt-4 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+                    <div class="h-full rounded-full bg-primary transition-all duration-500" style="width:${journey.pct}%"></div>
+                </div>
+                ${nextPending ? `<p class="mt-3 text-xs text-outline">Proximo passo recomendado: <span class="font-semibold text-on-surface">${this.escapeHtml(nextPending.label)}</span>.</p>` : ''}
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${itemHtml}</div>
+            </div>
+        `;
+    },
+
+    openPurposeJourneyStep: function(stepId) {
+        const map = {
+            identity: 'top-values-banner',
+            wheel: 'proposito-roda-section',
+            'ikigai-base': 'proposito-ikigai-section',
+            'ikigai-synthesis': 'display-ikigai-sintese',
+            legacy: 'proposito-legado-section',
+            vision: 'proposito-visao-section',
+            odyssey: 'odyssey-section'
+        };
+        const targetId = map[stepId];
+        if (!targetId) return;
+        const el = document.getElementById(targetId);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            el.classList.add('ring-2', 'ring-primary/30');
+            setTimeout(() => el.classList.remove('ring-2', 'ring-primary/30'), 1800);
+        }
     },
 
     renderPainelDiagnostics: function() {
@@ -9087,6 +9567,7 @@ const app = {
           odyssey: { cenarioA: '', cenarioB: '', cenarioC: '' },
           odysseyImages: { cenarioA: '', cenarioB: '', cenarioC: '' },
           identity: { strengths: [], shadows: [] },
+          onboardingStarter: { dimension: 'Carreira', goalTitle: '', habitTitle: '', habitTime: '', strength: '', shadow: '' },
           dailyCheckins: [],
           cadence: {},
           notes: []
@@ -10259,6 +10740,13 @@ const app = {
     // ------------------------------------------------------------------------
     // Onboarding Experience Logic
     // ------------------------------------------------------------------------
+    scrollOnboardingToTop: function() {
+        const appContent = document.getElementById(this.config.containerId);
+        const scrollContainer = appContent?.closest('section') || document.scrollingElement || document.documentElement;
+        try { scrollContainer.scrollTo({ top: 0, behavior: 'auto' }); } catch (_) { scrollContainer.scrollTop = 0; }
+        try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (_) {}
+    },
+
     onboardingGoTo: function(step) {
         const steps = document.querySelectorAll('.onboarding-step');
         if (steps.length === 0) return;
@@ -10287,17 +10775,85 @@ const app = {
             const state = window.sistemaVidaState;
             const nameEl = document.getElementById('conclusao-nome');
             const valuesEl = document.getElementById('conclusao-valores');
+            const trailEl = document.getElementById('onboarding-summary-trail');
+            const habitEl = document.getElementById('onboarding-summary-habit');
+            const starter = this.onboardingGetStarterDraft();
             if (nameEl) nameEl.textContent = state.profile.name || 'Viajante';
             if (valuesEl) valuesEl.textContent = (state.profile.values || []).join(', ') || 'seus valores';
+            if (trailEl) {
+                const dim = starter.dimension || 'Carreira';
+                const goal = starter.goalTitle || 'Meta inicial';
+                trailEl.textContent = `${dim}: ${goal} (com OKR, Macro e Micro criadas automaticamente).`;
+            }
+            if (habitEl) {
+                const habit = starter.habitTitle || 'Habito ancora';
+                const at = starter.habitTime ? ` as ${starter.habitTime}` : '';
+                habitEl.textContent = `${habit}${at}.`;
+            }
         }
 
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.scrollOnboardingToTop();
     },
 
     onboardingGetFieldValue: function(id) {
         const el = document.getElementById(id);
         if (!el) return '';
         return String(el.value || '').trim();
+    },
+
+    onboardingGetStarterDraft: function() {
+        const profile = window.sistemaVidaState?.profile || {};
+        if (!profile.onboardingStarter || typeof profile.onboardingStarter !== 'object') {
+            profile.onboardingStarter = {
+                dimension: 'Carreira',
+                goalTitle: '',
+                habitTitle: '',
+                habitTime: '',
+                strength: '',
+                shadow: ''
+            };
+            window.sistemaVidaState.profile = profile;
+        }
+        return profile.onboardingStarter;
+    },
+
+    onboardingSaveStarterDraft: function() {
+        const draft = this.onboardingGetStarterDraft();
+        const read = (id, fallback = '') => String(document.getElementById(id)?.value || fallback).trim();
+        draft.dimension = read('onboarding-starter-dimension', draft.dimension || 'Carreira') || 'Carreira';
+        draft.goalTitle = read('onboarding-starter-goal', draft.goalTitle || '');
+        draft.habitTitle = read('onboarding-starter-habit', draft.habitTitle || '');
+        draft.habitTime = read('onboarding-starter-time', draft.habitTime || '');
+        draft.strength = read('onboarding-strength', draft.strength || '');
+        draft.shadow = read('onboarding-shadow', draft.shadow || '');
+        window.sistemaVidaState.profile.onboardingStarter = draft;
+        return draft;
+    },
+
+    populateOnboardingIdentityCatalogs: function() {
+        const strengthList = document.getElementById('onboarding-strength-catalog');
+        const shadowList = document.getElementById('onboarding-shadow-catalog');
+        if (strengthList) {
+            strengthList.innerHTML = this.getIdentityCatalog('strengths')
+                .map((title) => `<option value="${this.escapeHtml(title)}"></option>`)
+                .join('');
+        }
+        if (shadowList) {
+            shadowList.innerHTML = this.getIdentityCatalog('shadows')
+                .map((title) => `<option value="${this.escapeHtml(title)}"></option>`)
+                .join('');
+        }
+    },
+
+    resolveIdentityCatalogTitle: function(type, rawTitle) {
+        const clean = String(rawTitle || '').trim();
+        if (!clean) return '';
+        const normalized = clean.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const catalog = this.getIdentityCatalog(type);
+        const exact = catalog.find((item) =>
+            item.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === normalized
+        );
+        return exact || clean;
     },
 
     onboardingHydrateFields: function() {
@@ -10326,6 +10882,14 @@ const app = {
 
         const fallbackPurpose = ikigai.sintese || legacyObj.mundo || profile.legacy || profile.purpose || '';
         setValue('onboarding-proposito', fallbackPurpose);
+        const starter = this.onboardingGetStarterDraft();
+        setValue('onboarding-starter-goal', starter.goalTitle || '');
+        setValue('onboarding-starter-habit', starter.habitTitle || '');
+        setValue('onboarding-starter-time', starter.habitTime || '');
+        setValue('onboarding-strength', starter.strength || '');
+        setValue('onboarding-shadow', starter.shadow || '');
+        const starterDimension = document.getElementById('onboarding-starter-dimension');
+        if (starterDimension && starter.dimension) starterDimension.value = starter.dimension;
 
         const dimensions = [
             { key: 'Saúde', sliderId: 'onboarding-slider-saude' },
@@ -10357,6 +10921,7 @@ const app = {
                 ? Array.from(selectedValues).join(' • ')
                 : 'Selecione seus valores...';
         }
+        this.populateOnboardingIdentityCatalogs();
 
         // Adapta o Step 1 caso o usuario ja esteja logado em uma conta real:
         // esconde inputs de email/senha, troca botoes para refletir o estado.
@@ -10464,12 +11029,223 @@ const app = {
             state.profile.legacy = ikigai.sintese || legacyObj.mundo || state.profile.legacy || '';
             // Campo legado mantido por compatibilidade, agora espelhando a sintese.
             state.profile.purpose = ikigai.sintese || state.profile.legacy || '';
+        } else if (this.onboardingStep === 5) {
+            this.onboardingSaveStarterDraft();
         }
         if (persist) this.saveState();
     },
 
+    validateOnboardingStarterDraft: function(options = {}) {
+        const showError = options.showError !== false;
+        const draft = this.onboardingSaveStarterDraft();
+        if (!draft.goalTitle) {
+            if (showError) this.showToast('Defina uma meta inicial para montar sua trilha.', 'error');
+            return false;
+        }
+        if (!draft.habitTitle) {
+            if (showError) this.showToast('Defina ao menos um habito ancora para continuar.', 'error');
+            return false;
+        }
+        return true;
+    },
+
+    ensureOnboardingStarterSetup: function() {
+        const state = window.sistemaVidaState;
+        this.ensureIdentityState();
+        if (!state.entities) state.entities = { metas: [], okrs: [], macros: [], micros: [] };
+        ['metas', 'okrs', 'macros', 'micros'].forEach((type) => {
+            if (!Array.isArray(state.entities[type])) state.entities[type] = [];
+        });
+        if (!Array.isArray(state.habits)) state.habits = [];
+        if (!state.weekPlans || typeof state.weekPlans !== 'object') state.weekPlans = {};
+
+        const draft = this.onboardingSaveStarterDraft();
+        const dim = state.dimensions?.[draft.dimension] ? draft.dimension : 'Carreira';
+        const goalTitle = draft.goalTitle || `Evoluir ${dim.toLowerCase()} com consistencia`;
+        const habitTitle = draft.habitTitle || 'Habito ancora diario';
+        const todayKey = this.getLocalDateKey();
+        const nowIso = new Date().toISOString();
+        const makeId = (prefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        const datePlus = (days) => {
+            const d = new Date(todayKey + 'T00:00:00');
+            d.setDate(d.getDate() + days);
+            return this.getLocalDateKey(d);
+        };
+
+        const identity = state.profile.identity || { strengths: [], shadows: [] };
+        const ensureIdentityItem = (type, rawTitle) => {
+            const resolvedTitle = this.resolveIdentityCatalogTitle(type, rawTitle);
+            if (!resolvedTitle) return null;
+            const list = identity[type];
+            const found = (list || []).find((item) => String(item.title || '').toLowerCase() === resolvedTitle.toLowerCase());
+            if (found) return found;
+            const isStrength = type === 'strengths';
+            const item = {
+                id: `${isStrength ? 'strength' : 'shadow'}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                title: resolvedTitle,
+                dimension: dim,
+                description: '',
+                evidence: '',
+                excessRisk: '',
+                practice: '',
+                obstacle: '',
+                ifThen: '',
+                trigger: '',
+                impact: '',
+                desiredResponse: '',
+                linkedHabitIds: [],
+                weeklyLogs: {},
+                createdAt: todayKey,
+                updatedAt: todayKey
+            };
+            list.push(item);
+            return item;
+        };
+
+        const strengthItem = ensureIdentityItem('strengths', draft.strength);
+        const shadowItem = ensureIdentityItem('shadows', draft.shadow);
+        state.profile.identity = identity;
+
+        const hasAnyTrail =
+            (state.entities.metas || []).length > 0 ||
+            (state.entities.okrs || []).length > 0 ||
+            (state.entities.macros || []).length > 0 ||
+            (state.entities.micros || []).length > 0;
+
+        let createdMicroId = '';
+        if (!hasAnyTrail) {
+            const metaId = makeId('meta');
+            const okrId = makeId('okr');
+            const macroId = makeId('macro');
+            const microId = makeId('micro');
+            createdMicroId = microId;
+
+            state.entities.metas.push({
+                id: metaId,
+                title: goalTitle,
+                dimension: dim,
+                prazo: datePlus(365),
+                createdAt: todayKey,
+                purpose: (state.profile.ikigai?.sintese || state.profile.legacy || '').trim(),
+                horizonYears: 1,
+                successCriteria: 'Meta inicial definida no onboarding',
+                challengeLevel: 3,
+                commitmentLevel: 3,
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+            state.entities.okrs.push({
+                id: okrId,
+                metaId,
+                title: `OKR inicial - ${goalTitle}`,
+                dimension: dim,
+                inicioDate: todayKey,
+                prazo: datePlus(84),
+                createdAt: todayKey,
+                purpose: `Resultado das proximas 12 semanas para ${goalTitle}`,
+                successCriteria: `Resultado das proximas 12 semanas para ${goalTitle}`,
+                challengeLevel: 3,
+                commitmentLevel: 3,
+                keyResults: [],
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+            state.entities.macros.push({
+                id: macroId,
+                metaId,
+                okrId,
+                title: `Macro inicial - ${goalTitle}`,
+                dimension: dim,
+                inicioDate: todayKey,
+                prazo: datePlus(30),
+                createdAt: todayKey,
+                description: 'Macro criada automaticamente no onboarding',
+                purpose: goalTitle,
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+            state.entities.micros.push({
+                id: microId,
+                metaId,
+                okrId,
+                macroId,
+                title: `Micro inicial - primeiro passo de ${goalTitle}`,
+                dimension: dim,
+                inicioDate: todayKey,
+                prazo: datePlus(7),
+                createdAt: todayKey,
+                indicator: 'Primeiro passo da trilha',
+                purpose: goalTitle,
+                effort: 'medio',
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+
+            this.markCadence('lifeGoals', todayKey);
+            const weekKey = this._getWeekKey();
+            if (!state.weekPlans[weekKey]) {
+                state.weekPlans[weekKey] = {
+                    weekKey,
+                    intention: `Avancar: ${goalTitle}`,
+                    selectedMicros: [microId],
+                    completedMicros: [],
+                    savedAt: nowIso
+                };
+                this.markCadence('weeklyPlan', todayKey);
+            }
+        }
+
+        const hasHabit = (state.habits || []).some((habit) => String(habit.title || '').trim().toLowerCase() === habitTitle.trim().toLowerCase());
+        if (!hasHabit) {
+            const sourceType = strengthItem ? 'strength' : (shadowItem ? 'shadow' : '');
+            const sourceId = strengthItem?.id || shadowItem?.id || '';
+            const habit = {
+                id: makeId('habit'),
+                title: habitTitle,
+                dimension: dim,
+                context: '',
+                completed: false,
+                trigger: draft.habitTime ? `Quando der ${draft.habitTime}` : 'Ao iniciar o dia',
+                routine: habitTitle,
+                reward: 'Marcar o habito concluido no Life OS',
+                steps: [],
+                trackMode: 'boolean',
+                targetValue: 1,
+                frequency: 'daily',
+                startTime: draft.habitTime || '',
+                reminderEnabled: !!draft.habitTime,
+                reminderTime: draft.habitTime || '',
+                specificDays: [],
+                logs: {},
+                stepLogs: {},
+                maturity: 'forming',
+                maturityMeta: {},
+                linkedMetaId: null,
+                sourceType,
+                sourceId,
+                habitMode: sourceType === 'shadow' ? 'replace' : (sourceType === 'strength' ? 'build' : ''),
+                obstacle: shadowItem ? `Sombra alvo: ${shadowItem.title}` : '',
+                ifThen: shadowItem ? `Se perceber ${shadowItem.title.toLowerCase()}, entao inicio este habito por 5 minutos.` : '',
+                createdAt: todayKey
+            };
+            state.habits.push(habit);
+        }
+
+        this.normalizeEntitiesState();
+        if (createdMicroId) this.updateCascadeProgress(createdMicroId, 'micros');
+        this.syncIdentityLinkedHabits();
+        this.scheduleHabitReminders();
+    },
+
     onboardingNext: function() {
         this.onboardingSaveCurrentStep();
+        if (this.onboardingStep === 5 && !this.validateOnboardingStarterDraft({ showError: true })) {
+            return;
+        }
         const total = document.querySelectorAll('.onboarding-step').length;
         if (this.onboardingStep < total - 1) {
             this.onboardingGoTo(this.onboardingStep + 1);
@@ -10519,6 +11295,7 @@ const app = {
 
     onboardingComplete: function() {
         this.onboardingSaveCurrentStep(false);
+        this.ensureOnboardingStarterSetup();
         window.sistemaVidaState.onboardingComplete = true;
         this.saveState();
         this.navigate('hoje');
@@ -10528,9 +11305,16 @@ const app = {
     },
 
     onboardingUpdateSlider: function(dim, val) {
-        if (window.sistemaVidaState.dimensions[dim]) {
-            window.sistemaVidaState.dimensions[dim].score = parseInt(val);
-            const valEl = document.getElementById(`slider-val-${dim}`);
+        const aliases = {
+            Saude: 'Saúde',
+            Financas: 'Finanças',
+            Familia: 'Família',
+            Proposito: 'Propósito'
+        };
+        const canonicalDim = aliases[dim] || dim;
+        if (window.sistemaVidaState.dimensions[canonicalDim]) {
+            window.sistemaVidaState.dimensions[canonicalDim].score = parseInt(val);
+            const valEl = document.getElementById(`slider-val-${dim}`) || document.getElementById(`slider-val-${canonicalDim}`);
             if (valEl) valEl.textContent = val;
         }
     },
@@ -11719,7 +12503,7 @@ const app = {
             }
 
 
-            // Render Habits
+            // Render Habits — grouped by intent (sustenta meta / pratica força / protege sombra / solto)
             const habitsContainer = document.getElementById('habits-container');
             if (habitsContainer && state.habits) {
                 const habitIconMap = {
@@ -11727,15 +12511,14 @@ const app = {
                     'Finanças': 'payments', 'Relacionamentos': 'groups', 'Família': 'family_restroom',
                     'Lazer': 'sports_esports', 'Propósito': 'auto_awesome'
                 };
-                
+
                 const todayStr = app.getLocalDateKey();
                 const dayIndex = new Date().getDay().toString(); // 0(Sun) to 6(Sat)
-                
-                let habitsHtml = '';
-                state.habits.forEach(habit => {
-                    // Check if frequency allows showing today
+
+                // Build card HTML for one habit (returns '' if habit is not scheduled for today)
+                const buildHabitCard = (habit) => {
                     if (habit.frequency === 'specific' && habit.specificDays && habit.specificDays.length > 0) {
-                        if (!habit.specificDays.includes(dayIndex)) return; // skip for today
+                        if (!habit.specificDays.includes(dayIndex)) return '';
                     }
 
                     const icon = habitIconMap[habit.dimension] || 'stars';
@@ -11749,7 +12532,7 @@ const app = {
                     const todayStepMap = stepLogs[todayStr] || {};
                     const todayStepsDone = hasSteps ? steps.reduce((acc, _, idx) => acc + (todayStepMap[idx] || todayStepMap[String(idx)] ? 1 : 0), 0) : 0;
                     const allStepsDone = hasSteps && todayStepsDone === steps.length;
-                    
+
                     let isDone = false;
                     if (mode === 'boolean') isDone = currentVal > 0;
                     else isDone = currentVal >= target;
@@ -11771,15 +12554,14 @@ const app = {
                             <button class="w-6 h-6 flex justify-center items-center rounded-md hover:bg-outline-variant/20 text-on-surface" onclick="window.app.updateHabitLog('${habit.id}', '${todayStr}', Math.max(0, ${currentVal} - 1))">-</button>
                             <span class="text-xs font-semibold text-primary w-6 text-center">${currentVal}</span>
                             <button class="w-6 h-6 flex justify-center items-center rounded-md hover:bg-outline-variant/20 text-on-surface" onclick="window.app.updateHabitLog('${habit.id}', '${todayStr}', ${currentVal} + 1)">+</button>
-                        </div>
-                        `;
+                        </div>`;
                     }
 
                     // Week progress strip (semana fixa: domingo -> sábado)
                     const nowForWeek = new Date();
                     const weekStart = new Date(nowForWeek);
                     weekStart.setHours(0, 0, 0, 0);
-                    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // domingo
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
                     let weekHtml = '<div class="flex gap-1 mt-3">';
                     for (let i = 0; i < 7; i++) {
                         const d = new Date(weekStart);
@@ -11793,7 +12575,6 @@ const app = {
                             dDone = dCount === steps.length;
                         } else if (mode === 'boolean') dDone = val > 0;
                         else dDone = val >= target;
-
                         const isTodayBar = ds === todayStr;
                         const isFutureBar = d > nowForWeek;
                         let barClass = 'bg-surface-container-high';
@@ -11803,12 +12584,12 @@ const app = {
                     }
                     weekHtml += '</div>';
 
-                    // Track progress line
+                    // Track progress text
                     let progressText = '';
                     if (mode === 'numeric') progressText = `${currentVal}/${target}`;
                     if (mode === 'timer') progressText = `${currentVal}m/${target}m`;
 
-                    // Expandable steps section
+                    // Expandable steps
                     let stepsHtml = '';
                     if (hasSteps) {
                         const stepsListItems = steps.map((step, idx) => {
@@ -11827,13 +12608,11 @@ const app = {
                                 <span class="text-[10px] font-bold uppercase tracking-widest text-primary">${todayStepsDone}/${steps.length} passos</span>
                                 <span class="material-symbols-outlined notranslate text-primary text-[14px] chev ml-auto">expand_more</span>
                             </button>
-                            <div class="hidden mt-1 space-y-0.5">
-                                ${stepsListItems}
-                            </div>
+                            <div class="hidden mt-1 space-y-0.5">${stepsListItems}</div>
                         </div>`;
                     }
 
-                    // Meta vinculada (opcional)
+                    // Linked meta chip
                     let linkedMetaHtml = '';
                     if (habit.linkedMetaId) {
                         const linkedMeta = (state.entities?.metas || []).find(m => m.id === habit.linkedMetaId);
@@ -11847,7 +12626,7 @@ const app = {
                         ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
                         : 'border-transparent bg-surface-container-low';
 
-                    habitsHtml += `
+                    return `
                     <div onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer">
                         <div class="flex justify-between items-start mb-2">
                             <div class="flex items-center gap-2 min-w-0">
@@ -11877,18 +12656,56 @@ const app = {
                             ${stepsHtml}
                         </div>
                     </div>`;
+                };
+
+                // Group habits by intent
+                const intentOrder = ['meta', 'strength', 'shadow', 'loose'];
+                const intentConfig = {
+                    meta:     { label: 'Sustenta meta',   icon: 'flag',                    color: 'text-primary' },
+                    strength: { label: 'Pratica força',   icon: 'workspace_premium',       color: 'text-primary' },
+                    shadow:   { label: 'Protege sombra',  icon: 'change_circle',           color: 'text-secondary' },
+                    loose:    { label: 'Sem vínculo',     icon: 'radio_button_unchecked',  color: 'text-outline' }
+                };
+                const grouped = { meta: [], strength: [], shadow: [], loose: [] };
+                state.habits.forEach(habit => {
+                    const intent = app._getHabitIntent(habit, state);
+                    grouped[intent.key].push(habit);
                 });
-                
-                if (state.habits.length === 0) {
-                    habitsHtml = `<div class="p-4 text-xs italic text-outline">Nenhum hábito rastreado.</div>`;
+
+                let habitsHtml = '';
+                let totalRendered = 0;
+                intentOrder.forEach(key => {
+                    const cards = (grouped[key] || []).map(buildHabitCard).filter(Boolean);
+                    if (!cards.length) return;
+                    totalRendered += cards.length;
+                    const cfg = intentConfig[key];
+                    habitsHtml += `
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined notranslate ${cfg.color} text-[14px]" style="font-variation-settings:'FILL' 1">${cfg.icon}</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest ${cfg.color}">${cfg.label}</span>
+                            <span class="text-[10px] text-outline">${cards.length}</span>
+                        </div>
+                        <div class="flex gap-4 overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">${cards.join('')}</div>
+                    </div>`;
+                });
+
+                if (totalRendered === 0) {
+                    habitsHtml = `
+                    <div class="flex flex-col items-center py-6 text-center gap-3">
+                        <span class="material-symbols-outlined notranslate text-outline text-4xl">self_improvement</span>
+                        <p class="text-sm text-outline">${state.habits.length === 0 ? 'Nenhum hábito criado ainda.' : 'Nenhum hábito agendado para hoje.'}</p>
+                        ${state.habits.length === 0 ? `<button type="button" onclick="window.app.openCreateModal('habits')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all"><span class="material-symbols-outlined notranslate text-[16px]">add</span>Criar hábito</button>` : ''}
+                    </div>`;
                 }
-                
+
                 habitsContainer.innerHTML = habitsHtml;
             }
 
             
             app.renderDailyCheckinPanel();
             app.renderDailyCompass();
+            app.renderStarterJourneyCard();
             app.renderNextBestAction();
 
             const container = document.getElementById('checklist-container');
@@ -12298,16 +13115,25 @@ const app = {
                     const emptyIcon = (entityType === 'metas' || entityType === 'okrs') ? 'flag' : 'task_alt';
                     const emptyTypeLabel = ({ metas: 'meta', okrs: 'OKR', macros: 'macro', micros: 'micro ação' })[entityType] || 'plano';
                     const filterCopy = filter === 'Todas' ? 'nesta categoria' : `em ${filter}`;
+                    // Show guided trail CTA when viewing metas with no active filter
+                    const showTrailCta = entityType === 'metas' && filter === 'Todas';
                     return `
                     <div class="bg-surface-container-lowest rounded-2xl p-8 border border-outline-variant/10 border-dashed text-center flex flex-col items-center justify-center">
                         <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-4">
                             <span class="material-symbols-outlined notranslate text-outline text-3xl">${emptyIcon}</span>
                         </div>
                         <h4 class="font-headline text-lg font-bold text-on-background">Nenhum ${emptyTypeLabel} encontrado</h4>
-                        <p class="text-sm text-outline mt-2 max-w-sm">Não há itens ${filterCopy} com os filtros atuais.</p>
+                        <p class="text-sm text-outline mt-2 max-w-sm">${showTrailCta ? 'Comece criando sua primeira meta. A trilha guiada cria meta, OKRs, macros e micros de uma vez.' : `Não há itens ${filterCopy} com os filtros atuais.`}</p>
                         <div class="mt-5 flex flex-wrap justify-center gap-2">
-                            <button type="button" onclick="window.app.openCreateModal('${entityType}')"
+                            ${showTrailCta ? `
+                            <button type="button" onclick="window.app.openMetaTrailWizard()"
                                 class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">
+                                <span class="material-symbols-outlined notranslate text-[16px]">auto_awesome</span>
+                                Trilha guiada
+                            </button>
+                            ` : ''}
+                            <button type="button" onclick="window.app.openCreateModal('${entityType}')"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl ${showTrailCta ? 'bg-surface-container-high text-on-surface-variant' : 'bg-primary text-on-primary'} text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">
                                 <span class="material-symbols-outlined notranslate text-[16px]">add</span>
                                 Criar ${emptyTypeLabel}
                             </button>
@@ -12661,6 +13487,7 @@ const app = {
 
         proposito: function() {
             const state = window.sistemaVidaState;
+            app.renderPurposeJourney();
 
             // Limpa o banner de valores para evitar duplicidade visual
             const valuesBannerTop = document.getElementById('top-values-banner');
@@ -14855,6 +15682,9 @@ const app = {
         this.showToast("Perfil atualizado com sucesso!", "success");
     }
 };
+
+// Phase 10 module attachments — extend app with extracted modules
+attachSubjectiveScales(app);
 
 window.app = app;
 
