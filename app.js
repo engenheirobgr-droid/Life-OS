@@ -193,7 +193,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-purpose-journey-v89',
+    appBuildVersion: '20260505-phase6-trail-discovery-v90',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -8454,7 +8454,7 @@ const app = {
         const checkinToday = cadence.checkin?.lastAt === today;
         const weeklyPlanned = !!(weekPlan && Array.isArray(weekPlan.selectedMicros) && weekPlan.selectedMicros.length > 0);
         const items = [
-            { id: 'trail', label: 'Trilha inicial', done: hasTrail, action: () => this.navigate('planos') },
+            { id: 'trail', label: 'Trilha inicial', done: hasTrail, action: () => this.openMetaTrailWizard() },
             { id: 'habit', label: 'Habito ancora', done: hasHabit, action: () => this.navigate('hoje') },
             { id: 'checkin', label: 'Check-in do dia', done: checkinToday, action: () => this.flowNavigate('hoje', 'daily-checkin-panel') },
             { id: 'weekly', label: 'Plano da semana', done: weeklyPlanned, action: () => this.flowNavigate('planos', 'tab-semanal', 'semanal') }
@@ -8506,7 +8506,7 @@ const app = {
 
     onStarterJourneyAction: function(itemId) {
         const actions = {
-            trail: () => this.navigate('planos'),
+            trail: () => this.openMetaTrailWizard(),
             habit: () => this.flowNavigate('hoje', 'hoje-habits-section'),
             checkin: () => this.flowNavigate('hoje', 'daily-checkin-panel'),
             weekly: () => this.flowNavigate('planos', 'tab-semanal', 'semanal')
@@ -12877,16 +12877,25 @@ const app = {
                     const emptyIcon = (entityType === 'metas' || entityType === 'okrs') ? 'flag' : 'task_alt';
                     const emptyTypeLabel = ({ metas: 'meta', okrs: 'OKR', macros: 'macro', micros: 'micro ação' })[entityType] || 'plano';
                     const filterCopy = filter === 'Todas' ? 'nesta categoria' : `em ${filter}`;
+                    // Show guided trail CTA when viewing metas with no active filter
+                    const showTrailCta = entityType === 'metas' && filter === 'Todas';
                     return `
                     <div class="bg-surface-container-lowest rounded-2xl p-8 border border-outline-variant/10 border-dashed text-center flex flex-col items-center justify-center">
                         <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-4">
                             <span class="material-symbols-outlined notranslate text-outline text-3xl">${emptyIcon}</span>
                         </div>
                         <h4 class="font-headline text-lg font-bold text-on-background">Nenhum ${emptyTypeLabel} encontrado</h4>
-                        <p class="text-sm text-outline mt-2 max-w-sm">Não há itens ${filterCopy} com os filtros atuais.</p>
+                        <p class="text-sm text-outline mt-2 max-w-sm">${showTrailCta ? 'Comece criando sua primeira meta. A trilha guiada cria meta, OKRs, macros e micros de uma vez.' : `Não há itens ${filterCopy} com os filtros atuais.`}</p>
                         <div class="mt-5 flex flex-wrap justify-center gap-2">
-                            <button type="button" onclick="window.app.openCreateModal('${entityType}')"
+                            ${showTrailCta ? `
+                            <button type="button" onclick="window.app.openMetaTrailWizard()"
                                 class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">
+                                <span class="material-symbols-outlined notranslate text-[16px]">auto_awesome</span>
+                                Trilha guiada
+                            </button>
+                            ` : ''}
+                            <button type="button" onclick="window.app.openCreateModal('${entityType}')"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl ${showTrailCta ? 'bg-surface-container-high text-on-surface-variant' : 'bg-primary text-on-primary'} text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">
                                 <span class="material-symbols-outlined notranslate text-[16px]">add</span>
                                 Criar ${emptyTypeLabel}
                             </button>
