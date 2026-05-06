@@ -7429,7 +7429,9 @@ const app = {
             purpose:      { view: 'proposito', sectionId: 'proposito-ikigai-section', tabId: '' },
             lifeGoals:    { view: 'planos',  sectionId: '',                         tabId: 'metas' }
         };
-        const keys = Object.keys(routeMap);
+        // diary (Diário/Shutdown) só faz sentido no fim do dia
+        const hour = new Date().getHours();
+        const keys = Object.keys(routeMap).filter(k => k !== 'diary' || hour >= 14);
         const statuses = keys.map(key => ({ key, route: routeMap[key], ...this.getCadenceStatus(key) }));
         const overdue = statuses.filter(s => s.state === 'overdue').sort((a, b) => {
             if (a.daysSince === null && b.daysSince === null) return 0;
@@ -7601,6 +7603,7 @@ const app = {
             chip.classList.toggle('text-primary', active);
             chip.classList.toggle('font-bold', active);
         });
+        this._updateEmotionPreview(emotionVal);
 
         const empty = document.getElementById('daily-checkin-empty');
         if (empty) empty.classList.toggle('hidden', !!todayEntry);
@@ -7661,6 +7664,25 @@ const app = {
         });
     },
 
+    toggleEmotionCollapse: function() {
+        const wrapper = document.getElementById('emotion-chips-wrapper');
+        const icon = document.getElementById('emotion-collapse-icon');
+        if (!wrapper) return;
+        const nowHidden = wrapper.classList.toggle('hidden');
+        if (icon) icon.style.transform = nowHidden ? '' : 'rotate(180deg)';
+    },
+
+    _updateEmotionPreview: function(val) {
+        const preview = document.getElementById('emotion-selected-preview');
+        if (!preview) return;
+        if (val) {
+            preview.textContent = val;
+            preview.classList.remove('hidden');
+        } else {
+            preview.classList.add('hidden');
+        }
+    },
+
     toggleEmotionChip: function(btn) {
         const emotion = btn.getAttribute('data-emotion');
         const hidden = document.getElementById('daily-checkin-emotion');
@@ -7676,6 +7698,17 @@ const app = {
             chip.classList.toggle('text-primary', active);
             chip.classList.toggle('font-bold', active);
         });
+        this._updateEmotionPreview(newVal);
+    },
+
+    toggleIdentityOptions: function(type) {
+        const optionsId = type === 'strengths' ? 'identity-strengths-options' : 'identity-shadows-options';
+        const iconId    = type === 'strengths' ? 'strengths-toggle-icon'       : 'shadows-toggle-icon';
+        const el   = document.getElementById(optionsId);
+        const icon = document.getElementById(iconId);
+        if (!el) return;
+        const nowHidden = el.classList.toggle('hidden');
+        if (icon) icon.style.transform = nowHidden ? '' : 'rotate(180deg)';
     },
 
     getIdentityPracticeStats: function(weekKey = this._getWeekKey()) {
@@ -8781,9 +8814,9 @@ const app = {
             <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest shadow-sm p-5 md:p-6">
                 <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div class="max-w-2xl">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Jornada de proposito</p>
-                        <h3 class="mt-2 font-headline text-2xl font-bold text-on-background">Transforme esta area em uma sequencia, nao em um formulario.</h3>
-                        <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Primeiro voce se observa, depois encontra sentido, depois escreve impacto e por fim explora futuros possiveis. O app continua igual por dentro, mas agora a tela te mostra melhor a ordem de construcao.</p>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Jornada de propósito</p>
+                        <h3 class="mt-2 font-headline text-2xl font-bold text-on-background">Monte sua bússola em etapas.</h3>
+                        <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Cada passo constrói sua clareza — de quem você é até onde quer chegar.</p>
                     </div>
                     <div class="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 min-w-[160px]">
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Progresso</p>

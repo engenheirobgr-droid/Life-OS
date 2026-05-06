@@ -47,10 +47,16 @@
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Forças</p>
                         <p class="text-xs text-outline mt-1">O que quero expressar mais.</p>
                     </div>
-                    <button onclick="window.app.addCustomIdentityItem('strengths')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar força">add_circle</button>
+                    <div class="flex items-center gap-1">
+                        <button onclick="window.app.toggleIdentityOptions('strengths')" class="flex items-center gap-0.5 text-[10px] font-bold text-outline hover:text-primary transition-colors" title="Ver sugestões">
+                            <span>Sugestões</span>
+                            <span id="strengths-toggle-icon" class="material-symbols-outlined notranslate text-[14px] transition-transform duration-200">expand_more</span>
+                        </button>
+                        <button onclick="window.app.addCustomIdentityItem('strengths')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar força">add_circle</button>
+                    </div>
                 </div>
-                <div id="identity-strengths-list" class="flex flex-wrap gap-2 min-h-[32px] mb-4"></div>
-                <div id="identity-strengths-options" class="flex flex-wrap gap-2"></div>
+                <div id="identity-strengths-list" class="flex flex-wrap gap-2 min-h-[32px] mb-2"></div>
+                <div id="identity-strengths-options" class="hidden flex flex-wrap gap-2 mt-2 pt-2 border-t border-outline-variant/10"></div>
             </div>
             <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
                 <div class="flex items-center justify-between gap-3 mb-3">
@@ -58,10 +64,16 @@
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Sombras</p>
                         <p class="text-xs text-outline mt-1">Padrões que quero transformar.</p>
                     </div>
-                    <button onclick="window.app.addCustomIdentityItem('shadows')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar sombra">add_circle</button>
+                    <div class="flex items-center gap-1">
+                        <button onclick="window.app.toggleIdentityOptions('shadows')" class="flex items-center gap-0.5 text-[10px] font-bold text-outline hover:text-primary transition-colors" title="Ver sugestões">
+                            <span>Sugestões</span>
+                            <span id="shadows-toggle-icon" class="material-symbols-outlined notranslate text-[14px] transition-transform duration-200">expand_more</span>
+                        </button>
+                        <button onclick="window.app.addCustomIdentityItem('shadows')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar sombra">add_circle</button>
+                    </div>
                 </div>
-                <div id="identity-shadows-list" class="flex flex-wrap gap-2 min-h-[32px] mb-4"></div>
-                <div id="identity-shadows-options" class="flex flex-wrap gap-2"></div>
+                <div id="identity-shadows-list" class="flex flex-wrap gap-2 min-h-[32px] mb-2"></div>
+                <div id="identity-shadows-options" class="hidden flex flex-wrap gap-2 mt-2 pt-2 border-t border-outline-variant/10"></div>
             </div>
         </div>
     </div>
