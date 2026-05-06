@@ -3,30 +3,22 @@
  * Vanilla JS Single Page Application Controller with Data Binding
  */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, EmailAuthProvider, linkWithCredential, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+// Firebase instances and helpers — all initialized in js/firebase.js
+import {
+    db, auth, storage, authPersistenceReady, LOCAL_USER_SCOPE,
+    doc, setDoc, getDoc, onSnapshot, deleteDoc,
+    signInAnonymously, onAuthStateChanged,
+    createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    signOut, sendPasswordResetEmail, updateProfile,
+    EmailAuthProvider, linkWithCredential,
+    storageRef, uploadString, getDownloadURL
+} from './js/firebase.js';
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDXu7ddS77_deDezWQqrLd4Ww-MRVL1bgM",
-    authDomain: "life-os-753f2.firebaseapp.com",
-    projectId: "life-os-753f2",
-    storageBucket: "life-os-753f2.firebasestorage.app",
-    messagingSenderId: "339455340566",
-    appId: "1:339455340566:web:976675a53891f365c48537"
-};
+// Phase 10 extracted modules — attached to app after object definition
+import { attachSubjectiveScales } from './js/subjectiveScales.js';
 
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
-const auth = getAuth(firebaseApp);
-const storage = getStorage(firebaseApp);
-const LOCAL_USER_SCOPE = 'guest';
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
-const authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch((err) => {
-    console.warn('[AUTH] Falha ao configurar persistência local:', err);
-});
 let initialAuthStatePromise = null;
 let authInteractiveOperation = false;
 
@@ -193,7 +185,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-phase9-contextual-xp-v94',
+    appBuildVersion: '20260505-phase10-architecture-v95',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -7503,62 +7495,8 @@ const app = {
         return (window.sistemaVidaState.profile.dailyCheckins || []).find(entry => entry.date === today) || null;
     },
 
-    getCheckinScaleText: function(kind, value) {
-        const n = Math.max(1, Math.min(5, Number(value) || 3));
-        const maps = {
-            sleep: {
-                1: 'Sono muito ruim: acordei quebrado e sem recuperar.',
-                2: 'Sono abaixo do ideal: descanso parcial.',
-                3: 'Sono ok: funcional, mas ainda melhoravel.',
-                4: 'Sono bom: acordei recuperado.',
-                5: 'Sono excelente: corpo e mente renovados.'
-            },
-            energy: {
-                1: 'Energia minima: so o essencial.',
-                2: 'Energia baixa: manter simples hoje.',
-                3: 'Energia media: ritmo sustentavel.',
-                4: 'Energia boa: da para avancar bem.',
-                5: 'Energia alta: aproveite para atacar o importante.'
-            },
-            mood: {
-                1: 'Humor muito baixo: cuide da base primeiro.',
-                2: 'Humor baixo: ajuste expectativa e carga.',
-                3: 'Humor neutro: siga o plano com calma.',
-                4: 'Humor bom: bom momento para interacoes e entrega.',
-                5: 'Humor excelente: use a maré a seu favor.'
-            },
-            stress: {
-                1: 'Estresse leve: mente sob controle.',
-                2: 'Estresse administravel: manter pausas curtas.',
-                3: 'Estresse moderado: priorize e simplifique.',
-                4: 'Estresse alto: reduzir volume e proteger foco.',
-                5: 'Estresse critico: pare, respire e recorte o dia.'
-            }
-        };
-        return maps[kind]?.[n] || '';
-    },
-
-    renderDailyCheckinGuidance: function() {
-        const read = (id, fallback = 3) => {
-            const n = Number(document.getElementById(id)?.value);
-            return Number.isFinite(n) ? n : fallback;
-        };
-        const sleepValue = read('daily-checkin-sleep-quality', 3);
-        const energyValue = read('daily-checkin-energy', 3);
-        const moodValue = read('daily-checkin-mood', 3);
-        const stressValue = read('daily-checkin-stress', 3);
-
-        const sleepValEl = document.getElementById('daily-checkin-sleep-quality-val');
-        if (sleepValEl) sleepValEl.textContent = String(sleepValue);
-        const bind = (id, text) => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = text;
-        };
-        bind('daily-checkin-sleep-quality-help', this.getCheckinScaleText('sleep', sleepValue));
-        bind('daily-checkin-energy-help', this.getCheckinScaleText('energy', energyValue));
-        bind('daily-checkin-mood-help', this.getCheckinScaleText('mood', moodValue));
-        bind('daily-checkin-stress-help', this.getCheckinScaleText('stress', stressValue));
-    },
+    // getCheckinScaleText and renderDailyCheckinGuidance extracted to js/subjectiveScales.js (Phase 10.1)
+    // Attached to app via attachSubjectiveScales(app) at module load time.
 
     saveDailyCheckin: function() {
         this.ensureDailyCheckinState();
@@ -15711,6 +15649,9 @@ const app = {
         this.showToast("Perfil atualizado com sucesso!", "success");
     }
 };
+
+// Phase 10 module attachments — extend app with extracted modules
+attachSubjectiveScales(app);
 
 window.app = app;
 
