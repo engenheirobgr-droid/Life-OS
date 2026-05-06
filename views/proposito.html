@@ -1,18 +1,18 @@
-﻿<main class="pt-6 lg:pt-10 pb-20 px-6 max-w-7xl mx-auto">
+<main class="pt-6 lg:pt-10 pb-20 px-6 max-w-7xl mx-auto">
 <!-- Header Section -->
 <section class="mb-8">
     <div class="flex items-center gap-3 mb-4">
-        <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Minha BÃºssola</p>
+        <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Minha Bússola</p>
         <div class="relative inline-flex group">
-            <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-md border border-outline-variant/30 text-[11px] font-bold italic text-outline hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors" aria-label="InformaÃ§Ãµes sobre PropÃ³sito">
+            <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-md border border-outline-variant/30 text-[11px] font-bold italic text-outline hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors" aria-label="Informações sobre Propósito">
                 i
             </button>
             <div class="hidden group-hover:block group-focus-within:block absolute left-0 top-7 z-30 w-[calc(100vw-3rem)] max-w-72 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-4 text-xs text-on-surface-variant leading-relaxed shadow-xl">
-                MissÃ£o, identidade, valores, bem-estar e visÃ£o de vida para orientar decisÃµes e metas.
+                Missão, identidade, valores, bem-estar e visão de vida para orientar decisões e metas.
             </div>
         </div>
     </div>
-    <h2 class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">PropÃ³sito</h2>
+    <h2 class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Propósito</h2>
     <div class="mt-6 h-px w-24 bg-primary"></div>
 </section>
 
@@ -22,7 +22,7 @@
         <div class="flex items-start justify-between mb-6">
             <div>
                 <h3 class="text-xl font-headline font-bold text-on-background">Identidade Base</h3>
-                <p class="text-sm text-outline mt-1">Valores, forÃ§as e sombras para orientar decisÃµes e evoluÃ§Ã£o pessoal.</p>
+                <p class="text-sm text-outline mt-1">Valores, forças e sombras para orientar decisões e evolução pessoal.</p>
             </div>
             <button type="button" onclick="window.app.openManualChapter('identidade')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">menu_book</button>
         </div>
@@ -31,7 +31,7 @@
                 <div class="flex items-center justify-between gap-3 mb-3">
                     <div>
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Valores</p>
-                        <p class="text-xs text-outline mt-1">PrincÃ­pios inegociÃ¡veis.</p>
+                        <p class="text-xs text-outline mt-1">Princípios inegociáveis.</p>
                     </div>
                     <button onclick="document.getElementById('values-selection-tool').classList.remove('hidden'); document.getElementById('values-selection-tool').scrollIntoView({behavior: 'smooth'})" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Editar Valores">edit</button>
                 </div>
@@ -40,15 +40,15 @@
             <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
                 <div class="flex items-center justify-between gap-3 mb-3">
                     <div>
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">ForÃ§as</p>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Forças</p>
                         <p class="text-xs text-outline mt-1">O que quero expressar mais.</p>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button onclick="window.app.toggleIdentityOptions('strengths')" class="flex items-center gap-0.5 text-[10px] font-bold text-outline hover:text-primary transition-colors" title="Ver sugestÃµes">
-                            <span>SugestÃµes</span>
+                        <button onclick="window.app.toggleIdentityOptions('strengths')" class="flex items-center gap-0.5 text-[10px] font-bold text-outline hover:text-primary transition-colors" title="Ver sugestões">
+                            <span>Sugestões</span>
                             <span id="strengths-toggle-icon" class="material-symbols-outlined notranslate text-[14px] transition-transform duration-200">expand_more</span>
                         </button>
-                        <button onclick="window.app.addCustomIdentityItem('strengths')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar forÃ§a">add_circle</button>
+                        <button onclick="window.app.addCustomIdentityItem('strengths')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar força">add_circle</button>
                     </div>
                 </div>
                 <div id="identity-strengths-list" class="flex flex-wrap gap-2 min-h-[32px] mb-2"></div>
@@ -58,11 +58,11 @@
                 <div class="flex items-center justify-between gap-3 mb-3">
                     <div>
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Sombras</p>
-                        <p class="text-xs text-outline mt-1">PadrÃµes que quero transformar.</p>
+                        <p class="text-xs text-outline mt-1">Padrões que quero transformar.</p>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button onclick="window.app.toggleIdentityOptions('shadows')" class="flex items-center gap-0.5 text-[10px] font-bold text-outline hover:text-primary transition-colors" title="Ver sugestÃµes">
-                            <span>SugestÃµes</span>
+                        <button onclick="window.app.toggleIdentityOptions('shadows')" class="flex items-center gap-0.5 text-[10px] font-bold text-outline hover:text-primary transition-colors" title="Ver sugestões">
+                            <span>Sugestões</span>
                             <span id="shadows-toggle-icon" class="material-symbols-outlined notranslate text-[14px] transition-transform duration-200">expand_more</span>
                         </button>
                         <button onclick="window.app.addCustomIdentityItem('shadows')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar sombra">add_circle</button>
@@ -82,7 +82,7 @@
         <div class="flex items-start justify-between mb-6">
             <div>
                 <h3 class="text-xl font-headline font-bold text-on-background">Roda da Vida</h3>
-                <p class="text-sm text-outline mt-1">Estado atual do equilÃ­brio nas 8 dimensÃµes.</p>
+                <p class="text-sm text-outline mt-1">Estado atual do equilíbrio nas 8 dimensões.</p>
             </div>
             <button type="button" onclick="window.app.openManualChapter('bem-estar')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">pie_chart</button>
         </div>
@@ -98,14 +98,14 @@
                 <svg class="w-full max-w-[320px] h-auto overflow-visible" viewbox="0 0 100 100">
                     <!-- Axis Lines -->
                     <g class="stroke-outline-variant/20" stroke-width="0.5">
-                        <line x1="50" x2="50" y1="50" y2="10"></line> <!-- SaÃºde -->
+                        <line x1="50" x2="50" y1="50" y2="10"></line> <!-- Saúde -->
                         <line x1="50" x2="78.3" y1="50" y2="21.7"></line> <!-- Mente -->
                         <line x1="50" x2="90" y1="50" y2="50"></line> <!-- Carreira -->
-                        <line x1="50" x2="78.3" y1="50" y2="78.3"></line> <!-- FinanÃ§as -->
+                        <line x1="50" x2="78.3" y1="50" y2="78.3"></line> <!-- Finanças -->
                         <line x1="50" x2="50" y1="50" y2="90"></line> <!-- Relac -->
-                        <line x1="50" x2="21.7" y1="50" y2="78.3"></line> <!-- FamÃ­lia -->
+                        <line x1="50" x2="21.7" y1="50" y2="78.3"></line> <!-- Família -->
                         <line x1="50" x2="10" y1="50" y2="50"></line> <!-- Lazer -->
-                        <line x1="50" x2="21.7" y1="50" y2="21.7"></line> <!-- PropÃ³sito -->
+                        <line x1="50" x2="21.7" y1="50" y2="21.7"></line> <!-- Propósito -->
                     </g>
                     <!-- Data Polygon (Example Values) -->
                     <polygon id="roda-polygon" class="text-primary/20 stroke-primary stroke-[1.5] fill-current" 
@@ -115,14 +115,14 @@
                 </svg>
 
                 <!-- Labels -->
-                <span class="absolute top-[-20px] left-1/2 -translate-x-1/2 text-[9px] font-label uppercase tracking-widest text-outline">SaÃºde</span>
+                <span class="absolute top-[-20px] left-1/2 -translate-x-1/2 text-[9px] font-label uppercase tracking-widest text-outline">Saúde</span>
                 <span class="absolute top-[10%] right-[5%] text-[9px] font-label uppercase tracking-widest text-outline">Mente</span>
                 <span class="absolute top-1/2 right-[-24px] -translate-y-1/2 text-[9px] font-label uppercase tracking-widest text-outline">Carreira</span>
-                <span class="absolute bottom-[10%] right-[5%] text-[9px] font-label uppercase tracking-widest text-outline">FinanÃ§as</span>
+                <span class="absolute bottom-[10%] right-[5%] text-[9px] font-label uppercase tracking-widest text-outline">Finanças</span>
                 <span class="absolute bottom-[-20px] left-1/2 -translate-x-1/2 text-[9px] font-label uppercase tracking-widest text-outline text-center">Relac.</span>
-                <span class="absolute bottom-[10%] left-[5%] text-[9px] font-label uppercase tracking-widest text-outline">FamÃ­lia</span>
+                <span class="absolute bottom-[10%] left-[5%] text-[9px] font-label uppercase tracking-widest text-outline">Família</span>
                 <span class="absolute top-1/2 left-[-12px] -translate-y-1/2 text-[9px] font-label uppercase tracking-widest text-outline">Lazer</span>
-                <span class="absolute top-[10%] left-[5%] text-[9px] font-label uppercase tracking-widest text-outline">PropÃ³sito</span>
+                <span class="absolute top-[10%] left-[5%] text-[9px] font-label uppercase tracking-widest text-outline">Propósito</span>
             </div>
             <div id="roda-sliders" class="hidden"></div>
             <button onclick="window.app.openWheelModal()" class="w-full mt-6 bg-surface-container-highest hover:bg-primary/10 text-primary border border-primary/20 py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 shadow-sm max-w-md mx-auto">
@@ -138,7 +138,7 @@
         <div class="flex items-start justify-between mb-8">
             <div>
                 <h3 class="text-xl font-headline font-bold text-on-background tracking-tight">Bem-Estar PERMA</h3>
-                <p class="text-sm text-outline mt-1 font-label uppercase tracking-widest">Seu florescimento em 5 dimensÃµes.</p>
+                <p class="text-sm text-outline mt-1 font-label uppercase tracking-widest">Seu florescimento em 5 dimensões.</p>
             </div>
             <button type="button" onclick="window.app.openManualChapter('bem-estar')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">psychology</button>
         </div>
@@ -158,20 +158,20 @@
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
         <div class="flex items-start justify-between mb-6">
             <div>
-                <h3 class="text-xl font-headline font-bold text-on-background tracking-tight">SatisfaÃ§Ã£o com a Vida (SWLS)</h3>
-                <p class="text-sm text-outline mt-1">DiagnÃ³stico cognitivo global complementar ao PERMA.</p>
+                <h3 class="text-xl font-headline font-bold text-on-background tracking-tight">Satisfação com a Vida (SWLS)</h3>
+                <p class="text-sm text-outline mt-1">Diagnóstico cognitivo global complementar ao PERMA.</p>
             </div>
             <button type="button" onclick="window.app.openManualChapter('bem-estar')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">monitoring</button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
             <div class="bg-surface-container-low p-5 rounded-xl border border-outline-variant/10">
-                <p class="text-[10px] font-label uppercase tracking-widest text-outline">PontuaÃ§Ã£o Atual</p>
+                <p class="text-[10px] font-label uppercase tracking-widest text-outline">Pontuação Atual</p>
                 <p id="swls-score" class="text-3xl font-headline italic text-primary mt-2">0/35</p>
-                <p id="swls-band" class="text-sm text-on-surface-variant mt-2">Sem avaliaÃ§Ã£o</p>
+                <p id="swls-band" class="text-sm text-on-surface-variant mt-2">Sem avaliação</p>
                 <p id="swls-last-date" class="text-[11px] text-outline mt-3"></p>
             </div>
             <div class="bg-surface-container-low p-5 rounded-xl border border-outline-variant/10">
-                <p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">HistÃ³rico Recente</p>
+                <p class="text-[10px] font-label uppercase tracking-widest text-outline mb-3">Histórico Recente</p>
                 <div id="swls-history-list" class="space-y-2 text-sm text-on-surface-variant"></div>
             </div>
         </div>
@@ -183,12 +183,12 @@
         </div>
         <div class="mt-4 bg-surface-container-low rounded-xl border border-outline-variant/10 px-4 py-3">
             <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Leitura integrada PERMA + SWLS</p>
-            <p id="swls-perma-insight" class="text-xs text-on-surface-variant">Sem dados suficientes para anÃ¡lise integrada.</p>
+            <p id="swls-perma-insight" class="text-xs text-on-surface-variant">Sem dados suficientes para análise integrada.</p>
         </div>
     </div>
 </section>
 
-<!-- Meus Valores (Ferramenta de SeleÃ§Ã£o) -->
+<!-- Meus Valores (Ferramenta de Seleção) -->
 <section id="values-selection-tool" class="mt-8">
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-10 border border-outline-variant/10 shadow-lg flex flex-col max-w-2xl mx-auto">
         <div class="flex justify-between items-center mb-10">
@@ -344,15 +344,15 @@
 </div>
 <div class="space-y-12">
 <div>
-<p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">FamÃ­lia &amp; RelaÃ§Ãµes</p>
-<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: FamÃ­lia', 'legacyObj', 'familia', 'familiaResumo')">
+<p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Família &amp; Relações</p>
+<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Família', 'legacyObj', 'familia', 'familiaResumo')">
 <p id="display-legacy-familia" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
 <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
 </div>
 <div>
-<p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">ProfissÃ£o &amp; Obra</p>
-<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: ProfissÃ£o', 'legacyObj', 'profissao', 'profissaoResumo')">
+<p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Profissão &amp; Obra</p>
+<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Profissão', 'legacyObj', 'profissao', 'profissaoResumo')">
 <p id="display-legacy-profissao" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
 <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
 </div>
@@ -369,41 +369,41 @@
 </section>
 
 
-<!-- VisÃ£o de Vida Section -->
+<!-- Visão de Vida Section -->
 <section id="proposito-visao-section" class="mt-8">
     <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">Quem quero me tornar</p>
     <div class="md:col-span-2 bg-surface-container-lowest rounded-2xl p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
         <div class="max-w-3xl mx-auto">
-            <h3 class="font-headline text-2xl italic mb-6 text-center">VisÃ£o de Vida</h3>
+            <h3 class="font-headline text-2xl italic mb-6 text-center">Visão de Vida</h3>
             <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 mb-8">
                 <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Pergunta guia</p>
                 <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Imagine um futuro desejado e concreto: como seria um dia comum seu se saude, carreira, mente e sentido estivessem bem alinhados?</p>
             </div>
             <div class="columns-1 md:columns-2 gap-12 space-y-8">
                 <div>
-                    <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">SaÃºde &amp; Vitalidade</h4>
-                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('VisÃ£o: SaÃºde', 'vision', 'saude', 'saudeResumo')">
+                    <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Saúde &amp; Vitalidade</h4>
+                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Saúde', 'vision', 'saude', 'saudeResumo')">
                         <p id="display-vision-saude" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                         <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
                     </div>
                 </div>
                 <div>
-                    <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Carreira &amp; FinanÃ§as</h4>
-                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('VisÃ£o: Carreira & FinanÃ§as', 'vision', 'carreira', 'carreiraResumo')">
+                    <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Carreira &amp; Finanças</h4>
+                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Carreira & Finanças', 'vision', 'carreira', 'carreiraResumo')">
                         <p id="display-vision-carreira" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                         <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
                     </div>
                 </div>
                 <div>
                     <h4 class="font-label text-[10px] uppercase tracking-[0.2em] text-primary mb-3">Intelectual &amp; Espiritual</h4>
-                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('VisÃ£o: Intelecto & Espiritual', 'vision', 'intelecto', 'intelectoResumo')">
+                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Visão: Intelecto & Espiritual', 'vision', 'intelecto', 'intelectoResumo')">
                         <p id="display-vision-intelecto" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                         <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
                     </div>
                 </div>
                 <div class="bg-surface-container-low p-6 rounded-lg">
                     <span class="material-symbols-outlined notranslate text-primary mb-2">format_quote</span>
-                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('CitaÃ§Ã£o Guia', 'vision', 'quote')">
+                    <div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Citação Guia', 'vision', 'quote')">
                         <p id="display-vision-quote" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                         <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
                     </div>
@@ -421,7 +421,7 @@
         <div class="flex items-start justify-between mb-6">
             <div>
                 <h3 class="text-xl font-headline font-bold text-on-background">Odyssey Plans</h3>
-                <p class="text-sm text-outline mt-1">TrÃªs cenÃ¡rios possÃ­veis para os prÃ³ximos 5 anos.</p>
+                <p class="text-sm text-outline mt-1">Três cenários possíveis para os próximos 5 anos.</p>
             </div>
             <button type="button" onclick="window.app.openManualChapter('ikigai-odyssey')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">explore_nearby</button>
         </div>
@@ -432,12 +432,12 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Scenario 1 -->
-            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('CenÃ¡rio A', 'odyssey', 'cenarioA')">
-                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-label font-bold uppercase tracking-wider">CenÃ¡rio A</div>
-                <h4 id="odyssey-title-cenarioA" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('TÃ­tulo do CenÃ¡rio A', 'odysseyTitles', 'cenarioA')" title="Clique para editar o tÃ­tulo do cenÃ¡rio">CenÃ¡rio A</h4>
+            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário A', 'odyssey', 'cenarioA')">
+                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-label font-bold uppercase tracking-wider">Cenário A</div>
+                <h4 id="odyssey-title-cenarioA" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário A', 'odysseyTitles', 'cenarioA')" title="Clique para editar o título do cenário">Cenário A</h4>
                 <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
-                    <img id="odyssey-image-cenarioA" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="CenÃ¡rio A" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioA')">
-                    <button id="odyssey-image-button-cenarioA" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioA')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenÃ¡rio">
+                    <img id="odyssey-image-cenarioA" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário A" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioA')">
+                    <button id="odyssey-image-button-cenarioA" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioA')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
                         <span class="material-symbols-outlined notranslate text-[14px]">photo_camera</span>
                         <span class="hidden sm:inline">Editar</span>
                     </button>
@@ -449,12 +449,12 @@
             </div>
 
             <!-- Scenario 2 -->
-            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('CenÃ¡rio B', 'odyssey', 'cenarioB')">
-                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-secondary/10 text-secondary text-[10px] font-label font-bold uppercase tracking-wider">CenÃ¡rio B</div>
-                <h4 id="odyssey-title-cenarioB" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('TÃ­tulo do CenÃ¡rio B', 'odysseyTitles', 'cenarioB')" title="Clique para editar o tÃ­tulo do cenÃ¡rio">CenÃ¡rio B</h4>
+            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário B', 'odyssey', 'cenarioB')">
+                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-secondary/10 text-secondary text-[10px] font-label font-bold uppercase tracking-wider">Cenário B</div>
+                <h4 id="odyssey-title-cenarioB" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário B', 'odysseyTitles', 'cenarioB')" title="Clique para editar o título do cenário">Cenário B</h4>
                 <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
-                    <img id="odyssey-image-cenarioB" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="CenÃ¡rio B" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioB')">
-                    <button id="odyssey-image-button-cenarioB" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioB')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenÃ¡rio">
+                    <img id="odyssey-image-cenarioB" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário B" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioB')">
+                    <button id="odyssey-image-button-cenarioB" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioB')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
                         <span class="material-symbols-outlined notranslate text-[14px]">photo_camera</span>
                         <span class="hidden sm:inline">Editar</span>
                     </button>
@@ -466,12 +466,12 @@
             </div>
 
             <!-- Scenario 3 -->
-            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('CenÃ¡rio C', 'odyssey', 'cenarioC')">
-                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary text-[10px] font-label font-bold uppercase tracking-wider">CenÃ¡rio C</div>
-                <h4 id="odyssey-title-cenarioC" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('TÃ­tulo do CenÃ¡rio C', 'odysseyTitles', 'cenarioC')" title="Clique para editar o tÃ­tulo do cenÃ¡rio">CenÃ¡rio C</h4>
+            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário C', 'odyssey', 'cenarioC')">
+                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary text-[10px] font-label font-bold uppercase tracking-wider">Cenário C</div>
+                <h4 id="odyssey-title-cenarioC" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário C', 'odysseyTitles', 'cenarioC')" title="Clique para editar o título do cenário">Cenário C</h4>
                 <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
-                    <img id="odyssey-image-cenarioC" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="CenÃ¡rio C" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioC')">
-                    <button id="odyssey-image-button-cenarioC" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioC')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenÃ¡rio">
+                    <img id="odyssey-image-cenarioC" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário C" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioC')">
+                    <button id="odyssey-image-button-cenarioC" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioC')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
                         <span class="material-symbols-outlined notranslate text-[14px]">photo_camera</span>
                         <span class="hidden sm:inline">Editar</span>
                     </button>
@@ -495,10 +495,10 @@
     <div class="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-background shadow-2xl flex flex-col h-[88dvh] max-h-[88dvh] sm:h-auto sm:max-h-[min(90vh,680px)]">
         <!-- Header fixo -->
         <div class="flex items-center justify-between px-6 pt-6 pb-4 shrink-0">
-            <h3 class="text-lg font-headline font-bold text-on-background" id="identity-modal-title">Nova ForÃ§a</h3>
+            <h3 class="text-lg font-headline font-bold text-on-background" id="identity-modal-title">Nova Força</h3>
             <button type="button" onclick="window.app.closeIdentityItemModal()" class="material-symbols-outlined notranslate text-outline hover:text-on-surface transition-colors">close</button>
         </div>
-        <!-- Form com body scrollÃ¡vel e footer fixo -->
+        <!-- Form com body scrollável e footer fixo -->
         <form id="identity-modal-form" onsubmit="event.preventDefault(); window.app.saveIdentityItemModal();" class="flex flex-col flex-1 min-h-0">
             <input type="hidden" id="identity-modal-type" value="">
             <input type="hidden" id="identity-modal-id" value="">
@@ -508,29 +508,29 @@
                     <label for="identity-modal-name" class="text-[10px] font-bold uppercase tracking-widest text-outline">Nome</label>
                     <input type="text" id="identity-modal-name" required autocomplete="off"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                        placeholder="Ex: ResiliÃªncia">
+                        placeholder="Ex: Resiliência">
                 </div>
                 <div class="flex flex-col gap-1.5">
-                    <label for="identity-modal-dimension" class="text-[10px] font-bold uppercase tracking-widest text-outline">DimensÃ£o <span class="normal-case font-normal italic">(opcional)</span></label>
+                    <label for="identity-modal-dimension" class="text-[10px] font-bold uppercase tracking-widest text-outline">Dimensão <span class="normal-case font-normal italic">(opcional)</span></label>
                     <select id="identity-modal-dimension" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface">
-                        <option value="">â€” Sem dimensÃ£o â€”</option>
-                        <option value="SaÃºde">SaÃºde</option>
+                        <option value="">— Sem dimensão —</option>
+                        <option value="Saúde">Saúde</option>
                         <option value="Carreira">Carreira</option>
-                        <option value="FinanÃ§as">FinanÃ§as</option>
-                        <option value="FamÃ­lia">FamÃ­lia</option>
+                        <option value="Finanças">Finanças</option>
+                        <option value="Família">Família</option>
                         <option value="Relacionamentos">Relacionamentos</option>
                         <option value="Lazer">Lazer</option>
                         <option value="Mente">Mente</option>
-                        <option value="PropÃ³sito">PropÃ³sito</option>
+                        <option value="Propósito">Propósito</option>
                     </select>
                 </div>
-                <!-- ForÃ§as -->
+                <!-- Forças -->
                 <div id="identity-modal-strengths-fields" class="hidden space-y-4">
                     <div class="flex flex-col gap-1.5">
-                        <label for="identity-modal-evidence" class="text-[10px] font-bold uppercase tracking-widest text-outline">EvidÃªncia <span class="normal-case font-normal italic">(onde essa forÃ§a aparece?)</span></label>
+                        <label for="identity-modal-evidence" class="text-[10px] font-bold uppercase tracking-widest text-outline">Evidência <span class="normal-case font-normal italic">(onde essa força aparece?)</span></label>
                         <input type="text" id="identity-modal-evidence" autocomplete="off"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                            placeholder="Ex: Na lideranÃ§a do time, nos momentos de crise">
+                            placeholder="Ex: Na liderança do time, nos momentos de crise">
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label for="identity-modal-excessRisk" class="text-[10px] font-bold uppercase tracking-widest text-outline">Risco de excesso <span class="normal-case font-normal italic">(quando passa do ponto?)</span></label>
@@ -539,7 +539,7 @@
                             placeholder="Ex: Pode se tornar perfeccionismo paralisante">
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <label for="identity-modal-practice" class="text-[10px] font-bold uppercase tracking-widest text-outline">PrÃ¡tica sugerida <span class="normal-case font-normal italic">(como treinar?)</span></label>
+                        <label for="identity-modal-practice" class="text-[10px] font-bold uppercase tracking-widest text-outline">Prática sugerida <span class="normal-case font-normal italic">(como treinar?)</span></label>
                         <input type="text" id="identity-modal-practice" autocomplete="off"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
                             placeholder="Ex: Dedicar 30 min/dia a um projeto pessoal">
@@ -557,7 +557,7 @@
                         <label for="identity-modal-impact" class="text-[10px] font-bold uppercase tracking-widest text-outline">Impacto <span class="normal-case font-normal italic">(o que costuma gerar?)</span></label>
                         <input type="text" id="identity-modal-impact" autocomplete="off"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                            placeholder="Ex: DistÃ¢ncia das pessoas que amo">
+                            placeholder="Ex: Distância das pessoas que amo">
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label for="identity-modal-desiredResponse" class="text-[10px] font-bold uppercase tracking-widest text-outline">Resposta desejada <span class="normal-case font-normal italic">(o que praticar?)</span></label>
@@ -566,20 +566,20 @@
                             placeholder="Ex: Respirar e comunicar o que sinto">
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <label for="identity-modal-obstacle" class="text-[10px] font-bold uppercase tracking-widest text-outline">ObstÃ¡culo previsto</label>
+                        <label for="identity-modal-obstacle" class="text-[10px] font-bold uppercase tracking-widest text-outline">Obstáculo previsto</label>
                         <input type="text" id="identity-modal-obstacle" autocomplete="off"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
                             placeholder="Ex: Ego e medo de vulnerabilidade">
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <label for="identity-modal-ifThen" class="text-[10px] font-bold uppercase tracking-widest text-outline">Plano se-entÃ£o</label>
+                        <label for="identity-modal-ifThen" class="text-[10px] font-bold uppercase tracking-widest text-outline">Plano se-então</label>
                         <input type="text" id="identity-modal-ifThen" autocomplete="off"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                            placeholder="Ex: Se me fechar, entÃ£o vou pausar e escrever o que sinto">
+                            placeholder="Ex: Se me fechar, então vou pausar e escrever o que sinto">
                     </div>
                 </div>
             </div>
-            <!-- Footer fixo com botÃµes -->
+            <!-- Footer fixo com botões -->
             <div class="sticky bottom-0 z-10 flex gap-3 px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] shrink-0 border-t border-outline-variant/10 bg-background/95 backdrop-blur rounded-b-3xl">
                 <button type="button" onclick="window.app.closeIdentityItemModal()"
                     class="flex-1 py-3 rounded-xl border border-outline-variant/30 text-sm font-bold text-outline hover:bg-surface-container transition-colors">Cancelar</button>
@@ -593,12 +593,12 @@
 <script>
 (function() {
     const valuesList = [
-        "Liberdade", "Integridade", "Curiosidade", "Impacto Social", "EstÃ©tica",
-        "FamÃ­lia", "Aventura", "Sabedoria", "Comprometimento", "Coragem",
-        "EquilÃ­brio", "InovaÃ§Ã£o", "Empatia", "Autonomia", "GratidÃ£o"
+        "Liberdade", "Integridade", "Curiosidade", "Impacto Social", "Estética",
+        "Família", "Aventura", "Sabedoria", "Comprometimento", "Coragem",
+        "Equilíbrio", "Inovação", "Empatia", "Autonomia", "Gratidão"
     ];
 
-    const VOTE_LABELS = { essential: 'Essencial â˜…', important: 'Relevante âœ“', skip: 'Descartado âœ•' };
+    const VOTE_LABELS = { essential: 'Essencial ★', important: 'Relevante ✓', skip: 'Descartado ✕' };
     const VOTE_COLORS = { essential: 'text-primary', important: 'text-secondary', skip: 'text-outline' };
 
     let currentIndex = 0;
@@ -637,7 +637,7 @@
                 voteStatus.className = `text-[10px] font-bold uppercase tracking-widest text-center mb-3 h-4 ${prevVote ? VOTE_COLORS[prevVote] : ''}`;
             }
         } else {
-            if (valueText) valueText.textContent = 'ConcluÃ­do!';
+            if (valueText) valueText.textContent = 'Concluído!';
             if (progressText) progressText.textContent = `${valuesList.length} de ${valuesList.length}`;
             if (progressBar) progressBar.style.width = '100%';
             if (voteStatus) { voteStatus.textContent = ''; }
@@ -696,7 +696,7 @@
     if (confirmBtn) {
         confirmBtn.addEventListener('click', function() {
             if (this.disabled) return;
-            this.textContent = 'âœ“ Valores Confirmados';
+            this.textContent = '✓ Valores Confirmados';
             this.classList.remove('bg-primary');
             this.classList.add('bg-emerald-600', 'text-white');
             this.setAttribute('data-confirmed', 'true');
@@ -707,7 +707,7 @@
             }
             const msg = document.createElement('p');
             msg.className = 'text-xs text-on-surface-variant mt-4 italic leading-relaxed';
-            msg.textContent = 'Seus valores foram salvos e agora orientam suas decisÃµes e prioridades no Sistema Vida.';
+            msg.textContent = 'Seus valores foram salvos e agora orientam suas decisões e prioridades no Sistema Vida.';
             this.parentNode.appendChild(msg);
             setTimeout(() => {
                 const modal = document.getElementById('values-selection-tool');
@@ -719,6 +719,3 @@
     updateUI();
 })();
 </script>
-
-
-

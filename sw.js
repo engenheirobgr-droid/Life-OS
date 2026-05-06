@@ -1,8 +1,8 @@
-﻿const CACHE_NAME = 'sistema-vida-v103';
+const CACHE_NAME = 'sistema-vida-v104';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-  './app.js?v=20260506-stability-ux-v103',
+  './app.js?v=20260506-encoding-fix-v104',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
@@ -46,12 +46,12 @@ self.addEventListener('message', (event) => {
     }
 });
 
-// â”€â”€ Push Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Push Notifications ────────────────────────────────────────────────────────
 // Recebe mensagens push do servidor (requer backend + VAPID keys para funcionar).
-// Para notificaÃ§Ãµes locais sem backend, o app usa registration.showNotification()
-// diretamente a partir do contexto da pÃ¡gina.
+// Para notificações locais sem backend, o app usa registration.showNotification()
+// diretamente a partir do contexto da página.
 self.addEventListener('push', (event) => {
-    let data = { title: 'Life OS', body: 'Nova notificaÃ§Ã£o.' };
+    let data = { title: 'Life OS', body: 'Nova notificação.' };
     try {
         if (event.data) data = event.data.json();
     } catch (_) {
@@ -108,4 +108,3 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
-

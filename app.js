@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Sistema Vida - Core OS
  * Vanilla JS Single Page Application Controller with Data Binding
  */
@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260506-stability-ux-v103',
+    appBuildVersion: '20260506-encoding-fix-v104',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
