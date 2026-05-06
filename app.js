@@ -122,7 +122,7 @@ window.sistemaVidaState = {
         xp: 0,
         values: [],
         legacy: "",
-        ikigai: { missao: "", vocacao: "", love: "", good: "", need: "", paid: "", sintese: "", sinteseResumo: "" },
+        ikigai: { missao: "", vocacao: "", paixao: "", profissao: "", love: "", good: "", need: "", paid: "", sintese: "", sinteseResumo: "" },
         legacyObj: { familia: "", profissao: "", mundo: "", familiaResumo: "", profissaoResumo: "", mundoResumo: "" },
         vision: { saude: "", carreira: "", intelecto: "", quote: "", saudeResumo: "", carreiraResumo: "", intelectoResumo: "" },
         odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" },
@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260506-stability-ux-v102',
+    appBuildVersion: '20260506-stability-ux-v103',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1783,6 +1783,8 @@ const app = {
         const ikigaiDefaults = {
             missao: '',
             vocacao: '',
+            paixao: '',
+            profissao: '',
             love: '',
             good: '',
             need: '',
@@ -6920,6 +6922,8 @@ const app = {
             profile.purpose,
             ikigai.missao,
             ikigai.vocacao,
+            ikigai.paixao,
+            ikigai.profissao,
             ikigai.love,
             ikigai.good,
             ikigai.need,
@@ -6941,6 +6945,7 @@ const app = {
         if (safeDays <= 1) return 'Diário';
         if (safeDays === 7) return 'Semanal';
         if (safeDays === 30) return 'Mensal';
+        if (safeDays === 45) return 'A cada 45 dias';
         if (safeDays === 90) return 'Trimestral';
         if (safeDays === 180) return 'Semestral';
         return `${safeDays} dias`;
@@ -7442,9 +7447,9 @@ const app = {
             weeklyPlan: { label: 'Planejamento semanal', expectedDays: 7, icon: 'edit_calendar', why: 'Escolher a carga da semana.' },
             weeklyReview: { label: 'Revisão semanal', expectedDays: 7, icon: 'rate_review', why: 'Transformar experiência em aprendizado.' },
             cycleReview: { label: 'Revisão de ciclo', expectedDays: 84, icon: 'fact_check', why: 'Fechar o ciclo de 12 semanas e decidir destino dos OKRs.' },
-            wheel: { label: 'Roda da Vida', expectedDays: 30, icon: 'pie_chart', why: 'Termômetro mensal das áreas.' },
-            perma: { label: 'PERMA', expectedDays: 30, icon: 'psychology', why: 'Florescimento mensal.' },
-            swls: { label: 'SWLS', expectedDays: 90, icon: 'monitoring', why: 'Satisfação global trimestral.' },
+            wheel: { label: 'Roda da Vida', expectedDays: 45, icon: 'pie_chart', why: 'Mapa de equilíbrio entre as áreas da vida.' },
+            perma: { label: 'PERMA', expectedDays: 90, icon: 'psychology', why: 'Diagnóstico profundo de florescimento.' },
+            swls: { label: 'SWLS', expectedDays: 30, icon: 'monitoring', why: 'Termômetro rápido de satisfação global.' },
             lifeGoals: { label: 'Metas de vida', expectedDays: 180, icon: 'flag', why: 'Revisão semestral das metas de 1 a 5 anos e do rumo de longo prazo.' },
             odyssey: { label: 'Odyssey Plan', expectedDays: 180, icon: 'explore', why: 'Revisão semestral dos cenários de vida.' },
             purpose: { label: 'Visão, Legado & Ikigai', expectedDays: 180, icon: 'self_improvement', why: 'Revisão semestral do norte existencial e do legado desejado.' }
@@ -9692,7 +9697,7 @@ const app = {
         stateSchemaVersion: CURRENT_STATE_SCHEMA_VERSION,
         profile: {
           name: 'Viajante', level: 1, xp: 0, values: [], legacy: '',
-          ikigai: { missao: '', vocacao: '', love: '', good: '', need: '', paid: '', sintese: '', sinteseResumo: '' },
+          ikigai: { missao: '', vocacao: '', paixao: '', profissao: '', love: '', good: '', need: '', paid: '', sintese: '', sinteseResumo: '' },
           legacyObj: { familia: '', profissao: '', mundo: '', familiaResumo: '', profissaoResumo: '', mundoResumo: '' },
           vision: { saude: '', carreira: '', intelecto: '', quote: '', saudeResumo: '', carreiraResumo: '', intelectoResumo: '' },
           odyssey: { cenarioA: '', cenarioB: '', cenarioC: '' },
@@ -9752,6 +9757,10 @@ const app = {
             good: 'Desenvolvimento de software, pensamento sistêmico e design de produto.',
             need: 'Ferramentas práticas de autogestão e produtividade com propósito.',
             paid: 'Desenvolvimento de apps, consultoria de produto e software sob medida.',
+            paixao: 'Criar e ensinar com profundidade, transformando ideias em algo vivo.',
+            profissao: 'Construir produtos digitais e liderar decisões de produto orientadas por dados.',
+            vocacao: 'Usar tecnologia para ampliar autonomia e clareza na vida das pessoas.',
+            missao: 'Conectar propósito humano e execução prática para gerar transformação real.',
             sintese: 'Construir tecnologia que transforma rotinas em jornadas com sentido.'
           },
           legacyObj: {
@@ -11668,11 +11677,12 @@ const app = {
             icon: 'explore',
             title: 'Ikigai, Odyssey & Visão',
             subtitle: 'Razão de viver e cenários de futuro',
-            what: 'O <strong>Ikigai</strong> cruza o que você ama, no que é bom, o que o mundo precisa e pelo que pode ser pago. Os <strong>Odyssey Plans</strong> projetam três cenários distintos para os próximos 5 anos. A <strong>Visão de Vida</strong> declara quem você quer ser em saúde, carreira e intelecto.',
+            what: 'O <strong>Ikigai</strong> cruza quatro perguntas base e gera interseções úteis: Paixão, Profissão, Vocação e Missão. Os <strong>Odyssey Plans</strong> projetam três cenários distintos para os próximos 5 anos. A <strong>Visão de Vida</strong> declara quem você quer ser em saúde, carreira e intelecto.',
             why: 'O futuro psicologicamente "próximo" é o que motiva ação no presente. Pesquisas em continuidade do self mostram que pessoas que visualizam um futuro vívido tomam decisões financeiras e de saúde melhores. Designing Your Life (Stanford) recomenda múltiplos cenários porque combate a falsa premissa de que existe "um caminho certo".',
             refs: ['Mieko Kamiya / Ken Mogi — Ikigai', 'Burnett & Evans — Designing Your Life', 'Hal Hershfield — Future Self Continuity'],
             how: [
-                'Preencha cada quadrante do Ikigai com 1-2 frases honestas, depois sintetize sua "razão de viver".',
+                'Preencha os quatro blocos do Ikigai e depois descreva as interseções: Paixão, Profissão, Vocação e Missão.',
+                'Só então escreva a síntese final do Ikigai em uma frase curta e objetiva.',
                 'Crie 3 Odyssey Plans bem distintos — um conservador, um audacioso, um radical — para forçar imaginação.',
                 'Atualize a Visão de Vida a cada 6-12 meses; ela é uma bússola, não um contrato.',
                 'Quando definir Metas, pergunte: "qual cenário Odyssey isso serve?"'
@@ -11684,13 +11694,13 @@ const app = {
             icon: 'monitoring',
             title: 'Bem-estar: Roda da Vida, PERMA & SWLS',
             subtitle: 'Diagnóstico holístico de florescimento',
-            what: 'Três instrumentos complementares: a <strong>Roda da Vida</strong> mede equilíbrio em 8 dimensões; o <strong>PERMA</strong> mensura florescimento em 5 dimensões (Emoções positivas, Engajamento, Relacionamentos, Meaning, Achievement); o <strong>SWLS</strong> é uma escala validada de satisfação cognitiva global.',
+            what: 'As três ferramentas não são redundantes: a <strong>Roda da Vida</strong> mostra equilíbrio entre áreas, o <strong>SWLS</strong> é um termômetro global rápido e o <strong>PERMA</strong> aprofunda qualidade do florescimento em 5 dimensões.',
             why: 'PERMA (Seligman) e SWLS (Diener) são instrumentos validados em centenas de estudos. Usados juntos, capturam tanto o "como me sinto" (afetivo) quanto o "como avalio minha vida" (cognitivo). A Roda da Vida adiciona granularidade por dimensão para detectar áreas negligenciadas.',
             refs: ['Seligman — Flourish (PERMA)', 'Diener et al. — Satisfaction with Life Scale (SWLS)', 'Paul J. Meyer — Wheel of Life'],
             how: [
                 'Reavalie a Roda da Vida a cada 4-6 semanas — anote a dimensão mais baixa.',
-                'PERMA é mais sensível: avalie mensalmente para detectar tendências.',
-                'SWLS deve ser preenchido a cada 3 meses; comparações curtas demais são ruído.',
+                'SWLS é rápido: use mensalmente como linha de tendência.',
+                'PERMA é mais profundo: use trimestralmente para reduzir ruído e fadiga.',
                 'Cruze: dimensões baixas na Roda devem aparecer como Metas em Planos.'
             ],
             cta: { label: 'Reavaliar bem-estar', view: 'proposito', sectionId: 'proposito-roda-section' }
@@ -11771,7 +11781,7 @@ const app = {
             how: [
                 'Faça o check-in diário na aba Hoje (topo da página): sono, qualidade do sono, energia, humor e estresse.',
                 'Use os badges de cadência como sinal visual, nunca como punição.',
-                'Roda da Vida e PERMA: mensal. SWLS: trimestral. Odyssey/Visão: semestral.',
+                'SWLS: mensal. Roda da Vida: a cada 4-6 semanas. PERMA: trimestral. Odyssey/Visão: semestral.',
                 'Quando algo atrasar, retome com a menor ação possível em vez de compensar tudo de uma vez.'
             ],
             cta: { label: 'Abrir Painel', view: 'painel' }
@@ -13870,7 +13880,11 @@ const app = {
                         renderField('display-ikigai-good', prof.ikigai.good, "No que você é excelente?");
                         renderField('display-ikigai-need', prof.ikigai.need, "Do que o mundo precisa?");
                         renderField('display-ikigai-paid', prof.ikigai.paid, "Pelo que você pode ser pago?");
-                        renderField('display-ikigai-sintese', prof.ikigai.sintese, "Sua razão de ser...");
+                        renderField('display-ikigai-paixao', prof.ikigai.paixao, "Onde amor e talento se encontram.");
+                        renderField('display-ikigai-profissao', prof.ikigai.profissao, "Onde talento e sustento se encontram.");
+                        renderField('display-ikigai-vocacao', prof.ikigai.vocacao, "Onde sustento e contribuição se encontram.");
+                        renderField('display-ikigai-missao', prof.ikigai.missao, "Onde amor e necessidade do mundo se encontram.");
+                        renderField('display-ikigai-sintese', prof.ikigai.sintese, "Sua síntese de vida em uma frase.");
 
                         // Visao (display-id)
                         renderField('display-vision-saude', prof.vision.saude, "Sua visão para o corpo e energia...");
@@ -14759,7 +14773,17 @@ const app = {
 
         propData.push(["Identidade", "Valores Pessoais", (state.profile.values || []).join(", ")]);
 
-        const ikigaiM = { missao: "Missão", vocacao: "Vocação", love: "Paixão (O que ama)", good: "Bom em (O que é bom)", need: "O que o Mundo Precisa", paid: "Pelo que pode ser Pago", sintese: "Síntese Ikigai" };
+        const ikigaiM = {
+            love: "O que ama",
+            good: "No que é bom",
+            need: "O que o mundo precisa",
+            paid: "Pelo que pode ser pago",
+            paixao: "Paixão (Amo + Bom)",
+            profissao: "Profissão (Bom + Pago)",
+            vocacao: "Vocação (Pago + Mundo)",
+            missao: "Missão (Amo + Mundo)",
+            sintese: "Síntese Ikigai"
+        };
         Object.entries(ikigaiM).forEach(([k, label]) => {
             propData.push(["Ikigai", label, state.profile.ikigai?.[k] || ""]);
         });
@@ -15086,6 +15110,8 @@ const app = {
                     else if (cat.includes('ikigai')) {
                         if (kLow.includes('miss')) window.sistemaVidaState.profile.ikigai.missao = val;
                         else if (kLow.includes('voca')) window.sistemaVidaState.profile.ikigai.vocacao = val;
+                        else if (kLow.includes('paix')) window.sistemaVidaState.profile.ikigai.paixao = val;
+                        else if (kLow.includes('prof')) window.sistemaVidaState.profile.ikigai.profissao = val;
                         else if (kLow.includes('amo')) window.sistemaVidaState.profile.ikigai.love = val;
                         else if (kLow.includes('bom')) window.sistemaVidaState.profile.ikigai.good = val;
                         else if (kLow.includes('precisa')) window.sistemaVidaState.profile.ikigai.need = val;
