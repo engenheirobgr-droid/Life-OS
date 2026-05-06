@@ -193,7 +193,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260505-phase6-trail-discovery-v90',
+    appBuildVersion: '20260505-phase6-gap-rules-v91',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -5612,7 +5612,7 @@ const app = {
         setTimeout(() => openPlannerWhenReady(), this.currentView === 'planos' ? 80 : 450);
     },
 
-    openCreateModal: function(type = 'metas') {
+    openCreateModal: function(type = 'metas', parentId = null) {
         this.closeFabMenu();
         this.editingEntity = null; // Limpa estado de edição
         this.clearBlockingMessage();
@@ -5649,6 +5649,11 @@ const app = {
 
         document.getElementById('crud-type').value = type;
         this.onTypeChange(type);
+        // Pre-select parent when opening from a gap action or context CTA
+        if (parentId) {
+            const parentSelect = document.getElementById('create-parent');
+            if (parentSelect) parentSelect.value = parentId;
+        }
         document.getElementById('crud-modal').classList.remove('hidden');
         document.getElementById('crud-title').focus();
     },
@@ -8105,6 +8110,61 @@ const app = {
         return { macro, okr, meta };
     },
 
+    // Detects the highest-priority gap in the Meta→OKR→Macro→Micro hierarchy.
+    // Returns a gap descriptor object or null when no gaps exist.
+    _detectHierarchyGap: function(state) {
+        const entities = state?.entities || {};
+        const isActive = item => item && item.id && item.status !== 'done' && item.status !== 'abandoned' && !item.completed;
+        const metas   = (entities.metas  || []).filter(isActive);
+        const okrs    = (entities.okrs   || []).filter(isActive);
+        const macros  = (entities.macros || []).filter(isActive);
+        const micros  = (entities.micros || []).filter(isActive);
+
+        // Priority 1: active meta with no OKR at all
+        for (const meta of metas) {
+            if (!okrs.some(o => o.metaId === meta.id)) {
+                return {
+                    gapType: 'meta-sem-okr',
+                    entityType: 'okrs',
+                    parentId: meta.id,
+                    parentTitle: meta.title,
+                    title: 'Meta sem resultado-chave',
+                    description: `"${meta.title}" ainda não tem um OKR. Defina um resultado mensurável para que o progresso desta meta possa ser rastreado.`
+                };
+            }
+        }
+
+        // Priority 2: active OKR with no macro
+        for (const okr of okrs) {
+            if (!macros.some(m => m.okrId === okr.id)) {
+                return {
+                    gapType: 'okr-sem-macro',
+                    entityType: 'macros',
+                    parentId: okr.id,
+                    parentTitle: okr.title,
+                    title: 'OKR sem projeto vinculado',
+                    description: `"${okr.title}" ainda não tem uma macro. Crie um projeto para dar execução a este resultado esperado.`
+                };
+            }
+        }
+
+        // Priority 3: active macro with no active micro
+        for (const macro of macros) {
+            if (!micros.some(m => m.macroId === macro.id)) {
+                return {
+                    gapType: 'macro-sem-micro',
+                    entityType: 'micros',
+                    parentId: macro.id,
+                    parentTitle: macro.title,
+                    title: 'Macro sem próximo passo',
+                    description: `"${macro.title}" não tem ações ativas vinculadas. Crie uma micro ação para avançar neste projeto.`
+                };
+            }
+        }
+
+        return null;
+    },
+
     getDailyCompassQuotes: function() {
         return [
             // Saúde
@@ -8374,13 +8434,41 @@ const app = {
         });
 
         const top = ranked[0] || null;
-        if (!top) return null;
+        if (!top) {
+            // No actionable micro found — surface hierarchy gap as next best action instead
+            return this._detectHierarchyGap(state);
+        }
         if (top.reasons.length === 0) top.reasons.push('é a melhor próxima micro ativa');
         return top;
     },
 
     _renderNextActionCard: function(next, variant = 'today') {
         if (!next?.micro) {
+            // Gap in hierarchy — guide user to complete the chain
+            if (next?.gapType) {
+                const entityLabel = ({ okrs: 'OKR', macros: 'macro', micros: 'micro ação' })[next.entityType] || next.entityType;
+                const icon = ({ okrs: 'flag', macros: 'checklist', micros: 'bolt' })[next.entityType] || 'warning';
+                const parentIdSafe = this.escapeHtml(next.parentId || '');
+                const entityTypeSafe = this.escapeHtml(next.entityType || '');
+                return `
+                    <div class="bg-amber-500/[0.06] border border-amber-500/20 rounded-2xl p-5 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <span class="material-symbols-outlined notranslate text-amber-500 shrink-0 mt-0.5">${icon}</span>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-1">Trilha incompleta</p>
+                                <p class="text-sm font-bold text-on-surface">${this.escapeHtml(next.title)}</p>
+                                <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">${this.escapeHtml(next.description)}</p>
+                                <button type="button"
+                                    onclick="window.app.openCreateModal('${entityTypeSafe}', '${parentIdSafe}')"
+                                    class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[11px] font-bold uppercase tracking-widest hover:bg-amber-500/20 active:scale-95 transition-all">
+                                    <span class="material-symbols-outlined notranslate text-[14px]">add</span>
+                                    Criar ${this.escapeHtml(entityLabel)}
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
             const title = variant === 'panel' ? 'Nenhuma decisão urgente' : 'Nada urgente agora';
             const text = variant === 'panel'
                 ? 'O plano não mostra uma micro crítica neste momento. Continue executando o que já foi planejado.'
