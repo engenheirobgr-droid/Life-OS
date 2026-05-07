@@ -16,6 +16,7 @@ import {
 
 // Phase 10 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js';
+import { attachHabitSuggestions } from './js/habitSuggestions.js';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -187,7 +188,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-phase5-checkin-rec-v117',
+    appBuildVersion: '20260507-phase6-habit-suggestions-v118',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -16499,6 +16500,7 @@ const app = {
 
 // Phase 10 module attachments — extend app with extracted modules
 attachSubjectiveScales(app);
+attachHabitSuggestions(app);
 
 window.app = app;
 
