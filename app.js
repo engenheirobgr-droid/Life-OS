@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-phase4-checkin-collapse-v116',
+    appBuildVersion: '20260507-phase5-checkin-rec-v117',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -8016,6 +8016,41 @@ const app = {
         return `Check-in concluído · Sono ${entry.sleepHours || 0}h · ${energyLabel} · ${moodLabel} · ${stressLabel}${emotion}`;
     },
 
+    getDailyCheckinRecommendationDismissKey: function(dateKey) {
+        return `lifeos_checkin_rec_dismissed_${dateKey || this.getLocalDateKey()}`;
+    },
+
+    getDailyCheckinRecommendation: function(entry) {
+        if (!entry) return '';
+        const sleep = Number(entry.sleepHours || 0);
+        const sleepQ = Number(entry.sleepQuality || 3);
+        const energy = Number(entry.energy || 3);
+        const mood = Number(entry.mood || 3);
+        const stress = Number(entry.stress || 3);
+        const emotion = String(entry.emotion || '').toLowerCase();
+        if (sleep < 5 || sleepQ < 3) {
+            return 'Sono curto ou de baixa qualidade hoje. Priorize o essencial e proteja uma desaceleração real à noite.';
+        }
+        if (stress >= 4 && emotion.includes('ans')) {
+            return 'Ansiedade e carga alta hoje. Vale uma pausa de respiração ou caminhada antes do próximo bloco.';
+        }
+        if (stress >= 4) {
+            return 'Carga emocional alta. Reduza o número de micros e preserve uma pausa de verdade hoje.';
+        }
+        if (energy <= 2) {
+            return 'Energia baixa. Um bloco de foco curto e bem feito vale mais do que um longo arrastado.';
+        }
+        if (mood <= 2) {
+            return 'Humor sensível hoje. Simplifique expectativas e busque uma pequena vitória concreta.';
+        }
+        return '';
+    },
+
+    dismissDailyCheckinRecommendation: function() {
+        try { this.localSet(this.getDailyCheckinRecommendationDismissKey(), '1'); } catch (_) {}
+        this.renderDailyCheckinPanel();
+    },
+
     // getCheckinScaleText and renderDailyCheckinGuidance extracted to js/subjectiveScales.js (Phase 10.1)
     // Attached to app via attachSubjectiveScales(app) at module load time.
 
@@ -8125,6 +8160,13 @@ const app = {
         if (formContent) formContent.classList.toggle('hidden', !!todayEntry && !expanded);
         if (summaryWrap) summaryWrap.classList.toggle('hidden', !todayEntry || expanded);
         if (summaryText) summaryText.textContent = this.buildDailyCheckinSummary(todayEntry);
+        const recommendationWrap = document.getElementById('daily-checkin-recommendation');
+        const recommendationText = document.getElementById('daily-checkin-recommendation-text');
+        const recommendation = this.getDailyCheckinRecommendation(todayEntry);
+        let recDismissed = false;
+        try { recDismissed = this.localGet(this.getDailyCheckinRecommendationDismissKey()) === '1'; } catch (_) {}
+        if (recommendationWrap) recommendationWrap.classList.toggle('hidden', !todayEntry || expanded || !recommendation || recDismissed);
+        if (recommendationText) recommendationText.textContent = recommendation;
         if (saveBtn) {
             saveBtn.classList.toggle('hidden', !!todayEntry && !expanded);
             saveBtn.innerHTML = `<span class="material-symbols-outlined notranslate text-[15px]">check_circle</span> ${todayEntry ? 'Atualizar' : 'Salvar'}`;
