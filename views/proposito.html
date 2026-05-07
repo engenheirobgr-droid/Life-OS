@@ -26,6 +26,10 @@
             </div>
             <button type="button" onclick="window.app.openManualChapter('identidade')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">menu_book</button>
         </div>
+        <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 mb-6">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Pergunta guia</p>
+            <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Quais valores, forças e sombras explicam melhor quem você é hoje e quem quer praticar ser?</p>
+        </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
                 <div class="flex items-center justify-between gap-3 mb-3">
@@ -82,9 +86,13 @@
         <div class="flex items-start justify-between mb-6">
             <div>
                 <h3 class="text-xl font-headline font-bold text-on-background">Roda da Vida</h3>
-                <p class="text-sm text-outline mt-1">Estado atual do equilíbrio nas 8 dimensões.</p>
+                <p class="text-sm text-outline mt-1">Mapa de investimento: mostra onde sua energia está bem distribuída e onde há áreas negligenciadas.</p>
             </div>
             <button type="button" onclick="window.app.openManualChapter('bem-estar')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">pie_chart</button>
+        </div>
+        <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 mb-6">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Pergunta guia</p>
+            <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Como está o equilíbrio entre saúde, mente, carreira, finanças, relacionamentos, família, lazer e propósito hoje?</p>
         </div>
         <div class="flex-1 flex flex-col items-center justify-center py-4 gap-12">
             <!-- Roda Container Ampliado -->
@@ -138,9 +146,13 @@
         <div class="flex items-start justify-between mb-8">
             <div>
                 <h3 class="text-xl font-headline font-bold text-on-background tracking-tight">Bem-Estar PERMA</h3>
-                <p class="text-sm text-outline mt-1 font-label uppercase tracking-widest">Seu florescimento em 5 dimensões.</p>
+                <p class="text-sm text-outline mt-1 font-label uppercase tracking-widest">Diagnóstico de florescimento: mostra onde sua vida está nutrindo você e onde está empobrecendo você.</p>
             </div>
             <button type="button" onclick="window.app.openManualChapter('bem-estar')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">psychology</button>
+        </div>
+        <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 mb-6">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Pergunta guia</p>
+            <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Em quais dimensões sua experiência de existir está florescendo: emoções, engajamento, relações, sentido e realização?</p>
         </div>
         <div id="perma-charts-container" class="space-y-6 mt-2">
             <!-- Renderizado dinamicamente pelo app.js -->
@@ -159,9 +171,13 @@
         <div class="flex items-start justify-between mb-6">
             <div>
                 <h3 class="text-xl font-headline font-bold text-on-background tracking-tight">Satisfação com a Vida (SWLS)</h3>
-                <p class="text-sm text-outline mt-1">Diagnóstico cognitivo global complementar ao PERMA.</p>
+                <p class="text-sm text-outline mt-1">Termômetro rápido: 5 perguntas validadas que geram uma nota global de satisfação com a vida (5-35).</p>
             </div>
             <button type="button" onclick="window.app.openManualChapter('bem-estar')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">monitoring</button>
+        </div>
+        <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 mb-6">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Pergunta guia</p>
+            <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Quando você olha para sua vida como um todo, qual é seu nível atual de satisfação?</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
             <div class="bg-surface-container-low p-5 rounded-xl border border-outline-variant/10">
@@ -259,6 +275,119 @@
     </div>
 </section>
 
+<!-- Meu Legado Card -->
+<section id="proposito-legado-section" class="mt-8">
+<p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">O que quero deixar</p>
+<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full">
+        <div class="flex items-start justify-between mb-6">
+            <div>
+                <h3 class="text-xl font-headline font-bold text-on-background">Meu Legado</h3>
+                <p class="text-sm text-outline mt-1">Âncora de longo prazo: o impacto que você quer deixar em pessoas, trabalho e mundo.</p>
+            </div>
+            <span class="material-symbols-outlined notranslate text-outline text-2xl">history_edu</span>
+        </div>
+<div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 mb-8">
+<p class="text-[10px] font-bold uppercase tracking-widest text-primary">Pergunta guia</p>
+<p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Se alguém importante descrevesse seu impacto daqui a muitos anos, o que você gostaria que essa pessoa dissesse sobre sua presença na família, no trabalho e no mundo?</p>
+</div>
+<div class="space-y-12">
+<div>
+<p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Família &amp; Relações</p>
+<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Família', 'legacyObj', 'familia', 'familiaResumo')">
+<p id="display-legacy-familia" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+<span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+</div>
+</div>
+<div>
+<p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Profissão &amp; Obra</p>
+<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Profissão', 'legacyObj', 'profissao', 'profissaoResumo')">
+<p id="display-legacy-profissao" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+<span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+</div>
+</div>
+<div>
+<p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Mundo &amp; Sociedade</p>
+<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Mundo', 'legacyObj', 'mundo', 'mundoResumo')">
+<p id="display-legacy-mundo" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+<span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Odyssey Plans Card -->
+<section id="odyssey-section" class="mt-8">
+    <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">O que posso viver</p>
+    <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
+        
+        <div class="flex items-start justify-between mb-6">
+            <div>
+                <h3 class="text-xl font-headline font-bold text-on-background">Odyssey Plans</h3>
+                <p class="text-sm text-outline mt-1">Exploração de futuros: três vidas distintas e plausíveis que você poderia construir nos próximos 5 anos.</p>
+            </div>
+            <button type="button" onclick="window.app.openManualChapter('ikigai-odyssey')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">explore_nearby</button>
+        </div>
+        
+        <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 mb-6">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Pergunta guia</p>
+            <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Quais são três vidas distintas e plausíveis que você poderia construir nos próximos 5 anos? Não escolha a melhor agora; abra possibilidades antes de convergir.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Scenario 1 -->
+            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário A', 'odyssey', 'cenarioA')">
+                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-label font-bold uppercase tracking-wider">Cenário A</div>
+                <h4 id="odyssey-title-cenarioA" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário A', 'odysseyTitles', 'cenarioA')" title="Clique para editar o título do cenário">Cenário A</h4>
+                <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
+                    <img id="odyssey-image-cenarioA" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário A" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioA')">
+                    <button id="odyssey-image-button-cenarioA" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioA')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
+                        <span class="material-symbols-outlined notranslate text-[14px]">photo_camera</span>
+                        <span class="hidden sm:inline">Editar</span>
+                    </button>
+                </div>
+                <p id="display-cenarioA" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                <div class="mt-auto pt-4 border-t border-outline-variant/10">
+                    <p class="text-[10px] font-label text-outline text-center uppercase tracking-widest">Plano Principal</p>
+                </div>
+            </div>
+
+            <!-- Scenario 2 -->
+            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário B', 'odyssey', 'cenarioB')">
+                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-secondary/10 text-secondary text-[10px] font-label font-bold uppercase tracking-wider">Cenário B</div>
+                <h4 id="odyssey-title-cenarioB" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário B', 'odysseyTitles', 'cenarioB')" title="Clique para editar o título do cenário">Cenário B</h4>
+                <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
+                    <img id="odyssey-image-cenarioB" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário B" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioB')">
+                    <button id="odyssey-image-button-cenarioB" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioB')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
+                        <span class="material-symbols-outlined notranslate text-[14px]">photo_camera</span>
+                        <span class="hidden sm:inline">Editar</span>
+                    </button>
+                </div>
+                <p id="display-cenarioB" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                <div class="mt-auto pt-4 border-t border-outline-variant/10">
+                    <p class="text-[10px] font-label text-outline text-center uppercase tracking-widest">Alternativa B</p>
+                </div>
+            </div>
+
+            <!-- Scenario 3 -->
+            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário C', 'odyssey', 'cenarioC')">
+                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary text-[10px] font-label font-bold uppercase tracking-wider">Cenário C</div>
+                <h4 id="odyssey-title-cenarioC" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário C', 'odysseyTitles', 'cenarioC')" title="Clique para editar o título do cenário">Cenário C</h4>
+                <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
+                    <img id="odyssey-image-cenarioC" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário C" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioC')">
+                    <button id="odyssey-image-button-cenarioC" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioC')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
+                        <span class="material-symbols-outlined notranslate text-[14px]">photo_camera</span>
+                        <span class="hidden sm:inline">Editar</span>
+                    </button>
+                </div>
+                <p id="display-cenarioC" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
+                <div class="mt-auto pt-4 border-t border-outline-variant/10">
+                    <p class="text-[10px] font-label text-outline text-center uppercase tracking-widest">Caminho do Radical</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Meu Ikigai Section -->
 <section id="proposito-ikigai-section" class="mt-8">
     <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">O que me move</p>
@@ -267,14 +396,14 @@
             <div class="flex items-start justify-between mb-8">
                 <div>
                     <h3 class="text-xl font-headline font-bold text-on-background">Meu Ikigai</h3>
-                    <p class="text-sm text-outline mt-1">Mapa visual da sua direcao de vida: base, intersecoes e sintese final.</p>
+                    <p class="text-sm text-outline mt-1">Mapa visual da sua contribuição: conecta prazer, talento, necessidade do mundo e sustento.</p>
                 </div>
                 <button type="button" onclick="window.app.openManualChapter('ikigai-odyssey')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">star</button>
             </div>
 
             <div class="rounded-2xl border border-primary/15 bg-primary/5 p-5">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Nao e redundante: cada ferramenta tem funcao</p>
-                <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Roda da Vida mostra equilibrio entre areas, SWLS mede satisfacao global rapida e PERMA aprofunda florescimento. No Ikigai, os blocos base viram intersecoes praticas: paixao, profissao, vocacao e missao.</p>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Pergunta guia</p>
+                <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Onde mora a interseção entre o que você ama, o que você faz bem, o que o mundo precisa e o que também pode sustentar sua vida?</p>
             </div>
 
             <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 md:p-6">
@@ -327,57 +456,17 @@
         </div>
     </div>
 </section>
-<!-- Meu Legado Card -->
-<section id="proposito-legado-section" class="mt-8">
-<p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">O que posso viver</p>
-<div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full">
-        <div class="flex items-start justify-between mb-6">
-            <div>
-                <h3 class="text-xl font-headline font-bold text-on-background">Meu Legado</h3>
-                <p class="text-sm text-outline mt-1">A marca que deseja deixar no mundo.</p>
-            </div>
-            <span class="material-symbols-outlined notranslate text-outline text-2xl">history_edu</span>
-        </div>
-<div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 mb-8">
-<p class="text-[10px] font-bold uppercase tracking-widest text-primary">Pergunta guia</p>
-<p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Se alguem importante para voce descrevesse seu impacto daqui a muitos anos, o que gostaria que essa pessoa dissesse sobre voce em familia, trabalho e mundo?</p>
-</div>
-<div class="space-y-12">
-<div>
-<p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Família &amp; Relações</p>
-<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Família', 'legacyObj', 'familia', 'familiaResumo')">
-<p id="display-legacy-familia" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-<span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
-</div>
-</div>
-<div>
-<p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Profissão &amp; Obra</p>
-<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Profissão', 'legacyObj', 'profissao', 'profissaoResumo')">
-<p id="display-legacy-profissao" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-<span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
-</div>
-</div>
-<div>
-<p class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-2">Mundo &amp; Sociedade</p>
-<div class="flex justify-between items-start group cursor-pointer" onclick="window.app.openTextEdit('Legado: Mundo', 'legacyObj', 'mundo', 'mundoResumo')">
-<p id="display-legacy-mundo" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-<span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
-</div>
-</div>
-</div>
-</div>
-</section>
-
 
 <!-- Visão de Vida Section -->
 <section id="proposito-visao-section" class="mt-8">
     <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">Quem quero me tornar</p>
     <div class="md:col-span-2 bg-surface-container-lowest rounded-2xl p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
         <div class="max-w-3xl mx-auto">
-            <h3 class="font-headline text-2xl italic mb-6 text-center">Visão de Vida</h3>
+            <h3 class="font-headline text-2xl italic mb-2 text-center">Visão de Vida</h3>
+            <p class="text-sm text-outline text-center mb-6">Convergência: a vida concreta que você escolhe construir depois da exploração.</p>
             <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 mb-8">
                 <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Pergunta guia</p>
-                <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Imagine um futuro desejado e concreto: como seria um dia comum seu se saude, carreira, mente e sentido estivessem bem alinhados?</p>
+                <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Dada toda essa exploração, qual é a vida concreta que você escolhe construir nos próximos anos?</p>
             </div>
             <div class="columns-1 md:columns-2 gap-12 space-y-8">
                 <div>
@@ -407,78 +496,6 @@
                         <p id="display-vision-quote" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
                         <span class="material-symbols-outlined notranslate text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity ml-4">edit_square</span>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Odyssey Plans Card -->
-<section id="odyssey-section" class="mt-8">
-    <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">O que posso viver</p>
-    <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
-        
-        <div class="flex items-start justify-between mb-6">
-            <div>
-                <h3 class="text-xl font-headline font-bold text-on-background">Odyssey Plans</h3>
-                <p class="text-sm text-outline mt-1">Três cenários possíveis para os próximos 5 anos.</p>
-            </div>
-            <button type="button" onclick="window.app.openManualChapter('ikigai-odyssey')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">explore_nearby</button>
-        </div>
-        
-        <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 mb-6">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Como pensar nos cenarios</p>
-            <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Nao escolha o melhor agora. Descreva tres vidas plausiveis: a via consolidada, uma alternativa criativa e um caminho mais radical. O objetivo e ampliar clareza, nao tomar uma decisao imediata.</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Scenario 1 -->
-            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário A', 'odyssey', 'cenarioA')">
-                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-label font-bold uppercase tracking-wider">Cenário A</div>
-                <h4 id="odyssey-title-cenarioA" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário A', 'odysseyTitles', 'cenarioA')" title="Clique para editar o título do cenário">Cenário A</h4>
-                <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
-                    <img id="odyssey-image-cenarioA" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário A" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioA')">
-                    <button id="odyssey-image-button-cenarioA" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioA')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
-                        <span class="material-symbols-outlined notranslate text-[14px]">photo_camera</span>
-                        <span class="hidden sm:inline">Editar</span>
-                    </button>
-                </div>
-                <p id="display-cenarioA" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-                <div class="mt-auto pt-4 border-t border-outline-variant/10">
-                    <p class="text-[10px] font-label text-outline text-center uppercase tracking-widest">Plano Principal</p>
-                </div>
-            </div>
-
-            <!-- Scenario 2 -->
-            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário B', 'odyssey', 'cenarioB')">
-                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-secondary/10 text-secondary text-[10px] font-label font-bold uppercase tracking-wider">Cenário B</div>
-                <h4 id="odyssey-title-cenarioB" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário B', 'odysseyTitles', 'cenarioB')" title="Clique para editar o título do cenário">Cenário B</h4>
-                <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
-                    <img id="odyssey-image-cenarioB" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário B" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioB')">
-                    <button id="odyssey-image-button-cenarioB" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioB')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
-                        <span class="material-symbols-outlined notranslate text-[14px]">photo_camera</span>
-                        <span class="hidden sm:inline">Editar</span>
-                    </button>
-                </div>
-                <p id="display-cenarioB" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-                <div class="mt-auto pt-4 border-t border-outline-variant/10">
-                    <p class="text-[10px] font-label text-outline text-center uppercase tracking-widest">Alternativa B</p>
-                </div>
-            </div>
-
-            <!-- Scenario 3 -->
-            <div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 flex flex-col h-full relative cursor-pointer hover:bg-surface-container-high transition-all" onclick="window.app.openTextEdit('Cenário C', 'odyssey', 'cenarioC')">
-                <div class="absolute top-4 right-6 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary text-[10px] font-label font-bold uppercase tracking-wider">Cenário C</div>
-                <h4 id="odyssey-title-cenarioC" class="font-headline text-xl font-bold mb-4 cursor-pointer" onclick="event.stopPropagation(); window.app.openTextEdit('Título do Cenário C', 'odysseyTitles', 'cenarioC')" title="Clique para editar o título do cenário">Cenário C</h4>
-                <div class="mb-3 h-28 rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container-high/50 relative">
-                    <img id="odyssey-image-cenarioC" class="hidden w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity" alt="Cenário C" onclick="event.stopPropagation(); window.app.viewOdysseyImage('cenarioC')">
-                    <button id="odyssey-image-button-cenarioC" onclick="event.stopPropagation(); window.app.openOdysseyImagePicker('cenarioC')" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors" title="Editar imagem do cenário">
-                        <span class="material-symbols-outlined notranslate text-[14px]">photo_camera</span>
-                        <span class="hidden sm:inline">Editar</span>
-                    </button>
-                </div>
-                <p id="display-cenarioC" class="text-sm text-on-surface-variant leading-relaxed mt-2 overflow-y-auto no-scrollbar max-h-[250px]">Carregando dados...</p>
-                <div class="mt-auto pt-4 border-t border-outline-variant/10">
-                    <p class="text-[10px] font-label text-outline text-center uppercase tracking-widest">Caminho do Radical</p>
                 </div>
             </div>
         </div>
