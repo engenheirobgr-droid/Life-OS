@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-stabilize-f1-f3-v115',
+    appBuildVersion: '20260507-phase4-checkin-collapse-v116',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -7127,6 +7127,7 @@ const app = {
                     mood: clamp(entry?.mood),
                     stress: clamp(entry?.stress),
                     emotion: String(entry?.emotion || '').trim().slice(0, 40),
+                    intention: String(entry?.intention || '').trim().slice(0, 160),
                     savedAt: String(entry?.savedAt || new Date().toISOString())
                 };
             })
@@ -7981,6 +7982,40 @@ const app = {
         return (window.sistemaVidaState.profile.dailyCheckins || []).find(entry => entry.date === today) || null;
     },
 
+    getDailyCheckinExpandKey: function(dateKey = this.getLocalDateKey()) {
+        return `lifeos_checkin_expanded_${dateKey}`;
+    },
+
+    isDailyCheckinExpanded: function(todayEntry) {
+        const today = this.getLocalDateKey();
+        if (!todayEntry) return true;
+        if (this._dailyCheckinExpandedDate === today && typeof this._dailyCheckinExpanded === 'boolean') {
+            return this._dailyCheckinExpanded;
+        }
+        let stored = '';
+        try { stored = this.localGet(this.getDailyCheckinExpandKey(today)) || ''; } catch (_) {}
+        if (stored === '1') return true;
+        if (stored === '0') return false;
+        return false;
+    },
+
+    expandDailyCheckinPanel: function(expanded = true) {
+        const today = this.getLocalDateKey();
+        this._dailyCheckinExpandedDate = today;
+        this._dailyCheckinExpanded = !!expanded;
+        try { this.localSet(this.getDailyCheckinExpandKey(today), expanded ? '1' : '0'); } catch (_) {}
+        this.renderDailyCheckinPanel();
+    },
+
+    buildDailyCheckinSummary: function(entry) {
+        if (!entry) return 'Check-in ainda não registrado hoje.';
+        const moodLabel = this.getCheckinScaleText ? this.getCheckinScaleText('mood', entry.mood) : `Humor ${entry.mood}`;
+        const energyLabel = this.getCheckinScaleText ? this.getCheckinScaleText('energy', entry.energy) : `Energia ${entry.energy}`;
+        const stressLabel = this.getCheckinScaleText ? this.getCheckinScaleText('stress', entry.stress) : `Estresse ${entry.stress}`;
+        const emotion = entry.emotion ? ` · Emoção ${entry.emotion}` : '';
+        return `Check-in concluído · Sono ${entry.sleepHours || 0}h · ${energyLabel} · ${moodLabel} · ${stressLabel}${emotion}`;
+    },
+
     // getCheckinScaleText and renderDailyCheckinGuidance extracted to js/subjectiveScales.js (Phase 10.1)
     // Attached to app via attachSubjectiveScales(app) at module load time.
 
@@ -8020,6 +8055,9 @@ const app = {
         const intentionAward = entry.intention
             ? this.awardGamification('daily_intention', { key: `daily_intention:${today}`, date: today })
             : null;
+        this._dailyCheckinExpandedDate = today;
+        this._dailyCheckinExpanded = false;
+        try { this.localSet(this.getDailyCheckinExpandKey(today), '0'); } catch (_) {}
         this.saveState(true);
         try { this.localSet('lifeos_daily_checkins_backup', JSON.stringify(window.sistemaVidaState.profile.dailyCheckins || [])); } catch (_) {}
         this.renderDailyCheckinPanel();
@@ -8078,6 +8116,19 @@ const app = {
         const todayLog = (window.sistemaVidaState.dailyLogs || {})[this.getLocalDateKey()] || {};
         const focoInput = document.getElementById('diario-foco');
         if (focoInput) focoInput.value = (todayLog.focus || defaults.intention || '').trim();
+
+        const expanded = this.isDailyCheckinExpanded(todayEntry);
+        const formContent = document.getElementById('daily-checkin-form-content');
+        const summaryWrap = document.getElementById('daily-checkin-summary');
+        const summaryText = document.getElementById('daily-checkin-summary-text');
+        const saveBtn = document.getElementById('daily-checkin-save-btn');
+        if (formContent) formContent.classList.toggle('hidden', !!todayEntry && !expanded);
+        if (summaryWrap) summaryWrap.classList.toggle('hidden', !todayEntry || expanded);
+        if (summaryText) summaryText.textContent = this.buildDailyCheckinSummary(todayEntry);
+        if (saveBtn) {
+            saveBtn.classList.toggle('hidden', !!todayEntry && !expanded);
+            saveBtn.innerHTML = `<span class="material-symbols-outlined notranslate text-[15px]">check_circle</span> ${todayEntry ? 'Atualizar' : 'Salvar'}`;
+        }
         document.querySelectorAll('.emotion-chip').forEach(chip => {
             const active = chip.getAttribute('data-emotion') === emotionVal;
             chip.classList.toggle('bg-primary/20', active);

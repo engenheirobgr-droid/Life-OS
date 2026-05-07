@@ -52,12 +52,23 @@
                 <p id="daily-checkin-empty" class="mt-0.5 text-xs text-primary font-bold hidden">Ainda não registrado hoje.</p>
             </div>
             <button type="button" onclick="window.app.saveDailyCheckin()"
+                id="daily-checkin-save-btn"
                 class="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-on-primary hover:opacity-90 transition-opacity shrink-0">
                 <span class="material-symbols-outlined notranslate text-[15px]">check_circle</span>
                 Salvar
             </button>
         </div>
-        <div class="space-y-3">
+        <div id="daily-checkin-summary" class="hidden rounded-xl border border-primary/20 bg-primary/[0.06] px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+                <p id="daily-checkin-summary-text" class="text-xs text-on-surface leading-relaxed"></p>
+                <button type="button" onclick="window.app.expandDailyCheckinPanel(true)"
+                    class="inline-flex items-center gap-1 rounded-lg border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container transition-colors shrink-0">
+                    <span class="material-symbols-outlined notranslate text-[13px]">edit</span>
+                    Editar
+                </button>
+            </div>
+        </div>
+        <div id="daily-checkin-form-content" class="space-y-3">
             <!-- Sono horas -->
             <div class="flex items-center gap-3">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-outline w-24 shrink-0">Sono (h)</span>
@@ -139,6 +150,7 @@
         <div>
             <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Últimos 7 dias</p>
             <div id="daily-checkin-history" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2"></div>
+        </div>
         </div>
         <div class="pt-2 border-t border-outline-variant/10">
             <label class="text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
