@@ -1696,6 +1696,13 @@
 
                 <!-- Custom Habit Controls -->
                 <div id="crud-habit-controls" class="flex-col gap-4" style="display: none;">
+                    <label class="flex items-start gap-3 p-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/50 cursor-pointer">
+                        <input type="checkbox" id="habit-continuous" class="accent-primary mt-0.5 shrink-0" onchange="window.app.onHabitContinuousChange(this.checked)">
+                        <div class="min-w-0">
+                            <span class="text-xs font-bold text-on-surface">Hábito contínuo (sem prazo)</span>
+                            <p class="text-[10px] text-outline mt-0.5">Para algo que faz parte da rotina ou identidade, sem data final.</p>
+                        </div>
+                    </label>
                     <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
                             <label for="habit-track-mode"
@@ -2664,7 +2671,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260507-ikigai-labels-v111"></script>
+    <script type="module" src="app.js?v=20260507-continuous-habit-v112"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>

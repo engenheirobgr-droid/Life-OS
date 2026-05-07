@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-ikigai-labels-v111',
+    appBuildVersion: '20260507-continuous-habit-v112',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -6046,6 +6046,12 @@ const app = {
         if (deadlineGroup) deadlineGroup.classList.toggle('hidden', usaAgendamento);
         if (agendamentoGroup) agendamentoGroup.classList.toggle('hidden', !usaAgendamento);
 
+        // Para hábitos, a checkbox "contínuo" pode esconder o prazo novamente
+        if (type === 'habits') {
+            const continuousCheck = document.getElementById('habit-continuous');
+            if (continuousCheck) this.onHabitContinuousChange(continuousCheck.checked);
+        }
+
         // Defaults para datas reais no modal (OKR/macro/micro)
         if (usaAgendamento) {
             const hoje = new Date().toISOString().split('T')[0];
@@ -6403,6 +6409,20 @@ const app = {
             daysContainer.classList.add('hidden');
             daysContainer.classList.remove('flex');
             daysContainer.style.display = 'none';
+        }
+    },
+
+    onHabitContinuousChange: function(checked) {
+        const deadlineGroup = document.getElementById('prazo-deadline-group');
+        if (!deadlineGroup) return;
+        if (checked) {
+            deadlineGroup.classList.add('hidden');
+            deadlineGroup.style.display = 'none';
+            const prazoInput = document.getElementById('create-prazo');
+            if (prazoInput) prazoInput.value = '';
+        } else {
+            deadlineGroup.classList.remove('hidden');
+            deadlineGroup.style.display = 'flex';
         }
     },
 
@@ -10614,6 +10634,9 @@ const app = {
                 }
             }
         } else if (type === 'habits') {
+            const isContinuous = !!(document.getElementById('habit-continuous')?.checked);
+            obj.continuous = isContinuous;
+            if (isContinuous) obj.prazo = '';
             obj.context = '';
             obj.completed = isEditing ? (getOldItem(id, 'habits').completed || false) : false;
             obj.trigger = trigger || '';
@@ -13108,6 +13131,9 @@ const app = {
                         }
                     }
                     const maturityChip = app.renderHabitMaturityChip(habit);
+                    const continuousChip = habit.continuous
+                        ? `<span class="inline-flex items-center gap-0.5 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]">all_inclusive</span>Contínuo</span>`
+                        : '';
                     const maturityClass = habit.maturity === 'graduated'
                         ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
                         : 'border-transparent bg-surface-container-low';
@@ -13115,9 +13141,10 @@ const app = {
                     return `
                     <div id="habit-card-${habit.id}" onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer scroll-mt-24">
                         <div class="flex justify-between items-start mb-2">
-                            <div class="flex items-center gap-2 min-w-0">
+                            <div class="flex items-center gap-2 min-w-0 flex-wrap">
                                 <span class="material-symbols-outlined notranslate text-primary text-2xl">${icon}</span>
                                 ${maturityChip}
+                                ${continuousChip}
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-primary transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
@@ -14913,6 +14940,11 @@ const app = {
         // Compatibilidade retrô: agendamento antigo migra visualmente para datas reais
         
         if (type === 'habits') {
+            const continuousCheck = document.getElementById('habit-continuous');
+            if (continuousCheck) {
+                continuousCheck.checked = !!item.continuous;
+                this.onHabitContinuousChange(!!item.continuous);
+            }
             document.getElementById('crud-trigger').value = item.trigger || '';
             const routineInput = document.getElementById('habit-routine');
             if (routineInput) routineInput.value = item.routine || item.context || item.title || '';
