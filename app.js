@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-continuous-habit-v112',
+    appBuildVersion: '20260507-dual-identity-v113',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1449,7 +1449,7 @@ const app = {
         if (result.state === 'graduated') {
             this.unlockAchievement('first_habit_graduated');
             if (this.showToast) this.showToast(`"${habit.title}" virou um hábito automático. XP de manutenção ativado.`, 'success');
-            const shouldAddStrength = habit.sourceType !== 'strength'
+            const shouldAddStrength = !this._getHabitSourceStrengthId(habit)
                 && confirm(`"${habit.title}" parece parte de quem voce esta se tornando. Registrar como forca em Proposito?`);
             if (shouldAddStrength) {
                 this.ensureIdentityState();
@@ -1496,25 +1496,25 @@ const app = {
             const ach = this.unlockAchievement('first_shadow_named');
             if (ach) unlocked.push(ach);
         }
-        if (habits.some(h => h.sourceType === 'strength' && h.sourceId)) {
+        if (habits.some(h => this._getHabitSourceStrengthId(h))) {
             const ach = this.unlockAchievement('first_strength_habit');
             if (ach) unlocked.push(ach);
         }
-        if (habits.some(h => h.sourceType === 'shadow' && this.getHabitDoneDates(h).length >= 7)) {
+        if (habits.some(h => this._getHabitSourceShadowId(h) && this.getHabitDoneDates(h).length >= 7)) {
             const ach = this.unlockAchievement('shadow_antidote_7');
             if (ach) unlocked.push(ach);
         }
         const weekKey = this._getWeekKey ? this._getWeekKey() : '';
         if (weekKey) {
             const weekDates = this.getWeekDateKeys(weekKey);
-            const didStrength = habits.some(h => h.sourceType === 'strength' && weekDates.some(d => this.isHabitDoneOnDate(h, d)));
-            const didShadow = habits.some(h => h.sourceType === 'shadow' && weekDates.some(d => this.isHabitDoneOnDate(h, d)));
+            const didStrength = habits.some(h => this._getHabitSourceStrengthId(h) && weekDates.some(d => this.isHabitDoneOnDate(h, d)));
+            const didShadow = habits.some(h => this._getHabitSourceShadowId(h) && weekDates.some(d => this.isHabitDoneOnDate(h, d)));
             if (didStrength && didShadow) {
                 const ach = this.unlockAchievement('identity_integration_week');
                 if (ach) unlocked.push(ach);
             }
         }
-        const linkedHabits = habits.filter(h => h.sourceType && h.sourceId);
+        const linkedHabits = habits.filter(h => this._getHabitSourceStrengthId(h) || this._getHabitSourceShadowId(h));
         const hasFourWeeks = linkedHabits.some(h => {
             const done = new Set(this.getHabitDoneDates(h));
             const current = this._getWeekKey ? this._getWeekKey() : '';
@@ -3981,11 +3981,13 @@ const app = {
     },
 
     getIdentityLinkedHabits: function(type, id) {
-        const sourceType = type === 'strengths' ? 'strength' : type === 'shadows' ? 'shadow' : '';
-        if (!sourceType || !id) return [];
-        return (window.sistemaVidaState.habits || []).filter(habit =>
-            habit && habit.sourceType === sourceType && habit.sourceId === id
-        );
+        if (!id || !['strengths', 'shadows'].includes(type)) return [];
+        const isStrength = type === 'strengths';
+        return (window.sistemaVidaState.habits || []).filter(habit => {
+            if (!habit) return false;
+            const linkedId = isStrength ? this._getHabitSourceStrengthId(habit) : this._getHabitSourceShadowId(habit);
+            return linkedId === id;
+        });
     },
 
     openHabitToday: async function(habitId) {
@@ -4032,14 +4034,16 @@ const app = {
                 dimension.value = item.dimension;
             }
 
-            const identitySelect = document.getElementById('habit-identity-source');
-            const identityMode = document.getElementById('habit-identity-mode');
-            if (identitySelect) {
-                const value = `${type}:${item.id}`;
-                if (Array.from(identitySelect.options || []).some(opt => opt.value === value)) identitySelect.value = value;
-                this.onHabitIdentitySourceChange(identitySelect.value);
+            const strengthSel = document.getElementById('habit-strength-source');
+            const shadowSel = document.getElementById('habit-shadow-source');
+            const shadowModeEl = document.getElementById('habit-shadow-mode');
+            if (isStrength && strengthSel && Array.from(strengthSel.options || []).some(opt => opt.value === item.id)) {
+                strengthSel.value = item.id;
+            } else if (!isStrength && shadowSel && Array.from(shadowSel.options || []).some(opt => opt.value === item.id)) {
+                shadowSel.value = item.id;
+                this.onHabitShadowSourceChange(item.id);
+                if (shadowModeEl) shadowModeEl.value = 'replace';
             }
-            if (identityMode) identityMode.value = isStrength ? 'build' : 'replace';
             this.showToast(isStrength ? 'Hábito preparado a partir da força.' : 'Hábito antídoto preparado a partir da sombra.', 'success');
         }, 80);
     },
@@ -6833,10 +6837,7 @@ const app = {
     },
 
     populateHabitIdentitySource: function() {
-        const select = document.getElementById('habit-identity-source');
-        if (!select) return;
         this.ensureIdentityState();
-        const prev = select.value;
         const identity = window.sistemaVidaState.profile.identity || { strengths: [], shadows: [] };
         const strengths = identity.strengths || [];
         const shadows = identity.shadows || [];
@@ -6844,94 +6845,90 @@ const app = {
 
         const notice = document.getElementById('habit-identity-empty-notice');
         if (notice) notice.classList.toggle('hidden', !isEmpty);
-        select.classList.toggle('hidden', isEmpty);
 
-        if (!isEmpty) {
-            const renderOption = (type, item) => {
-                const prefix = type === 'strengths' ? 'Força' : 'Sombra';
-                return `<option value="${type}:${this.escapeHtml(item.id)}">${prefix}: ${this.escapeHtml(item.title)}</option>`;
-            };
-            let html = '<option value="">— Sem conexão —</option>';
-            if (strengths.length) {
-                html += '<optgroup label="Forças">';
-                strengths.forEach(item => { html += renderOption('strengths', item); });
-                html += '</optgroup>';
-            }
-            if (shadows.length) {
-                html += '<optgroup label="Sombras">';
-                shadows.forEach(item => { html += renderOption('shadows', item); });
-                html += '</optgroup>';
-            }
-            select.innerHTML = html;
-            if (prev && select.querySelector(`option[value="${prev}"]`)) select.value = prev;
-            this.onHabitIdentitySourceChange(select.value);
+        const strengthSel = document.getElementById('habit-strength-source');
+        const shadowSel = document.getElementById('habit-shadow-source');
+
+        if (strengthSel) {
+            let html = '<option value="">— Nenhuma —</option>';
+            strengths.forEach(item => { html += `<option value="${this.escapeHtml(item.id)}">${this.escapeHtml(item.title)}</option>`; });
+            strengthSel.innerHTML = html;
+            strengthSel.classList.toggle('hidden', isEmpty);
+        }
+        if (shadowSel) {
+            let html = '<option value="">— Nenhuma —</option>';
+            shadows.forEach(item => { html += `<option value="${this.escapeHtml(item.id)}">${this.escapeHtml(item.title)}</option>`; });
+            shadowSel.innerHTML = html;
+            shadowSel.classList.toggle('hidden', isEmpty);
+            this.onHabitShadowSourceChange(shadowSel.value);
         }
     },
 
+    onHabitShadowSourceChange: function(value) {
+        const wrap = document.getElementById('habit-shadow-mode-wrap');
+        if (!wrap) return;
+        const hasValue = !!value;
+        wrap.classList.toggle('hidden', !hasValue);
+        wrap.style.display = hasValue ? 'flex' : 'none';
+    },
+
+    // Keep for backward compat with any callers still using old single-select
     onHabitIdentitySourceChange: function(value) {
-        const wrap = document.getElementById('habit-identity-mode-wrap');
-        const mode = document.getElementById('habit-identity-mode');
-        const isShadow = String(value || '').startsWith('shadows:');
-        if (wrap) {
-            wrap.classList.toggle('hidden', !value);
-            wrap.classList.toggle('flex', !!value);
-        }
-        if (mode && value) {
-            mode.value = isShadow ? (mode.value === 'build' ? 'replace' : mode.value) : 'build';
-        }
+        this.onHabitShadowSourceChange(String(value || '').startsWith('shadows:') ? value : '');
     },
 
-    parseHabitIdentitySource: function(rawValue) {
-        const raw = String(rawValue || '');
-        const [type, ...rest] = raw.split(':');
-        const id = rest.join(':');
-        if (!id || !['strengths', 'shadows'].includes(type)) return { sourceType: '', sourceId: '', habitMode: '' };
-        const sourceType = type === 'strengths' ? 'strength' : 'shadow';
-        const modeEl = document.getElementById('habit-identity-mode');
-        let habitMode = modeEl ? String(modeEl.value || '') : '';
-        if (!['build', 'reduce', 'replace'].includes(habitMode)) habitMode = sourceType === 'strength' ? 'build' : 'replace';
-        if (sourceType === 'strength') habitMode = 'build';
-        return { sourceType, sourceId: id, habitMode };
+    // Compat helper: resolves sourceStrengthId from new or old schema
+    _getHabitSourceStrengthId: function(habit) {
+        if (habit.sourceStrengthId) return habit.sourceStrengthId;
+        if (habit.sourceType === 'strength' && habit.sourceId) return habit.sourceId;
+        return null;
+    },
+
+    // Compat helper: resolves sourceShadowId from new or old schema
+    _getHabitSourceShadowId: function(habit) {
+        if (habit.sourceShadowId) return habit.sourceShadowId;
+        if (habit.sourceType === 'shadow' && habit.sourceId) return habit.sourceId;
+        return null;
     },
 
     getHabitIdentityItem: function(habit) {
-        if (!habit || !habit.sourceType || !habit.sourceId) return null;
-        const type = habit.sourceType === 'strength' ? 'strengths' : habit.sourceType === 'shadow' ? 'shadows' : '';
-        if (!type) return null;
-        return this.getIdentityItemById(type, habit.sourceId);
+        const strengthId = this._getHabitSourceStrengthId(habit);
+        if (strengthId) return this.getIdentityItemById('strengths', strengthId);
+        const shadowId = this._getHabitSourceShadowId(habit);
+        if (shadowId) return this.getIdentityItemById('shadows', shadowId);
+        return null;
     },
 
     renderHabitIdentityChip: function(habit) {
-        const item = this.getHabitIdentityItem(habit);
-        if (!item) return '';
-        const isStrength = habit.sourceType === 'strength';
-        const label = isStrength ? 'Força' : 'Sombra';
-        const icon = isStrength ? 'workspace_premium' : 'change_circle';
-        return `<button type="button" onclick="event.stopPropagation(); window.app.flowNavigate('proposito','proposito-identity-section','')"
-            class="mt-1 text-[10px] ${isStrength ? 'text-primary' : 'text-secondary'} leading-tight truncate flex items-center gap-1 hover:underline" title="Ver em Propósito">
-            <span class="material-symbols-outlined notranslate text-[11px]">${icon}</span>${label}: ${this.escapeHtml(item.title)}
-        </button>`;
+        const strengthId = this._getHabitSourceStrengthId(habit);
+        const shadowId = this._getHabitSourceShadowId(habit);
+        let html = '';
+        if (strengthId) {
+            const item = this.getIdentityItemById('strengths', strengthId);
+            if (item) html += `<button type="button" onclick="event.stopPropagation(); window.app.flowNavigate('proposito','proposito-identity-section','')"
+                class="mt-1 text-[10px] text-primary leading-tight truncate flex items-center gap-1 hover:underline" title="Ver em Propósito">
+                <span class="material-symbols-outlined notranslate text-[11px]">workspace_premium</span>Força: ${this.escapeHtml(item.title)}
+            </button>`;
+        }
+        if (shadowId) {
+            const item = this.getIdentityItemById('shadows', shadowId);
+            if (item) html += `<button type="button" onclick="event.stopPropagation(); window.app.flowNavigate('proposito','proposito-identity-section','')"
+                class="mt-1 text-[10px] text-secondary leading-tight truncate flex items-center gap-1 hover:underline" title="Ver em Propósito">
+                <span class="material-symbols-outlined notranslate text-[11px]">change_circle</span>Sombra: ${this.escapeHtml(item.title)}
+            </button>`;
+        }
+        return html;
     },
 
+    // Returns an intent descriptor for a habit: meta / strength / shadow / loose
     // Returns an intent descriptor for a habit: meta / strength / shadow / loose
     _getHabitIntent: function(habit, state) {
         if (habit.linkedMetaId) {
             const meta = (state?.entities?.metas || []).find(m => m.id === habit.linkedMetaId);
             if (meta) return { key: 'meta', label: 'Sustenta meta', icon: 'flag', metaTitle: meta.title };
         }
-        if (habit.sourceType === 'strength') return { key: 'strength', label: 'Pratica força', icon: 'workspace_premium' };
-        if (habit.sourceType === 'shadow')   return { key: 'shadow',   label: 'Protege sombra', icon: 'change_circle' };
-        return { key: 'loose', label: 'Sem vínculo', icon: 'radio_button_unchecked' };
-    },
-
-    // Returns an intent descriptor for a habit: meta / strength / shadow / loose
-    _getHabitIntent: function(habit, state) {
-        if (habit.linkedMetaId) {
-            const meta = (state?.entities?.metas || []).find(m => m.id === habit.linkedMetaId);
-            if (meta) return { key: 'meta', label: 'Sustenta meta', icon: 'flag', metaTitle: meta.title };
-        }
-        if (habit.sourceType === 'strength') return { key: 'strength', label: 'Pratica força', icon: 'workspace_premium' };
-        if (habit.sourceType === 'shadow')   return { key: 'shadow',   label: 'Protege sombra', icon: 'change_circle' };
+        if (this._getHabitSourceStrengthId(habit)) return { key: 'strength', label: 'Pratica força', icon: 'workspace_premium' };
+        if (this._getHabitSourceShadowId(habit))   return { key: 'shadow',   label: 'Protege sombra', icon: 'change_circle' };
         return { key: 'loose', label: 'Sem vínculo', icon: 'radio_button_unchecked' };
     },
 
@@ -6942,12 +6939,15 @@ const app = {
             (identity[type] || []).forEach(item => { item.linkedHabitIds = []; });
         });
         (window.sistemaVidaState.habits || []).forEach(habit => {
-            const type = habit.sourceType === 'strength' ? 'strengths' : habit.sourceType === 'shadow' ? 'shadows' : '';
-            if (!type || !habit.sourceId) return;
-            const item = (identity[type] || []).find(i => i.id === habit.sourceId);
-            if (!item) return;
-            if (!Array.isArray(item.linkedHabitIds)) item.linkedHabitIds = [];
-            if (!item.linkedHabitIds.includes(habit.id)) item.linkedHabitIds.push(habit.id);
+            const link = (type, id) => {
+                if (!id) return;
+                const item = (identity[type] || []).find(i => i.id === id);
+                if (!item) return;
+                if (!Array.isArray(item.linkedHabitIds)) item.linkedHabitIds = [];
+                if (!item.linkedHabitIds.includes(habit.id)) item.linkedHabitIds.push(habit.id);
+            };
+            link('strengths', this._getHabitSourceStrengthId(habit));
+            link('shadows',   this._getHabitSourceShadowId(habit));
         });
     },
 
@@ -8049,13 +8049,13 @@ const app = {
         const habits = window.sistemaVidaState.habits || [];
         const weekDates = this.getWeekDateKeys(weekKey);
         const priorWeekDates = this.getWeekDateKeys(this.getRelativeWeekKey(weekKey, -1));
-        const linkedHabits = habits.filter(h => h.sourceType && h.sourceId);
+        const linkedHabits = habits.filter(h => this._getHabitSourceStrengthId(h) || this._getHabitSourceShadowId(h));
         const doneThisWeek = linkedHabits.filter(h => weekDates.some(date => this.isHabitDoneOnDate(h, date)));
         const doneLastWeek = linkedHabits.filter(h => priorWeekDates.some(date => this.isHabitDoneOnDate(h, date)));
-        const practicedStrengthIds = new Set(doneThisWeek.filter(h => h.sourceType === 'strength').map(h => h.sourceId));
-        const workedShadowIds = new Set(doneThisWeek.filter(h => h.sourceType === 'shadow').map(h => h.sourceId));
-        const strengthIdsWithHabits = new Set(linkedHabits.filter(h => h.sourceType === 'strength').map(h => h.sourceId));
-        const shadowIdsWithHabits = new Set(linkedHabits.filter(h => h.sourceType === 'shadow').map(h => h.sourceId));
+        const practicedStrengthIds = new Set(doneThisWeek.map(h => this._getHabitSourceStrengthId(h)).filter(Boolean));
+        const workedShadowIds = new Set(doneThisWeek.map(h => this._getHabitSourceShadowId(h)).filter(Boolean));
+        const strengthIdsWithHabits = new Set(linkedHabits.map(h => this._getHabitSourceStrengthId(h)).filter(Boolean));
+        const shadowIdsWithHabits = new Set(linkedHabits.map(h => this._getHabitSourceShadowId(h)).filter(Boolean));
         return {
             strengths: identity.strengths || [],
             shadows: identity.shadows || [],
@@ -8080,12 +8080,14 @@ const app = {
             const shadowIds = new Set();
             let linkedCompletions = 0;
             habits.forEach(habit => {
-                if (!habit.sourceType || !habit.sourceId) return;
+                const sId = this._getHabitSourceStrengthId(habit);
+                const shId = this._getHabitSourceShadowId(habit);
+                if (!sId && !shId) return;
                 const count = dates.reduce((acc, date) => acc + (this.isHabitDoneOnDate(habit, date) ? 1 : 0), 0);
                 if (!count) return;
                 linkedCompletions += count;
-                if (habit.sourceType === 'strength') strengthIds.add(habit.sourceId);
-                if (habit.sourceType === 'shadow') shadowIds.add(habit.sourceId);
+                if (sId) strengthIds.add(sId);
+                if (shId) shadowIds.add(shId);
             });
             summary.push({ weekKey: wk, strengthCount: strengthIds.size, shadowCount: shadowIds.size, linkedCompletions });
         }
@@ -10665,10 +10667,14 @@ const app = {
             obj.maturityMeta = isEditing ? (getOldItem(id, 'habits').maturityMeta || {}) : {};
             const linkedSel = document.getElementById('habit-linked-meta');
             obj.linkedMetaId = linkedSel && linkedSel.value ? linkedSel.value : null;
-            const identityLink = this.parseHabitIdentitySource(document.getElementById('habit-identity-source')?.value || '');
-            obj.sourceType = identityLink.sourceType || '';
-            obj.sourceId = identityLink.sourceId || '';
-            obj.habitMode = identityLink.habitMode || '';
+            obj.sourceStrengthId = document.getElementById('habit-strength-source')?.value || '';
+            obj.sourceShadowId = document.getElementById('habit-shadow-source')?.value || '';
+            const shadowModeEl = document.getElementById('habit-shadow-mode');
+            obj.shadowMode = obj.sourceShadowId ? (shadowModeEl?.value || 'replace') : '';
+            // Legacy compat fields (for gamification events recorded earlier)
+            obj.sourceType = obj.sourceStrengthId ? 'strength' : obj.sourceShadowId ? 'shadow' : '';
+            obj.sourceId = obj.sourceStrengthId || obj.sourceShadowId || '';
+            obj.habitMode = obj.sourceType === 'strength' ? 'build' : (obj.shadowMode || '');
             if (!obj.steps.length) obj.stepLogs = {};
             else {
                 Object.keys(obj.stepLogs || {}).forEach(dateKey => {
@@ -14975,15 +14981,18 @@ const app = {
                     linkedSel.value = item.linkedMetaId;
                 }
             }
-            const identitySel = document.getElementById('habit-identity-source');
-            const identityMode = document.getElementById('habit-identity-mode');
-            const identityType = item.sourceType === 'strength' ? 'strengths' : item.sourceType === 'shadow' ? 'shadows' : '';
-            if (identitySel && identityType && item.sourceId) {
-                const value = `${identityType}:${item.sourceId}`;
-                if (identitySel.querySelector(`option[value="${value}"]`)) identitySel.value = value;
-                this.onHabitIdentitySourceChange(identitySel.value);
+            const strengthSel = document.getElementById('habit-strength-source');
+            const shadowSel = document.getElementById('habit-shadow-source');
+            const shadowModeEl = document.getElementById('habit-shadow-mode');
+            const strengthId = this._getHabitSourceStrengthId(item);
+            const shadowId = this._getHabitSourceShadowId(item);
+            if (strengthSel && strengthId && strengthSel.querySelector(`option[value="${strengthId}"]`)) strengthSel.value = strengthId;
+            if (shadowSel && shadowId && shadowSel.querySelector(`option[value="${shadowId}"]`)) {
+                shadowSel.value = shadowId;
+                this.onHabitShadowSourceChange(shadowId);
             }
-            if (identityMode && item.habitMode) identityMode.value = item.habitMode;
+            if (shadowModeEl && item.shadowMode) shadowModeEl.value = item.shadowMode;
+            else if (shadowModeEl && item.habitMode && item.sourceType === 'shadow') shadowModeEl.value = item.habitMode;
         }
         
         // Seta o pai após popular a lista

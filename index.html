@@ -1779,34 +1779,48 @@
                     </div>
 
                     <div class="flex flex-col gap-3 rounded-xl bg-primary/5 border border-primary/15 p-3">
-                        <div class="flex flex-col gap-1.5">
-                            <label for="habit-identity-source"
-                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Conectar à Identidade (opcional)</label>
-                            <div id="habit-identity-empty-notice" class="hidden rounded-lg bg-surface-container-low border border-outline-variant/20 p-3 flex items-start gap-2">
-                                <span class="material-symbols-outlined notranslate text-outline text-[18px] shrink-0 mt-0.5">info</span>
-                                <div class="min-w-0">
-                                    <p class="text-[11px] text-on-surface-variant leading-relaxed">Nenhuma força ou sombra cadastrada.</p>
-                                    <button type="button" onclick="window.app.closeModal(); window.app.switchView('proposito')"
-                                        class="mt-1 text-[11px] font-bold text-primary hover:underline">Definir minha identidade →</button>
-                                </div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Conectar à Identidade (opcional)</p>
+                        <div id="habit-identity-empty-notice" class="hidden rounded-lg bg-surface-container-low border border-outline-variant/20 p-3 flex items-start gap-2">
+                            <span class="material-symbols-outlined notranslate text-outline text-[18px] shrink-0 mt-0.5">info</span>
+                            <div class="min-w-0">
+                                <p class="text-[11px] text-on-surface-variant leading-relaxed">Nenhuma força ou sombra cadastrada.</p>
+                                <button type="button" onclick="window.app.closeModal(); window.app.switchView('proposito')"
+                                    class="mt-1 text-[11px] font-bold text-primary hover:underline">Definir minha identidade →</button>
                             </div>
-                            <select id="habit-identity-source"
-                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
-                                onchange="window.app.onHabitIdentitySourceChange(this.value)">
-                                <option value="">— Sem conexão —</option>
-                            </select>
-                            <p class="text-[10px] text-outline">Use o hábito para praticar uma força ou transformar uma sombra.</p>
                         </div>
-                        <div id="habit-identity-mode-wrap" class="hidden flex flex-col gap-1.5">
-                            <label for="habit-identity-mode"
-                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de transformação</label>
-                            <select id="habit-identity-mode"
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-strength-source"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1">
+                                <span class="material-symbols-outlined notranslate text-[13px] text-primary" style="font-variation-settings:'FILL' 1">workspace_premium</span>
+                                Força praticada
+                            </label>
+                            <select id="habit-strength-source"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
-                                <option value="build">Reforçar / construir</option>
+                                <option value="">— Nenhuma —</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-shadow-source"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1">
+                                <span class="material-symbols-outlined notranslate text-[13px] text-secondary" style="font-variation-settings:'FILL' 1">change_circle</span>
+                                Sombra protegida
+                            </label>
+                            <select id="habit-shadow-source"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                onchange="window.app.onHabitShadowSourceChange(this.value)">
+                                <option value="">— Nenhuma —</option>
+                            </select>
+                        </div>
+                        <div id="habit-shadow-mode-wrap" class="hidden flex-col gap-1.5">
+                            <label for="habit-shadow-mode"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de transformação da sombra</label>
+                            <select id="habit-shadow-mode"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                                 <option value="reduce">Reduzir padrão</option>
                                 <option value="replace">Substituir por resposta melhor</option>
                             </select>
                         </div>
+                        <p class="text-[10px] text-outline">Conecte a uma força, uma sombra, ou ambos.</p>
                     </div>
                 </div>
             </form>
@@ -2671,7 +2685,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260507-continuous-habit-v112"></script>
+    <script type="module" src="app.js?v=20260507-dual-identity-v113"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
