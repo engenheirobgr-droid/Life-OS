@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v107';
+const CACHE_NAME = 'sistema-vida-v108';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-  './app.js?v=20260507-ikigai-links-v107',
+  './app.js?v=20260507-ikigai-layout-v108',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
