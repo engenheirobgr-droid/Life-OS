@@ -188,7 +188,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-phase6-habit-suggestions-v118',
+    appBuildVersion: '20260507-phase7-manual-updated-v119',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -12352,17 +12352,35 @@ const app = {
             icon: 'repeat',
             title: 'Hábitos: Habit Loop & Identidade em Ação',
             subtitle: 'Cue → Routine → Reward, ancorado em quem você quer ser',
-            what: 'Cada hábito tem <strong>Gatilho</strong> (cue), <strong>Rotina</strong> (routine), <strong>Recompensa</strong> (reward) e pode estar conectado a uma força ou sombra. Modos: construir (força), reduzir (sombra) ou substituir (resposta melhor).',
+            what: 'Cada hábito tem <strong>Gatilho</strong> (cue), <strong>Rotina</strong> (routine), <strong>Recompensa</strong> (reward) e pode estar conectado a uma força, uma sombra ou ambas. Hábitos podem ser <strong>contínuos</strong> (sem data final, para rotinas de identidade) ou ter prazo. O <strong>Hábito-Chave</strong> marca a alavanca principal do momento — aquele que, se feito, eleva os outros. Modos: construir (força), reduzir (sombra) ou substituir (resposta melhor).',
             why: 'O Habit Loop (Duhigg, baseado em pesquisa do MIT/Graybiel) é a estrutura mínima de qualquer comportamento automatizado. James Clear adiciona a camada de identidade: "todo hábito é um voto para o tipo de pessoa que você quer ser". Implementation intentions ("depois de X, eu farei Y") aumentam aderência em meta-análises de 2-3x.',
             refs: ['Charles Duhigg — The Power of Habit', 'James Clear — Atomic Habits', 'B.J. Fogg — Tiny Habits'],
             how: [
                 'Ancore o hábito em uma rotina existente: "depois de escovar os dentes, eu...".',
                 'Comece ridiculamente pequeno: 2 minutos, não 30. Consistência > intensidade.',
                 'Conecte à identidade: "sou alguém que..." em vez de "vou fazer X".',
+                'Use hábito contínuo para rotinas sem data final; reserve o prazo para comportamentos que você quer consolidar e então revisar.',
+                'Marque como Hábito-Chave o comportamento que mais amplia capacidade agora — o app sugerirá com base em streak e vínculo de identidade.',
                 'Para forças, transforme a prática sugerida em rotina; para sombras, transforme o se-então em resposta substituta antes do gatilho aparecer.',
                 'Use o checklist de passos para hábitos complexos; quebra em micropassos previne paralisia.'
             ],
             cta: { label: 'Criar hábito', view: 'planos' }
+        },
+        {
+            id: 'habitos-ponte',
+            icon: 'library_add',
+            title: 'Biblioteca de Sugestões',
+            subtitle: 'Templates prontos para começar agora',
+            what: 'A <strong>Biblioteca de Sugestões</strong> oferece templates de hábitos agrupados por dimensão (Saúde, Carreira, Mente, Relacionamentos, Propósito). Cada template traz gatilho, rotina, recompensa, passos e modo de rastreamento pré-preenchidos — você ajusta antes de salvar.',
+            why: 'A maior barreira para criar um bom hábito não é vontade, mas design: escolher o gatilho certo, a rotina mínima e a recompensa adequada. Templates reduzem essa fricção sem remover o julgamento — você ainda personaliza para o seu contexto antes de salvar.',
+            refs: ['BJ Fogg — Tiny Habits', 'Nir Eyal — Hooked'],
+            how: [
+                'Na aba Hoje, toque em "Sugestões" para abrir a biblioteca de templates.',
+                'Escolha um template e toque em "Usar" — o formulário de criação abre pré-preenchido.',
+                'Revise gatilho, rotina e recompensa antes de salvar: o template é ponto de partida, não receita.',
+                'Prefira começar com 1–2 hábitos da dimensão mais carente, não com todos ao mesmo tempo.'
+            ],
+            cta: { label: 'Ver hoje', view: 'hoje' }
         },
         {
             id: 'maturacao-habitos',
@@ -12433,14 +12451,17 @@ const app = {
             icon: 'emoji_events',
             title: 'Gamificação e Progressão',
             subtitle: 'XP, streaks, maturação e níveis',
-            what: 'O sistema atribui <strong>XP</strong> a cada ação: micros concluídos (XP pelo esforço), hábitos executados (2 XP força, 4 XP sombra, 1 XP automático), sessões de foco e rituals. XP acumula em <strong>nível</strong> e <strong>streak</strong> (dias consecutivos de atividade). Hábitos que mantêm ≥80% de consistência por 4 semanas <strong>graduam</strong> de "em formação" para "automático".',
+            what: 'O sistema atribui <strong>XP</strong> a cada ação: hábitos executados valem <strong>2 XP base</strong> (4 XP se for o <strong>Hábito-Chave</strong>), +1 XP por ligar a uma força, +2 XP por ligar a uma sombra, +1 XP por ter plano se-então preenchido. Retomar um hábito após pausa rende <strong>+3 XP de bônus de retomada</strong> (uma vez por mês por hábito). XP acumula em <strong>nível</strong> e <strong>streak</strong>. Hábitos que mantêm ≥80% de consistência por 4 semanas <strong>graduam</strong> de "em formação" para "automático".',
             why: 'Sistemas de recompensa incremental (feedback loops de curto prazo) sustentam motivação intrínseca no início de uma mudança. A maturação de hábitos aplica a Teoria da Autodeterminação: à medida que o comportamento se automatiza, a recompensa externa diminui para não suplantar a motivação interna. Streaks aproveitam o efeito de continuidade — a perda de streak é mais aversiva do que o ganho de pontos.',
             refs: ['Deci & Ryan — Self-Determination Theory', 'B.J. Fogg — Tiny Habits (celebration)', 'Lally et al. — habit formation curve'],
             how: [
-                'Hábitos de sombra valem o dobro de XP porque exigem mais esforço cognitivo (regulação emocional).',
-                'Não force hábitos que já são automáticos só para ganhar XP — o sistema reduz a recompensa como sinal que o comportamento está internalizado.',
-                'Streaks quebrados não apagam progresso; o nível e o histórico persistem.',
-                'Use o Painel para ver hábitos próximos de graduar e decida se quer consolidar antes de criar novos.'
+                'Marque o <strong>Hábito-Chave</strong> para dobrar o XP base — reserve para o hábito de maior alavancagem do momento.',
+                'Ligar hábitos a forças e sombras aumenta XP e fortalece o loop identidade → ação.',
+                'Hábitos de sombra ganham +2 XP porque exigem mais esforço cognitivo (regulação emocional).',
+                'Retomar um hábito após pausa rende +3 XP de bônus de retomada, uma vez por mês por hábito.',
+                'Manter o Hábito-Chave por 7 ou 30 dias consecutivos desbloqueia conquistas especiais.',
+                'Hábitos automáticos rendem XP reduzido — sinal de que o comportamento já está internalizado.',
+                'Streaks quebrados não apagam progresso; o nível e o histórico persistem.'
             ],
             cta: { label: 'Abrir Painel', view: 'painel' }
         },
