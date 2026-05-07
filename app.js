@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260506-purpose-manual-v106',
+    appBuildVersion: '20260507-ikigai-links-v107',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -3988,6 +3988,21 @@ const app = {
         );
     },
 
+    openHabitToday: async function(habitId) {
+        if (!habitId) return;
+        await this.switchView('hoje', { preserveScroll: true });
+        setTimeout(() => {
+            const card = document.getElementById(`habit-card-${habitId}`);
+            if (!card) {
+                this.showToast('Hábito ligado, mas ele não está visível no Hoje agora.', 'info');
+                return;
+            }
+            card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            card.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-background');
+            setTimeout(() => card.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-background'), 2200);
+        }, 350);
+    },
+
     createHabitFromIdentity: function(type, id) {
         this.ensureIdentityState();
         const item = this.getIdentityItemById(type, id);
@@ -4045,10 +4060,10 @@ const app = {
             container.innerHTML = items.map(item => {
                 const linkedHabits = this.getIdentityLinkedHabits(type, item.id);
                 const linkedPreview = linkedHabits.slice(0, 2).map(habit => `
-                    <span class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/10 px-2 py-1 text-[10px] text-on-surface-variant">
+                    <button type="button" onclick="event.stopPropagation(); window.app.openHabitToday(${jsArg(habit.id)})" class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/10 px-2 py-1 text-[10px] text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors" title="Ver hábito no Hoje">
                         <span class="material-symbols-outlined notranslate text-[12px] text-primary">repeat</span>
                         ${this.escapeHtml(habit.title)}
-                    </span>
+                    </button>
                 `).join('');
                 const moreCount = Math.max(0, linkedHabits.length - 2);
                 const actionLabel = type === 'strengths' ? 'Criar hábito' : 'Criar antídoto';
@@ -6860,7 +6875,7 @@ const app = {
         const isStrength = habit.sourceType === 'strength';
         const label = isStrength ? 'Força' : 'Sombra';
         const icon = isStrength ? 'workspace_premium' : 'change_circle';
-        return `<button type="button" onclick="window.app.flowNavigate('proposito','proposito-identity-section','')"
+        return `<button type="button" onclick="event.stopPropagation(); window.app.flowNavigate('proposito','proposito-identity-section','')"
             class="mt-1 text-[10px] ${isStrength ? 'text-primary' : 'text-secondary'} leading-tight truncate flex items-center gap-1 hover:underline" title="Ver em Propósito">
             <span class="material-symbols-outlined notranslate text-[11px]">${icon}</span>${label}: ${this.escapeHtml(item.title)}
         </button>`;
@@ -12978,7 +12993,7 @@ const app = {
                         : 'border-transparent bg-surface-container-low';
 
                     return `
-                    <div onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer">
+                    <div id="habit-card-${habit.id}" onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer scroll-mt-24">
                         <div class="flex justify-between items-start mb-2">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-primary text-2xl">${icon}</span>

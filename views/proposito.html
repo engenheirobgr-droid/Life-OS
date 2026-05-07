@@ -377,25 +377,32 @@
                 <button type="button" onclick="window.app.openManualChapter('ikigai')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">star</button>
             </div>
 
-            <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4 md:p-6">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-3">Mandala interativa</p>
-                <div class="relative mx-auto w-full max-w-[380px] aspect-square">
-                    <div onclick="window.app.openTextEdit('O que amo', 'ikigai', 'love')" class="absolute left-[12%] top-[12%] w-[42%] h-[42%] rounded-full border border-primary/25 bg-primary/10 backdrop-blur-sm flex items-center justify-center text-center px-4 cursor-pointer hover:bg-primary/20 transition-colors">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-primary">Amo</span>
-                    </div>
-                    <div onclick="window.app.openTextEdit('No que sou bom', 'ikigai', 'good')" class="absolute right-[12%] top-[12%] w-[42%] h-[42%] rounded-full border border-secondary/25 bg-secondary/10 backdrop-blur-sm flex items-center justify-center text-center px-4 cursor-pointer hover:bg-secondary/20 transition-colors">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-secondary">Sou bom</span>
-                    </div>
-                    <div onclick="window.app.openTextEdit('O que o mundo precisa', 'ikigai', 'need')" class="absolute left-[12%] bottom-[12%] w-[42%] h-[42%] rounded-full border border-tertiary/25 bg-tertiary/10 backdrop-blur-sm flex items-center justify-center text-center px-4 cursor-pointer hover:bg-tertiary/20 transition-colors">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-tertiary">Mundo</span>
-                    </div>
-                    <div onclick="window.app.openTextEdit('Pelo que posso ser pago', 'ikigai', 'paid')" class="absolute right-[12%] bottom-[12%] w-[42%] h-[42%] rounded-full border border-amber-500/25 bg-amber-500/10 backdrop-blur-sm flex items-center justify-center text-center px-4 cursor-pointer hover:bg-amber-500/20 transition-colors">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Sustento</span>
-                    </div>
-                    <button type="button" onclick="window.app.openTextEdit('Sintese do Ikigai', 'ikigai', 'sintese', 'sinteseResumo')" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[34%] h-[34%] rounded-full border border-outline-variant/25 bg-surface-container-high text-on-surface flex items-center justify-center px-3 text-center shadow-sm hover:bg-surface-container-highest transition-colors">
-                        <span class="text-[10px] font-bold uppercase tracking-wider">Ikigai</span>
-                    </button>
-                </div>
+            <div class="relative mx-auto w-full max-w-[560px] aspect-square my-2 md:my-4 select-none">
+                <button type="button" onclick="window.app.openTextEdit('O que amo', 'ikigai', 'love')" class="absolute left-[25%] top-[2%] w-[50%] h-[50%] rounded-full bg-rose-400/55 border-[3px] border-background/95 text-rose-950/80 hover:bg-rose-400/70 transition-colors flex flex-col items-center justify-start pt-[9%] text-center z-10">
+                    <span class="text-[10px] md:text-xs font-bold uppercase tracking-widest">O que você</span>
+                    <span class="text-lg md:text-2xl font-headline font-bold">ama</span>
+                </button>
+                <button type="button" onclick="window.app.openTextEdit('No que sou bom', 'ikigai', 'good')" class="absolute left-[2%] top-[25%] w-[50%] h-[50%] rounded-full bg-lime-300/55 border-[3px] border-background/95 text-lime-950/80 hover:bg-lime-300/70 transition-colors flex flex-col items-start justify-center pl-[8%] text-left z-10">
+                    <span class="text-[10px] md:text-xs font-bold uppercase tracking-widest">Em que sou</span>
+                    <span class="text-lg md:text-2xl font-headline font-bold">bom</span>
+                </button>
+                <button type="button" onclick="window.app.openTextEdit('O que o mundo precisa', 'ikigai', 'need')" class="absolute right-[2%] top-[25%] w-[50%] h-[50%] rounded-full bg-yellow-300/55 border-[3px] border-background/95 text-yellow-950/80 hover:bg-yellow-300/70 transition-colors flex flex-col items-end justify-center pr-[7%] text-right z-10">
+                    <span class="text-[10px] md:text-xs font-bold uppercase tracking-widest">O mundo</span>
+                    <span class="text-lg md:text-2xl font-headline font-bold">precisa</span>
+                </button>
+                <button type="button" onclick="window.app.openTextEdit('Pelo que posso ser pago', 'ikigai', 'paid')" class="absolute left-[25%] bottom-[2%] w-[50%] h-[50%] rounded-full bg-sky-300/60 border-[3px] border-background/95 text-sky-950/80 hover:bg-sky-300/75 transition-colors flex flex-col items-center justify-end pb-[8%] text-center z-10">
+                    <span class="text-[10px] md:text-xs font-bold uppercase tracking-widest">Posso ser</span>
+                    <span class="text-lg md:text-2xl font-headline font-bold">pago</span>
+                </button>
+
+                <button type="button" onclick="window.app.openTextEdit('Paixão (Amo + Bom)', 'ikigai', 'paixao')" class="absolute left-[26%] top-[32%] -translate-x-1/2 -translate-y-1/2 z-20 text-[10px] md:text-sm font-bold uppercase tracking-wider text-on-surface-variant hover:text-primary transition-colors">Paixão</button>
+                <button type="button" onclick="window.app.openTextEdit('Missão (Amo + Mundo)', 'ikigai', 'missao')" class="absolute right-[26%] top-[32%] translate-x-1/2 -translate-y-1/2 z-20 text-[10px] md:text-sm font-bold uppercase tracking-wider text-on-surface-variant hover:text-primary transition-colors">Missão</button>
+                <button type="button" onclick="window.app.openTextEdit('Profissão (Bom + Pago)', 'ikigai', 'profissao')" class="absolute left-[28%] bottom-[31%] -translate-x-1/2 translate-y-1/2 z-20 text-[10px] md:text-sm font-bold uppercase tracking-wider text-on-surface-variant hover:text-primary transition-colors">Profissão</button>
+                <button type="button" onclick="window.app.openTextEdit('Vocação (Pago + Mundo)', 'ikigai', 'vocacao')" class="absolute right-[28%] bottom-[31%] translate-x-1/2 translate-y-1/2 z-20 text-[10px] md:text-sm font-bold uppercase tracking-wider text-on-surface-variant hover:text-primary transition-colors">Vocação</button>
+
+                <button type="button" onclick="window.app.openTextEdit('Síntese do Ikigai', 'ikigai', 'sintese', 'sinteseResumo')" class="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 w-[26%] h-[26%] rounded-full bg-primary/80 text-on-primary border-[3px] border-background shadow-lg flex items-center justify-center text-center px-2 hover:bg-primary transition-colors">
+                    <span class="text-lg md:text-3xl font-headline font-bold">Ikigai</span>
+                </button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
