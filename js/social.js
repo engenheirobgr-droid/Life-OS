@@ -1,4 +1,4 @@
-import { db, auth, doc, setDoc, deleteDoc, serverTimestamp, LOCAL_USER_SCOPE } from './firebase.js';
+import { db, auth, doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp, LOCAL_USER_SCOPE } from './firebase.js';
 
 const DEFAULT_SOCIAL_VISIBILITY = {
     name: true,
@@ -23,6 +23,25 @@ const SOCIAL_FIELD_LABELS = {
     streak: 'Streak',
     lastActiveAt: 'Ultima atividade'
 };
+
+const SOCIAL_REACTIONS = {
+    strength: { label: 'Forca', icon: 'workspace_premium' },
+    congrats: { label: 'Parabens', icon: 'celebration' },
+    together: { label: 'Vamos junto', icon: 'group' }
+};
+
+const SOCIAL_CHALLENGES = {
+    key_habits_3: { label: '3 habitos-chave na semana', target: 3, metric: 'keyHabitsDone' },
+    streak_5: { label: '5 dias de streak combinado', target: 5, metric: 'sharedStreak' },
+    xp_100: { label: '100 XP coletivos', target: 100, metric: 'collectiveXp' }
+};
+
+function makeSocialCode() {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+    return code;
+}
 
 export function attachSocial(app) {
     Object.assign(app, {
@@ -63,6 +82,21 @@ export function attachSocial(app) {
             if (typeof profile.social.publicProfileId !== 'string') profile.social.publicProfileId = '';
             if (typeof profile.social.lastPublishedAt !== 'string') profile.social.lastPublishedAt = '';
             if (typeof profile.social.lastDisabledAt !== 'string') profile.social.lastDisabledAt = '';
+            if (!profile.social.invites || typeof profile.social.invites !== 'object' || Array.isArray(profile.social.invites)) {
+                profile.social.invites = {};
+            }
+            if (!profile.social.connections || typeof profile.social.connections !== 'object' || Array.isArray(profile.social.connections)) {
+                profile.social.connections = {};
+            }
+            if (!profile.social.connectionProfiles || typeof profile.social.connectionProfiles !== 'object' || Array.isArray(profile.social.connectionProfiles)) {
+                profile.social.connectionProfiles = {};
+            }
+            if (!profile.social.reactions || typeof profile.social.reactions !== 'object' || Array.isArray(profile.social.reactions)) {
+                profile.social.reactions = {};
+            }
+            if (!profile.social.challenges || typeof profile.social.challenges !== 'object' || Array.isArray(profile.social.challenges)) {
+                profile.social.challenges = {};
+            }
         },
 
         getSocialPublicProfileDocRef: function(userId = this.getActiveUserId()) {
@@ -71,6 +105,18 @@ export function attachSocial(app) {
 
         getSocialPrivateDocRef: function(userId = this.getActiveUserId()) {
             return doc(db, 'users', userId, 'private', 'social');
+        },
+
+        getSocialConnectionsDocRef: function(userId = this.getActiveUserId()) {
+            return doc(db, 'users', userId, 'private', 'connections');
+        },
+
+        getSocialEngagementDocRef: function(userId = this.getActiveUserId()) {
+            return doc(db, 'users', userId, 'private', 'engagement');
+        },
+
+        getSocialInviteCodeDocRef: function(code) {
+            return doc(db, 'inviteCodes', String(code || '').trim().toUpperCase());
         },
 
         getSocialDimensionLevels: function() {
@@ -166,6 +212,267 @@ export function attachSocial(app) {
             window.sistemaVidaState.settings.features.social = !!enabled;
             this.saveState(true);
             if (this.currentView === 'perfil' && this.render?.perfil) this.render.perfil();
+        },
+
+        getSocialActiveConnectionIds: function() {
+            this.ensureSocialState();
+            const connections = window.sistemaVidaState.profile.social.connections || {};
+            return Object.entries(connections)
+                .filter(([, item]) => item?.status === 'active')
+                .map(([uid]) => uid);
+        },
+
+        startSocialConnectionsListener: function() {
+            if (this._socialConnectionsUnsub || !this.isSocialFeatureEnabled()) return;
+            const userId = this.getActiveUserId();
+            if (!userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return;
+            try {
+                this._socialConnectionsUnsub = onSnapshot(this.getSocialConnectionsDocRef(userId), (snap) => {
+                    this.ensureSocialState();
+                    const data = snap.exists() ? snap.data() : {};
+                    const connections = data.connections && typeof data.connections === 'object' ? data.connections : {};
+                    window.sistemaVidaState.profile.social.connections = connections;
+                    this.refreshSocialConnectionProfiles().catch(() => {});
+                    if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
+                }, (err) => {
+                    console.warn('[SOCIAL] Listener de conexoes falhou:', err);
+                });
+            } catch (err) {
+                console.warn('[SOCIAL] Nao foi possivel iniciar listener de conexoes:', err);
+            }
+        },
+
+        stopSocialConnectionsListener: function() {
+            if (this._socialConnectionsUnsub) {
+                try { this._socialConnectionsUnsub(); } catch (_) {}
+                this._socialConnectionsUnsub = null;
+            }
+        },
+
+        generateSocialInviteCode: async function() {
+            this.ensureSocialState();
+            if (!this.isSocialFeatureEnabled()) return;
+            const userId = this.getActiveUserId();
+            if (!userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) {
+                this.showToast('Entre em uma conta para gerar convite.', 'error');
+                return;
+            }
+            let code = '';
+            for (let tries = 0; tries < 5; tries++) {
+                const candidate = makeSocialCode();
+                const snap = await getDoc(this.getSocialInviteCodeDocRef(candidate));
+                if (!snap.exists()) { code = candidate; break; }
+            }
+            if (!code) {
+                this.showToast('Nao consegui gerar um codigo agora. Tente novamente.', 'error');
+                return;
+            }
+            const payload = {
+                code,
+                ownerUid: userId,
+                ownerName: window.sistemaVidaState.profile?.name || 'Usuario',
+                status: 'active',
+                createdAt: serverTimestamp(),
+                expiresAt: Date.now() + 7 * 86400000
+            };
+            await setDoc(this.getSocialInviteCodeDocRef(code), payload, { merge: false });
+            window.sistemaVidaState.profile.social.invites.lastCode = code;
+            window.sistemaVidaState.profile.social.invites.lastCreatedAt = new Date().toISOString();
+            this.saveState(true);
+            this.renderSocialConnectionsPanel();
+            this.showToast('Codigo de convite gerado.', 'success');
+        },
+
+        acceptSocialInviteCode: async function(rawCode) {
+            this.ensureSocialState();
+            if (!this.isSocialFeatureEnabled()) return;
+            const userId = this.getActiveUserId();
+            if (!userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) {
+                this.showToast('Entre em uma conta para aceitar convite.', 'error');
+                return;
+            }
+            const code = String(rawCode || document.getElementById('social-invite-code-input')?.value || '').trim().toUpperCase();
+            if (!code) {
+                this.showToast('Informe um codigo de convite.', 'error');
+                return;
+            }
+            const snap = await getDoc(this.getSocialInviteCodeDocRef(code));
+            if (!snap.exists()) {
+                this.showToast('Codigo nao encontrado.', 'error');
+                return;
+            }
+            const invite = snap.data() || {};
+            const otherUid = String(invite.ownerUid || '');
+            if (!otherUid || otherUid === userId) {
+                this.showToast('Esse convite nao pode ser aceito por esta conta.', 'error');
+                return;
+            }
+            if (invite.status && invite.status !== 'active') {
+                this.showToast('Esse convite nao esta ativo.', 'error');
+                return;
+            }
+            const nowIso = new Date().toISOString();
+            const myConnection = {
+                uid: otherUid,
+                status: 'active',
+                connectedAt: nowIso,
+                source: 'invite',
+                inviteCode: code
+            };
+            const otherConnection = {
+                uid: userId,
+                status: 'active',
+                connectedAt: nowIso,
+                source: 'invite',
+                inviteCode: code
+            };
+            await setDoc(this.getSocialConnectionsDocRef(userId), {
+                [`connections.${otherUid}`]: myConnection,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+            await setDoc(this.getSocialConnectionsDocRef(otherUid), {
+                [`connections.${userId}`]: otherConnection,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+            window.sistemaVidaState.profile.social.connections[otherUid] = myConnection;
+            await this.refreshSocialConnectionProfiles();
+            this.saveState(true);
+            this.renderSocialConnectionsPanel();
+            this.showToast('Conexao criada.', 'success');
+        },
+
+        removeSocialConnection: async function(otherUid) {
+            this.ensureSocialState();
+            const userId = this.getActiveUserId();
+            const target = String(otherUid || '');
+            if (!target || !userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return;
+            const removed = { uid: target, status: 'removed', removedAt: new Date().toISOString() };
+            const reciprocal = { uid: userId, status: 'removed', removedAt: new Date().toISOString() };
+            await setDoc(this.getSocialConnectionsDocRef(userId), {
+                [`connections.${target}`]: removed,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+            await setDoc(this.getSocialConnectionsDocRef(target), {
+                [`connections.${userId}`]: reciprocal,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+            window.sistemaVidaState.profile.social.connections[target] = removed;
+            delete window.sistemaVidaState.profile.social.connectionProfiles[target];
+            this.saveState(true);
+            this.renderSocialConnectionsPanel();
+            this.showToast('Conexao removida dos dois lados.', 'success');
+        },
+
+        refreshSocialConnectionProfiles: async function() {
+            this.ensureSocialState();
+            const ids = this.getSocialActiveConnectionIds();
+            const profiles = window.sistemaVidaState.profile.social.connectionProfiles || {};
+            await Promise.all(ids.map(async (uid) => {
+                try {
+                    const snap = await getDoc(this.getSocialPublicProfileDocRef(uid));
+                    if (snap.exists()) profiles[uid] = { uid, visible: true, ...snap.data() };
+                    else profiles[uid] = { uid, visible: false };
+                } catch (err) {
+                    profiles[uid] = { uid, visible: false, error: true };
+                }
+            }));
+            window.sistemaVidaState.profile.social.connectionProfiles = profiles;
+        },
+
+        sendSocialReaction: async function(targetUid, reactionType) {
+            this.ensureSocialState();
+            const uid = String(targetUid || '');
+            const type = SOCIAL_REACTIONS[reactionType] ? reactionType : 'strength';
+            if (!uid) return;
+            const reaction = {
+                id: `reaction_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                targetUid: uid,
+                type,
+                label: SOCIAL_REACTIONS[type].label,
+                sentAt: new Date().toISOString()
+            };
+            const reactions = window.sistemaVidaState.profile.social.reactions;
+            if (!Array.isArray(reactions.sent)) reactions.sent = [];
+            reactions.sent.unshift(reaction);
+            reactions.sent = reactions.sent.slice(0, 80);
+            await this.persistSocialEngagement();
+            this.renderSocialConnectionsPanel();
+            this.showToast('Reacao enviada.', 'success');
+        },
+
+        getSocialChallengeWeekKey: function() {
+            return this._getWeekKey ? this._getWeekKey() : new Date().toISOString().slice(0, 10);
+        },
+
+        createSocialWeeklyChallenge: async function(challengeType = 'key_habits_3') {
+            this.ensureSocialState();
+            const type = SOCIAL_CHALLENGES[challengeType] ? challengeType : 'key_habits_3';
+            const ids = this.getSocialActiveConnectionIds();
+            if (!ids.length) {
+                this.showToast('Adicione uma conexao antes de criar desafio.', 'error');
+                return;
+            }
+            const weekKey = this.getSocialChallengeWeekKey();
+            const challenge = {
+                id: `challenge_${weekKey}_${type}`,
+                type,
+                label: SOCIAL_CHALLENGES[type].label,
+                status: 'pending',
+                weekKey,
+                participants: [this.getActiveUserId(), ...ids].filter(Boolean),
+                createdAt: new Date().toISOString(),
+                acceptedAt: ''
+            };
+            window.sistemaVidaState.profile.social.challenges[challenge.id] = challenge;
+            await this.persistSocialEngagement();
+            this.renderSocialConnectionsPanel();
+            this.showToast('Desafio semanal criado.', 'success');
+        },
+
+        acceptSocialChallenge: async function(challengeId) {
+            this.ensureSocialState();
+            const challenge = window.sistemaVidaState.profile.social.challenges?.[challengeId];
+            if (!challenge) return;
+            challenge.status = 'accepted';
+            challenge.acceptedAt = new Date().toISOString();
+            await this.persistSocialEngagement();
+            this.renderSocialConnectionsPanel();
+            this.showToast('Desafio aceito.', 'success');
+        },
+
+        getSocialCollectiveMetrics: function() {
+            const own = this.buildPublicProfilePayload();
+            const profiles = Object.values(window.sistemaVidaState.profile?.social?.connectionProfiles || {})
+                .filter((profile) => profile?.visible);
+            const all = [own, ...profiles];
+            return {
+                people: all.length,
+                collectiveXp: all.reduce((sum, item) => sum + (Number(item.xp) || 0), 0),
+                keyHabitsDone: all.reduce((sum, item) => sum + (Number(item.keyHabitsDone) || 0), 0),
+                sharedStreak: all.reduce((sum, item) => sum + (Number(item.streak) || 0), 0)
+            };
+        },
+
+        getSocialChallengeProgress: function(challenge) {
+            const cfg = SOCIAL_CHALLENGES[challenge?.type] || SOCIAL_CHALLENGES.key_habits_3;
+            const metrics = this.getSocialCollectiveMetrics();
+            const value = Math.max(0, Number(metrics[cfg.metric]) || 0);
+            const target = Math.max(1, Number(cfg.target) || 1);
+            return { value, target, pct: Math.min(100, Math.round((value / target) * 100)) };
+        },
+
+        persistSocialEngagement: async function() {
+            this.ensureSocialState();
+            this.saveState(true);
+            const userId = this.getActiveUserId();
+            if (!this.isSocialFeatureEnabled() || !userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return false;
+            const social = window.sistemaVidaState.profile.social;
+            await setDoc(this.getSocialEngagementDocRef(userId), {
+                reactions: social.reactions || {},
+                challenges: social.challenges || {},
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+            return true;
         },
 
         toggleSocialSharing: async function() {
@@ -298,6 +605,109 @@ export function attachSocial(app) {
                         <span class="text-xs text-on-surface text-right">${this.escapeHtml(row.value)}</span>
                     </div>`).join('')
                     : '<p class="text-xs text-outline italic">Nenhum campo selecionado para publicar.</p>';
+            }
+
+            this.startSocialConnectionsListener();
+            this.renderSocialConnectionsPanel();
+        },
+
+        renderSocialConnectionsPanel: function() {
+            const section = document.getElementById('social-connections-section');
+            if (!section) return;
+            this.ensureSocialState();
+            const enabled = this.isSocialFeatureEnabled();
+            section.classList.toggle('hidden', !enabled);
+            if (!enabled) return;
+
+            const inviteCode = window.sistemaVidaState.profile.social.invites?.lastCode || '';
+            const inviteEl = document.getElementById('social-current-invite-code');
+            if (inviteEl) inviteEl.textContent = inviteCode || 'Sem codigo ativo';
+
+            const profiles = window.sistemaVidaState.profile.social.connectionProfiles || {};
+            const ids = this.getSocialActiveConnectionIds();
+            const list = document.getElementById('social-connections-list');
+            if (list) {
+                list.innerHTML = ids.length ? ids.map((uid) => {
+                    const profile = profiles[uid] || { uid, visible: false };
+                    const visible = profile.visible !== false && profile.sharingEnabled !== false;
+                    const name = visible ? (profile.name || 'Companheiro') : 'Companheiro privado';
+                    const xpToday = visible ? Number(profile.xp || 0) : 0;
+                    const activeLabel = visible && profile.lastActiveAt ? 'ativo hoje' : 'visibilidade indisponivel';
+                    return `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center shrink-0">
+                                    ${visible && profile.avatarUrl ? `<img src="${this.escapeHtml(profile.avatarUrl)}" alt="" class="w-full h-full object-cover">` : '<span class="material-symbols-outlined notranslate text-outline text-[20px]">account_circle</span>'}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(name)}</p>
+                                    <p class="text-[10px] text-outline uppercase tracking-wider">Nivel ${visible ? this.escapeHtml(profile.level || 1) : '-'} · ${this.escapeHtml(activeLabel)}</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="window.app.removeSocialConnection('${this.escapeHtml(uid)}')" class="text-outline hover:text-error transition-colors" title="Remover conexao">
+                                <span class="material-symbols-outlined notranslate text-[18px]">person_remove</span>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">XP</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(xpToday)}</p></div>
+                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Chave</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.keyHabitsDone || 0)}</p></div>
+                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Streak</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.streak || 0)}</p></div>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}')" class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[13px]">${cfg.icon}</span>${cfg.label}</button>`).join('')}
+                        </div>
+                    </div>`;
+                }).join('') : '<p class="text-xs text-outline italic">Nenhum companheiro conectado ainda.</p>';
+            }
+
+            const metrics = this.getSocialCollectiveMetrics();
+            const metricsEl = document.getElementById('social-collective-metrics');
+            if (metricsEl) {
+                metricsEl.innerHTML = [
+                    ['Pessoas', metrics.people],
+                    ['XP coletivo', metrics.collectiveXp],
+                    ['Habitos-chave', metrics.keyHabitsDone],
+                    ['Streak compartilhado', metrics.sharedStreak]
+                ].map(([label, value]) => `<div class="rounded-lg bg-surface-container-low p-3"><p class="text-[10px] text-outline uppercase tracking-wider">${label}</p><p class="text-sm font-bold text-on-surface">${value}</p></div>`).join('');
+            }
+
+            const challengesEl = document.getElementById('social-challenges-list');
+            if (challengesEl) {
+                const challenges = Object.values(window.sistemaVidaState.profile.social.challenges || {})
+                    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+                    .slice(0, 4);
+                challengesEl.innerHTML = challenges.length ? challenges.map((challenge) => {
+                    const progress = this.getSocialChallengeProgress(challenge);
+                    return `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-bold text-on-surface">${this.escapeHtml(challenge.label || 'Desafio semanal')}</p>
+                                <p class="text-[10px] text-outline uppercase tracking-wider">${this.escapeHtml(challenge.weekKey || '')} · ${challenge.status === 'accepted' ? 'aceito' : 'pendente'}</p>
+                            </div>
+                            ${challenge.status === 'accepted' ? '<span class="material-symbols-outlined notranslate text-primary text-[18px]">check_circle</span>' : `<button type="button" onclick="window.app.acceptSocialChallenge('${this.escapeHtml(challenge.id)}')" class="text-[10px] font-bold uppercase tracking-wider text-primary">Aceitar</button>`}
+                        </div>
+                        <div class="mt-3 h-1.5 rounded-full bg-outline-variant/20 overflow-hidden"><div class="h-full bg-primary rounded-full" style="width:${progress.pct}%"></div></div>
+                        <p class="mt-2 text-[10px] text-outline">${progress.value}/${progress.target}</p>
+                    </div>`;
+                }).join('') : '<p class="text-xs text-outline italic">Nenhum desafio criado ainda.</p>';
+            }
+
+            const reactionsEl = document.getElementById('social-reactions-list');
+            if (reactionsEl) {
+                const sent = Array.isArray(window.sistemaVidaState.profile.social.reactions?.sent)
+                    ? window.sistemaVidaState.profile.social.reactions.sent.slice(0, 6)
+                    : [];
+                reactionsEl.innerHTML = sent.length ? sent.map((reaction) => {
+                    const cfg = SOCIAL_REACTIONS[reaction.type] || SOCIAL_REACTIONS.strength;
+                    const profile = profiles[reaction.targetUid] || {};
+                    return `<div class="flex items-center justify-between gap-3 rounded-xl bg-surface-container-low p-3 border border-outline-variant/10">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="material-symbols-outlined notranslate text-primary text-[16px]">${cfg.icon}</span>
+                            <span class="text-xs text-on-surface truncate">${this.escapeHtml(cfg.label)} para ${this.escapeHtml(profile.name || 'companheiro')}</span>
+                        </div>
+                        <span class="text-[10px] text-outline shrink-0">${this.escapeHtml(String(reaction.sentAt || '').slice(0, 10))}</span>
+                    </div>`;
+                }).join('') : '<p class="text-xs text-outline italic">Nenhuma reacao enviada ainda.</p>';
             }
         }
     });

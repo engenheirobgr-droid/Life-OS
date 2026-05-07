@@ -1,20 +1,20 @@
-const CACHE_NAME = 'sistema-vida-v123';
+const CACHE_NAME = 'sistema-vida-v124';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260507-phase10-social-base-v123',
-    './js/habitSuggestions.js?v=20260507-phase10-social-base-v123',
-    './js/subjectiveScales.js?v=20260507-phase10-social-base-v123',
-    './js/notifications.js?v=20260507-phase10-social-base-v123',
-    './js/cadence.js?v=20260507-phase10-social-base-v123',
-    './js/onboarding.js?v=20260507-phase10-social-base-v123',
-    './js/identity.js?v=20260507-phase10-social-base-v123',
-    './js/habits.js?v=20260507-phase10-social-base-v123',
-    './js/state.js?v=20260507-phase10-social-base-v123',
-    './js/render.js?v=20260507-phase10-social-base-v123',
-    './js/planning.js?v=20260507-phase10-social-base-v123',
-    './js/gamification.js?v=20260507-phase10-social-base-v123',
-    './js/social.js?v=20260507-phase10-social-base-v123',
+    './app.js?v=20260507-phase12-social-engagement-v124',
+    './js/habitSuggestions.js?v=20260507-phase12-social-engagement-v124',
+    './js/subjectiveScales.js?v=20260507-phase12-social-engagement-v124',
+    './js/notifications.js?v=20260507-phase12-social-engagement-v124',
+    './js/cadence.js?v=20260507-phase12-social-engagement-v124',
+    './js/onboarding.js?v=20260507-phase12-social-engagement-v124',
+    './js/identity.js?v=20260507-phase12-social-engagement-v124',
+    './js/habits.js?v=20260507-phase12-social-engagement-v124',
+    './js/state.js?v=20260507-phase12-social-engagement-v124',
+    './js/render.js?v=20260507-phase12-social-engagement-v124',
+    './js/planning.js?v=20260507-phase12-social-engagement-v124',
+    './js/gamification.js?v=20260507-phase12-social-engagement-v124',
+    './js/social.js?v=20260507-phase12-social-engagement-v124',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
@@ -120,6 +120,7 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+
 
 
 

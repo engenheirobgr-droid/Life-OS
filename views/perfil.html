@@ -89,6 +89,59 @@
         </div>
     </div>
 </section>
+<!-- Companions -->
+<section id="social-connections-section" class="hidden mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-2">Companheiros</p>
+            <h3 class="font-headline text-2xl md:text-3xl font-bold text-on-surface">Conexoes</h3>
+            <p class="text-xs text-outline mt-2 leading-relaxed">Convites por codigo, apoio leve e desafios semanais entre pessoas conectadas.</p>
+        </div>
+        <span class="material-symbols-outlined notranslate text-primary text-2xl">groups</span>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Seu codigo</p>
+                    <p id="social-current-invite-code" class="font-mono text-lg font-bold text-primary mt-1">Sem codigo ativo</p>
+                </div>
+                <button type="button" onclick="window.app.generateSocialInviteCode()" class="h-10 px-4 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Gerar</button>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input id="social-invite-code-input" type="text" class="h-10 rounded-lg border-none bg-surface-container-high px-3 text-sm text-on-surface uppercase focus:ring-2 focus:ring-primary/20 flex-1" placeholder="Codigo recebido">
+                <button type="button" onclick="window.app.acceptSocialInviteCode()" class="h-10 px-4 rounded-xl bg-surface-container-high text-primary border border-primary/20 text-xs font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Aceitar</button>
+            </div>
+        </div>
+        <div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Desafio semanal</p>
+                    <p class="text-xs text-on-surface mt-1">Crie uma meta coletiva simples para a semana.</p>
+                </div>
+                <button type="button" onclick="window.app.createSocialWeeklyChallenge(document.getElementById('social-challenge-type')?.value)" class="h-10 px-4 rounded-xl bg-primary/10 text-primary border border-primary/20 text-xs font-bold uppercase tracking-wider hover:bg-primary/15 transition-colors">Criar</button>
+            </div>
+            <select id="social-challenge-type" class="w-full h-10 rounded-lg border-none bg-surface-container-high px-3 text-xs font-bold uppercase tracking-wider text-on-surface focus:ring-2 focus:ring-primary/20">
+                <option value="key_habits_3">3 habitos-chave na semana</option>
+                <option value="streak_5">5 dias de streak combinado</option>
+                <option value="xp_100">100 XP coletivos</option>
+            </select>
+            <div id="social-collective-metrics" class="grid grid-cols-2 gap-2"></div>
+        </div>
+    </div>
+    <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3">Lista de companheiros</p>
+        <div id="social-connections-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+    </div>
+    <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3">Desafios ativos</p>
+        <div id="social-challenges-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+    </div>
+    <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3">Reacoes recentes</p>
+        <div id="social-reactions-list" class="space-y-2"></div>
+    </div>
+</section>
 <!-- Gamification -->
 <section id="gamification-profile-panel" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-6">
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
