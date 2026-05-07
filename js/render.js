@@ -3014,6 +3014,7 @@ render: {
             app.renderProfileCadence();
             app.renderNotesPanel();
             app.renderManualGuide();
+            if (app.renderSocialPrivacyPanel) app.renderSocialPrivacyPanel();
             app.updateProfileAppVersion();
         },
 

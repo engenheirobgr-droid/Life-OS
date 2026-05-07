@@ -143,6 +143,12 @@ ensureSettingsState: function() {
         if (!window.sistemaVidaState.settings) {
             window.sistemaVidaState.settings = { notificationsEnabled: false, theme: 'auto' };
         }
+        if (!window.sistemaVidaState.settings.features || typeof window.sistemaVidaState.settings.features !== 'object') {
+            window.sistemaVidaState.settings.features = {};
+        }
+        if (typeof window.sistemaVidaState.settings.features.social !== 'boolean') {
+            window.sistemaVidaState.settings.features.social = false;
+        }
         if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
         if (typeof window.sistemaVidaState.settings.notificationsEnabled !== 'boolean') {
             window.sistemaVidaState.settings.notificationsEnabled = false;
@@ -176,6 +182,7 @@ ensureSettingsState: function() {
         this.ensureCadenceState();
         this.ensureNotesState();
         this.ensureHabitMaturityState();
+        if (this.ensureSocialState) this.ensureSocialState();
         if (typeof window.sistemaVidaState.profile.legacy !== 'string') {
             window.sistemaVidaState.profile.legacy = '';
         }
@@ -622,7 +629,8 @@ factoryReset: async function() {
         },
         settings: {
           notificationsEnabled: false,
-          theme: 'auto'
+          theme: 'auto',
+          features: { social: false }
         },
         onboardingComplete: false
       };

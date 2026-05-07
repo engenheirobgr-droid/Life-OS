@@ -15,17 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260507-phase9-modularization-v122';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260507-phase9-modularization-v122';
-import { attachNotifications } from './js/notifications.js?v=20260507-phase9-modularization-v122';
-import { attachCadence } from './js/cadence.js?v=20260507-phase9-modularization-v122';
-import { attachOnboarding } from './js/onboarding.js?v=20260507-phase9-modularization-v122';
-import { attachIdentity } from './js/identity.js?v=20260507-phase9-modularization-v122';
-import { attachHabits } from './js/habits.js?v=20260507-phase9-modularization-v122';
-import { attachStateModule } from './js/state.js?v=20260507-phase9-modularization-v122';
-import { attachRenderModule } from './js/render.js?v=20260507-phase9-modularization-v122';
-import { attachPlanningModule } from './js/planning.js?v=20260507-phase9-modularization-v122';
-import { attachGamificationModule } from './js/gamification.js?v=20260507-phase9-modularization-v122';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260507-phase10-social-base-v123';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260507-phase10-social-base-v123';
+import { attachNotifications } from './js/notifications.js?v=20260507-phase10-social-base-v123';
+import { attachCadence } from './js/cadence.js?v=20260507-phase10-social-base-v123';
+import { attachOnboarding } from './js/onboarding.js?v=20260507-phase10-social-base-v123';
+import { attachIdentity } from './js/identity.js?v=20260507-phase10-social-base-v123';
+import { attachHabits } from './js/habits.js?v=20260507-phase10-social-base-v123';
+import { attachStateModule } from './js/state.js?v=20260507-phase10-social-base-v123';
+import { attachRenderModule } from './js/render.js?v=20260507-phase10-social-base-v123';
+import { attachPlanningModule } from './js/planning.js?v=20260507-phase10-social-base-v123';
+import { attachGamificationModule } from './js/gamification.js?v=20260507-phase10-social-base-v123';
+import { attachSocial } from './js/social.js?v=20260507-phase10-social-base-v123';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -184,7 +185,8 @@ window.sistemaVidaState = {
     },
     settings: {
         notificationsEnabled: false,
-        theme: 'auto'
+        theme: 'auto',
+        features: { social: false }
     },
     cycleStartDate: new Date(new Date(new Date().setDate(new Date().getDate() - 21)).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0],
     onboardingComplete: false
@@ -197,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-phase9-modularization-v122',
+    appBuildVersion: '20260507-phase10-social-base-v123',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -6751,6 +6753,7 @@ attachStateModule(app);
 attachRenderModule(app);
 attachPlanningModule(app);
 attachGamificationModule(app);
+attachSocial(app);
 
 window.app = app;
 
@@ -6767,5 +6770,6 @@ onAuthStateChanged(auth, (user) => {
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
+
 
 
