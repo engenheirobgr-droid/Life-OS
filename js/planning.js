@@ -1,0 +1,1727 @@
+export function attachPlanningModule(app) {
+    Object.assign(app, {
+onTypeChange: function(type) {
+        const parentGroup = document.getElementById('crud-parent-group');
+        const triggerGroup = document.getElementById('crud-trigger-container');
+        const habitIdentityGroup = document.getElementById('crud-habit-identity');
+        const habitStepsChecklistWrap = document.getElementById('habit-steps-checklist-wrap');
+        const dimensionGroup = document.getElementById('crud-dimension-group');
+        const contextGroup = document.getElementById('crud-context-group');
+        const contextLabel = document.getElementById('crud-context-label');
+        const contextInput = document.getElementById('crud-context');
+        const triggerInput = document.getElementById('crud-trigger');
+        const routineInput = document.getElementById('habit-routine');
+        const rewardInput = document.getElementById('habit-reward');
+        const habitControls = document.getElementById('crud-habit-controls');
+        const woopGroup = document.getElementById('crud-woop-group');
+        const metaHorizonGroup = document.getElementById('crud-meta-horizon-group');
+        const successCriteriaGroup = document.getElementById('crud-success-criteria-group');
+        const goalRigorGroup = document.getElementById('crud-goal-rigor-group');
+        const keyResultsGroup = document.getElementById('crud-key-results-group');
+        const effortGroup = document.getElementById('crud-effort-group');
+        const successCriteriaLabel = document.querySelector('label[for="crud-success-criteria"]');
+        const setGroupVisible = (el, visible, displayMode = 'flex') => {
+            if (!el) return;
+            el.classList.toggle('hidden', !visible);
+            el.classList.toggle('flex', visible && displayMode === 'flex');
+            el.style.display = visible ? displayMode : 'none';
+        };
+        
+        // Esconde tudo por padrão para resetar estado visual
+        if (parentGroup) parentGroup.classList.add('hidden');
+        setGroupVisible(triggerGroup, false);
+        setGroupVisible(habitControls, false);
+        setGroupVisible(woopGroup, false);
+        setGroupVisible(habitIdentityGroup, false);
+        setGroupVisible(habitStepsChecklistWrap, false);
+        setGroupVisible(successCriteriaGroup, false);
+        setGroupVisible(goalRigorGroup, false);
+        setGroupVisible(keyResultsGroup, false);
+        setGroupVisible(effortGroup, false);
+        if (metaHorizonGroup) metaHorizonGroup.classList.add('hidden');
+        if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
+        if (contextGroup) contextGroup.classList.remove('hidden');
+        if (contextInput) contextInput.required = true;
+        if (triggerInput) triggerInput.required = false;
+        if (routineInput) routineInput.required = false;
+        if (rewardInput) rewardInput.required = false;
+
+        // Configura baseado no tipo
+        if (type === 'habits') {
+            setGroupVisible(triggerGroup, true);
+            setGroupVisible(habitIdentityGroup, true);
+            setGroupVisible(habitControls, true);
+            setGroupVisible(habitStepsChecklistWrap, !!this.editingEntity && this.editingEntity.type === 'habits');
+            if (habitControls) {
+                // Força atualização da visibilidade dos sub-campos baseando nos valores dos selects
+                const modeInput = document.getElementById('habit-track-mode');
+                if (modeInput) this.onHabitModeChange(modeInput.value);
+                const freqInput = document.getElementById('habit-frequency');
+                if (freqInput) this.onHabitFreqChange(freqInput.value);
+            }
+            this.populateHabitLinkedMeta();
+            this.populateHabitIdentitySource();
+            if (contextGroup) contextGroup.classList.add('hidden');
+            if (contextInput) contextInput.required = false;
+            if (triggerInput) triggerInput.required = true;
+            if (routineInput) routineInput.required = true;
+            if (rewardInput) rewardInput.required = true;
+            if (!this.editingEntity || this.editingEntity.type !== 'habits') {
+                const checklist = document.getElementById('habit-steps-checklist');
+                if (checklist) checklist.innerHTML = '<p class="text-[10px] text-outline px-1">Salve o hábito para usar checklist diário.</p>';
+            }
+        } else if (type === 'metas') {
+            if (parentGroup) parentGroup.classList.remove('hidden');
+            if (metaHorizonGroup) metaHorizonGroup.classList.remove('hidden');
+            setGroupVisible(successCriteriaGroup, true);
+            setGroupVisible(goalRigorGroup, true, 'grid');
+            if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério de Sucesso';
+            if (contextLabel) contextLabel.textContent = 'Por que esta meta? (Propósito)';
+            this.updateParentList(type);
+        } else if (type === 'okrs') {
+            if (parentGroup) parentGroup.classList.remove('hidden');
+            setGroupVisible(successCriteriaGroup, true);
+            setGroupVisible(goalRigorGroup, true, 'grid');
+            setGroupVisible(keyResultsGroup, true);
+            if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério / Meta do OKR';
+            if (contextGroup) contextGroup.classList.add('hidden');
+            if (contextInput) contextInput.required = false;
+            this.updateParentList(type);
+        } else {
+            // Macros, Micros
+            if (parentGroup) parentGroup.classList.remove('hidden');
+            if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério de Sucesso';
+            if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
+            if (type === 'micros') setGroupVisible(effortGroup, true);
+            if (['macros', 'micros'].includes(type)) {
+                if (woopGroup) {
+                    woopGroup.classList.remove('hidden');
+                    woopGroup.style.cssText = 'display: block;';
+                }
+                this.toggleCrudWoop(type === 'micros');
+            }
+            this.updateParentList(type);
+        }
+
+        // Seletor de propósito: apenas para metas
+        const purposeSelectorGroup = document.getElementById('crud-purpose-selector-group');
+        if (type === 'metas') {
+            this.buildPurposeOptions();
+        } else if (purposeSelectorGroup) {
+            purposeSelectorGroup.classList.add('hidden');
+            purposeSelectorGroup.style.display = 'none';
+        }
+
+        // Atualiza painel de propósito conforme o tipo selecionado
+        const currentDimension = document.getElementById('crud-dimension')?.value || '';
+        this.updatePurposePanel(currentDimension, type);
+
+        // Alterna campo de prazo padrão vs. janela real (OKR/macro/micro)
+        const deadlineGroup = document.getElementById('prazo-deadline-group');
+        const agendamentoGroup = document.getElementById('prazo-agendamento-group');
+        const usaAgendamento = ['okrs', 'macros', 'micros'].includes(type);
+
+        if (deadlineGroup) deadlineGroup.classList.toggle('hidden', usaAgendamento);
+        if (agendamentoGroup) agendamentoGroup.classList.toggle('hidden', !usaAgendamento);
+
+        // Para hábitos, a checkbox "contínuo" pode esconder o prazo novamente
+        if (type === 'habits') {
+            const continuousCheck = document.getElementById('habit-continuous');
+            if (continuousCheck) this.onHabitContinuousChange(continuousCheck.checked);
+        }
+
+        // Defaults para datas reais no modal (OKR/macro/micro)
+        if (usaAgendamento) {
+            const hoje = new Date().toISOString().split('T')[0];
+            const inicioInput = document.getElementById('crud-inicio-date');
+            const prazoInput = document.getElementById('crud-prazo-date');
+            if (type !== 'okrs' && inicioInput && !inicioInput.value) inicioInput.value = hoje;
+            if (prazoInput && !prazoInput.value) prazoInput.value = hoje;
+        }
+
+        // Toggle "Adicionar ao Plano da Semana" — apenas para micros com plano ativo
+        let toggleWrap = document.getElementById('week-plan-toggle-wrap');
+        if (type === 'micros') {
+            const weekKey = this._getWeekKey();
+            const hasActivePlan = !!(window.sistemaVidaState.weekPlans || {})[weekKey];
+            if (hasActivePlan) {
+                if (!toggleWrap) {
+                    toggleWrap = document.createElement('div');
+                    toggleWrap.id = 'week-plan-toggle-wrap';
+                    toggleWrap.className = 'mt-3';
+                    toggleWrap.innerHTML = `<label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-primary/5 border border-primary/20">
+                        <input type="checkbox" id="add-to-week-plan" class="accent-primary">
+                        <div>
+                            <p class="text-xs font-bold text-on-surface">Adicionar ao plano desta semana</p>
+                            <p class="text-[10px] text-outline">Aparecerá nos micros comprometidos da semana</p>
+                        </div>
+                    </label>`;
+                    if (agendamentoGroup && agendamentoGroup.parentNode) {
+                        agendamentoGroup.parentNode.insertBefore(toggleWrap, agendamentoGroup.nextSibling);
+                    }
+                } else {
+                    toggleWrap.classList.remove('hidden');
+                }
+                const editingMicroId = (this.editingEntity && this.editingEntity.type === 'micros') ? this.editingEntity.id : '';
+                this.syncMicroWeekPlanToggle(editingMicroId);
+            } else {
+                if (toggleWrap) toggleWrap.classList.add('hidden');
+            }
+        } else {
+            if (toggleWrap) toggleWrap.classList.add('hidden');
+        }
+    },
+
+finishMetaTrailWizard: function() {
+        for (let step = 1; step <= 4; step++) {
+            if (!this._validateMetaTrailStep(step)) {
+                this.setMetaTrailStep(step);
+                return;
+            }
+        }
+
+        const meta = this._readTrailMeta();
+        const okrs = this._readTrailOkrs().items;
+        const macros = this._readTrailMacros().items;
+        const micros = this._readTrailMicros().items;
+
+        const state = window.sistemaVidaState;
+        if (!state.entities) state.entities = { metas: [], okrs: [], macros: [], micros: [] };
+        ['metas', 'okrs', 'macros', 'micros'].forEach(type => {
+            if (!Array.isArray(state.entities[type])) state.entities[type] = [];
+        });
+
+        const makeId = () => `ent_${Date.now()}${Math.random().toString(36).slice(2, 6)}`;
+        const todayKey = this.getLocalDateKey();
+
+        const metaId = makeId();
+        state.entities.metas.push({
+            id: metaId,
+            title: meta.title,
+            dimension: meta.dimension,
+            prazo: meta.prazo,
+            createdAt: todayKey,
+            purpose: meta.why,
+            horizonYears: Number(meta.horizonYears || 1),
+            successCriteria: meta.successCriteria || '',
+            challengeLevel: Math.max(1, Math.min(5, Number(meta.challengeLevel || 3))),
+            commitmentLevel: Math.max(1, Math.min(5, Number(meta.commitmentLevel || 3))),
+            status: 'pending',
+            progress: 0,
+            completed: false
+        });
+        this.markCadence('lifeGoals', todayKey);
+
+        const okrMap = {};
+        okrs.forEach(okr => {
+            const okrId = makeId();
+            okrMap[okr.rowId] = okrId;
+            const normalizedKrs = Array.isArray(okr.keyResults) ? this.normalizeKeyResultsList(okr.keyResults) : [];
+            const krProgress = this.computeKeyResultsProgress(normalizedKrs);
+            state.entities.okrs.push({
+                id: okrId,
+                metaId,
+                title: okr.title,
+                dimension: meta.dimension,
+                inicioDate: okr.inicioDate || '',
+                prazo: okr.prazo,
+                createdAt: todayKey,
+                purpose: okr.metric,
+                successCriteria: okr.metric,
+                challengeLevel: Math.max(1, Math.min(5, Number(okr.challengeLevel || 3))),
+                commitmentLevel: Math.max(1, Math.min(5, Number(okr.commitmentLevel || 3))),
+                keyResults: normalizedKrs,
+                status: 'pending',
+                progress: krProgress === null ? 0 : krProgress,
+                completed: false
+            });
+        });
+
+        const macroMap = {};
+        macros.forEach(macro => {
+            const macroId = makeId();
+            macroMap[macro.rowId] = macroId;
+            const okrId = okrMap[macro.okrRowId] || '';
+            state.entities.macros.push({
+                id: macroId,
+                metaId,
+                okrId,
+                title: macro.title,
+                dimension: meta.dimension,
+                inicioDate: macro.inicioDate,
+                prazo: macro.prazo,
+                createdAt: todayKey,
+                description: macro.description || '',
+                purpose: meta.why || '',
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+        });
+
+        const createdMicroIds = [];
+        micros.forEach(micro => {
+            const microId = makeId();
+            const macroId = macroMap[micro.macroRowId] || '';
+            const macro = state.entities.macros.find(m => m.id === macroId);
+            state.entities.micros.push({
+                id: microId,
+                metaId,
+                okrId: macro?.okrId || '',
+                macroId,
+                title: micro.title,
+                dimension: meta.dimension,
+                inicioDate: micro.inicioDate,
+                prazo: micro.prazo,
+                createdAt: todayKey,
+                indicator: 'Primeiro passo da trilha',
+                purpose: meta.why || '',
+                status: 'pending',
+                progress: 0,
+                completed: false
+            });
+            createdMicroIds.push(microId);
+        });
+
+        this.normalizeEntitiesState();
+        createdMicroIds.forEach(id => this.updateCascadeProgress(id, 'micros'));
+        this._wizardPlanSuggestion = {
+            microIds: createdMicroIds,
+            intention: `Avançar meta: ${meta.title}`
+        };
+
+        this.closeMetaTrailWizard();
+        this.saveState(false);
+        this.showToast(`Trilha criada: 1 meta, ${okrs.length} OKR(s), ${macros.length} macro(s), ${micros.length} micro(s).`, 'success');
+
+        if (this.currentView === 'planos' && this.render.planos) {
+            this.render.planos();
+            this.switchPlanosTab(this.planosActiveTab || 'metas');
+        }
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+        if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        if (this.currentView === 'painel' && this.render.painel) this.render.painel();
+
+        const openPlannerWhenReady = (attempt = 0) => {
+            const hasWeeklyModal = !!document.getElementById('weekly-plan-modal');
+            if (hasWeeklyModal) {
+                this.switchPlanosTab('semanal');
+                this.openWeeklyPlanModal();
+                return;
+            }
+            if (attempt < 10) setTimeout(() => openPlannerWhenReady(attempt + 1), 150);
+        };
+
+        if (this.currentView !== 'planos') this.switchView('planos');
+        setTimeout(() => openPlannerWhenReady(), this.currentView === 'planos' ? 80 : 450);
+    },
+
+_validateMetaTrailStep: function(step) {
+        const s = Number(step || this.metaTrailStep || 1);
+        if (s === 1) {
+            const meta = this._readTrailMeta();
+            if (!meta.title || !meta.dimension || !meta.prazo || !meta.why) {
+                this.showToast('Preencha título, dimensão, prazo e motivação da meta.', 'error');
+                return false;
+            }
+            const horizonAlign = this.alignMetaHorizonSelection({
+                prazo: meta.prazo,
+                selectedHorizonYears: meta.horizonYears,
+                selectElementId: 'trail-meta-horizon'
+            });
+            if (!horizonAlign.ok) {
+                this.showToast(horizonAlign.message || 'Ajuste o horizonte da meta para continuar.', 'error');
+                return false;
+            }
+            const validation = this.validateEntityTimeWindow('metas', { prazo: meta.prazo, metaHorizonYears: horizonAlign.horizonYears });
+            if (!validation.ok) {
+                this.showToast(validation.message, 'error');
+                return false;
+            }
+            return true;
+        }
+        if (s === 2) {
+            const okrs = this._readTrailOkrs();
+            if (okrs.hasPartial) {
+                this.showToast('Complete os campos de cada OKR preenchido (resultado, métrica e prazo).', 'error');
+                return false;
+            }
+            if (okrs.items.length < 1 || okrs.items.length > 3) {
+                this.showToast('Defina de 1 a 3 OKRs para continuar.', 'error');
+                return false;
+            }
+            const invalidOkr = okrs.items.find((okr, idx) => {
+                const validation = this.validateEntityTimeWindow('okrs', {
+                    inicioDate: okr.inicioDate,
+                    prazo: okr.prazo
+                });
+                if (validation.ok) return false;
+                this.showToast(`OKR ${idx + 1}: ${validation.message}`, 'error');
+                return true;
+            });
+            if (invalidOkr) return false;
+            return true;
+        }
+        if (s === 3) {
+            const macros = this._readTrailMacros();
+            if (macros.hasPartial) {
+                this.showToast('Cada Macro precisa de título, OKR vinculado, início e prazo.', 'error');
+                return false;
+            }
+            if (macros.items.length < 2 || macros.items.length > 5) {
+                this.showToast('Defina de 2 a 5 Macros para continuar.', 'error');
+                return false;
+            }
+            const invalidMacro = macros.items.find((macro, idx) => {
+                const validation = this.validateEntityTimeWindow('macros', {
+                    inicioDate: macro.inicioDate,
+                    prazo: macro.prazo
+                });
+                if (validation.ok) return false;
+                this.showToast(`Macro ${idx + 1}: ${validation.message}`, 'error');
+                return true;
+            });
+            if (invalidMacro) return false;
+            return true;
+        }
+        if (s === 4) {
+            const micros = this._readTrailMicros();
+            if (micros.hasPartial) {
+                this.showToast('Cada Micro precisa de título, Macro vinculada, início e prazo.', 'error');
+                return false;
+            }
+            if (micros.items.length < 1) {
+                this.showToast('Defina ao menos 1 Micro para começar a semana.', 'error');
+                return false;
+            }
+            const invalidMicro = micros.items.find((micro, idx) => {
+                const validation = this.validateEntityTimeWindow('micros', {
+                    inicioDate: micro.inicioDate,
+                    prazo: micro.prazo
+                });
+                if (validation.ok) return false;
+                this.showToast(`Micro ${idx + 1}: ${validation.message}`, 'error');
+                return true;
+            });
+            if (invalidMicro) return false;
+            const todayKey = this.getLocalDateKey();
+            const today = new Date(todayKey + 'T00:00:00');
+            const maxDate = new Date(today);
+            maxDate.setDate(maxDate.getDate() + 14);
+            const invalidDate = micros.items.find(item => {
+                try {
+                    const d = new Date(item.prazo + 'T00:00:00');
+                    return d < today || d > maxDate;
+                } catch (_) {
+                    return true;
+                }
+            });
+            if (invalidDate) {
+                this.showToast('Os prazos dos Micros devem ficar dentro das próximas 2 semanas.', 'error');
+                return false;
+            }
+            return true;
+        }
+        return true;
+    },
+
+refreshTrailSummary: function() {
+        const summary = document.getElementById('trail-summary');
+        if (!summary) return;
+        const meta = this._readTrailMeta();
+        const okrs = this._readTrailOkrs().items;
+        const macros = this._readTrailMacros().items;
+        const micros = this._readTrailMicros().items;
+        const okrByRow = {};
+        okrs.forEach(okr => { okrByRow[okr.rowId] = okr; });
+        const macroByRow = {};
+        macros.forEach(macro => { macroByRow[macro.rowId] = macro; });
+
+        const metaCard = `
+            <div class="bg-surface-container-low rounded-xl border border-outline-variant/20 p-4">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Meta</p>
+                <p class="text-sm font-bold text-on-surface">${this.escapeHtml(meta.title || '—')}</p>
+                <p class="text-xs text-outline mt-1">${this.escapeHtml(meta.dimension || 'Sem dimensão')} • ${this._formatTrailDate(meta.prazo)}</p>
+                <p class="text-[11px] text-outline mt-1">Horizonte: ${this.escapeHtml(String(meta.horizonYears || 1))} ano(s) • Desafio ${meta.challengeLevel || 3}/5 • Comprometimento ${meta.commitmentLevel || 3}/5</p>
+                <p class="text-xs text-outline mt-2">${this.escapeHtml(meta.successCriteria || 'Sem critério de sucesso definido.')}</p>
+                <p class="text-xs text-on-surface mt-2 leading-relaxed">${this.escapeHtml(meta.why || 'Sem motivação definida.')}</p>
+            </div>`;
+
+        const okrCards = okrs.length > 0
+            ? okrs.map((okr, idx) => `
+                <div class="bg-surface-container rounded-lg border border-outline-variant/15 p-3">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">OKR ${idx + 1}</p>
+                    <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(okr.title)}</p>
+                    <p class="text-xs text-outline mt-1">${this.escapeHtml(okr.metric)}</p>
+                    <p class="text-[11px] text-outline mt-1">Desafio ${okr.challengeLevel || 3}/5 • Comprometimento ${okr.commitmentLevel || 3}/5</p>
+                    <p class="text-[11px] text-outline mt-1">${Array.isArray(okr.keyResults) && okr.keyResults.length > 0 ? `${okr.keyResults.length} key result(s)` : 'Sem key results'}</p>
+                    <p class="text-[11px] text-primary font-bold mt-2">${okr.inicioDate ? `${this._formatTrailDate(okr.inicioDate)} → ` : ''}${this._formatTrailDate(okr.prazo)}</p>
+                </div>
+            `).join('')
+            : '<p class="text-xs text-outline italic">Sem OKRs completos.</p>';
+
+        const macroCards = macros.length > 0
+            ? macros.map((macro, idx) => `
+                <div class="bg-surface-container rounded-lg border border-outline-variant/15 p-3">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Macro ${idx + 1}</p>
+                    <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(macro.title)}</p>
+                    <p class="text-xs text-outline mt-1">Vinculada a: ${this.escapeHtml(okrByRow[macro.okrRowId]?.title || 'OKR não definido')}</p>
+                    <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(macro.inicioDate)} → ${this._formatTrailDate(macro.prazo)}</p>
+                    ${macro.description ? `<p class="text-xs text-on-surface mt-2">${this.escapeHtml(macro.description)}</p>` : ''}
+                </div>
+            `).join('')
+            : '<p class="text-xs text-outline italic">Sem Macros completas.</p>';
+
+        const microCards = micros.length > 0
+            ? micros.map((micro, idx) => `
+                <div class="bg-surface-container rounded-lg border border-outline-variant/15 p-3">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Micro ${idx + 1}</p>
+                    <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(micro.title)}</p>
+                    <p class="text-xs text-outline mt-1">Macro: ${this.escapeHtml(macroByRow[micro.macroRowId]?.title || 'Macro não definida')}</p>
+                    <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(micro.inicioDate)} → ${this._formatTrailDate(micro.prazo)}</p>
+                </div>
+            `).join('')
+            : '<p class="text-xs text-outline italic">Sem Micros completas.</p>';
+
+        summary.innerHTML = `
+            ${metaCard}
+            <div class="grid md:grid-cols-3 gap-3">
+                <div class="space-y-2">${okrCards}</div>
+                <div class="space-y-2">${macroCards}</div>
+                <div class="space-y-2">${microCards}</div>
+            </div>
+        `;
+    },
+
+updatePurposePanel: function(dimension, type) {
+        const panel = document.getElementById('crud-purpose-panel');
+        if (!panel) return;
+
+        // Só mostra para tipos com propósito (não hábitos)
+        const showForType = ['metas', 'okrs', 'macros', 'micros'].includes(type);
+        if (!showForType) {
+            panel.classList.add('hidden');
+            panel.style.display = 'none';
+            return;
+        }
+
+        const profile = window.sistemaVidaState?.profile || {};
+        const values = profile.values || [];
+        const ikigai = profile.ikigai || {};
+        const legacyObj = profile.legacyObj || {};
+
+        // Verifica se há algum dado para mostrar
+        const hasValues = values.length > 0;
+        const hasIkigai = !!(ikigai.sintese || ikigai.love);
+        const legacyKey = this._dimensionLegacyMap[dimension];
+        const legacyText = legacyKey ? (legacyObj[legacyKey] || '') : '';
+        const hasLegacy = !!legacyText;
+
+        if (!hasValues && !hasIkigai && !hasLegacy) {
+            panel.classList.add('hidden');
+            panel.style.display = 'none';
+            return;
+        }
+
+        // Popula os campos
+        const valuesSection = document.getElementById('crud-purpose-values');
+        const valuesText = document.getElementById('crud-purpose-values-text');
+        const ikigaiSection = document.getElementById('crud-purpose-ikigai');
+        const ikigaiText = document.getElementById('crud-purpose-ikigai-text');
+        const legacySection = document.getElementById('crud-purpose-legacy');
+        const legacyTextEl = document.getElementById('crud-purpose-legacy-text');
+
+        if (hasValues && valuesSection && valuesText) {
+            valuesText.textContent = values.slice(0, 3).join(' · ');
+            valuesSection.classList.remove('hidden');
+            valuesSection.style.display = 'flex';
+        } else if (valuesSection) {
+            valuesSection.classList.add('hidden');
+        }
+
+        if (hasIkigai && ikigaiSection && ikigaiText) {
+            ikigaiText.textContent = ikigai.sintese || ikigai.love || '';
+            ikigaiSection.classList.remove('hidden');
+            ikigaiSection.style.display = 'flex';
+        } else if (ikigaiSection) {
+            ikigaiSection.classList.add('hidden');
+        }
+
+        if (hasLegacy && legacySection && legacyTextEl) {
+            legacyTextEl.textContent = legacyText;
+            legacySection.classList.remove('hidden');
+            legacySection.style.display = 'flex';
+        } else if (legacySection) {
+            legacySection.classList.add('hidden');
+        }
+
+        // Mostra painel (começa fechado para não poluir o modal)
+        panel.classList.remove('hidden');
+        panel.style.display = 'flex';
+        // Garante que o body começa collapsed
+        const body = document.getElementById('crud-purpose-body');
+        const chevron = document.getElementById('crud-purpose-chevron');
+        if (body) { body.classList.add('hidden'); body.style.display = 'none'; }
+        if (chevron) chevron.style.transform = '';
+    },
+
+openWeeklyPlanModal: function(options = {}) {
+        const state = window.sistemaVidaState;
+        const weekKey = options.weekKey || this._getWeekKey();
+        this._weeklyPlanTargetKey = weekKey;
+        const isNextWeek = weekKey > this._getWeekKey();
+
+        // Formata o rótulo da semana
+        const title = document.getElementById('weekly-plan-modal-title');
+        const label = document.getElementById('weekly-plan-week-label');
+        if (title) title.textContent = isNextWeek ? 'Planejar Próxima Semana' : 'Planejamento Semanal';
+        if (label) label.textContent = this._formatWeekRange(weekKey);
+
+        const noCurrentPlanWarning = document.getElementById('wp-no-current-plan-warning');
+        if (noCurrentPlanWarning) {
+            const currentWeekPlan = (state.weekPlans || {})[this._getWeekKey()];
+            const currentWeekHasPlan = currentWeekPlan && (currentWeekPlan.selectedMicros?.length > 0 || currentWeekPlan.intention?.trim());
+            noCurrentPlanWarning.classList.toggle('hidden', !isNextWeek || !!currentWeekHasPlan);
+        }
+
+        // Pré-preenche com plano existente para esta semana (se houver)
+        const existing = (state.weekPlans || {})[weekKey] || {};
+        const trailSuggestion = this._wizardPlanSuggestion || null;
+        const carryover = options.suggestCarryover ? this.getNextWeekCarryoverSuggestions(this._getWeekKey()) : [];
+        const suggestedMicros = Array.isArray(trailSuggestion?.microIds)
+            ? trailSuggestion.microIds
+            : carryover.map(m => m.id);
+        const intentionEl = document.getElementById('wp-intention');
+        const energyEl = document.getElementById('wp-energy');
+        if (intentionEl) intentionEl.value = existing.intention || trailSuggestion?.intention || (options.suggestCarryover ? 'Fechar pendências importantes e manter o plano executável.' : '');
+        if (energyEl) energyEl.value = existing.energyForecast || 3;
+
+        // Monta lista de micros ativos
+        const microsContainer = document.getElementById('wp-micros-list');
+        if (microsContainer) {
+            const activeMicros = (state.entities?.micros || []).filter(m => m.status !== 'done' && !m.completed);
+            if (activeMicros.length === 0) {
+                microsContainer.innerHTML = '<p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>';
+            } else {
+                const suggestionSet = new Set(suggestedMicros);
+                const suggestionNotice = carryover.length ? `
+                    <div class="mb-2 rounded-xl bg-primary/10 border border-primary/20 p-3 text-xs text-on-surface-variant leading-relaxed">
+                        <span class="font-bold text-primary">${carryover.length} pendência${carryover.length > 1 ? 's' : ''} pré-selecionada${carryover.length > 1 ? 's' : ''}.</span>
+                        Revise a carga antes de salvar a próxima semana.
+                    </div>` : '';
+                microsContainer.innerHTML = suggestionNotice + activeMicros.map(m => {
+                    const checked = ((existing.selectedMicros || []).includes(m.id) || suggestedMicros.includes(m.id)) ? 'checked' : '';
+                    const macroTitle = state.entities.macros?.find(ma => ma.id === m.macroId)?.title || '';
+                    const details = [
+                        m.dimension || '',
+                        macroTitle,
+                        m.prazo ? `prazo ${this._formatTrailDate ? this._formatTrailDate(m.prazo) : m.prazo}` : ''
+                    ].filter(Boolean).join(' · ');
+                    const carryBadge = suggestionSet.has(m.id) ? '<span class="ml-1 text-[9px] font-bold uppercase tracking-wider text-primary">sugerida</span>' : '';
+                    const sub = details ? `<span class="text-[10px] text-outline block">${this.escapeHtml(details)}${carryBadge}</span>` : '';
+                    return `<label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-primary/5 transition-colors">
+                        <input type="checkbox" class="wp-micro-check mt-0.5 accent-primary" value="${m.id}" ${checked}>
+                        <span class="text-sm text-on-surface leading-snug">${this.escapeHtml(m.title)}${sub}</span>
+                    </label>`;
+                }).join('');
+            }
+        }
+
+        document.getElementById('weekly-plan-modal').classList.remove('hidden');
+        this._wizardPlanSuggestion = null;
+
+        // Medidor de carga: inicializa e escuta mudanças
+        this._updateWeeklyPlanLoadMeter();
+        const listEl = document.getElementById('wp-micros-list');
+        if (listEl && !listEl._loadMeterBound) {
+            listEl.addEventListener('change', (e) => {
+                if (e.target && e.target.classList && e.target.classList.contains('wp-micro-check')) {
+                    this._updateWeeklyPlanLoadMeter();
+                }
+            });
+            listEl._loadMeterBound = true;
+        }
+
+        if (options && options.addMicro) {
+            const inlineForm = document.getElementById('wp-inline-new-micro');
+            if (inlineForm?.classList.contains('hidden')) this.toggleInlineNewMicro();
+        }
+    },
+
+getDailyCompassQuotes: function() {
+        return [
+            // Saúde
+            { theme: 'Saúde', quote: 'O corpo precisa de constância antes de intensidade.', author: 'Life OS', reflection: 'Proteja energia suficiente para cumprir o essencial.' },
+            { theme: 'Saúde', quote: 'Cuide do corpo — é o único lugar onde você tem de viver.', author: 'Jim Rohn', reflection: 'Um gesto de cuidado físico hoje é um presente para amanhã.' },
+            { theme: 'Saúde', quote: 'A saúde não é tudo, mas sem ela tudo é nada.', author: 'Arthur Schopenhauer', reflection: 'Priorize o básico: sono, movimento, hidratação.' },
+            { theme: 'Saúde', quote: 'Movimento é o remédio mais antigo do mundo.', author: 'Life OS', reflection: 'Dez minutos em movimento valem mais do que zero.' },
+            { theme: 'Saúde', quote: 'O esforço de hoje é a energia de amanhã.', author: 'Life OS', reflection: 'Invista no corpo agora para colher capacidade depois.' },
+            { theme: 'Saúde', quote: 'Hábitos saudáveis são promessas silenciosas a si mesmo.', author: 'Life OS', reflection: 'Cumpra ao menos uma promessa de saúde hoje.' },
+            { theme: 'Saúde', quote: 'Descanse com intenção; treine com presença.', author: 'Life OS', reflection: 'Qualidade importa mais do que duração, em treino e em descanso.' },
+            { theme: 'Saúde', quote: 'Seu corpo guarda a conta de tudo que você ignora.', author: 'Life OS', reflection: 'Não espere um sinal de alerta para ouvir o corpo.' },
+            // Mente
+            { theme: 'Mente', quote: 'A mente se fortalece quando volta ao que controla.', author: 'Epicteto', reflection: 'Escolha uma ação que dependa apenas de você.' },
+            { theme: 'Mente', quote: 'Não é o que acontece com você, mas como você responde que importa.', author: 'Epicteto', reflection: 'Pause antes de reagir; responda com intenção.' },
+            { theme: 'Mente', quote: 'O foco é a arte de dizer não a quase tudo.', author: 'Steve Jobs', reflection: 'Elimine uma distração hoje para ganhar clareza.' },
+            { theme: 'Mente', quote: 'Clareza antes de velocidade.', author: 'Life OS', reflection: 'Entenda o que precisa ser feito antes de começar a correr.' },
+            { theme: 'Mente', quote: 'Aprender é mudar de ideia com evidência.', author: 'Life OS', reflection: 'Questione uma crença antiga com curiosidade, não com defesa.' },
+            { theme: 'Mente', quote: 'A mente que se abre jamais voltará ao tamanho original.', author: 'Oliver Wendell Holmes', reflection: 'Leia algo que expanda sua perspectiva hoje.' },
+            { theme: 'Mente', quote: 'Pensar bem é uma habilidade treinável, não um dom.', author: 'Life OS', reflection: 'Dedique tempo a refletir, não apenas a agir.' },
+            { theme: 'Mente', quote: 'A leitura de bons livros é conversa com os melhores espíritos do passado.', author: 'Descartes', reflection: 'Invista ao menos 15 minutos num livro que vale a pena.' },
+            // Carreira
+            { theme: 'Carreira', quote: 'O trabalho visível nasce de blocos invisíveis de foco.', author: 'Life OS', reflection: 'Faça progresso pequeno, mensurável e entregável.' },
+            { theme: 'Carreira', quote: 'Excelência não é um ato isolado — é um hábito.', author: 'Aristóteles', reflection: 'Faça bem a próxima tarefa, independente do tamanho.' },
+            { theme: 'Carreira', quote: 'Trabalho profundo é o superpoder do século XXI.', author: 'Cal Newport', reflection: 'Bloqueie tempo para pensar sem interrupção hoje.' },
+            { theme: 'Carreira', quote: 'Concentre-se no processo; o resultado virá.', author: 'Life OS', reflection: 'Avalie o esforço, não só o resultado imediato.' },
+            { theme: 'Carreira', quote: 'A melhor hora foi há 20 anos. A segunda melhor é agora.', author: 'Provérbio chinês', reflection: 'Comece o projeto que você adiou. Hoje.' },
+            { theme: 'Carreira', quote: 'Reputação é construída em anos e destruída em minutos.', author: 'Life OS', reflection: 'Entregue com qualidade o que prometeu.' },
+            { theme: 'Carreira', quote: 'Faça o difícil enquanto ele ainda é fácil.', author: 'Lao-Tsé', reflection: 'Resolva o problema antes que ele cresça.' },
+            { theme: 'Carreira', quote: 'Seu trabalho é como você deixa sua marca no mundo.', author: 'Life OS', reflection: 'Pergunte: o que faço hoje reflete quem quero ser profissionalmente?' },
+            // Finanças
+            { theme: 'Finanças', quote: 'Quem sabe o bastante sabe também o que basta.', author: 'Estoicismo', reflection: 'Decida com clareza, não por impulso.' },
+            { theme: 'Finanças', quote: 'Não é quanto você ganha, mas quanto você guarda.', author: 'Robert Kiyosaki', reflection: 'Revise uma despesa desnecessária hoje.' },
+            { theme: 'Finanças', quote: 'Patrimônio é construído em anos de decisões consistentes.', author: 'Life OS', reflection: 'Uma decisão pequena e certa vale mais que um grande atalho.' },
+            { theme: 'Finanças', quote: 'Pague a si mesmo primeiro.', author: 'David Bach', reflection: 'Separe antes de gastar — mesmo que seja pouco.' },
+            { theme: 'Finanças', quote: 'Riqueza é quando o tempo começa a trabalhar por você.', author: 'Life OS', reflection: 'Cada investimento é uma hora de trabalho futuro comprada hoje.' },
+            { theme: 'Finanças', quote: 'Evite dívidas que financiam consumo — só as que constroem.', author: 'Life OS', reflection: 'Pergunte: isso me aproxima ou me afasta da liberdade financeira?' },
+            { theme: 'Finanças', quote: 'A regra mais importante: nunca perca dinheiro.', author: 'Warren Buffett', reflection: 'Segurança primeiro; ganhos depois.' },
+            { theme: 'Finanças', quote: 'Orçamento não é restrição — é direção.', author: 'Life OS', reflection: 'Saber onde o dinheiro vai é mais poderoso do que ganhar mais.' },
+            // Relacionamentos
+            { theme: 'Relacionamentos', quote: 'A atenção é uma forma rara de generosidade.', author: 'Simone Weil', reflection: 'Dê presença real a uma pessoa importante hoje.' },
+            { theme: 'Relacionamentos', quote: 'Você é a média das pessoas com quem passa mais tempo.', author: 'Jim Rohn', reflection: 'Com quem você escolhe se desenvolver?' },
+            { theme: 'Relacionamentos', quote: 'Escute para entender, não para responder.', author: 'Life OS', reflection: 'Na próxima conversa, fale menos e ouça mais.' },
+            { theme: 'Relacionamentos', quote: 'Confiança é construída em gotas e perdida em baldes.', author: 'Life OS', reflection: 'Uma promessa cumprida vale mais do que cem palavras.' },
+            { theme: 'Relacionamentos', quote: 'Conexão genuína começa com vulnerabilidade.', author: 'Brené Brown', reflection: 'Seja honesto com alguém sobre o que você está vivendo.' },
+            { theme: 'Relacionamentos', quote: 'Seja o tipo de pessoa com quem você gostaria de contar.', author: 'Life OS', reflection: 'Que gesto de presença você pode fazer hoje?' },
+            { theme: 'Relacionamentos', quote: 'Relações profundas exigem tempo intencional, não apenas casual.', author: 'Life OS', reflection: 'Agende uma conversa real com alguém que importa.' },
+            { theme: 'Relacionamentos', quote: 'Pessoas se lembram de como você as fez sentir.', author: 'Maya Angelou', reflection: 'Deixe alguém mais leve depois de falar com você.' },
+            // Família
+            { theme: 'Família', quote: 'O que é importante precisa aparecer no calendário.', author: 'Life OS', reflection: 'Transforme cuidado em gesto concreto e agendado.' },
+            { theme: 'Família', quote: 'Presença física não é o mesmo que presença real.', author: 'Life OS', reflection: 'Esteja inteiro quando estiver com quem ama.' },
+            { theme: 'Família', quote: 'A família que você nutre será seu maior legado.', author: 'Life OS', reflection: 'O que você planta em casa, colhe por gerações.' },
+            { theme: 'Família', quote: 'Mostre amor com ação, não só com intenção.', author: 'Life OS', reflection: 'Intenção não abraça. Faça o gesto.' },
+            { theme: 'Família', quote: 'Os filhos crescem vendo o que você faz, não o que você diz.', author: 'Life OS', reflection: 'Qual valor você quer modelar hoje?' },
+            { theme: 'Família', quote: 'Criar memórias boas é o melhor investimento sem prazo.', author: 'Life OS', reflection: 'Proponha um momento especial, simples que seja.' },
+            { theme: 'Família', quote: 'O lar é onde você decide estar, não apenas onde você está.', author: 'Life OS', reflection: 'Escolha estar presente — não apenas por perto.' },
+            { theme: 'Família', quote: 'Família não é uma obrigação — é uma escolha que se renova todo dia.', author: 'Life OS', reflection: 'Renove essa escolha com um gesto hoje.' },
+            // Lazer
+            { theme: 'Lazer', quote: 'Descanso também é parte do sistema.', author: 'Life OS', reflection: 'Recupere energia sem culpa e sem fuga.' },
+            { theme: 'Lazer', quote: 'Quem não descansa não sustenta o ritmo.', author: 'Life OS', reflection: 'Descanso planejado é performance futura garantida.' },
+            { theme: 'Lazer', quote: 'A recuperação deliberada é tão importante quanto o treino.', author: 'Life OS', reflection: 'Restaure, não apenas pause.' },
+            { theme: 'Lazer', quote: 'Prazer sem culpa é parte de uma vida bem vivida.', author: 'Life OS', reflection: 'Permita-se curtir algo hoje completamente.' },
+            { theme: 'Lazer', quote: 'O tempo de ócio produtivo é o berço da criatividade.', author: 'Life OS', reflection: 'Deixe a mente vagar sem agenda — boas ideias vêm daí.' },
+            { theme: 'Lazer', quote: 'Brincar é a forma mais pura de presença.', author: 'Life OS', reflection: 'Faça algo hoje só porque você gosta.' },
+            { theme: 'Lazer', quote: 'O descanso que você evita vai cobrar juros em forma de exaustão.', author: 'Life OS', reflection: 'Previna o burnout antes que ele te force a parar.' },
+            { theme: 'Lazer', quote: 'Alegria não é recompensa pelo trabalho — é combustível para ele.', author: 'Life OS', reflection: 'Inclua prazer na agenda com a mesma seriedade do trabalho.' },
+            // Propósito
+            { theme: 'Propósito', quote: 'Quem tem um porquê suporta quase qualquer como.', author: 'Viktor Frankl', reflection: 'Relembre o motivo antes de escolher a tarefa.' },
+            { theme: 'Propósito', quote: 'O propósito não é encontrado — é construído, ação por ação.', author: 'Life OS', reflection: 'O que você faz hoje está alinhado com quem quer ser?' },
+            { theme: 'Propósito', quote: 'O que você faz com seus dias é o que faz com sua vida.', author: 'Annie Dillard', reflection: 'Cada dia conta — não apenas os grandes marcos.' },
+            { theme: 'Propósito', quote: 'Missão sem ação é ilusão.', author: 'Life OS', reflection: 'Transforme intenção em um passo concreto agora.' },
+            { theme: 'Propósito', quote: 'Construa algo que valha mais do que sua presença.', author: 'Life OS', reflection: 'O que você está criando que sobrevive a você?' },
+            { theme: 'Propósito', quote: 'O legado não é o que você deixa para as pessoas — é o que você deixa nelas.', author: 'Life OS', reflection: 'Como você quer ser lembrado por quem te ama?' },
+            { theme: 'Propósito', quote: 'Viva de forma que sua história valha ser contada.', author: 'Life OS', reflection: 'Que capítulo você está escrevendo hoje?' },
+            { theme: 'Propósito', quote: 'A clareza de propósito transforma tarefas em vocação.', author: 'Life OS', reflection: 'Conecte o que você vai fazer hoje com por que você existe.' },
+            // Geral
+            { theme: 'Geral', quote: 'Nós somos aquilo que repetidamente fazemos.', author: 'Aristóteles', reflection: 'Uma repetição pequena hoje reforça a identidade certa.' },
+            { theme: 'Geral', quote: 'Comece fazendo o necessário; depois, o possível.', author: 'Francisco de Assis', reflection: 'Não precisa vencer o dia inteiro. Vença o próximo passo.' },
+            { theme: 'Geral', quote: 'Disciplina é o caminho mais curto para a liberdade.', author: 'Jocko Willink', reflection: 'O que você faz quando não está com vontade define quem você é.' },
+            { theme: 'Geral', quote: 'Feito é melhor que perfeito.', author: 'Sheryl Sandberg', reflection: 'Lance, aprenda, ajuste. Não espere condições ideais.' },
+            { theme: 'Geral', quote: 'Um ser humano pode alterar sua vida ao alterar suas atitudes.', author: 'William James', reflection: 'Escolha uma atitude melhor ainda hoje.' },
+            { theme: 'Geral', quote: 'Simplicidade é o máximo da sofisticação.', author: 'Leonardo da Vinci', reflection: 'Simplifique uma decisão ou processo complicado hoje.' },
+            { theme: 'Geral', quote: 'Cada dia é uma página em branco — você escolhe o que escrever.', author: 'Life OS', reflection: 'O que vale registrar nesta página ao final do dia?' },
+            { theme: 'Geral', quote: 'Pequenas vitórias acumuladas vencem grandes guerras.', author: 'Life OS', reflection: 'Qual pequena vitória você vai garantir hoje?' }
+        ];
+    },
+
+_renderNextActionCard: function(next, variant = 'today') {
+        if (!next?.micro) {
+            // Gap in hierarchy — guide user to complete the chain
+            if (next?.gapType) {
+                const entityLabel = ({ okrs: 'OKR', macros: 'macro', micros: 'micro ação' })[next.entityType] || next.entityType;
+                const icon = ({ okrs: 'flag', macros: 'checklist', micros: 'bolt' })[next.entityType] || 'warning';
+                const parentIdSafe = this.escapeHtml(next.parentId || '');
+                const entityTypeSafe = this.escapeHtml(next.entityType || '');
+                return `
+                    <div class="bg-amber-500/[0.06] border border-amber-500/20 rounded-2xl p-5 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <span class="material-symbols-outlined notranslate text-amber-500 shrink-0 mt-0.5">${icon}</span>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-1">Trilha incompleta</p>
+                                <p class="text-sm font-bold text-on-surface">${this.escapeHtml(next.title)}</p>
+                                <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">${this.escapeHtml(next.description)}</p>
+                                <button type="button"
+                                    onclick="window.app.openCreateModal('${entityTypeSafe}', '${parentIdSafe}')"
+                                    class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[11px] font-bold uppercase tracking-widest hover:bg-amber-500/20 active:scale-95 transition-all">
+                                    <span class="material-symbols-outlined notranslate text-[14px]">add</span>
+                                    Criar ${this.escapeHtml(entityLabel)}
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            const title = variant === 'panel' ? 'Nenhuma decisão urgente' : 'Nada urgente agora';
+            const text = variant === 'panel'
+                ? 'O plano não mostra uma micro crítica neste momento. Continue executando o que já foi planejado.'
+                : 'Seu dia não tem uma micro crítica pendente. Execute o plano com calma ou capture uma próxima ação.';
+            return `
+                <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined notranslate text-primary shrink-0">check_circle</span>
+                        <div>
+                            <p class="text-sm font-bold text-on-surface">${title}</p>
+                            <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">${text}</p>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        const micro = next.micro;
+        const metaText = next.meta?.title ? `Meta: ${this.escapeHtml(next.meta.title)}` : 'Sem meta vinculada';
+        const effortLabel = this.getMicroEffortLabel(next.effort || micro.effort);
+        const reasons = [
+            `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">Esforço ${effortLabel}</span>`,
+            ...next.reasons.map(r => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">${this.escapeHtml(r)}</span>`)
+        ].join('');
+        const wrapper = variant === 'panel'
+            ? 'bg-primary/5 border-primary/20'
+            : 'bg-surface-container-lowest border-primary/20 shadow-sm';
+
+        return `
+            <div class="${wrapper} border rounded-2xl p-5 md:p-6">
+                <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">Próxima melhor ação</p>
+                        <h4 class="font-headline text-xl md:text-2xl font-bold text-on-background leading-tight">${this.escapeHtml(micro.title)}</h4>
+                        <div class="mt-3 flex flex-wrap gap-2">${reasons}</div>
+                        <p class="mt-3 text-xs text-on-surface-variant leading-relaxed">${metaText}</p>
+                    </div>
+                    <div class="flex flex-wrap md:flex-col gap-2 md:min-w-[140px]">
+                        <button type="button" onclick="window.app.completeMicroAction('${micro.id}')"
+                            class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">
+                            Concluir
+                        </button>
+                        <button type="button" onclick="window.app.postponeMicroOneDay('${micro.id}')"
+                            class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest active:scale-95 transition-all">
+                            Adiar
+                        </button>
+                        <button type="button" onclick="window.app.openEntityReview('${micro.id}', 'micros')"
+                            class="flex-1 md:flex-none px-4 py-2 rounded-xl border border-outline-variant/30 text-outline text-xs font-bold uppercase tracking-widest hover:bg-surface-container-high active:scale-95 transition-all">
+                            Ver detalhes
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+    },
+
+getNextBestAction: function(options = {}) {
+        const state = window.sistemaVidaState;
+        const todayStr = this.getLocalDateKey();
+        const today = new Date(todayStr + 'T00:00:00');
+        const scope = options.scope || 'today';
+        const micros = (state.entities?.micros || []).filter(m =>
+            m && m.id && m.status !== 'done' && m.status !== 'abandoned' && !m.completed
+        );
+
+        const candidates = micros.map(micro => {
+            const reasons = [];
+            let score = 0;
+            const { macro, okr, meta } = this._getMicroContext(micro);
+            const prazo = micro.prazo ? new Date(micro.prazo + 'T00:00:00') : null;
+            const inicio = micro.inicioDate ? new Date(micro.inicioDate + 'T00:00:00') : null;
+            const daysToDue = prazo && !Number.isNaN(prazo.getTime())
+                ? Math.floor((prazo - today) / (1000 * 60 * 60 * 24))
+                : null;
+            const hasStarted = !inicio || Number.isNaN(inicio.getTime()) || inicio <= today;
+            const plannedThisWeek = this._isPlannedThisWeek(micro.id);
+            const dimScoreRaw = Number(state.dimensions?.[micro.dimension]?.score);
+            const dimScore = Number.isFinite(dimScoreRaw) ? dimScoreRaw : null;
+            const energy = Math.max(0, Math.min(5, Number(state.energy || 0)));
+            const effort = this.getMicroEffort(micro);
+
+            if (daysToDue !== null && daysToDue < 0) {
+                score += 12 + Math.min(6, Math.abs(daysToDue));
+                reasons.push(`${Math.abs(daysToDue)} dia${Math.abs(daysToDue) === 1 ? '' : 's'} em atraso`);
+            } else if (daysToDue === 0) {
+                score += 9;
+                reasons.push('vence hoje');
+            } else if (daysToDue !== null && daysToDue <= 2) {
+                score += 6;
+                reasons.push(`vence em ${daysToDue} dia${daysToDue === 1 ? '' : 's'}`);
+            } else if (daysToDue !== null && daysToDue <= 7) {
+                score += 3;
+                reasons.push('está na janela da semana');
+            }
+
+            if (plannedThisWeek) {
+                score += 5;
+                reasons.push('está no plano da semana');
+            }
+
+            if (micro.status === 'in_progress') {
+                score += 4;
+                reasons.push('já está em andamento');
+            } else if (hasStarted) {
+                score += 2;
+                reasons.push('já pode ser executada');
+            } else if (scope === 'today') {
+                score -= 4;
+            }
+
+            if (macro?.status === 'in_progress') {
+                score += 2;
+                reasons.push(`destrava a macro "${macro.title}"`);
+            } else if (macro?.title) {
+                score += 1;
+                reasons.push(`conecta com "${macro.title}"`);
+            }
+
+            if (meta?.status && meta.status !== 'done' && meta.status !== 'abandoned') {
+                score += 1;
+            }
+
+            if (dimScore !== null && dimScore > 0 && dimScore <= 40) {
+                score += 3;
+                reasons.push(`${micro.dimension} está com score baixo na Roda`);
+            }
+
+            if (scope === 'today' && energy > 0) {
+                if (energy <= 2) {
+                    if (effort === 'leve') {
+                        score += 4;
+                        reasons.push('cabe na energia de hoje');
+                    } else if (effort === 'medio') {
+                        score -= 2;
+                    } else if (effort === 'denso' && !(daysToDue !== null && daysToDue <= 0) && micro.status !== 'in_progress') {
+                        score -= 8;
+                    }
+                } else if (energy >= 4 && effort === 'denso') {
+                    score += 2;
+                    reasons.push('aproveita energia alta');
+                }
+            }
+
+            if (scope === 'today' && !hasStarted && !plannedThisWeek && !(daysToDue !== null && daysToDue <= 2)) {
+                score -= 3;
+            }
+
+            return { micro, macro, okr, meta, score, reasons: reasons.slice(0, 3), daysToDue, plannedThisWeek, effort };
+        }).filter(item => item.score > 0);
+
+        const energy = Math.max(0, Math.min(5, Number(state.energy || 0)));
+        const energyMatched = !options.skipEnergyFilter && energy > 0 && energy <= 2
+            ? candidates.filter(item => item.effort !== 'denso' || item.daysToDue !== null && item.daysToDue <= 0 || item.micro.status === 'in_progress')
+            : candidates;
+        const ranked = energyMatched.length ? energyMatched : candidates;
+
+        ranked.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            const aDue = a.daysToDue === null ? 9999 : a.daysToDue;
+            const bDue = b.daysToDue === null ? 9999 : b.daysToDue;
+            return aDue - bDue;
+        });
+
+        const top = ranked[0] || null;
+        if (!top) {
+            // No actionable micro found — surface hierarchy gap as next best action instead
+            return this._detectHierarchyGap(state);
+        }
+        if (top.reasons.length === 0) top.reasons.push('é a melhor próxima micro ativa');
+        return top;
+    },
+
+saveNewEntity: function() {
+        const titleInput = document.getElementById('crud-title');
+        const title = titleInput ? titleInput.value.trim() : '';
+
+        if (!title) {
+            if (this.showBlockingMessage) this.showBlockingMessage('Por favor, insira um título antes de salvar.');
+            else if (this.showToast) this.showToast('Por favor, insira um título.', 'error');
+            else alert('Por favor, insira um título.');
+            return;
+        }
+        this.clearBlockingMessage();
+
+        const type = document.getElementById('crud-type').value;
+        const dimension = document.getElementById('crud-dimension').value;
+        const context = document.getElementById('crud-context').value;
+        const trigger = (type === 'habits' && document.getElementById('crud-trigger')) ? document.getElementById('crud-trigger').value.trim() : '';
+        if (type === 'habits') {
+            const routineVal = document.getElementById('habit-routine') ? document.getElementById('habit-routine').value.trim() : '';
+            const rewardVal = document.getElementById('habit-reward') ? document.getElementById('habit-reward').value.trim() : '';
+            if (!trigger || !routineVal || !rewardVal) {
+                this.showBlockingMessage('Para hábitos, preencha gatilho, rotina e recompensa do dia.');
+                return;
+            }
+        }
+
+        const usaAgendamento = ['okrs', 'macros', 'micros'].includes(type);
+        let prazo = '';
+        let inicioDate = '';
+        if (usaAgendamento) {
+            inicioDate = document.getElementById('crud-inicio-date')?.value || '';
+            prazo = document.getElementById('crud-prazo-date')?.value || '';
+            if (type !== 'okrs' && !inicioDate && prazo) inicioDate = prazo; // fallback retrô para macro/micro
+            if (!prazo && inicioDate) prazo = inicioDate; // consistência mínima
+        } else {
+            prazo = document.getElementById('create-prazo')?.value || '';
+        }
+
+        const parentId = document.getElementById('create-parent') ? document.getElementById('create-parent').value : '';
+        let metaHorizonYears = Number(document.getElementById('crud-meta-horizon')?.value || 1);
+        const successCriteria = (document.getElementById('crud-success-criteria')?.value || '').trim();
+        const challengeLevel = Number(document.getElementById('crud-challenge-level')?.value || 3);
+        const commitmentLevel = Number(document.getElementById('crud-commitment-level')?.value || 3);
+        const keyResults = this.readKrRows();
+        const effort = this.getMicroEffort({ effort: document.getElementById('crud-effort')?.value || 'medio' });
+        const obstacle = (document.getElementById('crud-obstacle')?.value || '').trim();
+        const ifThen = (document.getElementById('crud-ifthen')?.value || '').trim();
+
+        const isEditing = !!this.editingEntity;
+        const id = isEditing ? this.editingEntity.id : 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
+        if (type === 'metas') {
+            const horizonAlign = this.alignMetaHorizonSelection({
+                prazo,
+                selectedHorizonYears: metaHorizonYears,
+                selectElementId: 'crud-meta-horizon'
+            });
+            if (!horizonAlign.ok) {
+                app.showBlockingMessage(horizonAlign.message || 'Ajuste o horizonte da meta antes de salvar.');
+                return;
+            }
+            metaHorizonYears = horizonAlign.horizonYears;
+        }
+        const windowValidation = this.validateEntityTimeWindow(type, { prazo, inicioDate, metaHorizonYears });
+        if (!windowValidation.ok) {
+            app.showBlockingMessage(windowValidation.message);
+            return;
+        }
+
+        const obj = { id: id || '', title: title || '', dimension: dimension || 'Geral', prazo: prazo || '' };
+        if (usaAgendamento && inicioDate) obj.inicioDate = inicioDate;
+
+        const getOldItem = (eid, etype) => {
+            const state = window.sistemaVidaState;
+            const list = etype === 'habits' ? state.habits : state.entities[etype];
+            return (list || []).find(e => e.id === eid) || {};
+        };
+        const oldEntity = isEditing ? getOldItem(id, type) : {};
+        if (['metas', 'okrs', 'macros', 'micros'].includes(type)) {
+            obj.createdAt = oldEntity.createdAt || this.getLocalDateKey();
+        }
+
+        if (type === 'metas' || type === 'okrs') {
+            obj.purpose = context || '';
+            obj.successCriteria = successCriteria;
+            obj.challengeLevel = Math.max(1, Math.min(5, Math.round(challengeLevel || 3)));
+            obj.commitmentLevel = Math.max(1, Math.min(5, Math.round(commitmentLevel || 3)));
+            obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
+            if (type === 'metas') {
+                obj.horizonYears = metaHorizonYears;
+                if (parentId) {
+                    const parentMeta = window.sistemaVidaState.entities.metas.find(m => m.id === parentId);
+                    if (!parentMeta) {
+                        app.showToast('Meta pai selecionada não encontrada.', 'error');
+                        return;
+                    }
+                    const parentChain = this.getMetaParentChain(parentMeta.id);
+                    if (isEditing && parentChain.includes(id)) {
+                        app.showToast('Não é possível criar ciclo entre metas pai e filhas.', 'error');
+                        return;
+                    }
+                    const parentHorizon = this.getMetaHorizonYears(parentMeta);
+                    if (parentHorizon <= metaHorizonYears) {
+                        app.showToast('A meta pai precisa ter horizonte maior do que a meta filha.', 'error');
+                        return;
+                    }
+                    obj.parentMetaId = parentId;
+                    obj.dimension = parentMeta.dimension || obj.dimension;
+                }
+            } else if (type === 'okrs') {
+                if (parentId) obj.metaId = parentId || '';
+                const okrCriterion = successCriteria || context || '';
+                if (!okrCriterion.trim()) {
+                    app.showBlockingMessage('Defina o Critério / Meta do OKR para salvar.');
+                    return;
+                }
+                obj.successCriteria = okrCriterion;
+                obj.purpose = okrCriterion;
+                obj.keyResults = keyResults;
+                const oldItem = getOldItem(id, 'okrs');
+                obj.rewarded70 = !!oldItem.rewarded70;
+                obj.status = isEditing ? (oldItem.status || 'pending') : 'pending';
+                const krProgress = this.computeKeyResultsProgress(obj.keyResults);
+                if (krProgress !== null) obj.progress = krProgress;
+            }
+        } else if (type === 'macros') {
+            obj.description = context || '';
+            obj.obstacle = obstacle;
+            obj.ifThen = ifThen;
+            obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
+            if (parentId) {
+                obj.okrId = parentId;
+                const okr = window.sistemaVidaState.entities.okrs.find(o => o.id === parentId);
+                if (okr) obj.metaId = okr.metaId || '';
+            }
+        } else if (type === 'micros') {
+            if (obj.inicioDate && obj.prazo) {
+                const start = new Date(obj.inicioDate + 'T00:00:00');
+                const end = new Date(obj.prazo + 'T00:00:00');
+                if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
+                    app.showBlockingMessage('Datas inválidas para Micro Ação. Verifique início e prazo.');
+                    return;
+                }
+                const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+                if (diffDays > 7) {
+                    app.showBlockingMessage('Uma Micro Ação não pode durar mais de 7 dias. Divida-a em partes menores ou classifique como Macro Ação.');
+                    return;
+                }
+            }
+            obj.indicator = context || '';
+            obj.effort = effort;
+            obj.obstacle = obstacle;
+            obj.ifThen = ifThen;
+            const oldItem = getOldItem(id, 'micros');
+            obj.status = isEditing ? (oldItem.status || 'pending') : 'pending';
+            obj.completed = obj.status === 'done';
+            obj.progress = obj.completed ? 100 : 0;
+            
+            if (parentId) {
+                const macro = window.sistemaVidaState.entities.macros.find(m => m.id === parentId);
+                if (macro) {
+                    obj.macroId = macro.id || '';
+                    obj.okrId = macro.okrId || '';
+                    obj.metaId = macro.metaId || '';
+                }
+            }
+        } else if (type === 'habits') {
+            const isContinuous = !!(document.getElementById('habit-continuous')?.checked);
+            obj.continuous = isContinuous;
+            if (isContinuous) obj.prazo = '';
+            obj.context = '';
+            obj.completed = isEditing ? (getOldItem(id, 'habits').completed || false) : false;
+            obj.trigger = trigger || '';
+            obj.routine = (document.getElementById('habit-routine') ? document.getElementById('habit-routine').value.trim() : '') || title;
+            obj.reward = document.getElementById('habit-reward') ? document.getElementById('habit-reward').value.trim() : '';
+            const stepsRaw = document.getElementById('habit-steps') ? document.getElementById('habit-steps').value : '';
+            obj.steps = stepsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+            obj.trackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
+            obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
+            obj.frequency = document.getElementById('habit-frequency') ? document.getElementById('habit-frequency').value : 'daily';
+            obj.startTime = document.getElementById('habit-start-time') ? document.getElementById('habit-start-time').value : '';
+            obj.reminderEnabled = !!(document.getElementById('habit-reminder-enabled') && document.getElementById('habit-reminder-enabled').checked);
+            obj.reminderTime = obj.startTime || '';
+            if (obj.reminderEnabled && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
+            const daysSelect = document.getElementById('habit-days');
+            if (daysSelect && obj.frequency === 'specific') {
+                obj.specificDays = Array.from(daysSelect.selectedOptions).map(o => o.value);
+            } else {
+                obj.specificDays = [];
+            }
+            obj.logs = isEditing ? (getOldItem(id, 'habits').logs || {}) : {};
+            obj.stepLogs = isEditing ? (getOldItem(id, 'habits').stepLogs || {}) : {};
+            obj.maturity = isEditing ? (getOldItem(id, 'habits').maturity || 'forming') : 'forming';
+            obj.maturityMeta = isEditing ? (getOldItem(id, 'habits').maturityMeta || {}) : {};
+            const keyEl = document.getElementById('habit-key');
+            const manualKey = keyEl ? !!keyEl.checked : !!getOldItem(id, 'habits').isKey;
+            obj.isKey = manualKey;
+            obj.keyAutoSuggested = isEditing ? (!!getOldItem(id, 'habits').keyAutoSuggested) : false;
+            obj.keyAutoReason = isEditing ? (getOldItem(id, 'habits').keyAutoReason || '') : '';
+            const oldDismissed = isEditing ? getOldItem(id, 'habits').keyDismissedAt : undefined;
+            if (oldDismissed) obj.keyDismissedAt = oldDismissed;
+            const linkedSel = document.getElementById('habit-linked-meta');
+            obj.linkedMetaId = linkedSel && linkedSel.value ? linkedSel.value : null;
+            obj.sourceStrengthId = document.getElementById('habit-strength-source')?.value || '';
+            obj.sourceShadowId = document.getElementById('habit-shadow-source')?.value || '';
+            const shadowModeEl = document.getElementById('habit-shadow-mode');
+            obj.shadowMode = obj.sourceShadowId ? (shadowModeEl?.value || 'replace') : '';
+            // Legacy compat fields (for gamification events recorded earlier)
+            obj.sourceType = obj.sourceStrengthId ? 'strength' : obj.sourceShadowId ? 'shadow' : '';
+            obj.sourceId = obj.sourceStrengthId || obj.sourceShadowId || '';
+            obj.habitMode = obj.sourceType === 'strength' ? 'build' : (obj.shadowMode || '');
+            if (!obj.steps.length) obj.stepLogs = {};
+            else {
+                Object.keys(obj.stepLogs || {}).forEach(dateKey => {
+                    const dayMap = obj.stepLogs[dateKey] || {};
+                    const cleaned = {};
+                    obj.steps.forEach((_, idx) => {
+                        if (dayMap[idx] || dayMap[String(idx)]) cleaned[idx] = true;
+                    });
+                    obj.stepLogs[dateKey] = cleaned;
+                });
+            }
+        }
+
+        if (isEditing) {
+            const list = type === 'habits' ? window.sistemaVidaState.habits : window.sistemaVidaState.entities[type];
+            const idx = list.findIndex(e => e.id === id);
+            if (idx !== -1) list[idx] = obj;
+            if (['micros', 'macros', 'okrs', 'metas'].includes(type)) this.updateCascadeProgress(id, type);
+        } else {
+            if (type === 'habits') {
+                if (!window.sistemaVidaState.habits) window.sistemaVidaState.habits = [];
+                window.sistemaVidaState.habits.push(obj);
+            } else {
+                if (!window.sistemaVidaState.entities[type]) window.sistemaVidaState.entities[type] = [];
+                window.sistemaVidaState.entities[type].push(obj);
+                if (['micros', 'macros', 'okrs', 'metas'].includes(type)) this.updateCascadeProgress(obj.id, type);
+            }
+        }
+        if (type === 'metas') {
+            this.markCadence('lifeGoals');
+        }
+
+        // Sincroniza seleção do micro no plano da semana (novo e edição).
+        if (type === 'micros') {
+            const toggleEl = document.getElementById('add-to-week-plan');
+            const weekKey = this._getWeekKey();
+            const plan = (window.sistemaVidaState.weekPlans || {})[weekKey];
+            if (toggleEl && plan) {
+                if (!Array.isArray(plan.selectedMicros)) plan.selectedMicros = [];
+                const alreadySelected = plan.selectedMicros.includes(obj.id);
+                if (toggleEl.checked && !alreadySelected) {
+                    plan.selectedMicros.push(obj.id);
+                } else if (!toggleEl.checked && alreadySelected) {
+                    plan.selectedMicros = plan.selectedMicros.filter(mid => mid !== obj.id);
+                }
+            }
+        }
+
+        this.editingEntity = null;
+        if (type === 'habits') {
+            this.syncIdentityLinkedHabits();
+            this.evaluateIdentityAchievements();
+            this.scheduleHabitReminders();
+        }
+        this.closeModal();
+        this.saveState(false); // Feedback ativo para criação/edição manual
+
+        if (this.currentView === 'planos') {
+            const typeMapping = { metas: 'metas', okrs: 'okrs', macros: 'macro', micros: 'micro' };
+            this.switchPlanosTab(typeMapping[type]);
+            this.render.planos();
+        } else if (this.currentView && this.render[this.currentView]) {
+            this.render[this.currentView]();
+        }
+    },
+
+openEntityReview: function(id, type) {
+        const state = window.sistemaVidaState;
+        const list = type === 'habits' ? state.habits : state.entities[type];
+        const entity = (list || []).find(e => e.id === id);
+        
+        if (!entity) return;
+
+        this.currentReviewEntity = entity;
+        this.currentReviewType = type;
+
+        const modal = document.getElementById('review-entity-modal');
+        const title = document.getElementById('review-entity-title');
+        const promoteSection = document.getElementById('promote-section');
+        const promoteLabel = document.getElementById('promote-label');
+        const reassignSection = document.getElementById('reassign-section');
+        const parentSelect = document.getElementById('reassign-parent-select');
+        const parentLabel = document.getElementById('reassign-parent-label');
+
+        // Configuração de Título
+        const typeLabels = { metas: 'Meta', okrs: 'OKR', macros: 'Macro Ação', micros: 'Micro Ação' };
+        title.textContent = `Gerir ${typeLabels[type] || 'Entidade'}: ${entity.title}`;
+
+        // Configuração de Promoção
+        if (type === 'metas') {
+            promoteSection.classList.add('hidden');
+        } else {
+            promoteSection.classList.remove('hidden');
+            const nextLevel = { okrs: 'Meta', macros: 'OKR', micros: 'Macro Ação' };
+            promoteLabel.textContent = `Promover para ${nextLevel[type]}`;
+        }
+
+        // Configuração de Reatribuição (Mesma Hierarquia)
+        if (type === 'metas') {
+            reassignSection.classList.add('hidden');
+        } else {
+            reassignSection.classList.remove('hidden');
+            let potentialParents = [];
+            let currentParentId = '';
+            let parentTypeLabel = '';
+
+            if (type === 'okrs') {
+                potentialParents = state.entities.metas;
+                currentParentId = entity.metaId;
+                parentTypeLabel = 'Selecionar Nova Meta';
+            } else if (type === 'macros') {
+                potentialParents = state.entities.okrs;
+                currentParentId = entity.okrId;
+                parentTypeLabel = 'Selecionar Novo OKR';
+            } else if (type === 'micros') {
+                potentialParents = state.entities.macros;
+                currentParentId = entity.macroId;
+                parentTypeLabel = 'Selecionar Nova Macro';
+            }
+
+            parentLabel.textContent = parentTypeLabel;
+            parentSelect.innerHTML = potentialParents.map(p => 
+                `<option value="${p.id}" ${p.id === currentParentId ? 'selected' : ''}>${p.title}</option>`
+            ).join('');
+            
+            if (potentialParents.length === 0) {
+                parentSelect.innerHTML = '<option value="">Nenhum pai disponível</option>';
+            }
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    },
+
+processQuarterlyReview: async function() {
+        const state = window.sistemaVidaState;
+        const saveBtn = document.getElementById('quarterly-save-btn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Processando...';
+            saveBtn.classList.add('opacity-60', 'cursor-not-allowed');
+        }
+        try {
+            // Motor de revisão: busca todos os cartões de OKR no modal
+            const items = document.querySelectorAll('#quarterly-okrs-list div[data-okr-id]');
+            if (items.length === 0) {
+                state.cycleStartDate = this.getLocalDateKey();
+                this.markCadence('cycleReview', state.cycleStartDate);
+                await this.saveState(true);
+                this.closeQuarterlyModal();
+                this.showToast('Novo ciclo iniciado. Nenhum OKR ativo para revisar.', 'success');
+                if (this.currentView === 'painel') this.render.painel();
+                return;
+            }
+
+            let processed = 0;
+            let concluded = 0;
+            let archived = 0;
+            let carried = 0;
+            let migrated = 0;
+            const todayStr = this.getLocalDateKey();
+
+            items.forEach(item => {
+                const id = item.getAttribute('data-okr-id');
+                const selectedAction = item.querySelector(`input[name="action_${id}"]:checked`);
+                const action = selectedAction ? selectedAction.value : 'continuar';
+                const migrateChecked = !!item.querySelector(`#migrate_${id}`)?.checked;
+                const okr = state.entities.okrs.find(o => o.id === id);
+                if (!okr) return;
+
+                if (action === 'concluir') {
+                    okr.status = 'done';
+                    okr.progress = 100;
+                    concluded++;
+                    const macros = state.entities.macros.filter(m => m.okrId === id);
+                    macros.forEach(m => {
+                        m.status = 'done';
+                        m.progress = 100;
+                        const micros = state.entities.micros.filter(mic => mic.macroId === m.id);
+                        micros.forEach(mic => {
+                            mic.status = 'done';
+                            mic.completed = true;
+                            mic.progress = 100;
+                        });
+                    });
+                } else if (action === 'arquivar') {
+                    okr.status = 'abandoned';
+                    archived++;
+                    const macros = state.entities.macros.filter(m => m.okrId === id);
+                    macros.forEach(m => {
+                        m.status = 'abandoned';
+                        const micros = state.entities.micros.filter(mic => mic.macroId === m.id);
+                        micros.forEach(mic => { if (mic.status !== 'done') mic.status = 'abandoned'; });
+                    });
+                } else {
+                    carried++;
+                    if (migrateChecked) {
+                        const macrosIds = state.entities.macros.filter(m => m.okrId === id).map(m => m.id);
+                        state.entities.micros.forEach(micro => {
+                            if (macrosIds.includes(micro.macroId) && micro.status !== 'done' && micro.prazo !== todayStr) {
+                                micro.prazo = todayStr;
+                                migrated++;
+                            }
+                        });
+                    }
+                }
+                processed++;
+            });
+
+            // Reset do ciclo para a data atual
+            state.cycleStartDate = this.getLocalDateKey();
+            this.markCadence('cycleReview', state.cycleStartDate);
+            await this.saveState(true);
+            this.closeQuarterlyModal();
+
+            const summary = `${processed} OKRs: ${concluded} concluídos, ${archived} arquivados, ${carried} continuados` + (migrated ? `, ${migrated} micros migradas` : '');
+            this.showToast(`Novo ciclo iniciado com sucesso. ${summary}.`, 'success');
+            if (this.currentView === 'painel') this.render.painel();
+            if (this.currentView === 'planos') this.render.planos();
+            if (this.currentView === 'hoje') this.render.hoje();
+        } catch (error) {
+            console.error('Erro ao processar revisão de ciclo:', error);
+            this.showToast('Falha ao processar a revisão de ciclo. Tente novamente.', 'error');
+        } finally {
+            const modalOpen = !!document.getElementById('quarterly-modal') && !document.getElementById('quarterly-modal').classList.contains('hidden');
+            if (saveBtn && modalOpen) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Salvar Novo Ciclo';
+                saveBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+            }
+        }
+    },
+
+editEntity: function(id, type) {
+        const state = window.sistemaVidaState;
+        const list = type === 'habits' ? state.habits : state.entities[type];
+        const item = list.find(e => e.id === id);
+        if (!item) return;
+
+        this.editingEntity = { id, type };
+        
+        // Configura o modal para edição
+        document.getElementById('crud-modal').classList.remove('hidden');
+        const modalTitle = document.getElementById('modal-title');
+        if (modalTitle) modalTitle.textContent = 'Editar Item';
+        
+        // Preenche campos
+        document.getElementById('crud-title').value = item.title || '';
+        document.getElementById('crud-type').value = type;
+        document.getElementById('crud-dimension').value = item.dimension || 'Geral';
+        document.getElementById('create-prazo').value = item.prazo || '';
+        const horizonSelect = document.getElementById('crud-meta-horizon');
+        if (horizonSelect) {
+            const horizon = Number(item.horizonYears || this.getMetaHorizonYears(item) || 1);
+            horizonSelect.value = String(horizon);
+        }
+        const inicioInput = document.getElementById('crud-inicio-date');
+        const prazoInput = document.getElementById('crud-prazo-date');
+        if (inicioInput) inicioInput.value = item.inicioDate || item.agendamento?.inicioDate || (type === 'okrs' ? '' : (item.prazo || ''));
+        if (prazoInput) prazoInput.value = item.prazo || '';
+        document.getElementById('crud-context').value = item.purpose || item.description || item.indicator || '';
+        const successCriteriaInput = document.getElementById('crud-success-criteria');
+        if (successCriteriaInput) successCriteriaInput.value = item.successCriteria || item.purpose || '';
+        const challengeInput = document.getElementById('crud-challenge-level');
+        if (challengeInput) challengeInput.value = String(item.challengeLevel || 3);
+        const commitmentInput = document.getElementById('crud-commitment-level');
+        if (commitmentInput) commitmentInput.value = String(item.commitmentLevel || 3);
+        const effortInput = document.getElementById('crud-effort');
+        if (effortInput) effortInput.value = this.getMicroEffort(item);
+        const obstacleInput = document.getElementById('crud-obstacle');
+        if (obstacleInput) obstacleInput.value = item.obstacle || '';
+        const ifThenInput = document.getElementById('crud-ifthen');
+        if (ifThenInput) ifThenInput.value = item.ifThen || '';
+        this.populateKrRows(item.keyResults);
+        
+        // Compatibilidade retrô: agendamento antigo migra visualmente para datas reais
+        
+        if (type === 'habits') {
+            const continuousCheck = document.getElementById('habit-continuous');
+            if (continuousCheck) {
+                continuousCheck.checked = !!item.continuous;
+                this.onHabitContinuousChange(!!item.continuous);
+            }
+            const keyCheck = document.getElementById('habit-key');
+            if (keyCheck) keyCheck.checked = !!item.isKey;
+            document.getElementById('crud-trigger').value = item.trigger || '';
+            const routineInput = document.getElementById('habit-routine');
+            if (routineInput) routineInput.value = item.routine || item.context || item.title || '';
+            const rewardInput = document.getElementById('habit-reward');
+            if (rewardInput) rewardInput.value = item.reward || '';
+            const stepsInput = document.getElementById('habit-steps');
+            if (stepsInput) stepsInput.value = Array.isArray(item.steps) ? item.steps.join('\n') : '';
+            if (document.getElementById('habit-track-mode')) document.getElementById('habit-track-mode').value = item.trackMode || 'boolean';
+            if (document.getElementById('habit-target')) document.getElementById('habit-target').value = item.targetValue || 1;
+            if (document.getElementById('habit-frequency')) document.getElementById('habit-frequency').value = item.frequency || 'daily';
+            if (document.getElementById('habit-start-time')) document.getElementById('habit-start-time').value = item.startTime || item.reminderTime || '';
+            if (document.getElementById('habit-reminder-enabled')) document.getElementById('habit-reminder-enabled').checked = !!item.reminderEnabled;
+            if (document.getElementById('habit-days') && item.specificDays) {
+                Array.from(document.getElementById('habit-days').options).forEach(opt => {
+                    opt.selected = item.specificDays.includes(opt.value);
+                });
+            }
+        }
+
+        this.onTypeChange(type);
+        if ((item.obstacle || item.ifThen) && ['macros', 'micros'].includes(type)) this.toggleCrudWoop(true);
+        if (type === 'habits') {
+            this.renderHabitStepsChecklist(id);
+            // Restaura vínculo com Meta (populateHabitLinkedMeta já rodou dentro de onTypeChange)
+            const linkedSel = document.getElementById('habit-linked-meta');
+            if (linkedSel && item.linkedMetaId) {
+                if (linkedSel.querySelector(`option[value="${item.linkedMetaId}"]`)) {
+                    linkedSel.value = item.linkedMetaId;
+                }
+            }
+            const strengthSel = document.getElementById('habit-strength-source');
+            const shadowSel = document.getElementById('habit-shadow-source');
+            const shadowModeEl = document.getElementById('habit-shadow-mode');
+            const strengthId = this._getHabitSourceStrengthId(item);
+            const shadowId = this._getHabitSourceShadowId(item);
+            if (strengthSel && strengthId && strengthSel.querySelector(`option[value="${strengthId}"]`)) strengthSel.value = strengthId;
+            if (shadowSel && shadowId && shadowSel.querySelector(`option[value="${shadowId}"]`)) {
+                shadowSel.value = shadowId;
+                this.onHabitShadowSourceChange(shadowId);
+            }
+            if (shadowModeEl && item.shadowMode) shadowModeEl.value = item.shadowMode;
+            else if (shadowModeEl && item.habitMode && item.sourceType === 'shadow') shadowModeEl.value = item.habitMode;
+        }
+        
+        // Seta o pai após popular a lista
+        const parentSelect = document.getElementById('create-parent');
+        if (parentSelect) {
+            let parentId = '';
+            if (type === 'metas') parentId = item.parentMetaId || '';
+            if (type === 'okrs') parentId = item.metaId || '';
+            if (type === 'macros') parentId = item.okrId || '';
+            if (type === 'micros') parentId = item.macroId || '';
+            const hasOption = Array.from(parentSelect.options || []).some(opt => opt.value === parentId);
+            if (parentId && !hasOption) {
+                const ghost = document.createElement('option');
+                ghost.value = parentId;
+                ghost.textContent = 'Vínculo atual (fora do filtro de dimensão)';
+                parentSelect.appendChild(ghost);
+            }
+            parentSelect.value = parentId;
+        }
+        if (type === 'micros') this.syncMicroWeekPlanToggle(id);
+
+        // Botão de notas no header do modal
+        const notesBtn = document.getElementById('crud-notes-btn');
+        const notesBtnCount = document.getElementById('crud-notes-btn-count');
+        if (notesBtn) {
+            const count = this.getLinkedNotes(type, id).length;
+            notesBtn.classList.remove('hidden');
+            notesBtn.classList.add('flex');
+            if (notesBtnCount) notesBtnCount.textContent = count > 0 ? `${count} nota${count > 1 ? 's' : ''}` : 'Notas';
+            notesBtn.dataset.entityType = type;
+            notesBtn.dataset.entityId = id;
+            notesBtn.dataset.entityTitle = item.title || '';
+        }
+    },
+
+completeMicroAction: function(id) {
+        const state = window.sistemaVidaState;
+        const micro = state.entities.micros.find(m => m.id === id);
+        if (!micro) {
+            this.showToast('Micro ação não encontrada. Atualize a tela e tente novamente.', 'error');
+            return;
+        }
+
+        // Define se estamos marcando ou desmarcando a tarefa
+        const isCompleting = micro.status !== 'done';
+        const wasInProgress = micro.status === 'in_progress';
+        if (!isCompleting) {
+            const confirmed = confirm('Reabrir esta micro vai remover a conclusão e recalcular o progresso da trilha. Deseja continuar?');
+            if (!confirmed) return;
+        } else {
+            const focusSec = Number(micro.focusSec || 0);
+            const focusSessions = Number(micro.focusSessions || 0);
+            const hasFocusEvidence = focusSec > 0 || focusSessions > 0;
+            if (!hasFocusEvidence) {
+                const confirmed = confirm('Esta micro não tem tempo de foco registrado. Concluir mesmo assim?');
+                if (!confirmed) return;
+            }
+        }
+        micro.status = isCompleting ? 'done' : 'pending';
+        // Sincroniza com a propriedade Legada 'completed' para manter UI funcionando
+        micro.completed = isCompleting;
+        micro.progress = isCompleting ? 100 : 0;
+
+        if (isCompleting) {
+          micro.completedDate = this.getLocalDateKey();
+          const award = this.awardGamification('micro_complete', {
+              key: `micro:${micro.id}:complete:${micro.completedDate}`,
+              date: micro.completedDate,
+              id: micro.id,
+              title: micro.title,
+              dimension: micro.dimension,
+              planned: this._isPlannedThisWeek ? this._isPlannedThisWeek(micro.id) : false,
+              inProgress: wasInProgress
+          });
+          this.showGamificationToast(award);
+          this.recentCompletedMicroId = micro.id;
+          if (award) {
+              this.flashMicroCard(micro.id);
+          }
+        } else {
+          delete micro.completedDate;
+        }
+
+        // Dispara cascata
+        this.updateCascadeProgress(micro.id, 'micros');
+
+        if (micro.macroId) {
+            const macro = state.entities.macros.find(m => m.id === micro.macroId);
+            if (macro && macro.okrId) {
+                const okr = state.entities.okrs.find(o => o.id === macro.okrId);
+                if (okr) {
+                    if (isCompleting) {
+                        // Regra de Sucesso (Locke & Latham): 70% é o alvo ideal.
+                        if (okr.progress >= 70 && !okr.rewarded70) {
+                            okr.rewarded70 = true;
+                            if (state.perma) {
+                                state.perma.A = this.normalizePermaScore((state.perma.A || 0) + 0.5);
+                            }
+                            if (this.showNotification) this.showNotification("🎯 OKR atingiu 70% (Alvo Ideal). Bônus de realização aplicado!");
+                        }
+                    } else {
+                        // Ao desmarcar: reseta flag se progresso voltou abaixo de 70%
+                        if (okr.rewarded70 && okr.progress < 70) {
+                            okr.rewarded70 = false;
+                        }
+                    }
+                }
+            }
+        }
+        
+        this.saveState(false);
+        if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        if (this.currentView === 'planos' && this.render.planos) this.render.planos();
+        if (this.currentView === 'painel' && this.render.painel) this.render.painel();
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+    },
+
+updateCascadeProgress: function(entityId, type) {
+        const state = window.sistemaVidaState;
+
+        const hasActiveChild = (children) => children.some(c => c.status === 'in_progress' || c.status === 'done');
+        const setParentStatus = (parent, children, computedProgress) => {
+            // Reverte done forçado pelo usuário se filha foi reaberta (computedProgress < 100)
+            if (parent.status === 'done' && computedProgress < 100) parent.status = 'in_progress';
+            // Auto-start ao detectar filha ativa
+            if (parent.status === 'pending' && hasActiveChild(children)) parent.status = 'in_progress';
+            // Sem filhas ativas e progress 0 → volta para pending
+            if (children.length === 0 && parent.status === 'in_progress') parent.status = 'pending';
+        };
+
+        if (type === 'micros') {
+            const micro = state.entities.micros.find(m => m.id === entityId);
+            if (micro && micro.macroId) {
+                const siblings = state.entities.micros.filter(m => m.macroId === micro.macroId && m.status !== 'abandoned');
+                const doneCount = siblings.filter(s => s.status === 'done').length;
+                const computed = siblings.length > 0 ? Math.round((doneCount / siblings.length) * 100) : 0;
+                const macro = state.entities.macros.find(m => m.id === micro.macroId);
+                if (macro) {
+                    macro.progress = computed;
+                    setParentStatus(macro, siblings, computed);
+                    this.updateCascadeProgress(macro.id, 'macros');
+                }
+            }
+        } else if (type === 'macros') {
+            const macro = state.entities.macros.find(m => m.id === entityId);
+            if (macro && macro.okrId) {
+                const siblings = state.entities.macros.filter(m => m.okrId === macro.okrId && m.status !== 'abandoned');
+                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
+                const okr = state.entities.okrs.find(o => o.id === macro.okrId);
+                if (okr) {
+                    const krProgress = this.computeKeyResultsProgress(okr.keyResults);
+                    const hasKrs = krProgress !== null;
+                    const computed = hasKrs ? Math.round((krProgress * 0.7) + (avg * 0.3)) : Math.round(avg);
+                    okr.progress = computed;
+                    setParentStatus(okr, siblings, computed);
+                    this.updateCascadeProgress(okr.id, 'okrs');
+                }
+            }
+        } else if (type === 'okrs') {
+            const okr = state.entities.okrs.find(o => o.id === entityId);
+            if (okr && okr.metaId) {
+                const siblings = state.entities.okrs.filter(o => o.metaId === okr.metaId && o.status !== 'abandoned');
+                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
+                const meta = state.entities.metas.find(m => m.id === okr.metaId);
+                if (meta) {
+                    const computed = Math.round(avg);
+                    meta.progress = computed;
+                    setParentStatus(meta, siblings, computed);
+                }
+            }
+        } else if (type === 'metas') {
+            const meta = state.entities.metas.find(m => m.id === entityId);
+            if (meta && meta.parentMetaId) {
+                const siblings = state.entities.metas.filter(m => m.parentMetaId === meta.parentMetaId && m.status !== 'abandoned');
+                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
+                const parentMeta = state.entities.metas.find(m => m.id === meta.parentMetaId);
+                if (parentMeta) {
+                    const computed = Math.round(avg);
+                    parentMeta.progress = computed;
+                    setParentStatus(parentMeta, siblings, computed);
+                    this.updateCascadeProgress(parentMeta.id, 'metas');
+                }
+            }
+        }
+    },
+
+getPurposeJourneyState: function() {
+        const profile = window.sistemaVidaState.profile || {};
+        const values = profile.values || [];
+        const identity = profile.identity || { strengths: [], shadows: [] };
+        const ikigai = profile.ikigai || {};
+        const legacyObj = profile.legacyObj || {};
+        const vision = profile.vision || {};
+        const odyssey = profile.odyssey || {};
+        const dimensions = window.sistemaVidaState.dimensions || {};
+
+        const wheelCount = Object.values(dimensions).filter((entry) => Number(entry?.score) > 0).length;
+        const ikigaiBaseCount = [ikigai.love, ikigai.good, ikigai.need, ikigai.paid].filter((value) => String(value || '').trim()).length;
+        const legacyCount = [legacyObj.familia, legacyObj.profissao, legacyObj.mundo].filter((value) => String(value || '').trim()).length;
+        const visionCount = [vision.saude, vision.carreira, vision.intelecto, vision.quote].filter((value) => String(value || '').trim()).length;
+        const odysseyCount = [odyssey.cenarioA, odyssey.cenarioB, odyssey.cenarioC].filter((value) => String(value || '').trim()).length;
+
+        const items = [
+            {
+                id: 'identity',
+                label: 'Identidade base',
+                hint: 'Valores, forcas e sombras',
+                done: values.length > 0 && (((identity.strengths || []).length + (identity.shadows || []).length) > 0)
+            },
+            {
+                id: 'wheel',
+                label: 'Roda da vida',
+                hint: `${wheelCount}/8 dimensoes pontuadas`,
+                done: wheelCount === 8
+            },
+            {
+                id: 'ikigai-base',
+                label: 'Base do Ikigai',
+                hint: `${ikigaiBaseCount}/4 blocos preenchidos`,
+                done: ikigaiBaseCount === 4
+            },
+            {
+                id: 'ikigai-synthesis',
+                label: 'Sintese do Ikigai',
+                hint: 'Frase central de direcao',
+                done: !!String(ikigai.sintese || '').trim()
+            },
+            {
+                id: 'legacy',
+                label: 'Legado',
+                hint: `${legacyCount}/3 frentes preenchidas`,
+                done: legacyCount === 3
+            },
+            {
+                id: 'vision',
+                label: 'Visao de vida',
+                hint: `${visionCount}/4 blocos preenchidos`,
+                done: visionCount === 4
+            },
+            {
+                id: 'odyssey',
+                label: 'Odyssey plans',
+                hint: `${odysseyCount}/3 cenarios descritos`,
+                done: odysseyCount === 3
+            }
+        ];
+        const doneCount = items.filter((item) => item.done).length;
+        return {
+            items,
+            doneCount,
+            total: items.length,
+            pct: Math.round((doneCount / items.length) * 100)
+        };
+    },
+    });
+}

@@ -1,10 +1,19 @@
-const CACHE_NAME = 'sistema-vida-v121';
+const CACHE_NAME = 'sistema-vida-v122';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260507-phase8-stabilization-v121',
-    './js/habitSuggestions.js?v=20260507-phase8-stabilization-v121',
-    './js/subjectiveScales.js?v=20260507-phase8-stabilization-v121',
+    './app.js?v=20260507-phase9-modularization-v122',
+    './js/habitSuggestions.js?v=20260507-phase9-modularization-v122',
+    './js/subjectiveScales.js?v=20260507-phase9-modularization-v122',
+    './js/notifications.js?v=20260507-phase9-modularization-v122',
+    './js/cadence.js?v=20260507-phase9-modularization-v122',
+    './js/onboarding.js?v=20260507-phase9-modularization-v122',
+    './js/identity.js?v=20260507-phase9-modularization-v122',
+    './js/habits.js?v=20260507-phase9-modularization-v122',
+    './js/state.js?v=20260507-phase9-modularization-v122',
+    './js/render.js?v=20260507-phase9-modularization-v122',
+    './js/planning.js?v=20260507-phase9-modularization-v122',
+    './js/gamification.js?v=20260507-phase9-modularization-v122',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
@@ -110,3 +119,6 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+
+
+
