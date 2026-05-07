@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-key-habit-v114',
+    appBuildVersion: '20260507-stabilize-f1-f3-v115',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1180,7 +1180,9 @@ const app = {
         if (eventType === 'daily_diary') xp = 8;
         if (eventType === 'daily_shutdown') xp = 8;
         if (eventType === 'weekly_plan') xp = 15;
-        if (eventType === 'habit_complete' && payload.sourceType) xp += payload.sourceType === 'shadow' ? 4 : 2;
+        if (eventType === 'habit_complete' && payload.sourceStrengthId) xp += 2;
+        if (eventType === 'habit_complete' && payload.sourceShadowId) xp += 4;
+        if (eventType === 'habit_complete' && payload.isKey) xp += 3;
         if (eventType === 'habit_complete' && payload.maturity === 'graduated') xp = Math.max(1, Math.round(xp * 0.5));
         if (eventType === 'weekly_review' && payload.identityReflection) xp += 5;
         if (xp <= 0) return null;
@@ -1195,6 +1197,9 @@ const app = {
             dimension,
             sourceType: payload.sourceType || '',
             sourceId: payload.sourceId || '',
+            sourceStrengthId: payload.sourceStrengthId || '',
+            sourceShadowId: payload.sourceShadowId || '',
+            isKey: !!payload.isKey,
             habitMode: payload.habitMode || '',
             maturity: payload.maturity || ''
         };
@@ -1207,6 +1212,9 @@ const app = {
             dimension,
             sourceType: payload.sourceType || '',
             sourceId: payload.sourceId || '',
+            sourceStrengthId: payload.sourceStrengthId || '',
+            sourceShadowId: payload.sourceShadowId || '',
+            isKey: !!payload.isKey,
             maturity: payload.maturity || '',
             at: new Date().toISOString()
         });
@@ -1377,6 +1385,17 @@ const app = {
             if (!habit.maturityMeta || typeof habit.maturityMeta !== 'object' || Array.isArray(habit.maturityMeta)) {
                 habit.maturityMeta = {};
             }
+            if (typeof habit.continuous !== 'boolean') habit.continuous = !habit.prazo;
+            if (typeof habit.isKey !== 'boolean') habit.isKey = false;
+            if (typeof habit.keyAutoSuggested !== 'boolean') habit.keyAutoSuggested = false;
+            if (typeof habit.keyAutoReason !== 'string') habit.keyAutoReason = '';
+            if (!habit.sourceStrengthId && habit.sourceType === 'strength' && habit.sourceId) habit.sourceStrengthId = habit.sourceId;
+            if (!habit.sourceShadowId && habit.sourceType === 'shadow' && habit.sourceId) habit.sourceShadowId = habit.sourceId;
+            if (!habit.sourceType) {
+                if (habit.sourceStrengthId) habit.sourceType = 'strength';
+                else if (habit.sourceShadowId) habit.sourceType = 'shadow';
+            }
+            if (!habit.sourceId) habit.sourceId = habit.sourceStrengthId || habit.sourceShadowId || '';
         });
     },
 
@@ -1484,6 +1503,8 @@ const app = {
         const acceptBtn = document.getElementById('key-habit-accept-btn');
         const dismissBtn = document.getElementById('key-habit-dismiss-btn');
 
+        habit.keyAutoSuggested = true;
+        habit.keyAutoReason = reason || '';
         if (titleEl) titleEl.textContent = habit.title || '';
         if (reasonEl) reasonEl.textContent = reason;
         if (acceptBtn) acceptBtn.onclick = () => this.acceptKeyHabit(habit.id);
@@ -1496,6 +1517,8 @@ const app = {
         const habit = (window.sistemaVidaState?.habits || []).find(h => h.id === habitId);
         if (!habit) return;
         habit.isKey = true;
+        habit.keyAutoSuggested = true;
+        habit.keyAutoReason = habit.keyAutoReason || 'Sugerido pela sua consistencia e contexto atual.';
         delete habit.keyDismissedAt;
         this.saveState(true);
         this.showToast(`"${habit.title}" marcado como Hábito-Chave. ⭐`, 'success');
@@ -1505,6 +1528,7 @@ const app = {
     dismissKeyHabitSuggestion: function(habitId) {
         const habit = (window.sistemaVidaState?.habits || []).find(h => h.id === habitId);
         if (!habit) return;
+        habit.keyAutoSuggested = true;
         habit.keyDismissedAt = this.getLocalDateKey();
         this.saveState(true);
         const banner = document.getElementById('key-habit-suggestion');
@@ -1515,6 +1539,8 @@ const app = {
         const habit = (window.sistemaVidaState?.habits || []).find(h => h.id === habitId);
         if (!habit) return;
         habit.isKey = !habit.isKey;
+        habit.keyAutoSuggested = false;
+        if (habit.isKey) habit.keyAutoReason = 'Marcado manualmente pelo usuario.';
         if (!habit.isKey) delete habit.keyDismissedAt;
         this.saveState(true);
         const msg = habit.isKey ? `"${habit.title}" é agora seu Hábito-Chave. ⭐` : `"${habit.title}" removido dos Hábitos-Chave.`;
@@ -10791,7 +10817,11 @@ const app = {
             obj.stepLogs = isEditing ? (getOldItem(id, 'habits').stepLogs || {}) : {};
             obj.maturity = isEditing ? (getOldItem(id, 'habits').maturity || 'forming') : 'forming';
             obj.maturityMeta = isEditing ? (getOldItem(id, 'habits').maturityMeta || {}) : {};
-            obj.isKey = isEditing ? (!!getOldItem(id, 'habits').isKey) : false;
+            const keyEl = document.getElementById('habit-key');
+            const manualKey = keyEl ? !!keyEl.checked : !!getOldItem(id, 'habits').isKey;
+            obj.isKey = manualKey;
+            obj.keyAutoSuggested = isEditing ? (!!getOldItem(id, 'habits').keyAutoSuggested) : false;
+            obj.keyAutoReason = isEditing ? (getOldItem(id, 'habits').keyAutoReason || '') : '';
             const oldDismissed = isEditing ? getOldItem(id, 'habits').keyDismissedAt : undefined;
             if (oldDismissed) obj.keyDismissedAt = oldDismissed;
             const linkedSel = document.getElementById('habit-linked-meta');
@@ -11070,6 +11100,9 @@ const app = {
                     date: dateStr,
                     sourceType: habit.sourceType || '',
                     sourceId: habit.sourceId || '',
+                    sourceStrengthId: this._getHabitSourceStrengthId(habit) || '',
+                    sourceShadowId: this._getHabitSourceShadowId(habit) || '',
+                    isKey: !!habit.isKey,
                     habitMode: habit.habitMode || '',
                     maturity: habit.maturity || 'forming'
                 });
@@ -11115,6 +11148,9 @@ const app = {
                 date: dateStr,
                 sourceType: habit.sourceType || '',
                 sourceId: habit.sourceId || '',
+                sourceStrengthId: this._getHabitSourceStrengthId(habit) || '',
+                sourceShadowId: this._getHabitSourceShadowId(habit) || '',
+                isKey: !!habit.isKey,
                 habitMode: habit.habitMode || '',
                 maturity: habit.maturity || 'forming'
             });
@@ -11153,6 +11189,9 @@ const app = {
                     date: dateStr,
                     sourceType: habit.sourceType || '',
                     sourceId: habit.sourceId || '',
+                    sourceStrengthId: this._getHabitSourceStrengthId(habit) || '',
+                    sourceShadowId: this._getHabitSourceShadowId(habit) || '',
+                    isKey: !!habit.isKey,
                     habitMode: habit.habitMode || '',
                     maturity: habit.maturity || 'forming'
                 });
@@ -15088,6 +15127,8 @@ const app = {
                 continuousCheck.checked = !!item.continuous;
                 this.onHabitContinuousChange(!!item.continuous);
             }
+            const keyCheck = document.getElementById('habit-key');
+            if (keyCheck) keyCheck.checked = !!item.isKey;
             document.getElementById('crud-trigger').value = item.trigger || '';
             const routineInput = document.getElementById('habit-routine');
             if (routineInput) routineInput.value = item.routine || item.context || item.title || '';
