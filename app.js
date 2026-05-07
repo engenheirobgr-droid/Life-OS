@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-ikigai-labels-v109',
+    appBuildVersion: '20260507-cadence-history-v110',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -4786,6 +4786,9 @@ const app = {
             const d = (s.endedAt || '').slice(0, 10);
             if (/^\d{4}-\d{2}-\d{2}$/.test(d)) dates.add(d);
         });
+        this.getCadenceHistoryEvents().forEach(event => {
+            if (/^\d{4}-\d{2}-\d{2}$/.test(event.date)) dates.add(event.date);
+        });
         return Array.from(dates)
             .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
             .sort((a, b) => b.localeCompare(a));
@@ -4822,7 +4825,8 @@ const app = {
         const achievements = (state.gamification?.achievements || []).filter(a =>
             (a.unlockedAt || '').slice(0, 10) === dateKey
         );
-        return { dateKey, checkin, log, habitsDone, microsDone, notes, dwSessions, dwMinutes, xpEarned, achievements };
+        const cadenceEvents = this.getCadenceHistoryEvents().filter(event => event.date === dateKey);
+        return { dateKey, checkin, log, habitsDone, microsDone, notes, dwSessions, dwMinutes, xpEarned, achievements, cadenceEvents };
     },
 
     renderTimelineHistory: function() {
@@ -4871,6 +4875,7 @@ const app = {
             if (d.habitsDone.length) stats.push(`${d.habitsDone.length} hábito${d.habitsDone.length > 1 ? 's' : ''}`);
             if (d.dwMinutes) stats.push(`${d.dwMinutes}min foco`);
             if (d.notes.length) stats.push(`${d.notes.length} nota${d.notes.length > 1 ? 's' : ''}`);
+            if (d.cadenceEvents.length) stats.push(`${d.cadenceEvents.length} revisão${d.cadenceEvents.length > 1 ? 'ões' : ''}`);
             if (d.xpEarned) stats.push(`+${d.xpEarned} XP`);
 
             // ── Seções expandidas ──
@@ -4933,6 +4938,13 @@ const app = {
                 }</ul></div>`;
             }
 
+            let cadenceHtml = '';
+            if (d.cadenceEvents.length) {
+                cadenceHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Ritmos e revisões</p><div class="flex flex-wrap gap-2">${
+                    d.cadenceEvents.map(event => `<span class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary"><span class="material-symbols-outlined notranslate text-[13px]">${this.escapeHtml(event.icon || 'history')}</span>${this.escapeHtml(event.label)}</span>`).join('')
+                }</div></div>`;
+            }
+
             let xpHtml = '';
             if (d.xpEarned || d.achievements.length) {
                 xpHtml = `<div class="flex flex-wrap gap-2">
@@ -4941,7 +4953,7 @@ const app = {
                 </div>`;
             }
 
-            const sections = [checkinHtml, diaryHtml, habitsHtml, microsHtml, dwHtml, notesHtml, xpHtml].filter(Boolean);
+            const sections = [checkinHtml, diaryHtml, habitsHtml, microsHtml, dwHtml, notesHtml, cadenceHtml, xpHtml].filter(Boolean);
             const safeKey = dateKey.replace(/-/g, '');
 
             return `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest shadow-sm overflow-hidden">
@@ -6972,6 +6984,19 @@ const app = {
             if (profile.cadence[key].lastAt && typeof profile.cadence[key].lastAt !== 'string') {
                 profile.cadence[key].lastAt = String(profile.cadence[key].lastAt);
             }
+            if (!Array.isArray(profile.cadence[key].history)) profile.cadence[key].history = [];
+            profile.cadence[key].history = profile.cadence[key].history
+                .map(entry => {
+                    const date = String(entry?.date || entry?.lastAt || '').slice(0, 10);
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+                    return {
+                        date,
+                        at: String(entry?.at || entry?.updatedAt || `${date}T00:00:00.000Z`)
+                    };
+                })
+                .filter(Boolean)
+                .sort((a, b) => b.date.localeCompare(a.date) || b.at.localeCompare(a.at))
+                .slice(0, 24);
         });
         if (!profile.cadence.lifeGoals?.lastAt && this.hasLifeGoalsContent()) {
             profile.cadence.lifeGoals = {
@@ -7546,10 +7571,23 @@ const app = {
         this.ensureCadenceState();
         const config = this.getCadenceConfig();
         if (!config[toolKey]) return;
+        const previous = window.sistemaVidaState.profile.cadence[toolKey] || {};
+        const history = Array.isArray(previous.history) ? [...previous.history] : [];
+        const now = new Date().toISOString();
+        const existingIdx = history.findIndex(entry => String(entry?.date || '') === dateKey);
+        if (existingIdx >= 0) {
+            history[existingIdx] = { ...history[existingIdx], date: dateKey, at: now };
+        } else {
+            history.unshift({ date: dateKey, at: now });
+        }
         window.sistemaVidaState.profile.cadence[toolKey] = {
-            ...(window.sistemaVidaState.profile.cadence[toolKey] || {}),
+            ...previous,
             lastAt: dateKey,
-            updatedAt: new Date().toISOString()
+            updatedAt: now,
+            history: history
+                .filter(entry => /^\d{4}-\d{2}-\d{2}$/.test(String(entry?.date || '')))
+                .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.at || '').localeCompare(String(a.at || '')))
+                .slice(0, 24)
         };
     },
 
@@ -7595,6 +7633,87 @@ const app = {
         return `<div class="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-outline">
             <span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-1">${this.escapeHtml(freq)}</span>
             <span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-1">${this.escapeHtml(lastLabel)}</span>
+        </div>`;
+    },
+
+    getCadenceHistoryEvents: function(options = {}) {
+        this.ensureCadenceState();
+        const config = this.getCadenceConfig();
+        const events = [];
+        Object.entries(config).forEach(([key, cfg]) => {
+            const item = window.sistemaVidaState.profile?.cadence?.[key] || {};
+            const seen = new Set();
+            const entries = Array.isArray(item.history) && item.history.length
+                ? item.history
+                : item.lastAt ? [{ date: item.lastAt, at: item.updatedAt || `${item.lastAt}T00:00:00.000Z` }] : [];
+            entries.forEach(entry => {
+                const date = String(entry?.date || '').slice(0, 10);
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || seen.has(date)) return;
+                seen.add(date);
+                events.push({
+                    key,
+                    date,
+                    at: String(entry?.at || `${date}T00:00:00.000Z`),
+                    label: cfg.label,
+                    icon: cfg.icon,
+                    expectedDays: cfg.expectedDays
+                });
+            });
+        });
+        return events
+            .sort((a, b) => b.date.localeCompare(a.date) || b.at.localeCompare(a.at))
+            .slice(0, Math.max(1, Number(options.limit) || 60));
+    },
+
+    renderCadenceHistoryPanel: function() {
+        const container = document.getElementById('cadence-history-panel');
+        if (!container) return;
+        const config = this.getCadenceConfig();
+        const focusKeys = ['weeklyPlan', 'weeklyReview', 'cycleReview', 'wheel', 'perma', 'swls', 'lifeGoals', 'odyssey', 'purpose'];
+        const formatDate = (dateKey) => dateKey
+            ? new Date(dateKey + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+            : 'Nunca feito';
+        const cards = focusKeys.map(key => {
+            const cfg = config[key];
+            const status = this.getCadenceStatus(key);
+            const item = window.sistemaVidaState.profile?.cadence?.[key] || {};
+            const history = (Array.isArray(item.history) && item.history.length
+                ? item.history
+                : item.lastAt ? [{ date: item.lastAt }] : [])
+                .filter(entry => /^\d{4}-\d{2}-\d{2}$/.test(String(entry?.date || '')))
+                .slice(0, 3);
+            const nextLabel = status.daysSince === null
+                ? 'Sem próxima data até o primeiro registro'
+                : status.state === 'overdue'
+                    ? 'Revisão pendente agora'
+                    : `Próxima em ${Math.max(0, status.expectedFreq - status.daysSince)} dia${Math.max(0, status.expectedFreq - status.daysSince) === 1 ? '' : 's'}`;
+            return `<div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined notranslate text-primary text-[18px]">${this.escapeHtml(cfg.icon)}</span>
+                            ${this.escapeHtml(cfg.label)}
+                        </p>
+                        <p class="mt-1 text-xs text-on-surface-variant">${this.escapeHtml(nextLabel)}</p>
+                    </div>
+                    ${this.renderCadenceBadge(key)}
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    ${history.length
+                        ? history.map(entry => `<span class="inline-flex rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-outline">${this.escapeHtml(formatDate(entry.date))}</span>`).join('')
+                        : '<span class="text-[10px] italic text-outline">Nenhum registro ainda.</span>'}
+                </div>
+            </div>`;
+        }).join('');
+        container.innerHTML = `<div class="rounded-2xl border border-outline-variant/10 bg-surface-container-low p-4 md:p-5">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div>
+                    <h4 class="font-headline text-xl italic text-on-background">Ritmos e revisões</h4>
+                    <p class="mt-1 text-xs text-on-surface-variant leading-relaxed">Quando cada ferramenta foi revisitada e quando merece atenção de novo.</p>
+                </div>
+                <span class="material-symbols-outlined notranslate text-primary">history</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${cards}</div>
         </div>`;
     },
 
@@ -12341,6 +12460,7 @@ const app = {
             app.renderPersonalEvolutionPanel();
             app.renderHabitMaturityPanel();
             app.renderWellbeingTrendsPanel();
+            app.renderCadenceHistoryPanel();
             app.renderLoadRecoveryPanel();
             app.renderPatternsPanel();
             app.renderTimelineHistory();
