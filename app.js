@@ -188,7 +188,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-phase7-manual-updated-v119',
+    appBuildVersion: '20260507-phase8-gamification-revised-v120',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1136,6 +1136,32 @@ const app = {
         state.profile.level = this.getLevelFromXp(gamification.totalXp);
         return gamification;
     },
+    getMonthKey: function(dateStr) {
+        return (dateStr || this.getLocalDateKey()).slice(0, 7);
+    },
+    getDateDiffInDays: function(d1, d2) {
+        return Math.abs(new Date(d1).getTime() - new Date(d2).getTime()) / 86400000;
+    },
+    getPreviousHabitDoneDate: function(habit, beforeDateStr) {
+        if (!habit || !habit.logs) return null;
+        const dates = Object.keys(habit.logs)
+            .filter(d => d < beforeDateStr && Number(habit.logs[d]) > 0)
+            .sort();
+        return dates.length ? dates[dates.length - 1] : null;
+    },
+    getKeyHabitStreak: function(habit, dateStr) {
+        if (!habit || !habit.logs) return 0;
+        let streak = 0;
+        let cursor = dateStr || this.getLocalDateKey();
+        for (let i = 0; i < 60; i++) {
+            if (Number(habit.logs[cursor] || 0) <= 0) break;
+            streak++;
+            const d = new Date(cursor + 'T12:00:00');
+            d.setDate(d.getDate() - 1);
+            cursor = d.toISOString().slice(0, 10);
+        }
+        return streak;
+    },
     getAchievementCatalog: function() {
         return {
             first_micro_done: { title: 'Primeira micro concluída', icon: 'task_alt' },
@@ -1149,7 +1175,9 @@ const app = {
             shadow_antidote_7: { title: 'Antídoto em prática', icon: 'healing' },
             identity_integration_week: { title: 'Integração', icon: 'all_inclusive' },
             sustained_identity_growth: { title: 'Evolução sustentada', icon: 'trending_up' },
-            first_habit_graduated: { title: 'Hábito automático', icon: 'verified' }
+            first_habit_graduated: { title: 'Hábito automático', icon: 'verified' },
+            key_habit_streak_7:  { title: '7 dias com Hábito-Chave',  icon: 'local_fire_department' },
+            key_habit_streak_30: { title: '30 dias com Hábito-Chave', icon: 'military_tech' }
         };
     },
     unlockAchievement: function(id, extra = {}) {
@@ -1173,7 +1201,8 @@ const app = {
 
         let xp = 0;
         if (eventType === 'micro_complete') xp = 12 + (payload.planned ? 6 : 0) + (payload.inProgress ? 4 : 0);
-        if (eventType === 'habit_complete') xp = 6;
+        if (eventType === 'habit_complete') xp = payload.isKey ? 4 : 2;
+        if (eventType === 'habit_recovery') xp = 3;
         if (eventType === 'deep_work') xp = Math.max(10, Math.min(40, Math.round((Number(payload.focusSec) || 0) / 300)));
         if (eventType === 'weekly_review') xp = 25;
         if (eventType === 'daily_checkin') xp = 10;
@@ -1181,9 +1210,9 @@ const app = {
         if (eventType === 'daily_diary') xp = 8;
         if (eventType === 'daily_shutdown') xp = 8;
         if (eventType === 'weekly_plan') xp = 15;
-        if (eventType === 'habit_complete' && payload.sourceStrengthId) xp += 2;
-        if (eventType === 'habit_complete' && payload.sourceShadowId) xp += 4;
-        if (eventType === 'habit_complete' && payload.isKey) xp += 3;
+        if (eventType === 'habit_complete' && payload.sourceStrengthId) xp += 1;
+        if (eventType === 'habit_complete' && payload.sourceShadowId) xp += 2;
+        if (eventType === 'habit_complete' && payload.hasIfThen) xp += 1;
         if (eventType === 'habit_complete' && payload.maturity === 'graduated') xp = Math.max(1, Math.round(xp * 0.5));
         if (eventType === 'weekly_review' && payload.identityReflection) xp += 5;
         if (xp <= 0) return null;
@@ -1261,6 +1290,15 @@ const app = {
                     if (ach) unlocked.push(ach);
                 }
             });
+            // Key habit streak achievements
+            if (payload.isKey && (payload.keyHabitStreak || 0) >= 7) {
+                const ach7 = this.unlockAchievement('key_habit_streak_7', { title: '7 dias com Hábito-Chave', icon: 'local_fire_department' });
+                if (ach7) unlocked.push(ach7);
+            }
+            if (payload.isKey && (payload.keyHabitStreak || 0) >= 30) {
+                const ach30 = this.unlockAchievement('key_habit_streak_30', { title: '30 dias com Hábito-Chave', icon: 'military_tech' });
+                if (ach30) unlocked.push(ach30);
+            }
         }
         if (eventType === 'deep_work') {
             const focus = this.unlockAchievement('first_focus_session');
@@ -11197,10 +11235,21 @@ const app = {
                     sourceStrengthId: this._getHabitSourceStrengthId(habit) || '',
                     sourceShadowId: this._getHabitSourceShadowId(habit) || '',
                     isKey: !!habit.isKey,
+                    hasIfThen: !!(habit.ifThen && String(habit.ifThen).trim()),
+                    keyHabitStreak: habit.isKey ? this.getKeyHabitStreak(habit, dateStr) : 0,
                     habitMode: habit.habitMode || '',
                     maturity: habit.maturity || 'forming'
                 });
                 this.showGamificationToast(award);
+                try {
+                    const _prev = this.getPreviousHabitDoneDate(habit, dateStr);
+                    if (_prev && this.getDateDiffInDays(_prev, dateStr) >= 7) {
+                        this.awardGamification('habit_recovery', {
+                            key: `habit_recovery:${habit.id}:${this.getMonthKey(dateStr)}`,
+                            id: habit.id, title: habit.title, dimension: habit.dimension, date: dateStr
+                        });
+                    }
+                } catch (_) {}
             }
             const maturityResult = this.evaluateHabitMaturity(habit);
             this.handleHabitMaturityChange(habit, maturityResult);
@@ -11245,10 +11294,21 @@ const app = {
                 sourceStrengthId: this._getHabitSourceStrengthId(habit) || '',
                 sourceShadowId: this._getHabitSourceShadowId(habit) || '',
                 isKey: !!habit.isKey,
+                hasIfThen: !!(habit.ifThen && String(habit.ifThen).trim()),
+                keyHabitStreak: habit.isKey ? this.getKeyHabitStreak(habit, dateStr) : 0,
                 habitMode: habit.habitMode || '',
                 maturity: habit.maturity || 'forming'
             });
             this.showGamificationToast(award);
+            try {
+                const _prev = this.getPreviousHabitDoneDate(habit, dateStr);
+                if (_prev && this.getDateDiffInDays(_prev, dateStr) >= 7) {
+                    this.awardGamification('habit_recovery', {
+                        key: `habit_recovery:${habit.id}:${this.getMonthKey(dateStr)}`,
+                        id: habit.id, title: habit.title, dimension: habit.dimension, date: dateStr
+                    });
+                }
+            } catch (_) {}
         }
         const maturityResult = this.evaluateHabitMaturity(habit);
         this.handleHabitMaturityChange(habit, maturityResult);
@@ -11286,10 +11346,21 @@ const app = {
                     sourceStrengthId: this._getHabitSourceStrengthId(habit) || '',
                     sourceShadowId: this._getHabitSourceShadowId(habit) || '',
                     isKey: !!habit.isKey,
+                    hasIfThen: !!(habit.ifThen && String(habit.ifThen).trim()),
+                    keyHabitStreak: habit.isKey ? this.getKeyHabitStreak(habit, dateStr) : 0,
                     habitMode: habit.habitMode || '',
                     maturity: habit.maturity || 'forming'
                 });
                 this.showGamificationToast(award);
+                try {
+                    const _prev = this.getPreviousHabitDoneDate(habit, dateStr);
+                    if (_prev && this.getDateDiffInDays(_prev, dateStr) >= 7) {
+                        this.awardGamification('habit_recovery', {
+                            key: `habit_recovery:${habit.id}:${this.getMonthKey(dateStr)}`,
+                            id: habit.id, title: habit.title, dimension: habit.dimension, date: dateStr
+                        });
+                    }
+                } catch (_) {}
             }
         }
         const maturityResult = this.evaluateHabitMaturity(habit);
