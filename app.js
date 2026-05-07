@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260506-purpose-journey-v105',
+    appBuildVersion: '20260506-purpose-manual-v106',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -3980,6 +3980,55 @@ const app = {
         this.openIdentityItemModal(type, id);
     },
 
+    getIdentityLinkedHabits: function(type, id) {
+        const sourceType = type === 'strengths' ? 'strength' : type === 'shadows' ? 'shadow' : '';
+        if (!sourceType || !id) return [];
+        return (window.sistemaVidaState.habits || []).filter(habit =>
+            habit && habit.sourceType === sourceType && habit.sourceId === id
+        );
+    },
+
+    createHabitFromIdentity: function(type, id) {
+        this.ensureIdentityState();
+        const item = this.getIdentityItemById(type, id);
+        if (!item) return;
+        const isStrength = type === 'strengths';
+        const practice = String(item.practice || item.suggestedPractice || '').trim();
+        const response = String(item.desiredResponse || '').trim();
+        const ifThen = String(item.ifThen || '').trim();
+        const trigger = String(item.trigger || '').trim();
+        const routine = isStrength
+            ? (practice || `Praticar ${item.title}`)
+            : (response || ifThen || `Praticar resposta alternativa a ${item.title}`);
+
+        this.openCreateModal('habits');
+        setTimeout(() => {
+            const setVal = (elId, value) => {
+                const el = document.getElementById(elId);
+                if (el) el.value = value || '';
+            };
+            setVal('crud-title', isStrength ? routine : `Antídoto para ${item.title}`);
+            setVal('crud-trigger', isStrength ? 'Quando iniciar minha rotina planejada' : (trigger || `Quando perceber ${item.title}`));
+            setVal('habit-routine', routine);
+            setVal('habit-reward', isStrength ? `Reforçar ${item.title}` : `Reduzir ${item.title}`);
+
+            const dimension = document.getElementById('crud-dimension');
+            if (dimension && item.dimension && Array.from(dimension.options).some(opt => opt.value === item.dimension)) {
+                dimension.value = item.dimension;
+            }
+
+            const identitySelect = document.getElementById('habit-identity-source');
+            const identityMode = document.getElementById('habit-identity-mode');
+            if (identitySelect) {
+                const value = `${type}:${item.id}`;
+                if (Array.from(identitySelect.options || []).some(opt => opt.value === value)) identitySelect.value = value;
+                this.onHabitIdentitySourceChange(identitySelect.value);
+            }
+            if (identityMode) identityMode.value = isStrength ? 'build' : 'replace';
+            this.showToast(isStrength ? 'Hábito preparado a partir da força.' : 'Hábito antídoto preparado a partir da sombra.', 'success');
+        }, 80);
+    },
+
     renderIdentityBase: function() {
         this.ensureIdentityState();
         this.renderSidebarValues();
@@ -3993,7 +4042,18 @@ const app = {
                 container.innerHTML = `<p class="text-xs text-outline italic">${emptyText}</p>`;
                 return;
             }
-            container.innerHTML = items.map(item => `
+            container.innerHTML = items.map(item => {
+                const linkedHabits = this.getIdentityLinkedHabits(type, item.id);
+                const linkedPreview = linkedHabits.slice(0, 2).map(habit => `
+                    <span class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/10 px-2 py-1 text-[10px] text-on-surface-variant">
+                        <span class="material-symbols-outlined notranslate text-[12px] text-primary">repeat</span>
+                        ${this.escapeHtml(habit.title)}
+                    </span>
+                `).join('');
+                const moreCount = Math.max(0, linkedHabits.length - 2);
+                const actionLabel = type === 'strengths' ? 'Criar hábito' : 'Criar antídoto';
+                const actionIcon = type === 'strengths' ? 'add_task' : 'change_circle';
+                return `
                 <div class="w-full rounded-xl border border-outline-variant/10 bg-surface-container-lowest/70 p-3">
                     <div class="flex items-start justify-between gap-2">
                         <div class="min-w-0">
@@ -4015,8 +4075,19 @@ const app = {
                         ${type === 'shadows' && item.obstacle ? `<p><span class="font-bold text-on-surface">Obstáculo:</span> ${this.escapeHtml(item.obstacle)}</p>` : ''}
                         ${type === 'shadows' && item.ifThen ? `<p><span class="font-bold text-on-surface">Se-então:</span> ${this.escapeHtml(item.ifThen)}</p>` : ''}
                     </div>
+                    <div class="mt-3 pt-3 border-t border-outline-variant/10">
+                        <div class="flex flex-wrap items-center gap-2">
+                            ${linkedHabits.length ? linkedPreview : `<span class="text-[10px] text-outline italic">Nenhum hábito ligado ainda.</span>`}
+                            ${moreCount ? `<span class="text-[10px] text-outline">+${moreCount}</span>` : ''}
+                        </div>
+                        <button type="button" onclick="event.stopPropagation(); window.app.createHabitFromIdentity(${jsArg(type)}, ${jsArg(item.id)})" class="mt-3 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10 transition-colors">
+                            <span class="material-symbols-outlined notranslate text-[14px]">${actionIcon}</span>
+                            ${actionLabel}
+                        </button>
+                    </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         };
         const renderOptions = (type) => {
             const container = document.getElementById(type === 'strengths' ? 'identity-strengths-options' : 'identity-shadows-options');
@@ -11645,11 +11716,11 @@ const app = {
             icon: 'menu_book',
             title: 'Visão Geral',
             subtitle: 'A arquitetura do Life OS em uma página',
-            what: 'O Life OS funciona em quatro camadas que se alimentam: <strong>Propósito</strong> (quem você é e quer ser) → <strong>Planos</strong> (Meta→OKR→Macro→Micro) → <strong>Execução</strong> (Hoje + Foco) → <strong>Reflexão</strong> (Painel + Revisão Semanal). Identidade e hábitos atravessam todas as camadas.',
+            what: 'O Life OS funciona em quatro camadas que se alimentam: <strong>Propósito</strong> (Quem eu sou → Como estou → O que quero deixar → O que posso viver → O que me move → Quem quero me tornar) → <strong>Planos</strong> (Meta→OKR→Macro→Micro) → <strong>Execução</strong> (Hoje + Foco) → <strong>Reflexão</strong> (Painel + Revisão Semanal). Identidade e hábitos atravessam todas as camadas.',
             why: 'Sistemas de mudança duradoura precisam de coerência vertical: ações diárias devem servir objetivos de médio prazo, que servem propósito de longo prazo. Sem essa cadeia, o esforço diário não acumula em direção a algo significativo.',
             refs: ['Covey — 7 Habits (begin with the end in mind)', 'Locke & Latham — Goal-Setting Theory'],
             how: [
-                'Comece pelo Propósito: defina valores, identidade (forças e sombras) e Ikigai antes de criar Metas.',
+                'Comece pelo Propósito: defina valores, forças/sombras, diagnóstico de bem-estar, Legado, Odyssey, Ikigai e Visão antes de criar Metas.',
                 'Quebre cada Meta em OKRs (90 dias) → Macros (semanais) → Micros (atômicos, executáveis em uma sessão).',
                 'Use o Hoje para executar Micros e o Foco para sessões de atenção profunda.',
                 'Revise no Painel e na Revisão Semanal para fechar o ciclo.'
@@ -11661,49 +11732,97 @@ const app = {
             icon: 'person_pin',
             title: 'Identidade & Valores',
             subtitle: 'Quem você está se tornando',
-            what: 'A aba Propósito guarda <strong>Valores</strong> (princípios inegociáveis), <strong>Forças</strong> (o que quer expressar mais) e <strong>Sombras</strong> (padrões a transformar). Cada hábito pode ser conectado a uma força ou sombra, e a Revisão Semanal pergunta qual delas você praticou.',
+            what: 'A aba Propósito guarda <strong>Valores</strong> (princípios inegociáveis), <strong>Forças</strong> (o que quer expressar mais) e <strong>Sombras</strong> (padrões a transformar). A prática sugerida de uma força pode virar hábito. O se-então de uma sombra é uma resposta preparada para o gatilho: "se X acontecer, então farei Y".',
             why: 'Mudanças sustentáveis acontecem em nível de identidade, não de comportamento isolado. Trabalhar sombras (psicologia junguiana) e cultivar forças (VIA Character Strengths) cria uma narrativa interna coerente: cada ação vira "voto" para a pessoa que você está se tornando.',
             refs: ['James Clear — Atomic Habits (identity-based habits)', 'Peterson & Seligman — VIA Character Strengths', 'Carl Jung — Shadow integration'],
             how: [
                 'Em Propósito, escolha 3-5 forças do catálogo e 1-2 sombras a observar.',
-                'Ao criar um hábito, conecte-o a uma força (modo "construir") ou sombra (modo "substituir").',
+                'No card de uma força ou sombra, use "Criar hábito" para transformar prática, resposta desejada ou se-então em rotina concreta.',
+                'Ao criar um hábito manualmente, conecte-o a uma força (modo "construir") ou sombra (modo "substituir").',
                 'Hábitos de sombra valem +4 XP, hábitos de força valem +2 XP — a diferença reflete o esforço cognitivo.',
-                'Na Revisão Semanal, marque qual força usou e qual sombra apareceu.'
+                'Na Revisão Semanal, marque qual força usou e qual sombra apareceu. O painel também usa hábitos ligados para mostrar forças praticadas e sombras trabalhadas.'
             ],
             cta: { label: 'Abrir Propósito', view: 'proposito', sectionId: 'proposito-identity-section' }
-        },
-        {
-            id: 'ikigai-odyssey',
-            icon: 'explore',
-            title: 'Ikigai, Odyssey & Visão',
-            subtitle: 'Razão de viver e cenários de futuro',
-            what: 'O <strong>Ikigai</strong> cruza quatro perguntas base e gera interseções úteis: Paixão, Profissão, Vocação e Missão. Os <strong>Odyssey Plans</strong> projetam três cenários distintos para os próximos 5 anos. A <strong>Visão de Vida</strong> declara quem você quer ser em saúde, carreira e intelecto.',
-            why: 'O futuro psicologicamente "próximo" é o que motiva ação no presente. Pesquisas em continuidade do self mostram que pessoas que visualizam um futuro vívido tomam decisões financeiras e de saúde melhores. Designing Your Life (Stanford) recomenda múltiplos cenários porque combate a falsa premissa de que existe "um caminho certo".',
-            refs: ['Mieko Kamiya / Ken Mogi — Ikigai', 'Burnett & Evans — Designing Your Life', 'Hal Hershfield — Future Self Continuity'],
-            how: [
-                'Preencha os quatro blocos do Ikigai e depois descreva as interseções: Paixão, Profissão, Vocação e Missão.',
-                'Só então escreva a síntese final do Ikigai em uma frase curta e objetiva.',
-                'Crie 3 Odyssey Plans bem distintos — um conservador, um audacioso, um radical — para forçar imaginação.',
-                'Atualize a Visão de Vida a cada 6-12 meses; ela é uma bússola, não um contrato.',
-                'Quando definir Metas, pergunte: "qual cenário Odyssey isso serve?"'
-            ],
-            cta: { label: 'Editar Ikigai e Odyssey', view: 'proposito', sectionId: 'proposito-ikigai-section' }
         },
         {
             id: 'bem-estar',
             icon: 'monitoring',
             title: 'Bem-estar: Roda da Vida, PERMA & SWLS',
-            subtitle: 'Diagnóstico holístico de florescimento',
-            what: 'As três ferramentas não são redundantes: a <strong>Roda da Vida</strong> mostra equilíbrio entre áreas, o <strong>SWLS</strong> é um termômetro global rápido e o <strong>PERMA</strong> aprofunda qualidade do florescimento em 5 dimensões.',
+            subtitle: 'Como estou',
+            what: 'As três ferramentas não são redundantes. <strong>Roda da Vida</strong>: mapa de investimento entre áreas; pergunta "onde estou investindo demais ou negligenciando?". <strong>PERMA</strong>: qualidade da experiência de existir em 5 vetores; pergunta "onde minha vida nutre ou empobrece meu florescimento?". <strong>SWLS</strong>: 5 perguntas validadas que geram nota global de satisfação com a vida (5-35).',
             why: 'PERMA (Seligman) e SWLS (Diener) são instrumentos validados em centenas de estudos. Usados juntos, capturam tanto o "como me sinto" (afetivo) quanto o "como avalio minha vida" (cognitivo). A Roda da Vida adiciona granularidade por dimensão para detectar áreas negligenciadas.',
             refs: ['Seligman — Flourish (PERMA)', 'Diener et al. — Satisfaction with Life Scale (SWLS)', 'Paul J. Meyer — Wheel of Life'],
             how: [
-                'Reavalie a Roda da Vida a cada 4-6 semanas — anote a dimensão mais baixa.',
-                'SWLS é rápido: use mensalmente como linha de tendência.',
-                'PERMA é mais profundo: use trimestralmente para reduzir ruído e fadiga.',
+                'Use a Roda da Vida para decidir onde investir energia: áreas baixas podem virar Metas ou hábitos.',
+                'SWLS é rápido: use mensalmente como linha de tendência de satisfação global.',
+                'PERMA é mais profundo: use trimestralmente para entender como sua vida está nutrindo emoções, engajamento, relações, sentido e realização.',
                 'Cruze: dimensões baixas na Roda devem aparecer como Metas em Planos.'
             ],
             cta: { label: 'Reavaliar bem-estar', view: 'proposito', sectionId: 'proposito-roda-section' }
+        },
+        {
+            id: 'legado',
+            icon: 'history_edu',
+            title: 'Legado',
+            subtitle: 'O que quero deixar',
+            what: 'O <strong>Legado</strong> é a âncora de longuíssimo prazo: o impacto que você gostaria de deixar na família, no trabalho e no mundo. Pergunta guia: <strong>se alguém importante descrevesse seu impacto daqui a muitos anos, o que você gostaria que essa pessoa dissesse?</strong>',
+            why: 'Começar pelo fim reduz ruído de vaidade e modismo. A lógica aparece em Covey ("begin with the end in mind") e em exercícios de sentido usados em psicologia existencial: imaginar o impacto final ajuda a filtrar decisões do presente.',
+            refs: ['Stephen Covey — 7 Habits (begin with the end in mind)', 'Viktor Frankl — meaning and responsibility', 'Life review / meaning-making research'],
+            how: [
+                'Escreva em linguagem humana, não como slogan. Pense em pessoas reais: família, colegas, comunidade.',
+                'Use o Legado antes de Odyssey e Ikigai: ele protege sua exploração de virar apenas fantasia ou pressão externa.',
+                'Ao criar uma Meta de vida, pergunte: "isso aumenta a chance desse legado existir?"',
+                'Revisite a cada 6-12 meses ou em transições grandes de vida.'
+            ],
+            cta: { label: 'Editar Legado', view: 'proposito', sectionId: 'proposito-legado-section' }
+        },
+        {
+            id: 'odyssey',
+            icon: 'explore',
+            title: 'Odyssey Plans',
+            subtitle: 'O que posso viver',
+            what: '<strong>Odyssey Plans</strong> são três vidas distintas e plausíveis para os próximos 5 anos. Pergunta guia: <strong>quais são três caminhos reais que eu poderia viver sem fingir que existe uma única resposta certa?</strong>',
+            why: 'Designing Your Life recomenda divergir antes de convergir. Ao desenhar mais de um futuro possível, você reduz apego a uma narrativa única e descobre padrões: temas que aparecem em todos os cenários costumam indicar necessidades profundas.',
+            refs: ['Bill Burnett & Dave Evans — Designing Your Life', 'Stanford d.school — design thinking', 'Possible selves research'],
+            how: [
+                'Crie três cenários com nomes, imagens e rotina concreta: como seria uma semana real nesse caminho?',
+                'Faça um cenário conservador, um ambicioso e um mais radical, todos plausíveis.',
+                'Não escolha na primeira passada. Primeiro observe o que se repete entre os cenários.',
+                'Depois use Ikigai e Visão para filtrar e convergir.'
+            ],
+            cta: { label: 'Editar Odyssey', view: 'proposito', sectionId: 'odyssey-section' }
+        },
+        {
+            id: 'ikigai',
+            icon: 'star',
+            title: 'Ikigai',
+            subtitle: 'O que me move',
+            what: 'O <strong>Ikigai</strong> cruza quatro blocos: o que você ama, o que faz bem, o que o mundo precisa e o que pode sustentar sua vida. Pergunta guia: <strong>onde mora a interseção entre prazer, talento, necessidade e sustento?</strong>',
+            why: 'A versão ocidental dos quatro círculos funciona como síntese vocacional: ela evita olhar só para paixão, só para dinheiro ou só para demanda externa. No Life OS, as interseções tornam a reflexão prática antes da síntese final.',
+            refs: ['Mieko Kamiya — Ikigai-ni-tsuite', 'Ken Mogi — The Little Book of Ikigai', 'Marc Winn — four-circle Ikigai adaptation', 'Self-Determination Theory — Deci & Ryan'],
+            how: [
+                'Preencha os quatro blocos base primeiro: Amo, Sou bom, Mundo precisa e Sustento.',
+                'Use as interseções como rascunho: Paixão = Amo + Sou bom; Profissão = Sou bom + Sustento; Vocação = Mundo precisa + Sustento; Missão = Amo + Mundo precisa.',
+                'Só depois escreva a síntese final do Ikigai em uma frase curta.',
+                'Transforme a síntese em Metas e hábitos: se o Ikigai não muda agenda, ele vira só uma frase bonita.'
+            ],
+            cta: { label: 'Editar Ikigai', view: 'proposito', sectionId: 'proposito-ikigai-section' }
+        },
+        {
+            id: 'visao',
+            icon: 'visibility',
+            title: 'Visão de Vida',
+            subtitle: 'Quem quero me tornar',
+            what: 'A <strong>Visão de Vida</strong> é a convergência: a vida concreta que você escolhe construir depois de Legado, Odyssey e Ikigai. Pergunta guia: <strong>dada toda essa exploração, qual é a vida real que escolho praticar nos próximos anos?</strong>',
+            why: 'Uma visão vívida aproxima o futuro do presente. Pesquisas sobre continuidade do self futuro mostram que visualizar quem você será aumenta decisões consistentes em saúde, finanças e planejamento.',
+            refs: ['Hal Hershfield — Future Self Continuity', 'Locke & Latham — Goal-Setting Theory', 'Mental simulation research'],
+            how: [
+                'Escreva a visão em áreas concretas: saúde, carreira/finanças, intelecto/espiritualidade e uma frase guia.',
+                'Use a Visão para escolher Metas de vida e OKRs trimestrais.',
+                'Revise a cada 6-12 meses; ela é uma bússola viva, não contrato rígido.',
+                'Se a semana atual não conversa com a Visão, ajuste as metas ou aceite conscientemente a exceção.'
+            ],
+            cta: { label: 'Editar Visão', view: 'proposito', sectionId: 'proposito-visao-section' }
         },
         {
             id: 'planos',
@@ -11725,16 +11844,17 @@ const app = {
         {
             id: 'woop',
             icon: 'psychology_alt',
-            title: 'WOOP e Se-entao',
-            subtitle: 'Antecipar obstaculos antes da execucao',
-            what: 'Macros, Micros e Sombras podem guardar dois campos opcionais: <strong>obstaculo previsto</strong> e <strong>plano se-entao</strong>. A ideia e transformar uma intencao vaga em uma resposta preparada para o atrito real.',
-            why: 'WOOP (Wish, Outcome, Obstacle, Plan) combina contraste mental com implementation intentions. O ponto forte e nomear o obstaculo interno ou contextual antes que ele apareca, reduzindo improviso quando a energia ja esta baixa.',
+            title: 'WOOP e Se-então',
+            subtitle: 'Antecipar obstáculos antes da execução',
+            what: 'Macros, Micros e Sombras podem guardar dois campos opcionais: <strong>obstáculo previsto</strong> e <strong>plano se-então</strong>. A ideia é transformar uma intenção vaga em uma resposta preparada para o atrito real. Nas sombras, o se-então responde à pergunta: "quando esse padrão aparecer, qual resposta eu quero treinar?".',
+            why: 'WOOP (Wish, Outcome, Obstacle, Plan) combina contraste mental com implementation intentions. O ponto forte é nomear o obstáculo interno ou contextual antes que ele apareça, reduzindo improviso quando a energia já está baixa.',
             refs: ['Gabriele Oettingen — WOOP / Mental Contrasting', 'Peter Gollwitzer — Implementation Intentions'],
             how: [
-                'Ao criar uma Macro ou Micro, abra "Antecipar obstaculo" apenas quando houver risco claro.',
-                'Escreva o obstaculo em linguagem concreta: "chegar cansado depois do trabalho", nao "falta de disciplina".',
-                'Use o formato se-entao: "Se eu chegar cansado, entao farei 5 minutos antes de decidir parar".',
-                'Na Revisao Semanal, os obstaculos das Micros planejadas aparecem como lembrete de ajuste.'
+                'Ao criar uma Macro ou Micro, abra "Antecipar obstáculo" apenas quando houver risco claro.',
+                'Escreva o obstáculo em linguagem concreta: "chegar cansado depois do trabalho", não "falta de disciplina".',
+                'Use o formato se-então: "Se eu chegar cansado, então farei 5 minutos antes de decidir parar".',
+                'Em Sombras, use o se-então para treinar uma resposta alternativa ao gatilho.',
+                'Na Revisão Semanal, obstáculos e respostas aparecem como lembrete de ajuste.'
             ],
             cta: { label: 'Abrir Planos', view: 'planos' }
         },
@@ -11814,7 +11934,7 @@ const app = {
                 'Ancore o hábito em uma rotina existente: "depois de escovar os dentes, eu...".',
                 'Comece ridiculamente pequeno: 2 minutos, não 30. Consistência > intensidade.',
                 'Conecte à identidade: "sou alguém que..." em vez de "vou fazer X".',
-                'Para sombras, defina a resposta-substituta antes do gatilho aparecer.',
+                'Para forças, transforme a prática sugerida em rotina; para sombras, transforme o se-então em resposta substituta antes do gatilho aparecer.',
                 'Use o checklist de passos para hábitos complexos; quebra em micropassos previne paralisia.'
             ],
             cta: { label: 'Criar hábito', view: 'planos' }
