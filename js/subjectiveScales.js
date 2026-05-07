@@ -41,6 +41,41 @@ function getCheckinScaleText(kind, value) {
     return maps[kind]?.[n] || '';
 }
 
+function getCheckinScaleMeta(kind, value) {
+    const n = Math.max(1, Math.min(5, Number(value) || 3));
+    const maps = {
+        sleep: {
+            1: { emoji: '😵', short: 'Muito ruim' },
+            2: { emoji: '😪', short: 'Abaixo' },
+            3: { emoji: '😐', short: 'Ok' },
+            4: { emoji: '🙂', short: 'Bom' },
+            5: { emoji: '✨', short: 'Excelente' }
+        },
+        energy: {
+            1: { emoji: '🪫', short: 'Minima' },
+            2: { emoji: '🥱', short: 'Baixa' },
+            3: { emoji: '🙂', short: 'Media' },
+            4: { emoji: '⚡', short: 'Boa' },
+            5: { emoji: '🔥', short: 'Alta' }
+        },
+        mood: {
+            1: { emoji: '😔', short: 'Muito baixo' },
+            2: { emoji: '😕', short: 'Baixo' },
+            3: { emoji: '😐', short: 'Neutro' },
+            4: { emoji: '🙂', short: 'Bom' },
+            5: { emoji: '😄', short: 'Otimo' }
+        },
+        stress: {
+            1: { emoji: '😌', short: 'Leve' },
+            2: { emoji: '🙂', short: 'Controlado' },
+            3: { emoji: '😤', short: 'Moderado' },
+            4: { emoji: '😰', short: 'Alto' },
+            5: { emoji: '🤯', short: 'Critico' }
+        }
+    };
+    return maps[kind]?.[n] || { emoji: '•', short: String(n) };
+}
+
 function renderDailyCheckinGuidance() {
     const read = (id, fallback = 3) => {
         const n = Number(document.getElementById(id)?.value);
@@ -70,5 +105,6 @@ function renderDailyCheckinGuidance() {
  */
 export function attachSubjectiveScales(app) {
     app.getCheckinScaleText        = getCheckinScaleText;
+    app.getCheckinScaleMeta        = getCheckinScaleMeta;
     app.renderDailyCheckinGuidance = renderDailyCheckinGuidance;
 }

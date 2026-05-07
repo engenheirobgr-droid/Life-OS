@@ -15,8 +15,8 @@ import {
 } from './js/firebase.js';
 
 // Phase 10 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js';
-import { attachHabitSuggestions } from './js/habitSuggestions.js';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260507-phase8-stabilization-v121';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260507-phase8-stabilization-v121';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -188,7 +188,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-phase8-gamification-revised-v120',
+    appBuildVersion: '20260507-phase8-stabilization-v121',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -8055,6 +8055,79 @@ const app = {
         return `Check-in concluído · Sono ${entry.sleepHours || 0}h · ${energyLabel} · ${moodLabel} · ${stressLabel}${emotion}`;
     },
 
+    getDailyCheckinSummaryState: function(entry) {
+        if (!entry) return { emoji: '📝', title: 'Check-in pendente', tone: 'bg-surface-container-low text-on-surface' };
+        const sleep = Number(entry.sleepHours || 0);
+        const sleepQ = Number(entry.sleepQuality || 3);
+        const energy = Number(entry.energy || 3);
+        const mood = Number(entry.mood || 3);
+        const stress = Number(entry.stress || 3);
+        const emotion = String(entry.emotion || '').toLowerCase();
+        if (sleep < 5 || sleepQ < 3) {
+            return { emoji: '😴', title: 'Base em protecao', tone: 'bg-amber-500/15 text-amber-700' };
+        }
+        if (stress >= 4 && emotion.includes('ans')) {
+            return { emoji: '🫶', title: 'Respire e reduza a carga', tone: 'bg-rose-500/12 text-rose-700' };
+        }
+        if (stress >= 4) {
+            return { emoji: '🧯', title: 'Dia para simplificar', tone: 'bg-orange-500/12 text-orange-700' };
+        }
+        if (energy <= 2) {
+            return { emoji: '🔋', title: 'Economia de energia', tone: 'bg-sky-500/12 text-sky-700' };
+        }
+        if (mood <= 2) {
+            return { emoji: '🌱', title: 'Va no gentil e no concreto', tone: 'bg-lime-500/12 text-lime-700' };
+        }
+        if (energy >= 4 && mood >= 4 && stress <= 2) {
+            return { emoji: '🚀', title: 'Janela boa para avancar', tone: 'bg-emerald-500/12 text-emerald-700' };
+        }
+        return { emoji: '🧭', title: 'Dia sob controle', tone: 'bg-primary/12 text-primary' };
+    },
+
+    renderDailyCheckinSummaryCard: function(entry) {
+        if (!entry) return 'Check-in ainda nao registrado hoje.';
+        const state = this.getDailyCheckinSummaryState(entry);
+        const sleepMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('sleep', entry.sleepQuality) : { emoji: '😴', short: `Sono ${entry.sleepQuality || 3}` };
+        const energyMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('energy', entry.energy) : { emoji: '⚡', short: `Energia ${entry.energy || 3}` };
+        const moodMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('mood', entry.mood) : { emoji: '🙂', short: `Humor ${entry.mood || 3}` };
+        const stressMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('stress', entry.stress) : { emoji: '😌', short: `Estresse ${entry.stress || 3}` };
+        const chips = [
+            { emoji: sleepMeta.emoji, label: `${entry.sleepHours || 0}h`, hint: `Sono ${sleepMeta.short}` },
+            { emoji: energyMeta.emoji, label: energyMeta.short, hint: 'Energia' },
+            { emoji: moodMeta.emoji, label: moodMeta.short, hint: 'Humor' },
+            { emoji: stressMeta.emoji, label: stressMeta.short, hint: 'Estresse' }
+        ];
+        const intention = entry.intention
+            ? `<p class="mt-2 text-[11px] text-on-surface-variant leading-relaxed"><span class="font-bold text-on-surface">Intencao:</span> ${this.escapeHtml(entry.intention)}</p>`
+            : '';
+        const emotion = entry.emotion
+            ? `<span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/20 bg-white/70 px-2.5 py-1 text-[10px] font-medium text-on-surface-variant">💭 ${this.escapeHtml(entry.emotion)}</span>`
+            : '';
+        return `
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${state.tone}">
+                        <span class="text-sm leading-none">${state.emoji}</span>
+                        ${this.escapeHtml(state.title)}
+                    </span>
+                    ${emotion}
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    ${chips.map((chip) => `
+                        <div class="inline-flex items-center gap-2 rounded-xl border border-outline-variant/15 bg-white/80 px-2.5 py-2 text-[11px] text-on-surface">
+                            <span class="text-sm leading-none">${chip.emoji}</span>
+                            <div class="leading-tight">
+                                <p class="font-bold">${this.escapeHtml(chip.label)}</p>
+                                <p class="text-[10px] text-outline">${this.escapeHtml(chip.hint)}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                ${intention}
+            </div>
+        `;
+    },
+
     getDailyCheckinRecommendationDismissKey: function(dateKey) {
         return `lifeos_checkin_rec_dismissed_${dateKey || this.getLocalDateKey()}`;
     },
@@ -8198,7 +8271,7 @@ const app = {
         const saveBtn = document.getElementById('daily-checkin-save-btn');
         if (formContent) formContent.classList.toggle('hidden', !!todayEntry && !expanded);
         if (summaryWrap) summaryWrap.classList.toggle('hidden', !todayEntry || expanded);
-        if (summaryText) summaryText.textContent = this.buildDailyCheckinSummary(todayEntry);
+        if (summaryText) summaryText.innerHTML = this.renderDailyCheckinSummaryCard(todayEntry);
         const recommendationWrap = document.getElementById('daily-checkin-recommendation');
         const recommendationText = document.getElementById('daily-checkin-recommendation-text');
         const recommendation = this.getDailyCheckinRecommendation(todayEntry);
@@ -12174,7 +12247,7 @@ const app = {
                 { icon: 'power_settings_new', label: 'Shutdown', xp: '+8 XP', note: 'conta uma vez por dia' },
                 { icon: 'edit_calendar', label: 'Planejamento semanal', xp: '+15 XP', note: 'conta uma vez por semana' },
                 { icon: 'task_alt', label: 'Micro concluída', xp: '+12 XP', note: '+6 se está no plano da semana' },
-                { icon: 'repeat', label: 'Hábito do dia', xp: '+6 XP', note: 'automáticos recebem XP de manutenção (50%)' },
+                { icon: 'repeat', label: 'Hábito concluído', xp: '+2 a +8 XP', note: '2 base, 4 se for chave, com bônus por força, sombra e se-então; automáticos recebem 50%' },
                 { icon: 'timer', label: 'Foco profundo', xp: '+10 a +40 XP', note: 'varia pela duração do bloco' },
                 { icon: 'rate_review', label: 'Revisão semanal', xp: '+25 XP', note: 'conta uma vez por semana' }
             ];
@@ -12235,7 +12308,7 @@ const app = {
                 'Em Propósito, escolha 3-5 forças do catálogo e 1-2 sombras a observar.',
                 'No card de uma força ou sombra, use "Criar hábito" para transformar prática, resposta desejada ou se-então em rotina concreta.',
                 'Ao criar um hábito manualmente, conecte-o a uma força (modo "construir") ou sombra (modo "substituir").',
-                'Hábitos de sombra valem +4 XP, hábitos de força valem +2 XP — a diferença reflete o esforço cognitivo.',
+                'Na gamificação revisada, hábitos ganham 2 XP base, +1 XP se ligados a força, +2 XP se ligados a sombra, e 4 XP base se forem Hábito-Chave.',
                 'Na Revisão Semanal, marque qual força usou e qual sombra apareceu. O painel também usa hábitos ligados para mostrar forças praticadas e sombras trabalhadas.'
             ],
             cta: { label: 'Abrir Propósito', view: 'proposito', sectionId: 'proposito-identity-section' }
