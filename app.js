@@ -187,7 +187,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-dual-identity-v113',
+    appBuildVersion: '20260507-key-habit-v114',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1394,6 +1394,132 @@ const app = {
         if (!expected.length) return 0;
         const done = expected.reduce((sum, dateKey) => sum + (this.isHabitDoneOnDate(habit, dateKey) ? 1 : 0), 0);
         return done / expected.length;
+    },
+
+    // ── Hábito-Chave ─────────────────────────────────────────────────────────
+    // Returns consecutive done-day streak ending today or yesterday.
+    getHabitConsecutiveStreak: function(habit) {
+        const today = new Date();
+        let streak = 0;
+        for (let i = 0; i < 90; i++) {
+            const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+            const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            if (this.isHabitDoneOnDate(habit, dk)) { streak++; }
+            else if (i === 0) { continue; } // allow today not yet done
+            else { break; }
+        }
+        return streak;
+    },
+
+    // Evaluates which habit best qualifies as Hábito-Chave candidate.
+    // Returns {habit, reason} or null.
+    evaluateKeyHabitCandidates: function() {
+        const habits = window.sistemaVidaState?.habits || [];
+        const today = this.getLocalDateKey();
+        const sevenDaysAgo = (() => {
+            const d = new Date(); d.setDate(d.getDate() - 7);
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        })();
+        const thirtyDaysAgo = (() => {
+            const d = new Date(); d.setDate(d.getDate() - 30);
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        })();
+        const fourteenDaysAgo = (() => {
+            const d = new Date(); d.setDate(d.getDate() - 14);
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        })();
+
+        let best = null;
+        let bestScore = 0;
+
+        habits.forEach(habit => {
+            if (!habit || habit.isKey) return; // already key
+            if (habit.keyDismissedAt && habit.keyDismissedAt >= sevenDaysAgo) return; // dismissed recently
+
+            const doneDates = this.getHabitDoneDates(habit);
+            const doneLastThirty = doneDates.filter(d => d >= thirtyDaysAgo).length;
+            const doneLastFourteen = doneDates.filter(d => d >= fourteenDaysAgo).length;
+            const streak = this.getHabitConsecutiveStreak(habit);
+            const hasIdentity = !!(this._getHabitSourceStrengthId(habit) || this._getHabitSourceShadowId(habit));
+            const hasMeta = !!habit.linkedMetaId;
+
+            let score = 0;
+            let reason = '';
+
+            if (hasIdentity && doneLastThirty >= 7) {
+                score = 30 + doneLastThirty;
+                const strengthId = this._getHabitSourceStrengthId(habit);
+                const shadowId = this._getHabitSourceShadowId(habit);
+                if (strengthId && shadowId) reason = `Praticado ${doneLastThirty}× neste mês, conectado a uma força e uma sombra da sua identidade.`;
+                else if (strengthId) reason = `Praticado ${doneLastThirty}× neste mês e conectado a uma força da sua identidade.`;
+                else reason = `Praticado ${doneLastThirty}× neste mês e conectado a uma sombra que você trabalha.`;
+            }
+            if (hasMeta && doneLastFourteen >= 5 && score < 25 + doneLastFourteen) {
+                score = 25 + doneLastFourteen;
+                reason = `Praticado ${doneLastFourteen}× nos últimos 14 dias e diretamente ligado a uma meta estratégica.`;
+            }
+            if (streak >= 14 && score < 20 + streak) {
+                score = 20 + streak;
+                reason = `${streak} dias consecutivos — parte consolidada da sua rotina.`;
+            }
+
+            if (score > 0 && score > bestScore) {
+                bestScore = score;
+                best = { habit, reason };
+            }
+        });
+
+        return best;
+    },
+
+    renderKeyHabitSuggestionBanner: function() {
+        const banner = document.getElementById('key-habit-suggestion');
+        if (!banner) return;
+        const candidate = this.evaluateKeyHabitCandidates();
+        if (!candidate) { banner.classList.add('hidden'); return; }
+
+        const { habit, reason } = candidate;
+        const titleEl = document.getElementById('key-habit-suggestion-title');
+        const reasonEl = document.getElementById('key-habit-suggestion-reason');
+        const acceptBtn = document.getElementById('key-habit-accept-btn');
+        const dismissBtn = document.getElementById('key-habit-dismiss-btn');
+
+        if (titleEl) titleEl.textContent = habit.title || '';
+        if (reasonEl) reasonEl.textContent = reason;
+        if (acceptBtn) acceptBtn.onclick = () => this.acceptKeyHabit(habit.id);
+        if (dismissBtn) dismissBtn.onclick = () => this.dismissKeyHabitSuggestion(habit.id);
+
+        banner.classList.remove('hidden');
+    },
+
+    acceptKeyHabit: function(habitId) {
+        const habit = (window.sistemaVidaState?.habits || []).find(h => h.id === habitId);
+        if (!habit) return;
+        habit.isKey = true;
+        delete habit.keyDismissedAt;
+        this.saveState(true);
+        this.showToast(`"${habit.title}" marcado como Hábito-Chave. ⭐`, 'success');
+        if (this.render.hoje) this.render.hoje();
+    },
+
+    dismissKeyHabitSuggestion: function(habitId) {
+        const habit = (window.sistemaVidaState?.habits || []).find(h => h.id === habitId);
+        if (!habit) return;
+        habit.keyDismissedAt = this.getLocalDateKey();
+        this.saveState(true);
+        const banner = document.getElementById('key-habit-suggestion');
+        if (banner) banner.classList.add('hidden');
+    },
+
+    toggleManualKeyHabit: function(habitId) {
+        const habit = (window.sistemaVidaState?.habits || []).find(h => h.id === habitId);
+        if (!habit) return;
+        habit.isKey = !habit.isKey;
+        if (!habit.isKey) delete habit.keyDismissedAt;
+        this.saveState(true);
+        const msg = habit.isKey ? `"${habit.title}" é agora seu Hábito-Chave. ⭐` : `"${habit.title}" removido dos Hábitos-Chave.`;
+        this.showToast(msg, 'success');
+        if (this.render.hoje) this.render.hoje();
     },
 
     evaluateHabitMaturity: function(habit) {
@@ -10665,6 +10791,9 @@ const app = {
             obj.stepLogs = isEditing ? (getOldItem(id, 'habits').stepLogs || {}) : {};
             obj.maturity = isEditing ? (getOldItem(id, 'habits').maturity || 'forming') : 'forming';
             obj.maturityMeta = isEditing ? (getOldItem(id, 'habits').maturityMeta || {}) : {};
+            obj.isKey = isEditing ? (!!getOldItem(id, 'habits').isKey) : false;
+            const oldDismissed = isEditing ? getOldItem(id, 'habits').keyDismissedAt : undefined;
+            if (oldDismissed) obj.keyDismissedAt = oldDismissed;
             const linkedSel = document.getElementById('habit-linked-meta');
             obj.linkedMetaId = linkedSel && linkedSel.value ? linkedSel.value : null;
             obj.sourceStrengthId = document.getElementById('habit-strength-source')?.value || '';
@@ -13140,9 +13269,14 @@ const app = {
                     const continuousChip = habit.continuous
                         ? `<span class="inline-flex items-center gap-0.5 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]">all_inclusive</span>Contínuo</span>`
                         : '';
-                    const maturityClass = habit.maturity === 'graduated'
-                        ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
-                        : 'border-transparent bg-surface-container-low';
+                    const keyChip = habit.isKey
+                        ? `<span class="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 text-amber-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]" style="font-variation-settings:'FILL' 1">key</span>Chave</span>`
+                        : '';
+                    const maturityClass = habit.isKey
+                        ? 'border-amber-500/25 bg-amber-500/[0.04]'
+                        : habit.maturity === 'graduated'
+                            ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
+                            : 'border-transparent bg-surface-container-low';
 
                     return `
                     <div id="habit-card-${habit.id}" onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer scroll-mt-24">
@@ -13151,8 +13285,10 @@ const app = {
                                 <span class="material-symbols-outlined notranslate text-primary text-2xl">${icon}</span>
                                 ${maturityChip}
                                 ${continuousChip}
+                                ${keyChip}
                             </div>
                             <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined notranslate text-[18px] opacity-0 group-hover:opacity-100 transition-all p-1 cursor-pointer ${habit.isKey ? 'text-amber-500' : 'text-outline hover:text-amber-500'}" onclick="event.stopPropagation(); window.app.toggleManualKeyHabit('${habit.id}')" title="${habit.isKey ? 'Remover Hábito-Chave' : 'Marcar como Hábito-Chave'}" style="font-variation-settings:'FILL' ${habit.isKey ? 1 : 0}">key</span>
                                 <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-primary transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
                                 <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-error transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')">delete</span>
                                 ${controlHtml}
@@ -13219,9 +13355,10 @@ const app = {
                 }
 
                 habitsContainer.innerHTML = habitsHtml;
+                app.renderKeyHabitSuggestionBanner();
             }
 
-            
+
             app.renderDailyCheckinPanel();
             app.renderDailyCompass();
             app.renderStarterJourneyCard();

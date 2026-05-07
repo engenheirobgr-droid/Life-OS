@@ -201,6 +201,19 @@
 <!-- Section: Hábitos -->
 <section id="hoje-habits-section" class="mt-8 space-y-4">
 <h3 class="font-headline text-2xl italic mb-6">Hábitos de hoje</h3>
+<!-- Key Habit Suggestion Banner (populated dynamically) -->
+<div id="key-habit-suggestion" class="hidden mb-2 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+    <span class="material-symbols-outlined notranslate text-amber-500 text-xl shrink-0 mt-0.5" style="font-variation-settings:'FILL' 1">key</span>
+    <div class="flex-1 min-w-0">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Hábito-Chave sugerido</p>
+        <p id="key-habit-suggestion-title" class="text-sm font-bold text-on-surface mt-0.5 truncate"></p>
+        <p id="key-habit-suggestion-reason" class="text-[11px] text-on-surface-variant mt-1 leading-relaxed"></p>
+        <div class="flex flex-wrap gap-2 mt-2">
+            <button id="key-habit-accept-btn" type="button" class="px-3 py-1.5 text-xs font-bold bg-amber-500 text-white rounded-lg hover:bg-amber-600 active:scale-95 transition-all">Tornar Hábito-Chave</button>
+            <button id="key-habit-dismiss-btn" type="button" class="px-3 py-1.5 text-xs font-bold text-outline hover:text-on-surface hover:bg-surface-container-high rounded-lg transition-colors">Agora não</button>
+        </div>
+    </div>
+</div>
 <div id="habits-container" class="space-y-6">
 </div>
 <!-- Identity Toast (Dynamic) -->
