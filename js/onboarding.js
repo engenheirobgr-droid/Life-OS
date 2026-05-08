@@ -316,9 +316,9 @@ onboardingSwitchAccount: async function() {
         this.onboardingSaveCurrentStep(false);
         try {
             this.teardownRealtimeSync();
-            setSignedOutIntentionally(true);
+            this.setSignedOutIntentionally(true);
             if (auth.currentUser) await signOut(auth);
-            initialAuthStatePromise = Promise.resolve(null);
+            this.resetInitialAuthState(null);
             this.persistLocalMirror(LOCAL_USER_SCOPE);
             this.showToast('Sessao encerrada. Use os campos para entrar com outra conta.', 'success');
             // Re-renderiza onboarding sem auth para mostrar form de email/senha de novo
@@ -614,9 +614,9 @@ onboardingContinueLocal: async function() {
         this.onboardingSaveCurrentStep(false);
         try {
             this.teardownRealtimeSync();
-            setSignedOutIntentionally(true);
+            this.setSignedOutIntentionally(true);
             if (auth.currentUser) await signOut(auth);
-            initialAuthStatePromise = Promise.resolve(null);
+            this.resetInitialAuthState(null);
             this.persistLocalMirror(LOCAL_USER_SCOPE);
         } catch (error) {
             console.warn('[AUTH] Falha ao alternar onboarding para modo local:', error);

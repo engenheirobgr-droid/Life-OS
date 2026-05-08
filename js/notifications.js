@@ -187,7 +187,7 @@ registerPushSubscription: async function() {
         if (!('serviceWorker' in navigator)) throw new Error('serviceWorker_unavailable');
         if (!('PushManager' in window)) throw new Error('PushManager_unavailable');
         await this.requestNotificationPermission();
-        await this.withTimeout(getAuthReady(), 8000, 'auth_ready_push');
+        await this.withTimeout(this.getAuthReady(), 8000, 'auth_ready_push');
         const publicKey = await this.getWebPushPublicKey();
         const reg = await navigator.serviceWorker.ready;
         let sub = await reg.pushManager.getSubscription();

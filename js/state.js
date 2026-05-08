@@ -327,7 +327,7 @@ loadState: async function() {
         let forceCloudLoad = false;
         try {
             try {
-                await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
+                await this.withTimeout(this.getAuthReady(), 8000, 'auth_ready');
             } catch (authError) {
                 const authGateCode = this.getAuthGateCode ? this.getAuthGateCode(authError) : '';
                 if (authGateCode) {
@@ -339,7 +339,7 @@ loadState: async function() {
                 }
             }
             const activeUserId = this.getActiveUserId();
-            forceCloudLoad = !localOnlyLoad && this.isRealAccount(auth.currentUser) && shouldForceCloudLoadForUser(activeUserId);
+            forceCloudLoad = !localOnlyLoad && this.isRealAccount(auth.currentUser) && this.shouldForceCloudLoadForUser(activeUserId);
             const rawLocal = this.localGet('lifeos_state_backup');
             const rawCore = this.localGet('lifeos_state_backup_core');
             if (!forceCloudLoad) {
@@ -358,7 +358,7 @@ loadState: async function() {
                 if (docSnap.exists()) {
                     console.log("Estado encontrado na Nuvem, mesclando dados...");
                     cloudData = docSnap.data();
-                    if (forceCloudLoad) clearForceCloudLoadForUser(activeUserId);
+                    if (forceCloudLoad) this.clearForceCloudLoadForUser(activeUserId);
                 } else {
                     console.log("Primeiro acesso deste usuário. Documento será criado após normalização.");
                     shouldSeedCloudAfterLoad = !forceCloudLoad;
@@ -508,7 +508,7 @@ saveState: function(silent = true) {
             this.updateSyncBadge('syncing');
             try {
                 try {
-                    await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
+                    await this.withTimeout(this.getAuthReady(), 8000, 'auth_ready');
                 } catch (authError) {
                     const authGateCode = this.getAuthGateCode ? this.getAuthGateCode(authError) : '';
                     if (authGateCode) {
@@ -584,7 +584,7 @@ factoryReset: async function() {
     
       // ── Estado base virgem ──────────────────────────────────────────────────
       const baseState = {
-        stateSchemaVersion: CURRENT_STATE_SCHEMA_VERSION,
+        stateSchemaVersion: this.getCurrentStateSchemaVersion ? this.getCurrentStateSchemaVersion() : 2,
         profile: {
           name: 'Viajante', level: 1, xp: 0, values: [], legacy: '',
           ikigai: { missao: '', vocacao: '', paixao: '', profissao: '', love: '', good: '', need: '', paid: '', sintese: '', sinteseResumo: '' },
@@ -807,7 +807,7 @@ factoryReset: async function() {
         try { if (this._realtimeSyncUnsub) { this._realtimeSyncUnsub(); this._realtimeSyncUnsub = null; } } catch (_) {}
         try { if (this._imagesSyncUnsub) { this._imagesSyncUnsub(); this._imagesSyncUnsub = null; } } catch (_) {}
         // ── Grava o novo estado SEM merge ──
-        await getAuthReady();
+        await this.getAuthReady();
         const stateRef = this.getStateDocRef();
         const newCloudState = JSON.parse(JSON.stringify(window.sistemaVidaState));
         delete newCloudState.profile?.avatarUrl;
