@@ -13,12 +13,21 @@
 </style>
 
 <main class="pt-6 lg:pt-10 pb-20 px-6 max-w-7xl mx-auto">
-<section class="mb-8">
-    <p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Conexões & Compartilhamento</p>
+<header class="mb-8">
+    <div class="flex items-center gap-3 mb-4">
+        <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Conexões & Compartilhamento</p>
+        <div class="relative inline-flex group">
+            <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-md border border-outline-variant/30 text-[11px] font-bold italic text-outline hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors" aria-label="Informações sobre Área Social">
+                i
+            </button>
+            <div class="hidden group-hover:block group-focus-within:block absolute left-0 top-7 z-30 w-[calc(100vw-3rem)] max-w-72 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-4 text-xs text-on-surface-variant leading-relaxed shadow-xl">
+                Gerencie convites, conexões, desafios e seu perfil público em um espaço próprio.
+            </div>
+        </div>
+    </div>
     <h2 class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Área Social</h2>
-    <p class="mt-4 max-w-2xl text-sm text-outline leading-relaxed">Gerencie convites, conexões, desafios e seu perfil público em um espaço próprio.</p>
     <div class="mt-6 h-px w-24 bg-primary"></div>
-</section>
+</header>
 
 <!-- Tabs Navigation -->
 <nav class="flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0 mb-8">

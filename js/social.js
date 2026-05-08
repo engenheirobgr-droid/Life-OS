@@ -1162,10 +1162,6 @@ export function attachSocial(app) {
                 button.onclick = () => this.setSocialFeatureEnabled(!enabled);
             }
 
-            const openButton = document.getElementById('social-open-page-btn');
-            if (openButton) {
-                openButton.classList.toggle('hidden', !enabled);
-            }
 
             const badge = document.getElementById('social-access-badge');
             if (badge) {
