@@ -48,6 +48,19 @@
     <div>
         <div id="social-connections-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
     </div>
+    
+    <details class="group rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden mt-4">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Reações recentes</p>
+                <p class="text-xs text-on-surface-variant mt-1">Histórico das reações que você enviou para conexões.</p>
+            </div>
+            <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
+        </summary>
+        <div class="px-4 pb-4">
+            <div id="social-reactions-list" class="space-y-2"></div>
+        </div>
+    </details>
 </section>
 
 <!-- TAB 2: Convites e Desafios -->
@@ -59,6 +72,9 @@
         </div>
         <span class="material-symbols-outlined notranslate text-primary text-2xl">local_fire_department</span>
     </div>
+
+    <div id="social-pending-invites-list" class="space-y-3 mb-4 empty:hidden"></div>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
             <div class="flex items-center justify-between gap-3">
@@ -94,19 +110,6 @@
         <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3 mt-4">Desafios ativos</p>
         <div id="social-challenges-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
     </div>
-    
-    <details class="group rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden mt-4">
-        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
-            <div>
-                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Reações recentes</p>
-                <p class="text-xs text-on-surface-variant mt-1">Histórico das reações que você enviou para conexões.</p>
-            </div>
-            <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
-        </summary>
-        <div class="px-4 pb-4">
-            <div id="social-reactions-list" class="space-y-2"></div>
-        </div>
-    </details>
 </section>
 
 <!-- TAB 3: Privacidade -->

@@ -50,6 +50,15 @@ export function attachSocial(app) {
 
             if (this.currentView === 'social' && this.render?.social) {
                 this.render.social();
+                
+                // Fetch profiles with a 1-minute throttle to avoid excess reads
+                const now = Date.now();
+                if (!this._lastSocialFetchAt || (now - this._lastSocialFetchAt > 60000)) {
+                    this._lastSocialFetchAt = now;
+                    this.refreshSocialConnectionProfiles().then(() => {
+                        if (this.currentView === 'social') this.renderSocialConnectionsPanel();
+                    }).catch(() => {});
+                }
                 return;
             }
             if (this.currentView === 'perfil') this.renderSocialAccessPanel();
@@ -1200,8 +1209,13 @@ export function attachSocial(app) {
 
             const profiles = window.sistemaVidaState.profile.social.connectionProfiles || {};
             const connectionsMap = this.normalizeSocialConnectionMap(window.sistemaVidaState.profile.social.connections || {});
-            const ids = Object.keys(connectionsMap).filter((uid) => connectionsMap[uid]?.status !== 'removed');
+            const allIds = Object.keys(connectionsMap).filter((uid) => connectionsMap[uid]?.status !== 'removed');
+            const activeIds = allIds.filter(uid => connectionsMap[uid]?.status === 'active');
+            const pendingIncomingIds = allIds.filter(uid => connectionsMap[uid]?.status === 'pending_incoming');
+            const pendingOutgoingIds = allIds.filter(uid => connectionsMap[uid]?.status === 'pending_outgoing');
+
             const list = document.getElementById('social-connections-list');
+            const pendingList = document.getElementById('social-pending-invites-list');
             const metricsEl = document.getElementById('social-collective-metrics');
             const challengesEl = document.getElementById('social-challenges-list');
             const reactionsEl = document.getElementById('social-reactions-list');
@@ -1222,15 +1236,13 @@ export function attachSocial(app) {
             }
 
             if (list) {
-                list.innerHTML = ids.length ? ids.map((uid) => {
+                list.innerHTML = activeIds.length ? activeIds.map((uid) => {
                     const conn = connectionsMap[uid] || {};
                     const profile = profiles[uid] || { uid, visible: false };
-                    const isActive = conn.status === 'active';
-                    const visible = isActive && profile.visible !== false && profile.sharingEnabled !== false;
+                    const isActive = true;
+                    const visible = profile.visible !== false && profile.sharingEnabled !== false;
                     const name = visible ? (profile.name || 'Companheiro') : 'Companheiro privado';
-                    const activeLabel = !isActive
-                        ? (conn.status === 'pending_outgoing' ? 'aguardando aceite' : 'convite pendente')
-                        : (visible && profile.lastActiveAt ? 'ativo hoje' : 'visibilidade indisponivel');
+                    const activeLabel = visible && profile.lastActiveAt ? 'ativo hoje' : 'visibilidade indisponivel';
                     const achievements = Array.isArray(profile.achievements) ? profile.achievements : [];
                     const dimensions = profile.dimensionLevels && typeof profile.dimensionLevels === 'object'
                         ? Object.entries(profile.dimensionLevels)
@@ -1329,6 +1341,47 @@ export function attachSocial(app) {
                         ${achievementsSection}
                     </div>`;
                 }).join('') : '<p class="text-xs text-outline italic">Nenhum companheiro conectado ainda.</p>';
+            }
+
+            if (pendingList) {
+                let pendingHtml = '';
+                if (pendingIncomingIds.length || pendingOutgoingIds.length) {
+                    pendingHtml += '<p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-1 mt-2">Convites pendentes</p>';
+                    
+                    pendingIncomingIds.forEach(uid => {
+                         const profile = profiles[uid] || { uid };
+                         const name = profile.name || 'Companheiro';
+                         pendingHtml += `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
+                             <div class="flex items-center justify-between gap-3 min-w-0">
+                                 <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(name)}</p>
+                                    <p class="text-[10px] text-outline uppercase tracking-wider">Convite recebido</p>
+                                 </div>
+                                 <div class="flex gap-2 shrink-0">
+                                     <button type="button" onclick="window.app.handleSocialInviteDecision('manual_${this.escapeHtml(uid)}','${this.escapeHtml(uid)}',true)" class="h-8 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Aceitar</button>
+                                     <button type="button" onclick="window.app.handleSocialInviteDecision('manual_${this.escapeHtml(uid)}','${this.escapeHtml(uid)}',false)" class="h-8 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider hover:bg-outline/10 transition-colors">Recusar</button>
+                                 </div>
+                             </div>
+                         </div>`;
+                    });
+                    
+                    pendingOutgoingIds.forEach(uid => {
+                         const profile = profiles[uid] || { uid };
+                         const name = profile.name || 'Companheiro';
+                         pendingHtml += `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+                             <div class="flex items-center justify-between gap-3 min-w-0">
+                                 <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(name)}</p>
+                                    <p class="text-[10px] text-outline uppercase tracking-wider">Aguardando aceite</p>
+                                 </div>
+                                 <button type="button" onclick="window.app.removeSocialConnection('${this.escapeHtml(uid)}')" class="text-outline hover:text-error transition-colors" title="Cancelar convite">
+                                     <span class="material-symbols-outlined notranslate text-[18px]">cancel</span>
+                                 </button>
+                             </div>
+                         </div>`;
+                    });
+                }
+                pendingList.innerHTML = pendingHtml;
             }
 
             const metrics = this.getSocialCollectiveMetrics();
