@@ -16,11 +16,11 @@ const SOCIAL_FIELD_LABELS = {
     name: 'Nome',
     avatar: 'Avatar',
     level: 'Nivel',
-    xp: 'XP total',
-    dimensionLevels: 'Niveis por dimensao',
-    achievements: 'Conquistas',
-    keyHabitsDone: 'Habitos-chave feitos',
-    streak: 'Dias em sequencia',
+    xp: 'XP pessoal',
+    dimensionLevels: 'Areas com nivel',
+    achievements: 'Conquistas recentes',
+    keyHabitsDone: 'Habitos-chave concluidos',
+    streak: 'Dias em sequencia pessoal',
     lastActiveAt: 'Ultima atividade'
 };
 
@@ -199,8 +199,14 @@ export function attachSocial(app) {
                 if (!(key in payload)) return;
                 let value = payload[key];
                 if (key === 'avatar') value = payload.avatarUrl ? 'Imagem de perfil' : 'Sem avatar';
-                else if (Array.isArray(value)) value = value.length ? `${value.length} conquista(s)` : 'Nenhuma ainda';
-                else if (value && typeof value === 'object') value = `${Object.keys(value).length} dimensao(oes)`;
+                else if (Array.isArray(value)) value = value.length ? `${value.length} conquista(s) recente(s)` : 'Nenhuma ainda';
+                else if (key === 'dimensionLevels' && value && typeof value === 'object') {
+                    const areas = Object.entries(value)
+                        .map(([name, item]) => `${name}: nv. ${item?.level || 1}`)
+                        .slice(0, 4);
+                    const extra = Object.keys(value).length > areas.length ? ` +${Object.keys(value).length - areas.length}` : '';
+                    value = areas.length ? `${areas.join(', ')}${extra}` : 'Sem niveis ainda';
+                } else if (value && typeof value === 'object') value = `${Object.keys(value).length} item(ns)`;
                 else if (key === 'lastActiveAt') value = 'Agora';
                 rows.push({ key, label, value: String(value ?? '') });
             });
@@ -350,13 +356,13 @@ export function attachSocial(app) {
                     inviteCode: code
                 };
                 await setDoc(this.getSocialConnectionsDocRef(userId), {
-                    [`connections.${otherUid}`]: myConnection,
+                    connections: { [otherUid]: myConnection },
                     updatedAt: serverTimestamp()
                 }, { merge: true });
                 let reciprocalOk = true;
                 try {
                     await setDoc(this.getSocialConnectionsDocRef(otherUid), {
-                        [`connections.${userId}`]: otherConnection,
+                        connections: { [userId]: otherConnection },
                         updatedAt: serverTimestamp()
                     }, { merge: true });
                 } catch (reciprocalErr) {
@@ -387,11 +393,11 @@ export function attachSocial(app) {
             const removed = { uid: target, status: 'removed', removedAt: new Date().toISOString() };
             const reciprocal = { uid: userId, status: 'removed', removedAt: new Date().toISOString() };
             await setDoc(this.getSocialConnectionsDocRef(userId), {
-                [`connections.${target}`]: removed,
+                connections: { [target]: removed },
                 updatedAt: serverTimestamp()
             }, { merge: true });
             await setDoc(this.getSocialConnectionsDocRef(target), {
-                [`connections.${userId}`]: reciprocal,
+                connections: { [userId]: reciprocal },
                 updatedAt: serverTimestamp()
             }, { merge: true });
             window.sistemaVidaState.profile.social.connections[target] = removed;
@@ -729,9 +735,9 @@ export function attachSocial(app) {
                             </button>
                         </div>
                         <div class="grid grid-cols-3 gap-2 text-center">
-                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">XP</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(xpToday)}</p></div>
-                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Chave</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.keyHabitsDone || 0)}</p></div>
-                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Sequencia</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.streak || 0)} dia(s)</p></div>
+                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">XP pessoal</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(xpToday)}</p></div>
+                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Habitos-chave</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.keyHabitsDone || 0)}</p></div>
+                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Seq. pessoal</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.streak || 0)} dia(s)</p></div>
                         </div>
                         <div class="flex flex-wrap gap-2">
                             ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}')" class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[13px]">${cfg.icon}</span>${cfg.label}</button>`).join('')}
@@ -745,7 +751,7 @@ export function attachSocial(app) {
             if (metricsEl) {
                 metricsEl.innerHTML = [
                     ['Pessoas', metrics.people],
-                    ['XP coletivo', metrics.collectiveXp],
+                    ['XP do grupo', metrics.collectiveXp],
                     ['Habitos-chave', metrics.keyHabitsDone],
                     ['Dias em sequencia', `${metrics.sharedStreak} dia(s)`]
                 ].map(([label, value]) => `<div class="rounded-lg bg-surface-container-low p-3"><p class="text-[10px] text-outline uppercase tracking-wider">${label}</p><p class="text-sm font-bold text-on-surface">${value}</p></div>`).join('');

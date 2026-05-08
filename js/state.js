@@ -536,6 +536,13 @@ saveState: function(silent = true) {
                 cloudSnapshot._lastUpdatedAt = cloudTs;
                 cloudSnapshot._pendingLocalChanges = false;
                 await this.withTimeout(setDoc(stateRef, cloudSnapshot, { merge: true }), 10000, 'firestore_setDoc');
+                if (this.syncSocialPublicProfileIfNeeded) {
+                    try {
+                        await this.syncSocialPublicProfileIfNeeded();
+                    } catch (socialErr) {
+                        console.warn('[SOCIAL] Falha ao atualizar perfil publico apos save:', socialErr);
+                    }
+                }
                 console.log("Sincronização com Nuvem: Concluída.");
                 this.lastCloudSyncOk = true;
                 this.updateSyncBadge('ok');
