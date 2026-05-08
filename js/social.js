@@ -520,11 +520,11 @@ export function attachSocial(app) {
         renderAppNotificationCenter: function() {
             const notificationsEl = document.getElementById('app-notifications-panel-list');
             const badgeEls = Array.from(document.querySelectorAll('[data-app-notification-badge]'));
-            if (!notificationsEl) return;
             this.ensureSocialState();
             if (this.isSocialFeatureEnabled()) {
                 this.startSocialInboxListener();
             }
+            if (!notificationsEl) return;
             const notifications = Array.isArray(window.sistemaVidaState.profile.social.notifications?.items)
                 ? window.sistemaVidaState.profile.social.notifications.items.slice(0, 24)
                 : [];

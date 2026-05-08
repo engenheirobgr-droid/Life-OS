@@ -1,20 +1,20 @@
-﻿const CACHE_NAME = 'sistema-vida-v147';
+﻿const CACHE_NAME = 'sistema-vida-v148';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260508-ui-improvements-v147',
-    './js/habitSuggestions.js?v=20260508-ui-improvements-v147',
-    './js/subjectiveScales.js?v=20260508-ui-improvements-v147',
-    './js/notifications.js?v=20260508-ui-improvements-v147',
-    './js/cadence.js?v=20260508-ui-improvements-v147',
-    './js/onboarding.js?v=20260508-ui-improvements-v147',
-    './js/identity.js?v=20260508-ui-improvements-v147',
-    './js/habits.js?v=20260508-ui-improvements-v147',
-    './js/state.js?v=20260508-ui-improvements-v147',
-    './js/render.js?v=20260508-ui-improvements-v147',
-    './js/planning.js?v=20260508-ui-improvements-v147',
-    './js/gamification.js?v=20260508-ui-improvements-v147',
-    './js/social.js?v=20260508-ui-improvements-v147',
+    './app.js?v=20260508-ui-improvements-v148',
+    './js/habitSuggestions.js?v=20260508-ui-improvements-v148',
+    './js/subjectiveScales.js?v=20260508-ui-improvements-v148',
+    './js/notifications.js?v=20260508-ui-improvements-v148',
+    './js/cadence.js?v=20260508-ui-improvements-v148',
+    './js/onboarding.js?v=20260508-ui-improvements-v148',
+    './js/identity.js?v=20260508-ui-improvements-v148',
+    './js/habits.js?v=20260508-ui-improvements-v148',
+    './js/state.js?v=20260508-ui-improvements-v148',
+    './js/render.js?v=20260508-ui-improvements-v148',
+    './js/planning.js?v=20260508-ui-improvements-v148',
+    './js/gamification.js?v=20260508-ui-improvements-v148',
+    './js/social.js?v=20260508-ui-improvements-v148',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
@@ -58,7 +58,7 @@ self.addEventListener('message', (event) => {
     }
 });
 
-// ── Push Notifications ────────────────────────────────────────────────────────
+// -- Push Notifications --------------------------------------------------------
 // Recebe mensagens push do servidor (requer backend + VAPID keys para funcionar).
 // Para notificações locais sem backend, o app usa registration.showNotification()
 // diretamente a partir do contexto da página.
@@ -120,6 +120,7 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+
 
 
 
