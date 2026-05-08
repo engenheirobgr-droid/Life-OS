@@ -1211,8 +1211,12 @@ export function attachSocial(app) {
             const connectionsMap = this.normalizeSocialConnectionMap(window.sistemaVidaState.profile.social.connections || {});
             const allIds = Object.keys(connectionsMap).filter((uid) => connectionsMap[uid]?.status !== 'removed');
             const activeIds = allIds.filter(uid => connectionsMap[uid]?.status === 'active');
-            const pendingIncomingIds = allIds.filter(uid => connectionsMap[uid]?.status === 'pending_incoming');
             const pendingOutgoingIds = allIds.filter(uid => connectionsMap[uid]?.status === 'pending_outgoing');
+
+            const notifications = Array.isArray(window.sistemaVidaState.profile.social.notifications?.items)
+                ? window.sistemaVidaState.profile.social.notifications.items
+                : [];
+            const pendingIncomingEvents = notifications.filter(item => item.type === 'invite_request' && item.status === 'pending');
 
             const list = document.getElementById('social-connections-list');
             const pendingList = document.getElementById('social-pending-invites-list');
@@ -1345,12 +1349,13 @@ export function attachSocial(app) {
 
             if (pendingList) {
                 let pendingHtml = '';
-                if (pendingIncomingIds.length || pendingOutgoingIds.length) {
+                if (pendingIncomingEvents.length || pendingOutgoingIds.length) {
                     pendingHtml += '<p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-1 mt-2">Convites pendentes</p>';
                     
-                    pendingIncomingIds.forEach(uid => {
+                    pendingIncomingEvents.forEach(evt => {
+                         const uid = evt.sourceUid;
                          const profile = profiles[uid] || { uid };
-                         const name = profile.name || 'Companheiro';
+                         const name = profile.name || evt.sourceName || 'Companheiro';
                          pendingHtml += `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
                              <div class="flex items-center justify-between gap-3 min-w-0">
                                  <div class="min-w-0 flex-1">
@@ -1358,8 +1363,8 @@ export function attachSocial(app) {
                                     <p class="text-[10px] text-outline uppercase tracking-wider">Convite recebido</p>
                                  </div>
                                  <div class="flex gap-2 shrink-0">
-                                     <button type="button" onclick="window.app.handleSocialInviteDecision('manual_${this.escapeHtml(uid)}','${this.escapeHtml(uid)}',true)" class="h-8 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Aceitar</button>
-                                     <button type="button" onclick="window.app.handleSocialInviteDecision('manual_${this.escapeHtml(uid)}','${this.escapeHtml(uid)}',false)" class="h-8 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider hover:bg-outline/10 transition-colors">Recusar</button>
+                                     <button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(evt.id)}','${this.escapeHtml(uid)}',true)" class="h-8 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Aceitar</button>
+                                     <button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(evt.id)}','${this.escapeHtml(uid)}',false)" class="h-8 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider hover:bg-outline/10 transition-colors">Recusar</button>
                                  </div>
                              </div>
                          </div>`;
