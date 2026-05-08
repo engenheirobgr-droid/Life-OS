@@ -163,6 +163,7 @@ export function attachSocial(app) {
                     payload
                 }, { merge: false });
             }
+            this.renderAppNotificationCenter();
             if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
         },
 
@@ -181,6 +182,7 @@ export function attachSocial(app) {
             if (userId && userId !== LOCAL_USER_SCOPE && !auth.currentUser?.isAnonymous) {
                 try { await setDoc(this.getSocialInboxDocRef(userId, id), { readAt: nowIso, status: 'read' }, { merge: true }); } catch (_) {}
             }
+            this.renderAppNotificationCenter();
             if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
         },
 
@@ -202,6 +204,7 @@ export function attachSocial(app) {
                     try { await setDoc(this.getSocialInboxDocRef(userId, entry.id), { readAt: nowIso, status: 'read' }, { merge: true }); } catch (_) {}
                 }));
             }
+            this.renderAppNotificationCenter();
             if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
         },
 
@@ -273,14 +276,58 @@ export function attachSocial(app) {
                 .filter((item) => item.id || item.title);
         },
 
+        getSocialMilestonesPreview: function(visibility = {}) {
+            const gamification = window.sistemaVidaState.gamification || {};
+            const recentEvents = Array.isArray(gamification.recentEvents) ? gamification.recentEvents : [];
+            const milestones = [];
+            if (visibility.xp !== false || visibility.level !== false) {
+                recentEvents
+                    .filter((event) => ['micro_complete', 'habit_complete', 'deep_work', 'weekly_review', 'daily_checkin', 'daily_diary', 'daily_shutdown'].includes(event.type))
+                    .slice(0, 3)
+                    .forEach((event, idx) => {
+                        const labelMap = {
+                            micro_complete: 'Micro concluida',
+                            habit_complete: 'Habito concluido',
+                            deep_work: 'Bloco de foco concluido',
+                            weekly_review: 'Revisao semanal feita',
+                            daily_checkin: 'Check-in realizado',
+                            daily_diary: 'Diario registrado',
+                            daily_shutdown: 'Fechamento do dia feito'
+                        };
+                        milestones.push({
+                            id: event.sourceId || `${event.type}_${idx}_${event.at || ''}`,
+                            type: event.type,
+                            title: labelMap[event.type] || 'Movimento registrado',
+                            subtitle: event.title || event.dimension || '',
+                            createdAt: event.at || ''
+                        });
+                    });
+            }
+            if (visibility.achievements !== false) {
+                this.getSocialAchievementsPreview().slice(0, 3).forEach((achievement) => {
+                    milestones.push({
+                        id: `achievement_${achievement.id}`,
+                        type: 'achievement',
+                        title: achievement.title || 'Conquista desbloqueada',
+                        subtitle: 'Conquista recente',
+                        createdAt: achievement.unlockedAt || ''
+                    });
+                });
+            }
+            return milestones
+                .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+                .slice(0, 5);
+        },
+
         buildPublicProfilePayload: function() {
             this.ensureSocialState();
             const state = window.sistemaVidaState;
             const profile = state.profile || {};
             const social = profile.social || {};
             const visibility = social.visibility || DEFAULT_SOCIAL_VISIBILITY;
-            const gamification = state.gamification || {};
+            const gamification = this.ensureGamificationState ? this.ensureGamificationState() : (state.gamification || {});
             const totalXp = Math.max(0, Number(gamification.totalXp || profile.xp) || 0);
+            const overallLevel = this.getOverallLevelProgress ? this.getOverallLevelProgress(gamification).level : (this.getLevelFromXp ? this.getLevelFromXp(totalXp) : Math.max(1, Number(profile.level) || 1));
             const payload = {
                 schemaVersion: 1,
                 userId: this.getActiveUserId(),
@@ -289,13 +336,14 @@ export function attachSocial(app) {
             };
             if (visibility.name) payload.name = String(profile.name || 'Usuario');
             if (visibility.avatar) payload.avatarUrl = String(profile.avatarUrl || '');
-            if (visibility.level) payload.level = this.getLevelFromXp ? this.getLevelFromXp(totalXp) : Math.max(1, Number(profile.level) || 1);
+            if (visibility.level) payload.level = overallLevel;
             if (visibility.xp) payload.xp = totalXp;
             if (visibility.dimensionLevels) payload.dimensionLevels = this.getSocialDimensionLevels();
             if (visibility.achievements) payload.achievements = this.getSocialAchievementsPreview();
             if (visibility.keyHabitsDone) payload.keyHabitsDone = this.getSocialKeyHabitsDoneCount();
             if (visibility.streak) payload.streak = this.getSocialBestStreak();
             if (visibility.lastActiveAt) payload.lastActiveAt = new Date().toISOString();
+            if (visibility.xp || visibility.level || visibility.achievements) payload.recentMilestones = this.getSocialMilestonesPreview(visibility);
             return payload;
         },
 
@@ -333,6 +381,25 @@ export function attachSocial(app) {
                 ritual: { group: 'app', title: 'Rito importante', icon: 'event_repeat', tone: 'text-primary' }
             };
             return meta[key] || { group: 'app', title: 'Atualizacao do app', icon: 'notifications', tone: 'text-primary' };
+        },
+
+        openAppNotificationsPanel: function() {
+            const modal = document.getElementById('app-notifications-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            this.renderAppNotificationCenter();
+        },
+
+        closeAppNotificationsPanel: function() {
+            const modal = document.getElementById('app-notifications-modal');
+            if (modal) modal.classList.add('hidden');
+        },
+
+        toggleAppNotificationsPanel: function() {
+            const modal = document.getElementById('app-notifications-modal');
+            if (!modal) return;
+            if (modal.classList.contains('hidden')) this.openAppNotificationsPanel();
+            else this.closeAppNotificationsPanel();
         },
 
         formatSocialTimestamp: function(value) {
@@ -374,15 +441,19 @@ export function attachSocial(app) {
         },
 
         renderAppNotificationCenter: function() {
-            const notificationsEl = document.getElementById('app-notifications-list');
-            const badge = document.getElementById('app-notifications-badge');
-            if (!notificationsEl || !badge) return;
+            const notificationsEl = document.getElementById('app-notifications-panel-list');
+            const badgeEls = Array.from(document.querySelectorAll('[data-app-notification-badge]'));
+            if (!notificationsEl) return;
             this.ensureSocialState();
             const notifications = Array.isArray(window.sistemaVidaState.profile.social.notifications?.items)
                 ? window.sistemaVidaState.profile.social.notifications.items.slice(0, 24)
                 : [];
             const unread = notifications.filter((item) => !item.readAt).length;
-            badge.textContent = unread > 0 ? `${unread} nova(s)` : 'Sem novidades';
+            badgeEls.forEach((badge) => {
+                badge.textContent = unread > 9 ? '9+' : String(unread);
+                badge.classList.toggle('hidden', unread === 0);
+                badge.classList.toggle('inline-flex', unread > 0);
+            });
 
             const grouped = { app: [], social: [] };
             notifications.forEach((item) => {
@@ -405,10 +476,11 @@ export function attachSocial(app) {
                     }
                 } else if (item.type === 'reaction') {
                     const cfg = SOCIAL_REACTIONS[item.reactionType] || SOCIAL_REACTIONS.strength;
-                    body = `${item.sourceName || 'Usuario'} enviou ${cfg.label.toLowerCase()} para voce.`;
+                    const targetCopy = item.payload?.contextTitle ? ` em "${item.payload.contextTitle}"` : '';
+                    body = `${item.sourceName || 'Usuario'} enviou ${cfg.label.toLowerCase()} para voce${targetCopy}.`;
                     if (item.sourceUid) {
                         actions = `<div class="flex flex-wrap gap-2 pt-2">
-                            ${Object.entries(SOCIAL_REACTIONS).map(([type, cfgAction]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(item.sourceUid)}','${type}')" class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[13px]">${cfgAction.icon}</span>${cfgAction.label}</button>`).join('')}
+                            ${Object.entries(SOCIAL_REACTIONS).map(([type, cfgAction]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(item.sourceUid)}','${type}','${encodeURIComponent(String(item.payload?.contextType || ''))}','${encodeURIComponent(String(item.payload?.contextId || ''))}','${encodeURIComponent(String(item.payload?.contextTitle || ''))}')" class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[13px]">${cfgAction.icon}</span>${cfgAction.label}</button>`).join('')}
                         </div>`;
                     }
                 }
@@ -530,6 +602,7 @@ export function attachSocial(app) {
                     items.push({ id: itemDoc.id, ...itemDoc.data() });
                 });
                 window.sistemaVidaState.profile.social.notifications.items = items;
+                this.renderAppNotificationCenter();
                 if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
             }, (err) => {
                 console.warn('[SOCIAL] Listener da central social falhou:', err);
@@ -721,10 +794,13 @@ export function attachSocial(app) {
             window.sistemaVidaState.profile.social.connectionProfiles = profiles;
         },
 
-        sendSocialReaction: async function(targetUid, reactionType) {
+        sendSocialReaction: async function(targetUid, reactionType, contextType = '', contextId = '', contextTitle = '') {
             this.ensureSocialState();
             const uid = String(targetUid || '');
             const type = SOCIAL_REACTIONS[reactionType] ? reactionType : 'strength';
+            const safeDecode = (value) => {
+                try { return decodeURIComponent(String(value || '')); } catch (_) { return String(value || ''); }
+            };
             if (!uid) return;
             const conn = this.normalizeSocialConnectionMap(window.sistemaVidaState.profile.social.connections || {})[uid];
             if (!conn || conn.status !== 'active') {
@@ -736,6 +812,9 @@ export function attachSocial(app) {
                 targetUid: uid,
                 type,
                 label: SOCIAL_REACTIONS[type].label,
+                contextType: safeDecode(contextType),
+                contextId: safeDecode(contextId),
+                contextTitle: safeDecode(contextTitle),
                 sentAt: new Date().toISOString()
             };
             const reactions = window.sistemaVidaState.profile.social.reactions;
@@ -751,7 +830,12 @@ export function attachSocial(app) {
                 reactionType: type,
                 status: 'new',
                 readAt: '',
-                createdAt: reaction.sentAt
+                createdAt: reaction.sentAt,
+                payload: {
+                    contextType: reaction.contextType,
+                    contextId: reaction.contextId,
+                    contextTitle: reaction.contextTitle
+                }
             }, { merge: false });
             await this.persistSocialEngagement();
             this.renderSocialConnectionsPanel();
@@ -1042,6 +1126,7 @@ export function attachSocial(app) {
                     const dimensions = profile.dimensionLevels && typeof profile.dimensionLevels === 'object'
                         ? Object.entries(profile.dimensionLevels)
                         : [];
+                    const recentMilestones = Array.isArray(profile.recentMilestones) ? profile.recentMilestones : [];
                     const infoRows = [];
                     if (profile.xp !== undefined) infoRows.push(['XP pessoal', Number(profile.xp || 0)]);
                     if (profile.keyHabitsDone !== undefined) infoRows.push(['Habitos-chave', Number(profile.keyHabitsDone || 0)]);
@@ -1113,6 +1198,31 @@ export function attachSocial(app) {
                             </div>
                         </details>`
                         : '';
+                    const milestonesSection = visible && recentMilestones.length
+                        ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest" open>
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
+                                <div>
+                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Momentos recentes</p>
+                                    <p class="text-xs text-on-surface-variant">Apoie algo concreto que essa pessoa acabou de mover.</p>
+                                </div>
+                                <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
+                            </summary>
+                            <div class="px-3 pb-3 space-y-2">
+                                ${recentMilestones.map((milestone) => `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-high p-3 space-y-2">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-bold text-on-surface">${this.escapeHtml(milestone.title || 'Movimento recente')}</p>
+                                            ${milestone.subtitle ? `<p class="mt-0.5 text-[11px] text-on-surface-variant">${this.escapeHtml(milestone.subtitle)}</p>` : ''}
+                                        </div>
+                                        <span class="text-[10px] text-outline shrink-0">${this.escapeHtml(this.formatSocialTimestamp(milestone.createdAt))}</span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}','${encodeURIComponent(String(milestone.type || ''))}','${encodeURIComponent(String(milestone.id || ''))}','${encodeURIComponent(String(milestone.title || ''))}')" class="inline-flex items-center gap-1.5 rounded-full bg-primary/5 border border-primary/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[14px]">${cfg.icon}</span>${cfg.label}</button>`).join('')}
+                                    </div>
+                                </div>`).join('')}
+                            </div>
+                        </details>`
+                        : '';
                     return `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3 min-w-0">
@@ -1129,6 +1239,7 @@ export function attachSocial(app) {
                             </button>
                         </div>
                         ${summaryRows}
+                        ${milestonesSection}
                         ${identitySection}
                         ${achievementsSection}
                         ${reactionsSection}

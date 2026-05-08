@@ -1264,6 +1264,11 @@
                 onclick="app.openFlowModal()" title="Flow — Fluxo de trabalho">
                 <span class="material-symbols-outlined notranslate text-[20px]">account_tree</span>
             </button>
+            <button class="relative w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-outline transition-colors"
+                onclick="app.toggleAppNotificationsPanel()" title="Central do app">
+                <span class="material-symbols-outlined notranslate text-[20px]">notifications</span>
+                <span data-app-notification-badge class="hidden absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-on-primary text-[9px] font-bold items-center justify-center">0</span>
+            </button>
             <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-outline transition-colors"
                 onclick="app.flowNavigate('perfil','manual-guide-section')" title="Manual do app">
                 <span class="material-symbols-outlined notranslate text-[20px]">menu_book</span>
@@ -1344,6 +1349,11 @@
                 <button class="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary border border-primary/25 hover:bg-primary/15 transition-all"
                 onclick="app.openFlowModal()" title="Flow">
                 <span class="material-symbols-outlined notranslate">account_tree</span>
+                </button>
+                <button class="relative w-10 h-10 rounded-full flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container transition-all"
+                    onclick="app.toggleAppNotificationsPanel()" title="Central do app">
+                    <span class="material-symbols-outlined notranslate">notifications</span>
+                    <span data-app-notification-badge class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-on-primary text-[9px] font-bold items-center justify-center">0</span>
                 </button>
                 <button class="w-10 h-10 rounded-full flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container transition-all"
                     onclick="app.flowNavigate('perfil','manual-guide-section')" title="Manual do app">
@@ -2692,7 +2702,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260508-social-stability-v132"></script>
+    <script type="module" src="app.js?v=20260508-social-stability-v133"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -2767,6 +2777,21 @@
             <!-- Content -->
             <div id="flow-modal-content" class="flex-1 overflow-y-auto px-5 py-5 space-y-1">
             </div>
+        </div>
+    </div>
+    <div id="app-notifications-modal" class="fixed inset-0 z-[9050] hidden" aria-modal="true" role="dialog">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="app.closeAppNotificationsPanel()"></div>
+        <div class="absolute inset-x-4 top-20 mx-auto w-auto max-w-xl rounded-3xl border border-outline-variant/20 bg-surface-container-lowest shadow-2xl lg:inset-x-auto lg:right-8 lg:top-8 lg:w-[30rem]">
+            <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-outline-variant/10">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Central do app</p>
+                    <h3 class="font-headline text-xl font-bold text-on-surface">Eventos e interacoes</h3>
+                </div>
+                <button onclick="app.closeAppNotificationsPanel()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container text-outline hover:text-on-surface transition-colors">
+                    <span class="material-symbols-outlined notranslate text-xl">close</span>
+                </button>
+            </div>
+            <div id="app-notifications-panel-list" class="max-h-[70vh] overflow-y-auto px-5 py-4 space-y-4"></div>
         </div>
     </div>
 </body>

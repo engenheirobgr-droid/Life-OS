@@ -738,7 +738,7 @@ renderGamificationProfile: function() {
         if (!panel) return;
         const state = window.sistemaVidaState;
         const gamification = this.ensureGamificationState();
-        const totalProgress = this.getLevelProgress(gamification.totalXp);
+        const totalProgress = this.getOverallLevelProgress(gamification);
 
         const totalLevelEl = document.getElementById('gamification-total-level');
         const totalXpEl = document.getElementById('gamification-total-xp');

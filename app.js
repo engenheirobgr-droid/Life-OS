@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-stability-v132';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-stability-v132';
-import { attachNotifications } from './js/notifications.js?v=20260508-social-stability-v132';
-import { attachCadence } from './js/cadence.js?v=20260508-social-stability-v132';
-import { attachOnboarding } from './js/onboarding.js?v=20260508-social-stability-v132';
-import { attachIdentity } from './js/identity.js?v=20260508-social-stability-v132';
-import { attachHabits } from './js/habits.js?v=20260508-social-stability-v132';
-import { attachStateModule } from './js/state.js?v=20260508-social-stability-v132';
-import { attachRenderModule } from './js/render.js?v=20260508-social-stability-v132';
-import { attachPlanningModule } from './js/planning.js?v=20260508-social-stability-v132';
-import { attachGamificationModule } from './js/gamification.js?v=20260508-social-stability-v132';
-import { attachSocial } from './js/social.js?v=20260508-social-stability-v132';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-stability-v133';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-stability-v133';
+import { attachNotifications } from './js/notifications.js?v=20260508-social-stability-v133';
+import { attachCadence } from './js/cadence.js?v=20260508-social-stability-v133';
+import { attachOnboarding } from './js/onboarding.js?v=20260508-social-stability-v133';
+import { attachIdentity } from './js/identity.js?v=20260508-social-stability-v133';
+import { attachHabits } from './js/habits.js?v=20260508-social-stability-v133';
+import { attachStateModule } from './js/state.js?v=20260508-social-stability-v133';
+import { attachRenderModule } from './js/render.js?v=20260508-social-stability-v133';
+import { attachPlanningModule } from './js/planning.js?v=20260508-social-stability-v133';
+import { attachGamificationModule } from './js/gamification.js?v=20260508-social-stability-v133';
+import { attachSocial } from './js/social.js?v=20260508-social-stability-v133';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260508-social-stability-v132',
+    appBuildVersion: '20260508-social-stability-v133',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -864,6 +864,34 @@ getDimensionIdentity: function(dimension, level) {
             pct: Math.max(0, Math.min(100, (current / Math.max(1, next)) * 100))
         };
     },
+    getGamificationDimensionKeys: function() {
+        const stateKeys = Object.keys(window.sistemaVidaState?.dimensions || {});
+        return stateKeys.length ? stateKeys : Object.keys(this.getDimensionProgressionCatalog?.() || {});
+    },
+    getOverallLevelSourceXp: function(gamification = window.sistemaVidaState?.gamification || {}) {
+        const dimKeys = this.getGamificationDimensionKeys();
+        if (!dimKeys.length) return 0;
+        const total = dimKeys.reduce((sum, dim) => sum + Math.max(0, Number(gamification.dimensionXp?.[dim]) || 0), 0);
+        return total / dimKeys.length;
+    },
+    getOverallLevelProgress: function(gamification = window.sistemaVidaState?.gamification || {}) {
+        return this.getLevelProgress(this.getOverallLevelSourceXp(gamification));
+    },
+    allocateGamificationXp: function(xp, primaryDimension = '') {
+        const amount = Math.max(0, Number(xp) || 0);
+        const dimKeys = this.getGamificationDimensionKeys();
+        if (!amount || !dimKeys.length) return {};
+        if (primaryDimension && dimKeys.includes(primaryDimension)) {
+            return { [primaryDimension]: amount };
+        }
+        const base = Math.floor(amount / dimKeys.length);
+        let remainder = amount % dimKeys.length;
+        return dimKeys.reduce((acc, dim) => {
+            acc[dim] = base + (remainder > 0 ? 1 : 0);
+            if (remainder > 0) remainder -= 1;
+            return acc;
+        }, {});
+    },
     getDimensionEvolution: function(dimension, level) {
         const identity = this.getDimensionIdentity(dimension, level);
         const catalog = this.getDimensionProgressionCatalog();
@@ -904,6 +932,7 @@ getDimensionIdentity: function(dimension, level) {
         const state = window.sistemaVidaState;
         if (!state.gamification || typeof state.gamification !== 'object') state.gamification = {};
         const gamification = state.gamification;
+        const dimKeys = this.getGamificationDimensionKeys();
         if (!gamification.dimensionXp || typeof gamification.dimensionXp !== 'object' || Array.isArray(gamification.dimensionXp)) {
             gamification.dimensionXp = {};
         }
@@ -914,10 +943,17 @@ getDimensionIdentity: function(dimension, level) {
         if (!Array.isArray(gamification.recentEvents)) gamification.recentEvents = [];
 
         const legacyXp = Math.max(0, Number(state.profile?.xp) || 0);
-        gamification.totalXp = Math.max(0, Number(gamification.totalXp) || 0, legacyXp);
-        Object.keys(gamification.dimensionXp).forEach((dim) => {
+        if (!Object.keys(gamification.dimensionXp).length && legacyXp > 0 && dimKeys.length) {
+            const seeded = this.allocateGamificationXp(legacyXp, '');
+            gamification.dimensionXp = { ...seeded };
+        }
+        dimKeys.forEach((dim) => {
             gamification.dimensionXp[dim] = Math.max(0, Number(gamification.dimensionXp[dim]) || 0);
         });
+        Object.keys(gamification.dimensionXp).forEach((dim) => {
+            if (!dimKeys.includes(dim)) delete gamification.dimensionXp[dim];
+        });
+        gamification.totalXp = dimKeys.reduce((sum, dim) => sum + (Number(gamification.dimensionXp[dim]) || 0), 0);
         gamification.achievements = gamification.achievements
             .filter(item => item && item.id)
             .filter((item, idx, arr) => arr.findIndex(a => a.id === item.id) === idx);
@@ -925,7 +961,7 @@ getDimensionIdentity: function(dimension, level) {
 
         if (!state.profile) state.profile = {};
         state.profile.xp = gamification.totalXp;
-        state.profile.level = this.getLevelFromXp(gamification.totalXp);
+        state.profile.level = this.getOverallLevelProgress(gamification).level;
         return gamification;
     },
     getMonthKey: function(dateStr) {
@@ -2451,6 +2487,9 @@ renderProfileChrome: function() {
             }
             if (this.render[viewName]) {
                 try { this.render[viewName](); } catch (e) { console.warn('render error:', e); }
+            }
+            if (this.renderAppNotificationCenter) {
+                try { this.renderAppNotificationCenter(); } catch (_) {}
             }
             if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
             resolve();

@@ -150,12 +150,15 @@ awardGamification: function(eventType, payload = {}) {
 
         const dimension = payload.dimension || '';
         const totalBefore = gamification.totalXp;
+        const overallBefore = this.getOverallLevelProgress(gamification).level;
         const dimensionBefore = Math.max(0, Number(gamification.dimensionXp[dimension]) || 0);
+        const allocation = this.allocateGamificationXp(xp, dimension);
         gamification.events[key] = {
             type: eventType,
             at: new Date().toISOString(),
             xp,
             dimension,
+            dimensionShares: allocation,
             sourceType: payload.sourceType || '',
             sourceId: payload.sourceId || '',
             sourceStrengthId: payload.sourceStrengthId || '',
@@ -164,13 +167,16 @@ awardGamification: function(eventType, payload = {}) {
             habitMode: payload.habitMode || '',
             maturity: payload.maturity || ''
         };
-        gamification.totalXp += xp;
-        if (dimension) gamification.dimensionXp[dimension] = dimensionBefore + xp;
+        Object.entries(allocation).forEach(([dim, amount]) => {
+            gamification.dimensionXp[dim] = Math.max(0, Number(gamification.dimensionXp[dim]) || 0) + (Number(amount) || 0);
+        });
+        gamification.totalXp = this.getGamificationDimensionKeys().reduce((sum, dim) => sum + (Number(gamification.dimensionXp[dim]) || 0), 0);
         gamification.recentEvents.unshift({
             type: eventType,
             title: payload.title || '',
             xp,
             dimension,
+            dimensionShares: allocation,
             sourceType: payload.sourceType || '',
             sourceId: payload.sourceId || '',
             sourceStrengthId: payload.sourceStrengthId || '',
@@ -253,7 +259,8 @@ awardGamification: function(eventType, payload = {}) {
                 }
             });
         }
-        if (this.getLevelFromXp(totalBefore) < 5 && this.getLevelFromXp(gamification.totalXp) >= 5) {
+        const overallAfter = this.getOverallLevelProgress(gamification).level;
+        if (overallBefore < 5 && overallAfter >= 5) {
             const total = this.unlockAchievement('total_level_5');
             if (total) unlocked.push(total);
         }
@@ -303,16 +310,16 @@ awardGamification: function(eventType, payload = {}) {
 
         if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
         window.sistemaVidaState.profile.xp = gamification.totalXp;
-        window.sistemaVidaState.profile.level = this.getLevelFromXp(gamification.totalXp);
+        window.sistemaVidaState.profile.level = overallAfter;
         return {
             xp,
             dimension,
             sourceTitle: payload.title || '',
             eventType,
             identity: this.getDimensionIdentity(dimension, dimLevelAfter),
-            totalLevel: this.getLevelFromXp(gamification.totalXp),
+            totalLevel: overallAfter,
             dimensionLevel: dimLevelAfter || null,
-            totalLeveledUp: this.getLevelFromXp(totalBefore) < this.getLevelFromXp(gamification.totalXp),
+            totalLeveledUp: overallBefore < overallAfter,
             dimensionLeveledUp: !!(dimension && dimLevelBefore < dimLevelAfter),
             tierPromotion,
             achievementsUnlocked: unlocked
