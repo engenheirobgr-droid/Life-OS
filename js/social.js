@@ -665,13 +665,15 @@ export function attachSocial(app) {
             const userId = this.getActiveUserId();
             if (!userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return;
             try {
-                this._socialConnectionsUnsub = onSnapshot(this.getSocialConnectionsDocRef(userId), (snap) => {
+                this._socialConnectionsUnsub = onSnapshot(this.getSocialConnectionsDocRef(userId), async (snap) => {
                     this.ensureSocialState();
                     const data = snap.exists() ? snap.data() : {};
                     const connectionsRaw = data.connections && typeof data.connections === 'object' ? data.connections : {};
                     const connections = this.normalizeSocialConnectionMap(connectionsRaw);
                     window.sistemaVidaState.profile.social.connections = connections;
-                    this.refreshSocialConnectionProfiles().catch(() => {});
+                    try {
+                        await this.refreshSocialConnectionProfiles();
+                    } catch (_) {}
                     this.refreshSocialConnectionsSurface();
                 }, (err) => {
                     console.warn('[SOCIAL] Listener de conexoes falhou:', err);
@@ -742,6 +744,8 @@ export function attachSocial(app) {
                         
                         if (changed) {
                             await setDoc(this.getSocialConnectionsDocRef(userId), { connections: meConnections, updatedAt: serverTimestamp() }, { merge: true });
+                            window.sistemaVidaState.profile.social.connections = meConnections;
+                            await this.refreshSocialConnectionProfiles();
                         }
                     } catch (err) {
                         console.warn('[SOCIAL] Erro ao processar eventos automaticos da inbox:', err);
@@ -962,7 +966,7 @@ export function attachSocial(app) {
         refreshSocialConnectionProfiles: async function() {
             this.ensureSocialState();
             const ids = this.getSocialActiveConnectionIds();
-            const profiles = window.sistemaVidaState.profile.social.connectionProfiles || {};
+            const profiles = {};
             await Promise.all(ids.map(async (uid) => {
                 try {
                     const snap = await getDoc(this.getSocialPublicProfileDocRef(uid));
@@ -1409,26 +1413,42 @@ export function attachSocial(app) {
                         </details>`
                         : '';
 
-                    const myReactions = Array.isArray(window.sistemaVidaState.profile.social.reactions?.sent) ? window.sistemaVidaState.profile.social.reactions.sent : [];
-                    const reactionsToThisUser = myReactions.filter(r => r.targetUid === uid).slice(0, 3);
-                    const reactionsSection = reactionsToThisUser.length
+                    const sentReactions = Array.isArray(window.sistemaVidaState.profile.social.reactions?.sent)
+                        ? window.sistemaVidaState.profile.social.reactions.sent
+                            .filter((reaction) => reaction.targetUid === uid)
+                            .map((reaction) => ({ direction: 'sent', at: reaction.sentAt || '', reaction }))
+                        : [];
+                    const receivedReactions = Array.isArray(window.sistemaVidaState.profile.social.reactions?.received)
+                        ? window.sistemaVidaState.profile.social.reactions.received
+                            .filter((reaction) => reaction.sourceUid === uid)
+                            .map((reaction) => ({ direction: 'received', at: reaction.receivedAt || '', reaction }))
+                        : [];
+                    const connectionReactions = [...sentReactions, ...receivedReactions]
+                        .sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))
+                        .slice(0, 4);
+                    const reactionsSection = connectionReactions.length
                         ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest mt-3">
                             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
                                 <div>
-                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Reacoes enviadas</p>
-                                    <p class="text-xs text-on-surface-variant">${reactionsToThisUser.length} reacao(oes) recente(s)</p>
+                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Historico de reacoes</p>
+                                    <p class="text-xs text-on-surface-variant">${connectionReactions.length} reacao(oes) recente(s)</p>
                                 </div>
                                 <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
                             </summary>
                             <div class="px-3 pb-3 space-y-2">
-                                ${reactionsToThisUser.map(reaction => {
+                                ${connectionReactions.map((entry) => {
+                                    const reaction = entry.reaction || {};
                                     const cfg = SOCIAL_REACTIONS[reaction.type] || SOCIAL_REACTIONS.strength;
+                                    const directionCopy = entry.direction === 'sent' ? 'Enviada por voce' : 'Recebida de volta';
                                     return `<div class="flex items-center justify-between gap-3 rounded-xl bg-surface-container-high px-3 py-2">
                                         <div class="flex items-center gap-2 min-w-0">
                                             <span class="material-symbols-outlined notranslate text-primary text-[16px]">${cfg.icon}</span>
-                                            <span class="text-xs text-on-surface truncate">${this.escapeHtml(cfg.label)}</span>
+                                            <div class="min-w-0">
+                                                <p class="text-xs text-on-surface truncate">${this.escapeHtml(cfg.label)}</p>
+                                                <p class="text-[10px] text-outline truncate">${this.escapeHtml(directionCopy)}</p>
+                                            </div>
                                         </div>
-                                        <span class="text-[10px] text-outline shrink-0">${this.escapeHtml(String(reaction.sentAt || '').slice(0, 10))}</span>
+                                        <span class="text-[10px] text-outline shrink-0">${this.escapeHtml(String(entry.at || '').slice(0, 10))}</span>
                                     </div>`;
                                 }).join('')}
                             </div>
