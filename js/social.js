@@ -372,7 +372,7 @@ export function attachSocial(app) {
             if (visibility.keyHabitsDone) payload.keyHabitsDone = this.getSocialKeyHabitsDoneCount();
             if (visibility.streak) payload.streak = this.getSocialBestStreak();
             if (visibility.lastActiveAt) payload.lastActiveAt = new Date().toISOString();
-            if (visibility.xp || visibility.level || visibility.achievements) payload.recentHighlights = this.getSocialHighlightsPreview(visibility);
+            // recentHighlights removidos do payload público para evitar contagem incorreta no perfil da conexão
             return payload;
         },
 
@@ -1273,23 +1273,15 @@ export function attachSocial(app) {
                             </div>
                         </details>`
                         : '';
-                    const achievementItems = [
-                        ...achievements.map((ach) => ({
+                    // Fix #3: mostra só conquistas reais no card da conexão — sem misturar highlights
+                    const achievementItems = achievements
+                        .map((ach) => ({
                             id: `achievement_${ach.id || ach.title || ''}`,
                             type: 'achievement',
                             title: ach.title || 'Conquista',
                             subtitle: 'Conquista recente',
                             createdAt: ach.unlockedAt || ''
-                        })),
-                        ...recentHighlights.map((item) => ({
-                            id: item.id || `${item.type || 'highlight'}_${item.createdAt || ''}`,
-                            type: item.type || 'highlight',
-                            sourceType: item.sourceType || '',
-                            title: item.title || 'Destaque recente',
-                            subtitle: item.subtitle || 'Movimento recente',
-                            createdAt: item.createdAt || ''
                         }))
-                    ]
                         .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
                         .slice(0, 6);
                     const achievementsSection = visible && (Array.isArray(profile.achievements) || recentHighlights.length)
@@ -1297,7 +1289,7 @@ export function attachSocial(app) {
                             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
                                 <div>
                                     <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Conquistas</p>
-                                    <p class="text-xs text-on-surface-variant">${achievementItems.length ? `${achievementItems.length} conquista(s) ou destaque(s)` : 'Sem conquistas publicadas'}</p>
+                                    <p class="text-xs text-on-surface-variant">${achievementItems.length ? `${achievementItems.length} conquista(s) recente(s)` : 'Sem conquistas publicadas'}</p>
                                 </div>
                                 <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
                             </summary>

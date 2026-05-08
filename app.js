@@ -1069,48 +1069,8 @@ getDimensionIdentity: function(dimension, level) {
                 }
             });
         }
-        if (this.broadcastSocialActivityToConnections) {
-            awards.forEach((award) => {
-                const sourceTitle = award.sourceTitle || ({
-                    micro_complete: 'Micro concluida',
-                    habit_complete: 'Habito concluido',
-                    deep_work: 'Bloco de foco concluido',
-                    weekly_review: 'Revisao semanal feita',
-                    daily_checkin: 'Check-in realizado',
-                    daily_diary: 'Diario registrado',
-                    daily_shutdown: 'Fechamento do dia feito'
-                })[award.eventType] || 'Movimento registrado';
-                if (['micro_complete', 'habit_complete', 'deep_work', 'weekly_review'].includes(award.eventType)) {
-                    this.broadcastSocialActivityToConnections({
-                        contextType: award.eventType,
-                        contextId: award.sourceTitle || award.eventType,
-                        contextTitle: sourceTitle,
-                        summary: sourceTitle,
-                        subtitle: award.dimension && award.identity ? `${award.dimension}: ${award.identity.title}` : ''
-                    }).catch(() => {});
-                }
-                if (award.tierPromotion || award.dimensionLeveledUp || award.totalLeveledUp) {
-                    this.broadcastSocialActivityToConnections({
-                        contextType: 'level_up',
-                        contextId: `level_${award.totalLevel}_${award.dimension || 'system'}`,
-                        contextTitle: `Subiu para o nivel ${award.totalLevel}`,
-                        summary: `Novo nivel ${award.totalLevel}`,
-                        subtitle: award.dimension && award.identity ? `${award.dimension}: ${award.identity.title}` : ''
-                    }).catch(() => {});
-                }
-                if (Array.isArray(award.achievementsUnlocked) && award.achievementsUnlocked.length) {
-                    award.achievementsUnlocked.slice(0, 2).forEach((achievement) => {
-                        this.broadcastSocialActivityToConnections({
-                            contextType: 'achievement',
-                            contextId: achievement.id || achievement.title || 'achievement',
-                            contextTitle: achievement.title || 'Conquista desbloqueada',
-                            summary: achievement.title || 'Conquista desbloqueada',
-                            subtitle: 'Conquista recente'
-                        }).catch(() => {});
-                    });
-                }
-            });
-        }
+        // Nota: o broadcast social é gerenciado pelo showGamificationToast() em gamification.js
+        // para evitar emissão dupla e garantir que apenas o evento final processado seja enviado.
         const levelAward = awards.find(item => item.tierPromotion)
             || awards.find(item => item.dimensionLeveledUp)
             || awards.find(item => item.totalLeveledUp)

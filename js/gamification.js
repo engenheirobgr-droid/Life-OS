@@ -391,13 +391,22 @@ showGamificationToast: function(result) {
             }
         }
         if (this.broadcastSocialActivityToConnections) {
+            const genericLabel = ({
+                micro_complete: 'Micro concluida',
+                habit_complete: 'Habito concluido',
+                deep_work: 'Bloco de foco concluido',
+                weekly_review: 'Revisao semanal feita',
+                daily_checkin: 'Check-in realizado',
+                daily_diary: 'Diario registrado',
+                daily_shutdown: 'Fechamento do dia feito'
+            })[result.eventType] || 'Movimento registrado';
             const socialEvents = [];
             if (['micro_complete', 'habit_complete', 'deep_work', 'weekly_review'].includes(result.eventType)) {
                 socialEvents.push({
                     contextType: result.eventType,
-                    contextId: result.sourceTitle || result.eventType,
-                    contextTitle: whyPrefix || 'Movimento registrado',
-                    summary: whyPrefix || 'Movimento registrado',
+                    contextId: result.eventType, // sem nome pessoal no ID
+                    contextTitle: genericLabel,   // apenas label genérico
+                    summary: genericLabel,
                     subtitle: result.dimension && result.identity ? `${result.dimension}: ${result.identity.title}` : ''
                 });
             }
