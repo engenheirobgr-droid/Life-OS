@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-stability-v133';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-stability-v133';
-import { attachNotifications } from './js/notifications.js?v=20260508-social-stability-v133';
-import { attachCadence } from './js/cadence.js?v=20260508-social-stability-v133';
-import { attachOnboarding } from './js/onboarding.js?v=20260508-social-stability-v133';
-import { attachIdentity } from './js/identity.js?v=20260508-social-stability-v133';
-import { attachHabits } from './js/habits.js?v=20260508-social-stability-v133';
-import { attachStateModule } from './js/state.js?v=20260508-social-stability-v133';
-import { attachRenderModule } from './js/render.js?v=20260508-social-stability-v133';
-import { attachPlanningModule } from './js/planning.js?v=20260508-social-stability-v133';
-import { attachGamificationModule } from './js/gamification.js?v=20260508-social-stability-v133';
-import { attachSocial } from './js/social.js?v=20260508-social-stability-v133';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-stability-v134';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-stability-v134';
+import { attachNotifications } from './js/notifications.js?v=20260508-social-stability-v134';
+import { attachCadence } from './js/cadence.js?v=20260508-social-stability-v134';
+import { attachOnboarding } from './js/onboarding.js?v=20260508-social-stability-v134';
+import { attachIdentity } from './js/identity.js?v=20260508-social-stability-v134';
+import { attachHabits } from './js/habits.js?v=20260508-social-stability-v134';
+import { attachStateModule } from './js/state.js?v=20260508-social-stability-v134';
+import { attachRenderModule } from './js/render.js?v=20260508-social-stability-v134';
+import { attachPlanningModule } from './js/planning.js?v=20260508-social-stability-v134';
+import { attachGamificationModule } from './js/gamification.js?v=20260508-social-stability-v134';
+import { attachSocial } from './js/social.js?v=20260508-social-stability-v134';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260508-social-stability-v133',
+    appBuildVersion: '20260508-social-stability-v134',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1066,6 +1066,48 @@ getDimensionIdentity: function(dimension, level) {
                         icon: first.icon || 'military_tech',
                         message: first.title || 'Conquista desbloqueada'
                     }).catch(() => {});
+                }
+            });
+        }
+        if (this.broadcastSocialActivityToConnections) {
+            awards.forEach((award) => {
+                const sourceTitle = award.sourceTitle || ({
+                    micro_complete: 'Micro concluida',
+                    habit_complete: 'Habito concluido',
+                    deep_work: 'Bloco de foco concluido',
+                    weekly_review: 'Revisao semanal feita',
+                    daily_checkin: 'Check-in realizado',
+                    daily_diary: 'Diario registrado',
+                    daily_shutdown: 'Fechamento do dia feito'
+                })[award.eventType] || 'Movimento registrado';
+                if (['micro_complete', 'habit_complete', 'deep_work', 'weekly_review'].includes(award.eventType)) {
+                    this.broadcastSocialActivityToConnections({
+                        contextType: award.eventType,
+                        contextId: award.sourceTitle || award.eventType,
+                        contextTitle: sourceTitle,
+                        summary: sourceTitle,
+                        subtitle: award.dimension && award.identity ? `${award.dimension}: ${award.identity.title}` : ''
+                    }).catch(() => {});
+                }
+                if (award.tierPromotion || award.dimensionLeveledUp || award.totalLeveledUp) {
+                    this.broadcastSocialActivityToConnections({
+                        contextType: 'level_up',
+                        contextId: `level_${award.totalLevel}_${award.dimension || 'system'}`,
+                        contextTitle: `Subiu para o nivel ${award.totalLevel}`,
+                        summary: `Novo nivel ${award.totalLevel}`,
+                        subtitle: award.dimension && award.identity ? `${award.dimension}: ${award.identity.title}` : ''
+                    }).catch(() => {});
+                }
+                if (Array.isArray(award.achievementsUnlocked) && award.achievementsUnlocked.length) {
+                    award.achievementsUnlocked.slice(0, 2).forEach((achievement) => {
+                        this.broadcastSocialActivityToConnections({
+                            contextType: 'achievement',
+                            contextId: achievement.id || achievement.title || 'achievement',
+                            contextTitle: achievement.title || 'Conquista desbloqueada',
+                            summary: achievement.title || 'Conquista desbloqueada',
+                            subtitle: 'Conquista recente'
+                        }).catch(() => {});
+                    });
                 }
             });
         }
@@ -4417,9 +4459,9 @@ ensureNotesState: function() {
         const stressMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('stress', entry.stress) : { emoji: '😌', short: `Estresse ${entry.stress || 3}` };
         const chips = [
             { emoji: sleepMeta.emoji, title: 'Sono', value: `${entry.sleepHours || 0}h`, detail: sleepMeta.short },
-            { emoji: energyMeta.emoji, title: 'Energia', value: energyMeta.short, detail: 'Hoje' },
-            { emoji: moodMeta.emoji, title: 'Humor', value: moodMeta.short, detail: 'Agora' },
-            { emoji: stressMeta.emoji, title: 'Estresse', value: stressMeta.short, detail: 'Carga' }
+            { emoji: energyMeta.emoji, title: 'Energia', value: energyMeta.short, detail: '' },
+            { emoji: moodMeta.emoji, title: 'Humor', value: moodMeta.short, detail: '' },
+            { emoji: stressMeta.emoji, title: 'Estresse', value: stressMeta.short, detail: '' }
         ];
         const intention = entry.intention
             ? `<p class="mt-2 text-[11px] text-on-surface-variant leading-relaxed"><span class="font-bold text-on-surface">Intencao:</span> ${this.escapeHtml(entry.intention)}</p>`
@@ -4438,14 +4480,14 @@ ensureNotesState: function() {
                 </div>
                 <div class="mt-3 grid grid-cols-2 gap-2.5">
                     ${chips.map((chip) => `
-                        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high px-3 py-2.5 text-on-surface min-w-0 min-h-[82px]">
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="text-base leading-none">${chip.emoji}</span>
-                                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline text-right">${this.escapeHtml(chip.title)}</p>
+                        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high px-3 py-2.5 text-on-surface min-w-0 min-h-[78px]">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base leading-none shrink-0">${chip.emoji}</span>
+                                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">${this.escapeHtml(chip.title)}</p>
                             </div>
-                            <div class="mt-3 leading-tight min-w-0">
-                                <p class="text-sm font-bold text-on-surface break-words">${this.escapeHtml(chip.value)}</p>
-                                <p class="mt-1 text-[10px] text-outline">${this.escapeHtml(chip.detail)}</p>
+                            <div class="mt-2 leading-tight min-w-0">
+                                <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(chip.value)}</p>
+                                ${chip.detail ? `<p class="mt-0.5 text-[10px] text-outline truncate">${this.escapeHtml(chip.detail)}</p>` : ''}
                             </div>
                         </div>
                     `).join('')}

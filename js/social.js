@@ -25,9 +25,9 @@ const SOCIAL_FIELD_LABELS = {
 };
 
 const SOCIAL_REACTIONS = {
-    strength: { label: 'Forca', icon: 'workspace_premium' },
-    congrats: { label: 'Parabens', icon: 'celebration' },
-    together: { label: 'Vamos junto', icon: 'group' }
+    strength: { label: 'Forca', icon: 'workspace_premium', emoji: '💪' },
+    congrats: { label: 'Parabens', icon: 'celebration', emoji: '🎉' },
+    together: { label: 'Vamos junto', icon: 'group', emoji: '🤝' }
 };
 
 const SOCIAL_CHALLENGES = {
@@ -276,10 +276,10 @@ export function attachSocial(app) {
                 .filter((item) => item.id || item.title);
         },
 
-        getSocialMilestonesPreview: function(visibility = {}) {
+        getSocialHighlightsPreview: function(visibility = {}) {
             const gamification = window.sistemaVidaState.gamification || {};
             const recentEvents = Array.isArray(gamification.recentEvents) ? gamification.recentEvents : [];
-            const milestones = [];
+            const highlights = [];
             if (visibility.xp !== false || visibility.level !== false) {
                 recentEvents
                     .filter((event) => ['micro_complete', 'habit_complete', 'deep_work', 'weekly_review', 'daily_checkin', 'daily_diary', 'daily_shutdown'].includes(event.type))
@@ -294,29 +294,19 @@ export function attachSocial(app) {
                             daily_diary: 'Diario registrado',
                             daily_shutdown: 'Fechamento do dia feito'
                         };
-                        milestones.push({
+                        highlights.push({
                             id: event.sourceId || `${event.type}_${idx}_${event.at || ''}`,
-                            type: event.type,
+                            type: 'highlight',
+                            sourceType: event.type,
                             title: labelMap[event.type] || 'Movimento registrado',
                             subtitle: event.title || event.dimension || '',
                             createdAt: event.at || ''
                         });
                     });
             }
-            if (visibility.achievements !== false) {
-                this.getSocialAchievementsPreview().slice(0, 3).forEach((achievement) => {
-                    milestones.push({
-                        id: `achievement_${achievement.id}`,
-                        type: 'achievement',
-                        title: achievement.title || 'Conquista desbloqueada',
-                        subtitle: 'Conquista recente',
-                        createdAt: achievement.unlockedAt || ''
-                    });
-                });
-            }
-            return milestones
+            return highlights
                 .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
-                .slice(0, 5);
+                .slice(0, 3);
         },
 
         buildPublicProfilePayload: function() {
@@ -343,7 +333,7 @@ export function attachSocial(app) {
             if (visibility.keyHabitsDone) payload.keyHabitsDone = this.getSocialKeyHabitsDoneCount();
             if (visibility.streak) payload.streak = this.getSocialBestStreak();
             if (visibility.lastActiveAt) payload.lastActiveAt = new Date().toISOString();
-            if (visibility.xp || visibility.level || visibility.achievements) payload.recentMilestones = this.getSocialMilestonesPreview(visibility);
+            if (visibility.xp || visibility.level || visibility.achievements) payload.recentHighlights = this.getSocialHighlightsPreview(visibility);
             return payload;
         },
 
@@ -373,6 +363,7 @@ export function attachSocial(app) {
             const meta = {
                 invite_request: { group: 'social', title: 'Convite recebido', icon: 'mail', tone: 'text-primary' },
                 reaction: { group: 'social', title: 'Reacao recebida', icon: 'favorite', tone: 'text-primary' },
+                social_activity: { group: 'social', title: 'Conquista da conexao', icon: 'emoji_events', tone: 'text-primary' },
                 challenge: { group: 'social', title: 'Desafio social', icon: 'flag', tone: 'text-primary' },
                 xp_gain: { group: 'app', title: 'XP ganho', icon: 'bolt', tone: 'text-primary' },
                 level_up: { group: 'app', title: 'Novo nivel', icon: 'trending_up', tone: 'text-primary' },
@@ -381,6 +372,42 @@ export function attachSocial(app) {
                 ritual: { group: 'app', title: 'Rito importante', icon: 'event_repeat', tone: 'text-primary' }
             };
             return meta[key] || { group: 'app', title: 'Atualizacao do app', icon: 'notifications', tone: 'text-primary' };
+        },
+
+        broadcastSocialActivityToConnections: async function(activity = {}) {
+            this.ensureSocialState();
+            if (!this.isSocialFeatureEnabled()) return false;
+            const social = window.sistemaVidaState.profile.social || {};
+            if (!social.sharingEnabled) return false;
+            const sourceUid = this.getActiveUserId();
+            if (!sourceUid || sourceUid === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return false;
+            const connectionIds = this.getSocialActiveConnectionIds();
+            if (!connectionIds.length) return false;
+            const createdAt = new Date().toISOString();
+            await Promise.all(connectionIds.map(async (targetUid) => {
+                const eventId = `social_activity_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                try {
+                    await setDoc(this.getSocialInboxDocRef(targetUid, eventId), {
+                        type: 'social_activity',
+                        sourceUid,
+                        sourceName: window.sistemaVidaState.profile?.name || 'Usuario',
+                        targetUid,
+                        status: 'new',
+                        readAt: '',
+                        createdAt,
+                        payload: {
+                            contextType: String(activity.contextType || ''),
+                            contextId: String(activity.contextId || ''),
+                            contextTitle: String(activity.contextTitle || ''),
+                            summary: String(activity.summary || ''),
+                            subtitle: String(activity.subtitle || '')
+                        }
+                    }, { merge: false });
+                } catch (err) {
+                    console.warn('[SOCIAL] Falha ao notificar conexao sobre atividade:', err);
+                }
+            }));
+            return true;
         },
 
         openAppNotificationsPanel: function() {
@@ -480,7 +507,16 @@ export function attachSocial(app) {
                     body = `${item.sourceName || 'Usuario'} enviou ${cfg.label.toLowerCase()} para voce${targetCopy}.`;
                     if (item.sourceUid) {
                         actions = `<div class="flex flex-wrap gap-2 pt-2">
-                            ${Object.entries(SOCIAL_REACTIONS).map(([type, cfgAction]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(item.sourceUid)}','${type}','${encodeURIComponent(String(item.payload?.contextType || ''))}','${encodeURIComponent(String(item.payload?.contextId || ''))}','${encodeURIComponent(String(item.payload?.contextTitle || ''))}')" class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[13px]">${cfgAction.icon}</span>${cfgAction.label}</button>`).join('')}
+                            ${Object.entries(SOCIAL_REACTIONS).map(([type, cfgAction]) => `<button type="button" title="${this.escapeHtml(cfgAction.label)}" aria-label="${this.escapeHtml(cfgAction.label)}" onclick="window.app.sendSocialReaction('${this.escapeHtml(item.sourceUid)}','${type}','${encodeURIComponent(String(item.payload?.contextType || ''))}','${encodeURIComponent(String(item.payload?.contextId || ''))}','${encodeURIComponent(String(item.payload?.contextTitle || ''))}')" class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/5 border border-primary/15 text-base hover:bg-primary/10"><span aria-hidden="true">${cfgAction.emoji}</span></button>`).join('')}
+                        </div>`;
+                    }
+                } else if (item.type === 'social_activity') {
+                    const context = item.payload?.contextTitle || 'movimento recente';
+                    const subtitle = item.payload?.subtitle ? ` · ${item.payload.subtitle}` : '';
+                    body = `${item.sourceName || 'Usuario'} registrou ${context}${subtitle}.`;
+                    if (item.sourceUid) {
+                        actions = `<div class="flex flex-wrap gap-2 pt-2">
+                            ${Object.entries(SOCIAL_REACTIONS).map(([type, cfgAction]) => `<button type="button" title="${this.escapeHtml(cfgAction.label)}" aria-label="${this.escapeHtml(cfgAction.label)}" onclick="window.app.sendSocialReaction('${this.escapeHtml(item.sourceUid)}','${type}','${encodeURIComponent(String(item.payload?.contextType || ''))}','${encodeURIComponent(String(item.payload?.contextId || ''))}','${encodeURIComponent(String(item.payload?.contextTitle || ''))}')" class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/5 border border-primary/15 text-base hover:bg-primary/10"><span aria-hidden="true">${cfgAction.emoji}</span></button>`).join('')}
                         </div>`;
                     }
                 }
@@ -839,7 +875,7 @@ export function attachSocial(app) {
             }, { merge: false });
             await this.persistSocialEngagement();
             this.renderSocialConnectionsPanel();
-            this.showToast('Reacao enviada.', 'success');
+            this.showToast(`${SOCIAL_REACTIONS[type].label} enviado.`, 'success');
         },
 
         getSocialChallengeWeekKey: function() {
@@ -1126,7 +1162,7 @@ export function attachSocial(app) {
                     const dimensions = profile.dimensionLevels && typeof profile.dimensionLevels === 'object'
                         ? Object.entries(profile.dimensionLevels)
                         : [];
-                    const recentMilestones = Array.isArray(profile.recentMilestones) ? profile.recentMilestones : [];
+                    const recentHighlights = Array.isArray(profile.recentHighlights) ? profile.recentHighlights : [];
                     const infoRows = [];
                     if (profile.xp !== undefined) infoRows.push(['XP pessoal', Number(profile.xp || 0)]);
                     if (profile.keyHabitsDone !== undefined) infoRows.push(['Habitos-chave', Number(profile.keyHabitsDone || 0)]);
@@ -1164,62 +1200,47 @@ export function attachSocial(app) {
                             </div>
                         </details>`
                         : '';
-                    const achievementsSection = visible && Array.isArray(profile.achievements)
+                    const achievementItems = [
+                        ...achievements.map((ach) => ({
+                            id: `achievement_${ach.id || ach.title || ''}`,
+                            type: 'achievement',
+                            title: ach.title || 'Conquista',
+                            subtitle: 'Conquista recente',
+                            createdAt: ach.unlockedAt || ''
+                        })),
+                        ...recentHighlights.map((item) => ({
+                            id: item.id || `${item.type || 'highlight'}_${item.createdAt || ''}`,
+                            type: item.type || 'highlight',
+                            sourceType: item.sourceType || '',
+                            title: item.title || 'Destaque recente',
+                            subtitle: item.subtitle || 'Movimento recente',
+                            createdAt: item.createdAt || ''
+                        }))
+                    ]
+                        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+                        .slice(0, 6);
+                    const achievementsSection = visible && (Array.isArray(profile.achievements) || recentHighlights.length)
                         ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest">
                             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
                                 <div>
-                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Conquistas recentes</p>
-                                    <p class="text-xs text-on-surface-variant">${achievements.length ? `${achievements.length} registrada(s)` : 'Sem conquistas publicadas'}</p>
+                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Conquistas</p>
+                                    <p class="text-xs text-on-surface-variant">${achievementItems.length ? `${achievementItems.length} conquista(s) ou destaque(s)` : 'Sem conquistas publicadas'}</p>
                                 </div>
                                 <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
                             </summary>
                             <div class="px-3 pb-3 space-y-2">
-                                ${achievements.length ? achievements.map((ach) => `<div class="flex items-center gap-3 rounded-xl bg-surface-container-high px-3 py-2.5">
-                                    <span class="material-symbols-outlined notranslate text-primary text-[18px]">military_tech</span>
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-bold text-on-surface">${this.escapeHtml(ach.title || 'Conquista')}</p>
-                                        <p class="text-[10px] text-outline">${this.escapeHtml(this.formatSocialTimestamp(ach.unlockedAt))}</p>
-                                    </div>
-                                </div>`).join('') : `<p class="rounded-xl bg-surface-container-high px-3 py-2 text-xs text-outline">Sem conquistas publicadas neste perfil.</p>`}
-                            </div>
-                        </details>`
-                        : '';
-                    const reactionsSection = isActive
-                        ? `<details class="group rounded-xl border border-primary/15 bg-primary/5">
-                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
-                                <div>
-                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Enviar apoio</p>
-                                    <p class="text-xs text-on-surface-variant">Uma interacao curta para manter o movimento vivo.</p>
-                                </div>
-                                <span class="material-symbols-outlined notranslate text-primary transition-transform group-open:rotate-180">expand_more</span>
-                            </summary>
-                            <div class="px-3 pb-3 flex flex-wrap gap-2">
-                                ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}')" class="inline-flex items-center gap-1.5 rounded-full bg-white/60 dark:bg-surface-container-low border border-primary/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[14px]">${cfg.icon}</span>${cfg.label}</button>`).join('')}
-                            </div>
-                        </details>`
-                        : '';
-                    const milestonesSection = visible && recentMilestones.length
-                        ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest" open>
-                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
-                                <div>
-                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Momentos recentes</p>
-                                    <p class="text-xs text-on-surface-variant">Apoie algo concreto que essa pessoa acabou de mover.</p>
-                                </div>
-                                <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
-                            </summary>
-                            <div class="px-3 pb-3 space-y-2">
-                                ${recentMilestones.map((milestone) => `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-high p-3 space-y-2">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <p class="text-xs font-bold text-on-surface">${this.escapeHtml(milestone.title || 'Movimento recente')}</p>
-                                            ${milestone.subtitle ? `<p class="mt-0.5 text-[11px] text-on-surface-variant">${this.escapeHtml(milestone.subtitle)}</p>` : ''}
+                                ${achievementItems.length ? achievementItems.map((item) => `<div class="rounded-xl bg-surface-container-high px-3 py-2.5 space-y-2">
+                                    <div class="flex items-center gap-3">
+                                        <span class="material-symbols-outlined notranslate text-primary text-[18px]">${item.type === 'achievement' ? 'military_tech' : 'bolt'}</span>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-bold text-on-surface">${this.escapeHtml(item.title || 'Conquista')}</p>
+                                            <p class="text-[10px] text-outline">${this.escapeHtml(item.subtitle || '')}${item.subtitle ? ' · ' : ''}${this.escapeHtml(this.formatSocialTimestamp(item.createdAt))}</p>
                                         </div>
-                                        <span class="text-[10px] text-outline shrink-0">${this.escapeHtml(this.formatSocialTimestamp(milestone.createdAt))}</span>
                                     </div>
-                                    <div class="flex flex-wrap gap-2">
-                                        ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}','${encodeURIComponent(String(milestone.type || ''))}','${encodeURIComponent(String(milestone.id || ''))}','${encodeURIComponent(String(milestone.title || ''))}')" class="inline-flex items-center gap-1.5 rounded-full bg-primary/5 border border-primary/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[14px]">${cfg.icon}</span>${cfg.label}</button>`).join('')}
-                                    </div>
-                                </div>`).join('')}
+                                    ${isActive ? `<div class="flex flex-wrap gap-2">
+                                        ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" title="${this.escapeHtml(cfg.label)}" aria-label="${this.escapeHtml(cfg.label)}" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}','${encodeURIComponent(String(item.type || ''))}','${encodeURIComponent(String(item.id || ''))}','${encodeURIComponent(String(item.title || ''))}')" class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/60 dark:bg-surface-container-low border border-primary/15 text-base hover:bg-primary/10"><span aria-hidden="true">${cfg.emoji}</span></button>`).join('')}
+                                    </div>` : ''}
+                                </div>`).join('') : `<p class="rounded-xl bg-surface-container-high px-3 py-2 text-xs text-outline">Sem conquistas publicadas neste perfil.</p>`}
                             </div>
                         </details>`
                         : '';
@@ -1239,10 +1260,8 @@ export function attachSocial(app) {
                             </button>
                         </div>
                         ${summaryRows}
-                        ${milestonesSection}
                         ${identitySection}
                         ${achievementsSection}
-                        ${reactionsSection}
                     </div>`;
                 }).join('') : '<p class="text-xs text-outline italic">Nenhum companheiro conectado ainda.</p>';
             }

@@ -390,6 +390,41 @@ showGamificationToast: function(result) {
                 }).catch(() => {});
             }
         }
+        if (this.broadcastSocialActivityToConnections) {
+            const socialEvents = [];
+            if (['micro_complete', 'habit_complete', 'deep_work', 'weekly_review'].includes(result.eventType)) {
+                socialEvents.push({
+                    contextType: result.eventType,
+                    contextId: result.sourceTitle || result.eventType,
+                    contextTitle: whyPrefix || 'Movimento registrado',
+                    summary: whyPrefix || 'Movimento registrado',
+                    subtitle: result.dimension && result.identity ? `${result.dimension}: ${result.identity.title}` : ''
+                });
+            }
+            if (leveledUp) {
+                socialEvents.push({
+                    contextType: 'level_up',
+                    contextId: `level_${result.totalLevel}_${result.dimension || 'system'}`,
+                    contextTitle: `Subiu para o nivel ${result.totalLevel}`,
+                    summary: `Novo nivel ${result.totalLevel}`,
+                    subtitle: result.dimension && result.identity ? `${result.dimension}: ${result.identity.title}` : ''
+                });
+            }
+            if (result.achievementsUnlocked && result.achievementsUnlocked.length) {
+                result.achievementsUnlocked.slice(0, 2).forEach((achievement) => {
+                    socialEvents.push({
+                        contextType: 'achievement',
+                        contextId: achievement.id || achievement.title || 'achievement',
+                        contextTitle: achievement.title || 'Conquista desbloqueada',
+                        summary: achievement.title || 'Conquista desbloqueada',
+                        subtitle: 'Conquista recente'
+                    });
+                });
+            }
+            socialEvents.forEach((event) => {
+                this.broadcastSocialActivityToConnections(event).catch(() => {});
+            });
+        }
         this.showGamificationAwardEffects(result);
     },
     });
