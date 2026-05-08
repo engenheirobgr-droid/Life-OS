@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="pt-br" class="light">
 
 <head>
@@ -1343,6 +1342,12 @@
                     <span class="material-symbols-outlined notranslate">auto_awesome</span>
                     Propósito
                 </button>
+                <button data-view="social"
+                    class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
+                    onclick="app.navigate('social')">
+                    <span class="material-symbols-outlined notranslate">groups</span>
+                    Social
+                </button>
             </nav>
 
             <div class="mt-4 px-4 flex items-center justify-between">
@@ -1434,6 +1439,13 @@
                 <span class="material-symbols-outlined notranslate text-outline">auto_awesome</span>
             </div>
             <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Propósito</span>
+        </button>
+        <button data-view="social" class="nav-item-link flex flex-col items-center gap-1 transition-all"
+            onclick="app.navigate('social')">
+            <div class="w-12 h-8 rounded-full flex items-center justify-center transition-colors">
+                <span class="material-symbols-outlined notranslate text-outline">groups</span>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Social</span>
         </button>
     </nav>
 
@@ -2796,5 +2808,6 @@
     </div>
 </body>
 </html>
+
 
 

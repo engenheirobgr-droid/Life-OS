@@ -1157,8 +1157,7 @@ export function attachSocial(app) {
             if (!section) return;
             this.ensureSocialState();
             const enabled = this.isSocialFeatureEnabled();
-            section.classList.toggle('hidden', !enabled);
-            if (!enabled) return;
+            section.classList.remove('hidden');
 
             const inviteCode = window.sistemaVidaState.profile.social.invites?.lastCode || '';
             const inviteEl = document.getElementById('social-current-invite-code');
@@ -1168,6 +1167,25 @@ export function attachSocial(app) {
             const connectionsMap = this.normalizeSocialConnectionMap(window.sistemaVidaState.profile.social.connections || {});
             const ids = Object.keys(connectionsMap).filter((uid) => connectionsMap[uid]?.status !== 'removed');
             const list = document.getElementById('social-connections-list');
+            const metricsEl = document.getElementById('social-collective-metrics');
+            const challengesEl = document.getElementById('social-challenges-list');
+            const reactionsEl = document.getElementById('social-reactions-list');
+            if (!enabled) {
+                if (inviteEl) inviteEl.textContent = 'Ative a area social';
+                if (list) {
+                    list.innerHTML = `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+                        <p class="text-sm font-semibold text-on-surface">Area social desativada neste perfil.</p>
+                        <p class="mt-1 text-xs text-outline">Ative para liberar conexoes, convites e desafios.</p>
+                        <button type="button" onclick="window.app.setSocialFeatureEnabled(true)" class="mt-3 h-9 px-3 rounded-lg bg-primary text-on-primary text-[11px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Ativar area social</button>
+                    </div>`;
+                }
+                if (metricsEl) metricsEl.innerHTML = '';
+                if (challengesEl) challengesEl.innerHTML = '<p class="text-xs text-outline italic">Ative a area social para exibir desafios.</p>';
+                if (reactionsEl) reactionsEl.innerHTML = '<p class="text-xs text-outline italic">Ative a area social para acompanhar reacoes.</p>';
+                this.renderAppNotificationCenter();
+                return;
+            }
+
             if (list) {
                 list.innerHTML = ids.length ? ids.map((uid) => {
                     const conn = connectionsMap[uid] || {};
@@ -1287,7 +1305,6 @@ export function attachSocial(app) {
             }
 
             const metrics = this.getSocialCollectiveMetrics();
-            const metricsEl = document.getElementById('social-collective-metrics');
             if (metricsEl) {
                 metricsEl.innerHTML = [
                     ['Pessoas', metrics.people],
@@ -1297,7 +1314,6 @@ export function attachSocial(app) {
                 ].map(([label, value]) => `<div class="rounded-lg bg-surface-container-low p-3"><p class="text-[10px] text-outline uppercase tracking-wider">${label}</p><p class="text-sm font-bold text-on-surface">${value}</p></div>`).join('');
             }
 
-            const challengesEl = document.getElementById('social-challenges-list');
             if (challengesEl) {
                 const challenges = Object.values(window.sistemaVidaState.profile.social.challenges || {})
                     .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
@@ -1318,7 +1334,6 @@ export function attachSocial(app) {
                 }).join('') : '<p class="text-xs text-outline italic">Nenhum desafio criado ainda.</p>';
             }
 
-            const reactionsEl = document.getElementById('social-reactions-list');
             if (reactionsEl) {
                 const sent = Array.isArray(window.sistemaVidaState.profile.social.reactions?.sent)
                     ? window.sistemaVidaState.profile.social.reactions.sent.slice(0, 6)
