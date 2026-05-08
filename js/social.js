@@ -46,6 +46,8 @@ function makeSocialCode() {
 export function attachSocial(app) {
     Object.assign(app, {
         refreshSocialSurface: function() {
+            if (this.updateSocialNavVisibility) this.updateSocialNavVisibility();
+
             if (this.currentView === 'social' && this.render?.social) {
                 this.render.social();
                 return;
@@ -598,6 +600,20 @@ export function attachSocial(app) {
                     this._notificationAcknowledgeQueued = false;
                     this.acknowledgeVisibleNotifications().catch(() => {});
                 }, 600);
+            }
+        },
+
+        updateSocialNavVisibility: function() {
+            const enabled = this.isSocialFeatureEnabled();
+            document.querySelectorAll('button[data-view="social"]').forEach(btn => {
+                if (!enabled) {
+                    btn.style.display = 'none';
+                } else {
+                    btn.style.display = '';
+                }
+            });
+            if (!enabled && this.currentView === 'social') {
+                this.navigate('hoje');
             }
         },
 

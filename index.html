@@ -1366,7 +1366,7 @@
                 </button>
             </div>
 
-            <div class="mt-auto pt-6 border-t border-outline-variant/20">
+            <div class="mt-auto pt-6 border-t border-outline-variant/20 shrink-0">
                 <button data-view="perfil"
                     class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
                     onclick="app.navigate('perfil')">
@@ -1374,14 +1374,14 @@
                         <img id="profile-sidebar-avatar" alt="Foto de perfil" class="hidden w-full h-full object-cover">
                         <span id="profile-sidebar-icon" class="material-symbols-outlined notranslate text-[22px]">account_circle</span>
                     </span>
-                    <div class="flex flex-col text-left">
-                        <span class="text-sm font-bold text-on-background" id="perfil-sidebar-name">Bruno</span>
+                    <div class="flex flex-col text-left min-w-0 flex-1">
+                        <span class="text-sm font-bold text-on-background w-full truncate" id="perfil-sidebar-name">Bruno</span>
                         <span class="text-[10px] text-outline uppercase tracking-wider">Ver Perfil</span>
                     </div>
                 </button>
             </div>
             <!-- Sync status badge (desktop sidebar) -->
-            <div class="px-4 pb-4">
+            <div class="px-4 pb-10 shrink-0">
                 <div class="lifeos-sync-badge flex items-center gap-1 text-outline text-[10px] font-bold">
                     <span class="material-symbols-outlined notranslate text-sm">cloud_sync</span>
                     <span>Conectando…</span>
