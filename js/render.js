@@ -3003,8 +3003,14 @@ render: {
             app.renderAccountPanel();
             app.renderNotesPanel();
             app.renderManualGuide();
-            if (app.renderSocialPrivacyPanel) app.renderSocialPrivacyPanel();
+            if (app.renderSocialAccessPanel) app.renderSocialAccessPanel();
             app.updateProfileAppVersion();
+        },
+
+        social: function() {
+            app.renderProfileChrome();
+            if (app.renderSocialPrivacyPanel) app.renderSocialPrivacyPanel();
+            if (app.renderSocialConnectionsPanel) app.renderSocialConnectionsPanel();
         },
 
         proposito: function() {

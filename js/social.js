@@ -45,6 +45,18 @@ function makeSocialCode() {
 
 export function attachSocial(app) {
     Object.assign(app, {
+        refreshSocialSurface: function() {
+            if (this.currentView === 'social' && this.render?.social) {
+                this.render.social();
+                return;
+            }
+            if (this.currentView === 'perfil') this.renderSocialAccessPanel();
+        },
+
+        refreshSocialConnectionsSurface: function() {
+            if (this.currentView === 'social') this.renderSocialConnectionsPanel();
+        },
+
         getSocialDefaultVisibility: function() {
             return { ...DEFAULT_SOCIAL_VISIBILITY };
         },
@@ -164,7 +176,7 @@ export function attachSocial(app) {
                 }, { merge: false });
             }
             this.renderAppNotificationCenter();
-            if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
+            this.refreshSocialConnectionsSurface();
         },
 
         markSocialNotificationRead: async function(notificationId) {
@@ -183,7 +195,7 @@ export function attachSocial(app) {
                 try { await setDoc(this.getSocialInboxDocRef(userId, id), { readAt: nowIso, status: 'read' }, { merge: true }); } catch (_) {}
             }
             this.renderAppNotificationCenter();
-            if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
+            this.refreshSocialConnectionsSurface();
         },
 
         markAllSocialNotificationsRead: async function() {
@@ -205,7 +217,7 @@ export function attachSocial(app) {
                 }));
             }
             this.renderAppNotificationCenter();
-            if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
+            this.refreshSocialConnectionsSurface();
         },
 
         normalizeSocialConnectionMap: function(input = {}) {
@@ -568,7 +580,7 @@ export function attachSocial(app) {
             this.ensureSocialState();
             window.sistemaVidaState.settings.features.social = !!enabled;
             this.saveState(true);
-            if (this.currentView === 'perfil' && this.render?.perfil) this.render.perfil();
+            this.refreshSocialSurface();
         },
 
         setSocialFeatureEnabled: function(enabled) {
@@ -579,7 +591,7 @@ export function attachSocial(app) {
                 this.stopSocialConnectionsListener();
             }
             this.saveState(true);
-            if (this.currentView === 'perfil' && this.render?.perfil) this.render.perfil();
+            this.refreshSocialSurface();
             this.showToast(
                 nextValue
                     ? 'Area social liberada neste perfil.'
@@ -608,7 +620,7 @@ export function attachSocial(app) {
                     const connections = this.normalizeSocialConnectionMap(connectionsRaw);
                     window.sistemaVidaState.profile.social.connections = connections;
                     this.refreshSocialConnectionProfiles().catch(() => {});
-                    if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
+                    this.refreshSocialConnectionsSurface();
                 }, (err) => {
                     console.warn('[SOCIAL] Listener de conexoes falhou:', err);
                 });
@@ -642,7 +654,7 @@ export function attachSocial(app) {
                 });
                 window.sistemaVidaState.profile.social.notifications.items = items;
                 this.renderAppNotificationCenter();
-                if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
+                this.refreshSocialConnectionsSurface();
             }, (err) => {
                 console.warn('[SOCIAL] Listener da central social falhou:', err);
             });
@@ -972,7 +984,7 @@ export function attachSocial(app) {
                 this.showToast('Compartilhamento desativado e perfil publico removido.', 'success');
             }
             this.saveState(true);
-            if (this.currentView === 'perfil' && this.render?.perfil) this.render.perfil();
+            this.refreshSocialSurface();
         },
 
         setSocialVisibility: async function(key, enabled) {
@@ -1105,15 +1117,15 @@ export function attachSocial(app) {
             const statusEl = document.getElementById('social-access-status');
             if (statusEl) {
                 statusEl.textContent = enabled
-                    ? 'Fases sociais ativas neste perfil. As secoes de privacidade, conexoes e desafios aparecem logo abaixo.'
-                    : 'Fases sociais instaladas, mas ainda ocultas neste perfil. Ative para liberar compartilhamento, convites e desafios.';
+                    ? 'Fases sociais ativas neste perfil. A area social agora tem uma pagina propria para compartilhamento, conexoes e desafios.'
+                    : 'Fases sociais instaladas, mas ainda ocultas neste perfil. Ative para liberar a pagina da area social.';
                 statusEl.className = enabled ? 'text-xs text-primary leading-relaxed' : 'text-xs text-outline leading-relaxed';
             }
 
             const hintEl = document.getElementById('social-access-hint');
             if (hintEl) {
                 hintEl.textContent = signedAccount
-                    ? 'Para usar com outra pessoa, ative a area social e depois ligue o compartilhamento publico.'
+                    ? 'Ative aqui e, depois, abra a area social para configurar compartilhamento, convites e companheiros.'
                     : 'Entre em uma conta antes de compartilhar perfil, gerar codigo ou aceitar convites.';
             }
 
@@ -1124,6 +1136,11 @@ export function attachSocial(app) {
                     ? 'h-10 px-4 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity'
                     : 'h-10 px-4 rounded-xl bg-surface-container-high text-primary border border-primary/20 text-xs font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors';
                 button.onclick = () => this.setSocialFeatureEnabled(!enabled);
+            }
+
+            const openButton = document.getElementById('social-open-page-btn');
+            if (openButton) {
+                openButton.classList.toggle('hidden', !enabled);
             }
 
             const badge = document.getElementById('social-access-badge');
