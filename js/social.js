@@ -142,6 +142,8 @@ export function attachSocial(app) {
             if (!profile.social.reactions || typeof profile.social.reactions !== 'object' || Array.isArray(profile.social.reactions)) {
                 profile.social.reactions = {};
             }
+            if (!Array.isArray(profile.social.reactions.sent)) profile.social.reactions.sent = [];
+            if (!Array.isArray(profile.social.reactions.received)) profile.social.reactions.received = [];
             if (!profile.social.notifications || typeof profile.social.notifications !== 'object' || Array.isArray(profile.social.notifications)) {
                 profile.social.notifications = {};
             }
@@ -747,6 +749,21 @@ export function attachSocial(app) {
                 }
                 
                 window.sistemaVidaState.profile.social.notifications.items = items;
+                window.sistemaVidaState.profile.social.reactions.received = items
+                    .filter((entry) => entry?.type === 'reaction')
+                    .map((entry) => ({
+                        id: String(entry.id || ''),
+                        sourceUid: String(entry.sourceUid || ''),
+                        sourceName: String(entry.sourceName || 'Companheiro'),
+                        type: String(entry.reactionType || 'strength'),
+                        label: SOCIAL_REACTIONS[String(entry.reactionType || 'strength')]?.label || SOCIAL_REACTIONS.strength.label,
+                        contextType: String(entry.payload?.contextType || ''),
+                        contextId: String(entry.payload?.contextId || ''),
+                        contextTitle: String(entry.payload?.contextTitle || ''),
+                        receivedAt: String(entry.createdAt || '')
+                    }))
+                    .sort((a, b) => String(b.receivedAt || '').localeCompare(String(a.receivedAt || '')))
+                    .slice(0, 80);
                 this.renderAppNotificationCenter();
                 this.refreshSocialConnectionsSurface();
             }, (err) => {
@@ -1509,6 +1526,39 @@ export function attachSocial(app) {
                         <p class="mt-2 text-[10px] text-outline">${progress.value}/${progress.target}</p>
                     </div>`;
                 }).join('') : '<p class="text-xs text-outline italic">Nenhum desafio criado ainda.</p>';
+            }
+            if (reactionsEl) {
+                const sent = Array.isArray(window.sistemaVidaState.profile.social.reactions?.sent)
+                    ? window.sistemaVidaState.profile.social.reactions.sent
+                    : [];
+                const received = Array.isArray(window.sistemaVidaState.profile.social.reactions?.received)
+                    ? window.sistemaVidaState.profile.social.reactions.received
+                    : [];
+                const merged = [
+                    ...sent.map((reaction) => ({ direction: 'sent', at: reaction.sentAt || '', reaction })),
+                    ...received.map((reaction) => ({ direction: 'received', at: reaction.receivedAt || '', reaction }))
+                ]
+                    .sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))
+                    .slice(0, 20);
+                reactionsEl.innerHTML = merged.length ? merged.map((entry) => {
+                    const reaction = entry.reaction || {};
+                    const cfg = SOCIAL_REACTIONS[reaction.type] || SOCIAL_REACTIONS.strength;
+                    const counterpartName = entry.direction === 'sent'
+                        ? (profiles[reaction.targetUid]?.name || 'companheiro')
+                        : (profiles[reaction.sourceUid]?.name || reaction.sourceName || 'companheiro');
+                    const context = reaction.contextTitle ? ` em ${reaction.contextTitle}` : '';
+                    const directionCopy = entry.direction === 'sent' ? 'Enviada' : 'Recebida';
+                    return `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="material-symbols-outlined notranslate text-primary text-[16px]">${cfg.icon}</span>
+                                <span class="text-xs text-on-surface truncate">${this.escapeHtml(cfg.label)} ${entry.direction === 'sent' ? 'para' : 'de'} ${this.escapeHtml(counterpartName)}${this.escapeHtml(context)}</span>
+                            </div>
+                            <span class="text-[10px] text-outline shrink-0">${this.escapeHtml(String(entry.at || '').slice(0, 10))}</span>
+                        </div>
+                        <p class="mt-1 text-[10px] text-outline uppercase tracking-wider">${directionCopy}</p>
+                    </div>`;
+                }).join('') : '<p class="text-xs text-outline italic">Nenhuma reacao no historico ainda.</p>';
             }
             this.renderAppNotificationCenter();
         }

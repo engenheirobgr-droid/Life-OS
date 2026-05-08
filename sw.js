@@ -1,20 +1,20 @@
-const CACHE_NAME = 'sistema-vida-v146';
+﻿const CACHE_NAME = 'sistema-vida-v147';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260508-ui-improvements-v140',
-    './js/habitSuggestions.js?v=20260508-ui-improvements-v140',
-    './js/subjectiveScales.js?v=20260508-ui-improvements-v140',
-    './js/notifications.js?v=20260508-ui-improvements-v140',
-    './js/cadence.js?v=20260508-ui-improvements-v140',
-    './js/onboarding.js?v=20260508-ui-improvements-v140',
-    './js/identity.js?v=20260508-ui-improvements-v140',
-    './js/habits.js?v=20260508-ui-improvements-v140',
-    './js/state.js?v=20260508-ui-improvements-v140',
-    './js/render.js?v=20260508-ui-improvements-v140',
-    './js/planning.js?v=20260508-ui-improvements-v140',
-    './js/gamification.js?v=20260508-ui-improvements-v140',
-    './js/social.js?v=20260508-ui-improvements-v140',
+    './app.js?v=20260508-ui-improvements-v147',
+    './js/habitSuggestions.js?v=20260508-ui-improvements-v147',
+    './js/subjectiveScales.js?v=20260508-ui-improvements-v147',
+    './js/notifications.js?v=20260508-ui-improvements-v147',
+    './js/cadence.js?v=20260508-ui-improvements-v147',
+    './js/onboarding.js?v=20260508-ui-improvements-v147',
+    './js/identity.js?v=20260508-ui-improvements-v147',
+    './js/habits.js?v=20260508-ui-improvements-v147',
+    './js/state.js?v=20260508-ui-improvements-v147',
+    './js/render.js?v=20260508-ui-improvements-v147',
+    './js/planning.js?v=20260508-ui-improvements-v147',
+    './js/gamification.js?v=20260508-ui-improvements-v147',
+    './js/social.js?v=20260508-ui-improvements-v147',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
@@ -120,6 +120,8 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+
+
 
 
 
