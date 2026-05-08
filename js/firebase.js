@@ -4,7 +4,7 @@
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import {
     getAuth, signInAnonymously, onAuthStateChanged,
     createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -39,7 +39,7 @@ export const authPersistenceReady = setPersistence(auth, browserLocalPersistence
 export const LOCAL_USER_SCOPE = 'guest';
 
 // Firestore helpers — re-exported so callers don't import CDN URLs directly
-export { doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp };
+export { doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp, collection, query, orderBy, limit, getDocs };
 
 // Auth helpers — re-exported
 export {

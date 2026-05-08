@@ -58,11 +58,11 @@
                 Salvar
             </button>
         </div>
-        <div id="daily-checkin-summary" class="hidden rounded-2xl border border-primary/20 bg-[linear-gradient(135deg,rgba(1,105,111,0.12),rgba(1,105,111,0.04))] px-4 py-3.5 shadow-sm">
+        <div id="daily-checkin-summary" class="hidden rounded-2xl border border-primary/20 bg-surface-container-low px-4 py-3.5 shadow-sm">
             <div class="flex items-start justify-between gap-3">
                 <div id="daily-checkin-summary-text" class="min-w-0 flex-1"></div>
                 <button type="button" onclick="window.app.expandDailyCheckinPanel(true)"
-                    class="inline-flex items-center gap-1 rounded-lg border border-outline-variant/20 bg-white/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container transition-colors shrink-0">
+                    class="inline-flex items-center gap-1 rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container transition-colors shrink-0">
                     <span class="material-symbols-outlined notranslate text-[13px]">edit</span>
                     Editar
                 </button>
@@ -96,7 +96,7 @@
             <div class="flex items-center gap-2">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-outline w-24 shrink-0">Energia</span>
                 <input type="hidden" id="daily-checkin-energy" value="3">
-                <div class="flex gap-1.5 flex-1" data-checkin-group="daily-checkin-energy">
+                <div class="grid grid-cols-5 gap-1.5 flex-1 min-w-0" data-checkin-group="daily-checkin-energy">
                     <button type="button" data-val="1" onclick="window.app.setCheckinVal('daily-checkin-energy',1,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Sem energia">🪫</button>
                     <button type="button" data-val="2" onclick="window.app.setCheckinVal('daily-checkin-energy',2,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Cansado">😩</button>
                     <button type="button" data-val="3" onclick="window.app.setCheckinVal('daily-checkin-energy',3,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Normal">😐</button>
@@ -109,7 +109,7 @@
             <div class="flex items-center gap-2">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-outline w-24 shrink-0">Humor</span>
                 <input type="hidden" id="daily-checkin-mood" value="3">
-                <div class="flex gap-1.5 flex-1" data-checkin-group="daily-checkin-mood">
+                <div class="grid grid-cols-5 gap-1.5 flex-1 min-w-0" data-checkin-group="daily-checkin-mood">
                     <button type="button" data-val="1" onclick="window.app.setCheckinVal('daily-checkin-mood',1,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Muito baixo">😔</button>
                     <button type="button" data-val="2" onclick="window.app.setCheckinVal('daily-checkin-mood',2,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Baixo">😕</button>
                     <button type="button" data-val="3" onclick="window.app.setCheckinVal('daily-checkin-mood',3,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Neutro">😐</button>
@@ -122,7 +122,7 @@
             <div class="flex items-center gap-2">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-outline w-24 shrink-0">Estresse</span>
                 <input type="hidden" id="daily-checkin-stress" value="3">
-                <div class="flex gap-1.5 flex-1" data-checkin-group="daily-checkin-stress">
+                <div class="grid grid-cols-5 gap-1.5 flex-1 min-w-0" data-checkin-group="daily-checkin-stress">
                     <button type="button" data-val="1" onclick="window.app.setCheckinVal('daily-checkin-stress',1,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Tranquilo">😌</button>
                     <button type="button" data-val="2" onclick="window.app.setCheckinVal('daily-checkin-stress',2,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Leve">🙂</button>
                     <button type="button" data-val="3" onclick="window.app.setCheckinVal('daily-checkin-stress',3,this)" class="checkin-emoji-btn flex-1 text-lg py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all" title="Moderado">😤</button>

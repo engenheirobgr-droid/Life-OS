@@ -3011,7 +3011,6 @@ render: {
             }
             app.renderGamificationProfile();
             app.renderAccountPanel();
-            app.renderProfileCadence();
             app.renderNotesPanel();
             app.renderManualGuide();
             if (app.renderSocialPrivacyPanel) app.renderSocialPrivacyPanel();

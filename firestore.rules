@@ -22,6 +22,13 @@ service cloud.firestore {
 
       match /private/social {
         allow read, write: if owns(userId);
+
+        match /inbox/{eventId} {
+          allow read, update, delete: if owns(userId);
+          allow create: if signedIn()
+            && request.resource.data.targetUid == userId
+            && request.resource.data.sourceUid == request.auth.uid;
+        }
       }
 
       match /private/connections {
