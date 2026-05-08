@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-stability-v134';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-stability-v134';
-import { attachNotifications } from './js/notifications.js?v=20260508-social-stability-v134';
-import { attachCadence } from './js/cadence.js?v=20260508-social-stability-v134';
-import { attachOnboarding } from './js/onboarding.js?v=20260508-social-stability-v134';
-import { attachIdentity } from './js/identity.js?v=20260508-social-stability-v134';
-import { attachHabits } from './js/habits.js?v=20260508-social-stability-v134';
-import { attachStateModule } from './js/state.js?v=20260508-social-stability-v134';
-import { attachRenderModule } from './js/render.js?v=20260508-social-stability-v134';
-import { attachPlanningModule } from './js/planning.js?v=20260508-social-stability-v134';
-import { attachGamificationModule } from './js/gamification.js?v=20260508-social-stability-v134';
-import { attachSocial } from './js/social.js?v=20260508-social-stability-v134';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-stability-v135';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-stability-v135';
+import { attachNotifications } from './js/notifications.js?v=20260508-social-stability-v135';
+import { attachCadence } from './js/cadence.js?v=20260508-social-stability-v135';
+import { attachOnboarding } from './js/onboarding.js?v=20260508-social-stability-v135';
+import { attachIdentity } from './js/identity.js?v=20260508-social-stability-v135';
+import { attachHabits } from './js/habits.js?v=20260508-social-stability-v135';
+import { attachStateModule } from './js/state.js?v=20260508-social-stability-v135';
+import { attachRenderModule } from './js/render.js?v=20260508-social-stability-v135';
+import { attachPlanningModule } from './js/planning.js?v=20260508-social-stability-v135';
+import { attachGamificationModule } from './js/gamification.js?v=20260508-social-stability-v135';
+import { attachSocial } from './js/social.js?v=20260508-social-stability-v135';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260508-social-stability-v134',
+    appBuildVersion: '20260508-social-stability-v135',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -4457,11 +4457,21 @@ ensureNotesState: function() {
         const energyMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('energy', entry.energy) : { emoji: '⚡', short: `Energia ${entry.energy || 3}` };
         const moodMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('mood', entry.mood) : { emoji: '🙂', short: `Humor ${entry.mood || 3}` };
         const stressMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('stress', entry.stress) : { emoji: '😌', short: `Estresse ${entry.stress || 3}` };
+        const compactValue = (kind, raw) => {
+            const maps = {
+                sleep: ['Ruim', 'Abaixo', 'Ok', 'Bom', 'Otimo'],
+                energy: ['Min.', 'Baixa', 'Media', 'Boa', 'Alta'],
+                mood: ['Baixo', 'Baixo', 'Neutro', 'Bom', 'Otimo'],
+                stress: ['Leve', 'Ok', 'Mod.', 'Alta', 'Crit.']
+            };
+            const idx = Math.max(1, Math.min(5, Number(raw) || 3)) - 1;
+            return maps[kind]?.[idx] || 'Ok';
+        };
         const chips = [
-            { emoji: sleepMeta.emoji, title: 'Sono', value: `${entry.sleepHours || 0}h`, detail: sleepMeta.short },
-            { emoji: energyMeta.emoji, title: 'Energia', value: energyMeta.short, detail: '' },
-            { emoji: moodMeta.emoji, title: 'Humor', value: moodMeta.short, detail: '' },
-            { emoji: stressMeta.emoji, title: 'Estresse', value: stressMeta.short, detail: '' }
+            { emoji: sleepMeta.emoji, title: 'Sono', value: `${entry.sleepHours || 0}h`, detail: compactValue('sleep', entry.sleepQuality) },
+            { emoji: energyMeta.emoji, title: 'Energia', value: compactValue('energy', entry.energy), detail: '' },
+            { emoji: moodMeta.emoji, title: 'Humor', value: compactValue('mood', entry.mood), detail: '' },
+            { emoji: stressMeta.emoji, title: 'Estresse', value: compactValue('stress', entry.stress), detail: '' }
         ];
         const intention = entry.intention
             ? `<p class="mt-2 text-[11px] text-on-surface-variant leading-relaxed"><span class="font-bold text-on-surface">Intencao:</span> ${this.escapeHtml(entry.intention)}</p>`
@@ -4478,16 +4488,16 @@ ensureNotesState: function() {
                     </span>
                     ${emotion}
                 </div>
-                <div class="mt-3 grid grid-cols-2 gap-2.5">
+                <div class="mt-3 grid grid-cols-2 gap-2">
                     ${chips.map((chip) => `
-                        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high px-3 py-2.5 text-on-surface min-w-0 min-h-[78px]">
+                        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-on-surface min-w-0">
                             <div class="flex items-center gap-2">
-                                <span class="text-base leading-none shrink-0">${chip.emoji}</span>
+                                <span class="text-[15px] leading-none shrink-0">${chip.emoji}</span>
                                 <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">${this.escapeHtml(chip.title)}</p>
                             </div>
-                            <div class="mt-2 leading-tight min-w-0">
-                                <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(chip.value)}</p>
-                                ${chip.detail ? `<p class="mt-0.5 text-[10px] text-outline truncate">${this.escapeHtml(chip.detail)}</p>` : ''}
+                            <div class="mt-1.5 flex items-end justify-between gap-2 min-w-0">
+                                <p class="text-[13px] font-bold text-on-surface truncate">${this.escapeHtml(chip.value)}</p>
+                                ${chip.detail ? `<p class="text-[10px] text-outline shrink-0">${this.escapeHtml(chip.detail)}</p>` : ''}
                             </div>
                         </div>
                     `).join('')}
