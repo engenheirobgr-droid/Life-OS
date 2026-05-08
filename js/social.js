@@ -68,6 +68,25 @@ export function attachSocial(app) {
             if (this.currentView === 'social') this.renderSocialConnectionsPanel();
         },
 
+        getSocialConnectionFilterState: function() {
+            if (!this._socialConnectionFilter) {
+                this._socialConnectionFilter = { query: '', status: 'all' };
+            }
+            return this._socialConnectionFilter;
+        },
+
+        setSocialConnectionFilter: function(value) {
+            const filter = this.getSocialConnectionFilterState();
+            filter.query = String(value || '');
+            this.refreshSocialConnectionsSurface();
+        },
+
+        setSocialConnectionStatusFilter: function(value) {
+            const filter = this.getSocialConnectionFilterState();
+            filter.status = ['all', 'active', 'private', 'public'].includes(String(value || '')) ? String(value) : 'all';
+            this.refreshSocialConnectionsSurface();
+        },
+
         switchSocialTab: function(tabId) {
             const container = document.querySelector('main.pt-6'); // O container principal
             if (!container) return;
@@ -1303,10 +1322,16 @@ export function attachSocial(app) {
             const pendingIncomingEvents = notifications.filter(item => item.type === 'invite_request' && item.status === 'pending');
 
             const list = document.getElementById('social-connections-list');
+            const dashboardEl = document.getElementById('social-connections-dashboard');
             const pendingList = document.getElementById('social-pending-invites-list');
             const metricsEl = document.getElementById('social-collective-metrics');
             const challengesEl = document.getElementById('social-challenges-list');
             const reactionsEl = document.getElementById('social-reactions-list');
+            const filterInput = document.getElementById('social-connection-filter-input');
+            const filterStatus = document.getElementById('social-connection-filter-status');
+            const filter = this.getSocialConnectionFilterState();
+            if (filterInput && filterInput.value !== filter.query) filterInput.value = filter.query;
+            if (filterStatus && filterStatus.value !== filter.status) filterStatus.value = filter.status;
             if (!enabled) {
                 if (inviteEl) inviteEl.textContent = 'Ative a area social';
                 if (list) {
@@ -1317,14 +1342,50 @@ export function attachSocial(app) {
                     </div>`;
                 }
                 if (metricsEl) metricsEl.innerHTML = '';
+                if (dashboardEl) dashboardEl.innerHTML = '';
                 if (challengesEl) challengesEl.innerHTML = '<p class="text-xs text-outline italic">Ative a area social para exibir desafios.</p>';
                 if (reactionsEl) reactionsEl.innerHTML = '<p class="text-xs text-outline italic">Ative a area social para acompanhar reacoes.</p>';
                 this.renderAppNotificationCenter();
                 return;
             }
 
+            const sentAll = Array.isArray(window.sistemaVidaState.profile.social.reactions?.sent)
+                ? window.sistemaVidaState.profile.social.reactions.sent
+                : [];
+            const receivedAll = Array.isArray(window.sistemaVidaState.profile.social.reactions?.received)
+                ? window.sistemaVidaState.profile.social.reactions.received
+                : [];
+
+            if (dashboardEl) {
+                const privateCount = activeIds.filter((uid) => {
+                    const profile = profiles[uid] || {};
+                    return profile.visible === false || profile.sharingEnabled === false;
+                }).length;
+                dashboardEl.innerHTML = [
+                    ['Conexoes', activeIds.length],
+                    ['Perfis privados', privateCount],
+                    ['Enviadas', sentAll.length],
+                    ['Recebidas', receivedAll.length]
+                ].map(([label, value]) => `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10">
+                    <p class="text-[10px] text-outline uppercase tracking-wider">${label}</p>
+                    <p class="mt-1 text-lg font-bold text-on-surface">${value}</p>
+                </div>`).join('');
+            }
+
             if (list) {
-                list.innerHTML = activeIds.length ? activeIds.map((uid) => {
+                const filteredIds = activeIds.filter((uid) => {
+                    const profile = profiles[uid] || { uid, visible: false };
+                    const visible = profile.visible !== false && profile.sharingEnabled !== false;
+                    const name = visible ? (profile.name || 'Companheiro') : 'Companheiro privado';
+                    const query = filter.query.trim().toLowerCase();
+                    const matchesQuery = !query || name.toLowerCase().includes(query);
+                    const matchesStatus = filter.status === 'all'
+                        || (filter.status === 'active')
+                        || (filter.status === 'private' && !visible)
+                        || (filter.status === 'public' && visible);
+                    return matchesQuery && matchesStatus;
+                });
+                list.innerHTML = filteredIds.length ? filteredIds.map((uid) => {
                     const conn = connectionsMap[uid] || {};
                     const profile = profiles[uid] || { uid, visible: false };
                     const isActive = true;
@@ -1481,7 +1542,7 @@ export function attachSocial(app) {
                         ${achievementsSection}
                         ${reactionsSection}
                     </div>`;
-                }).join('') : '<p class="text-xs text-outline italic">Nenhum companheiro conectado ainda.</p>';
+                }).join('') : '<p class="text-xs text-outline italic">Nenhuma conexao encontrada para esse filtro.</p>';
             }
 
             if (pendingList) {
