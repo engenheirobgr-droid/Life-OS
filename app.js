@@ -1,9 +1,9 @@
-/**
+Ôªø/**
  * Sistema Vida - Core OS
  * Vanilla JS Single Page Application Controller with Data Binding
  */
 
-// Firebase instances and helpers ó all initialized in js/firebase.js
+// Firebase instances and helpers ‚Äî all initialized in js/firebase.js
 import {
     db, auth, storage, authPersistenceReady, LOCAL_USER_SCOPE,
     doc, setDoc, getDoc, onSnapshot, deleteDoc,
@@ -14,19 +14,19 @@ import {
     storageRef, uploadString, getDownloadURL
 } from './js/firebase.js';
 
-// Phase 9 extracted modules ó attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-ui-improvements-v149';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-ui-improvements-v149';
-import { attachNotifications } from './js/notifications.js?v=20260508-ui-improvements-v149';
-import { attachCadence } from './js/cadence.js?v=20260508-ui-improvements-v149';
-import { attachOnboarding } from './js/onboarding.js?v=20260508-ui-improvements-v149';
-import { attachIdentity } from './js/identity.js?v=20260508-ui-improvements-v149';
-import { attachHabits } from './js/habits.js?v=20260508-ui-improvements-v149';
-import { attachStateModule } from './js/state.js?v=20260508-ui-improvements-v149';
-import { attachRenderModule } from './js/render.js?v=20260508-ui-improvements-v149';
-import { attachPlanningModule } from './js/planning.js?v=20260508-ui-improvements-v149';
-import { attachGamificationModule } from './js/gamification.js?v=20260508-ui-improvements-v149';
-import { attachSocial } from './js/social.js?v=20260508-ui-improvements-v149';
+// Phase 9 extracted modules ‚Äî attached to app after object definition
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-ui-improvements-v150';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-ui-improvements-v150';
+import { attachNotifications } from './js/notifications.js?v=20260508-ui-improvements-v150';
+import { attachCadence } from './js/cadence.js?v=20260508-ui-improvements-v150';
+import { attachOnboarding } from './js/onboarding.js?v=20260508-ui-improvements-v150';
+import { attachIdentity } from './js/identity.js?v=20260508-ui-improvements-v150';
+import { attachHabits } from './js/habits.js?v=20260508-ui-improvements-v150';
+import { attachStateModule } from './js/state.js?v=20260508-ui-improvements-v150';
+import { attachRenderModule } from './js/render.js?v=20260508-ui-improvements-v150';
+import { attachPlanningModule } from './js/planning.js?v=20260508-ui-improvements-v150';
+import { attachGamificationModule } from './js/gamification.js?v=20260508-ui-improvements-v150';
+import { attachSocial } from './js/social.js?v=20260508-ui-improvements-v150';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -114,8 +114,8 @@ function waitInitialAuthState() {
     return initialAuthStatePromise;
 }
 // getAuthReady() cria uma Promise fresca a cada chamada.
-// Isso evita que uma falha de auth transitÛria (ex: rede lenta na abertura do app)
-// deixe uma sess„o antiga/rejeitada bloquear os saves futuros.
+// Isso evita que uma falha de auth transit√≥ria (ex: rede lenta na abertura do app)
+// deixe uma sess√£o antiga/rejeitada bloquear os saves futuros.
 function getAuthReady() {
     if (auth.currentUser) return Promise.resolve(auth.currentUser);
     return waitInitialAuthState().then((user) => {
@@ -138,7 +138,7 @@ window.sistemaVidaState = {
         vision: { saude: "", carreira: "", intelecto: "", quote: "", saudeResumo: "", carreiraResumo: "", intelectoResumo: "" },
         odyssey: { cenarioA: "", cenarioB: "", cenarioC: "" },
         odysseyImages: { cenarioA: "", cenarioB: "", cenarioC: "" },
-        odysseyTitles: { cenarioA: "Cen·rio A", cenarioB: "Cen·rio B", cenarioC: "Cen·rio C" },
+        odysseyTitles: { cenarioA: "Cen√°rio A", cenarioB: "Cen√°rio B", cenarioC: "Cen√°rio C" },
         identity: { strengths: [], shadows: [] },
         onboardingStarter: { dimension: 'Carreira', goalTitle: '', habitTitle: '', habitTime: '', strength: '', shadow: '' },
         dailyCheckins: [],
@@ -147,14 +147,14 @@ window.sistemaVidaState = {
     },
     energy: 5,
     dimensions: {
-        Sa˙de: { score: 0 },
+        Sa√∫de: { score: 0 },
         Mente: { score: 0 },
         Carreira: { score: 0 },
-        FinanÁas: { score: 0 },
+        Finan√ßas: { score: 0 },
         Relacionamentos: { score: 0 },
-        FamÌlia: { score: 0 },
+        Fam√≠lia: { score: 0 },
         Lazer: { score: 0 },
-        PropÛsito: { score: 0 }
+        Prop√≥sito: { score: 0 }
     },
     perma: { P: 0, E: 0, R: 0, M: 0, A: 0 },
     swls: { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} },
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260508-ui-improvements-v149',
+    appBuildVersion: '20260508-ui-improvements-v150',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -326,7 +326,7 @@ const app = {
         const labels = {
             ok:      { icon: 'cloud_done',    text: 'Sincronizado',     cls: 'text-emerald-500' },
             error:   { icon: 'cloud_off',     text: 'Falha na nuvem',   cls: 'text-red-400' },
-            syncing: { icon: 'cloud_sync',    text: 'SincronizandoÖ',   cls: 'text-primary' },
+            syncing: { icon: 'cloud_sync',    text: 'Sincronizando‚Ä¶',   cls: 'text-primary' },
             offline: { icon: 'cloud_off',     text: 'Modo local',       cls: 'text-amber-400' },
         };
         const d = { ...(labels[state] || labels['ok']) };
@@ -347,13 +347,13 @@ const app = {
 
     getAuthErrorMessage: function(error) {
         const code = String(error?.code || error?.message || '');
-        if (code.includes('auth/email-already-in-use')) return 'Este e-mail j· tem uma conta. Use Entrar; seus dados locais continuam guardados neste aparelho.';
-        if (code.includes('auth/credential-already-in-use')) return 'Este e-mail j· est· vinculado a outra conta. Use Entrar; seus dados locais continuam guardados neste aparelho.';
+        if (code.includes('auth/email-already-in-use')) return 'Este e-mail j√° tem uma conta. Use Entrar; seus dados locais continuam guardados neste aparelho.';
+        if (code.includes('auth/credential-already-in-use')) return 'Este e-mail j√° est√° vinculado a outra conta. Use Entrar; seus dados locais continuam guardados neste aparelho.';
         if (code.includes('auth/invalid-email')) return 'Confira o e-mail informado.';
         if (code.includes('auth/weak-password')) return 'Use uma senha com pelo menos 6 caracteres.';
-        if (code.includes('auth/invalid-credential') || code.includes('auth/wrong-password') || code.includes('auth/user-not-found')) return 'E-mail ou senha inv·lidos.';
+        if (code.includes('auth/invalid-credential') || code.includes('auth/wrong-password') || code.includes('auth/user-not-found')) return 'E-mail ou senha inv√°lidos.';
         if (code.includes('auth/operation-not-allowed')) return 'O login por e-mail/senha precisa ser ativado no Firebase Authentication.';
-        return 'N„o foi possÌvel concluir a operaÁ„o da conta.';
+        return 'N√£o foi poss√≠vel concluir a opera√ß√£o da conta.';
     },
 
     renderAccountPanel: function() {
@@ -540,9 +540,9 @@ const app = {
         }
         try {
             await sendPasswordResetEmail(auth, email);
-            this.showToast('E-mail de recuperaÁ„o enviado.', 'success');
+            this.showToast('E-mail de recupera√ß√£o enviado.', 'success');
         } catch (error) {
-            console.error('[AUTH] Falha ao enviar recuperaÁ„o:', error);
+            console.error('[AUTH] Falha ao enviar recupera√ß√£o:', error);
             this.showToast(this.getAuthErrorMessage(error), 'error');
         }
     },
@@ -554,11 +554,11 @@ const app = {
             setSignedOutIntentionally(true);
             await signOut(auth);
             initialAuthStatePromise = Promise.resolve(null);
-            this.showToast('VocÍ saiu da conta.', 'success');
+            this.showToast('Voc√™ saiu da conta.', 'success');
             setTimeout(() => window.location.reload(), 600);
         } catch (error) {
             console.error('[AUTH] Falha ao sair:', error);
-            this.showToast('N„o foi possÌvel sair da conta.', 'error');
+            this.showToast('N√£o foi poss√≠vel sair da conta.', 'error');
         }
     },
 
@@ -573,18 +573,18 @@ const app = {
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '');
         const compact = txt.replace(/[^a-z]/g, '');
-        if (txt.includes('saud')) return 'Sa˙de';
+        if (txt.includes('saud')) return 'Sa√∫de';
         if (txt.includes('relac')) return 'Relacionamentos';
         if (txt.includes('pessoal') || txt.includes('mental') || compact.startsWith('mente')) return 'Mente';
         if (txt.includes('carre') || txt.includes('profiss') || txt.includes('trabalh')) return 'Carreira';
-        if (txt.includes('finan')) return 'FinanÁas';
-        if (txt.includes('fam')) return 'FamÌlia';
+        if (txt.includes('finan')) return 'Finan√ßas';
+        if (txt.includes('fam')) return 'Fam√≠lia';
         if (txt.includes('lazer')) return 'Lazer';
-        if (txt.includes('propos') || txt.includes('contribu')) return 'PropÛsito';
+        if (txt.includes('propos') || txt.includes('contribu')) return 'Prop√≥sito';
         return '';
     },
     getWheelAxes: function() {
-        return ['Sa˙de', 'Mente', 'Carreira', 'FinanÁas', 'Relacionamentos', 'FamÌlia', 'Lazer', 'PropÛsito'];
+        return ['Sa√∫de', 'Mente', 'Carreira', 'Finan√ßas', 'Relacionamentos', 'Fam√≠lia', 'Lazer', 'Prop√≥sito'];
     },
     normalizeDimensionsState: function() {
         const state = window.sistemaVidaState;
@@ -804,10 +804,10 @@ getDimensionIdentity: function(dimension, level) {
             tone: '#0d9488',
             stages: [
                 ['stars', 'Iniciante'],
-                ['trending_up', 'Em avanÁo'],
+                ['trending_up', 'Em avan√ßo'],
                 ['verified', 'Consistente'],
                 ['rocket_launch', 'Destaque'],
-                ['auto_awesome', 'Lend·rio'],
+                ['auto_awesome', 'Lend√°rio'],
                 ['stars', 'Ascendente'],
                 ['stars', 'Ascendente II'],
                 ['stars', 'Ascendente III'],
@@ -899,10 +899,10 @@ getDimensionIdentity: function(dimension, level) {
             tone: '#0d9488',
             stages: [
                 ['stars', 'Iniciante'],
-                ['trending_up', 'Em avanÁo'],
+                ['trending_up', 'Em avan√ßo'],
                 ['verified', 'Consistente'],
                 ['rocket_launch', 'Destaque'],
-                ['auto_awesome', 'Lend·rio'],
+                ['auto_awesome', 'Lend√°rio'],
                 ['stars', 'Ascendente'],
                 ['stars', 'Ascendente II'],
                 ['stars', 'Ascendente III'],
@@ -925,7 +925,7 @@ getDimensionIdentity: function(dimension, level) {
         return 'medio';
     },
     getMicroEffortLabel: function(effort) {
-        const labels = { leve: 'Leve', medio: 'MÈdio', denso: 'Denso' };
+        const labels = { leve: 'Leve', medio: 'M√©dio', denso: 'Denso' };
         return labels[this.getMicroEffort({ effort })] || labels.medio;
     },
     ensureGamificationState: function() {
@@ -992,20 +992,20 @@ getDimensionIdentity: function(dimension, level) {
     },
     getAchievementCatalog: function() {
         return {
-            first_micro_done: { title: 'Primeira micro concluÌda', icon: 'task_alt' },
+            first_micro_done: { title: 'Primeira micro conclu√≠da', icon: 'task_alt' },
             first_planned_micro: { title: 'Plano executado', icon: 'event_available' },
             first_habit_done: { title: 'Ritual iniciado', icon: 'repeat' },
             first_focus_session: { title: 'Bloco de foco', icon: 'timer' },
             first_weekly_review: { title: 'Semana revisada', icon: 'rate_review' },
             total_level_5: { title: 'Sistema em movimento', icon: 'rocket_launch' },
             first_shadow_named: { title: 'Sombra nomeada', icon: 'change_circle' },
-            first_strength_habit: { title: 'ForÁa consciente', icon: 'workspace_premium' },
-            shadow_antidote_7: { title: 'AntÌdoto em pr·tica', icon: 'healing' },
-            identity_integration_week: { title: 'IntegraÁ„o', icon: 'all_inclusive' },
-            sustained_identity_growth: { title: 'EvoluÁ„o sustentada', icon: 'trending_up' },
-            first_habit_graduated: { title: 'H·bito autom·tico', icon: 'verified' },
-            key_habit_streak_7:  { title: '7 dias com H·bito-Chave',  icon: 'local_fire_department' },
-            key_habit_streak_30: { title: '30 dias com H·bito-Chave', icon: 'military_tech' }
+            first_strength_habit: { title: 'For√ßa consciente', icon: 'workspace_premium' },
+            shadow_antidote_7: { title: 'Ant√≠doto em pr√°tica', icon: 'healing' },
+            identity_integration_week: { title: 'Integra√ß√£o', icon: 'all_inclusive' },
+            sustained_identity_growth: { title: 'Evolu√ß√£o sustentada', icon: 'trending_up' },
+            first_habit_graduated: { title: 'H√°bito autom√°tico', icon: 'verified' },
+            key_habit_streak_7:  { title: '7 dias com H√°bito-Chave',  icon: 'local_fire_department' },
+            key_habit_streak_30: { title: '30 dias com H√°bito-Chave', icon: 'military_tech' }
         };
     },
     unlockAchievement: function(id, extra = {}) {
@@ -1069,8 +1069,8 @@ getDimensionIdentity: function(dimension, level) {
                 }
             });
         }
-        // Nota: o broadcast social È gerenciado pelo showGamificationToast() em gamification.js
-        // para evitar emiss„o dupla e garantir que apenas o evento final processado seja enviado.
+        // Nota: o broadcast social √© gerenciado pelo showGamificationToast() em gamification.js
+        // para evitar emiss√£o dupla e garantir que apenas o evento final processado seja enviado.
         const levelAward = awards.find(item => item.tierPromotion)
             || awards.find(item => item.dimensionLeveledUp)
             || awards.find(item => item.totalLeveledUp)
@@ -1114,7 +1114,7 @@ getDimensionIdentity: function(dimension, level) {
                 <span class="material-symbols-outlined notranslate">${this.escapeHtml(stageIcon)}</span>
                 <div class="gamification-level-copy">
                     <strong>${this.escapeHtml(label)}</strong>
-                    <small>NÌvel ${idx + 1} ∑ ${this.escapeHtml(String(this.getXpThresholdForLevel(idx + 1)))} XP acumulados</small>
+                    <small>N√≠vel ${idx + 1} ¬∑ ${this.escapeHtml(String(this.getXpThresholdForLevel(idx + 1)))} XP acumulados</small>
                 </div>
             </div>
         `).join('');
@@ -1125,7 +1125,7 @@ getDimensionIdentity: function(dimension, level) {
                 <span class="material-symbols-outlined notranslate level-main-icon">${icon}</span>
                 <p style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.18em;color:var(--md-sys-color-outline);margin-top:0.75rem;">${this.escapeHtml(dimension)}</p>
                 <p style="font-size:1.4rem;font-weight:800;color:var(--md-sys-color-on-surface);margin-top:0.2rem;">${this.escapeHtml(title)}</p>
-                <p style="font-size:0.7rem;color:var(--md-sys-color-outline);margin-top:0.2rem;">NÌvel ${this.escapeHtml(String(level || 1))} desbloqueado</p>
+                <p style="font-size:0.7rem;color:var(--md-sys-color-outline);margin-top:0.2rem;">N√≠vel ${this.escapeHtml(String(level || 1))} desbloqueado</p>
                 <div class="gamification-level-list overlay-list" style="margin-top:1rem;">${stages}</div>
             </div>`;
         document.body.appendChild(overlay);
@@ -1158,7 +1158,7 @@ getDimensionIdentity: function(dimension, level) {
             okr,
             macro,
             path: parts.length ? parts.join(' > ') : 'Sem trilha em Planos',
-            parentLabel: macro?.title || okr?.title || meta?.title || 'Sem vÌnculo em Planos'
+            parentLabel: macro?.title || okr?.title || meta?.title || 'Sem v√≠nculo em Planos'
         };
     },
     getPlanMicros: function(options = {}) {
@@ -1253,7 +1253,7 @@ getDimensionIdentity: function(dimension, level) {
         try { this.localSet('lifeos_theme_pref', next); } catch (_) {}
         this.applyThemePreference();
         this.saveState(true);
-        this.showToast(`Tema aplicado: ${next === 'auto' ? 'Autom·tico' : (next === 'dark' ? 'Escuro' : 'Claro')}.`, 'success');
+        this.showToast(`Tema aplicado: ${next === 'auto' ? 'Autom√°tico' : (next === 'dark' ? 'Escuro' : 'Claro')}.`, 'success');
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
     },
         // Extracted in Phase 9: notifications module
@@ -1297,7 +1297,7 @@ _getAudioContext: function() {
         const knob = document.getElementById('sound-toggle-knob');
         if (track) track.className = `w-10 h-5 rounded-full relative flex items-center px-1 transition-colors ${on ? 'bg-primary/30' : 'bg-outline-variant/40'}`;
         if (knob) knob.className = `w-3 h-3 rounded-full absolute transition-all ${on ? 'right-1 bg-primary' : 'left-1 bg-outline'}`;
-        this.showToast(on ? 'Sons de gamificaÁ„o ativados.' : 'Sons de gamificaÁ„o desativados.', 'success');
+        this.showToast(on ? 'Sons de gamifica√ß√£o ativados.' : 'Sons de gamifica√ß√£o desativados.', 'success');
     },
     toggleSplashSetting: function() {
         this.ensureSettingsState();
@@ -1305,14 +1305,14 @@ _getAudioContext: function() {
         window.sistemaVidaState.settings.splashEnabled = on;
         this.saveState(true);
         this.updateSplashSettingsControls();
-        this.showToast(on ? 'B˙ssola inicial ativada.' : 'B˙ssola inicial desativada.', 'success');
+        this.showToast(on ? 'B√∫ssola inicial ativada.' : 'B√∫ssola inicial desativada.', 'success');
     },
     setSplashModeSetting: function(mode) {
         this.ensureSettingsState();
         window.sistemaVidaState.settings.splashMode = ['daily', 'twice_daily', 'always'].includes(mode) ? mode : 'daily';
         this.saveState(true);
         this.updateSplashSettingsControls();
-        this.showToast('FrequÍncia da b˙ssola atualizada.', 'success');
+        this.showToast('Frequ√™ncia da b√∫ssola atualizada.', 'success');
     },
     setSplashDurationSetting: function(raw) {
         this.ensureSettingsState();
@@ -1320,7 +1320,7 @@ _getAudioContext: function() {
         window.sistemaVidaState.settings.splashDurationSec = duration;
         this.saveState(true);
         this.updateSplashSettingsControls();
-        this.showToast('Tempo da b˙ssola atualizado.', 'success');
+        this.showToast('Tempo da b√∫ssola atualizado.', 'success');
     },
     setOdysseySplashFilter: function(value) {
         this.ensureSettingsState();
@@ -1342,7 +1342,7 @@ _getAudioContext: function() {
         window.sistemaVidaState.settings.odysseySplashMode = ['daily', 'twice_daily', 'always'].includes(mode) ? mode : 'daily';
         this.saveState(true);
         this.updateSplashSettingsControls();
-        this.showToast('FrequÍncia do Splash Odyssey atualizada.', 'success');
+        this.showToast('Frequ√™ncia do Splash Odyssey atualizada.', 'success');
     },
     updateSplashSettingsControls: function() {
         this.ensureSettingsState();
@@ -1411,18 +1411,18 @@ _getAudioContext: function() {
         el.id = 'daily-splash-screen';
         el.className = 'lifeos-splash';
         const quoteHtml = quote ? `<p class="lifeos-splash__quote">"${this.escapeHtml(quote.quote)}"</p>` : '';
-        const authorHtml = quote?.author ? `<p class="lifeos-splash__author">ó ${this.escapeHtml(quote.author)}</p>` : '';
+        const authorHtml = quote?.author ? `<p class="lifeos-splash__author">‚Äî ${this.escapeHtml(quote.author)}</p>` : '';
         const reflectionHtml = quote?.reflection ? `<p class="lifeos-splash__reflection">${this.escapeHtml(quote.reflection)}</p>` : '';
         el.innerHTML = `
             <div class="lifeos-splash__content">
                 <span class="lifeos-splash__mark">
                     <span class="material-symbols-outlined notranslate" style="font-size:2rem;">explore</span>
                 </span>
-                <p class="lifeos-splash__eyebrow">B˙ssola do Dia</p>
+                <p class="lifeos-splash__eyebrow">B√∫ssola do Dia</p>
                 <p class="lifeos-splash__theme">${this.escapeHtml(compass.theme || 'Life OS')}</p>
                 ${quoteHtml}${authorHtml}${reflectionHtml}
                 <button class="lifeos-splash__button" onclick="event.stopPropagation();window.app.dismissSplash()">
-                    ComeÁar o dia
+                    Come√ßar o dia
                 </button>
                 <p id="splash-countdown" class="lifeos-splash__countdown">Continua em ${duration}s</p>
             </div>`;
@@ -1471,9 +1471,9 @@ _getAudioContext: function() {
         const titles = window.sistemaVidaState.profile.odysseyTitles || {};
         const filter = this.getOdysseySplashFilter();
         const slides = [
-            { key: 'cenarioA', label: 'Cen·rio A', title: titles.cenarioA || 'Cen·rio A', src: images.cenarioA || '' },
-            { key: 'cenarioB', label: 'Cen·rio B', title: titles.cenarioB || 'Cen·rio B', src: images.cenarioB || '' },
-            { key: 'cenarioC', label: 'Cen·rio C', title: titles.cenarioC || 'Cen·rio C', src: images.cenarioC || '' }
+            { key: 'cenarioA', label: 'Cen√°rio A', title: titles.cenarioA || 'Cen√°rio A', src: images.cenarioA || '' },
+            { key: 'cenarioB', label: 'Cen√°rio B', title: titles.cenarioB || 'Cen√°rio B', src: images.cenarioB || '' },
+            { key: 'cenarioC', label: 'Cen√°rio C', title: titles.cenarioC || 'Cen√°rio C', src: images.cenarioC || '' }
         ].filter(item => item.src && item.src.length > 10);
         return filter === 'all' ? slides : slides.filter(item => item.key === filter);
     },
@@ -1528,7 +1528,7 @@ _getAudioContext: function() {
                         <span class="lifeos-odyssey-slide__badge">${this.escapeHtml(slides[0].label)}</span>
                         <h2 class="lifeos-odyssey-slide__title">${this.escapeHtml(slides[0].title)}</h2>
                     </div>
-                    <button class="lifeos-odyssey-button" onclick="event.stopPropagation();window.app.dismissOdysseySplash()">ComeÁar o dia</button>
+                    <button class="lifeos-odyssey-button" onclick="event.stopPropagation();window.app.dismissOdysseySplash()">Come√ßar o dia</button>
                 </div>
             </div>
         `;
@@ -1602,15 +1602,15 @@ _getAudioContext: function() {
         }
 
         if (sectionId) {
-            // Usa requestAnimationFrame para esperar pelo prÛximo ciclo de renderizaÁ„o
+            // Usa requestAnimationFrame para esperar pelo pr√≥ximo ciclo de renderiza√ß√£o
             requestAnimationFrame(() => {
                 const scrollToSection = () => {
                     const section = document.getElementById(sectionId);
                     if (section) {
-                        // Pequeno delay adicional para garantir que o layout esteja est·vel
+                        // Pequeno delay adicional para garantir que o layout esteja est√°vel
                         setTimeout(() => {
                             section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            // Highlight tempor·rio para feedback visual
+                            // Highlight tempor√°rio para feedback visual
                             section.classList.add('ring-2', 'ring-primary/30');
                             setTimeout(() => section.classList.remove('ring-2', 'ring-primary/30'), 2000);
                         }, 100);
@@ -1621,10 +1621,10 @@ _getAudioContext: function() {
 
                 // Tenta imediatamente
                 if (!scrollToSection()) {
-                    // Se n„o conseguiu, tenta novamente apÛs um delay maior
+                    // Se n√£o conseguiu, tenta novamente ap√≥s um delay maior
                     setTimeout(() => {
                         if (!scrollToSection()) {
-                            // ⁄ltima tentativa com delay ainda maior
+                            // √öltima tentativa com delay ainda maior
                             setTimeout(scrollToSection, 500);
                         }
                     }, 300);
@@ -1702,7 +1702,7 @@ openAvatarPicker: function() {
                     canvas.width = Math.max(1, Math.round(w * scale));
                     canvas.height = Math.max(1, Math.round(h * scale));
                     const ctx = canvas.getContext('2d');
-                    if (!ctx) return reject(new Error('Canvas indisponÌvel'));
+                    if (!ctx) return reject(new Error('Canvas indispon√≠vel'));
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     resolve(canvas.toDataURL('image/jpeg', quality));
                 };
@@ -1717,7 +1717,7 @@ openAvatarPicker: function() {
         return typeof value === 'string' && value.startsWith('data:image/');
     },
     uploadProfileImageDataUrl: async function(dataUrl, path) {
-        // Firebase Storage bypassed ó images stored in Firestore directly via syncImagesToFirestoreDoc.
+        // Firebase Storage bypassed ‚Äî images stored in Firestore directly via syncImagesToFirestoreDoc.
         return dataUrl || '';
     },
     syncImagesToFirestoreDoc: async function() {
@@ -1747,7 +1747,7 @@ openAvatarPicker: function() {
         const file = event?.target?.files?.[0];
         if (!file) return;
         if (!file.type.startsWith('image/')) {
-            this.showToast('Selecione um arquivo de imagem v·lido.', 'error');
+            this.showToast('Selecione um arquivo de imagem v√°lido.', 'error');
             return;
         }
         this.fileToOptimizedDataUrl(file, 400, 0.70).then(async (dataUrl) => {
@@ -1761,10 +1761,10 @@ openAvatarPicker: function() {
             await this.saveState(true);
             if (this.lastCloudSyncOk === false) {
                 const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
-                this.showToast(`Foto salva sÛ neste dispositivo.${reason}`, 'error');
+                this.showToast(`Foto salva s√≥ neste dispositivo.${reason}`, 'error');
             } else {
                 if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
-                this.showToast('Foto de perfil atualizada! ?', 'success');
+                this.showToast('Foto de perfil atualizada! ‚úì', 'success');
             }
         }).catch(() => {
             this.showToast('Falha ao ler a imagem selecionada.', 'error');
@@ -1786,7 +1786,7 @@ openAvatarPicker: function() {
         const file = input?.files?.[0];
         if (!key || !file) return;
         if (!file.type.startsWith('image/')) {
-            this.showToast('Selecione um arquivo de imagem v·lido para o cen·rio.', 'error');
+            this.showToast('Selecione um arquivo de imagem v√°lido para o cen√°rio.', 'error');
             return;
         }
         this.fileToOptimizedDataUrl(file, 600, 0.65).then(async (dataUrl) => {
@@ -1801,10 +1801,10 @@ openAvatarPicker: function() {
             await this.saveState(true);
             if (this.lastCloudSyncOk === false) {
                 const reason = this.lastCloudSyncErrorCode ? ` (${this.lastCloudSyncErrorCode})` : '';
-                this.showToast(`Imagem salva sÛ neste dispositivo.${reason}`, 'error');
+                this.showToast(`Imagem salva s√≥ neste dispositivo.${reason}`, 'error');
             } else {
                 if (this.render.proposito) this.render.proposito();
-                this.showToast('Imagem do cen·rio atualizada! ?', 'success');
+                this.showToast('Imagem do cen√°rio atualizada! ‚úì', 'success');
             }
         }).catch(() => {
             this.showToast('Falha ao ler a imagem selecionada.', 'error');
@@ -1826,8 +1826,8 @@ openAvatarPicker: function() {
         };
         modal.innerHTML = `
             <div class="relative max-w-4xl max-h-[90vh] flex flex-col">
-                <button onclick="window.app.closeOdysseyImageViewer()" class="absolute -top-10 right-0 text-white hover:text-gray-300 transition text-2xl font-bold" aria-label="Fechar">?</button>
-                <img src="${this.escapeHtml(src)}" alt="Imagem do cen·rio" class="max-w-full max-h-[85vh] object-contain rounded-lg">
+                <button onclick="window.app.closeOdysseyImageViewer()" class="absolute -top-10 right-0 text-white hover:text-gray-300 transition text-2xl font-bold" aria-label="Fechar">‚úï</button>
+                <img src="${this.escapeHtml(src)}" alt="Imagem do cen√°rio" class="max-w-full max-h-[85vh] object-contain rounded-lg">
             </div>
         `;
         document.body.appendChild(modal);
@@ -1872,7 +1872,7 @@ openAvatarPicker: function() {
             toast.classList.remove('translate-y-8', 'opacity-0');
         }, 10);
         
-        // Remover apÛs 3.5 segundos
+        // Remover ap√≥s 3.5 segundos
         setTimeout(() => {
             toast.classList.add('translate-y-4', 'opacity-0');
             setTimeout(() => toast.remove(), 500);
@@ -1885,7 +1885,7 @@ openAvatarPicker: function() {
         el.classList.add('hidden');
     },
     showBlockingMessage: function(message, options = {}) {
-        const text = String(message || 'N„o foi possÌvel continuar. Verifique os campos destacados.').trim();
+        const text = String(message || 'N√£o foi poss√≠vel continuar. Verifique os campos destacados.').trim();
         const el = document.getElementById(options.targetId || 'crud-blocking-message');
         if (el) {
             el.textContent = text;
@@ -2010,7 +2010,7 @@ openAvatarPicker: function() {
                 }, function(err) {
                     console.warn('[SYNC] Real-time listener error:', err);
                     self.updateSyncBadge('error');
-                    // Listener errored ñ tear down and retry in 30s
+                    // Listener errored ‚Äì tear down and retry in 30s
                     self._realtimeSyncUnsub = null;
                     setTimeout(function() { self.setupRealtimeSync(); }, 30000);
                 });
@@ -2025,7 +2025,7 @@ openAvatarPicker: function() {
                             app.applyRemoteImagesDoc(imgData, { replace: app.isRealAccount() });
                         } catch (_) {}
                         app.persistLocalMirror();
-                        console.log('[Images] AtualizaÁ„o de imagens recebida em tempo real.');
+                        console.log('[Images] Atualiza√ß√£o de imagens recebida em tempo real.');
                         try {
                             if (app.currentView && app.render && app.render[app.currentView]) app.render[app.currentView]();
                         } catch (_) {}
@@ -2096,13 +2096,13 @@ openAvatarPicker: function() {
         
         if (state.lastAccess) {
             const diffDays = Math.floor((today - new Date(state.lastAccess)) / (1000 * 60 * 60 * 24));
-            if (diffDays >= 2) setTimeout(() => this.showNotification("Bom ter vocÍ de volta ‡ sua jornada!"), 1000);
+            if (diffDays >= 2) setTimeout(() => this.showNotification("Bom ter voc√™ de volta √† sua jornada!"), 1000);
         }
         state.lastAccess = todayStr;
 
         this.needsReview = false;
-        const dow = today.getDay(); // 0=Dom, 5=Sex, 6=S·b
-        if ([5, 6, 0].includes(dow)) { // Sex, S·b ou Dom
+        const dow = today.getDay(); // 0=Dom, 5=Sex, 6=S√°b
+        if ([5, 6, 0].includes(dow)) { // Sex, S√°b ou Dom
             const weekKey = this._getWeekKey();
             const reviews = state.reviews || {};
             const hasPlan = !!(state.weekPlans || {})[weekKey];
@@ -2114,15 +2114,15 @@ openAvatarPicker: function() {
                 });
             this.needsReview = hasPlan && !hasReviewThisWeek;
         }
-        // Agenda notificaÁıes locais do SO (apenas se permiss„o concedida)
+        // Agenda notifica√ß√µes locais do SO (apenas se permiss√£o concedida)
         setTimeout(() => this.scheduleLocalNotifications(), 5000);
         setTimeout(() => this.scheduleHabitReminders(), 5200);
 
         const diffDaysCycle = Math.floor((today - new Date(state.cycleStartDate)) / (1000 * 60 * 60 * 24));
-        if (diffDaysCycle >= 84) setTimeout(() => this.showNotification("?? Ciclo concluÌdo! Reavalie a Roda da Vida e o PERMA na aba PropÛsito."), 4000);
+        if (diffDaysCycle >= 84) setTimeout(() => this.showNotification("üîÑ Ciclo conclu√≠do! Reavalie a Roda da Vida e o PERMA na aba Prop√≥sito."), 4000);
 
         const diffDaysPurpose = Math.floor((today - new Date(state.purposeStartDate)) / (1000 * 60 * 60 * 24));
-        if (diffDaysPurpose >= 365 && diffDaysPurpose % 365 === 0) setTimeout(() => this.showNotification("?? 1 ano de jornada! Hora da revis„o profunda do seu PropÛsito e Ikigai."), 5500);
+        if (diffDaysPurpose >= 365 && diffDaysPurpose % 365 === 0) setTimeout(() => this.showNotification("üåü 1 ano de jornada! Hora da revis√£o profunda do seu Prop√≥sito e Ikigai."), 5500);
     },
 
     getRiskAlerts: function() {
@@ -2132,19 +2132,19 @@ openAvatarPicker: function() {
       const alerts = [];
 
       state.entities.micros.forEach(m => {
-        if (m.status === 'done') return; // ignora concluÌdas
+        if (m.status === 'done') return; // ignora conclu√≠das
 
         const hasPrazo = m.prazo && m.prazo.trim() !== '';
         const hasInicio = m.inicioDate && m.inicioDate.trim() !== '';
 
-        if (!hasPrazo) return; // sem prazo, sem risco calcul·vel
+        if (!hasPrazo) return; // sem prazo, sem risco calcul√°vel
 
         const prazo = new Date(m.prazo + 'T00:00:00');
         const inicio = hasInicio ? new Date(m.inicioDate + 'T00:00:00') : null;
 
         const diasAteVencer = Math.floor((prazo - today) / (1000 * 60 * 60 * 24));
 
-        // Risco 1: prazo j· passou (atrasada)
+        // Risco 1: prazo j√° passou (atrasada)
         if (diasAteVencer < 0) {
           alerts.push({ id: m.id, title: m.title, tipo: 'overdue', dias: Math.abs(diasAteVencer) });
           return;
@@ -2156,13 +2156,13 @@ openAvatarPicker: function() {
           return;
         }
 
-        // Risco 3: inicioDate j· passou e ainda est· pendente (n„o iniciada)
+        // Risco 3: inicioDate j√° passou e ainda est√° pendente (n√£o iniciada)
         if (inicio && inicio < today && m.status !== 'in_progress' && diasAteVencer <= 3) {
           alerts.push({ id: m.id, title: m.title, tipo: 'risco', dias: diasAteVencer });
           return;
         }
 
-        // Risco 4: vence em atÈ 2 dias e ainda n„o tem inicioDate
+        // Risco 4: vence em at√© 2 dias e ainda n√£o tem inicioDate
         if (!inicio && diasAteVencer <= 2) {
           alerts.push({ id: m.id, title: m.title, tipo: 'urgente', dias: diasAteVencer });
         }
@@ -2187,7 +2187,7 @@ openAvatarPicker: function() {
             if (importants.length > 0) {
                 html += importants.map(v => `<span class="px-2 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-lg uppercase italic transition-all hover:bg-secondary/20 cursor-default animate-fade-in" title="Importante">${v}</span>`).join('');
             }
-            container.innerHTML = html || `<span class="text-[10px] text-outline italic">Defina seus valores no PropÛsito</span>`;
+            container.innerHTML = html || `<span class="text-[10px] text-outline italic">Defina seus valores no Prop√≥sito</span>`;
         }
 
         const valuesBanner = document.getElementById('top-values-banner');
@@ -2199,7 +2199,7 @@ openAvatarPicker: function() {
             if (importants.length > 0) {
                 html += importants.map(v => `<span class="px-4 py-1.5 bg-secondary/10 text-secondary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in" title="Importante">${v}</span>`).join('');
             }
-            valuesBanner.innerHTML = html || '<p class="text-xs text-outline italic">Escolha os valores que guiam suas decisıes.</p>';
+            valuesBanner.innerHTML = html || '<p class="text-xs text-outline italic">Escolha os valores que guiam suas decis√µes.</p>';
         }
     },
 
@@ -2227,14 +2227,14 @@ renderProfileChrome: function() {
 
     switchPlanosTab: function(tabId) {
       this.planosActiveTab = tabId || 'metas';
-      // 1. Oculta todos os conte˙dos removendo 'active'
+      // 1. Oculta todos os conte√∫dos removendo 'active'
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     
-      // 2. Exibe o conte˙do da tab clicada
+      // 2. Exibe o conte√∫do da tab clicada
       const targetContent = document.getElementById('tab-' + tabId);
       if (targetContent) targetContent.classList.add('active');
     
-      // 3. Remove estado ativo de TODOS os botıes
+      // 3. Remove estado ativo de TODOS os bot√µes
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active', 'text-primary');
         btn.classList.add('text-outline');
@@ -2254,7 +2254,7 @@ renderProfileChrome: function() {
         if (this.currentView === 'planos' && this.render.planos) this.render.planos();
       }
 
-      // ReaÁ„o em cadeia: renderiza conte˙do especÌfico da tab
+      // Rea√ß√£o em cadeia: renderiza conte√∫do espec√≠fico da tab
       if (tabId === 'timeline') this.renderTimeline();
       if (tabId === 'semanal') this.renderWeeklyPlans();
       if (tabId === 'ciclo') this.renderCycleReviewPanel();
@@ -2279,8 +2279,8 @@ renderProfileChrome: function() {
                 return `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                            <p class="text-sm font-bold text-on-surface">${this.escapeHtml(okr.title || 'OKR sem tÌtulo')}</p>
-                            <p class="text-xs text-outline mt-1">${macros.length} macro${macros.length === 1 ? '' : 's'} ∑ ${pendingMicros} micro${pendingMicros === 1 ? '' : 's'} pendente${pendingMicros === 1 ? '' : 's'}</p>
+                            <p class="text-sm font-bold text-on-surface">${this.escapeHtml(okr.title || 'OKR sem t√≠tulo')}</p>
+                            <p class="text-xs text-outline mt-1">${macros.length} macro${macros.length === 1 ? '' : 's'} ¬∑ ${pendingMicros} micro${pendingMicros === 1 ? '' : 's'} pendente${pendingMicros === 1 ? '' : 's'}</p>
                         </div>
                         <span class="text-xs font-bold text-primary shrink-0">${Math.round(Number(okr.progress) || 0)}%</span>
                     </div>
@@ -2297,7 +2297,7 @@ renderProfileChrome: function() {
                 <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
                     <div class="h-full bg-primary rounded-full transition-all duration-500" style="width: ${cyclePct}%"></div>
                 </div>
-                <p class="text-[11px] text-on-surface-variant uppercase tracking-widest text-center pt-1">Semana ${weekNumber} de 12 ∑ ${elapsedDays} dias decorridos</p>
+                <p class="text-[11px] text-on-surface-variant uppercase tracking-widest text-center pt-1">Semana ${weekNumber} de 12 ¬∑ ${elapsedDays} dias decorridos</p>
             </div>
             <div class="space-y-3">
                 <div class="flex items-center justify-between gap-3">
@@ -2305,14 +2305,14 @@ renderProfileChrome: function() {
                     <button onclick="window.app.openQuarterlyModal()"
                         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
                         <span class="material-symbols-outlined notranslate text-[16px]">rate_review</span>
-                        Abrir revis„o
+                        Abrir revis√£o
                     </button>
                 </div>
                 ${okrRows}
             </div>`;
     },
 
-    // -- RenderizaÁ„o da aba Semanal ---------------------------------------------
+    // ‚îÄ‚îÄ Renderiza√ß√£o da aba Semanal ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
     _renderWeeklyPlanShell: function({ weekKey, plan, label, actionLabel, actionIcon, actionOptions = '', isCurrent = false, emptyText = '' } = {}) {
         const options = actionOptions ? `{ ${actionOptions} }` : '{}';
         const body = plan
@@ -2344,18 +2344,18 @@ renderProfileChrome: function() {
             ['O que executei', review.q2],
             ['O que aprendi', review.q3],
             ['O que ajustaria', review.q4],
-            ['Gratid„o / Destaque', review.q5],
-            ['ForÁa usada', this.getIdentityTitleById('strengths', review.strengthId)],
+            ['Gratid√£o / Destaque', review.q5],
+            ['For√ßa usada', this.getIdentityTitleById('strengths', review.strengthId)],
             ['Sombra observada', this.getIdentityTitleById('shadows', review.shadowId)],
             ['Resposta melhor', review.responsePracticed],
-            ['H·bito a ajustar', review.habitAdjustment]
+            ['H√°bito a ajustar', review.habitAdjustment]
         ].filter(([, value]) => String(value || '').trim());
 
         if (!fields.length) {
             return `
             <div class="mt-4 pt-4 border-t border-outline-variant/10 text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                 <span class="material-symbols-outlined notranslate text-[16px]">check_circle</span>
-                Revis„o da semana salva
+                Revis√£o da semana salva
             </div>`;
         }
 
@@ -2363,7 +2363,7 @@ renderProfileChrome: function() {
         <div class="mt-4 pt-4 border-t border-outline-variant/10">
             <p class="text-[10px] font-bold uppercase tracking-widest text-secondary mb-3 flex items-center gap-1">
                 <span class="material-symbols-outlined notranslate text-[14px]">rate_review</span>
-                Revis„o da Semana
+                Revis√£o da Semana
             </p>
             <div class="grid md:grid-cols-2 gap-3">
                 ${fields.map(([label, value], idx) => `
@@ -2388,11 +2388,11 @@ renderProfileChrome: function() {
         }
         if (this._cadenceNeedsMigrationSave) {
             this._cadenceNeedsMigrationSave = false;
-            try { await this.saveState(true); } catch (err) { console.warn('[Cadence] Falha ao persistir migraÁ„o de propÛsito:', err); }
+            try { await this.saveState(true); } catch (err) { console.warn('[Cadence] Falha ao persistir migra√ß√£o de prop√≥sito:', err); }
         }
         if (this._stateSchemaNeedsSave) {
             this._stateSchemaNeedsSave = false;
-            try { await this.saveState(true); } catch (err) { console.warn('[Schema] Falha ao persistir migraÁ„o de vers„o:', err); }
+            try { await this.saveState(true); } catch (err) { console.warn('[Schema] Falha ao persistir migra√ß√£o de vers√£o:', err); }
         }
         const recheckNotifications = () => {
             try { this.revalidateNotificationState({ register: true, rerender: true }).catch(() => {}); } catch (_) {}
@@ -2418,19 +2418,19 @@ renderProfileChrome: function() {
         try { this.ensureDeepWorkTicking(); } catch (_) {}
         try { this.setupRealtimeSync(); } catch (_) {} // real-time cross-device sync
 
-        // Auto-sincroniza imagens com Firestore logo apÛs o carregamento
+        // Auto-sincroniza imagens com Firestore logo ap√≥s o carregamento
         try {
             const hasAvatar = !!(window.sistemaVidaState.profile?.avatarUrl);
             const odysseyImgs = window.sistemaVidaState.profile?.odysseyImages || {};
             const hasOdyssey = Object.values(odysseyImgs).some(v => v && typeof v === 'string' && v.length > 10);
             if (hasAvatar || hasOdyssey) {
                 getAuthReady().then(() => {
-                    this.syncImagesToFirestoreDoc().catch(e => console.warn('[Images] Falha ao sincronizar imagens na inicializaÁ„o:', e));
+                    this.syncImagesToFirestoreDoc().catch(e => console.warn('[Images] Falha ao sincronizar imagens na inicializa√ß√£o:', e));
                 }).catch(() => {});
             }
         } catch (_) {}
 
-        // Always navigate ó even if something above threw
+        // Always navigate ‚Äî even if something above threw
         if (!window.sistemaVidaState.onboardingComplete) {
             this.switchView('onboarding');
         } else {
@@ -2442,7 +2442,7 @@ renderProfileChrome: function() {
             }
         }
 
-        // Tarefa 2: Filtro Inteligente - Listener de Dimens„o
+        // Tarefa 2: Filtro Inteligente - Listener de Dimens√£o
         try {
             const dimSelect = document.getElementById('crud-dimension');
             if (dimSelect) {
@@ -2575,15 +2575,15 @@ renderProfileChrome: function() {
             list.innerHTML = '<div class="text-center py-12 text-outline italic">Nenhum registro encontrado.</div>';
         } else {
             list.innerHTML = sortedLogs.map(log => {
-                // Adiciona T12:00:00 para evitar que o fuso hor·rio mude o dia no toLocaleDateString
+                // Adiciona T12:00:00 para evitar que o fuso hor√°rio mude o dia no toLocaleDateString
                 const dateObj = new Date(log.date + "T12:00:00");
                 const dateStr = dateObj.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
                 const [dia, de, mes] = dateStr.split(' ');
                 
                 const energyColor = log.energy >= 4 ? 'text-emerald-600 dark:text-emerald-400' : log.energy >= 3 ? 'text-amber-600 dark:text-amber-400' : 'text-error';
-                const gratidaoBlock = log.gratidao ? `<p class="text-[11px] text-on-surface-variant mt-2"><span class="font-bold text-outline">Gratid„o:</span> ${this.escapeHtml(log.gratidao)}</p>` : '';
+                const gratidaoBlock = log.gratidao ? `<p class="text-[11px] text-on-surface-variant mt-2"><span class="font-bold text-outline">Gratid√£o:</span> ${this.escapeHtml(log.gratidao)}</p>` : '';
                 const funcionouBlock = log.funcionou ? `<p class="text-[11px] text-on-surface-variant mt-1"><span class="font-bold text-outline">Funcionou:</span> ${this.escapeHtml(log.funcionou)}</p>` : '';
-                const dimIcons = { 'Sa˙de':'??','Mente':'??','Carreira':'??','FinanÁas':'??','Relacionamentos':'??','FamÌlia':'??','Lazer':'??','PropÛsito':'?' };
+                const dimIcons = { 'Sa√∫de':'üí™','Mente':'üß†','Carreira':'üíº','Finan√ßas':'üí∞','Relacionamentos':'ü§ù','Fam√≠lia':'üè†','Lazer':'üé®','Prop√≥sito':'‚ú®' };
                 const dimNotes = log.dimensionNotes || {};
                 const dimEntries = Object.entries(dimNotes).filter(([,v]) => v && v.trim());
                 const shutdownBlock = dimEntries.length ? `
@@ -2591,19 +2591,19 @@ renderProfileChrome: function() {
                         <p class="text-[9px] uppercase font-bold text-primary tracking-wider mb-1.5">Ritual de Shutdown</p>
                         ${dimEntries.map(([dim, text]) => `
                             <div>
-                                <span class="text-[10px] font-bold text-on-surface">${dimIcons[dim] || '?'} ${this.escapeHtml(dim)}</span>
+                                <span class="text-[10px] font-bold text-on-surface">${dimIcons[dim] || '‚≠ê'} ${this.escapeHtml(dim)}</span>
                                 <p class="text-[11px] text-on-surface-variant leading-snug mt-0.5">${this.escapeHtml(text)}</p>
                             </div>`).join('')}
                     </div>` : '';
                 
-                // SeÁ„o Flash Reflex„o
+                // Se√ß√£o Flash Reflex√£o
                 let flashBlock = '';
                 if (log.flashGratitude) {
-                    const emotionMap = { 'angry': '??', 'neutral': '??', 'happy': '??', 'fire': '??' };
-                    const emotionEmoji = emotionMap[log.flashEmotion] || '?';
+                    const emotionMap = { 'angry': 'üò°', 'neutral': 'üòê', 'happy': 'üòä', 'fire': 'üî•' };
+                    const emotionEmoji = emotionMap[log.flashEmotion] || '‚ú®';
                     flashBlock = `
                         <div class="mt-3 p-2.5 bg-secondary/5 rounded-lg border border-secondary/10">
-                            <p class="text-[9px] uppercase font-bold text-secondary tracking-wider mb-1">Flash Reflex„o ${emotionEmoji}</p>
+                            <p class="text-[9px] uppercase font-bold text-secondary tracking-wider mb-1">Flash Reflex√£o ${emotionEmoji}</p>
                             <p class="text-[11px] text-on-surface-variant italic">"${log.flashGratitude}"</p>
                         </div>
                     `;
@@ -2618,7 +2618,7 @@ renderProfileChrome: function() {
                             </div>
                             <div class="h-8 w-px bg-outline-variant/20"></div>
                             <div>
-                                <p class="text-sm font-medium text-on-surface italic">"${log.focus || 'Sem intenÁ„o definida'}"</p>
+                                <p class="text-sm font-medium text-on-surface italic">"${log.focus || 'Sem inten√ß√£o definida'}"</p>
                                 <div class="flex items-center gap-2 mt-1">
                                     <span class="text-[10px] uppercase font-bold text-outline">Energia:</span>
                                     <span class="text-xs font-bold ${energyColor}">${log.energy || 0}/5</span>
@@ -2651,7 +2651,7 @@ renderProfileChrome: function() {
         }
     },
 
-    // -- LINHA DO TEMPO ----------------------------------------------------------
+    // ‚îÄ‚îÄ LINHA DO TEMPO ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
 
     getAllActiveDates: function() {
         const state = window.sistemaVidaState;
@@ -2731,18 +2731,18 @@ renderProfileChrome: function() {
         if (chev) chev.textContent = opening ? 'expand_less' : 'expand_more';
     },
 
-    // -- FIM LINHA DO TEMPO ------------------------------------------------------
+    // ‚îÄ‚îÄ FIM LINHA DO TEMPO ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
 
     setPlanosFilter: function(dim) {
         this.planosFilter = dim;
         if (this.render.planos) this.render.planos();
-        this.renderTimeline(); // ReaÁ„o em Cadeia
+        this.renderTimeline(); // Rea√ß√£o em Cadeia
     },
 
     setPlanosStatusFilter: function(status) {
         this.planosStatusFilter = status;
         if (this.render.planos) this.render.planos();
-        this.renderTimeline(); // ReaÁ„o em Cadeia
+        this.renderTimeline(); // Rea√ß√£o em Cadeia
     },
 
     clearPlanosFilters: function() {
@@ -2803,7 +2803,7 @@ renderProfileChrome: function() {
         const cachedHash = localStorage.getItem(cacheKey);
 
         if (cachedHash) versionEl.textContent = `Commit ${cachedHash}`;
-        else versionEl.textContent = 'Commit indisponÌvel';
+        else versionEl.textContent = 'Commit indispon√≠vel';
 
         const repo = this.config.repoFullName;
         if (!repo) return;
@@ -2817,7 +2817,7 @@ renderProfileChrome: function() {
             versionEl.textContent = `Commit ${sha}`;
             localStorage.setItem(cacheKey, sha);
         } catch (_) {
-            if (!cachedHash) versionEl.textContent = 'Commit indisponÌvel (offline)';
+            if (!cachedHash) versionEl.textContent = 'Commit indispon√≠vel (offline)';
         }
     },
 
@@ -2835,7 +2835,7 @@ renderProfileChrome: function() {
         const legacyObj = profile.legacyObj || {};
         const legacyKey = this._dimensionLegacyMap ? this._dimensionLegacyMap[dimension] : null;
 
-        const valuesText = values.length ? values.slice(0, 3).join(' ∑ ') : '';
+        const valuesText = values.length ? values.slice(0, 3).join(' ¬∑ ') : '';
         const ikigaiText = (ikigai.sintese || ikigai.love || '').trim();
         const legacyText = (legacyKey ? (legacyObj[legacyKey] || '') : '').trim();
         const hasAny = !!(valuesText || ikigaiText || legacyText);
@@ -2989,7 +2989,7 @@ renderProfileChrome: function() {
         const list = document.getElementById('trail-okrs-list');
         if (!list) return;
         if (list.children.length >= 3) {
-            this.showToast('M·ximo de 3 OKRs na trilha.', 'error');
+            this.showToast('M√°ximo de 3 OKRs na trilha.', 'error');
             return;
         }
         const rowId = this._trailRowId('okr');
@@ -3002,7 +3002,7 @@ renderProfileChrome: function() {
                 <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
             </div>
             <input type="text" class="trail-okr-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Resultado-chave (ex.: Publicar 12 artigos)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
-            <input type="text" class="trail-okr-metric w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="MÈtrica de sucesso (ex.: 12 artigos publicados atÈ o prazo)" value="${this.escapeHtml(prefill.metric || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
+            <input type="text" class="trail-okr-metric w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="M√©trica de sucesso (ex.: 12 artigos publicados at√© o prazo)" value="${this.escapeHtml(prefill.metric || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input type="date" class="trail-okr-inicio w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.inicioDate || '')}" onchange="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
                 <input type="date" class="trail-okr-prazo w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.prazo || '')}" onchange="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
@@ -3057,7 +3057,7 @@ renderProfileChrome: function() {
         row.className = 'trail-kr-row grid gap-2 items-center';
         row.style.gridTemplateColumns = '1fr 72px 72px 32px';
         row.innerHTML = `
-            <input type="text" class="trail-kr-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Resultado mensur·vel" value="${this.escapeHtml(kr.title || '')}" oninput="window.app.refreshTrailSummary()">
+            <input type="text" class="trail-kr-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Resultado mensur√°vel" value="${this.escapeHtml(kr.title || '')}" oninput="window.app.refreshTrailSummary()">
             <input type="number" class="trail-kr-current w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-2 py-2 text-sm text-on-surface text-center" placeholder="Atual" min="0" value="${Number(kr.current || 0)}" oninput="window.app.refreshTrailSummary()">
             <input type="number" class="trail-kr-target w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-2 py-2 text-sm text-on-surface text-center" placeholder="Meta" min="0" value="${Number(kr.target || 0)}" oninput="window.app.refreshTrailSummary()">
             <button type="button" onclick="this.closest('.trail-kr-row').remove(); window.app.refreshTrailSummary();" class="flex items-center justify-center w-8 h-9 rounded-lg text-outline hover:text-error hover:bg-error/10 transition-colors">
@@ -3072,7 +3072,7 @@ renderProfileChrome: function() {
         const list = document.getElementById('trail-macros-list');
         if (!list) return;
         if (list.children.length >= 5) {
-            this.showToast('M·ximo de 5 Macros na trilha.', 'error');
+            this.showToast('M√°ximo de 5 Macros na trilha.', 'error');
             return;
         }
         const rowId = this._trailRowId('macro');
@@ -3109,7 +3109,7 @@ renderProfileChrome: function() {
                 <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Micro</p>
                 <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
             </div>
-            <input type="text" class="trail-micro-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="AÁ„o concreta (ex.: Escrever outline do artigo 1)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailSummary()">
+            <input type="text" class="trail-micro-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="A√ß√£o concreta (ex.: Escrever outline do artigo 1)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailSummary()">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <select class="trail-micro-macro w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()"></select>
                 <input type="date" class="trail-micro-inicio w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.inicioDate || '')}" onchange="window.app.refreshTrailSummary()">
@@ -3139,7 +3139,7 @@ renderProfileChrome: function() {
         selects.forEach(select => {
             const selected = select.value;
             if (okrs.length === 0) {
-                select.innerHTML = '<option value="">Sem OKR disponÌvel</option>';
+                select.innerHTML = '<option value="">Sem OKR dispon√≠vel</option>';
                 select.value = '';
                 return;
             }
@@ -3158,7 +3158,7 @@ renderProfileChrome: function() {
         selects.forEach(select => {
             const selected = select.value;
             if (macros.length === 0) {
-                select.innerHTML = '<option value="">Sem Macro disponÌvel</option>';
+                select.innerHTML = '<option value="">Sem Macro dispon√≠vel</option>';
                 select.value = '';
                 return;
             }
@@ -3269,9 +3269,9 @@ renderProfileChrome: function() {
         // Extracted in Phase 9: planning module
 openCreateModal: function(type = 'metas', parentId = null) {
         this.closeFabMenu();
-        this.editingEntity = null; // Limpa estado de ediÁ„o
+        this.editingEntity = null; // Limpa estado de edi√ß√£o
         this.clearBlockingMessage();
-        // Reseta chips do seletor de propÛsito
+        // Reseta chips do seletor de prop√≥sito
         document.querySelectorAll('.purpose-option-chip').forEach(c => {
             c.classList.remove('bg-primary/10', 'border-primary');
         });
@@ -3324,15 +3324,15 @@ openCreateModal: function(type = 'metas', parentId = null) {
         const legacyObj = p.legacyObj || {};
         const vision = p.vision || {};
 
-        // Coleta todas as opÁıes disponÌveis (sÛ onde resumo est· preenchido)
+        // Coleta todas as op√ß√µes dispon√≠veis (s√≥ onde resumo est√° preenchido)
         const options = [];
         if (ikigai.sinteseResumo)    options.push({ label: 'Ikigai',              text: ikigai.sinteseResumo });
-        if (legacyObj.familiaResumo) options.push({ label: 'Legado FamÌlia',       text: legacyObj.familiaResumo });
-        if (legacyObj.profissaoResumo) options.push({ label: 'Legado Profiss„o',   text: legacyObj.profissaoResumo });
+        if (legacyObj.familiaResumo) options.push({ label: 'Legado Fam√≠lia',       text: legacyObj.familiaResumo });
+        if (legacyObj.profissaoResumo) options.push({ label: 'Legado Profiss√£o',   text: legacyObj.profissaoResumo });
         if (legacyObj.mundoResumo)   options.push({ label: 'Legado Mundo',         text: legacyObj.mundoResumo });
-        if (vision.saudeResumo)      options.push({ label: 'Vis„o Sa˙de',          text: vision.saudeResumo });
-        if (vision.carreiraResumo)   options.push({ label: 'Vis„o Carreira',       text: vision.carreiraResumo });
-        if (vision.intelectoResumo)  options.push({ label: 'Vis„o Intelecto',      text: vision.intelectoResumo });
+        if (vision.saudeResumo)      options.push({ label: 'Vis√£o Sa√∫de',          text: vision.saudeResumo });
+        if (vision.carreiraResumo)   options.push({ label: 'Vis√£o Carreira',       text: vision.carreiraResumo });
+        if (vision.intelectoResumo)  options.push({ label: 'Vis√£o Intelecto',      text: vision.intelectoResumo });
 
         if (options.length === 0) {
             optionsContainer.innerHTML = '';
@@ -3344,7 +3344,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
                     onclick="window.app.selectPurposeOption(this, '${opt.text.replace(/'/g, "\\'")}')"
                     class="purpose-option-chip px-3 py-1.5 rounded-full border border-primary/30 text-xs text-primary hover:bg-primary/10 transition-colors text-left"
                     title="${opt.text}">
-                    <span class="font-bold text-outline">${opt.label}:</span> ${opt.text.length > 45 ? opt.text.slice(0, 45) + 'Ö' : opt.text}
+                    <span class="font-bold text-outline">${opt.label}:</span> ${opt.text.length > 45 ? opt.text.slice(0, 45) + '‚Ä¶' : opt.text}
                 </button>
             `).join('');
         }
@@ -3377,12 +3377,12 @@ openCreateModal: function(type = 'metas', parentId = null) {
         if (chevron) chevron.style.transform = willOpen ? 'rotate(180deg)' : '';
     },
 
-    // -- Painel de PropÛsito no modal de criaÁ„o ---------------------------------
-    // Dimensıes mapeadas ao campo de legado do perfil
+    // ‚îÄ‚îÄ Painel de Prop√≥sito no modal de cria√ß√£o ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
+    // Dimens√µes mapeadas ao campo de legado do perfil
     _dimensionLegacyMap: {
-        'Carreira': 'profissao', 'FinanÁas': 'profissao',
-        'FamÌlia': 'familia', 'Relacionamentos': 'familia',
-        'PropÛsito': 'mundo', 'Sa˙de': null, 'Mente': null, 'Lazer': null
+        'Carreira': 'profissao', 'Finan√ßas': 'profissao',
+        'Fam√≠lia': 'familia', 'Relacionamentos': 'familia',
+        'Prop√≥sito': 'mundo', 'Sa√∫de': null, 'Mente': null, 'Lazer': null
     },
 
     togglePurposePanel: function() {
@@ -3490,12 +3490,12 @@ openCreateModal: function(type = 'metas', parentId = null) {
         const normalizedType = String(type || '');
         const hasPrazo = !!String(prazo || '').trim();
         if (['metas', 'okrs', 'macros', 'micros'].includes(normalizedType) && !hasPrazo) {
-            return { ok: false, message: 'Defina um prazo. Cada tipo do plano tem uma janela m·xima para manter a execuÁ„o realista.' };
+            return { ok: false, message: 'Defina um prazo. Cada tipo do plano tem uma janela m√°xima para manter a execu√ß√£o realista.' };
         }
 
         if (normalizedType === 'metas') {
             const days = this.getDayDiffFromNow(prazo);
-            if (days === null || days < 1) return { ok: false, message: 'Meta precisa de um prazo futuro v·lido.' };
+            if (days === null || days < 1) return { ok: false, message: 'Meta precisa de um prazo futuro v√°lido.' };
             const rule = this.getMetaHorizonRule(metaHorizonYears);
             if (days < rule.min || days > rule.max) {
                 return { ok: false, message: `Para uma meta de ${rule.label}, o prazo precisa ficar entre ${rule.min} e ${rule.max} dias. Ajuste o prazo ou escolha outro horizonte.` };
@@ -3506,24 +3506,24 @@ openCreateModal: function(type = 'metas', parentId = null) {
         if (normalizedType === 'okrs') {
             const startRef = String(inicioDate || this.getLocalDateKey());
             const days = this.getDayDiffBetween(startRef, prazo);
-            if (days === null || days < 0) return { ok: false, message: 'OKR precisa de inÌcio e prazo v·lidos. O prazo n„o pode vir antes do inÌcio.' };
-            if (days > 92) return { ok: false, message: 'OKR deve ficar dentro de atÈ 3 meses (m·x. 92 dias). Se for maior, transforme em Meta ou divida em OKRs menores.' };
+            if (days === null || days < 0) return { ok: false, message: 'OKR precisa de in√≠cio e prazo v√°lidos. O prazo n√£o pode vir antes do in√≠cio.' };
+            if (days > 92) return { ok: false, message: 'OKR deve ficar dentro de at√© 3 meses (m√°x. 92 dias). Se for maior, transforme em Meta ou divida em OKRs menores.' };
             return { ok: true };
         }
 
         if (normalizedType === 'macros') {
             const startRef = String(inicioDate || this.getLocalDateKey());
             const days = this.getDayDiffBetween(startRef, prazo);
-            if (days === null || days < 0) return { ok: false, message: 'Macro AÁ„o precisa de inÌcio e prazo v·lidos. O prazo n„o pode vir antes do inÌcio.' };
-            if (days > 31) return { ok: false, message: 'Macro AÁ„o deve caber em atÈ 1 mÍs (m·x. 31 dias). Se passar disso, divida em macros menores ou promova para OKR.' };
+            if (days === null || days < 0) return { ok: false, message: 'Macro A√ß√£o precisa de in√≠cio e prazo v√°lidos. O prazo n√£o pode vir antes do in√≠cio.' };
+            if (days > 31) return { ok: false, message: 'Macro A√ß√£o deve caber em at√© 1 m√™s (m√°x. 31 dias). Se passar disso, divida em macros menores ou promova para OKR.' };
             return { ok: true };
         }
 
         if (normalizedType === 'micros') {
             const startRef = String(inicioDate || this.getLocalDateKey());
             const days = this.getDayDiffBetween(startRef, prazo);
-            if (days === null || days < 0) return { ok: false, message: 'Micro AÁ„o precisa de inÌcio e prazo v·lidos. O prazo n„o pode vir antes do inÌcio.' };
-            if (days > 7) return { ok: false, message: 'Micro AÁ„o deve caber em atÈ 7 dias. Se passar disso, divida em micros menores ou classifique como Macro AÁ„o.' };
+            if (days === null || days < 0) return { ok: false, message: 'Micro A√ß√£o precisa de in√≠cio e prazo v√°lidos. O prazo n√£o pode vir antes do in√≠cio.' };
+            if (days > 7) return { ok: false, message: 'Micro A√ß√£o deve caber em at√© 7 dias. Se passar disso, divida em micros menores ou classifique como Macro A√ß√£o.' };
             return { ok: true };
         }
 
@@ -3538,7 +3538,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         row.className = 'kr-row grid gap-2 items-center';
         row.style.gridTemplateColumns = '1fr 72px 72px 32px';
         row.innerHTML = `
-            <input type="text" class="kr-title w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-10 px-3 text-on-surface placeholder-outline-variant" placeholder="DescriÁ„o do resultado" value="${this.escapeHtml(kr.title || '')}">
+            <input type="text" class="kr-title w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-10 px-3 text-on-surface placeholder-outline-variant" placeholder="Descri√ß√£o do resultado" value="${this.escapeHtml(kr.title || '')}">
             <input type="number" class="kr-current w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-10 px-2 text-on-surface text-center" placeholder="Atual" min="0" value="${Number(kr.current || 0)}">
             <input type="number" class="kr-target w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-10 px-2 text-on-surface text-center" placeholder="Meta" min="0" value="${Number(kr.target || 0)}">
             <button type="button" onclick="this.closest('.kr-row').remove(); window.app._syncKrHeader();" class="flex items-center justify-center w-8 h-8 rounded-lg text-outline hover:text-error hover:bg-error/10 transition-colors">
@@ -3627,7 +3627,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         if (parentType) {
             const parent = window.sistemaVidaState.entities[parentType].find(e => e.id === parentId);
             if (parent && parent.dimension) {
-                // Sincroniza dimens„o com o pai selecionado
+                // Sincroniza dimens√£o com o pai selecionado
                 dimSelect.value = parent.dimension;
             }
         }
@@ -3640,7 +3640,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         if (!parentSelect) return;
         
         const currentDim = dimSelect ? dimSelect.value : null;
-        parentSelect.innerHTML = `<option value="">${type === 'metas' ? 'Sem meta pai (Meta Raiz)' : 'Sem vÌnculo (Mestre)'}</option>`;
+        parentSelect.innerHTML = `<option value="">${type === 'metas' ? 'Sem meta pai (Meta Raiz)' : 'Sem v√≠nculo (Mestre)'}</option>`;
         
         let parentType = '';
         if (type === 'metas') parentType = 'metas';
@@ -3684,7 +3684,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         this.clearBlockingMessage();
         if (form) {
             form.reset();
-            // Reset de campos extras n„o limpos pelo reset() standard
+            // Reset de campos extras n√£o limpos pelo reset() standard
             const parentSelect = document.getElementById('create-parent');
             if (parentSelect) parentSelect.innerHTML = '';
             
@@ -3742,11 +3742,11 @@ openCreateModal: function(type = 'metas', parentId = null) {
     saveTextEdit: function() {
         const val = document.getElementById('text-edit-input').value.trim();
 
-        // Valida resumo obrigatÛrio quando campo possui resumoKey
+        // Valida resumo obrigat√≥rio quando campo possui resumoKey
         if (this.currentResumoKey) {
             const resumoVal = (document.getElementById('text-edit-resumo')?.value || '').trim();
             if (!resumoVal) {
-                alert('O resumo para trilha È obrigatÛrio. Preencha uma vers„o curta (m·x. 80 caracteres).');
+                alert('O resumo para trilha √© obrigat√≥rio. Preencha uma vers√£o curta (m√°x. 80 caracteres).');
                 document.getElementById('text-edit-resumo')?.focus();
                 return;
             }
@@ -3772,7 +3772,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         }
     },
 
-    // -- Planejamento Semanal ----------------------------------------------------
+    // ‚îÄ‚îÄ Planejamento Semanal ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
     _getWeekKey: function(date = new Date()) {
         // Retorna a segunda-feira da semana no formato YYYY-MM-DD
         const d = new Date(date);
@@ -3895,13 +3895,13 @@ openCreateModal: function(type = 'metas', parentId = null) {
     },
 
     /**
-     * Gera uma lista de insights autom·ticos baseados nos dados j· existentes.
+     * Gera uma lista de insights autom√°ticos baseados nos dados j√° existentes.
      * Retorna um array de objetos {icon, tone, text} ordenados por prioridade.
-     * Zero impacto em dados ó apenas leitura.
+     * Zero impacto em dados ‚Äî apenas leitura.
      */
     /**
      * Popula o select #habit-linked-meta com todas as Metas ativas,
-     * agrupadas por dimens„o. MantÈm a seleÁ„o atual se o id ainda existir.
+     * agrupadas por dimens√£o. Mant√©m a sele√ß√£o atual se o id ainda existir.
      */
     ensureDailyCheckinState: function() {
         if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
@@ -4094,7 +4094,7 @@ ensureNotesState: function() {
                 if (!groups[opt.group]) groups[opt.group] = [];
                 groups[opt.group].push(opt);
             });
-            let html = '<option value="">Sem vÌnculo (nota avulsa)</option>';
+            let html = '<option value="">Sem v√≠nculo (nota avulsa)</option>';
             Object.keys(groups).forEach(group => {
                 html += `<optgroup label="${this.escapeHtml(group)}">`;
                 groups[group].forEach(opt => {
@@ -4115,7 +4115,7 @@ ensureNotesState: function() {
     },
 
     openEntityNotesModal: function(type, id, entityTitle) {
-        // Pode ser chamado pelo bot„o do crud-modal (sem args) ou direto com args
+        // Pode ser chamado pelo bot√£o do crud-modal (sem args) ou direto com args
         if (!type || !id) {
             const btn = document.getElementById('crud-notes-btn');
             if (!btn) return;
@@ -4183,7 +4183,7 @@ ensureNotesState: function() {
                 if (!groups[opt.group]) groups[opt.group] = [];
                 groups[opt.group].push(opt);
             });
-            let html = '<option value="">Sem vÌnculo (nota avulsa)</option>';
+            let html = '<option value="">Sem v√≠nculo (nota avulsa)</option>';
             Object.keys(groups).forEach(group => {
                 html += `<optgroup label="${this.escapeHtml(group)}">`;
                 groups[group].forEach(opt => {
@@ -4192,7 +4192,7 @@ ensureNotesState: function() {
                 html += '</optgroup>';
             });
             linkedSel.innerHTML = html;
-            // PrÈ-selecionar a entidade
+            // Pr√©-selecionar a entidade
             if (ctx?.type && ctx?.id) {
                 const targetVal = `${ctx.type}:${ctx.id}`;
                 if (linkedSel.querySelector(`option[value="${targetVal}"]`)) linkedSel.value = targetVal;
@@ -4225,7 +4225,7 @@ ensureNotesState: function() {
                 if (!groups[opt.group]) groups[opt.group] = [];
                 groups[opt.group].push(opt);
             });
-            let html = '<option value="">Sem vÌnculo (nota avulsa)</option>';
+            let html = '<option value="">Sem v√≠nculo (nota avulsa)</option>';
             Object.keys(groups).forEach(group => {
                 html += `<optgroup label="${this.escapeHtml(group)}">`;
                 groups[group].forEach(opt => {
@@ -4249,7 +4249,7 @@ ensureNotesState: function() {
         const title = String(document.getElementById('quick-note-title')?.value || '').trim();
         const body = String(document.getElementById('quick-note-body')?.value || '').trim();
         if (!title && !body) {
-            if (this.showToast) this.showToast('Escreva um tÌtulo ou conte˙do para salvar a nota.', 'error');
+            if (this.showToast) this.showToast('Escreva um t√≠tulo ou conte√∫do para salvar a nota.', 'error');
             return;
         }
         this.ensureNotesState();
@@ -4260,7 +4260,7 @@ ensureNotesState: function() {
         const now = new Date().toISOString();
         const note = {
             id: editId || `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
-            title: title || 'Nota sem tÌtulo',
+            title: title || 'Nota sem t√≠tulo',
             body,
             url: String(document.getElementById('quick-note-url')?.value || '').trim(),
             tags: String(document.getElementById('quick-note-tags')?.value || '').split(',').map(t => t.trim()).filter(Boolean),
@@ -4276,7 +4276,7 @@ ensureNotesState: function() {
         this.saveState(true);
         this.closeQuickNoteModal();
         this.renderNotesPanel();
-        if (this.showToast) this.showToast('Nota salva em Perfil ? Notas.', 'success');
+        if (this.showToast) this.showToast('Nota salva em Perfil ‚Üí Notas.', 'success');
     },
 
     editProfileNote: function(noteId) {
@@ -4373,16 +4373,16 @@ ensureNotesState: function() {
     },
 
     buildDailyCheckinSummary: function(entry) {
-        if (!entry) return 'Check-in ainda n„o registrado hoje.';
+        if (!entry) return 'Check-in ainda n√£o registrado hoje.';
         const moodLabel = this.getCheckinScaleText ? this.getCheckinScaleText('mood', entry.mood) : `Humor ${entry.mood}`;
         const energyLabel = this.getCheckinScaleText ? this.getCheckinScaleText('energy', entry.energy) : `Energia ${entry.energy}`;
         const stressLabel = this.getCheckinScaleText ? this.getCheckinScaleText('stress', entry.stress) : `Estresse ${entry.stress}`;
-        const emotion = entry.emotion ? ` ∑ EmoÁ„o ${entry.emotion}` : '';
-        return `Check-in concluÌdo ∑ Sono ${entry.sleepHours || 0}h ∑ ${energyLabel} ∑ ${moodLabel} ∑ ${stressLabel}${emotion}`;
+        const emotion = entry.emotion ? ` ¬∑ Emo√ß√£o ${entry.emotion}` : '';
+        return `Check-in conclu√≠do ¬∑ Sono ${entry.sleepHours || 0}h ¬∑ ${energyLabel} ¬∑ ${moodLabel} ¬∑ ${stressLabel}${emotion}`;
     },
 
     getDailyCheckinSummaryState: function(entry) {
-        if (!entry) return { emoji: '??', title: 'Check-in pendente', tone: 'bg-surface-container-low text-on-surface' };
+        if (!entry) return { emoji: 'üìù', title: 'Check-in pendente', tone: 'bg-surface-container-low text-on-surface' };
         const sleep = Number(entry.sleepHours || 0);
         const sleepQ = Number(entry.sleepQuality || 3);
         const energy = Number(entry.energy || 3);
@@ -4390,33 +4390,33 @@ ensureNotesState: function() {
         const stress = Number(entry.stress || 3);
         const emotion = String(entry.emotion || '').toLowerCase();
         if (sleep < 5 || sleepQ < 3) {
-            return { emoji: '??', title: 'Base em protecao', tone: 'bg-amber-500/15 text-amber-700' };
+            return { emoji: 'üò¥', title: 'Base em protecao', tone: 'bg-amber-500/15 text-amber-700' };
         }
         if (stress >= 4 && emotion.includes('ans')) {
-            return { emoji: '??', title: 'Respire e reduza a carga', tone: 'bg-rose-500/12 text-rose-700' };
+            return { emoji: 'ü´∂', title: 'Respire e reduza a carga', tone: 'bg-rose-500/12 text-rose-700' };
         }
         if (stress >= 4) {
-            return { emoji: '??', title: 'Dia para simplificar', tone: 'bg-orange-500/12 text-orange-700' };
+            return { emoji: 'üßØ', title: 'Dia para simplificar', tone: 'bg-orange-500/12 text-orange-700' };
         }
         if (energy <= 2) {
-            return { emoji: '??', title: 'Economia de energia', tone: 'bg-sky-500/12 text-sky-700' };
+            return { emoji: 'üîã', title: 'Economia de energia', tone: 'bg-sky-500/12 text-sky-700' };
         }
         if (mood <= 2) {
-            return { emoji: '??', title: 'Va no gentil e no concreto', tone: 'bg-lime-500/12 text-lime-700' };
+            return { emoji: 'üå±', title: 'Va no gentil e no concreto', tone: 'bg-lime-500/12 text-lime-700' };
         }
         if (energy >= 4 && mood >= 4 && stress <= 2) {
-            return { emoji: '??', title: 'Janela boa para avancar', tone: 'bg-emerald-500/12 text-emerald-700' };
+            return { emoji: 'üöÄ', title: 'Janela boa para avancar', tone: 'bg-emerald-500/12 text-emerald-700' };
         }
-        return { emoji: '??', title: 'Dia sob controle', tone: 'bg-primary/12 text-primary' };
+        return { emoji: 'üß≠', title: 'Dia sob controle', tone: 'bg-primary/12 text-primary' };
     },
 
     renderDailyCheckinSummaryCard: function(entry) {
         if (!entry) return 'Check-in ainda nao registrado hoje.';
         const state = this.getDailyCheckinSummaryState(entry);
-        const sleepMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('sleep', entry.sleepQuality) : { emoji: '??', short: `Sono ${entry.sleepQuality || 3}` };
-        const energyMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('energy', entry.energy) : { emoji: '?', short: `Energia ${entry.energy || 3}` };
-        const moodMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('mood', entry.mood) : { emoji: '??', short: `Humor ${entry.mood || 3}` };
-        const stressMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('stress', entry.stress) : { emoji: '??', short: `Estresse ${entry.stress || 3}` };
+        const sleepMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('sleep', entry.sleepQuality) : { emoji: 'üò¥', short: `Sono ${entry.sleepQuality || 3}` };
+        const energyMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('energy', entry.energy) : { emoji: '‚ö°', short: `Energia ${entry.energy || 3}` };
+        const moodMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('mood', entry.mood) : { emoji: 'üôÇ', short: `Humor ${entry.mood || 3}` };
+        const stressMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('stress', entry.stress) : { emoji: 'üòå', short: `Estresse ${entry.stress || 3}` };
         const compactValue = (kind, raw) => {
             const maps = {
                 sleep: ['Ruim', 'Abaixo', 'Ok', 'Bom', 'Otimo'],
@@ -4437,7 +4437,7 @@ ensureNotesState: function() {
             ? `<p class="mt-2 text-[11px] text-on-surface-variant leading-relaxed"><span class="font-bold text-on-surface">Intencao:</span> ${this.escapeHtml(entry.intention)}</p>`
             : '';
         const emotion = entry.emotion
-            ? `<span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-high px-2.5 py-1 text-[10px] font-medium text-on-surface-variant">?? ${this.escapeHtml(entry.emotion)}</span>`
+            ? `<span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-high px-2.5 py-1 text-[10px] font-medium text-on-surface-variant">üí≠ ${this.escapeHtml(entry.emotion)}</span>`
             : '';
         return `
             <div class="min-w-0">
@@ -4480,19 +4480,19 @@ ensureNotesState: function() {
         const stress = Number(entry.stress || 3);
         const emotion = String(entry.emotion || '').toLowerCase();
         if (sleep < 5 || sleepQ < 3) {
-            return 'Sono curto ou de baixa qualidade hoje. Priorize o essencial e proteja uma desaceleraÁ„o real ‡ noite.';
+            return 'Sono curto ou de baixa qualidade hoje. Priorize o essencial e proteja uma desacelera√ß√£o real √† noite.';
         }
         if (stress >= 4 && emotion.includes('ans')) {
-            return 'Ansiedade e carga alta hoje. Vale uma pausa de respiraÁ„o ou caminhada antes do prÛximo bloco.';
+            return 'Ansiedade e carga alta hoje. Vale uma pausa de respira√ß√£o ou caminhada antes do pr√≥ximo bloco.';
         }
         if (stress >= 4) {
-            return 'Carga emocional alta. Reduza o n˙mero de micros e preserve uma pausa de verdade hoje.';
+            return 'Carga emocional alta. Reduza o n√∫mero de micros e preserve uma pausa de verdade hoje.';
         }
         if (energy <= 2) {
             return 'Energia baixa. Um bloco de foco curto e bem feito vale mais do que um longo arrastado.';
         }
         if (mood <= 2) {
-            return 'Humor sensÌvel hoje. Simplifique expectativas e busque uma pequena vitÛria concreta.';
+            return 'Humor sens√≠vel hoje. Simplifique expectativas e busque uma pequena vit√≥ria concreta.';
         }
         return '';
     },
@@ -4579,7 +4579,7 @@ ensureNotesState: function() {
         const safeId = 'dim-note-' + dim.replace(/[^a-zA-Z0-9]/g, '-');
         const existing = document.getElementById(safeId);
         const btn = document.querySelector(`.dim-diary-toggle[data-dim="${CSS.escape(dim)}"]`);
-        const dimIcons = { 'Sa˙de': '??', 'Mente': '??', 'Carreira': '??', 'FinanÁas': '??', 'Relacionamentos': '??', 'FamÌlia': '??', 'Lazer': '??', 'PropÛsito': '?' };
+        const dimIcons = { 'Sa√∫de': 'üí™', 'Mente': 'üß†', 'Carreira': 'üíº', 'Finan√ßas': 'üí∞', 'Relacionamentos': 'ü§ù', 'Fam√≠lia': 'üè†', 'Lazer': 'üé®', 'Prop√≥sito': '‚ú®' };
         if (existing) {
             existing.remove();
             if (btn) btn.classList.remove('bg-secondary/20', 'border-secondary', 'text-secondary', 'font-bold');
@@ -4588,7 +4588,7 @@ ensureNotesState: function() {
             div.id = safeId;
             div.className = 'rounded-xl border border-outline-variant/20 overflow-hidden';
             div.innerHTML = `<div class="flex items-center gap-2 bg-surface-container px-4 py-2.5">
-                <span class="text-base">${dimIcons[dim] || '?'}</span>
+                <span class="text-base">${dimIcons[dim] || '‚≠ê'}</span>
                 <span class="text-xs font-bold text-on-surface uppercase tracking-widest">${this.escapeHtml(dim)}</span>
             </div>
             <textarea data-dim-note="${this.escapeHtml(dim)}" class="w-full bg-transparent px-4 py-3 text-sm text-on-surface resize-none focus:outline-none focus:bg-primary/[0.02]" rows="3" placeholder="Como foi ${this.escapeHtml(dim.toLowerCase())} hoje?"></textarea>`;
@@ -4689,7 +4689,7 @@ ensureNotesState: function() {
                 value: candidates.length ? `${Math.round(candidates[0].avg * 100)}%` : '--',
                 icon: 'trending_up',
                 body: candidates.length
-                    ? candidates.map(item => `${this.escapeHtml(item.habit.title)} (${Math.round(item.avg * 100)}%)`).join(' ∑ ')
+                    ? candidates.map(item => `${this.escapeHtml(item.habit.title)} (${Math.round(item.avg * 100)}%)`).join(' ¬∑ ')
                     : 'Sem historico suficiente para indicar candidatos.'
             }
         ];
@@ -4833,7 +4833,7 @@ ensureNotesState: function() {
             if (!previous) return 'Sem snapshot anterior.';
             const oldVal = Number(previous[1].avg ?? previous[1].score);
             const delta = Math.round((Number(current) - oldVal) * 10) / 10;
-            if (Math.abs(delta) < 0.1) return `Est·vel desde ${previous[0]}.`;
+            if (Math.abs(delta) < 0.1) return `Est√°vel desde ${previous[0]}.`;
             return `${delta > 0 ? '+' : ''}${delta}${suffix} desde ${previous[0]}.`;
         };
         const card = (label, value, copy, icon) => `
@@ -4848,7 +4848,7 @@ ensureNotesState: function() {
         container.innerHTML = [
             card('Roda da Vida', `${wheelAvg}%`, trendLabel(history.wheel, wheelAvg, ' pts'), 'pie_chart'),
             card('PERMA', `${permaAvg.toFixed(1)}/10`, trendLabel(history.perma, permaAvg), 'psychology'),
-            card('SWLS', swlsScore ? `${swlsScore}/35` : '--', state.swls?.lastDate ? `⁄ltima avaliaÁ„o: ${state.swls.lastDate}` : 'Sem avaliaÁ„o registrada.', 'monitoring')
+            card('SWLS', swlsScore ? `${swlsScore}/35` : '--', state.swls?.lastDate ? `√öltima avalia√ß√£o: ${state.swls.lastDate}` : 'Sem avalia√ß√£o registrada.', 'monitoring')
         ].join('');
     },
 
@@ -4882,9 +4882,9 @@ ensureNotesState: function() {
         const insights = [];
         const todayStr = this.getLocalDateKey();
         const today = new Date(todayStr + 'T00:00:00');
-        const dimensions = ['Sa˙de', 'Mente', 'Carreira', 'FinanÁas', 'Relacionamentos', 'FamÌlia', 'Lazer', 'PropÛsito'];
+        const dimensions = ['Sa√∫de', 'Mente', 'Carreira', 'Finan√ßas', 'Relacionamentos', 'Fam√≠lia', 'Lazer', 'Prop√≥sito'];
 
-        // 1. Dimens„o com Meta ativa mas sem micro concluÌda nas ˙ltimas 4 semanas
+        // 1. Dimens√£o com Meta ativa mas sem micro conclu√≠da nas √∫ltimas 4 semanas
         const fourWeeksAgo = new Date(today);
         fourWeeksAgo.setDate(today.getDate() - 28);
         const fourWeeksAgoStr = this.getLocalDateKey(fourWeeksAgo);
@@ -4901,12 +4901,12 @@ ensureNotesState: function() {
                 insights.push({
                     icon: 'trending_down',
                     tone: 'warn',
-                    text: `<b>${dim}</b> tem Meta ativa mas nenhuma micro concluÌda nas ˙ltimas 4 semanas.`
+                    text: `<b>${dim}</b> tem Meta ativa mas nenhuma micro conclu√≠da nas √∫ltimas 4 semanas.`
                 });
             }
         });
 
-        // 2. H·bito com sequÍncia 3+ dias quebrada (ontem e hoje em branco)
+        // 2. H√°bito com sequ√™ncia 3+ dias quebrada (ontem e hoje em branco)
         (state.habits || []).forEach(h => {
             const logs = h.logs || {};
             const yesterday = new Date(today);
@@ -4928,12 +4928,12 @@ ensureNotesState: function() {
                 insights.push({
                     icon: 'local_fire_department',
                     tone: 'info',
-                    text: `<b>${h.title}</b> tinha ${streak} dias de sequÍncia ó 2 dias em branco, vale retomar.`
+                    text: `<b>${h.title}</b> tinha ${streak} dias de sequ√™ncia ‚Äî 2 dias em branco, vale retomar.`
                 });
             }
         });
 
-        // 3. Ac˙mulo de atrasadas (5+)
+        // 3. Ac√∫mulo de atrasadas (5+)
         const overdueCount = (state.entities?.micros || []).filter(m =>
             m.status !== 'done' && m.prazo && m.prazo < todayStr
         ).length;
@@ -4963,7 +4963,7 @@ ensureNotesState: function() {
                 insights.push({
                     icon: 'balance',
                     tone: 'info',
-                    text: `<b>${dominant[0]}</b> concentra ${Math.round((dominant[1] / weekMicros.length) * 100)}% das micros da semana. Veja se isso È intenÁ„o ou desequilÌbrio.`
+                    text: `<b>${dominant[0]}</b> concentra ${Math.round((dominant[1] / weekMicros.length) * 100)}% das micros da semana. Veja se isso √© inten√ß√£o ou desequil√≠brio.`
                 });
             }
 
@@ -4975,7 +4975,7 @@ ensureNotesState: function() {
                 insights.push({
                     icon: 'link_off',
                     tone: 'warn',
-                    text: `${unlinked} de ${weekMicros.length} micros da semana est„o sem vÌnculo com Meta. Pode ser operaÁ„o necess·ria, mas revise se o plano ainda aponta para algo maior.`
+                    text: `${unlinked} de ${weekMicros.length} micros da semana est√£o sem v√≠nculo com Meta. Pode ser opera√ß√£o necess√°ria, mas revise se o plano ainda aponta para algo maior.`
                 });
             }
         }
@@ -4997,7 +4997,7 @@ ensureNotesState: function() {
         return { macro, okr, meta };
     },
 
-    // Detects the highest-priority gap in the Meta?OKR?Macro?Micro hierarchy.
+    // Detects the highest-priority gap in the Meta‚ÜíOKR‚ÜíMacro‚ÜíMicro hierarchy.
     // Returns a gap descriptor object or null when no gaps exist.
     _detectHierarchyGap: function(state) {
         const entities = state?.entities || {};
@@ -5016,7 +5016,7 @@ ensureNotesState: function() {
                     parentId: meta.id,
                     parentTitle: meta.title,
                     title: 'Meta sem resultado-chave',
-                    description: `"${meta.title}" ainda n„o tem um OKR. Defina um resultado mensur·vel para que o progresso desta meta possa ser rastreado.`
+                    description: `"${meta.title}" ainda n√£o tem um OKR. Defina um resultado mensur√°vel para que o progresso desta meta possa ser rastreado.`
                 };
             }
         }
@@ -5030,7 +5030,7 @@ ensureNotesState: function() {
                     parentId: okr.id,
                     parentTitle: okr.title,
                     title: 'OKR sem projeto vinculado',
-                    description: `"${okr.title}" ainda n„o tem uma macro. Crie um projeto para dar execuÁ„o a este resultado esperado.`
+                    description: `"${okr.title}" ainda n√£o tem uma macro. Crie um projeto para dar execu√ß√£o a este resultado esperado.`
                 };
             }
         }
@@ -5043,8 +5043,8 @@ ensureNotesState: function() {
                     entityType: 'micros',
                     parentId: macro.id,
                     parentTitle: macro.title,
-                    title: 'Macro sem prÛximo passo',
-                    description: `"${macro.title}" n„o tem aÁıes ativas vinculadas. Crie uma micro aÁ„o para avanÁar neste projeto.`
+                    title: 'Macro sem pr√≥ximo passo',
+                    description: `"${macro.title}" n√£o tem a√ß√µes ativas vinculadas. Crie uma micro a√ß√£o para avan√ßar neste projeto.`
                 };
             }
         }
@@ -5087,10 +5087,10 @@ ensureNotesState: function() {
             legacyObj.mundo
         ].map(v => String(v || '').trim()).filter(Boolean);
         const personalAnchor = purposePieces[seed % Math.max(1, purposePieces.length)] || values[0] || theme;
-        const valueText = values.length ? `valor ${values[0]}` : `·rea ${theme}`;
+        const valueText = values.length ? `valor ${values[0]}` : `√°rea ${theme}`;
         const direction = next?.micro?.title
-            ? `DireÁ„o: avance "${next.micro.title}" sem perder de vista ${valueText}.`
-            : `DireÁ„o: escolha uma micro aÁ„o que torne ${valueText} visÌvel hoje.`;
+            ? `Dire√ß√£o: avance "${next.micro.title}" sem perder de vista ${valueText}.`
+            : `Dire√ß√£o: escolha uma micro a√ß√£o que torne ${valueText} vis√≠vel hoje.`;
 
         return {
             theme,
@@ -5108,14 +5108,14 @@ ensureNotesState: function() {
             ? this.escapeHtml(compass.quote.quote)
             : `"${this.escapeHtml(compass.quote.quote)}"`;
         const quoteSource = isInternalPrinciple
-            ? 'PrincÌpio interno do Life OS'
+            ? 'Princ√≠pio interno do Life OS'
             : this.escapeHtml(compass.quote.author);
         container.innerHTML = `
             <div class="relative overflow-hidden rounded-2xl border border-primary/15 bg-primary/5 p-5 md:p-6 shadow-sm">
                 <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
-                        <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">B˙ssola do Dia ∑ ${this.escapeHtml(compass.theme)}</p>
+                        <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">B√∫ssola do Dia ¬∑ ${this.escapeHtml(compass.theme)}</p>
                         <p class="text-sm text-on-surface leading-relaxed">${compass.personal}</p>
                         <blockquote class="mt-4 border-l border-primary/30 pl-4">
                             <p class="font-headline text-xl md:text-2xl italic text-on-background leading-snug">${quoteText}</p>
@@ -5153,9 +5153,9 @@ ensureNotesState: function() {
             <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest shadow-sm p-5 md:p-6">
                 <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div class="max-w-2xl">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Jornada de propÛsito</p>
-                        <h3 class="mt-2 font-headline text-2xl font-bold text-on-background">Monte sua b˙ssola em etapas.</h3>
-                        <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Cada passo constrÛi sua clareza ó de quem vocÍ È atÈ onde quer chegar.</p>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Jornada de prop√≥sito</p>
+                        <h3 class="mt-2 font-headline text-2xl font-bold text-on-background">Monte sua b√∫ssola em etapas.</h3>
+                        <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Cada passo constr√≥i sua clareza ‚Äî de quem voc√™ √© at√© onde quer chegar.</p>
                     </div>
                     <div class="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 min-w-[160px]">
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Progresso</p>
@@ -5203,7 +5203,7 @@ ensureNotesState: function() {
                         <span class="material-symbols-outlined notranslate text-primary shrink-0">verified</span>
                         <div>
                             <p class="text-sm font-bold text-on-surface">Sem alertas relevantes</p>
-                            <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">Nenhum sinal forte passou do limite de atenÁ„o agora.</p>
+                            <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">Nenhum sinal forte passou do limite de aten√ß√£o agora.</p>
                         </div>
                     </div>
                 </div>`;
@@ -5236,14 +5236,14 @@ ensureNotesState: function() {
             const ratio = plannedCount / avg;
             const tone = ratio > 1.5 ? 'text-red-600 dark:text-red-400' : (ratio > 1.1 ? 'text-amber-600 dark:text-amber-400' : 'text-primary');
             const copy = ratio > 1.5
-                ? 'Seu plano est· muito acima do ritmo recente. Corte ou adie antes de criar novas aÁıes.'
+                ? 'Seu plano est√° muito acima do ritmo recente. Corte ou adie antes de criar novas a√ß√µes.'
                 : (ratio > 1.1
-                    ? 'Seu plano est· um pouco acima da mÈdia. Priorize as micros essenciais.'
-                    : 'A carga planejada est· dentro do seu ritmo recente.');
+                    ? 'Seu plano est√° um pouco acima da m√©dia. Priorize as micros essenciais.'
+                    : 'A carga planejada est√° dentro do seu ritmo recente.');
             loadHtml = `
                 <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-4 shadow-sm">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">ExecuÁ„o realista</p>
-                    <p class="mt-2 text-sm text-on-surface"><span class="${tone} font-bold">${plannedCount}</span> micros planejadas para mÈdia recente de <span class="font-bold">${avg}</span>.</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Execu√ß√£o realista</p>
+                    <p class="mt-2 text-sm text-on-surface"><span class="${tone} font-bold">${plannedCount}</span> micros planejadas para m√©dia recente de <span class="font-bold">${avg}</span>.</p>
                     <p class="mt-1 text-xs text-on-surface-variant leading-relaxed">${copy}</p>
                 </div>`;
         }
@@ -5267,20 +5267,20 @@ ensureNotesState: function() {
             : Math.max(0, Math.min(100, Math.round((execScore * 0.75) + 25 - loadPenalty - overduePenalty)));
 
         let label = 'Semana sem plano';
-        let copy = 'Planeje micros para medir se a semana est· execut·vel.';
+        let copy = 'Planeje micros para medir se a semana est√° execut√°vel.';
         let color = 'bg-primary';
         if (plannedCount > 0) {
             if (score >= 75) {
-                label = 'Saud·vel';
-                copy = `${doneCount}/${plannedCount} micros concluÌdas. Continue executando sem inflar o plano.`;
+                label = 'Saud√°vel';
+                copy = `${doneCount}/${plannedCount} micros conclu√≠das. Continue executando sem inflar o plano.`;
                 color = 'bg-emerald-500';
             } else if (score >= 45) {
-                label = 'Pede atenÁ„o';
-                copy = `${doneCount}/${plannedCount} micros concluÌdas. Priorize o essencial antes de adicionar novas aÁıes.`;
+                label = 'Pede aten√ß√£o';
+                copy = `${doneCount}/${plannedCount} micros conclu√≠das. Priorize o essencial antes de adicionar novas a√ß√µes.`;
                 color = 'bg-amber-500';
             } else {
                 label = 'Sob risco';
-                copy = `${doneCount}/${plannedCount} micros concluÌdas. Reduza escopo, adie o que for denso e resolva atrasos.`;
+                copy = `${doneCount}/${plannedCount} micros conclu√≠das. Reduza escopo, adie o que for denso e resolva atrasos.`;
                 color = 'bg-error';
             }
         }
@@ -5295,8 +5295,8 @@ ensureNotesState: function() {
     },
 
     /**
-     * Retorna a mÈdia de Micros concluÌdos por semana nas ˙ltimas N semanas
-     * (exclui a semana corrente para n„o contaminar com dados parciais).
+     * Retorna a m√©dia de Micros conclu√≠dos por semana nas √∫ltimas N semanas
+     * (exclui a semana corrente para n√£o contaminar com dados parciais).
      * Baseia-se em micro.completedDate (definido por completeMicroAction).
      */
     _computeWeeklyCompletionAverage: function(weeks = 4) {
@@ -5358,19 +5358,19 @@ ensureNotesState: function() {
         const avg = this._computeWeeklyCompletionAverage(4);
 
         countEl.textContent = String(checked);
-        avgEl.textContent = avg > 0 ? String(avg) : 'ó';
+        avgEl.textContent = avg > 0 ? String(avg) : '‚Äî';
 
         // Cor e dica conforme overcommitment
         countEl.classList.remove('text-primary', 'text-amber-600', 'text-red-600', 'dark:text-amber-400', 'dark:text-red-400');
         if (avg <= 0) {
             countEl.classList.add('text-primary');
-            hintEl.textContent = 'Sem histÛrico suficiente ainda.';
+            hintEl.textContent = 'Sem hist√≥rico suficiente ainda.';
         } else if (checked > avg * 1.5) {
             countEl.classList.add('text-red-600', 'dark:text-red-400');
-            hintEl.textContent = 'Muito acima do seu ritmo mÈdio.';
+            hintEl.textContent = 'Muito acima do seu ritmo m√©dio.';
         } else if (checked > avg * 1.1) {
             countEl.classList.add('text-amber-600', 'dark:text-amber-400');
-            hintEl.textContent = 'Acima da mÈdia ó priorize com cuidado.';
+            hintEl.textContent = 'Acima da m√©dia ‚Äî priorize com cuidado.';
         } else {
             countEl.classList.add('text-primary');
             hintEl.textContent = 'Dentro do seu ritmo.';
@@ -5393,12 +5393,12 @@ ensureNotesState: function() {
                     .filter(m => m.status !== 'done' && m.status !== 'abandoned');
                 select.innerHTML = '<option value="">Selecione um macro...</option>' +
                     activeMacros.map(m => {
-                        const dim = this.escapeHtml(m.dimension || 'Sem dimens„o');
+                        const dim = this.escapeHtml(m.dimension || 'Sem dimens√£o');
                         const title = this.escapeHtml(m.title);
-                        return `<option value="${m.id}">${dim} ∑ ${title}</option>`;
+                        return `<option value="${m.id}">${dim} ¬∑ ${title}</option>`;
                     }).join('');
                 if (activeMacros.length === 0) {
-                    select.innerHTML = '<option value="">Nenhum macro ativo ó crie um primeiro</option>';
+                    select.innerHTML = '<option value="">Nenhum macro ativo ‚Äî crie um primeiro</option>';
                 }
             }
             const targetWeekKey = this._getWeeklyPlanKey();
@@ -5424,10 +5424,10 @@ ensureNotesState: function() {
         if (!label) return;
         const macro = (window.sistemaVidaState.entities?.macros || []).find(m => m.id === macroId);
         if (!macro) {
-            label.textContent = 'Dimens„o herdada do macro selecionado.';
+            label.textContent = 'Dimens√£o herdada do macro selecionado.';
             return;
         }
-        label.textContent = `Dimens„o: ${macro.dimension || 'Sem dimens„o'}`;
+        label.textContent = `Dimens√£o: ${macro.dimension || 'Sem dimens√£o'}`;
     },
 
     cancelInlineNewMicro: function() {
@@ -5450,12 +5450,12 @@ ensureNotesState: function() {
         const prazo = document.getElementById('wp-new-micro-deadline')?.value || '';
 
         if (!macroId) { this.showToast('Selecione um macro pai.', 'error'); return; }
-        if (!title) { this.showToast('Informe o tÌtulo da micro aÁ„o.', 'error'); return; }
-        if (!prazo) { this.showToast('Informe o prazo da micro aÁ„o.', 'error'); return; }
+        if (!title) { this.showToast('Informe o t√≠tulo da micro a√ß√£o.', 'error'); return; }
+        if (!prazo) { this.showToast('Informe o prazo da micro a√ß√£o.', 'error'); return; }
 
         const state = window.sistemaVidaState;
         const macro = (state.entities?.macros || []).find(m => m.id === macroId);
-        if (!macro) { this.showToast('Macro n„o encontrado.', 'error'); return; }
+        if (!macro) { this.showToast('Macro n√£o encontrado.', 'error'); return; }
         const windowValidation = this.validateEntityTimeWindow('micros', { inicioDate, prazo });
         if (!windowValidation.ok) { this.showToast(windowValidation.message, 'error'); return; }
 
@@ -5512,7 +5512,7 @@ ensureNotesState: function() {
         const container = document.getElementById('wp-micros-list');
         if (!container) return;
         if (activeMicros.length === 0) {
-            container.innerHTML = '<p class="text-xs text-outline italic">Nenhum micro ativo disponÌvel.</p>';
+            container.innerHTML = '<p class="text-xs text-outline italic">Nenhum micro ativo dispon√≠vel.</p>';
             this._updateWeeklyPlanLoadMeter();
             return;
         }
@@ -5523,7 +5523,7 @@ ensureNotesState: function() {
                 m.dimension || '',
                 macroTitle,
                 m.prazo ? `prazo ${this._formatTrailDate ? this._formatTrailDate(m.prazo) : m.prazo}` : ''
-            ].filter(Boolean).join(' ∑ ');
+            ].filter(Boolean).join(' ¬∑ ');
             const sub = details ? `<span class="text-[10px] text-outline block">${this.escapeHtml(details)}</span>` : '';
             return `<label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-primary/5 transition-colors">
                 <input type="checkbox" class="wp-micro-check mt-0.5 accent-primary" value="${m.id}" ${checked}>
@@ -5555,8 +5555,8 @@ ensureNotesState: function() {
         this.closeWeeklyPlanModal();
         if (award) this.showGamificationAwardEffects(award);
         this.showNotification(award
-            ? `${isNextWeek ? 'Plano da prÛxima semana salvo' : 'Plano semanal salvo'}! +${award.xp} XP`
-            : (isNextWeek ? 'Plano da prÛxima semana salvo!' : 'Plano semanal salvo!'));
+            ? `${isNextWeek ? 'Plano da pr√≥xima semana salvo' : 'Plano semanal salvo'}! +${award.xp} XP`
+            : (isNextWeek ? 'Plano da pr√≥xima semana salvo!' : 'Plano semanal salvo!'));
         if (this.renderWeeklyPlans) this.renderWeeklyPlans();
         if (this.currentView === 'planos' && this.render.planos) {
             this.render.planos();
@@ -5590,12 +5590,12 @@ ensureNotesState: function() {
                 <div class="max-w-lg mx-auto rounded-2xl bg-surface-container-highest border border-primary/20 shadow-xl p-4 flex items-center gap-4">
                     <span class="material-symbols-outlined notranslate text-primary text-2xl shrink-0">auto_awesome</span>
                     <div class="flex-1 min-w-0">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-outline">Revis„o Semanal</p>
-                        <p class="text-xs text-on-surface-variant mt-0.5 leading-snug truncate">${anchor ? this.escapeHtml(anchor) : 'Relembre seu propÛsito antes de avaliar a semana.'}</p>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-outline">Revis√£o Semanal</p>
+                        <p class="text-xs text-on-surface-variant mt-0.5 leading-snug truncate">${anchor ? this.escapeHtml(anchor) : 'Relembre seu prop√≥sito antes de avaliar a semana.'}</p>
                     </div>
                     <button onclick="window.app._launchReviewFromAnchor()"
                         class="shrink-0 px-4 py-2 bg-primary text-on-primary text-xs font-bold rounded-xl hover:opacity-90 transition-opacity uppercase tracking-wider whitespace-nowrap">
-                        Abrir Revis„o
+                        Abrir Revis√£o
                     </button>
                 </div>
             </div>`;
@@ -5621,7 +5621,7 @@ ensureNotesState: function() {
             const q2El = document.getElementById('rev-q2');
             const q4El = document.getElementById('rev-q4');
 
-            // q1: O que planejei? ? intenÁ„o + micros planejados
+            // q1: O que planejei? ‚Üí inten√ß√£o + micros planejados
             if (q1El && (plan.intention || plan.selectedMicros?.length)) {
                 const lines = [];
                 if (plan.intention) lines.push(plan.intention);
@@ -5634,7 +5634,7 @@ ensureNotesState: function() {
                 q1El.value = lines.join('\n');
             }
 
-            // q2: O que executei? ? micros planejados que foram concluÌdos
+            // q2: O que executei? ‚Üí micros planejados que foram conclu√≠dos
             if (q2El && plan.selectedMicros?.length) {
                 const doneTitles = plan.selectedMicros
                     .map(id => state.entities?.micros?.find(m => m.id === id))
@@ -5675,7 +5675,7 @@ ensureNotesState: function() {
         const responsePracticed = document.getElementById('rev-response')?.value.trim() || '';
         const habitAdjustment = document.getElementById('rev-habit-adjust')?.value.trim() || '';
 
-        // Salva pelo weekKey da segunda-feira (igual ‡ chave de weekPlans)
+        // Salva pelo weekKey da segunda-feira (igual √† chave de weekPlans)
         const weekKey = this._getWeekKey();
         if (!window.sistemaVidaState.reviews) {
             window.sistemaVidaState.reviews = {};
@@ -5703,7 +5703,7 @@ ensureNotesState: function() {
         const btn = document.getElementById('btn-save-review');
         if (btn) {
             const originalText = btn.innerHTML;
-            btn.innerHTML = "? Revis„o Salva!";
+            btn.innerHTML = "‚úî Revis√£o Salva!";
             setTimeout(() => {
                 btn.innerHTML = originalText;
                 this.closeReviewModal();
@@ -5762,12 +5762,12 @@ ensureNotesState: function() {
                         ${pendingMicrosCount > 0 ? `<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0">${pendingMicrosCount} pendentes</span>` : ''}
                     </div>
                     <div class="flex flex-col gap-2">
-                        <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="action_${okr.id}" value="continuar" checked class="accent-primary" onchange="document.getElementById('migrate-container-${okr.id}').classList.toggle('hidden', !this.checked)"> Continuar no prÛximo ciclo</label>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="action_${okr.id}" value="continuar" checked class="accent-primary" onchange="document.getElementById('migrate-container-${okr.id}').classList.toggle('hidden', !this.checked)"> Continuar no pr√≥ximo ciclo</label>
                         <div id="migrate-container-${okr.id}" class="${pendingMicrosCount > 0 ? 'flex' : 'hidden'} items-center gap-2 ml-6 mb-1">
                             <input type="checkbox" id="migrate_${okr.id}" ${pendingMicrosCount > 0 ? 'checked' : ''} class="w-3.5 h-3.5 rounded accent-primary">
-                            <label for="migrate_${okr.id}" class="text-[10px] text-outline font-medium">Migrar pendÍncias para hoje</label>
+                            <label for="migrate_${okr.id}" class="text-[10px] text-outline font-medium">Migrar pend√™ncias para hoje</label>
                         </div>
-                        <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="action_${okr.id}" value="concluir" class="accent-primary" onchange="document.getElementById('migrate-container-${okr.id}').classList.add('hidden')"> Marcar como ConcluÌdo</label>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="action_${okr.id}" value="concluir" class="accent-primary" onchange="document.getElementById('migrate-container-${okr.id}').classList.add('hidden')"> Marcar como Conclu√≠do</label>
                         <label class="flex items-center gap-2 text-xs cursor-pointer text-error"><input type="radio" name="action_${okr.id}" value="arquivar" class="accent-error" onchange="document.getElementById('migrate-container-${okr.id}').classList.add('hidden')"> Arquivar / Abandonar</label>
                     </div>
                 </div>`;
@@ -5866,15 +5866,15 @@ ensureNotesState: function() {
     },
 
     /**
-     * Adia uma Micro AÁ„o para o dia seguinte.
-     * Move o inicioDate para amanh„ (removendo do "Hoje"). Se o prazo ficar
-     * anterior ao novo inÌcio, empurra o prazo junto para manter a janela v·lida.
+     * Adia uma Micro A√ß√£o para o dia seguinte.
+     * Move o inicioDate para amanh√£ (removendo do "Hoje"). Se o prazo ficar
+     * anterior ao novo in√≠cio, empurra o prazo junto para manter a janela v√°lida.
      */
     postponeMicroOneDay: function(id) {
         const state = window.sistemaVidaState;
         const micro = (state.entities.micros || []).find(m => m.id === id);
         if (!micro) {
-            this.showToast('Micro aÁ„o n„o encontrada para adiar.', 'error');
+            this.showToast('Micro a√ß√£o n√£o encontrada para adiar.', 'error');
             return;
         }
 
@@ -5888,7 +5888,7 @@ ensureNotesState: function() {
         }
 
         this.saveState(false);
-        this.showToast('Micro adiada para amanh„', 'success');
+        this.showToast('Micro adiada para amanh√£', 'success');
         if (this.render.hoje) this.render.hoje();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
     },
@@ -5917,10 +5917,10 @@ ensureNotesState: function() {
     },
 
     resetWheelOfLife: function() {
-        const confirmReset = confirm("Isso iniciar· um novo ciclo da Roda da Vida, zerando as notas atuais para reavaliaÁ„o. Deseja continuar?");
+        const confirmReset = confirm("Isso iniciar√° um novo ciclo da Roda da Vida, zerando as notas atuais para reavalia√ß√£o. Deseja continuar?");
         if (confirmReset) {
             const state = window.sistemaVidaState;
-            // Salva snapshot (simplificado para histÛrico)
+            // Salva snapshot (simplificado para hist√≥rico)
             if (!state.history) state.history = {};
             state.history['roda_' + Date.now()] = JSON.parse(JSON.stringify(state.dimensions));
             
@@ -5933,7 +5933,7 @@ ensureNotesState: function() {
             this.showNotification("Roda da Vida zerada. Ajuste os sliders para o seu estado atual.");
             if (this.render.proposito) this.render.proposito();
             
-            // Rola a p·gina suavemente para os sliders
+            // Rola a p√°gina suavemente para os sliders
             setTimeout(() => {
                 const sliders = document.getElementById('roda-sliders');
                 if (sliders) sliders.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -5947,25 +5947,25 @@ ensureNotesState: function() {
         if (!entity || type === 'metas') return;
 
         const state = window.sistemaVidaState;
-        const confirmPromote = confirm(`Deseja promover "${entity.title}" para o prÛximo nÌvel? Isto criar· uma nova entidade superior e remover· a atual.`);
+        const confirmPromote = confirm(`Deseja promover "${entity.title}" para o pr√≥ximo n√≠vel? Isto criar√° uma nova entidade superior e remover√° a atual.`);
         if (!confirmPromote) return;
 
         let newType = '';
         let newObj = { ...entity, id: 'ent_' + Date.now() + '_promoted' };
         
-        // Remove IDs de hierarquia que podem n„o fazer sentido no novo nÌvel
+        // Remove IDs de hierarquia que podem n√£o fazer sentido no novo n√≠vel
         if (type === 'micros') {
             newType = 'macros';
             delete newObj.status;
             delete newObj.completed;
             newObj.description = entity.indicator || '';
             newObj.progress = 0;
-            // MantÈm metaId e okrId
+            // Mant√©m metaId e okrId
         } else if (type === 'macros') {
             newType = 'okrs';
             newObj.purpose = entity.description || '';
             newObj.progress = entity.progress || 0;
-            // MantÈm metaId
+            // Mant√©m metaId
         } else if (type === 'okrs') {
             newType = 'metas';
             newObj.purpose = entity.purpose || '';
@@ -5973,11 +5973,11 @@ ensureNotesState: function() {
             delete newObj.metaId;
         }
 
-        // Adiciona ao novo nÌvel
+        // Adiciona ao novo n√≠vel
         if (!state.entities[newType]) state.entities[newType] = [];
         state.entities[newType].push(newObj);
 
-        // Remove do nÌvel antigo
+        // Remove do n√≠vel antigo
         const oldList = state.entities[type];
         const idx = oldList.findIndex(e => e.id === entity.id);
         if (idx !== -1) oldList.splice(idx, 1);
@@ -6035,7 +6035,7 @@ ensureNotesState: function() {
                 list.splice(idx, 1);
                 this.saveState(true);
                 document.getElementById('review-entity-modal').classList.add('hidden');
-                this.showToast('Entidade excluÌda.', 'success');
+                this.showToast('Entidade exclu√≠da.', 'success');
                 if (this.currentView && this.render[this.currentView]) this.render[this.currentView]();
             }
         }
@@ -6046,7 +6046,7 @@ ensureNotesState: function() {
         const funcionou = document.getElementById('diario-funcionou') ? document.getElementById('diario-funcionou').value : '';
         const s1 = document.getElementById('diario-shutdown-1') ? document.getElementById('diario-shutdown-1').value : '';
 
-        // Ajuste de Fuso Hor·rio para a data local real
+        // Ajuste de Fuso Hor√°rio para a data local real
         const d = new Date();
         const today = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
         
@@ -6102,9 +6102,9 @@ ensureNotesState: function() {
             const { ciclo, mes, semana, inicio } = entity.agendamento;
             let text = "";
             if (ciclo) text += `Ciclo ${ciclo}`;
-            if (mes) text += (text ? " ï " : "") + `MÍs ${mes}`;
-            if (semana) text += (text ? " ï " : "") + `Sem. ${semana}`;
-            if (inicio) text += (text ? " ï " : "") + `InÌcio: Sem. ${inicio}`;
+            if (mes) text += (text ? " ‚Ä¢ " : "") + `M√™s ${mes}`;
+            if (semana) text += (text ? " ‚Ä¢ " : "") + `Sem. ${semana}`;
+            if (inicio) text += (text ? " ‚Ä¢ " : "") + `In√≠cio: Sem. ${inicio}`;
             
             return `
                 <div class="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-md text-[10px] font-bold uppercase tracking-wider">
@@ -6144,28 +6144,28 @@ ensureNotesState: function() {
         if (meta && meta.status === 'pending') meta.status = 'in_progress';
     },
 
-    // Inicia uma micro aÁ„o manualmente (bot„o Iniciar / Foco). Macro/OKR/Meta N√O s„o
-    // iniciados manualmente ó eles cascateiam a partir das micros via cascadeStartUp.
+    // Inicia uma micro a√ß√£o manualmente (bot√£o Iniciar / Foco). Macro/OKR/Meta N√ÉO s√£o
+    // iniciados manualmente ‚Äî eles cascateiam a partir das micros via cascadeStartUp.
     startEntity: function(id, type) {
         const state = window.sistemaVidaState;
         if (type !== 'micros') {
             // Caminho legado: ignora silenciosamente para macros/okrs/metas.
-            // O fluxo correto È iniciar a partir da micro filha.
-            console.warn(`[startEntity] type='${type}' n„o È mais suportado. Use cascade via micro.`);
+            // O fluxo correto √© iniciar a partir da micro filha.
+            console.warn(`[startEntity] type='${type}' n√£o √© mais suportado. Use cascade via micro.`);
             return;
         }
         const entity = (state.entities.micros || []).find(e => e.id === id);
         if (!entity) {
-            this.showToast('Item n„o encontrado. Atualize a tela e tente novamente.', 'error');
+            this.showToast('Item n√£o encontrado. Atualize a tela e tente novamente.', 'error');
             return;
         }
         if (entity.status === 'done') {
-            this.showToast('Esta micro j· est· concluÌda. Reabra antes de iniciar novamente.', 'error');
+            this.showToast('Esta micro j√° est√° conclu√≠da. Reabra antes de iniciar novamente.', 'error');
             return;
         }
         entity.status = 'in_progress';
         entity.completed = false;
-        // Micro tem progresso bin·rio: 0 (n„o-done) ou 100 (done). InÌcio n„o muda progress.
+        // Micro tem progresso bin√°rio: 0 (n√£o-done) ou 100 (done). In√≠cio n√£o muda progress.
         this.cascadeStartUp(entity.id);
         this.saveState(false);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
@@ -6199,16 +6199,16 @@ ensureNotesState: function() {
         if (!item) return;
         const currentProgress = Number(item.progress) || 0;
         const isAtFullProgress = currentProgress >= 100;
-        // Texto adaptado: 100% = simples confirmaÁ„o; < 100% = aviso de forÁa.
+        // Texto adaptado: 100% = simples confirma√ß√£o; < 100% = aviso de for√ßa.
         const message = isAtFullProgress
-            ? 'Todas as filhas est„o concluÌdas. Deseja fechar este item?'
-            : `Este item est· em ${currentProgress}%. Concluir agora vai marcar todas as filhas pendentes como concluÌdas. Confirmar?`;
+            ? 'Todas as filhas est√£o conclu√≠das. Deseja fechar este item?'
+            : `Este item est√° em ${currentProgress}%. Concluir agora vai marcar todas as filhas pendentes como conclu√≠das. Confirmar?`;
         if (!confirm(message)) return;
         item.progress = 100;
         item.status = 'done';
         if (type === 'micros') item.completed = true;
-        this.updateCascadeProgress(id, type); // rec·lculo bottom-up dos pais
-        // Top-down sÛ faz sentido quando forÁa (< 100%); a 100% as filhas j· est„o done.
+        this.updateCascadeProgress(id, type); // rec√°lculo bottom-up dos pais
+        // Top-down s√≥ faz sentido quando for√ßa (< 100%); a 100% as filhas j√° est√£o done.
         if (!isAtFullProgress) this.cascadeStatusDown(id, type, 'done');
         this.saveState(false);
         if (this.render.planos) this.render.planos();
@@ -6222,7 +6222,7 @@ ensureNotesState: function() {
         if (!source) return;
         const clone = JSON.parse(JSON.stringify(source));
         clone.id = 'ent_' + Date.now() + Math.random().toString(36).substr(2, 5);
-        clone.title = `${source.title} (cÛpia)`;
+        clone.title = `${source.title} (c√≥pia)`;
 
         if (type === 'micros') {
             clone.status = 'pending';
@@ -6260,8 +6260,8 @@ ensureNotesState: function() {
         const item = list.find(e => e.id === id);
         
         if (item && confirm(`Deseja realmente excluir "${item.title}"?`)) {
-            // Recalcula a hierarquia antes da remoÁ„o definitiva, tratando o item como excluÌdo.
-            // Assim, os percentuais dos pais s„o atualizados sem depender de IDs j· removidos.
+            // Recalcula a hierarquia antes da remo√ß√£o definitiva, tratando o item como exclu√≠do.
+            // Assim, os percentuais dos pais s√£o atualizados sem depender de IDs j√° removidos.
             if (type !== 'habits' && ['micros', 'macros', 'okrs', 'metas'].includes(type)) {
                 item.status = 'abandoned';
                 item.progress = 0;
@@ -6311,10 +6311,10 @@ ensureNotesState: function() {
             try {
                 const parsed = JSON.parse(e.target.result);
                 if (!parsed || typeof parsed !== 'object' || !parsed.entities || !parsed.profile) {
-                    this.showToast('Arquivo inv·lido ó estrutura n„o reconhecida.', 'error');
+                    this.showToast('Arquivo inv√°lido ‚Äî estrutura n√£o reconhecida.', 'error');
                     return;
                 }
-                if (!confirm('Isso vai substituir todos os seus dados pelo conte˙do do arquivo. Continuar?')) return;
+                if (!confirm('Isso vai substituir todos os seus dados pelo conte√∫do do arquivo. Continuar?')) return;
                 Object.assign(window.sistemaVidaState, parsed);
                 await this.saveState(true);
                 this.showToast('Dados importados com sucesso.', 'success');
@@ -6374,7 +6374,7 @@ ensureNotesState: function() {
     },
 
     getFallbackTemplate: function(viewName) {
-        return `<div class="p-6 mt-10 text-red-500 font-bold">Erro local de CORS: view '${viewName}' n„o pÙde ser carregada via protocolo file. Use um servidor local.</div>`;
+        return `<div class="p-6 mt-10 text-red-500 font-bold">Erro local de CORS: view '${viewName}' n√£o p√¥de ser carregada via protocolo file. Use um servidor local.</div>`;
     },
 
     ensureDeepWorkTicking: function() {
@@ -6455,7 +6455,7 @@ ensureNotesState: function() {
             dw.mode = 'break';
             dw.remainingSec = dw.breakSec;
             dw.lastTickAt = Date.now();
-            if (this.showNotification) this.showNotification('Bloco de foco concluÌdo. Iniciando pausa de 20 minutos. Use "Concluir micro" para fechar a aÁ„o.');
+            if (this.showNotification) this.showNotification('Bloco de foco conclu√≠do. Iniciando pausa de 20 minutos. Use "Concluir micro" para fechar a a√ß√£o.');
             this.saveState(true);
             this.ensureDeepWorkTicking();
             if (this.currentView === 'foco' && this.render.foco) this.render.foco();
@@ -6469,7 +6469,7 @@ ensureNotesState: function() {
         dw.lastTickAt = 0;
         this.stopDeepWorkTicking();
         this.saveState(true);
-        if (this.showNotification) this.showNotification('Pausa concluÌda. VocÍ est· pronto para o prÛximo bloco.');
+        if (this.showNotification) this.showNotification('Pausa conclu√≠da. Voc√™ est√° pronto para o pr√≥ximo bloco.');
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
     },
 
@@ -6486,7 +6486,7 @@ ensureNotesState: function() {
         const chosenMicro = microEl?.value || '';
         const intention = (intentionEl?.value || '').trim();
         if (!chosenMicro) {
-            this.showToast('Selecione uma micro aÁ„o de Planos para iniciar o foco.', 'error');
+            this.showToast('Selecione uma micro a√ß√£o de Planos para iniciar o foco.', 'error');
             return;
         }
 
@@ -6521,16 +6521,16 @@ ensureNotesState: function() {
         const state = window.sistemaVidaState;
         const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
         if (!micro) {
-            this.showToast('Micro aÁ„o indisponÌvel para foco. Verifique se ela ainda est· ativa.', 'error');
+            this.showToast('Micro a√ß√£o indispon√≠vel para foco. Verifique se ela ainda est√° ativa.', 'error');
             return;
         }
         if (micro.status === 'done') {
-            this.showToast('Esta micro j· est· concluÌda. Reabra antes de iniciar foco.', 'error');
+            this.showToast('Esta micro j√° est√° conclu√≠da. Reabra antes de iniciar foco.', 'error');
             return;
         }
         const dw = state.deepWork;
         if (dw.isRunning) {
-            this.showToast('J· existe um bloco de foco em andamento.', 'error');
+            this.showToast('J√° existe um bloco de foco em andamento.', 'error');
             return;
         }
         dw.microId = micro.id;
@@ -6549,16 +6549,16 @@ ensureNotesState: function() {
         const state = window.sistemaVidaState;
         const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
         if (!micro) {
-            this.showToast('Micro aÁ„o indisponÌvel para foco. Verifique se ela ainda est· ativa.', 'error');
+            this.showToast('Micro a√ß√£o indispon√≠vel para foco. Verifique se ela ainda est√° ativa.', 'error');
             return;
         }
         if (micro.status === 'done') {
-            this.showToast('Esta micro j· est· concluÌda. Reabra antes de gerenciar no foco.', 'error');
+            this.showToast('Esta micro j√° est√° conclu√≠da. Reabra antes de gerenciar no foco.', 'error');
             return;
         }
         const dw = state.deepWork;
         if (dw.isRunning && dw.microId && dw.microId !== micro.id) {
-            this.showToast('Finalize ou pause o bloco atual antes de trocar de micro aÁ„o.', 'error');
+            this.showToast('Finalize ou pause o bloco atual antes de trocar de micro a√ß√£o.', 'error');
             this.navigate('foco');
             return;
         }
@@ -6631,7 +6631,7 @@ ensureNotesState: function() {
         if (!dw.isRunning) {
             if (canCompleteLinkedMicro) {
                 this.completeMicroAction(linkedMicro.id);
-                if (this.showNotification) this.showNotification('Micro aÁ„o concluÌda.');
+                if (this.showNotification) this.showNotification('Micro a√ß√£o conclu√≠da.');
             }
             return;
         }
@@ -6642,7 +6642,7 @@ ensureNotesState: function() {
             return;
         }
 
-        // Se est· na pausa, o bot„o "Finalizar" tambÈm pode concluir a micro vinculada.
+        // Se est√° na pausa, o bot√£o "Finalizar" tamb√©m pode concluir a micro vinculada.
         dw.isRunning = false;
         dw.isPaused = false;
         dw.mode = 'focus';
@@ -6653,7 +6653,7 @@ ensureNotesState: function() {
 
         if (canCompleteLinkedMicro) {
             this.completeMicroAction(linkedMicro.id);
-            if (this.showNotification) this.showNotification('Sess„o encerrada e micro concluÌda.');
+            if (this.showNotification) this.showNotification('Sess√£o encerrada e micro conclu√≠da.');
             return;
         }
 
@@ -6672,7 +6672,7 @@ ensureNotesState: function() {
         dw.lastTickAt = 0;
         this.stopDeepWorkTicking();
         this.saveState(true);
-        if (this.showNotification) this.showNotification('Descanso pulado. Pronto para nova sess„o.');
+        if (this.showNotification) this.showNotification('Descanso pulado. Pronto para nova sess√£o.');
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
     },
 
@@ -6728,7 +6728,7 @@ ensureNotesState: function() {
         const state = window.sistemaVidaState;
         const perma = state.perma || {P:0, E:0, R:0, M:0, A:0};
         
-        // Tarefa 2: SincronizaÁ„o Total e ExplÌcita (Sliders + Labels)
+        // Tarefa 2: Sincroniza√ß√£o Total e Expl√≠cita (Sliders + Labels)
         const keys = ['P', 'E', 'R', 'M', 'A'];
         keys.forEach(k => {
             const id = k.toLowerCase();
@@ -6767,21 +6767,21 @@ ensureNotesState: function() {
             }
         });
 
-        // Tarefa 3: PersistÍncia ExplÌcita e AtualizaÁ„o Padronizada
+        // Tarefa 3: Persist√™ncia Expl√≠cita e Atualiza√ß√£o Padronizada
         this.recordWellbeingSnapshot('perma');
         this.markCadence('perma');
         this.saveState(true);
         this.closePermaModal();
-        this.switchView('proposito'); // ForÁa re-render completo
-        this.showNotification("DiagnÛstico PERMA atualizado com sucesso!");
+        this.switchView('proposito'); // For√ßa re-render completo
+        this.showNotification("Diagn√≥stico PERMA atualizado com sucesso!");
     },
 
     openOdysseyModal: function(id) {
         const state = window.sistemaVidaState;
         if (!state.profile.odyssey) state.profile.odyssey = {
-            A: { title: "Cen·rio A", desc: "Foco em ascens„o na carreira atual.", conf: 4, nrg: 4 },
-            B: { title: "Cen·rio B", desc: "TransiÁ„o para trabalho solo.", conf: 3, nrg: 5 },
-            C: { title: "Cen·rio C", desc: "Doutorado e pesquisa.", conf: 2, nrg: 3 }
+            A: { title: "Cen√°rio A", desc: "Foco em ascens√£o na carreira atual.", conf: 4, nrg: 4 },
+            B: { title: "Cen√°rio B", desc: "Transi√ß√£o para trabalho solo.", conf: 3, nrg: 5 },
+            C: { title: "Cen√°rio C", desc: "Doutorado e pesquisa.", conf: 2, nrg: 3 }
         };
         const plan = state.profile.odyssey[id];
         document.getElementById('odyssey-id').value = id;
