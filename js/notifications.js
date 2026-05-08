@@ -1,3 +1,5 @@
+import { setDoc, deleteDoc } from './firebase.js';
+
 export function attachNotifications(app) {
     Object.assign(app, {
 getPushErrorMessage: function(error) {

@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260507-phase12-auth-fix-v126';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260507-phase12-auth-fix-v126';
-import { attachNotifications } from './js/notifications.js?v=20260507-phase12-auth-fix-v126';
-import { attachCadence } from './js/cadence.js?v=20260507-phase12-auth-fix-v126';
-import { attachOnboarding } from './js/onboarding.js?v=20260507-phase12-auth-fix-v126';
-import { attachIdentity } from './js/identity.js?v=20260507-phase12-auth-fix-v126';
-import { attachHabits } from './js/habits.js?v=20260507-phase12-auth-fix-v126';
-import { attachStateModule } from './js/state.js?v=20260507-phase12-auth-fix-v126';
-import { attachRenderModule } from './js/render.js?v=20260507-phase12-auth-fix-v126';
-import { attachPlanningModule } from './js/planning.js?v=20260507-phase12-auth-fix-v126';
-import { attachGamificationModule } from './js/gamification.js?v=20260507-phase12-auth-fix-v126';
-import { attachSocial } from './js/social.js?v=20260507-phase12-auth-fix-v126';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-firebase-module-imports-v127';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-firebase-module-imports-v127';
+import { attachNotifications } from './js/notifications.js?v=20260508-firebase-module-imports-v127';
+import { attachCadence } from './js/cadence.js?v=20260508-firebase-module-imports-v127';
+import { attachOnboarding } from './js/onboarding.js?v=20260508-firebase-module-imports-v127';
+import { attachIdentity } from './js/identity.js?v=20260508-firebase-module-imports-v127';
+import { attachHabits } from './js/habits.js?v=20260508-firebase-module-imports-v127';
+import { attachStateModule } from './js/state.js?v=20260508-firebase-module-imports-v127';
+import { attachRenderModule } from './js/render.js?v=20260508-firebase-module-imports-v127';
+import { attachPlanningModule } from './js/planning.js?v=20260508-firebase-module-imports-v127';
+import { attachGamificationModule } from './js/gamification.js?v=20260508-firebase-module-imports-v127';
+import { attachSocial } from './js/social.js?v=20260508-firebase-module-imports-v127';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260507-phase12-auth-fix-v126',
+    appBuildVersion: '20260508-firebase-module-imports-v127',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -314,6 +314,15 @@ const app = {
     },
     updateSyncBadge: function(state) {
         // state: 'ok' | 'error' | 'syncing' | 'offline'
+        if (state === 'ok') {
+            this.lastCloudSyncOk = true;
+            this.lastCloudSyncErrorCode = '';
+        } else if (state === 'error') {
+            this.lastCloudSyncOk = false;
+            if (!this.lastCloudSyncErrorCode) this.lastCloudSyncErrorCode = 'erro_desconhecido';
+        } else if (state === 'offline') {
+            this.lastCloudSyncOk = null;
+        }
         const labels = {
             ok:      { icon: 'cloud_done',    text: 'Sincronizado',     cls: 'text-emerald-500' },
             error:   { icon: 'cloud_off',     text: 'Falha na nuvem',   cls: 'text-red-400' },
@@ -331,6 +340,9 @@ const app = {
                          + '<span class="text-[10px] font-bold">' + d.text + '</span>';
             el.className = 'lifeos-sync-badge flex items-center gap-1 ' + d.cls;
         });
+        if (this.currentView === 'perfil') {
+            try { this.renderAccountPanel(); } catch (_) {}
+        }
     },
 
     getAuthErrorMessage: function(error) {

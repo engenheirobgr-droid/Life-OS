@@ -1,3 +1,5 @@
+import { auth, signOut, LOCAL_USER_SCOPE } from './firebase.js';
+
 export function attachOnboarding(app) {
     Object.assign(app, {
 getStarterJourneyState: function() {

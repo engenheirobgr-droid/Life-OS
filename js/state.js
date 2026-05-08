@@ -1,3 +1,5 @@
+import { auth, getDoc, setDoc } from './firebase.js';
+
 export function attachStateModule(app) {
     Object.assign(app, {
 normalizeEntitiesState: function() {
