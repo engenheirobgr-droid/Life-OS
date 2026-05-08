@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-stability-v130';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-stability-v130';
-import { attachNotifications } from './js/notifications.js?v=20260508-social-stability-v130';
-import { attachCadence } from './js/cadence.js?v=20260508-social-stability-v130';
-import { attachOnboarding } from './js/onboarding.js?v=20260508-social-stability-v130';
-import { attachIdentity } from './js/identity.js?v=20260508-social-stability-v130';
-import { attachHabits } from './js/habits.js?v=20260508-social-stability-v130';
-import { attachStateModule } from './js/state.js?v=20260508-social-stability-v130';
-import { attachRenderModule } from './js/render.js?v=20260508-social-stability-v130';
-import { attachPlanningModule } from './js/planning.js?v=20260508-social-stability-v130';
-import { attachGamificationModule } from './js/gamification.js?v=20260508-social-stability-v130';
-import { attachSocial } from './js/social.js?v=20260508-social-stability-v130';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-stability-v131';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-stability-v131';
+import { attachNotifications } from './js/notifications.js?v=20260508-social-stability-v131';
+import { attachCadence } from './js/cadence.js?v=20260508-social-stability-v131';
+import { attachOnboarding } from './js/onboarding.js?v=20260508-social-stability-v131';
+import { attachIdentity } from './js/identity.js?v=20260508-social-stability-v131';
+import { attachHabits } from './js/habits.js?v=20260508-social-stability-v131';
+import { attachStateModule } from './js/state.js?v=20260508-social-stability-v131';
+import { attachRenderModule } from './js/render.js?v=20260508-social-stability-v131';
+import { attachPlanningModule } from './js/planning.js?v=20260508-social-stability-v131';
+import { attachGamificationModule } from './js/gamification.js?v=20260508-social-stability-v131';
+import { attachSocial } from './js/social.js?v=20260508-social-stability-v131';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260508-social-stability-v130',
+    appBuildVersion: '20260508-social-stability-v131',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1009,6 +1009,30 @@ getDimensionIdentity: function(dimension, level) {
         const awards = (Array.isArray(results) ? results : [results]).filter(Boolean);
         if (!awards.length) return;
         this.showFloatingXp(xpTotal || awards.reduce((sum, item) => sum + (Number(item.xp) || 0), 0));
+        if (this.pushSocialInternalNotification) {
+            awards.forEach((award) => {
+                this.pushSocialInternalNotification('xp_gain', {
+                    xp: award.xp,
+                    title: award.sourceTitle || 'Acao registrada',
+                    message: `+${award.xp} XP`
+                }).catch(() => {});
+                if (award.tierPromotion || award.dimensionLeveledUp || award.totalLeveledUp) {
+                    this.pushSocialInternalNotification('level_up', {
+                        level: award.totalLevel,
+                        title: 'Subiu de nivel',
+                        message: `Sistema nivel ${award.totalLevel}`
+                    }).catch(() => {});
+                }
+                if (Array.isArray(award.achievementsUnlocked) && award.achievementsUnlocked.length) {
+                    const first = award.achievementsUnlocked[0];
+                    this.pushSocialInternalNotification('achievement_unlock', {
+                        title: first.title || 'Conquista desbloqueada',
+                        icon: first.icon || 'military_tech',
+                        message: first.title || 'Conquista desbloqueada'
+                    }).catch(() => {});
+                }
+            });
+        }
         const levelAward = awards.find(item => item.tierPromotion)
             || awards.find(item => item.dimensionLeveledUp)
             || awards.find(item => item.totalLeveledUp)
@@ -4362,7 +4386,7 @@ ensureNotesState: function() {
             ? `<p class="mt-2 text-[11px] text-on-surface-variant leading-relaxed"><span class="font-bold text-on-surface">Intencao:</span> ${this.escapeHtml(entry.intention)}</p>`
             : '';
         const emotion = entry.emotion
-            ? `<span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/20 bg-white/70 px-2.5 py-1 text-[10px] font-medium text-on-surface-variant">💭 ${this.escapeHtml(entry.emotion)}</span>`
+            ? `<span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-high px-2.5 py-1 text-[10px] font-medium text-on-surface-variant">💭 ${this.escapeHtml(entry.emotion)}</span>`
             : '';
         return `
             <div class="min-w-0">
@@ -4373,13 +4397,13 @@ ensureNotesState: function() {
                     </span>
                     ${emotion}
                 </div>
-                <div class="mt-3 flex flex-wrap gap-2">
+                <div class="mt-3 grid grid-cols-2 gap-2">
                     ${chips.map((chip) => `
-                        <div class="inline-flex items-center gap-2 rounded-xl border border-outline-variant/15 bg-white/80 px-2.5 py-2 text-[11px] text-on-surface">
+                        <div class="inline-flex items-center gap-2 rounded-xl border border-outline-variant/20 bg-surface-container-high px-2.5 py-2 text-[11px] text-on-surface min-w-0">
                             <span class="text-sm leading-none">${chip.emoji}</span>
-                            <div class="leading-tight">
-                                <p class="font-bold">${this.escapeHtml(chip.label)}</p>
-                                <p class="text-[10px] text-outline">${this.escapeHtml(chip.hint)}</p>
+                            <div class="leading-tight min-w-0">
+                                <p class="font-bold truncate">${this.escapeHtml(chip.label)}</p>
+                                <p class="text-[10px] text-outline truncate">${this.escapeHtml(chip.hint)}</p>
                             </div>
                         </div>
                     `).join('')}

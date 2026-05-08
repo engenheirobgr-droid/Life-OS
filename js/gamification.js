@@ -361,6 +361,28 @@ showGamificationToast: function(result) {
         }
 
         this.showToast(parts.join(' · '), 'success');
+        if (this.pushSocialInternalNotification) {
+            this.pushSocialInternalNotification('xp_gain', {
+                xp: result.xp,
+                title: whyPrefix || 'Acao registrada',
+                message: `+${result.xp} XP`
+            }).catch(() => {});
+            if (leveledUp) {
+                this.pushSocialInternalNotification('level_up', {
+                    level: result.totalLevel,
+                    title: 'Subiu de nivel',
+                    message: `Sistema nivel ${result.totalLevel}`
+                }).catch(() => {});
+            }
+            if (result.achievementsUnlocked && result.achievementsUnlocked.length) {
+                const first = result.achievementsUnlocked[0];
+                this.pushSocialInternalNotification('achievement_unlock', {
+                    title: first.title || 'Conquista desbloqueada',
+                    icon: first.icon || 'military_tech',
+                    message: first.title || 'Conquista desbloqueada'
+                }).catch(() => {});
+            }
+        }
         this.showGamificationAwardEffects(result);
     },
     });

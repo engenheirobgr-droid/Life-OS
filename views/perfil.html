@@ -162,7 +162,10 @@
     <div>
         <div class="flex items-center justify-between gap-3 mb-3">
             <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Central social</p>
-            <span id="social-notifications-badge" class="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-outline">Tudo lido</span>
+            <div class="flex items-center gap-2">
+                <button id="social-notifications-mark-all" type="button" onclick="window.app.markAllSocialNotificationsRead()" class="hidden h-7 px-2.5 rounded-lg bg-surface-container-high text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/20">Marcar tudo</button>
+                <span id="social-notifications-badge" class="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-outline">Tudo lido</span>
+            </div>
         </div>
         <div id="social-notifications-list" class="space-y-2"></div>
     </div>

@@ -131,6 +131,80 @@ export function attachSocial(app) {
             return doc(db, 'users', userId, 'private', 'social', 'inbox', eventId);
         },
 
+        pushSocialInternalNotification: async function(type, payload = {}) {
+            this.ensureSocialState();
+            const nowIso = new Date().toISOString();
+            const item = {
+                id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                type: String(type || 'app_event'),
+                sourceUid: this.getActiveUserId(),
+                sourceName: window.sistemaVidaState.profile?.name || 'Usuario',
+                targetUid: this.getActiveUserId(),
+                status: 'new',
+                readAt: '',
+                createdAt: nowIso,
+                payload
+            };
+            const social = window.sistemaVidaState.profile.social;
+            if (!Array.isArray(social.notifications.items)) social.notifications.items = [];
+            social.notifications.items.unshift(item);
+            social.notifications.items = social.notifications.items.slice(0, 100);
+            const userId = this.getActiveUserId();
+            if (this.isSocialFeatureEnabled() && userId && userId !== LOCAL_USER_SCOPE && !auth.currentUser?.isAnonymous) {
+                const cloudId = `evt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                await setDoc(this.getSocialInboxDocRef(userId, cloudId), {
+                    type: item.type,
+                    sourceUid: item.sourceUid,
+                    sourceName: item.sourceName,
+                    targetUid: item.targetUid,
+                    status: item.status,
+                    readAt: '',
+                    createdAt: nowIso,
+                    payload
+                }, { merge: false });
+            }
+            if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
+        },
+
+        markSocialNotificationRead: async function(notificationId) {
+            this.ensureSocialState();
+            const social = window.sistemaVidaState.profile.social;
+            const id = String(notificationId || '');
+            if (!id || !Array.isArray(social.notifications.items)) return;
+            const item = social.notifications.items.find((entry) => String(entry.id || '') === id);
+            if (!item || item.readAt) return;
+            const nowIso = new Date().toISOString();
+            item.readAt = nowIso;
+            item.status = 'read';
+            this.saveState(true);
+            const userId = this.getActiveUserId();
+            if (userId && userId !== LOCAL_USER_SCOPE && !auth.currentUser?.isAnonymous) {
+                try { await setDoc(this.getSocialInboxDocRef(userId, id), { readAt: nowIso, status: 'read' }, { merge: true }); } catch (_) {}
+            }
+            if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
+        },
+
+        markAllSocialNotificationsRead: async function() {
+            this.ensureSocialState();
+            const social = window.sistemaVidaState.profile.social;
+            if (!Array.isArray(social.notifications.items)) return;
+            const unread = social.notifications.items.filter((entry) => !entry.readAt);
+            if (!unread.length) return;
+            const nowIso = new Date().toISOString();
+            unread.forEach((entry) => {
+                entry.readAt = nowIso;
+                entry.status = 'read';
+            });
+            this.saveState(true);
+            const userId = this.getActiveUserId();
+            if (userId && userId !== LOCAL_USER_SCOPE && !auth.currentUser?.isAnonymous) {
+                await Promise.all(unread.map(async (entry) => {
+                    try { await setDoc(this.getSocialInboxDocRef(userId, entry.id), { readAt: nowIso, status: 'read' }, { merge: true }); } catch (_) {}
+                }));
+            }
+            if (this.currentView === 'perfil') this.renderSocialConnectionsPanel();
+        },
+
         normalizeSocialConnectionMap: function(input = {}) {
             const now = new Date().toISOString();
             const out = {};
@@ -237,7 +311,7 @@ export function attachSocial(app) {
                 else if (key === 'dimensionLevels' && value && typeof value === 'object') {
                     const areas = Object.entries(value).slice(0, 8);
                     value = areas.length
-                        ? areas.map(([name, item]) => `${name} N${item?.level || 1}`).join(' • ')
+                        ? areas.map(([name, item]) => `${name} N${item?.level || 1}`).join(' | ')
                         : 'Sem niveis ainda';
                 } else if (value && typeof value === 'object') value = `${Object.keys(value).length} item(ns)`;
                 else if (key === 'lastActiveAt') value = 'Agora';
@@ -827,10 +901,18 @@ export function attachSocial(app) {
                     const isActive = conn.status === 'active';
                     const visible = isActive && profile.visible !== false && profile.sharingEnabled !== false;
                     const name = visible ? (profile.name || 'Companheiro') : 'Companheiro privado';
-                    const xpToday = visible ? Number(profile.xp || 0) : 0;
                     const activeLabel = !isActive
                         ? (conn.status === 'pending_outgoing' ? 'aguardando aceite' : 'convite pendente')
                         : (visible && profile.lastActiveAt ? 'ativo hoje' : 'visibilidade indisponivel');
+                    const achievements = Array.isArray(profile.achievements) ? profile.achievements.slice(0, 3) : [];
+                    const dimensions = profile.dimensionLevels && typeof profile.dimensionLevels === 'object'
+                        ? Object.entries(profile.dimensionLevels).slice(0, 4)
+                        : [];
+                    const infoRows = [];
+                    if (profile.xp !== undefined) infoRows.push(['XP pessoal', Number(profile.xp || 0)]);
+                    if (profile.keyHabitsDone !== undefined) infoRows.push(['Habitos-chave', Number(profile.keyHabitsDone || 0)]);
+                    if (profile.streak !== undefined) infoRows.push(['Sequencia pessoal', `${Number(profile.streak || 0)} dia(s)`]);
+                    if (profile.lastActiveAt) infoRows.push(['Ultima atividade', 'Agora']);
                     return `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3 min-w-0">
@@ -846,11 +928,13 @@ export function attachSocial(app) {
                                 <span class="material-symbols-outlined notranslate text-[18px]">person_remove</span>
                             </button>
                         </div>
-                        <div class="grid grid-cols-3 gap-2 text-center">
-                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">XP pessoal</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(xpToday)}</p></div>
-                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Habitos-chave</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.keyHabitsDone || 0)}</p></div>
-                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Sequencia pessoal</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.streak || 0)} dia(s)</p></div>
-                        </div>
+                        ${infoRows.length ? `<div class="grid grid-cols-2 gap-2 text-center">${infoRows.map(([label, value]) => `<div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">${this.escapeHtml(label)}</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(value)}</p></div>`).join('')}</div>` : ''}
+                        ${dimensions.length ? `<div class="flex flex-wrap gap-1.5">${dimensions.map(([name, item]) => {
+                            const level = Number(item?.level || 1);
+                            const identity = this.getDimensionIdentity ? this.getDimensionIdentity(name, level) : { title: `N${level}` };
+                            return `<span class="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-1 text-[10px] font-bold text-primary">${this.escapeHtml(name)}: ${this.escapeHtml(identity.title)}</span>`;
+                        }).join('')}</div>` : ''}
+                        ${achievements.length ? `<div class="space-y-1">${achievements.map((ach) => `<div class="rounded-lg bg-surface-container-high px-2.5 py-1.5 text-[11px] text-on-surface">${this.escapeHtml(ach.title || 'Conquista')}</div>`).join('')}</div>` : ''}
                         <div class="flex flex-wrap gap-2 ${isActive ? '' : 'opacity-60'}">
                             ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}')" class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[13px]">${cfg.icon}</span>${cfg.label}</button>`).join('')}
                         </div>
@@ -915,22 +999,35 @@ export function attachSocial(app) {
             const unread = notifications.filter((n) => !n.readAt).length;
             const badge = document.getElementById('social-notifications-badge');
             if (badge) badge.textContent = unread > 0 ? `${unread} novas` : 'Tudo lido';
+            const markAllBtn = document.getElementById('social-notifications-mark-all');
+            if (markAllBtn) markAllBtn.classList.toggle('hidden', unread === 0);
             if (notificationsEl) {
                 notificationsEl.innerHTML = notifications.length ? notifications.map((item) => {
                     const t = String(item.type || '');
+                    const readCls = item.readAt ? 'opacity-70' : '';
                     if (t === 'invite_request') {
                         const pending = item.status === 'pending';
-                        return `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10 space-y-2">
+                        return `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10 space-y-2 ${readCls}">
                             <p class="text-xs text-on-surface"><b>${this.escapeHtml(item.sourceName || 'Usuario')}</b> pediu conexao.</p>
                             <p class="text-[10px] text-outline">${this.escapeHtml(String(item.createdAt || '').slice(0, 16).replace('T', ' '))}</p>
-                            ${pending ? `<div class="flex gap-2"><button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(item.id)}','${this.escapeHtml(item.sourceUid)}',true)" class="h-8 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider">Aceitar</button><button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(item.id)}','${this.escapeHtml(item.sourceUid)}',false)" class="h-8 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider">Recusar</button></div>` : ''}
+                            ${pending ? `<div class="flex gap-2"><button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(item.id)}','${this.escapeHtml(item.sourceUid)}',true)" class="h-8 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider">Aceitar</button><button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(item.id)}','${this.escapeHtml(item.sourceUid)}',false)" class="h-8 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider">Recusar</button></div>` : `<button type="button" onclick="window.app.markSocialNotificationRead('${this.escapeHtml(item.id)}')" class="text-[10px] font-bold uppercase tracking-wider text-primary">Marcar lida</button>`}
                         </div>`;
                     }
                     if (t === 'reaction') {
                         const cfg = SOCIAL_REACTIONS[item.reactionType] || SOCIAL_REACTIONS.strength;
-                        return `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10">
+                        return `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10 ${readCls}">
                             <p class="text-xs text-on-surface"><b>${this.escapeHtml(item.sourceName || 'Usuario')}</b> enviou: ${this.escapeHtml(cfg.label)}.</p>
                             <p class="text-[10px] text-outline mt-1">${this.escapeHtml(String(item.createdAt || '').slice(0, 16).replace('T', ' '))}</p>
+                            <button type="button" onclick="window.app.markSocialNotificationRead('${this.escapeHtml(item.id)}')" class="mt-1 text-[10px] font-bold uppercase tracking-wider text-primary">Marcar lida</button>
+                        </div>`;
+                    }
+                    if (t === 'xp_gain' || t === 'level_up' || t === 'achievement_unlock') {
+                        const title = t === 'xp_gain' ? 'XP ganho' : (t === 'level_up' ? 'Subiu de nivel' : 'Conquista');
+                        const detail = item.payload?.message || item.payload?.title || '';
+                        return `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10 ${readCls}">
+                            <p class="text-xs text-on-surface"><b>${this.escapeHtml(title)}</b>: ${this.escapeHtml(detail)}</p>
+                            <p class="text-[10px] text-outline mt-1">${this.escapeHtml(String(item.createdAt || '').slice(0, 16).replace('T', ' '))}</p>
+                            <button type="button" onclick="window.app.markSocialNotificationRead('${this.escapeHtml(item.id)}')" class="mt-1 text-[10px] font-bold uppercase tracking-wider text-primary">Marcar lida</button>
                         </div>`;
                     }
                     return '';
@@ -939,3 +1036,4 @@ export function attachSocial(app) {
         }
     });
 }
+

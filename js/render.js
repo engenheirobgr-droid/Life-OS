@@ -116,13 +116,13 @@ renderFlowModal: function() {
             ) +
             section('Ritmo Mensal', 'calendar_month',
                 row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section', '', 'wheel') +
-                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito', 'perma-section', '', 'perma') +
+                row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'proposito', 'swls-section', '', 'swls') +
                 row('account_tree', 'Revisar Macros', 'Avaliar iniciativas mensais em andamento e criar novas', '', s.macrosThisMonth, 'planos', '', 'macro')
             ) +
             section('Ritmo Trimestral', 'event_repeat',
                 row('track_changes', 'OKRs', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos', '', 'okrs') +
                 row('fact_check', 'Revisão de ciclo', 'Fechar o ciclo de 12 semanas e decidir o destino dos OKRs ativos', '', s.cycleReviewDone, 'planos', 'tab-ciclo', 'ciclo', 'cycleReview') +
-                row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'proposito', 'swls-section', '', 'swls')
+                row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito', 'perma-section', '', 'perma')
             ) +
             section('Horizonte Vital', 'auto_awesome',
                 row('flag', 'Metas de vida', 'Metas de 1 a 5 anos alinhadas ao propósito de vida', '', s.lifeGoalsFilled, 'planos', '', 'metas', 'lifeGoals', true) +
@@ -744,7 +744,7 @@ renderGamificationProfile: function() {
         const totalXpEl = document.getElementById('gamification-total-xp');
         const totalBarEl = document.getElementById('gamification-total-bar');
         if (totalLevelEl) totalLevelEl.textContent = `Nível ${totalProgress.level}`;
-        if (totalXpEl) totalXpEl.textContent = `${totalProgress.current}/${totalProgress.next} XP para o próximo nível`;
+        if (totalXpEl) totalXpEl.textContent = `${totalProgress.current}/${totalProgress.next} XP para o próximo nível · ${gamification.totalXp} XP total`;
         if (totalBarEl) totalBarEl.style.width = `${totalProgress.pct}%`;
 
         const dimensionsEl = document.getElementById('gamification-dimensions');
@@ -1887,7 +1887,7 @@ render: {
                         break;
                     }
                 }
-                streakEl.textContent = `${streak} ${streak === 1 ? 'Dia' : 'Dias'} de sequência`;
+                streakEl.textContent = `${streak} ${streak === 1 ? 'Dia' : 'Dias'} de sequência pessoal`;
 
                 // Badge no header: dias ativos nesta semana (Dom → hoje), alinha com os círculos
                 const headerStreak = document.getElementById('header-streak');
@@ -1902,7 +1902,7 @@ render: {
                         d.setDate(weekSunday.getDate() + i);
                         if (app.hasDayActivity(app.getLocalDateKey(d))) weekDaysActive++;
                     }
-                    headerStreak.textContent = weekDaysActive + ' dias';
+                    headerStreak.textContent = weekDaysActive + ' dias ativos/semana';
                 }
             }
 
