@@ -696,12 +696,56 @@ export function attachSocial(app) {
             const userId = this.getActiveUserId();
             if (!userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return;
             const q = query(this.getSocialInboxCollectionRef(userId), orderBy('createdAt', 'desc'), limit(60));
-            this._socialInboxUnsub = onSnapshot(q, (snap) => {
+            this._socialInboxUnsub = onSnapshot(q, async (snap) => {
                 this.ensureSocialState();
                 const items = [];
+                const toProcess = [];
                 snap.forEach((itemDoc) => {
-                    items.push({ id: itemDoc.id, ...itemDoc.data() });
+                    const data = itemDoc.data();
+                    items.push({ id: itemDoc.id, ...data });
+                    if (!data.processed && (data.type === 'invite_decision' || data.type === 'connection_removed')) {
+                        toProcess.push({ id: itemDoc.id, ...data });
+                    }
                 });
+                
+                if (toProcess.length > 0) {
+                    try {
+                        const meSnap = await getDoc(this.getSocialConnectionsDocRef(userId));
+                        const meConnections = this.normalizeSocialConnectionMap(meSnap.exists() ? (meSnap.data()?.connections || {}) : {});
+                        let changed = false;
+                        const nowIso = new Date().toISOString();
+                        
+                        for (const evt of toProcess) {
+                            if (evt.type === 'invite_decision') {
+                                meConnections[evt.sourceUid] = {
+                                    uid: evt.sourceUid,
+                                    status: evt.status === 'accepted' ? 'active' : 'removed',
+                                    source: 'invite',
+                                    inviteCode: String(meConnections[evt.sourceUid]?.inviteCode || ''),
+                                    requestedAt: String(meConnections[evt.sourceUid]?.requestedAt || nowIso),
+                                    acceptedAt: evt.status === 'accepted' ? nowIso : '',
+                                    removedAt: evt.status === 'accepted' ? '' : nowIso
+                                };
+                                changed = true;
+                            } else if (evt.type === 'connection_removed') {
+                                meConnections[evt.sourceUid] = {
+                                    uid: evt.sourceUid,
+                                    status: 'removed',
+                                    removedAt: nowIso
+                                };
+                                changed = true;
+                            }
+                            await setDoc(this.getSocialInboxDocRef(userId, evt.id), { processed: true }, { merge: true });
+                        }
+                        
+                        if (changed) {
+                            await setDoc(this.getSocialConnectionsDocRef(userId), { connections: meConnections, updatedAt: serverTimestamp() }, { merge: true });
+                        }
+                    } catch (err) {
+                        console.warn('[SOCIAL] Erro ao processar eventos automaticos da inbox:', err);
+                    }
+                }
+                
                 window.sistemaVidaState.profile.social.notifications.items = items;
                 this.renderAppNotificationCenter();
                 this.refreshSocialConnectionsSurface();
@@ -823,38 +867,43 @@ export function attachSocial(app) {
             const userId = this.getActiveUserId();
             if (!userId || !sourceUid) return;
             const nowIso = new Date().toISOString();
-            const meSnap = await getDoc(this.getSocialConnectionsDocRef(userId));
-            const meConnections = this.normalizeSocialConnectionMap(meSnap.exists() ? (meSnap.data()?.connections || {}) : {});
-            meConnections[sourceUid] = {
-                uid: sourceUid,
-                status: accept ? 'active' : 'removed',
-                source: 'invite',
-                inviteCode: String(meConnections[sourceUid]?.inviteCode || ''),
-                requestedAt: String(meConnections[sourceUid]?.requestedAt || nowIso),
-                acceptedAt: accept ? nowIso : '',
-                removedAt: accept ? '' : nowIso
-            };
-            await setDoc(this.getSocialConnectionsDocRef(userId), { connections: meConnections, updatedAt: serverTimestamp() }, { merge: true });
+            
+            try {
+                const meSnap = await getDoc(this.getSocialConnectionsDocRef(userId));
+                const meConnections = this.normalizeSocialConnectionMap(meSnap.exists() ? (meSnap.data()?.connections || {}) : {});
+                meConnections[sourceUid] = {
+                    uid: sourceUid,
+                    status: accept ? 'active' : 'removed',
+                    source: 'invite',
+                    inviteCode: String(meConnections[sourceUid]?.inviteCode || ''),
+                    requestedAt: String(meConnections[sourceUid]?.requestedAt || nowIso),
+                    acceptedAt: accept ? nowIso : '',
+                    removedAt: accept ? '' : nowIso
+                };
+                await setDoc(this.getSocialConnectionsDocRef(userId), { connections: meConnections, updatedAt: serverTimestamp() }, { merge: true });
 
-            const sourceSnap = await getDoc(this.getSocialConnectionsDocRef(sourceUid));
-            const sourceConnections = this.normalizeSocialConnectionMap(sourceSnap.exists() ? (sourceSnap.data()?.connections || {}) : {});
-            sourceConnections[userId] = {
-                uid: userId,
-                status: accept ? 'active' : 'removed',
-                source: 'invite',
-                inviteCode: String(sourceConnections[userId]?.inviteCode || ''),
-                requestedAt: String(sourceConnections[userId]?.requestedAt || nowIso),
-                acceptedAt: accept ? nowIso : '',
-                removedAt: accept ? '' : nowIso
-            };
-            await setDoc(this.getSocialConnectionsDocRef(sourceUid), { connections: sourceConnections, updatedAt: serverTimestamp() }, { merge: true });
+                await setDoc(this.getSocialInboxDocRef(userId, eventId), {
+                    status: accept ? 'accepted' : 'declined',
+                    readAt: nowIso
+                }, { merge: true });
 
-            await setDoc(this.getSocialInboxDocRef(userId, eventId), {
-                status: accept ? 'accepted' : 'declined',
-                readAt: nowIso
-            }, { merge: true });
-            this.showToast(accept ? 'Conexao ativada.' : 'Convite recusado.', accept ? 'success' : 'warning');
-            this.renderSocialConnectionsPanel();
+                const decisionEventId = `decision_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                await setDoc(this.getSocialInboxDocRef(sourceUid, decisionEventId), {
+                    type: 'invite_decision',
+                    sourceUid: userId,
+                    sourceName: window.sistemaVidaState.profile?.name || 'Usuario',
+                    targetUid: sourceUid,
+                    status: accept ? 'accepted' : 'declined',
+                    readAt: '',
+                    createdAt: nowIso
+                }, { merge: false });
+
+                this.showToast(accept ? 'Conexao ativada.' : 'Convite recusado.', accept ? 'success' : 'warning');
+                this.renderSocialConnectionsPanel();
+            } catch (err) {
+                console.warn('[SOCIAL] Erro ao processar decisao:', err);
+                this.showToast('Erro ao processar convite. Tente novamente.', 'error');
+            }
         },
 
         removeSocialConnection: async function(otherUid) {
@@ -862,17 +911,31 @@ export function attachSocial(app) {
             const userId = this.getActiveUserId();
             const target = String(otherUid || '');
             if (!target || !userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return;
-            const removed = { uid: target, status: 'removed', removedAt: new Date().toISOString() };
-            const reciprocal = { uid: userId, status: 'removed', removedAt: new Date().toISOString() };
-            await setDoc(this.getSocialConnectionsDocRef(userId), {
-                connections: { [target]: removed },
-                updatedAt: serverTimestamp()
-            }, { merge: true });
-            await setDoc(this.getSocialConnectionsDocRef(target), {
-                connections: { [userId]: reciprocal },
-                updatedAt: serverTimestamp()
-            }, { merge: true });
-            window.sistemaVidaState.profile.social.connections[target] = removed;
+            
+            try {
+                const removed = { uid: target, status: 'removed', removedAt: new Date().toISOString() };
+                await setDoc(this.getSocialConnectionsDocRef(userId), {
+                    connections: { [target]: removed },
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+
+                const eventId = `remove_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                await setDoc(this.getSocialInboxDocRef(target, eventId), {
+                    type: 'connection_removed',
+                    sourceUid: userId,
+                    sourceName: window.sistemaVidaState.profile?.name || 'Usuario',
+                    targetUid: target,
+                    status: 'removed',
+                    readAt: '',
+                    createdAt: new Date().toISOString()
+                }, { merge: false });
+
+                if (this.currentView === 'social') this.renderSocialConnectionsPanel();
+            } catch (err) {
+                console.warn('[SOCIAL] Erro ao remover conexao:', err);
+                this.showToast('Erro ao remover conexao.', 'error');
+            }
+            window.sistemaVidaState.profile.social.connections[target] = { uid: target, status: 'removed', removedAt: new Date().toISOString() };
             delete window.sistemaVidaState.profile.social.connectionProfiles[target];
             this.saveState(true);
             this.renderSocialConnectionsPanel();
@@ -1243,34 +1306,23 @@ export function attachSocial(app) {
                 list.innerHTML = activeIds.length ? activeIds.map((uid) => {
                     const conn = connectionsMap[uid] || {};
                     const profile = profiles[uid] || { uid, visible: false };
-                    const isActive = true;
-                    const visible = profile.visible !== false && profile.sharingEnabled !== false;
-                    const name = visible ? (profile.name || 'Companheiro') : 'Companheiro privado';
-                    const activeLabel = visible && profile.lastActiveAt ? 'ativo hoje' : 'visibilidade indisponivel';
-                    const achievements = Array.isArray(profile.achievements) ? profile.achievements : [];
-                    const dimensions = profile.dimensionLevels && typeof profile.dimensionLevels === 'object'
-                        ? Object.entries(profile.dimensionLevels)
-                        : [];
-                    const recentHighlights = Array.isArray(profile.recentHighlights) ? profile.recentHighlights : [];
-                    const infoRows = [];
-                    if (profile.xp !== undefined) infoRows.push(['XP pessoal', Number(profile.xp || 0)]);
-                    if (profile.keyHabitsDone !== undefined) infoRows.push(['Habitos-chave', Number(profile.keyHabitsDone || 0)]);
-                    if (profile.streak !== undefined) infoRows.push(['Sequencia pessoal', `${Number(profile.streak || 0)} dia(s)`]);
-                    if (profile.lastActiveAt) infoRows.push(['Ultima atividade', 'Agora']);
-                    const summaryRows = infoRows.length ? `<div class="grid grid-cols-2 gap-2 text-center">${infoRows.map(([label, value]) => `<div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">${this.escapeHtml(label)}</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(value)}</p></div>`).join('')}</div>` : '';
-                    const identitySection = visible && (dimensions.length || profile.level !== undefined)
-                        ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest">
+                    const lvl = profile.level || 1;
+                    const xp = profile.xp || 0;
+                    const name = profile.visible !== false && profile.sharingEnabled !== false ? (profile.name || 'Companheiro') : 'Companheiro privado';
+                    const dimensions = profile.dimensionLevels && typeof profile.dimensionLevels === 'object' ? Object.entries(profile.dimensionLevels) : [];
+                    const identitySection = (dimensions.length || profile.level !== undefined)
+                        ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest mt-3">
                             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
                                 <div>
                                     <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Identidade e niveis</p>
-                                    <p class="text-xs text-on-surface-variant">${dimensions.length ? `${dimensions.length} dimensao(oes) publicadas` : `Nivel ${this.escapeHtml(profile.level || 1)}`}</p>
+                                    <p class="text-xs text-on-surface-variant">${dimensions.length ? `${dimensions.length} dimensao(oes) publicadas` : `Nivel ${lvl}`}</p>
                                 </div>
                                 <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
                             </summary>
                             <div class="px-3 pb-3 space-y-3">
                                 <div class="rounded-xl bg-surface-container-high px-3 py-2">
                                     <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">Nivel geral</p>
-                                    <p class="mt-1 text-sm font-bold text-on-surface">Nivel ${this.escapeHtml(profile.level || 1)}</p>
+                                    <p class="mt-1 text-sm font-bold text-on-surface">Nivel ${lvl}</p>
                                 </div>
                                 ${dimensions.length ? `<div class="grid grid-cols-2 gap-2">${dimensions.map(([dimensionName, item]) => {
                                     const level = Number(item?.level || 1);
@@ -1289,60 +1341,71 @@ export function attachSocial(app) {
                             </div>
                         </details>`
                         : '';
-                    // Fix #3: mostra só conquistas reais no card da conexão — sem misturar highlights
-                    const achievementItems = achievements
-                        .map((ach) => ({
-                            id: `achievement_${ach.id || ach.title || ''}`,
-                            type: 'achievement',
-                            title: ach.title || 'Conquista',
-                            subtitle: 'Conquista recente',
-                            createdAt: ach.unlockedAt || ''
-                        }))
-                        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
-                        .slice(0, 6);
-                    const achievementsSection = visible && (Array.isArray(profile.achievements) || recentHighlights.length)
-                        ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest">
+                    const achievementsSection = (profile.achievements && Object.keys(profile.achievements).length)
+                        ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest mt-3">
                             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
                                 <div>
-                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Conquistas</p>
-                                    <p class="text-xs text-on-surface-variant">${achievementItems.length ? `${achievementItems.length} conquista(s) recente(s)` : 'Sem conquistas publicadas'}</p>
+                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Conquistas desbloqueadas</p>
+                                    <p class="text-xs text-on-surface-variant">${Object.keys(profile.achievements).length} conquista(s) no total</p>
+                                </div>
+                                <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
+                            </summary>
+                            <div class="px-3 pb-3">
+                                <div class="flex flex-wrap gap-2">
+                                    ${Object.entries(profile.achievements).map(([id, ach]) => `<span title="${this.escapeHtml(ach.title)}: ${this.escapeHtml(ach.description)}" class="inline-flex h-10 items-center justify-center rounded-xl bg-surface-container-high px-3 text-xs font-bold text-on-surface hover:bg-outline/5">${this.escapeHtml(ach.emoji || '🏆')} ${this.escapeHtml(ach.title)}</span>`).join('')}
+                                </div>
+                            </div>
+                        </details>`
+                        : '';
+                    const myReactions = Array.isArray(window.sistemaVidaState.profile.social.reactions?.sent) ? window.sistemaVidaState.profile.social.reactions.sent : [];
+                    const reactionsToThisUser = myReactions.filter(r => r.targetUid === uid).slice(0, 3);
+                    const reactionsSection = reactionsToThisUser.length
+                        ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest mt-3">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
+                                <div>
+                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Reacoes enviadas</p>
+                                    <p class="text-xs text-on-surface-variant">${reactionsToThisUser.length} reacao(oes) recente(s)</p>
                                 </div>
                                 <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
                             </summary>
                             <div class="px-3 pb-3 space-y-2">
-                                ${achievementItems.length ? achievementItems.map((item) => `<div class="rounded-xl bg-surface-container-high px-3 py-2.5 space-y-2">
-                                    <div class="flex items-center gap-3">
-                                        <span class="material-symbols-outlined notranslate text-primary text-[18px]">${item.type === 'achievement' ? 'military_tech' : 'bolt'}</span>
-                                        <div class="min-w-0 flex-1">
-                                            <p class="text-xs font-bold text-on-surface">${this.escapeHtml(item.title || 'Conquista')}</p>
-                                            <p class="text-[10px] text-outline">${this.escapeHtml(item.subtitle || '')}${item.subtitle ? ' · ' : ''}${this.escapeHtml(this.formatSocialTimestamp(item.createdAt))}</p>
+                                ${reactionsToThisUser.map(reaction => {
+                                    const cfg = SOCIAL_REACTIONS[reaction.type] || SOCIAL_REACTIONS.strength;
+                                    return `<div class="flex items-center justify-between gap-3 rounded-xl bg-surface-container-high px-3 py-2">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="material-symbols-outlined notranslate text-primary text-[16px]">${cfg.icon}</span>
+                                            <span class="text-xs text-on-surface truncate">${this.escapeHtml(cfg.label)}</span>
                                         </div>
-                                    </div>
-                                    ${isActive ? `<div class="flex flex-wrap gap-2">
-                                        ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" title="${this.escapeHtml(cfg.label)}" aria-label="${this.escapeHtml(cfg.label)}" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}','${encodeURIComponent(String(item.type || ''))}','${encodeURIComponent(String(item.id || ''))}','${encodeURIComponent(String(item.title || ''))}')" class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/60 dark:bg-surface-container-low border border-primary/15 text-base hover:bg-primary/10"><span aria-hidden="true">${cfg.emoji}</span></button>`).join('')}
-                                    </div>` : ''}
-                                </div>`).join('') : `<p class="rounded-xl bg-surface-container-high px-3 py-2 text-xs text-outline">Sem conquistas publicadas neste perfil.</p>`}
+                                        <span class="text-[10px] text-outline shrink-0">${this.escapeHtml(String(reaction.sentAt || '').slice(0, 10))}</span>
+                                    </div>`;
+                                }).join('')}
                             </div>
                         </details>`
                         : '';
-                    return `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center shrink-0">
-                                    ${visible && profile.avatarUrl ? `<img src="${this.escapeHtml(profile.avatarUrl)}" alt="" class="w-full h-full object-cover">` : '<span class="material-symbols-outlined notranslate text-outline text-[20px]">account_circle</span>'}
+
+                    return `<div class="rounded-2xl border border-outline-variant/10 bg-surface-container-low overflow-hidden">
+                        <div class="p-4 sm:p-5">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-base font-bold text-on-surface truncate">${this.escapeHtml(name)}</p>
+                                        <span class="inline-flex items-center justify-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">Nvl ${lvl}</span>
+                                    </div>
+                                    <p class="text-[10px] text-outline uppercase tracking-wider mt-1">${xp} XP acumulado</p>
                                 </div>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(name)}</p>
-                                    <p class="text-[10px] text-outline uppercase tracking-wider">Nivel ${visible ? this.escapeHtml(profile.level || 1) : '-'} · ${this.escapeHtml(activeLabel)}</p>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <button type="button" onclick="window.app.generateSocialActivity(this, '${this.escapeHtml(uid)}', '${this.escapeHtml(name)}')" class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/5 text-primary hover:bg-primary/15 transition-colors" title="Incentivar">
+                                        <span class="material-symbols-outlined notranslate text-[20px]">recommend</span>
+                                    </button>
+                                    <button type="button" onclick="window.app.removeSocialConnection('${this.escapeHtml(uid)}')" class="inline-flex h-9 w-9 items-center justify-center rounded-full text-outline hover:text-error hover:bg-error/10 transition-colors" title="Desfazer conexao">
+                                        <span class="material-symbols-outlined notranslate text-[20px]">person_remove</span>
+                                    </button>
                                 </div>
                             </div>
-                            <button type="button" onclick="window.app.removeSocialConnection('${this.escapeHtml(uid)}')" class="text-outline hover:text-error transition-colors" title="Remover conexao">
-                                <span class="material-symbols-outlined notranslate text-[18px]">person_remove</span>
-                            </button>
+                            ${identitySection}
+                            ${achievementsSection}
+                            ${reactionsSection}
                         </div>
-                        ${summaryRows}
-                        ${identitySection}
-                        ${achievementsSection}
                     </div>`;
                 }).join('') : '<p class="text-xs text-outline italic">Nenhum companheiro conectado ainda.</p>';
             }
@@ -1418,25 +1481,7 @@ export function attachSocial(app) {
                     </div>`;
                 }).join('') : '<p class="text-xs text-outline italic">Nenhum desafio criado ainda.</p>';
             }
-
-            if (reactionsEl) {
-                const sent = Array.isArray(window.sistemaVidaState.profile.social.reactions?.sent)
-                    ? window.sistemaVidaState.profile.social.reactions.sent.slice(0, 6)
-                    : [];
-                reactionsEl.innerHTML = sent.length ? sent.map((reaction) => {
-                    const cfg = SOCIAL_REACTIONS[reaction.type] || SOCIAL_REACTIONS.strength;
-                    const profile = profiles[reaction.targetUid] || {};
-                    return `<div class="flex items-center justify-between gap-3 rounded-xl bg-surface-container-low p-3 border border-outline-variant/10">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="material-symbols-outlined notranslate text-primary text-[16px]">${cfg.icon}</span>
-                            <span class="text-xs text-on-surface truncate">${this.escapeHtml(cfg.label)} para ${this.escapeHtml(profile.name || 'companheiro')}</span>
-                        </div>
-                        <span class="text-[10px] text-outline shrink-0">${this.escapeHtml(String(reaction.sentAt || '').slice(0, 10))}</span>
-                    </div>`;
-                }).join('') : '<p class="text-xs text-outline italic">Nenhuma reacao enviada ainda.</p>';
-            }
             this.renderAppNotificationCenter();
         }
     });
 }
-
