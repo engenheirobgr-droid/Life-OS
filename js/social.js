@@ -472,6 +472,9 @@ export function attachSocial(app) {
             const badgeEls = Array.from(document.querySelectorAll('[data-app-notification-badge]'));
             if (!notificationsEl) return;
             this.ensureSocialState();
+            if (this.isSocialFeatureEnabled()) {
+                this.startSocialInboxListener();
+            }
             const notifications = Array.isArray(window.sistemaVidaState.profile.social.notifications?.items)
                 ? window.sistemaVidaState.profile.social.notifications.items.slice(0, 24)
                 : [];
@@ -1069,7 +1072,7 @@ export function attachSocial(app) {
             if (toggles) {
                 toggles.innerHTML = Object.entries(SOCIAL_FIELD_LABELS).map(([key, label]) => {
                     const checked = social.visibility?.[key] !== false;
-                    return `<label class="flex items-center justify-between gap-3 rounded-xl bg-surface-container-low p-3 border border-outline-variant/10">
+                    return `<label class="flex items-center justify-between gap-3 rounded-xl bg-surface-container-low px-3 py-2.5 border border-outline-variant/10">
                         <span class="text-xs font-semibold text-on-surface">${this.escapeHtml(label)}</span>
                         <input type="checkbox" ${checked ? 'checked' : ''} onchange="window.app.setSocialVisibility('${key}', this.checked)" class="accent-primary">
                     </label>`;
@@ -1183,18 +1186,18 @@ export function attachSocial(app) {
                                     <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">Nivel geral</p>
                                     <p class="mt-1 text-sm font-bold text-on-surface">Nivel ${this.escapeHtml(profile.level || 1)}</p>
                                 </div>
-                                ${dimensions.length ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${dimensions.map(([dimensionName, item]) => {
+                                ${dimensions.length ? `<div class="grid grid-cols-2 gap-2">${dimensions.map(([dimensionName, item]) => {
                                     const level = Number(item?.level || 1);
                                     const identity = this.getDimensionIdentity ? this.getDimensionIdentity(dimensionName, level) : { title: `Nivel ${level}`, icon: 'stars' };
-                                    return `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-high p-3 min-w-0">
+                                    return `<div class="rounded-lg border border-outline-variant/10 bg-surface-container-high px-2.5 py-2 min-w-0">
                                         <div class="flex items-start justify-between gap-2">
-                                            <div class="min-w-0">
-                                                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline truncate">${this.escapeHtml(dimensionName)}</p>
-                                                <p class="mt-1 text-xs font-bold text-on-surface truncate">${this.escapeHtml(identity.title)}</p>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-[9px] font-bold uppercase tracking-[0.14em] text-outline truncate">${this.escapeHtml(dimensionName)}</p>
+                                                <p class="mt-0.5 text-[11px] font-bold text-on-surface truncate">${this.escapeHtml(identity.title)}</p>
                                             </div>
-                                            <span class="material-symbols-outlined notranslate text-primary text-[18px] shrink-0">${this.escapeHtml(identity.icon || 'stars')}</span>
+                                            <span class="material-symbols-outlined notranslate text-primary text-[16px] shrink-0">${this.escapeHtml(identity.icon || 'stars')}</span>
                                         </div>
-                                        <p class="mt-2 text-[11px] text-primary font-semibold">Nivel ${level}</p>
+                                        <p class="mt-1 text-[10px] text-primary font-semibold">Nivel ${level}</p>
                                     </div>`;
                                 }).join('')}</div>` : ''}
                             </div>

@@ -97,8 +97,18 @@
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
-            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3">Campos compartilhaveis</p>
-            <div id="social-visibility-toggles" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+            <details class="group rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden" open>
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Campos compartilhaveis</p>
+                        <p class="text-xs text-on-surface-variant mt-1">Escolha o que entra no perfil publico.</p>
+                    </div>
+                    <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
+                </summary>
+                <div class="px-3 pb-3">
+                    <div id="social-visibility-toggles" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                </div>
+            </details>
         </div>
         <div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
             <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3">Preview publico</p>
