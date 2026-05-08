@@ -320,6 +320,139 @@ export function attachSocial(app) {
             return rows;
         },
 
+        getAppNotificationTypeMeta: function(type) {
+            const key = String(type || '');
+            const meta = {
+                invite_request: { group: 'social', title: 'Convite recebido', icon: 'mail', tone: 'text-primary' },
+                reaction: { group: 'social', title: 'Reacao recebida', icon: 'favorite', tone: 'text-primary' },
+                challenge: { group: 'social', title: 'Desafio social', icon: 'flag', tone: 'text-primary' },
+                xp_gain: { group: 'app', title: 'XP ganho', icon: 'bolt', tone: 'text-primary' },
+                level_up: { group: 'app', title: 'Novo nivel', icon: 'trending_up', tone: 'text-primary' },
+                achievement_unlock: { group: 'app', title: 'Conquista desbloqueada', icon: 'military_tech', tone: 'text-primary' },
+                sync_warning: { group: 'app', title: 'Aviso de sincronizacao', icon: 'sync_problem', tone: 'text-error' },
+                ritual: { group: 'app', title: 'Rito importante', icon: 'event_repeat', tone: 'text-primary' }
+            };
+            return meta[key] || { group: 'app', title: 'Atualizacao do app', icon: 'notifications', tone: 'text-primary' };
+        },
+
+        formatSocialTimestamp: function(value) {
+            const raw = String(value || '');
+            if (!raw) return 'Agora';
+            const date = new Date(raw);
+            if (Number.isNaN(date.getTime())) return raw.slice(0, 16).replace('T', ' ');
+            return date.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        },
+
+        acknowledgeVisibleNotifications: async function() {
+            this.ensureSocialState();
+            const items = Array.isArray(window.sistemaVidaState.profile.social.notifications?.items)
+                ? window.sistemaVidaState.profile.social.notifications.items
+                : [];
+            const unread = items.filter((entry) => !entry.readAt);
+            if (!unread.length) return;
+            const nowIso = new Date().toISOString();
+            unread.forEach((entry) => {
+                entry.readAt = nowIso;
+                entry.status = 'seen';
+            });
+            this.saveState(true);
+            const userId = this.getActiveUserId();
+            if (userId && userId !== LOCAL_USER_SCOPE && !auth.currentUser?.isAnonymous) {
+                await Promise.all(unread
+                    .filter((entry) => String(entry.id || '').startsWith('evt_'))
+                    .map(async (entry) => {
+                        try {
+                            await setDoc(this.getSocialInboxDocRef(userId, entry.id), { readAt: nowIso, status: 'seen' }, { merge: true });
+                        } catch (_) {}
+                    }));
+            }
+        },
+
+        renderAppNotificationCenter: function() {
+            const notificationsEl = document.getElementById('app-notifications-list');
+            const badge = document.getElementById('app-notifications-badge');
+            if (!notificationsEl || !badge) return;
+            this.ensureSocialState();
+            const notifications = Array.isArray(window.sistemaVidaState.profile.social.notifications?.items)
+                ? window.sistemaVidaState.profile.social.notifications.items.slice(0, 24)
+                : [];
+            const unread = notifications.filter((item) => !item.readAt).length;
+            badge.textContent = unread > 0 ? `${unread} nova(s)` : 'Sem novidades';
+
+            const grouped = { app: [], social: [] };
+            notifications.forEach((item) => {
+                const meta = this.getAppNotificationTypeMeta(item.type);
+                grouped[meta.group].push({ item, meta });
+            });
+
+            const renderCard = ({ item, meta }) => {
+                const readCls = item.readAt ? 'opacity-80' : '';
+                const baseDetail = item.payload?.message || item.payload?.title || item.payload?.summary || '';
+                let body = baseDetail;
+                let actions = '';
+                if (item.type === 'invite_request') {
+                    body = `${item.sourceName || 'Usuario'} quer se conectar com voce.`;
+                    if (item.status === 'pending') {
+                        actions = `<div class="flex flex-wrap gap-2 pt-2">
+                            <button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(item.id)}','${this.escapeHtml(item.sourceUid)}',true)" class="h-9 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider">Aceitar</button>
+                            <button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(item.id)}','${this.escapeHtml(item.sourceUid)}',false)" class="h-9 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider">Recusar</button>
+                        </div>`;
+                    }
+                } else if (item.type === 'reaction') {
+                    const cfg = SOCIAL_REACTIONS[item.reactionType] || SOCIAL_REACTIONS.strength;
+                    body = `${item.sourceName || 'Usuario'} enviou ${cfg.label.toLowerCase()} para voce.`;
+                    if (item.sourceUid) {
+                        actions = `<div class="flex flex-wrap gap-2 pt-2">
+                            ${Object.entries(SOCIAL_REACTIONS).map(([type, cfgAction]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(item.sourceUid)}','${type}')" class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[13px]">${cfgAction.icon}</span>${cfgAction.label}</button>`).join('')}
+                        </div>`;
+                    }
+                }
+                return `<article class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10 ${readCls}">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined notranslate text-[18px] ${meta.tone}">${meta.icon}</span>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="text-xs font-bold text-on-surface">${this.escapeHtml(meta.title)}</p>
+                                <span class="text-[10px] text-outline shrink-0">${this.escapeHtml(this.formatSocialTimestamp(item.createdAt))}</span>
+                            </div>
+                            <p class="mt-1 text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(body || 'Atualizacao registrada no app.')}</p>
+                            ${actions}
+                        </div>
+                    </div>
+                </article>`;
+            };
+
+            const sections = [
+                { key: 'app', label: 'App', empty: 'Ganhos de XP, niveis, conquistas e avisos internos aparecem aqui.' },
+                { key: 'social', label: 'Social', empty: 'Convites, reacoes e interacoes com conexoes aparecem aqui.' }
+            ];
+            notificationsEl.innerHTML = sections.map((section) => {
+                const items = grouped[section.key] || [];
+                return `<div class="space-y-2">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">${section.label}</p>
+                        <span class="text-[10px] text-outline">${items.length ? `${items.length} evento(s)` : 'Sem eventos'}</span>
+                    </div>
+                    ${items.length
+                        ? `<div class="space-y-2">${items.map(renderCard).join('')}</div>`
+                        : `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10 text-xs text-outline">${section.empty}</div>`}
+                </div>`;
+            }).join('');
+
+            if (unread > 0 && !this._notificationAcknowledgeQueued) {
+                this._notificationAcknowledgeQueued = true;
+                setTimeout(() => {
+                    this._notificationAcknowledgeQueued = false;
+                    this.acknowledgeVisibleNotifications().catch(() => {});
+                }, 600);
+            }
+        },
+
         setSocialFeatureForLocalAudit: function(enabled) {
             this.ensureSocialState();
             window.sistemaVidaState.settings.features.social = !!enabled;
@@ -784,6 +917,7 @@ export function attachSocial(app) {
 
         renderSocialPrivacyPanel: function() {
             this.renderSocialAccessPanel();
+            this.renderAppNotificationCenter();
             const section = document.getElementById('social-privacy-section');
             if (!section) return;
             this.ensureSocialState();
@@ -904,15 +1038,81 @@ export function attachSocial(app) {
                     const activeLabel = !isActive
                         ? (conn.status === 'pending_outgoing' ? 'aguardando aceite' : 'convite pendente')
                         : (visible && profile.lastActiveAt ? 'ativo hoje' : 'visibilidade indisponivel');
-                    const achievements = Array.isArray(profile.achievements) ? profile.achievements.slice(0, 3) : [];
+                    const achievements = Array.isArray(profile.achievements) ? profile.achievements : [];
                     const dimensions = profile.dimensionLevels && typeof profile.dimensionLevels === 'object'
-                        ? Object.entries(profile.dimensionLevels).slice(0, 4)
+                        ? Object.entries(profile.dimensionLevels)
                         : [];
                     const infoRows = [];
                     if (profile.xp !== undefined) infoRows.push(['XP pessoal', Number(profile.xp || 0)]);
                     if (profile.keyHabitsDone !== undefined) infoRows.push(['Habitos-chave', Number(profile.keyHabitsDone || 0)]);
                     if (profile.streak !== undefined) infoRows.push(['Sequencia pessoal', `${Number(profile.streak || 0)} dia(s)`]);
                     if (profile.lastActiveAt) infoRows.push(['Ultima atividade', 'Agora']);
+                    const summaryRows = infoRows.length ? `<div class="grid grid-cols-2 gap-2 text-center">${infoRows.map(([label, value]) => `<div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">${this.escapeHtml(label)}</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(value)}</p></div>`).join('')}</div>` : '';
+                    const identitySection = visible && (dimensions.length || profile.level !== undefined)
+                        ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
+                                <div>
+                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Identidade e niveis</p>
+                                    <p class="text-xs text-on-surface-variant">${dimensions.length ? `${dimensions.length} dimensao(oes) publicadas` : `Nivel ${this.escapeHtml(profile.level || 1)}`}</p>
+                                </div>
+                                <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
+                            </summary>
+                            <div class="px-3 pb-3 space-y-3">
+                                <div class="rounded-xl bg-surface-container-high px-3 py-2">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">Nivel geral</p>
+                                    <p class="mt-1 text-sm font-bold text-on-surface">Nivel ${this.escapeHtml(profile.level || 1)}</p>
+                                </div>
+                                ${dimensions.length ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${dimensions.map(([dimensionName, item]) => {
+                                    const level = Number(item?.level || 1);
+                                    const identity = this.getDimensionIdentity ? this.getDimensionIdentity(dimensionName, level) : { title: `Nivel ${level}`, icon: 'stars' };
+                                    return `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-high p-3 min-w-0">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div class="min-w-0">
+                                                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline truncate">${this.escapeHtml(dimensionName)}</p>
+                                                <p class="mt-1 text-xs font-bold text-on-surface truncate">${this.escapeHtml(identity.title)}</p>
+                                            </div>
+                                            <span class="material-symbols-outlined notranslate text-primary text-[18px] shrink-0">${this.escapeHtml(identity.icon || 'stars')}</span>
+                                        </div>
+                                        <p class="mt-2 text-[11px] text-primary font-semibold">Nivel ${level}</p>
+                                    </div>`;
+                                }).join('')}</div>` : ''}
+                            </div>
+                        </details>`
+                        : '';
+                    const achievementsSection = visible && Array.isArray(profile.achievements)
+                        ? `<details class="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
+                                <div>
+                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-outline">Conquistas recentes</p>
+                                    <p class="text-xs text-on-surface-variant">${achievements.length ? `${achievements.length} registrada(s)` : 'Sem conquistas publicadas'}</p>
+                                </div>
+                                <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
+                            </summary>
+                            <div class="px-3 pb-3 space-y-2">
+                                ${achievements.length ? achievements.map((ach) => `<div class="flex items-center gap-3 rounded-xl bg-surface-container-high px-3 py-2.5">
+                                    <span class="material-symbols-outlined notranslate text-primary text-[18px]">military_tech</span>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-bold text-on-surface">${this.escapeHtml(ach.title || 'Conquista')}</p>
+                                        <p class="text-[10px] text-outline">${this.escapeHtml(this.formatSocialTimestamp(ach.unlockedAt))}</p>
+                                    </div>
+                                </div>`).join('') : `<p class="rounded-xl bg-surface-container-high px-3 py-2 text-xs text-outline">Sem conquistas publicadas neste perfil.</p>`}
+                            </div>
+                        </details>`
+                        : '';
+                    const reactionsSection = isActive
+                        ? `<details class="group rounded-xl border border-primary/15 bg-primary/5">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
+                                <div>
+                                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Enviar apoio</p>
+                                    <p class="text-xs text-on-surface-variant">Uma interacao curta para manter o movimento vivo.</p>
+                                </div>
+                                <span class="material-symbols-outlined notranslate text-primary transition-transform group-open:rotate-180">expand_more</span>
+                            </summary>
+                            <div class="px-3 pb-3 flex flex-wrap gap-2">
+                                ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}')" class="inline-flex items-center gap-1.5 rounded-full bg-white/60 dark:bg-surface-container-low border border-primary/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[14px]">${cfg.icon}</span>${cfg.label}</button>`).join('')}
+                            </div>
+                        </details>`
+                        : '';
                     return `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3 min-w-0">
@@ -928,16 +1128,10 @@ export function attachSocial(app) {
                                 <span class="material-symbols-outlined notranslate text-[18px]">person_remove</span>
                             </button>
                         </div>
-                        ${infoRows.length ? `<div class="grid grid-cols-2 gap-2 text-center">${infoRows.map(([label, value]) => `<div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">${this.escapeHtml(label)}</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(value)}</p></div>`).join('')}</div>` : ''}
-                        ${dimensions.length ? `<div class="flex flex-wrap gap-1.5">${dimensions.map(([name, item]) => {
-                            const level = Number(item?.level || 1);
-                            const identity = this.getDimensionIdentity ? this.getDimensionIdentity(name, level) : { title: `N${level}` };
-                            return `<span class="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-1 text-[10px] font-bold text-primary">${this.escapeHtml(name)}: ${this.escapeHtml(identity.title)}</span>`;
-                        }).join('')}</div>` : ''}
-                        ${achievements.length ? `<div class="space-y-1">${achievements.map((ach) => `<div class="rounded-lg bg-surface-container-high px-2.5 py-1.5 text-[11px] text-on-surface">${this.escapeHtml(ach.title || 'Conquista')}</div>`).join('')}</div>` : ''}
-                        <div class="flex flex-wrap gap-2 ${isActive ? '' : 'opacity-60'}">
-                            ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}')" class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[13px]">${cfg.icon}</span>${cfg.label}</button>`).join('')}
-                        </div>
+                        ${summaryRows}
+                        ${identitySection}
+                        ${achievementsSection}
+                        ${reactionsSection}
                     </div>`;
                 }).join('') : '<p class="text-xs text-outline italic">Nenhum companheiro conectado ainda.</p>';
             }
@@ -991,48 +1185,7 @@ export function attachSocial(app) {
                     </div>`;
                 }).join('') : '<p class="text-xs text-outline italic">Nenhuma reacao enviada ainda.</p>';
             }
-
-            const notificationsEl = document.getElementById('social-notifications-list');
-            const notifications = Array.isArray(window.sistemaVidaState.profile.social.notifications?.items)
-                ? window.sistemaVidaState.profile.social.notifications.items.slice(0, 20)
-                : [];
-            const unread = notifications.filter((n) => !n.readAt).length;
-            const badge = document.getElementById('social-notifications-badge');
-            if (badge) badge.textContent = unread > 0 ? `${unread} novas` : 'Tudo lido';
-            const markAllBtn = document.getElementById('social-notifications-mark-all');
-            if (markAllBtn) markAllBtn.classList.toggle('hidden', unread === 0);
-            if (notificationsEl) {
-                notificationsEl.innerHTML = notifications.length ? notifications.map((item) => {
-                    const t = String(item.type || '');
-                    const readCls = item.readAt ? 'opacity-70' : '';
-                    if (t === 'invite_request') {
-                        const pending = item.status === 'pending';
-                        return `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10 space-y-2 ${readCls}">
-                            <p class="text-xs text-on-surface"><b>${this.escapeHtml(item.sourceName || 'Usuario')}</b> pediu conexao.</p>
-                            <p class="text-[10px] text-outline">${this.escapeHtml(String(item.createdAt || '').slice(0, 16).replace('T', ' '))}</p>
-                            ${pending ? `<div class="flex gap-2"><button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(item.id)}','${this.escapeHtml(item.sourceUid)}',true)" class="h-8 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider">Aceitar</button><button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(item.id)}','${this.escapeHtml(item.sourceUid)}',false)" class="h-8 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider">Recusar</button></div>` : `<button type="button" onclick="window.app.markSocialNotificationRead('${this.escapeHtml(item.id)}')" class="text-[10px] font-bold uppercase tracking-wider text-primary">Marcar lida</button>`}
-                        </div>`;
-                    }
-                    if (t === 'reaction') {
-                        const cfg = SOCIAL_REACTIONS[item.reactionType] || SOCIAL_REACTIONS.strength;
-                        return `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10 ${readCls}">
-                            <p class="text-xs text-on-surface"><b>${this.escapeHtml(item.sourceName || 'Usuario')}</b> enviou: ${this.escapeHtml(cfg.label)}.</p>
-                            <p class="text-[10px] text-outline mt-1">${this.escapeHtml(String(item.createdAt || '').slice(0, 16).replace('T', ' '))}</p>
-                            <button type="button" onclick="window.app.markSocialNotificationRead('${this.escapeHtml(item.id)}')" class="mt-1 text-[10px] font-bold uppercase tracking-wider text-primary">Marcar lida</button>
-                        </div>`;
-                    }
-                    if (t === 'xp_gain' || t === 'level_up' || t === 'achievement_unlock') {
-                        const title = t === 'xp_gain' ? 'XP ganho' : (t === 'level_up' ? 'Subiu de nivel' : 'Conquista');
-                        const detail = item.payload?.message || item.payload?.title || '';
-                        return `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10 ${readCls}">
-                            <p class="text-xs text-on-surface"><b>${this.escapeHtml(title)}</b>: ${this.escapeHtml(detail)}</p>
-                            <p class="text-[10px] text-outline mt-1">${this.escapeHtml(String(item.createdAt || '').slice(0, 16).replace('T', ' '))}</p>
-                            <button type="button" onclick="window.app.markSocialNotificationRead('${this.escapeHtml(item.id)}')" class="mt-1 text-[10px] font-bold uppercase tracking-wider text-primary">Marcar lida</button>
-                        </div>`;
-                    }
-                    return '';
-                }).join('') : '<p class="text-xs text-outline italic">Sem eventos ainda.</p>';
-            }
+            this.renderAppNotificationCenter();
         }
     });
 }

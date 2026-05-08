@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-stability-v131';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-stability-v131';
-import { attachNotifications } from './js/notifications.js?v=20260508-social-stability-v131';
-import { attachCadence } from './js/cadence.js?v=20260508-social-stability-v131';
-import { attachOnboarding } from './js/onboarding.js?v=20260508-social-stability-v131';
-import { attachIdentity } from './js/identity.js?v=20260508-social-stability-v131';
-import { attachHabits } from './js/habits.js?v=20260508-social-stability-v131';
-import { attachStateModule } from './js/state.js?v=20260508-social-stability-v131';
-import { attachRenderModule } from './js/render.js?v=20260508-social-stability-v131';
-import { attachPlanningModule } from './js/planning.js?v=20260508-social-stability-v131';
-import { attachGamificationModule } from './js/gamification.js?v=20260508-social-stability-v131';
-import { attachSocial } from './js/social.js?v=20260508-social-stability-v131';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-stability-v132';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-stability-v132';
+import { attachNotifications } from './js/notifications.js?v=20260508-social-stability-v132';
+import { attachCadence } from './js/cadence.js?v=20260508-social-stability-v132';
+import { attachOnboarding } from './js/onboarding.js?v=20260508-social-stability-v132';
+import { attachIdentity } from './js/identity.js?v=20260508-social-stability-v132';
+import { attachHabits } from './js/habits.js?v=20260508-social-stability-v132';
+import { attachStateModule } from './js/state.js?v=20260508-social-stability-v132';
+import { attachRenderModule } from './js/render.js?v=20260508-social-stability-v132';
+import { attachPlanningModule } from './js/planning.js?v=20260508-social-stability-v132';
+import { attachGamificationModule } from './js/gamification.js?v=20260508-social-stability-v132';
+import { attachSocial } from './js/social.js?v=20260508-social-stability-v132';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260508-social-stability-v131',
+    appBuildVersion: '20260508-social-stability-v132',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -4377,10 +4377,10 @@ ensureNotesState: function() {
         const moodMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('mood', entry.mood) : { emoji: '🙂', short: `Humor ${entry.mood || 3}` };
         const stressMeta = this.getCheckinScaleMeta ? this.getCheckinScaleMeta('stress', entry.stress) : { emoji: '😌', short: `Estresse ${entry.stress || 3}` };
         const chips = [
-            { emoji: sleepMeta.emoji, label: `${entry.sleepHours || 0}h`, hint: `Sono ${sleepMeta.short}` },
-            { emoji: energyMeta.emoji, label: energyMeta.short, hint: 'Energia' },
-            { emoji: moodMeta.emoji, label: moodMeta.short, hint: 'Humor' },
-            { emoji: stressMeta.emoji, label: stressMeta.short, hint: 'Estresse' }
+            { emoji: sleepMeta.emoji, title: 'Sono', value: `${entry.sleepHours || 0}h`, detail: sleepMeta.short },
+            { emoji: energyMeta.emoji, title: 'Energia', value: energyMeta.short, detail: 'Hoje' },
+            { emoji: moodMeta.emoji, title: 'Humor', value: moodMeta.short, detail: 'Agora' },
+            { emoji: stressMeta.emoji, title: 'Estresse', value: stressMeta.short, detail: 'Carga' }
         ];
         const intention = entry.intention
             ? `<p class="mt-2 text-[11px] text-on-surface-variant leading-relaxed"><span class="font-bold text-on-surface">Intencao:</span> ${this.escapeHtml(entry.intention)}</p>`
@@ -4397,13 +4397,16 @@ ensureNotesState: function() {
                     </span>
                     ${emotion}
                 </div>
-                <div class="mt-3 grid grid-cols-2 gap-2">
+                <div class="mt-3 grid grid-cols-2 gap-2.5">
                     ${chips.map((chip) => `
-                        <div class="inline-flex items-center gap-2 rounded-xl border border-outline-variant/20 bg-surface-container-high px-2.5 py-2 text-[11px] text-on-surface min-w-0">
-                            <span class="text-sm leading-none">${chip.emoji}</span>
-                            <div class="leading-tight min-w-0">
-                                <p class="font-bold truncate">${this.escapeHtml(chip.label)}</p>
-                                <p class="text-[10px] text-outline truncate">${this.escapeHtml(chip.hint)}</p>
+                        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high px-3 py-2.5 text-on-surface min-w-0 min-h-[82px]">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-base leading-none">${chip.emoji}</span>
+                                <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline text-right">${this.escapeHtml(chip.title)}</p>
+                            </div>
+                            <div class="mt-3 leading-tight min-w-0">
+                                <p class="text-sm font-bold text-on-surface break-words">${this.escapeHtml(chip.value)}</p>
+                                <p class="mt-1 text-[10px] text-outline">${this.escapeHtml(chip.detail)}</p>
                             </div>
                         </div>
                     `).join('')}

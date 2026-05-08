@@ -63,6 +63,21 @@
         </div>
     </div>
 </section>
+<!-- App Notification Center -->
+<section id="app-notifications-section" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-2">
+                <p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline">Central do app</p>
+                <span id="app-notifications-badge" class="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Sem novidades</span>
+            </div>
+            <h3 class="font-headline text-2xl md:text-3xl font-bold text-on-surface">Eventos e interações</h3>
+            <p class="text-xs text-outline mt-2 leading-relaxed">Aqui ficam juntos os avisos do app e as interações sociais mais recentes.</p>
+        </div>
+        <span class="material-symbols-outlined notranslate text-primary text-2xl">notifications</span>
+    </div>
+    <div id="app-notifications-list" class="space-y-3"></div>
+</section>
 <!-- Social Access -->
 <section id="social-access-section" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-4">
     <div class="flex items-start justify-between gap-4">
@@ -158,16 +173,6 @@
     <div>
         <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3">Reacoes recentes</p>
         <div id="social-reactions-list" class="space-y-2"></div>
-    </div>
-    <div>
-        <div class="flex items-center justify-between gap-3 mb-3">
-            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Central social</p>
-            <div class="flex items-center gap-2">
-                <button id="social-notifications-mark-all" type="button" onclick="window.app.markAllSocialNotificationsRead()" class="hidden h-7 px-2.5 rounded-lg bg-surface-container-high text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/20">Marcar tudo</button>
-                <span id="social-notifications-badge" class="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-outline">Tudo lido</span>
-            </div>
-        </div>
-        <div id="social-notifications-list" class="space-y-2"></div>
     </div>
 </section>
 <!-- Gamification -->

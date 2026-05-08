@@ -1889,20 +1889,10 @@ render: {
                 }
                 streakEl.textContent = `${streak} ${streak === 1 ? 'Dia' : 'Dias'} de sequência pessoal`;
 
-                // Badge no header: dias ativos nesta semana (Dom → hoje), alinha com os círculos
+                // Badge no header: mesma métrica principal exibida no card do dia
                 const headerStreak = document.getElementById('header-streak');
                 if (headerStreak) {
-                    const todayMidnight = new Date();
-                    todayMidnight.setHours(0, 0, 0, 0);
-                    const weekSunday = new Date(todayMidnight);
-                    weekSunday.setDate(todayMidnight.getDate() - todayMidnight.getDay());
-                    let weekDaysActive = 0;
-                    for (let i = 0; i <= todayMidnight.getDay(); i++) {
-                        const d = new Date(weekSunday);
-                        d.setDate(weekSunday.getDate() + i);
-                        if (app.hasDayActivity(app.getLocalDateKey(d))) weekDaysActive++;
-                    }
-                    headerStreak.textContent = weekDaysActive + ' dias ativos/semana';
+                    headerStreak.textContent = `${streak} ${streak === 1 ? 'dia' : 'dias'} de sequencia pessoal`;
                 }
             }
 
