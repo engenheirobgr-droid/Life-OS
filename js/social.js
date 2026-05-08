@@ -1326,7 +1326,9 @@ export function attachSocial(app) {
                     const isActive = true;
                     const visible = profile.visible !== false && profile.sharingEnabled !== false;
                     const name = visible ? (profile.name || 'Companheiro') : 'Companheiro privado';
-                    const activeLabel = visible && profile.lastActiveAt ? 'ativo hoje' : 'visibilidade indisponivel';
+                    const activeLabel = visible
+                        ? (profile.lastActiveAt ? 'ativo hoje' : 'conectado')
+                        : 'conectado · perfil privado';
                     const achievements = Array.isArray(profile.achievements) ? profile.achievements : [];
                     const dimensions = profile.dimensionLevels && typeof profile.dimensionLevels === 'object'
                         ? Object.entries(profile.dimensionLevels)
@@ -1433,6 +1435,11 @@ export function attachSocial(app) {
                         </details>`
                         : '';
 
+                    const privacyHint = !visible
+                        ? `<div class="rounded-lg bg-surface-container-high p-2.5 border border-outline-variant/10">
+                            <p class="text-[11px] text-outline">Conexao ativa. Este companheiro esta com compartilhamento social desativado ou sem perfil publico publicado.</p>
+                        </div>`
+                        : '';
                     return `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3 min-w-0">
@@ -1448,6 +1455,7 @@ export function attachSocial(app) {
                                 <span class="material-symbols-outlined notranslate text-[18px]">person_remove</span>
                             </button>
                         </div>
+                        ${privacyHint}
                         ${summaryRows}
                         ${identitySection}
                         ${achievementsSection}
