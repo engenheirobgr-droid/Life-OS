@@ -878,6 +878,23 @@ manualGuideChapters: [
             cta: { label: 'Abrir Painel', view: 'painel' }
         },
         {
+            id: 'social',
+            icon: 'groups',
+            title: 'Area Social',
+            subtitle: 'Companheiros, convites e desafios leves',
+            what: 'A <strong>Area Social</strong> fica no Perfil e e opcional. Ela permite ativar compartilhamento publico, escolher exatamente quais campos podem aparecer, gerar codigo de convite, conectar companheiros, enviar reacoes leves e criar desafios semanais.',
+            why: 'Apoio social aumenta continuidade porque cria contexto compartilhado sem transformar a rotina em competicao pesada. O Life OS publica apenas um perfil reduzido quando voce ativa o opt-in: diario, check-in emocional, valores, sombras, proposito, notas, OKRs, micros e respostas de bem-estar ficam privados.',
+            refs: ['Social accountability', 'Self-Determination Theory - relatedness', 'LGPD - minimizacao de dados'],
+            how: [
+                'No Perfil, ative Area Social e depois ligue Privacidade & Compartilhamento se quiser aparecer para companheiros.',
+                'Em Campos compartilhaveis, desligue qualquer dado que nao queira mostrar no perfil publico.',
+                'Para conectar, uma pessoa gera um codigo e a outra aceita. Se a conexao nao aparecer para os dois, cada lado pode aceitar o codigo do outro.',
+                'Dias em sequencia e a soma das sequencias atuais dos companheiros visiveis, incluindo voce. Exemplo: 3 dias seus + 2 dias de um companheiro = 5 dias em sequencia no grupo.',
+                'Use reacoes e desafios como apoio leve; eles nao revelam diario, emocoes ou conteudo privado.'
+            ],
+            cta: { label: 'Abrir Area Social', view: 'perfil', sectionId: 'social-access-section' }
+        },
+        {
             id: 'jornada-guiada',
             icon: 'explore_nearby',
             title: 'Jornada Guiada',

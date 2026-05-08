@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-firebase-module-imports-v127';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-firebase-module-imports-v127';
-import { attachNotifications } from './js/notifications.js?v=20260508-firebase-module-imports-v127';
-import { attachCadence } from './js/cadence.js?v=20260508-firebase-module-imports-v127';
-import { attachOnboarding } from './js/onboarding.js?v=20260508-firebase-module-imports-v127';
-import { attachIdentity } from './js/identity.js?v=20260508-firebase-module-imports-v127';
-import { attachHabits } from './js/habits.js?v=20260508-firebase-module-imports-v127';
-import { attachStateModule } from './js/state.js?v=20260508-firebase-module-imports-v127';
-import { attachRenderModule } from './js/render.js?v=20260508-firebase-module-imports-v127';
-import { attachPlanningModule } from './js/planning.js?v=20260508-firebase-module-imports-v127';
-import { attachGamificationModule } from './js/gamification.js?v=20260508-firebase-module-imports-v127';
-import { attachSocial } from './js/social.js?v=20260508-firebase-module-imports-v127';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-social-invites-manual-v128';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-social-invites-manual-v128';
+import { attachNotifications } from './js/notifications.js?v=20260508-social-invites-manual-v128';
+import { attachCadence } from './js/cadence.js?v=20260508-social-invites-manual-v128';
+import { attachOnboarding } from './js/onboarding.js?v=20260508-social-invites-manual-v128';
+import { attachIdentity } from './js/identity.js?v=20260508-social-invites-manual-v128';
+import { attachHabits } from './js/habits.js?v=20260508-social-invites-manual-v128';
+import { attachStateModule } from './js/state.js?v=20260508-social-invites-manual-v128';
+import { attachRenderModule } from './js/render.js?v=20260508-social-invites-manual-v128';
+import { attachPlanningModule } from './js/planning.js?v=20260508-social-invites-manual-v128';
+import { attachGamificationModule } from './js/gamification.js?v=20260508-social-invites-manual-v128';
+import { attachSocial } from './js/social.js?v=20260508-social-invites-manual-v128';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260508-firebase-module-imports-v127',
+    appBuildVersion: '20260508-social-invites-manual-v128',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -1791,15 +1791,16 @@ openAvatarPicker: function() {
         
         const toast = document.createElement('div');
         const isSuccess = type === 'success';
-        const icon = isSuccess ? 'check_circle' : 'error';
-        const bgColor = isSuccess ? 'bg-surface-container-highest' : 'bg-error';
-        const textColor = isSuccess ? 'text-primary' : 'text-white';
-        const ringColor = isSuccess ? 'ring-primary/20' : 'ring-error/20';
+        const isWarning = type === 'warning';
+        const icon = isSuccess ? 'check_circle' : (isWarning ? 'info' : 'error');
+        const bgColor = isSuccess ? 'bg-surface-container-highest' : (isWarning ? 'bg-surface-container-highest' : 'bg-error');
+        const textColor = isSuccess ? 'text-primary' : (isWarning ? 'text-amber-600' : 'text-white');
+        const ringColor = isSuccess ? 'ring-primary/20' : (isWarning ? 'ring-amber-400/20' : 'ring-error/20');
         
         toast.className = `flex max-w-sm items-center gap-3 px-5 py-3 rounded-2xl shadow-xl transform transition-all duration-500 translate-y-8 opacity-0 ${bgColor} border border-outline-variant/10 ring-4 ${ringColor}`;
         toast.innerHTML = `
             <span class="material-symbols-outlined notranslate ${textColor} text-xl">${icon}</span>
-            <p class="text-sm font-semibold ${isSuccess ? 'text-on-surface' : 'text-white'}">${message}</p>
+            <p class="text-sm font-semibold ${isSuccess || isWarning ? 'text-on-surface' : 'text-white'}">${message}</p>
         `;
         
         container.appendChild(toast);

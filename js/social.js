@@ -20,7 +20,7 @@ const SOCIAL_FIELD_LABELS = {
     dimensionLevels: 'Niveis por dimensao',
     achievements: 'Conquistas',
     keyHabitsDone: 'Habitos-chave feitos',
-    streak: 'Streak',
+    streak: 'Dias em sequencia',
     lastActiveAt: 'Ultima atividade'
 };
 
@@ -32,7 +32,7 @@ const SOCIAL_REACTIONS = {
 
 const SOCIAL_CHALLENGES = {
     key_habits_3: { label: '3 habitos-chave na semana', target: 3, metric: 'keyHabitsDone' },
-    streak_5: { label: '5 dias de streak combinado', target: 5, metric: 'sharedStreak' },
+    streak_5: { label: '5 dias em sequencia no grupo', target: 5, metric: 'sharedStreak' },
     xp_100: { label: '100 XP coletivos', target: 100, metric: 'collectiveXp' }
 };
 
@@ -274,30 +274,35 @@ export function attachSocial(app) {
                 this.showToast('Entre em uma conta para gerar convite.', 'error');
                 return;
             }
-            let code = '';
-            for (let tries = 0; tries < 5; tries++) {
-                const candidate = makeSocialCode();
-                const snap = await getDoc(this.getSocialInviteCodeDocRef(candidate));
-                if (!snap.exists()) { code = candidate; break; }
+            try {
+                let code = '';
+                for (let tries = 0; tries < 5; tries++) {
+                    const candidate = makeSocialCode();
+                    const snap = await getDoc(this.getSocialInviteCodeDocRef(candidate));
+                    if (!snap.exists()) { code = candidate; break; }
+                }
+                if (!code) {
+                    this.showToast('Nao consegui gerar um codigo agora. Tente novamente.', 'error');
+                    return;
+                }
+                const payload = {
+                    code,
+                    ownerUid: userId,
+                    ownerName: window.sistemaVidaState.profile?.name || 'Usuario',
+                    status: 'active',
+                    createdAt: serverTimestamp(),
+                    expiresAt: Date.now() + 7 * 86400000
+                };
+                await setDoc(this.getSocialInviteCodeDocRef(code), payload, { merge: false });
+                window.sistemaVidaState.profile.social.invites.lastCode = code;
+                window.sistemaVidaState.profile.social.invites.lastCreatedAt = new Date().toISOString();
+                this.saveState(true);
+                this.renderSocialConnectionsPanel();
+                this.showToast('Codigo de convite gerado.', 'success');
+            } catch (err) {
+                console.warn('[SOCIAL] Falha ao gerar convite:', err);
+                this.showToast('Nao consegui gerar o codigo. Verifique a sincronizacao e tente novamente.', 'error');
             }
-            if (!code) {
-                this.showToast('Nao consegui gerar um codigo agora. Tente novamente.', 'error');
-                return;
-            }
-            const payload = {
-                code,
-                ownerUid: userId,
-                ownerName: window.sistemaVidaState.profile?.name || 'Usuario',
-                status: 'active',
-                createdAt: serverTimestamp(),
-                expiresAt: Date.now() + 7 * 86400000
-            };
-            await setDoc(this.getSocialInviteCodeDocRef(code), payload, { merge: false });
-            window.sistemaVidaState.profile.social.invites.lastCode = code;
-            window.sistemaVidaState.profile.social.invites.lastCreatedAt = new Date().toISOString();
-            this.saveState(true);
-            this.renderSocialConnectionsPanel();
-            this.showToast('Codigo de convite gerado.', 'success');
         },
 
         acceptSocialInviteCode: async function(rawCode) {
@@ -313,49 +318,65 @@ export function attachSocial(app) {
                 this.showToast('Informe um codigo de convite.', 'error');
                 return;
             }
-            const snap = await getDoc(this.getSocialInviteCodeDocRef(code));
-            if (!snap.exists()) {
-                this.showToast('Codigo nao encontrado.', 'error');
-                return;
+            try {
+                const snap = await getDoc(this.getSocialInviteCodeDocRef(code));
+                if (!snap.exists()) {
+                    this.showToast('Codigo nao encontrado.', 'error');
+                    return;
+                }
+                const invite = snap.data() || {};
+                const otherUid = String(invite.ownerUid || '');
+                if (!otherUid || otherUid === userId) {
+                    this.showToast('Esse convite nao pode ser aceito por esta conta.', 'error');
+                    return;
+                }
+                if (invite.status && invite.status !== 'active') {
+                    this.showToast('Esse convite nao esta ativo.', 'error');
+                    return;
+                }
+                const nowIso = new Date().toISOString();
+                const myConnection = {
+                    uid: otherUid,
+                    status: 'active',
+                    connectedAt: nowIso,
+                    source: 'invite',
+                    inviteCode: code
+                };
+                const otherConnection = {
+                    uid: userId,
+                    status: 'active',
+                    connectedAt: nowIso,
+                    source: 'invite',
+                    inviteCode: code
+                };
+                await setDoc(this.getSocialConnectionsDocRef(userId), {
+                    [`connections.${otherUid}`]: myConnection,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+                let reciprocalOk = true;
+                try {
+                    await setDoc(this.getSocialConnectionsDocRef(otherUid), {
+                        [`connections.${userId}`]: otherConnection,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+                } catch (reciprocalErr) {
+                    reciprocalOk = false;
+                    console.warn('[SOCIAL] Gravacao reciproca bloqueada; conexao salva deste lado:', reciprocalErr);
+                }
+                window.sistemaVidaState.profile.social.connections[otherUid] = myConnection;
+                await this.refreshSocialConnectionProfiles();
+                this.saveState(true);
+                this.renderSocialConnectionsPanel();
+                this.showToast(
+                    reciprocalOk
+                        ? 'Conexao criada.'
+                        : 'Convite aceito deste lado. Se necessario, peca para a outra pessoa aceitar seu codigo tambem.',
+                    reciprocalOk ? 'success' : 'warning'
+                );
+            } catch (err) {
+                console.warn('[SOCIAL] Falha ao aceitar convite:', err);
+                this.showToast('Nao consegui aceitar o codigo. Confira se ele esta correto e tente novamente.', 'error');
             }
-            const invite = snap.data() || {};
-            const otherUid = String(invite.ownerUid || '');
-            if (!otherUid || otherUid === userId) {
-                this.showToast('Esse convite nao pode ser aceito por esta conta.', 'error');
-                return;
-            }
-            if (invite.status && invite.status !== 'active') {
-                this.showToast('Esse convite nao esta ativo.', 'error');
-                return;
-            }
-            const nowIso = new Date().toISOString();
-            const myConnection = {
-                uid: otherUid,
-                status: 'active',
-                connectedAt: nowIso,
-                source: 'invite',
-                inviteCode: code
-            };
-            const otherConnection = {
-                uid: userId,
-                status: 'active',
-                connectedAt: nowIso,
-                source: 'invite',
-                inviteCode: code
-            };
-            await setDoc(this.getSocialConnectionsDocRef(userId), {
-                [`connections.${otherUid}`]: myConnection,
-                updatedAt: serverTimestamp()
-            }, { merge: true });
-            await setDoc(this.getSocialConnectionsDocRef(otherUid), {
-                [`connections.${userId}`]: otherConnection,
-                updatedAt: serverTimestamp()
-            }, { merge: true });
-            window.sistemaVidaState.profile.social.connections[otherUid] = myConnection;
-            await this.refreshSocialConnectionProfiles();
-            this.saveState(true);
-            this.renderSocialConnectionsPanel();
-            this.showToast('Conexao criada.', 'success');
         },
 
         removeSocialConnection: async function(otherUid) {
@@ -710,7 +731,7 @@ export function attachSocial(app) {
                         <div class="grid grid-cols-3 gap-2 text-center">
                             <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">XP</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(xpToday)}</p></div>
                             <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Chave</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.keyHabitsDone || 0)}</p></div>
-                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Streak</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.streak || 0)}</p></div>
+                            <div class="rounded-lg bg-surface-container-high p-2"><p class="text-[10px] text-outline">Sequencia</p><p class="text-xs font-bold text-on-surface">${this.escapeHtml(profile.streak || 0)} dia(s)</p></div>
                         </div>
                         <div class="flex flex-wrap gap-2">
                             ${Object.entries(SOCIAL_REACTIONS).map(([type, cfg]) => `<button type="button" onclick="window.app.sendSocialReaction('${this.escapeHtml(uid)}','${type}')" class="inline-flex items-center gap-1 rounded-full bg-primary/5 border border-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"><span class="material-symbols-outlined notranslate text-[13px]">${cfg.icon}</span>${cfg.label}</button>`).join('')}
@@ -726,7 +747,7 @@ export function attachSocial(app) {
                     ['Pessoas', metrics.people],
                     ['XP coletivo', metrics.collectiveXp],
                     ['Habitos-chave', metrics.keyHabitsDone],
-                    ['Streak compartilhado', metrics.sharedStreak]
+                    ['Dias em sequencia', `${metrics.sharedStreak} dia(s)`]
                 ].map(([label, value]) => `<div class="rounded-lg bg-surface-container-low p-3"><p class="text-[10px] text-outline uppercase tracking-wider">${label}</p><p class="text-sm font-bold text-on-surface">${value}</p></div>`).join('');
             }
 
