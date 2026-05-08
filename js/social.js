@@ -214,6 +214,23 @@ export function attachSocial(app) {
             if (this.currentView === 'perfil' && this.render?.perfil) this.render.perfil();
         },
 
+        setSocialFeatureEnabled: function(enabled) {
+            this.ensureSocialState();
+            const nextValue = !!enabled;
+            window.sistemaVidaState.settings.features.social = nextValue;
+            if (!nextValue) {
+                this.stopSocialConnectionsListener();
+            }
+            this.saveState(true);
+            if (this.currentView === 'perfil' && this.render?.perfil) this.render.perfil();
+            this.showToast(
+                nextValue
+                    ? 'Area social liberada neste perfil.'
+                    : 'Area social ocultada novamente.',
+                'success'
+            );
+        },
+
         getSocialActiveConnectionIds: function() {
             this.ensureSocialState();
             const connections = window.sistemaVidaState.profile.social.connections || {};
@@ -558,6 +575,7 @@ export function attachSocial(app) {
         },
 
         renderSocialPrivacyPanel: function() {
+            this.renderSocialAccessPanel();
             const section = document.getElementById('social-privacy-section');
             if (!section) return;
             this.ensureSocialState();
@@ -609,6 +627,47 @@ export function attachSocial(app) {
 
             this.startSocialConnectionsListener();
             this.renderSocialConnectionsPanel();
+        },
+
+        renderSocialAccessPanel: function() {
+            const section = document.getElementById('social-access-section');
+            if (!section) return;
+            this.ensureSocialState();
+
+            const enabled = this.isSocialFeatureEnabled();
+            const signedAccount = this.getActiveUserId() !== LOCAL_USER_SCOPE && !auth.currentUser?.isAnonymous;
+
+            const statusEl = document.getElementById('social-access-status');
+            if (statusEl) {
+                statusEl.textContent = enabled
+                    ? 'Fases sociais ativas neste perfil. As secoes de privacidade, conexoes e desafios aparecem logo abaixo.'
+                    : 'Fases sociais instaladas, mas ainda ocultas neste perfil. Ative para liberar compartilhamento, convites e desafios.';
+                statusEl.className = enabled ? 'text-xs text-primary leading-relaxed' : 'text-xs text-outline leading-relaxed';
+            }
+
+            const hintEl = document.getElementById('social-access-hint');
+            if (hintEl) {
+                hintEl.textContent = signedAccount
+                    ? 'Para usar com outra pessoa, ative a area social e depois ligue o compartilhamento publico.'
+                    : 'Entre em uma conta antes de compartilhar perfil, gerar codigo ou aceitar convites.';
+            }
+
+            const button = document.getElementById('social-access-toggle');
+            if (button) {
+                button.textContent = enabled ? 'Ocultar area social' : 'Ativar area social';
+                button.className = enabled
+                    ? 'h-10 px-4 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity'
+                    : 'h-10 px-4 rounded-xl bg-surface-container-high text-primary border border-primary/20 text-xs font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors';
+                button.onclick = () => this.setSocialFeatureEnabled(!enabled);
+            }
+
+            const badge = document.getElementById('social-access-badge');
+            if (badge) {
+                badge.textContent = enabled ? 'Ativo' : 'Oculto';
+                badge.className = enabled
+                    ? 'inline-flex items-center rounded-full bg-primary/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-primary'
+                    : 'inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-outline';
+            }
         },
 
         renderSocialConnectionsPanel: function() {

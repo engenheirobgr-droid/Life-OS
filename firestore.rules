@@ -12,6 +12,26 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if owns(userId);
 
+      match /public/profile {
+        allow read: if signedIn() && resource.data.sharingEnabled == true;
+        allow create, update: if owns(userId)
+          && request.resource.data.userId == userId
+          && request.resource.data.sharingEnabled == true;
+        allow delete: if owns(userId);
+      }
+
+      match /private/social {
+        allow read, write: if owns(userId);
+      }
+
+      match /private/connections {
+        allow read, write: if owns(userId);
+      }
+
+      match /private/engagement {
+        allow read, write: if owns(userId);
+      }
+
       match /push_subscriptions/{subscriptionId} {
         allow read, write: if owns(userId);
       }
@@ -24,6 +44,13 @@ service cloud.firestore {
 
     match /user_images/{userId} {
       allow read, write: if owns(userId);
+    }
+
+    match /inviteCodes/{code} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
     }
   }
 }

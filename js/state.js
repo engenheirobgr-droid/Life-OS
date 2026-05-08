@@ -329,7 +329,7 @@ loadState: async function() {
             try {
                 await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
             } catch (authError) {
-                const authGateCode = getAuthGateCode(authError);
+                const authGateCode = this.getAuthGateCode ? this.getAuthGateCode(authError) : '';
                 if (authGateCode) {
                     console.log('[SYNC] Sessão sem auth de nuvem; carregando sem criar visitante.', authGateCode);
                     this.updateSyncBadge('offline');
@@ -510,7 +510,7 @@ saveState: function(silent = true) {
                 try {
                     await this.withTimeout(getAuthReady(), 8000, 'auth_ready');
                 } catch (authError) {
-                    const authGateCode = getAuthGateCode(authError);
+                    const authGateCode = this.getAuthGateCode ? this.getAuthGateCode(authError) : '';
                     if (authGateCode) {
                         console.log('[SYNC] Auth indisponível agora; mantendo dados apenas localmente.', authGateCode);
                         this.lastCloudSyncOk = null;
