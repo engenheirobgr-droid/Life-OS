@@ -1,31 +1,66 @@
+<style>
+    .tab-btn.active {
+        color: rgb(var(--color-primary));
+        border-bottom: 2px solid rgb(var(--color-primary));
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+</style>
+
 <main class="pt-6 lg:pt-10 pb-20 px-6 max-w-7xl mx-auto">
-<section class="mb-12">
-    <p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Conexoes & Compartilhamento</p>
-    <h2 class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Area Social</h2>
-    <p class="mt-4 max-w-2xl text-sm text-outline leading-relaxed">Gerencie convites, conexoes, desafios e seu perfil publico em um espaco proprio.</p>
+<section class="mb-8">
+    <p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Conexões & Compartilhamento</p>
+    <h2 class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Área Social</h2>
+    <p class="mt-4 max-w-2xl text-sm text-outline leading-relaxed">Gerencie convites, conexões, desafios e seu perfil público em um espaço próprio.</p>
     <div class="mt-6 h-px w-24 bg-primary"></div>
 </section>
 
-<section id="social-connections-section" class="hidden mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
-    <div class="flex items-start justify-between gap-4">
+<!-- Tabs Navigation -->
+<nav class="flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0 mb-8">
+    <button class="tab-btn active text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="tab-social-conexoes" onclick="window.app.switchSocialTab('tab-social-conexoes')">Conexões</button>
+    <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="tab-social-convites" onclick="window.app.switchSocialTab('tab-social-convites')">Convites & Desafios</button>
+    <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="tab-social-privacidade" onclick="window.app.switchSocialTab('tab-social-privacidade')">Privacidade</button>
+</nav>
+
+<!-- TAB 1: Conexões -->
+<section id="tab-social-conexoes" class="tab-content active bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
+    <div class="flex items-start justify-between gap-4 mb-2">
         <div>
-            <p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-2">Companheiros</p>
-            <h3 class="font-headline text-2xl md:text-3xl font-bold text-on-surface">Conexoes</h3>
-            <p class="text-xs text-outline mt-2 leading-relaxed">Convites por codigo, apoio leve e desafios semanais entre pessoas conectadas.</p>
+            <h3 class="font-headline text-2xl md:text-3xl font-bold text-on-surface">Suas Conexões</h3>
+            <p class="text-xs text-outline mt-2 leading-relaxed">Acompanhe seus companheiros de jornada e seus perfis públicos.</p>
         </div>
-        <span class="material-symbols-outlined notranslate text-primary text-2xl">groups</span>
+        <span class="material-symbols-outlined notranslate text-primary text-2xl">group</span>
+    </div>
+    <div>
+        <div id="social-connections-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+    </div>
+</section>
+
+<!-- TAB 2: Convites e Desafios -->
+<section id="tab-social-convites" class="tab-content bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
+    <div class="flex items-start justify-between gap-4 mb-2">
+        <div>
+            <h3 class="font-headline text-2xl md:text-3xl font-bold text-on-surface">Convites e Desafios</h3>
+            <p class="text-xs text-outline mt-2 leading-relaxed">Convites por código, apoio leve e desafios semanais entre pessoas conectadas.</p>
+        </div>
+        <span class="material-symbols-outlined notranslate text-primary text-2xl">local_fire_department</span>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
             <div class="flex items-center justify-between gap-3">
                 <div>
-                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Seu codigo</p>
-                    <p id="social-current-invite-code" class="font-mono text-lg font-bold text-primary mt-1">Sem codigo ativo</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Seu código</p>
+                    <p id="social-current-invite-code" class="font-mono text-lg font-bold text-primary mt-1">Sem código ativo</p>
                 </div>
                 <button type="button" onclick="window.app.generateSocialInviteCode()" class="h-10 px-4 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Gerar</button>
             </div>
             <div class="flex flex-col sm:flex-row gap-2">
-                <input id="social-invite-code-input" type="text" class="h-10 rounded-lg border-none bg-surface-container-high px-3 text-sm text-on-surface uppercase focus:ring-2 focus:ring-primary/20 flex-1" placeholder="Codigo recebido">
+                <input id="social-invite-code-input" type="text" class="h-10 rounded-lg border-none bg-surface-container-high px-3 text-sm text-on-surface uppercase focus:ring-2 focus:ring-primary/20 flex-1" placeholder="Código recebido">
                 <button type="button" onclick="window.app.acceptSocialInviteCode()" class="h-10 px-4 rounded-xl bg-surface-container-high text-primary border border-primary/20 text-xs font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Aceitar</button>
             </div>
         </div>
@@ -38,26 +73,24 @@
                 <button type="button" onclick="window.app.createSocialWeeklyChallenge(document.getElementById('social-challenge-type')?.value)" class="h-10 px-4 rounded-xl bg-primary/10 text-primary border border-primary/20 text-xs font-bold uppercase tracking-wider hover:bg-primary/15 transition-colors">Criar</button>
             </div>
             <select id="social-challenge-type" class="w-full h-10 rounded-lg border-none bg-surface-container-high px-3 text-xs font-bold uppercase tracking-wider text-on-surface focus:ring-2 focus:ring-primary/20">
-                <option value="key_habits_3">3 habitos-chave na semana</option>
-                <option value="streak_5">5 dias em sequencia no grupo</option>
+                <option value="key_habits_3">3 hábitos-chave na semana</option>
+                <option value="streak_5">5 dias em sequência no grupo</option>
                 <option value="xp_100">100 XP coletivos</option>
             </select>
             <div id="social-collective-metrics" class="grid grid-cols-2 gap-2"></div>
         </div>
     </div>
+    
     <div>
-        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3">Lista de companheiros</p>
-        <div id="social-connections-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
-    </div>
-    <div>
-        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3">Desafios ativos</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3 mt-4">Desafios ativos</p>
         <div id="social-challenges-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
     </div>
-    <details class="group rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden">
+    
+    <details class="group rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden mt-4">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
             <div>
-                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Reacoes recentes</p>
-                <p class="text-xs text-on-surface-variant mt-1">Historico das reacoes que voce enviou para conexoes.</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Reações recentes</p>
+                <p class="text-xs text-on-surface-variant mt-1">Histórico das reações que você enviou para conexões.</p>
             </div>
             <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
         </summary>
@@ -67,12 +100,12 @@
     </details>
 </section>
 
-<section id="social-privacy-section" class="hidden mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
-    <div class="flex items-start justify-between gap-4">
+<!-- TAB 3: Privacidade -->
+<section id="tab-social-privacidade" class="tab-content bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
+    <div class="flex items-start justify-between gap-4 mb-2">
         <div>
-            <p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-2">Privacidade & Compartilhamento</p>
-            <h3 class="font-headline text-2xl md:text-3xl font-bold text-on-surface">Perfil publico</h3>
-            <p id="social-share-status" class="text-xs text-outline mt-2 leading-relaxed">Nada e publicado enquanto o opt-in estiver desligado.</p>
+            <h3 class="font-headline text-2xl md:text-3xl font-bold text-on-surface">Privacidade & Compartilhamento</h3>
+            <p id="social-share-status" class="text-xs text-outline mt-2 leading-relaxed">Nada é publicado enquanto o opt-in estiver desligado.</p>
         </div>
         <button type="button" onclick="window.app.toggleSocialSharing()" class="shrink-0" aria-label="Alternar compartilhamento social">
             <div id="social-share-toggle-track" class="w-10 h-5 rounded-full relative flex items-center px-1 transition-colors bg-outline-variant/40">
@@ -85,8 +118,8 @@
             <details class="group rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden" open>
                 <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
                     <div>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Campos compartilhaveis</p>
-                        <p class="text-xs text-on-surface-variant mt-1">Escolha o que entra no perfil publico.</p>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Campos compartilháveis</p>
+                        <p class="text-xs text-on-surface-variant mt-1">Escolha o que entra no perfil público.</p>
                     </div>
                     <span class="material-symbols-outlined notranslate text-outline transition-transform group-open:rotate-180">expand_more</span>
                 </summary>
@@ -96,9 +129,9 @@
             </details>
         </div>
         <div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
-            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3">Preview publico</p>
+            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-3">Preview público</p>
             <div id="social-public-preview" class="space-y-1"></div>
-            <p class="mt-4 text-[10px] text-outline leading-relaxed">Diario, check-in emocional, valores, sombras, proposito, notas, OKRs, micros e respostas de bem-estar nunca entram neste preview.</p>
+            <p class="mt-4 text-[10px] text-outline leading-relaxed">Diário, check-in emocional, valores, sombras, propósito, notas, OKRs, micros e respostas de bem-estar nunca entram neste preview.</p>
         </div>
     </div>
 </section>

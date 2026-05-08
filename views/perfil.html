@@ -32,7 +32,10 @@
         <div>
             <p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-2">Conta</p>
             <h3 class="font-headline text-2xl md:text-3xl font-bold text-on-surface">Usuario</h3>
-            <p id="account-status-text" class="text-xs text-outline mt-2 leading-relaxed">Carregando status da conta...</p>
+            <div id="account-status-text" class="text-xs text-outline mt-2 leading-relaxed w-full">
+                <div class="h-3 bg-outline-variant/20 rounded animate-pulse w-48 mb-1.5"></div>
+                <div class="h-3 bg-outline-variant/20 rounded animate-pulse w-32"></div>
+            </div>
         </div>
         <span class="material-symbols-outlined notranslate text-primary text-2xl">verified_user</span>
     </div>
@@ -343,7 +346,9 @@
 <span class="material-symbols-outlined notranslate text-primary" data-icon="info">info</span>
 <div>
 <p class="text-sm font-medium text-on-surface">Versão do App</p>
-<p id="perfil-app-version" class="text-[11px] text-outline">Carregando commit...</p>
+<div id="perfil-app-version" class="text-[11px] text-outline w-full">
+    <div class="h-3 bg-outline-variant/20 rounded animate-pulse w-24"></div>
+</div>
 </div>
 </div>
 </div>

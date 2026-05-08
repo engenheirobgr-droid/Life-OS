@@ -57,6 +57,31 @@ export function attachSocial(app) {
             if (this.currentView === 'social') this.renderSocialConnectionsPanel();
         },
 
+        switchSocialTab: function(tabId) {
+            const container = document.querySelector('main.pt-6'); // O container principal
+            if (!container) return;
+            
+            // Remove active das abas
+            container.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'text-outline');
+                if(btn.dataset.tab === tabId) {
+                    btn.classList.add('active');
+                    btn.classList.remove('text-outline');
+                } else {
+                    btn.classList.add('text-outline');
+                }
+            });
+
+            // Mostra o conteúdo correto
+            container.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            const activeContent = document.getElementById(tabId);
+            if (activeContent) {
+                activeContent.classList.add('active');
+            }
+        },
+
         getSocialDefaultVisibility: function() {
             return { ...DEFAULT_SOCIAL_VISIBILITY };
         },
@@ -1053,11 +1078,10 @@ export function attachSocial(app) {
         renderSocialPrivacyPanel: function() {
             this.renderSocialAccessPanel();
             this.renderAppNotificationCenter();
-            const section = document.getElementById('social-privacy-section');
+            const section = document.getElementById('tab-social-privacidade');
             if (!section) return;
             this.ensureSocialState();
             const enabled = this.isSocialFeatureEnabled();
-            section.classList.toggle('hidden', !enabled);
             if (!enabled) return;
 
             const social = window.sistemaVidaState.profile.social;
@@ -1153,11 +1177,10 @@ export function attachSocial(app) {
         },
 
         renderSocialConnectionsPanel: function() {
-            const section = document.getElementById('social-connections-section');
+            const section = document.getElementById('tab-social-conexoes');
             if (!section) return;
             this.ensureSocialState();
             const enabled = this.isSocialFeatureEnabled();
-            section.classList.remove('hidden');
 
             const inviteCode = window.sistemaVidaState.profile.social.invites?.lastCode || '';
             const inviteEl = document.getElementById('social-current-invite-code');
