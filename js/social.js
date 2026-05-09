@@ -2,8 +2,10 @@ import { db, auth, doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp, 
 
 const DEFAULT_SOCIAL_VISIBILITY = {
     name: true,
+    email: false,
     avatar: true,
     level: true,
+    levelName: true,
     xp: true,
     dimensionLevels: true,
     achievements: true,
@@ -14,8 +16,10 @@ const DEFAULT_SOCIAL_VISIBILITY = {
 
 const SOCIAL_FIELD_LABELS = {
     name: 'Nome',
+    email: 'Email',
     avatar: 'Avatar',
     level: 'Nivel',
+    levelName: 'Nome do nivel',
     xp: 'XP pessoal',
     dimensionLevels: 'Niveis por dimensao',
     achievements: 'Conquistas recentes',
@@ -387,6 +391,8 @@ export function attachSocial(app) {
             const gamification = this.ensureGamificationState ? this.ensureGamificationState() : (state.gamification || {});
             const totalXp = Math.max(0, Number(gamification.totalXp || profile.xp) || 0);
             const overallLevel = this.getOverallLevelProgress ? this.getOverallLevelProgress(gamification).level : (this.getLevelFromXp ? this.getLevelFromXp(totalXp) : Math.max(1, Number(profile.level) || 1));
+            const overallIdentity = this.getOverallLevelIdentity ? this.getOverallLevelIdentity(overallLevel) : { name: `Nivel ${overallLevel}` };
+            const accountEmail = String(auth.currentUser?.email || '').trim();
             const payload = {
                 schemaVersion: 1,
                 userId: this.getActiveUserId(),
@@ -394,8 +400,10 @@ export function attachSocial(app) {
                 updatedAt: new Date().toISOString()
             };
             if (visibility.name) payload.name = String(profile.name || 'Usuario');
+            if (visibility.email && accountEmail) payload.email = accountEmail;
             if (visibility.avatar) payload.avatarUrl = String(profile.avatarUrl || '');
             if (visibility.level) payload.level = overallLevel;
+            if (visibility.levelName) payload.levelName = String(overallIdentity.name || `Nivel ${overallLevel}`);
             if (visibility.xp) payload.xp = totalXp;
             if (visibility.dimensionLevels) payload.dimensionLevels = this.getSocialDimensionLevels();
             if (visibility.achievements) payload.achievements = this.getSocialAchievementsPreview();
@@ -1401,6 +1409,7 @@ export function attachSocial(app) {
                     const recentHighlights = Array.isArray(profile.recentHighlights) ? profile.recentHighlights : [];
                     const infoRows = [];
                     if (profile.xp !== undefined) infoRows.push(['XP pessoal', Number(profile.xp || 0)]);
+                    if (profile.email) infoRows.push(['Email', String(profile.email)]);
                     if (profile.keyHabitsDone !== undefined) infoRows.push(['Habitos-chave', Number(profile.keyHabitsDone || 0)]);
                     if (profile.streak !== undefined) infoRows.push(['Sequencia pessoal', `${Number(profile.streak || 0)} dia(s)`]);
                     if (profile.lastActiveAt) infoRows.push(['Ultima atividade', 'Agora']);
@@ -1417,7 +1426,7 @@ export function attachSocial(app) {
                             <div class="px-3 pb-3 space-y-3">
                                 <div class="rounded-xl bg-surface-container-high px-3 py-2">
                                     <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">Nivel geral</p>
-                                    <p class="mt-1 text-sm font-bold text-on-surface">Nivel ${this.escapeHtml(profile.level || 1)}</p>
+                                    <p class="mt-1 text-sm font-bold text-on-surface">Nivel ${this.escapeHtml(profile.level || 1)}${profile.levelName ? ` · ${this.escapeHtml(profile.levelName)}` : ''}</p>
                                 </div>
                                 ${dimensions.length ? `<div class="grid grid-cols-2 gap-2">${dimensions.map(([dimensionName, item]) => {
                                     const level = Number(item?.level || 1);
@@ -1529,7 +1538,7 @@ export function attachSocial(app) {
                                 </div>
                                 <div class="min-w-0">
                                     <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(name)}</p>
-                                    <p class="text-[10px] text-outline uppercase tracking-wider">Nivel ${visible ? this.escapeHtml(profile.level || 1) : '-'} · ${this.escapeHtml(activeLabel)}</p>
+                                    <p class="text-[10px] text-outline uppercase tracking-wider">Nivel ${visible ? this.escapeHtml(profile.level || 1) : '-'}${visible && profile.levelName ? ` · ${this.escapeHtml(profile.levelName)}` : ''} · ${this.escapeHtml(activeLabel)}</p>
                                 </div>
                             </div>
                             <button type="button" onclick="window.app.removeSocialConnection('${this.escapeHtml(uid)}')" class="text-outline hover:text-error transition-colors" title="Remover conexao">

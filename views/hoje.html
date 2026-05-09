@@ -64,16 +64,17 @@
                 <button type="button" onclick="window.app.expandDailyCheckinPanel(true)"
                     class="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container transition-colors shrink-0 sm:w-auto sm:justify-start sm:px-3 sm:py-1.5">
                     <span class="material-symbols-outlined notranslate text-[13px]">edit</span>
-                    Editar
+                    Detalhes
                 </button>
             </div>
         </div>
-        <div id="daily-checkin-recommendation" class="hidden rounded-lg bg-surface-container-low/80 px-3 py-2.5">
+        <div id="daily-checkin-recommendation" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
             <div class="flex items-start justify-between gap-3">
-                <p id="daily-checkin-recommendation-text" class="text-[11px] text-on-surface-variant leading-relaxed"></p>
+                <p id="daily-checkin-recommendation-text" class="text-[11px] font-medium text-amber-800 leading-relaxed"></p>
                 <button type="button" onclick="window.app.dismissDailyCheckinRecommendation()"
-                    class="shrink-0 text-[10px] font-bold uppercase tracking-wider text-outline hover:text-primary transition-colors ml-2">
-                    Fechar
+                    class="shrink-0 h-5 w-5 inline-flex items-center justify-center rounded text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors ml-2"
+                    aria-label="Fechar alerta">
+                    <span class="text-sm leading-none">&times;</span>
                 </button>
             </div>
         </div>

@@ -2,7 +2,7 @@
     <div id="onboarding-progress-bar" class="h-full bg-primary transition-all duration-500 ease-out" style="width: 0%"></div>
 </div>
 
-<main class="pt-16 md:pt-20 pb-24 md:pb-32 px-4 sm:px-6 max-w-4xl mx-auto min-h-[100dvh] md:min-h-screen flex flex-col justify-start relative overflow-x-hidden">
+<main class="pt-12 md:pt-14 pb-14 md:pb-20 px-4 sm:px-6 max-w-4xl mx-auto min-h-[100dvh] md:min-h-screen flex flex-col justify-start relative overflow-x-hidden">
 
     <div class="absolute top-4 left-4 sm:top-8 sm:left-6 flex items-center gap-2 text-outline">
         <span class="text-[10px] font-bold uppercase tracking-widest" id="onboarding-step-indicator">1/7</span>
@@ -36,7 +36,7 @@
                 <p class="text-xs text-outline mt-1">Valores, legado, visao e Flow.</p>
             </div>
         </div>
-        <button onclick="app.onboardingNext()" class="mt-4 bg-primary text-on-primary py-4 px-8 rounded-2xl font-bold font-label uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-fit">
+        <button onclick="app.onboardingNext()" class="mt-2 bg-primary text-on-primary py-4 px-8 rounded-2xl font-bold font-label uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-fit">
             Comecar jornada
         </button>
     </div>
@@ -59,7 +59,7 @@
             </div>
             <p class="text-[11px] text-outline leading-relaxed">Preferir testar primeiro? Continue localmente. Seus dados ficam apenas neste aparelho ate voce criar uma conta em Perfil.</p>
         </div>
-        <div class="flex gap-4 mt-8">
+        <div class="flex gap-4 mt-4">
             <button onclick="app.onboardingBack()" class="flex-1 border-2 border-outline-variant/30 py-4 rounded-xl font-bold uppercase text-xs tracking-widest text-outline">Voltar</button>
             <button onclick="app.onboardingContinueLocal()" class="flex-[2] bg-surface-container-high text-primary border border-primary/20 py-4 rounded-xl font-bold uppercase text-sm tracking-widest">Continuar local</button>
         </div>
@@ -137,7 +137,7 @@
             </div>
         </div>
 
-        <div class="flex gap-4 mt-8">
+        <div class="flex gap-4 mt-4">
             <button onclick="app.onboardingBack()" class="flex-1 border-2 border-outline-variant/30 py-4 rounded-xl font-bold uppercase text-xs tracking-widest text-outline">Voltar</button>
             <button onclick="app.onboardingNext()" class="flex-[2] bg-primary text-on-primary py-4 rounded-xl font-bold uppercase text-sm tracking-widest">Continuar</button>
         </div>
@@ -168,7 +168,7 @@
             <p id="onboarding-valores-preview" class="text-sm italic text-primary">Selecione seus valores...</p>
         </div>
 
-        <div class="flex gap-4 mt-8">
+        <div class="flex gap-4 mt-4">
             <button onclick="app.onboardingBack()" class="flex-1 border-2 border-outline-variant/30 py-4 rounded-xl font-bold uppercase text-xs tracking-widest text-outline">Voltar</button>
             <button onclick="app.onboardingNext()" class="flex-[2] bg-primary text-on-primary py-4 rounded-xl font-bold uppercase text-sm tracking-widest">Continuar</button>
         </div>
@@ -205,7 +205,7 @@
             <textarea id="onboarding-legacy-mundo" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Mundo: deixar mais clareza, coragem e boas ferramentas."></textarea>
         </div>
 
-        <div class="flex gap-4 mt-6">
+        <div class="flex gap-4 mt-4">
             <button onclick="app.onboardingBack()" class="flex-1 border-2 border-outline-variant/30 py-4 rounded-xl font-bold uppercase text-xs tracking-widest text-outline">Voltar</button>
             <button onclick="app.onboardingNext()" class="flex-[2] bg-primary text-on-primary py-4 rounded-xl font-bold uppercase text-sm tracking-widest">Quase la</button>
         </div>
@@ -293,7 +293,7 @@
             </div>
         </div>
 
-        <div class="flex gap-4 mt-6">
+        <div class="flex gap-4 mt-4">
             <button onclick="app.onboardingBack()" class="flex-1 border-2 border-outline-variant/30 py-4 rounded-xl font-bold uppercase text-xs tracking-widest text-outline">Voltar</button>
             <button onclick="app.onboardingNext()" class="flex-[2] bg-primary text-on-primary py-4 rounded-xl font-bold uppercase text-sm tracking-widest">Entendi</button>
         </div>
@@ -329,7 +329,7 @@
             </div>
         </div>
 
-        <button onclick="app.onboardingComplete()" class="mt-8 bg-primary text-on-primary py-5 rounded-2xl font-bold font-label uppercase tracking-[0.2em] text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-full">
+        <button onclick="app.onboardingComplete()" class="mt-5 bg-primary text-on-primary py-5 rounded-2xl font-bold font-label uppercase tracking-[0.2em] text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-full">
             Confirmar e comecar
         </button>
     </div>

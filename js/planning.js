@@ -13,6 +13,7 @@ onTypeChange: function(type) {
         const routineInput = document.getElementById('habit-routine');
         const rewardInput = document.getElementById('habit-reward');
         const habitControls = document.getElementById('crud-habit-controls');
+        const habitContinuousRow = document.getElementById('habit-continuous-row');
         const woopGroup = document.getElementById('crud-woop-group');
         const metaHorizonGroup = document.getElementById('crud-meta-horizon-group');
         const successCriteriaGroup = document.getElementById('crud-success-criteria-group');
@@ -31,6 +32,7 @@ onTypeChange: function(type) {
         if (parentGroup) parentGroup.classList.add('hidden');
         setGroupVisible(triggerGroup, false);
         setGroupVisible(habitControls, false);
+        setGroupVisible(habitContinuousRow, false, 'block');
         setGroupVisible(woopGroup, false);
         setGroupVisible(habitIdentityGroup, false);
         setGroupVisible(habitStepsChecklistWrap, false);
@@ -48,6 +50,7 @@ onTypeChange: function(type) {
 
         // Configura baseado no tipo
         if (type === 'habits') {
+            setGroupVisible(habitContinuousRow, true, 'block');
             setGroupVisible(triggerGroup, true);
             setGroupVisible(habitIdentityGroup, true);
             setGroupVisible(habitControls, true);

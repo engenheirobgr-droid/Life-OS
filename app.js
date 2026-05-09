@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260508-ui-improvements-v152';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260508-ui-improvements-v152';
-import { attachNotifications } from './js/notifications.js?v=20260508-ui-improvements-v152';
-import { attachCadence } from './js/cadence.js?v=20260508-ui-improvements-v152';
-import { attachOnboarding } from './js/onboarding.js?v=20260508-ui-improvements-v152';
-import { attachIdentity } from './js/identity.js?v=20260508-ui-improvements-v152';
-import { attachHabits } from './js/habits.js?v=20260508-ui-improvements-v152';
-import { attachStateModule } from './js/state.js?v=20260508-ui-improvements-v152';
-import { attachRenderModule } from './js/render.js?v=20260508-ui-improvements-v152';
-import { attachPlanningModule } from './js/planning.js?v=20260508-ui-improvements-v152';
-import { attachGamificationModule } from './js/gamification.js?v=20260508-ui-improvements-v152';
-import { attachSocial } from './js/social.js?v=20260508-ui-improvements-v152';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260509-ui-improvements-v153';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260509-ui-improvements-v153';
+import { attachNotifications } from './js/notifications.js?v=20260509-ui-improvements-v153';
+import { attachCadence } from './js/cadence.js?v=20260509-ui-improvements-v153';
+import { attachOnboarding } from './js/onboarding.js?v=20260509-ui-improvements-v153';
+import { attachIdentity } from './js/identity.js?v=20260509-ui-improvements-v153';
+import { attachHabits } from './js/habits.js?v=20260509-ui-improvements-v153';
+import { attachStateModule } from './js/state.js?v=20260509-ui-improvements-v153';
+import { attachRenderModule } from './js/render.js?v=20260509-ui-improvements-v153';
+import { attachPlanningModule } from './js/planning.js?v=20260509-ui-improvements-v153';
+import { attachGamificationModule } from './js/gamification.js?v=20260509-ui-improvements-v153';
+import { attachSocial } from './js/social.js?v=20260509-ui-improvements-v153';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -876,6 +876,25 @@ getDimensionIdentity: function(dimension, level) {
     },
     getOverallLevelProgress: function(gamification = window.sistemaVidaState?.gamification || {}) {
         return this.getLevelProgress(this.getOverallLevelSourceXp(gamification));
+    },
+    getOverallLevelIdentity: function(level) {
+        const lv = Math.max(1, Number(level) || 1);
+        const names = [
+            'Despertar',
+            'Fundacao',
+            'Tracao',
+            'Consistencia',
+            'Evolucao',
+            'Dominio',
+            'Expansao',
+            'Maestria',
+            'Legado',
+            'Lendario'
+        ];
+        const idx = Math.min(names.length - 1, lv - 1);
+        const base = names[idx];
+        if (lv <= names.length) return { name: base, index: idx + 1 };
+        return { name: `${base}+`, index: names.length };
     },
     allocateGamificationXp: function(xp, primaryDimension = '') {
         const amount = Math.max(0, Number(xp) || 0);
@@ -4433,12 +4452,6 @@ ensureNotesState: function() {
             { emoji: moodMeta.emoji, title: 'Humor', value: compactValue('mood', entry.mood), detail: '' },
             { emoji: stressMeta.emoji, title: 'Estresse', value: compactValue('stress', entry.stress), detail: '' }
         ];
-        const intention = entry.intention
-            ? `<p class="mt-2 text-[11px] text-on-surface-variant leading-relaxed"><span class="font-bold text-on-surface">Intencao:</span> ${this.escapeHtml(entry.intention)}</p>`
-            : '';
-        const emotion = entry.emotion
-            ? `<span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-high px-2.5 py-1 text-[10px] font-medium text-on-surface-variant">💭 ${this.escapeHtml(entry.emotion)}</span>`
-            : '';
         return `
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -4446,7 +4459,6 @@ ensureNotesState: function() {
                         <span class="text-sm leading-none">${state.emoji}</span>
                         ${this.escapeHtml(state.title)}
                     </span>
-                    ${emotion}
                 </div>
                 <div class="mt-3 grid grid-cols-2 gap-2">
                     ${chips.map((chip) => `
@@ -4462,7 +4474,6 @@ ensureNotesState: function() {
                         </div>
                     `).join('')}
                 </div>
-                ${intention}
             </div>
         `;
     },

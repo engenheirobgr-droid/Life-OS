@@ -743,7 +743,8 @@ renderGamificationProfile: function() {
         const totalLevelEl = document.getElementById('gamification-total-level');
         const totalXpEl = document.getElementById('gamification-total-xp');
         const totalBarEl = document.getElementById('gamification-total-bar');
-        if (totalLevelEl) totalLevelEl.textContent = `Nível ${totalProgress.level}`;
+        const totalIdentity = this.getOverallLevelIdentity(totalProgress.level);
+        if (totalLevelEl) totalLevelEl.textContent = `Nível ${totalProgress.level} · ${totalIdentity.name}`;
         if (totalXpEl) totalXpEl.textContent = `${totalProgress.current}/${totalProgress.next} XP para o próximo nível · ${gamification.totalXp} XP total`;
         if (totalBarEl) totalBarEl.style.width = `${totalProgress.pct}%`;
 
@@ -1892,7 +1893,7 @@ render: {
                 // Badge no header: mesma métrica principal exibida no card do dia
                 const headerStreak = document.getElementById('header-streak');
                 if (headerStreak) {
-                    headerStreak.textContent = `${streak} ${streak === 1 ? 'dia' : 'dias'} de sequencia pessoal`;
+                    headerStreak.textContent = `${streak} ${streak === 1 ? 'dia' : 'dias'} de sequência pessoal`;
                 }
             }
 
@@ -2935,6 +2936,13 @@ render: {
             const nomeDisplay = document.getElementById('perfil-nome-display');
             if (nomeDisplay && state.profile) {
                 nomeDisplay.textContent = state.profile.name || "Seu Nome";
+            }
+            const levelBadge = document.getElementById('perfil-level-badge');
+            if (levelBadge) {
+                const gamification = app.ensureGamificationState();
+                const overall = app.getOverallLevelProgress(gamification);
+                const overallIdentity = app.getOverallLevelIdentity(overall.level);
+                levelBadge.textContent = `NIVEL ${overall.level} · ${String(overallIdentity.name || 'Despertar').toUpperCase()}`;
             }
             app.ensureSettingsState();
             if (state.settings?.notificationsEnabled && !app._pushRevalidateInFlight) {

@@ -1398,11 +1398,15 @@
             <div id="app-content" class="fade-in">
                 <!-- Views loaded here -->
                 <div class="flex flex-col items-center justify-center min-h-[60vh] text-outline" id="loading-placeholder">
-                    <span class="material-symbols-outlined notranslate text-5xl mb-6 text-primary/80 animate-pulse">explore</span>
-                    <div class="flex flex-col items-center w-full max-w-[200px]">
+                    <div class="flex flex-col items-center w-full max-w-[220px]">
+                        <div class="inline-flex items-center gap-2 mb-5" aria-hidden="true">
+                            <span class="h-2.5 w-2.5 rounded-full bg-primary/80 animate-bounce [animation-delay:-0.3s]"></span>
+                            <span class="h-2.5 w-2.5 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.15s]"></span>
+                            <span class="h-2.5 w-2.5 rounded-full bg-primary/60 animate-bounce"></span>
+                        </div>
                         <p class="font-medium mb-4 text-sm tracking-wide" id="loading-msg">Carregando sua jornada...</p>
                         <div class="h-1 bg-outline-variant/20 rounded-full w-full overflow-hidden">
-                            <div class="h-full bg-primary/60 w-full animate-pulse rounded-full"></div>
+                            <div class="h-full bg-primary/60 w-1/2 animate-pulse rounded-full"></div>
                         </div>
                     </div>
                 </div>
@@ -1479,6 +1483,16 @@
                     <input type="text" id="crud-title"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
                         required>
+                </div>
+
+                <div id="habit-continuous-row" class="hidden">
+                    <label class="flex items-start gap-3 p-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/50 cursor-pointer">
+                        <input type="checkbox" id="habit-continuous" class="accent-primary mt-0.5 shrink-0" onchange="window.app.onHabitContinuousChange(this.checked)">
+                        <div class="min-w-0">
+                            <span class="text-xs font-bold text-on-surface">Hábito contínuo (sem prazo)</span>
+                            <p class="text-[10px] text-outline mt-0.5">Para algo que faz parte da rotina ou identidade, sem data final.</p>
+                        </div>
+                    </label>
                 </div>
 
                 <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
@@ -1727,13 +1741,6 @@
 
                 <!-- Custom Habit Controls -->
                 <div id="crud-habit-controls" class="flex-col gap-4" style="display: none;">
-                    <label class="flex items-start gap-3 p-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/50 cursor-pointer">
-                        <input type="checkbox" id="habit-continuous" class="accent-primary mt-0.5 shrink-0" onchange="window.app.onHabitContinuousChange(this.checked)">
-                        <div class="min-w-0">
-                            <span class="text-xs font-bold text-on-surface">Hábito contínuo (sem prazo)</span>
-                            <p class="text-[10px] text-outline mt-0.5">Para algo que faz parte da rotina ou identidade, sem data final.</p>
-                        </div>
-                    </label>
                     <label class="flex items-start gap-3 p-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/50 cursor-pointer">
                         <input type="checkbox" id="habit-key" class="accent-primary mt-0.5 shrink-0">
                         <div class="min-w-0">
@@ -2723,7 +2730,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260508-ui-improvements-v152"></script>
+    <script type="module" src="app.js?v=20260509-ui-improvements-v153"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
