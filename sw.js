@@ -1,20 +1,20 @@
-﻿const CACHE_NAME = 'sistema-vida-v155';
+const CACHE_NAME = 'sistema-vida-v157';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260509-ui-improvements-v155',
-    './js/habitSuggestions.js?v=20260509-ui-improvements-v155',
-    './js/subjectiveScales.js?v=20260509-ui-improvements-v155',
-    './js/notifications.js?v=20260509-ui-improvements-v155',
-    './js/cadence.js?v=20260509-ui-improvements-v155',
-    './js/onboarding.js?v=20260509-ui-improvements-v155',
-    './js/identity.js?v=20260509-ui-improvements-v155',
-    './js/habits.js?v=20260509-ui-improvements-v155',
-    './js/state.js?v=20260509-ui-improvements-v155',
-    './js/render.js?v=20260509-ui-improvements-v155',
-    './js/planning.js?v=20260509-ui-improvements-v155',
-    './js/gamification.js?v=20260509-ui-improvements-v155',
-    './js/social.js?v=20260509-ui-improvements-v155',
+    './app.js?v=20260509-ui-improvements-v157',
+    './js/habitSuggestions.js?v=20260509-ui-improvements-v157',
+    './js/subjectiveScales.js?v=20260509-ui-improvements-v157',
+    './js/notifications.js?v=20260509-ui-improvements-v157',
+    './js/cadence.js?v=20260509-ui-improvements-v157',
+    './js/onboarding.js?v=20260509-ui-improvements-v157',
+    './js/identity.js?v=20260509-ui-improvements-v157',
+    './js/habits.js?v=20260509-ui-improvements-v157',
+    './js/state.js?v=20260509-ui-improvements-v157',
+    './js/render.js?v=20260509-ui-improvements-v157',
+    './js/planning.js?v=20260509-ui-improvements-v157',
+    './js/gamification.js?v=20260509-ui-improvements-v157',
+    './js/social.js?v=20260509-ui-improvements-v157',
     './views/hoje.html',
     './views/planos.html',
     './views/proposito.html',
@@ -61,10 +61,10 @@ self.addEventListener('message', (event) => {
 
 // -- Push Notifications --------------------------------------------------------
 // Recebe mensagens push do servidor (requer backend + VAPID keys para funcionar).
-// Para notificaÃ§Ãµes locais sem backend, o app usa registration.showNotification()
-// diretamente a partir do contexto da pÃ¡gina.
+// Para notificações locais sem backend, o app usa registration.showNotification()
+// diretamente a partir do contexto da página.
 self.addEventListener('push', (event) => {
-    let data = { title: 'Life OS', body: 'Nova notificaÃ§Ã£o.' };
+    let data = { title: 'Life OS', body: 'Nova notificação.' };
     try {
         if (event.data) data = event.data.json();
     } catch (_) {
@@ -121,6 +121,8 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+
+
 
 
 

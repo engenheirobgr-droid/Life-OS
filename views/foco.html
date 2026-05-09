@@ -4,7 +4,7 @@
         <div class="flex items-center gap-3 mb-4">
             <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Foco e execucao</p>
             <div class="relative inline-flex group">
-                <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-md border border-outline-variant/30 text-outline/80 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors" aria-label="Informacoes sobre Foco">
+                <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full text-outline/60 hover:text-primary hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="Informacoes sobre Foco">
                     <span class="material-symbols-outlined notranslate text-[12px]">info</span>
                 </button>
                 <div class="hidden group-hover:block group-focus-within:block absolute top-7 left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 z-30 w-[min(19rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-4 text-xs text-on-surface-variant leading-relaxed shadow-xl">
@@ -25,29 +25,60 @@
     <section id="deep-work-panel" class="order-2 bg-surface-container-lowest p-5 md:p-8 rounded-2xl border border-outline-variant/10 shadow-sm space-y-6 min-w-0">
         <input id="deep-work-intention" type="hidden">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 min-w-0">
-            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 min-w-0">
-                <div class="space-y-1">
-                    <label for="deep-work-preset" class="text-[10px] uppercase tracking-widest font-bold text-outline">Duracao foco</label>
-                    <select id="deep-work-preset" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none border border-outline-variant/30">
-                        <option value="60">60 minutos</option>
-                        <option value="90" selected>90 minutos</option>
-                        <option value="120">120 minutos</option>
-                    </select>
+            <div class="lg:col-span-2 space-y-3 min-w-0">
+                <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-4 min-w-0">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Configuracao do bloco</p>
+                        <span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-outline">
+                            <span class="material-symbols-outlined notranslate text-[12px]">tune</span>
+                            Passo 1
+                        </span>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="deep-work-preset" class="text-[10px] uppercase tracking-widest font-bold text-outline">Duracao foco</label>
+                                <span class="text-[10px] text-outline">Selecao rapida</span>
+                            </div>
+                            <select id="deep-work-preset" class="hidden">
+                                <option value="60">60 minutos</option>
+                                <option value="90" selected>90 minutos</option>
+                                <option value="120">120 minutos</option>
+                            </select>
+                            <div class="grid grid-cols-3 gap-2 rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-1">
+                                <button type="button" data-deep-work-preset="60" onclick="window.app.setDeepWorkPreset(60)" class="deep-work-preset-chip rounded-lg border border-transparent px-2 py-2 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-high">
+                                    60m
+                                </button>
+                                <button type="button" data-deep-work-preset="90" onclick="window.app.setDeepWorkPreset(90)" class="deep-work-preset-chip rounded-lg border border-transparent px-2 py-2 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-high">
+                                    90m
+                                </button>
+                                <button type="button" data-deep-work-preset="120" onclick="window.app.setDeepWorkPreset(120)" class="deep-work-preset-chip rounded-lg border border-transparent px-2 py-2 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-high">
+                                    120m
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label for="deep-work-micro" class="text-[10px] uppercase tracking-widest font-bold text-outline">Micro acao</label>
+                            <select id="deep-work-micro" onchange="window.app.selectDeepWorkMicro(this.value)" class="w-full h-11 bg-surface-container-lowest text-on-surface text-sm font-medium rounded-lg px-3 outline-none border border-outline-variant/25">
+                                <option value="">Selecione uma micro</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="space-y-1">
-                    <label for="deep-work-micro" class="text-[10px] uppercase tracking-widest font-bold text-outline">Micro acao</label>
-                    <select id="deep-work-micro" onchange="window.app.selectDeepWorkMicro(this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none border border-outline-variant/30">
-                        <option value="">Selecione uma micro</option>
-                    </select>
+                <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-3">
+                    <div class="flex items-start gap-3">
+                        <span class="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-primary"></span>
+                        <div class="min-w-0">
+                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Estado</p>
+                            <p id="deep-work-status" class="text-sm font-bold text-primary mt-1">Pronto para iniciar</p>
+                            <p id="deep-work-step" class="text-xs text-on-surface-variant mt-1">Selecione uma micro para comecar</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="rounded-xl border border-primary/20 bg-surface-container-low p-3 min-w-0 space-y-3">
-                <div class="rounded-lg border border-outline-variant/15 bg-surface-container-lowest px-3 py-2">
-                    <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Estado</p>
-                    <p id="deep-work-status" class="text-sm font-bold text-primary mt-1">Pronto para iniciar</p>
-                    <p id="deep-work-step" class="text-xs text-on-surface-variant mt-1">Selecione uma micro para comecar</p>
-                </div>
-                <div class="rounded-lg border border-primary/25 bg-primary/5 px-4 py-5 text-center shadow-inner">
+            <div class="rounded-xl border border-primary/20 bg-surface-container-low p-4 min-w-0">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-outline mb-2">Relogio da sessao</p>
+                <div class="rounded-xl border border-primary/20 bg-primary/5 px-4 py-6 text-center shadow-inner">
                     <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">Tempo restante</p>
                     <p id="deep-work-timer" class="mt-2 text-6xl leading-none font-headline italic text-primary tabular-nums">90:00</p>
                     <p id="deep-work-phase" class="mt-2 text-[11px] uppercase tracking-[0.12em] text-on-surface-variant">Bloco</p>

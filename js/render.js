@@ -1259,6 +1259,19 @@ renderDeepWorkPanel: function() {
             const presetMin = Math.max(5, Math.round((dw.targetSec || 5400) / 60));
             presetEl.value = String(presetMin);
         }
+        if (presetEl) {
+            const activePreset = String(presetEl.value || '90');
+            document.querySelectorAll('.deep-work-preset-chip').forEach((chip) => {
+                const isActive = chip.getAttribute('data-deep-work-preset') === activePreset;
+                chip.classList.toggle('bg-primary', isActive);
+                chip.classList.toggle('text-on-primary', isActive);
+                chip.classList.toggle('border-primary/60', isActive);
+                chip.classList.toggle('shadow-sm', isActive);
+                chip.classList.toggle('bg-surface-container-lowest', !isActive);
+                chip.classList.toggle('text-on-surface', !isActive);
+                chip.classList.toggle('border-outline-variant/25', !isActive);
+            });
+        }
         if (microEl) {
             const micros = this.getPlanMicros({ includeDone: false });
             let selected = dw.microId || '';
