@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260509-ui-improvements-v153';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260509-ui-improvements-v153';
-import { attachNotifications } from './js/notifications.js?v=20260509-ui-improvements-v153';
-import { attachCadence } from './js/cadence.js?v=20260509-ui-improvements-v153';
-import { attachOnboarding } from './js/onboarding.js?v=20260509-ui-improvements-v153';
-import { attachIdentity } from './js/identity.js?v=20260509-ui-improvements-v153';
-import { attachHabits } from './js/habits.js?v=20260509-ui-improvements-v153';
-import { attachStateModule } from './js/state.js?v=20260509-ui-improvements-v153';
-import { attachRenderModule } from './js/render.js?v=20260509-ui-improvements-v153';
-import { attachPlanningModule } from './js/planning.js?v=20260509-ui-improvements-v153';
-import { attachGamificationModule } from './js/gamification.js?v=20260509-ui-improvements-v153';
-import { attachSocial } from './js/social.js?v=20260509-ui-improvements-v153';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260509-ui-improvements-v154';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260509-ui-improvements-v154';
+import { attachNotifications } from './js/notifications.js?v=20260509-ui-improvements-v154';
+import { attachCadence } from './js/cadence.js?v=20260509-ui-improvements-v154';
+import { attachOnboarding } from './js/onboarding.js?v=20260509-ui-improvements-v154';
+import { attachIdentity } from './js/identity.js?v=20260509-ui-improvements-v154';
+import { attachHabits } from './js/habits.js?v=20260509-ui-improvements-v154';
+import { attachStateModule } from './js/state.js?v=20260509-ui-improvements-v154';
+import { attachRenderModule } from './js/render.js?v=20260509-ui-improvements-v154';
+import { attachPlanningModule } from './js/planning.js?v=20260509-ui-improvements-v154';
+import { attachGamificationModule } from './js/gamification.js?v=20260509-ui-improvements-v154';
+import { attachSocial } from './js/social.js?v=20260509-ui-improvements-v154';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260508-ui-improvements-v152',
+    appBuildVersion: '20260509-ui-improvements-v154',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -895,6 +895,26 @@ getDimensionIdentity: function(dimension, level) {
         const base = names[idx];
         if (lv <= names.length) return { name: base, index: idx + 1 };
         return { name: `${base}+`, index: names.length };
+    },
+    getOverallLevelEvolution: function(level) {
+        const lv = Math.max(1, Number(level) || 1);
+        const stages = [
+            ['wb_twilight', 'Despertar'],
+            ['foundation', 'Fundacao'],
+            ['trending_up', 'Tracao'],
+            ['task_alt', 'Consistencia'],
+            ['autorenew', 'Evolucao'],
+            ['workspace_premium', 'Dominio'],
+            ['open_in_full', 'Expansao'],
+            ['psychology', 'Maestria'],
+            ['history_edu', 'Legado'],
+            ['military_tech', 'Lendario']
+        ];
+        return {
+            stages,
+            currentIndex: Math.min(stages.length - 1, Math.max(0, lv - 1)),
+            totalStages: stages.length
+        };
     },
     allocateGamificationXp: function(xp, primaryDimension = '') {
         const amount = Math.max(0, Number(xp) || 0);
@@ -4452,6 +4472,8 @@ ensureNotesState: function() {
             { emoji: moodMeta.emoji, title: 'Humor', value: compactValue('mood', entry.mood), detail: '' },
             { emoji: stressMeta.emoji, title: 'Estresse', value: compactValue('stress', entry.stress), detail: '' }
         ];
+        const emotionValue = entry.emotion ? entry.emotion : 'Nao informada';
+        const intentionValue = entry.intention ? entry.intention : 'Nao definida';
         return `
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -4473,6 +4495,22 @@ ensureNotesState: function() {
                             </div>
                         </div>
                     `).join('')}
+                </div>
+                <div class="mt-2 grid grid-cols-1 gap-2">
+                    <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-on-surface min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[15px] leading-none shrink-0">🎭</span>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">Emocao dominante</p>
+                        </div>
+                        <p class="mt-1.5 text-[13px] font-bold text-on-surface truncate">${this.escapeHtml(emotionValue)}</p>
+                    </div>
+                    <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-on-surface min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[15px] leading-none shrink-0">🧭</span>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">Intencao do dia</p>
+                        </div>
+                        <p class="mt-1.5 text-[13px] font-bold text-on-surface break-words">${this.escapeHtml(intentionValue)}</p>
+                    </div>
                 </div>
             </div>
         `;
@@ -6132,6 +6170,10 @@ ensureNotesState: function() {
             this._gamificationExpandedTrails = {};
         }
         this._gamificationExpandedTrails[dimension] = !this._gamificationExpandedTrails[dimension];
+        this.renderGamificationProfile();
+    },
+    toggleGamificationOverallTrail: function() {
+        this._gamificationExpandedOverallTrail = !this._gamificationExpandedOverallTrail;
         this.renderGamificationProfile();
     },
     toggleGamificationRules: function() {

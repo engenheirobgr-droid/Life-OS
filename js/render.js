@@ -623,10 +623,16 @@ renderDailyCheckinPanel: function() {
         const formContent = document.getElementById('daily-checkin-form-content');
         const summaryWrap = document.getElementById('daily-checkin-summary');
         const summaryText = document.getElementById('daily-checkin-summary-text');
+        const emotionSection = document.getElementById('daily-checkin-emotion-section');
+        const historySection = document.getElementById('daily-checkin-history-section');
+        const intentionSection = document.getElementById('daily-checkin-intention-section');
         const saveBtn = document.getElementById('daily-checkin-save-btn');
         if (formContent) formContent.classList.toggle('hidden', !!todayEntry && !expanded);
         if (summaryWrap) summaryWrap.classList.toggle('hidden', !todayEntry || expanded);
         if (summaryText) summaryText.innerHTML = this.renderDailyCheckinSummaryCard(todayEntry);
+        if (emotionSection) emotionSection.classList.toggle('hidden', !!todayEntry && !expanded);
+        if (historySection) historySection.classList.toggle('hidden', !!todayEntry && !expanded);
+        if (intentionSection) intentionSection.classList.toggle('hidden', !!todayEntry && !expanded);
         const recommendationWrap = document.getElementById('daily-checkin-recommendation');
         const recommendationText = document.getElementById('daily-checkin-recommendation-text');
         const recommendation = this.getDailyCheckinRecommendation(todayEntry);
@@ -743,10 +749,49 @@ renderGamificationProfile: function() {
         const totalLevelEl = document.getElementById('gamification-total-level');
         const totalXpEl = document.getElementById('gamification-total-xp');
         const totalBarEl = document.getElementById('gamification-total-bar');
+        const totalTrailEl = document.getElementById('gamification-overall-trail');
         const totalIdentity = this.getOverallLevelIdentity(totalProgress.level);
         if (totalLevelEl) totalLevelEl.textContent = `Nível ${totalProgress.level} · ${totalIdentity.name}`;
         if (totalXpEl) totalXpEl.textContent = `${totalProgress.current}/${totalProgress.next} XP para o próximo nível · ${gamification.totalXp} XP total`;
         if (totalBarEl) totalBarEl.style.width = `${totalProgress.pct}%`;
+
+        if (totalTrailEl) {
+            const overallEvolution = this.getOverallLevelEvolution(totalProgress.level);
+            const expanded = !!this._gamificationExpandedOverallTrail;
+            const nextStage = overallEvolution.currentIndex < overallEvolution.stages.length - 1
+                ? overallEvolution.stages[overallEvolution.currentIndex + 1][1]
+                : null;
+            const stageNodes = overallEvolution.stages.map(([icon, label], idx) => `
+                <div class="gamification-level-row ${idx < overallEvolution.currentIndex ? 'done' : ''} ${idx === overallEvolution.currentIndex ? 'current' : ''}">
+                    <span class="gamification-level-badge">${idx + 1}</span>
+                    <span class="material-symbols-outlined notranslate">${this.escapeHtml(icon)}</span>
+                    <div class="gamification-level-copy">
+                        <strong>${this.escapeHtml(label)}</strong>
+                        <small>NÃ­vel ${idx + 1}</small>
+                    </div>
+                    ${idx === overallEvolution.currentIndex ? '<span class="gamification-level-state">Atual</span>' : ''}
+                </div>
+            `).join('');
+            totalTrailEl.innerHTML = `
+                <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Trilha geral</p>
+                            <p class="mt-1 text-sm font-bold text-on-surface">${this.escapeHtml(totalIdentity.name)}</p>
+                            <p class="text-[10px] text-outline mt-0.5">${nextStage ? `Proximo: ${this.escapeHtml(nextStage)}` : 'Voce esta no topo da trilha geral'}</p>
+                        </div>
+                        <span class="material-symbols-outlined notranslate text-primary text-xl">military_tech</span>
+                    </div>
+                    <button type="button"
+                        onclick="window.app.toggleGamificationOverallTrail()"
+                        class="mt-3 w-full flex items-center justify-between gap-3 rounded-xl border border-outline-variant/10 bg-surface-container-lowest px-3 py-2 text-left hover:bg-surface-container-high transition-colors">
+                        <span class="text-[11px] font-bold uppercase tracking-[0.14em] text-outline">Ver trilha geral</span>
+                        <span class="material-symbols-outlined notranslate text-outline transition-transform ${expanded ? 'rotate-180' : ''}">expand_more</span>
+                    </button>
+                    <div class="gamification-level-list mt-3 ${expanded ? '' : 'hidden'}">${stageNodes}</div>
+                </div>
+            `;
+        }
 
         const dimensionsEl = document.getElementById('gamification-dimensions');
         if (dimensionsEl) {
