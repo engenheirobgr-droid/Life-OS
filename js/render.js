@@ -751,8 +751,8 @@ renderGamificationProfile: function() {
         const totalBarEl = document.getElementById('gamification-total-bar');
         const totalTrailEl = document.getElementById('gamification-overall-trail');
         const totalIdentity = this.getOverallLevelIdentity(totalProgress.level);
-        if (totalLevelEl) totalLevelEl.textContent = `Nível ${totalProgress.level} · ${totalIdentity.name}`;
-        if (totalXpEl) totalXpEl.textContent = `${totalProgress.current}/${totalProgress.next} XP para o próximo nível · ${gamification.totalXp} XP total`;
+        if (totalLevelEl) totalLevelEl.textContent = `Nivel ${totalProgress.level} - ${totalIdentity.name}`;
+        if (totalXpEl) totalXpEl.textContent = `${totalProgress.current}/${totalProgress.next} XP para o proximo nivel - ${gamification.totalXp} XP total`;
         if (totalBarEl) totalBarEl.style.width = `${totalProgress.pct}%`;
 
         if (totalTrailEl) {
@@ -767,7 +767,7 @@ renderGamificationProfile: function() {
                     <span class="material-symbols-outlined notranslate">${this.escapeHtml(icon)}</span>
                     <div class="gamification-level-copy">
                         <strong>${this.escapeHtml(label)}</strong>
-                        <small>NÃ­vel ${idx + 1}</small>
+                        <small>Nivel ${idx + 1}</small>
                     </div>
                     ${idx === overallEvolution.currentIndex ? '<span class="gamification-level-state">Atual</span>' : ''}
                 </div>
@@ -778,7 +778,7 @@ renderGamificationProfile: function() {
                         <div class="min-w-0">
                             <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Trilha geral</p>
                             <p class="mt-1 text-sm font-bold text-on-surface">${this.escapeHtml(totalIdentity.name)}</p>
-                            <p class="text-[10px] text-outline mt-0.5">${nextStage ? `Proximo: ${this.escapeHtml(nextStage)}` : 'Voce esta no topo da trilha geral'}</p>
+                            <p class="text-[10px] text-outline mt-0.5">${nextStage ? `Proxima etapa: ${this.escapeHtml(nextStage)}` : 'Voce esta no topo da trilha geral'}</p>
                         </div>
                         <span class="material-symbols-outlined notranslate text-primary text-xl">military_tech</span>
                     </div>
@@ -808,7 +808,7 @@ renderGamificationProfile: function() {
                         <span class="material-symbols-outlined notranslate">${this.escapeHtml(stageIcon)}</span>
                         <div class="gamification-level-copy">
                             <strong>${this.escapeHtml(label)}</strong>
-                            <small>Nível ${idx + 1} · ${this.escapeHtml(String(this.getXpThresholdForLevel(idx + 1)))} XP acumulados</small>
+                            <small>Nivel ${idx + 1} - ${this.escapeHtml(String(this.getXpThresholdForLevel(idx + 1)))} XP acumulados</small>
                         </div>
                         ${idx === evolution.currentIndex ? '<span class="gamification-level-state">Atual</span>' : ''}
                     </div>
@@ -822,7 +822,7 @@ renderGamificationProfile: function() {
                         <div class="min-w-0">
                             <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline truncate">${this.escapeHtml(dim)}</p>
                             <p class="mt-1 text-sm font-bold text-on-surface truncate">${this.escapeHtml(identity.title)}</p>
-                            <p class="text-[10px] text-outline mt-0.5">Nível ${progress.level} · Etapa ${Math.min(identity.stageCount, Math.max(1, progress.level))} de ${identity.stageCount}</p>
+                            <p class="text-[10px] text-outline mt-0.5">Nivel ${progress.level} - Etapa ${Math.min(identity.stageCount, Math.max(1, progress.level))} de ${identity.stageCount}</p>
                         </div>
                         <span class="material-symbols-outlined notranslate text-primary text-xl">${identity.icon}</span>
                     </div>
@@ -1288,19 +1288,19 @@ renderDeepWorkPanel: function() {
         const selectedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
         const canCompleteSelectedMicro = !!(selectedMicro && selectedMicro.status !== 'done');
         if (statusEl) {
-            if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Escolha uma micro ação';
+            if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Selecione uma micro acao';
             else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
-            else if (dw.isPaused) statusEl.textContent = 'Sessão pausada';
-            else statusEl.textContent = dw.mode === 'focus' ? 'Foco profundo em andamento' : (canCompleteSelectedMicro ? 'Sessão concluída: confirme a micro ação' : 'Pausa de recuperação');
+            else if (dw.isPaused) statusEl.textContent = 'Sessao pausada';
+            else statusEl.textContent = dw.mode === 'focus' ? 'Bloco em andamento' : (canCompleteSelectedMicro ? 'Sessao concluida: confirme a micro' : 'Pausa de recuperacao');
         }
         if (stepEl) {
-            if (!dw.isRunning && !hasSelectedMicro) stepEl.textContent = 'Passo 1 de 3: selecione a micro';
-            else if (!dw.isRunning) stepEl.textContent = 'Passo 2 de 3: inicie o bloco';
+            if (!dw.isRunning && !hasSelectedMicro) stepEl.textContent = 'Passo 1: escolha a micro';
+            else if (!dw.isRunning) stepEl.textContent = 'Passo 2: inicie o bloco';
             else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
-            else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3 de 3: executando foco' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a micro após o foco' : 'Pausa estruturada');
+            else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3: foco em execucao' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a micro' : 'Pausa estruturada');
         }
         if (timerEl) timerEl.textContent = this.formatClock(dw.remainingSec);
-        if (phaseEl) phaseEl.textContent = dw.mode === 'focus' ? 'Foco' : 'Pausa';
+        if (phaseEl) phaseEl.textContent = dw.mode === 'focus' ? 'Bloco' : 'Pausa';
 
         const baseBtn = 'px-3 md:px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50';
         const primaryBtn = `${baseBtn} bg-primary text-on-primary shadow-sm`;
@@ -2987,7 +2987,7 @@ render: {
                 const gamification = app.ensureGamificationState();
                 const overall = app.getOverallLevelProgress(gamification);
                 const overallIdentity = app.getOverallLevelIdentity(overall.level);
-                levelBadge.textContent = `NIVEL ${overall.level} · ${String(overallIdentity.name || 'Despertar').toUpperCase()}`;
+                levelBadge.textContent = `NIVEL ${overall.level} - ${String(overallIdentity.name || 'Despertar').toUpperCase()}`;
             }
             app.ensureSettingsState();
             if (state.settings?.notificationsEnabled && !app._pushRevalidateInFlight) {

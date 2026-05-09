@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260509-ui-improvements-v154';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260509-ui-improvements-v154';
-import { attachNotifications } from './js/notifications.js?v=20260509-ui-improvements-v154';
-import { attachCadence } from './js/cadence.js?v=20260509-ui-improvements-v154';
-import { attachOnboarding } from './js/onboarding.js?v=20260509-ui-improvements-v154';
-import { attachIdentity } from './js/identity.js?v=20260509-ui-improvements-v154';
-import { attachHabits } from './js/habits.js?v=20260509-ui-improvements-v154';
-import { attachStateModule } from './js/state.js?v=20260509-ui-improvements-v154';
-import { attachRenderModule } from './js/render.js?v=20260509-ui-improvements-v154';
-import { attachPlanningModule } from './js/planning.js?v=20260509-ui-improvements-v154';
-import { attachGamificationModule } from './js/gamification.js?v=20260509-ui-improvements-v154';
-import { attachSocial } from './js/social.js?v=20260509-ui-improvements-v154';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260509-ui-improvements-v155';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260509-ui-improvements-v155';
+import { attachNotifications } from './js/notifications.js?v=20260509-ui-improvements-v155';
+import { attachCadence } from './js/cadence.js?v=20260509-ui-improvements-v155';
+import { attachOnboarding } from './js/onboarding.js?v=20260509-ui-improvements-v155';
+import { attachIdentity } from './js/identity.js?v=20260509-ui-improvements-v155';
+import { attachHabits } from './js/habits.js?v=20260509-ui-improvements-v155';
+import { attachStateModule } from './js/state.js?v=20260509-ui-improvements-v155';
+import { attachRenderModule } from './js/render.js?v=20260509-ui-improvements-v155';
+import { attachPlanningModule } from './js/planning.js?v=20260509-ui-improvements-v155';
+import { attachGamificationModule } from './js/gamification.js?v=20260509-ui-improvements-v155';
+import { attachSocial } from './js/social.js?v=20260509-ui-improvements-v155';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260509-ui-improvements-v154',
+    appBuildVersion: '20260509-ui-improvements-v155',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -2238,7 +2238,7 @@ openAvatarPicker: function() {
             if (importants.length > 0) {
                 html += importants.map(v => `<span class="px-4 py-1.5 bg-secondary/10 text-secondary rounded-full text-xs font-bold uppercase tracking-widest animate-fade-in" title="Importante">${v}</span>`).join('');
             }
-            valuesBanner.innerHTML = html || '<p class="text-xs text-outline italic">Escolha os valores que guiam suas decisões.</p>';
+            valuesBanner.innerHTML = html || '<p class="text-xs text-outline italic">Defina seus valores em Proposito para orientar este bloco.</p>';
         }
     },
 
@@ -4474,6 +4474,11 @@ ensureNotesState: function() {
         ];
         const emotionValue = entry.emotion ? entry.emotion : 'Nao informada';
         const intentionValue = entry.intention ? entry.intention : 'Nao definida';
+        const compactText = (value, max = 48) => {
+            const clean = String(value || '').trim();
+            if (clean.length <= max) return clean;
+            return `${clean.slice(0, max - 3)}...`;
+        };
         return `
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -4496,20 +4501,16 @@ ensureNotesState: function() {
                         </div>
                     `).join('')}
                 </div>
-                <div class="mt-2 grid grid-cols-1 gap-2">
-                    <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-on-surface min-w-0">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[15px] leading-none shrink-0">🎭</span>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">Emocao dominante</p>
-                        </div>
-                        <p class="mt-1.5 text-[13px] font-bold text-on-surface truncate">${this.escapeHtml(emotionValue)}</p>
+                <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div class="rounded-lg border border-outline-variant/20 bg-surface-container-high px-2.5 py-2 text-on-surface min-w-0 flex items-center gap-1.5">
+                        <span class="text-[14px] leading-none shrink-0">🎭</span>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-outline shrink-0">Emocao</p>
+                        <p class="text-[12px] font-semibold text-on-surface truncate">${this.escapeHtml(compactText(emotionValue, 28))}</p>
                     </div>
-                    <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high px-3 py-2 text-on-surface min-w-0">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[15px] leading-none shrink-0">🧭</span>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">Intencao do dia</p>
-                        </div>
-                        <p class="mt-1.5 text-[13px] font-bold text-on-surface break-words">${this.escapeHtml(intentionValue)}</p>
+                    <div class="rounded-lg border border-outline-variant/20 bg-surface-container-high px-2.5 py-2 text-on-surface min-w-0 flex items-center gap-1.5">
+                        <span class="text-[14px] leading-none shrink-0">🧭</span>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-outline shrink-0">Intencao</p>
+                        <p class="text-[12px] font-semibold text-on-surface truncate">${this.escapeHtml(compactText(intentionValue, 42))}</p>
                     </div>
                 </div>
             </div>
@@ -6942,6 +6943,7 @@ onAuthStateChanged(auth, (user) => {
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
+
 
 
 

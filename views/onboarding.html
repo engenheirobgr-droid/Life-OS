@@ -2,7 +2,7 @@
     <div id="onboarding-progress-bar" class="h-full bg-primary transition-all duration-500 ease-out" style="width: 0%"></div>
 </div>
 
-<main class="pt-12 md:pt-14 pb-14 md:pb-20 px-4 sm:px-6 max-w-4xl mx-auto min-h-[100dvh] md:min-h-screen flex flex-col justify-start relative overflow-x-hidden">
+<main class="pt-10 md:pt-12 pb-12 md:pb-16 px-4 sm:px-6 max-w-4xl mx-auto min-h-[100dvh] md:min-h-screen flex flex-col justify-start relative overflow-x-hidden">
 
     <div class="absolute top-4 left-4 sm:top-8 sm:left-6 flex items-center gap-2 text-outline">
         <span class="text-[10px] font-bold uppercase tracking-widest" id="onboarding-step-indicator">1/7</span>
@@ -66,17 +66,17 @@
     </div>
 
     <!-- PASSO 2: RODA DA VIDA -->
-    <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-6" id="step-2">
+    <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-5" id="step-2">
         <h2 class="text-3xl font-headline font-bold italic text-on-background">Como voce esta hoje?</h2>
-        <p class="text-outline text-sm">Marque como voce se sente em cada area da sua vida agora. Nao precisa ser perfeito: e apenas o primeiro retrato.</p>
+        <p class="text-outline text-sm">Marque como voce se sente em cada area da sua vida agora. E um retrato inicial, rapido e sem pressao.</p>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 mt-1">
             <div class="space-y-2">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-outline">
                     <span>Saude</span>
                     <span id="slider-val-Saude" class="text-primary">50</span>
                 </div>
-                <p class="text-xs text-outline">Quanta energia e cuidado com o corpo voce sente hoje?</p>
+                <p class="hidden md:block text-xs text-outline">Quanta energia e cuidado com o corpo voce sente hoje?</p>
                 <input type="range" id="onboarding-slider-saude" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Saude', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
@@ -84,7 +84,7 @@
                     <span>Mente</span>
                     <span id="slider-val-Mente" class="text-primary">50</span>
                 </div>
-                <p class="text-xs text-outline">O quanto sua mente esta clara, curiosa e aprendendo?</p>
+                <p class="hidden md:block text-xs text-outline">O quanto sua mente esta clara, curiosa e aprendendo?</p>
                 <input type="range" id="onboarding-slider-mente" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Mente', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
@@ -92,7 +92,7 @@
                     <span>Carreira</span>
                     <span id="slider-val-Carreira" class="text-primary">50</span>
                 </div>
-                <p class="text-xs text-outline">O quanto voce se sente realizado e em movimento na carreira?</p>
+                <p class="hidden md:block text-xs text-outline">O quanto voce se sente realizado e em movimento na carreira?</p>
                 <input type="range" id="onboarding-slider-carreira" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Carreira', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
@@ -100,7 +100,7 @@
                     <span>Financas</span>
                     <span id="slider-val-Financas" class="text-primary">50</span>
                 </div>
-                <p class="text-xs text-outline">Quanta seguranca e controle financeiro voce percebe?</p>
+                <p class="hidden md:block text-xs text-outline">Quanta seguranca e controle financeiro voce percebe?</p>
                 <input type="range" id="onboarding-slider-financas" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Financas', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
@@ -108,7 +108,7 @@
                     <span>Relacionamentos</span>
                     <span id="slider-val-Relacionamentos" class="text-primary">50</span>
                 </div>
-                <p class="text-xs text-outline">O quanto suas conexoes estao presentes e nutritivas?</p>
+                <p class="hidden md:block text-xs text-outline">O quanto suas conexoes estao presentes e nutritivas?</p>
                 <input type="range" id="onboarding-slider-relacionamentos" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Relacionamentos', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
@@ -116,7 +116,7 @@
                     <span>Familia</span>
                     <span id="slider-val-Familia" class="text-primary">50</span>
                 </div>
-                <p class="text-xs text-outline">O quanto voce se sente presente e em paz com sua familia?</p>
+                <p class="hidden md:block text-xs text-outline">O quanto voce se sente presente e em paz com sua familia?</p>
                 <input type="range" id="onboarding-slider-familia" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Familia', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
@@ -124,7 +124,7 @@
                     <span>Lazer</span>
                     <span id="slider-val-Lazer" class="text-primary">50</span>
                 </div>
-                <p class="text-xs text-outline">O quanto voce tem espaco para descanso, prazer e leveza?</p>
+                <p class="hidden md:block text-xs text-outline">O quanto voce tem espaco para descanso, prazer e leveza?</p>
                 <input type="range" id="onboarding-slider-lazer" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Lazer', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
             <div class="space-y-2">
@@ -132,7 +132,7 @@
                     <span>Proposito</span>
                     <span id="slider-val-Proposito" class="text-primary">50</span>
                 </div>
-                <p class="text-xs text-outline">O quanto sua vida parece apontar para algo com sentido?</p>
+                <p class="hidden md:block text-xs text-outline">O quanto sua vida parece apontar para algo com sentido?</p>
                 <input type="range" id="onboarding-slider-proposito" min="0" max="100" value="50" oninput="app.onboardingUpdateSlider('Proposito', this.value)" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary">
             </div>
         </div>
@@ -175,35 +175,36 @@
     </div>
 
     <!-- PASSO 4: PROPOSITO -->
-    <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-5" id="step-4">
+    <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-4" id="step-4">
         <h2 class="text-3xl font-headline font-bold italic text-on-background">Qual e o seu proposito?</h2>
-        <p class="text-outline text-sm">Rascunhe sem pressao. Exemplos ajudam: voce pode editar e aprofundar tudo depois em Proposito.</p>
+        <p class="text-outline text-sm">Sem cara de formulario: pense como um rascunho de conversa com voce mesmo. Depois refinamos em Proposito.</p>
 
-        <div class="grid grid-cols-1 gap-4">
-            <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Missao</label>
-            <input type="text" id="onboarding-ikigai-missao" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Ex.: criar solucoes que simplificam a vida das pessoas">
-
-            <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Vocacao</label>
-            <input type="text" id="onboarding-ikigai-vocacao" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Ex.: unir tecnologia, estrategia e cuidado humano">
+        <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4 space-y-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Norte rapido</p>
+            <input type="text" id="onboarding-ikigai-missao" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Missao: por que esse momento da sua vida importa?">
+            <input type="text" id="onboarding-ikigai-vocacao" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Vocacao: como voce quer contribuir usando seu melhor?">
+            <textarea id="onboarding-proposito" rows="3" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-4 text-sm italic focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Sintese: escreva em 2-3 linhas o sentido que quer viver agora."></textarea>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input type="text" id="onboarding-ikigai-love" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Amo: aprender, construir, ensinar...">
-            <input type="text" id="onboarding-ikigai-good" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Sou bom em: resolver problemas, liderar...">
-            <input type="text" id="onboarding-ikigai-need" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="O mundo precisa de: clareza, ferramentas...">
-            <input type="text" id="onboarding-ikigai-paid" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:border-primary transition-colors outline-none" placeholder="Posso ser pago por: produto, consultoria...">
-        </div>
-
-        <div class="space-y-3">
-            <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Sintese do Ikigai</label>
-            <textarea id="onboarding-proposito" rows="3" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-2xl p-4 text-base italic focus:border-primary transition-colors outline-none resize-none" placeholder="Ex.: Eu existo para construir sistemas que ajudam pessoas a viver com mais clareza."></textarea>
-        </div>
-
-        <div class="grid grid-cols-1 gap-3">
-            <textarea id="onboarding-legacy-familia" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Familia: ser presenca confiavel, amorosa e inspiradora."></textarea>
-            <textarea id="onboarding-legacy-profissao" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Profissao: criar trabalhos uteis, bem feitos e com impacto real."></textarea>
-            <textarea id="onboarding-legacy-mundo" rows="2" class="w-full bg-surface-container-low border-2 border-outline-variant/30 rounded-xl p-4 text-sm focus:border-primary transition-colors outline-none resize-none" placeholder="Mundo: deixar mais clareza, coragem e boas ferramentas."></textarea>
-        </div>
+        <details class="rounded-2xl border border-outline-variant/20 bg-surface-container-low overflow-hidden">
+            <summary class="list-none cursor-pointer px-4 py-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-outline">
+                <span class="material-symbols-outlined notranslate text-[16px] text-primary">expand_more</span>
+                Explorar com mais detalhes (opcional)
+            </summary>
+            <div class="px-4 pb-4 space-y-3 border-t border-outline-variant/10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input type="text" id="onboarding-ikigai-love" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Amo: aprender, construir, ensinar...">
+                    <input type="text" id="onboarding-ikigai-good" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Sou bom em: resolver problemas, liderar...">
+                    <input type="text" id="onboarding-ikigai-need" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="O mundo precisa de: clareza, ferramentas...">
+                    <input type="text" id="onboarding-ikigai-paid" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Posso ser pago por: produto, consultoria...">
+                </div>
+                <div class="grid grid-cols-1 gap-3">
+                    <textarea id="onboarding-legacy-familia" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Familia: como voce quer ser lembrado em casa?"></textarea>
+                    <textarea id="onboarding-legacy-profissao" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Profissao: qual impacto deseja deixar no trabalho?"></textarea>
+                    <textarea id="onboarding-legacy-mundo" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Mundo: que marca voce quer deixar para alem de voce?"></textarea>
+                </div>
+            </div>
+        </details>
 
         <div class="flex gap-4 mt-4">
             <button onclick="app.onboardingBack()" class="flex-1 border-2 border-outline-variant/30 py-4 rounded-xl font-bold uppercase text-xs tracking-widest text-outline">Voltar</button>
@@ -261,6 +262,7 @@
                     <datalist id="onboarding-shadow-catalog"></datalist>
                 </div>
             </div>
+            <p class="text-[11px] text-outline">Sugestoes de forcas e sombras sincronizadas com Proposito &gt; Identidade.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">

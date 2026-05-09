@@ -1397,16 +1397,20 @@
         <section class="flex-1 overflow-y-auto min-h-screen pb-4 lg:pb-2 bg-background relative">
             <div id="app-content" class="fade-in">
                 <!-- Views loaded here -->
-                <div class="flex flex-col items-center justify-center min-h-[60vh] text-outline" id="loading-placeholder">
-                    <div class="flex flex-col items-center w-full max-w-[220px]">
-                        <div class="inline-flex items-center gap-2 mb-5" aria-hidden="true">
-                            <span class="h-2.5 w-2.5 rounded-full bg-primary/80 animate-bounce [animation-delay:-0.3s]"></span>
-                            <span class="h-2.5 w-2.5 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.15s]"></span>
-                            <span class="h-2.5 w-2.5 rounded-full bg-primary/60 animate-bounce"></span>
+                <div class="flex flex-col items-center justify-center min-h-[60vh] text-outline px-4" id="loading-placeholder">
+                    <div class="w-full max-w-[300px] rounded-2xl border border-outline-variant/20 bg-surface-container-low/80 backdrop-blur-sm p-5 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="inline-flex items-center gap-2" aria-hidden="true">
+                                <span class="h-2.5 w-2.5 rounded-full bg-primary/80 animate-bounce [animation-delay:-0.3s]"></span>
+                                <span class="h-2.5 w-2.5 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.15s]"></span>
+                                <span class="h-2.5 w-2.5 rounded-full bg-primary/60 animate-bounce"></span>
+                            </div>
+                            <span class="material-symbols-outlined notranslate text-primary/80 text-[18px]">auto_awesome</span>
                         </div>
-                        <p class="font-medium mb-4 text-sm tracking-wide" id="loading-msg">Carregando sua jornada...</p>
-                        <div class="h-1 bg-outline-variant/20 rounded-full w-full overflow-hidden">
-                            <div class="h-full bg-primary/60 w-1/2 animate-pulse rounded-full"></div>
+                        <p class="font-medium text-sm tracking-wide text-on-surface" id="loading-msg">Carregando sua jornada...</p>
+                        <p class="text-[11px] text-outline mt-1">Preparando seus rituais e metas.</p>
+                        <div class="h-1.5 bg-outline-variant/20 rounded-full w-full overflow-hidden mt-4">
+                            <div class="h-full bg-primary/70 w-1/2 animate-pulse rounded-full"></div>
                         </div>
                     </div>
                 </div>
@@ -2730,7 +2734,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260509-ui-improvements-v154"></script>
+    <script type="module" src="app.js?v=20260509-ui-improvements-v155"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -2824,6 +2828,7 @@
     </div>
 </body>
 </html>
+
 
 
 
