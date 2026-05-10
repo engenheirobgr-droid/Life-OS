@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260510-focus-clock-v163';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260510-focus-clock-v163';
-import { attachNotifications } from './js/notifications.js?v=20260510-focus-clock-v163';
-import { attachCadence } from './js/cadence.js?v=20260510-focus-clock-v163';
-import { attachOnboarding } from './js/onboarding.js?v=20260510-focus-clock-v163';
-import { attachIdentity } from './js/identity.js?v=20260510-focus-clock-v163';
-import { attachHabits } from './js/habits.js?v=20260510-focus-clock-v163';
-import { attachStateModule } from './js/state.js?v=20260510-focus-clock-v163';
-import { attachRenderModule } from './js/render.js?v=20260510-focus-clock-v163';
-import { attachPlanningModule } from './js/planning.js?v=20260510-focus-clock-v163';
-import { attachGamificationModule } from './js/gamification.js?v=20260510-focus-clock-v163';
-import { attachSocial } from './js/social.js?v=20260510-focus-clock-v163';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260510-focus-clock-v164';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260510-focus-clock-v164';
+import { attachNotifications } from './js/notifications.js?v=20260510-focus-clock-v164';
+import { attachCadence } from './js/cadence.js?v=20260510-focus-clock-v164';
+import { attachOnboarding } from './js/onboarding.js?v=20260510-focus-clock-v164';
+import { attachIdentity } from './js/identity.js?v=20260510-focus-clock-v164';
+import { attachHabits } from './js/habits.js?v=20260510-focus-clock-v164';
+import { attachStateModule } from './js/state.js?v=20260510-focus-clock-v164';
+import { attachRenderModule } from './js/render.js?v=20260510-focus-clock-v164';
+import { attachPlanningModule } from './js/planning.js?v=20260510-focus-clock-v164';
+import { attachGamificationModule } from './js/gamification.js?v=20260510-focus-clock-v164';
+import { attachSocial } from './js/social.js?v=20260510-focus-clock-v164';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -200,7 +200,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260510-focus-clock-v163',
+    appBuildVersion: '20260510-focus-clock-v164',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -6691,8 +6691,75 @@ ensureNotesState: function() {
         this.ensureSettingsState();
         const safeStyle = ['classic', 'ring', 'tree'].includes(style) ? style : 'classic';
         window.sistemaVidaState.settings.deepWorkClockStyle = safeStyle;
+        this.stopDeepWorkClockPreview();
         this.renderDeepWorkPanel();
         this.saveState(true);
+    },
+
+    stopDeepWorkClockPreview: function() {
+        if (this._deepWorkClockPreviewTimer) {
+            clearInterval(this._deepWorkClockPreviewTimer);
+            this._deepWorkClockPreviewTimer = null;
+        }
+        this._deepWorkClockPreviewActive = false;
+        const previewBtn = document.getElementById('deep-work-clock-preview-btn');
+        if (previewBtn) {
+            previewBtn.textContent = 'Preview';
+            previewBtn.disabled = false;
+            previewBtn.classList.remove('bg-primary', 'text-on-primary');
+        }
+    },
+
+    previewDeepWorkClock: function() {
+        this.normalizeDeepWorkState();
+        this.ensureSettingsState();
+        if (this._deepWorkClockPreviewActive) {
+            this.stopDeepWorkClockPreview();
+            this.renderDeepWorkPanel();
+            return;
+        }
+        const state = window.sistemaVidaState;
+        const dw = state.deepWork;
+        const style = ['classic', 'ring', 'tree'].includes(state.settings?.deepWorkClockStyle)
+            ? state.settings.deepWorkClockStyle
+            : 'classic';
+        const previewBtn = document.getElementById('deep-work-clock-preview-btn');
+        if (previewBtn) {
+            previewBtn.textContent = 'Preview...';
+            previewBtn.disabled = true;
+            previewBtn.classList.add('bg-primary', 'text-on-primary');
+        }
+        this._deepWorkClockPreviewActive = true;
+        const durationMs = 9000;
+        const startedAt = Date.now();
+        const renderFrame = () => {
+            const elapsed = Date.now() - startedAt;
+            const progress = Math.max(0, Math.min(1, elapsed / durationMs));
+            const phaseBreak = progress > 0.78;
+            const visual = document.getElementById('deep-work-clock-visual');
+            if (!visual || !this._deepWorkClockPreviewActive) {
+                this.stopDeepWorkClockPreview();
+                return;
+            }
+            const fakeRemaining = Math.max(0, Math.round((1 - progress) * (dw.targetSec || 5400)));
+            visual.outerHTML = `<div id="deep-work-clock-visual">${this.renderDeepWorkClockVisual({
+                style,
+                timeText: this.formatClock(fakeRemaining),
+                phaseText: phaseBreak ? 'Pausa' : 'Preview',
+                mode: phaseBreak ? 'break' : 'focus',
+                isRunning: true,
+                isPaused: false,
+                progress,
+                hasSelectedMicro: true,
+                canCompleteSelectedMicro: progress > 0.92
+            })}</div>`;
+            if (progress >= 1) {
+                this.stopDeepWorkClockPreview();
+                this.renderDeepWorkPanel();
+            }
+        };
+        renderFrame();
+        this._deepWorkClockPreviewTimer = setInterval(renderFrame, 120);
     },
 
     toggleDeepWorkPause: function() {

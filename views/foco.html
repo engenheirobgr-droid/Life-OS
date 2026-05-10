@@ -79,16 +79,21 @@
             <div class="rounded-xl border border-primary/20 bg-surface-container-low p-4 min-w-0">
                 <div class="flex items-center justify-between gap-3 mb-3">
                     <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Relogio da sessao</p>
-                    <div class="grid grid-cols-3 gap-1 rounded-lg border border-outline-variant/15 bg-surface-container-lowest p-1" aria-label="Estilo do relogio de foco">
-                        <button type="button" data-deep-work-clock-style="classic" onclick="window.app.setDeepWorkClockStyle('classic')" class="deep-work-clock-style-chip h-8 w-8 rounded-md text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Classico">
-                            <span class="material-symbols-outlined notranslate text-[16px]">timer</span>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" id="deep-work-clock-preview-btn" onclick="window.app.previewDeepWorkClock()" class="h-8 rounded-md border border-outline-variant/15 bg-surface-container-lowest px-2 text-[10px] font-bold uppercase tracking-wider text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Prever animacao visual">
+                            Preview
                         </button>
-                        <button type="button" data-deep-work-clock-style="ring" onclick="window.app.setDeepWorkClockStyle('ring')" class="deep-work-clock-style-chip h-8 w-8 rounded-md text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Anel organico">
-                            <span class="material-symbols-outlined notranslate text-[16px]">donut_large</span>
-                        </button>
-                        <button type="button" data-deep-work-clock-style="tree" onclick="window.app.setDeepWorkClockStyle('tree')" class="deep-work-clock-style-chip h-8 w-8 rounded-md text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Arvore">
-                            <span class="material-symbols-outlined notranslate text-[16px]">psychiatry</span>
-                        </button>
+                        <div class="grid grid-cols-3 gap-1 rounded-lg border border-outline-variant/15 bg-surface-container-lowest p-1" aria-label="Estilo do relogio de foco">
+                            <button type="button" data-deep-work-clock-style="classic" onclick="window.app.setDeepWorkClockStyle('classic')" class="deep-work-clock-style-chip h-8 w-8 rounded-md text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Classico">
+                                <span class="material-symbols-outlined notranslate text-[16px]">timer</span>
+                            </button>
+                            <button type="button" data-deep-work-clock-style="ring" onclick="window.app.setDeepWorkClockStyle('ring')" class="deep-work-clock-style-chip h-8 w-8 rounded-md text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Anel organico">
+                                <span class="material-symbols-outlined notranslate text-[16px]">donut_large</span>
+                            </button>
+                            <button type="button" data-deep-work-clock-style="tree" onclick="window.app.setDeepWorkClockStyle('tree')" class="deep-work-clock-style-chip h-8 w-8 rounded-md text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Arvore">
+                                <span class="material-symbols-outlined notranslate text-[16px]">psychiatry</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div id="deep-work-clock-visual" class="rounded-xl border border-primary/20 bg-primary/5 px-4 py-6 text-center shadow-inner">

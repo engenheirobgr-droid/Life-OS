@@ -1341,6 +1341,7 @@ renderDeepWorkClockVisual: function(options = {}) {
 renderDeepWorkPanel: function() {
         this.normalizeDeepWorkState();
         this.ensureSettingsState();
+        this.stopDeepWorkClockPreview?.();
         const state = window.sistemaVidaState;
         const dw = state.deepWork;
 
