@@ -1448,14 +1448,13 @@ export function attachSocial(app) {
                     return profile.visible === false || profile.sharingEnabled === false;
                 }).length;
                 dashboardEl.innerHTML = [
-                    { label: 'Conexoes', value: activeIds.length, hint: 'Vinculos ativos agora' },
-                    { label: 'Sem perfil publico', value: privateCount, hint: 'Conectados sem visao compartilhada' },
-                    { label: 'Enviadas', value: sentAll.length, hint: 'Reacoes que voce enviou' },
-                    { label: 'Recebidas', value: receivedAll.length, hint: 'Reacoes que chegaram para voce' }
-                ].map((card) => `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10">
-                    <p class="text-[10px] text-outline uppercase tracking-wider">${card.label}</p>
-                    <p class="mt-1 text-lg font-bold text-on-surface">${card.value}</p>
-                    <p class="mt-0.5 text-[10px] text-outline">${card.hint}</p>
+                    ['Conexoes', activeIds.length],
+                    ['Perfis privados', privateCount],
+                    ['Enviadas', sentAll.length],
+                    ['Recebidas', receivedAll.length]
+                ].map(([label, value]) => `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10">
+                    <p class="text-[10px] text-outline uppercase tracking-wider">${label}</p>
+                    <p class="mt-1 text-lg font-bold text-on-surface">${value}</p>
                 </div>`).join('');
             }
 

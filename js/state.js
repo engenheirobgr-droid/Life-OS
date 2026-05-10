@@ -780,6 +780,8 @@ factoryReset: async function() {
         ? mergeDeep(baseState, mockupOverrides)
         : baseState;
     
+      let cloudResetOk = false;
+      let cloudResetError = null;
       try {
         // ── Apaga imagens do Firestore ──────────────────────────────────────────
         try {
@@ -823,17 +825,25 @@ factoryReset: async function() {
         delete newCloudState.profile?.odysseyImages;
         newCloudState._lastUpdatedAt = Date.now();
         await this.withTimeout(setDoc(stateRef, newCloudState), 10000, 'firestore_reset');
+        cloudResetOk = true;
         // NÃO usa localStorage.clear() — bloqueado em ambientes sandbox/iframe
+      } catch (error) {
+        console.error('Erro ao resetar o sistema:', error);
+        cloudResetError = error;
+      }
+
+      // Finaliza reset local mesmo se a nuvem falhar, para funcionar em site/PC sem travar o fluxo.
+      if (cloudResetOk) {
         this.showNotification(
           useMockup
             ? 'App carregado com dados de exemplo. Explore à vontade!'
             : 'Sistema zerado. Iniciando o Onboarding...'
         );
-        setTimeout(() => window.location.reload(), 1800);
-      } catch (error) {
-        console.error('Erro ao resetar o sistema:', error);
-        alert('Houve um erro ao tentar apagar os dados da nuvem.');
+      } else {
+        alert('Dados locais zerados. Falha ao atualizar a nuvem agora; tente sincronizar novamente depois.');
+        console.warn('[Reset] Estado local resetado com falha na nuvem:', cloudResetError);
       }
+      setTimeout(() => window.location.reload(), 1800);
     },
 
 importFromExcel: async function(event) {
