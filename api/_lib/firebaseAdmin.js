@@ -27,4 +27,9 @@ function getFirestoreAdmin() {
   return admin.firestore(firebaseApp);
 }
 
-module.exports = { getFirestoreAdmin };
+function getAuthAdmin() {
+  const firebaseApp = getFirebaseAdminApp();
+  return admin.auth(firebaseApp);
+}
+
+module.exports = { getFirestoreAdmin, getAuthAdmin, getFirebaseAdminApp };

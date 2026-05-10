@@ -176,6 +176,31 @@ export function attachSocial(app) {
             }
         },
 
+        extractReceivedReactionsFromNotifications: function(items = []) {
+            const meUid = this.getActiveUserId();
+            return (Array.isArray(items) ? items : [])
+                .filter((entry) => entry?.type === 'reaction')
+                .map((entry) => ({
+                    id: String(entry.id || ''),
+                    sourceUid: String(entry.sourceUid || entry.payload?.sourceUid || entry.fromUid || ''),
+                    sourceName: String(entry.sourceName || entry.payload?.sourceName || 'Companheiro'),
+                    targetUid: String(entry.targetUid || meUid || ''),
+                    type: String(entry.reactionType || entry.payload?.reactionType || 'strength'),
+                    label: SOCIAL_REACTIONS[String(entry.reactionType || entry.payload?.reactionType || 'strength')]?.label || SOCIAL_REACTIONS.strength.label,
+                    contextType: String(entry.payload?.contextType || ''),
+                    contextId: String(entry.payload?.contextId || ''),
+                    contextTitle: String(entry.payload?.contextTitle || ''),
+                    receivedAt: String(entry.createdAt || '')
+                }))
+                .sort((a, b) => String(b.receivedAt || '').localeCompare(String(a.receivedAt || '')))
+                .slice(0, 80);
+        },
+
+        syncSocialReceivedReactionsFromNotifications: function(items = []) {
+            this.ensureSocialState();
+            window.sistemaVidaState.profile.social.reactions.received = this.extractReceivedReactionsFromNotifications(items);
+        },
+
         getSocialPublicProfileDocRef: function(userId = this.getActiveUserId()) {
             return doc(db, 'users', userId, 'public', 'profile');
         },
@@ -729,6 +754,10 @@ export function attachSocial(app) {
             const q = query(this.getSocialInboxCollectionRef(userId), orderBy('createdAt', 'desc'), limit(60));
             this._socialInboxUnsub = onSnapshot(q, async (snap) => {
                 this.ensureSocialState();
+                const previousItems = Array.isArray(window.sistemaVidaState.profile.social.notifications?.items)
+                    ? window.sistemaVidaState.profile.social.notifications.items
+                    : [];
+                const previousIds = new Set(previousItems.map((entry) => String(entry?.id || '')));
                 const items = [];
                 const toProcess = [];
                 snap.forEach((itemDoc) => {
@@ -780,21 +809,29 @@ export function attachSocial(app) {
                 }
                 
                 window.sistemaVidaState.profile.social.notifications.items = items;
-                window.sistemaVidaState.profile.social.reactions.received = items
-                    .filter((entry) => entry?.type === 'reaction')
-                    .map((entry) => ({
-                        id: String(entry.id || ''),
-                        sourceUid: String(entry.sourceUid || ''),
-                        sourceName: String(entry.sourceName || 'Companheiro'),
-                        type: String(entry.reactionType || 'strength'),
-                        label: SOCIAL_REACTIONS[String(entry.reactionType || 'strength')]?.label || SOCIAL_REACTIONS.strength.label,
-                        contextType: String(entry.payload?.contextType || ''),
-                        contextId: String(entry.payload?.contextId || ''),
-                        contextTitle: String(entry.payload?.contextTitle || ''),
-                        receivedAt: String(entry.createdAt || '')
-                    }))
-                    .sort((a, b) => String(b.receivedAt || '').localeCompare(String(a.receivedAt || '')))
-                    .slice(0, 80);
+                this.syncSocialReceivedReactionsFromNotifications(items);
+                const freshItems = items.filter((entry) => !previousIds.has(String(entry?.id || '')));
+                if (freshItems.length && window.sistemaVidaState.settings?.notificationsEnabled) {
+                    freshItems.forEach((entry) => {
+                        if (entry?.type === 'reaction') {
+                            const cfg = SOCIAL_REACTIONS[String(entry.reactionType || 'strength')] || SOCIAL_REACTIONS.strength;
+                            const ctx = entry.payload?.contextTitle ? ` em "${entry.payload.contextTitle}"` : '';
+                            this.showNotification({
+                                title: 'Life OS - Area Social',
+                                body: `${entry.sourceName || 'Companheiro'} enviou ${cfg.label.toLowerCase()} para voce${ctx}.`,
+                                tag: `lifeos-social-reaction-${String(entry.id || '')}`,
+                                url: '/?view=social'
+                            }, 'info');
+                        } else if (entry?.type === 'invite_request') {
+                            this.showNotification({
+                                title: 'Life OS - Area Social',
+                                body: `${entry.sourceName || 'Companheiro'} quer se conectar com voce.`,
+                                tag: `lifeos-social-invite-${String(entry.id || '')}`,
+                                url: '/?view=social'
+                            }, 'info');
+                        }
+                    });
+                }
                 this.renderAppNotificationCenter();
                 this.refreshSocialConnectionsSurface();
             }, (err) => {
@@ -1049,9 +1086,49 @@ export function attachSocial(app) {
                     contextTitle: reaction.contextTitle
                 }
             }, { merge: false });
+            await this.notifySocialReactionPush({
+                targetUid: uid,
+                reactionType: type,
+                contextType: reaction.contextType,
+                contextId: reaction.contextId,
+                contextTitle: reaction.contextTitle
+            });
             await this.persistSocialEngagement();
             this.renderSocialConnectionsPanel();
             this.showToast(`${SOCIAL_REACTIONS[type].label} enviado.`, 'success');
+        },
+
+        notifySocialReactionPush: async function({ targetUid, reactionType, contextType = '', contextId = '', contextTitle = '' } = {}) {
+            try {
+                const currentUser = auth.currentUser;
+                if (!currentUser || currentUser.isAnonymous || !targetUid) return;
+                const idToken = await currentUser.getIdToken();
+                const payload = {
+                    targetUid: String(targetUid || ''),
+                    reactionType: String(reactionType || 'strength'),
+                    sourceName: String(window.sistemaVidaState.profile?.name || 'Usuario'),
+                    contextType: String(contextType || ''),
+                    contextId: String(contextId || ''),
+                    contextTitle: String(contextTitle || '')
+                };
+                const endpoints = [
+                    '/api/social-reaction-push',
+                    'https://life-os-mu-ashy.vercel.app/api/social-reaction-push'
+                ];
+                for (const endpoint of endpoints) {
+                    try {
+                        const res = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${idToken}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        if (res.ok) return;
+                    } catch (_) {}
+                }
+            } catch (_) {}
         },
 
         getSocialChallengeWeekKey: function() {
@@ -1327,6 +1404,7 @@ export function attachSocial(app) {
             const notifications = Array.isArray(window.sistemaVidaState.profile.social.notifications?.items)
                 ? window.sistemaVidaState.profile.social.notifications.items
                 : [];
+            this.syncSocialReceivedReactionsFromNotifications(notifications);
             const pendingIncomingEvents = notifications.filter(item => item.type === 'invite_request' && item.status === 'pending');
 
             const list = document.getElementById('social-connections-list');
@@ -1370,13 +1448,14 @@ export function attachSocial(app) {
                     return profile.visible === false || profile.sharingEnabled === false;
                 }).length;
                 dashboardEl.innerHTML = [
-                    ['Conexoes', activeIds.length],
-                    ['Perfis privados', privateCount],
-                    ['Enviadas', sentAll.length],
-                    ['Recebidas', receivedAll.length]
-                ].map(([label, value]) => `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10">
-                    <p class="text-[10px] text-outline uppercase tracking-wider">${label}</p>
-                    <p class="mt-1 text-lg font-bold text-on-surface">${value}</p>
+                    { label: 'Conexoes', value: activeIds.length, hint: 'Vinculos ativos agora' },
+                    { label: 'Sem perfil publico', value: privateCount, hint: 'Conectados sem visao compartilhada' },
+                    { label: 'Enviadas', value: sentAll.length, hint: 'Reacoes que voce enviou' },
+                    { label: 'Recebidas', value: receivedAll.length, hint: 'Reacoes que chegaram para voce' }
+                ].map((card) => `<div class="rounded-xl bg-surface-container-low p-3 border border-outline-variant/10">
+                    <p class="text-[10px] text-outline uppercase tracking-wider">${card.label}</p>
+                    <p class="mt-1 text-lg font-bold text-on-surface">${card.value}</p>
+                    <p class="mt-0.5 text-[10px] text-outline">${card.hint}</p>
                 </div>`).join('');
             }
 
@@ -1490,7 +1569,12 @@ export function attachSocial(app) {
                         : [];
                     const receivedReactions = Array.isArray(window.sistemaVidaState.profile.social.reactions?.received)
                         ? window.sistemaVidaState.profile.social.reactions.received
-                            .filter((reaction) => reaction.sourceUid === uid)
+                            .filter((reaction) => {
+                                if (reaction.sourceUid === uid) return true;
+                                const profileName = String(profile.name || '').trim().toLowerCase();
+                                const sourceName = String(reaction.sourceName || '').trim().toLowerCase();
+                                return !!profileName && !!sourceName && profileName === sourceName;
+                            })
                             .map((reaction) => ({ direction: 'received', at: reaction.receivedAt || '', reaction }))
                         : [];
                     const connectionReactions = [...sentReactions, ...receivedReactions]

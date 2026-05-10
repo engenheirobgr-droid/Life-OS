@@ -111,6 +111,11 @@
             animation: fadeIn 0.4s ease-out forwards;
         }
 
+        @keyframes loadingLetterPulse {
+            0%, 100% { transform: translateY(0); opacity: 0.35; }
+            50% { transform: translateY(-5px); opacity: 1; }
+        }
+
         .glass-card {
             @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
         }
@@ -1400,18 +1405,18 @@
                 <div class="flex flex-col items-center justify-center min-h-[60vh] text-outline px-4" id="loading-placeholder">
                     <div class="w-full max-w-[300px] rounded-2xl border border-outline-variant/20 bg-surface-container-low/80 backdrop-blur-sm p-5 shadow-sm">
                         <div class="flex items-center justify-between mb-4">
-                            <div class="inline-flex items-center gap-2" aria-hidden="true">
-                                <span class="h-2.5 w-2.5 rounded-full bg-primary/80 animate-bounce [animation-delay:-0.3s]"></span>
-                                <span class="h-2.5 w-2.5 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.15s]"></span>
-                                <span class="h-2.5 w-2.5 rounded-full bg-primary/60 animate-bounce"></span>
+                            <div class="inline-flex items-center gap-1.5" aria-hidden="true">
+                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary" style="animation: loadingLetterPulse 1.1s ease-in-out infinite; animation-delay: 0s;">L</span>
+                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary" style="animation: loadingLetterPulse 1.1s ease-in-out infinite; animation-delay: 0.12s;">I</span>
+                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary" style="animation: loadingLetterPulse 1.1s ease-in-out infinite; animation-delay: 0.24s;">F</span>
+                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary" style="animation: loadingLetterPulse 1.1s ease-in-out infinite; animation-delay: 0.36s;">E</span>
+                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary" style="animation: loadingLetterPulse 1.1s ease-in-out infinite; animation-delay: 0.48s;">O</span>
+                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary" style="animation: loadingLetterPulse 1.1s ease-in-out infinite; animation-delay: 0.6s;">S</span>
                             </div>
                             <span class="material-symbols-outlined notranslate text-primary/80 text-[18px]">auto_awesome</span>
                         </div>
                         <p class="font-medium text-sm tracking-wide text-on-surface" id="loading-msg">Carregando sua jornada...</p>
                         <p class="text-[11px] text-outline mt-1">Preparando seus rituais e metas.</p>
-                        <div class="h-1.5 bg-outline-variant/20 rounded-full w-full overflow-hidden mt-4">
-                            <div class="h-full bg-primary/70 w-1/2 animate-pulse rounded-full"></div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -2734,7 +2739,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260509-ui-improvements-v157"></script>
+    <script type="module" src="app.js?v=20260509-ui-improvements-v158"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
