@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260510-focus-clock-v162';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260510-focus-clock-v162';
-import { attachNotifications } from './js/notifications.js?v=20260510-focus-clock-v162';
-import { attachCadence } from './js/cadence.js?v=20260510-focus-clock-v162';
-import { attachOnboarding } from './js/onboarding.js?v=20260510-focus-clock-v162';
-import { attachIdentity } from './js/identity.js?v=20260510-focus-clock-v162';
-import { attachHabits } from './js/habits.js?v=20260510-focus-clock-v162';
-import { attachStateModule } from './js/state.js?v=20260510-focus-clock-v162';
-import { attachRenderModule } from './js/render.js?v=20260510-focus-clock-v162';
-import { attachPlanningModule } from './js/planning.js?v=20260510-focus-clock-v162';
-import { attachGamificationModule } from './js/gamification.js?v=20260510-focus-clock-v162';
-import { attachSocial } from './js/social.js?v=20260510-focus-clock-v162';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260510-focus-clock-v163';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260510-focus-clock-v163';
+import { attachNotifications } from './js/notifications.js?v=20260510-focus-clock-v163';
+import { attachCadence } from './js/cadence.js?v=20260510-focus-clock-v163';
+import { attachOnboarding } from './js/onboarding.js?v=20260510-focus-clock-v163';
+import { attachIdentity } from './js/identity.js?v=20260510-focus-clock-v163';
+import { attachHabits } from './js/habits.js?v=20260510-focus-clock-v163';
+import { attachStateModule } from './js/state.js?v=20260510-focus-clock-v163';
+import { attachRenderModule } from './js/render.js?v=20260510-focus-clock-v163';
+import { attachPlanningModule } from './js/planning.js?v=20260510-focus-clock-v163';
+import { attachGamificationModule } from './js/gamification.js?v=20260510-focus-clock-v163';
+import { attachSocial } from './js/social.js?v=20260510-focus-clock-v163';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -200,7 +200,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260510-focus-clock-v162',
+    appBuildVersion: '20260510-focus-clock-v163',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -2533,7 +2533,8 @@ renderProfileChrome: function() {
             // AbortController timeout so fetch never hangs forever
             const ctrl = new AbortController();
             const timer = setTimeout(() => ctrl.abort(), 8000);
-            const response = await fetch(`${this.config.viewsPath}${viewName}.html`, { signal: ctrl.signal });
+            const viewVersion = encodeURIComponent(this.appBuildVersion || 'dev');
+            const response = await fetch(`${this.config.viewsPath}${viewName}.html?v=${viewVersion}`, { signal: ctrl.signal });
             clearTimeout(timer);
             html = response.ok ? await response.text() : null;
         } catch (error) {
