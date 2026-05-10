@@ -466,6 +466,7 @@ export function attachSocial(app) {
                 invite_request: { group: 'social', title: 'Convite recebido', icon: 'mail', tone: 'text-primary' },
                 reaction: { group: 'social', title: 'Reacao recebida', icon: 'favorite', tone: 'text-primary' },
                 social_activity: { group: 'social', title: 'Conquista da conexao', icon: 'emoji_events', tone: 'text-primary' },
+                social_profile_sync: { group: 'social', title: 'Perfil atualizado', icon: 'sync', tone: 'text-primary' },
                 challenge: { group: 'social', title: 'Desafio social', icon: 'flag', tone: 'text-primary' },
                 xp_gain: { group: 'app', title: 'XP ganho', icon: 'bolt', tone: 'text-primary' },
                 level_up: { group: 'app', title: 'Novo nivel', icon: 'trending_up', tone: 'text-primary' },
@@ -474,6 +475,33 @@ export function attachSocial(app) {
                 ritual: { group: 'app', title: 'Rito importante', icon: 'event_repeat', tone: 'text-primary' }
             };
             return meta[key] || { group: 'app', title: 'Atualizacao do app', icon: 'notifications', tone: 'text-primary' };
+        },
+
+        broadcastSocialProfileSyncToConnections: async function(reason = 'profile_updated') {
+            this.ensureSocialState();
+            const sourceUid = this.getActiveUserId();
+            if (!sourceUid || sourceUid === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return false;
+            const connectionIds = this.getSocialActiveConnectionIds();
+            if (!connectionIds.length) return false;
+            const createdAt = new Date().toISOString();
+            await Promise.all(connectionIds.map(async (targetUid) => {
+                const eventId = `social_profile_sync_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                try {
+                    await setDoc(this.getSocialInboxDocRef(targetUid, eventId), {
+                        type: 'social_profile_sync',
+                        sourceUid,
+                        sourceName: window.sistemaVidaState.profile?.name || 'Usuario',
+                        targetUid,
+                        status: 'new',
+                        readAt: '',
+                        createdAt,
+                        payload: { reason: String(reason || 'profile_updated') }
+                    }, { merge: false });
+                } catch (err) {
+                    console.warn('[SOCIAL] Falha ao notificar sync de perfil para conexao:', err);
+                }
+            }));
+            return true;
         },
 
         broadcastSocialActivityToConnections: async function(activity = {}) {
@@ -687,12 +715,19 @@ export function attachSocial(app) {
             this.refreshSocialSurface();
         },
 
-        setSocialFeatureEnabled: function(enabled) {
+        setSocialFeatureEnabled: async function(enabled) {
             this.ensureSocialState();
             const nextValue = !!enabled;
+            const social = window.sistemaVidaState.profile.social || {};
+            if (!nextValue && social.sharingEnabled) {
+                await this.deleteSocialPublicProfile();
+                await this.broadcastSocialProfileSyncToConnections('feature_disabled');
+            }
             window.sistemaVidaState.settings.features.social = nextValue;
             if (!nextValue) {
                 this.stopSocialConnectionsListener();
+            } else {
+                this.startSocialConnectionsListener();
             }
             this.saveState(true);
             this.refreshSocialSurface();
@@ -763,7 +798,7 @@ export function attachSocial(app) {
                 snap.forEach((itemDoc) => {
                     const data = itemDoc.data();
                     items.push({ id: itemDoc.id, ...data });
-                    if (!data.processed && (data.type === 'invite_decision' || data.type === 'connection_removed')) {
+                    if (!data.processed && (data.type === 'invite_decision' || data.type === 'connection_removed' || data.type === 'social_profile_sync')) {
                         toProcess.push({ id: itemDoc.id, ...data });
                     }
                 });
@@ -773,6 +808,7 @@ export function attachSocial(app) {
                         const meSnap = await getDoc(this.getSocialConnectionsDocRef(userId));
                         const meConnections = this.normalizeSocialConnectionMap(meSnap.exists() ? (meSnap.data()?.connections || {}) : {});
                         let changed = false;
+                        let refreshProfilesRequested = false;
                         const nowIso = new Date().toISOString();
                         
                         for (const evt of toProcess) {
@@ -794,6 +830,8 @@ export function attachSocial(app) {
                                     removedAt: nowIso
                                 };
                                 changed = true;
+                            } else if (evt.type === 'social_profile_sync') {
+                                refreshProfilesRequested = true;
                             }
                             await setDoc(this.getSocialInboxDocRef(userId, evt.id), { processed: true }, { merge: true });
                         }
@@ -801,6 +839,8 @@ export function attachSocial(app) {
                         if (changed) {
                             await setDoc(this.getSocialConnectionsDocRef(userId), { connections: meConnections, updatedAt: serverTimestamp() }, { merge: true });
                             window.sistemaVidaState.profile.social.connections = meConnections;
+                        }
+                        if (changed || refreshProfilesRequested) {
                             await this.refreshSocialConnectionProfiles();
                         }
                     } catch (err) {
@@ -1216,9 +1256,13 @@ export function attachSocial(app) {
             social.sharingEnabled = !social.sharingEnabled;
             if (social.sharingEnabled) {
                 const published = await this.publishSocialProfile();
-                if (published) this.showToast('Compartilhamento ativado.', 'success');
+                if (published) {
+                    await this.broadcastSocialProfileSyncToConnections('sharing_enabled');
+                    this.showToast('Compartilhamento ativado.', 'success');
+                }
             } else {
                 await this.deleteSocialPublicProfile();
+                await this.broadcastSocialProfileSyncToConnections('sharing_disabled');
                 this.showToast('Compartilhamento desativado e perfil publico removido.', 'success');
             }
             this.saveState(true);
@@ -1231,6 +1275,7 @@ export function attachSocial(app) {
             window.sistemaVidaState.profile.social.visibility[key] = !!enabled;
             if (window.sistemaVidaState.profile.social.sharingEnabled && this.isSocialFeatureEnabled()) {
                 await this.publishSocialProfile({ silent: true });
+                await this.broadcastSocialProfileSyncToConnections('visibility_updated');
             }
             this.saveState(true);
             this.renderSocialPrivacyPanel();

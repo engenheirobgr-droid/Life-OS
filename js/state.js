@@ -1,4 +1,4 @@
-import { auth, getDoc, setDoc } from './firebase.js';
+import { auth, db, getDoc, setDoc, deleteDoc, getDocs, collection } from './firebase.js';
 
 export function attachStateModule(app) {
     Object.assign(app, {
@@ -590,6 +590,8 @@ factoryReset: async function() {
       const useMockup = window.confirm(
         'Como deseja reiniciar?\n\nOK → Carregar dados de exemplo (recomendado para explorar o app)\nCancelar → Começar completamente do zero (Onboarding)'
       );
+      const previousSocialState = window.sistemaVidaState?.profile?.social || {};
+      const previousInviteCode = String(previousSocialState?.invites?.lastCode || '').trim().toUpperCase();
     
       // ── Estado base virgem ──────────────────────────────────────────────────
       const baseState = {
@@ -819,6 +821,36 @@ factoryReset: async function() {
         try { if (this._imagesSyncUnsub) { this._imagesSyncUnsub(); this._imagesSyncUnsub = null; } } catch (_) {}
         // ── Grava o novo estado SEM merge ──
         await this.getAuthReady();
+        const resetUserId = this.getActiveUserId();
+        const isCloudUser = !!(resetUserId && resetUserId !== 'guest' && !auth.currentUser?.isAnonymous);
+        if (isCloudUser) {
+          try {
+            // Limpeza de documentos sociais do próprio usuário
+            const cleanupRefs = [
+              this.getSocialPublicProfileDocRef ? this.getSocialPublicProfileDocRef(resetUserId) : null,
+              this.getSocialPrivateDocRef ? this.getSocialPrivateDocRef(resetUserId) : null,
+              this.getSocialConnectionsDocRef ? this.getSocialConnectionsDocRef(resetUserId) : null,
+              this.getSocialEngagementDocRef ? this.getSocialEngagementDocRef(resetUserId) : null
+            ].filter(Boolean);
+            await Promise.all(cleanupRefs.map(async (ref) => {
+              try { await deleteDoc(ref); } catch (_) {}
+            }));
+
+            // Limpa inbox social (subcoleção)
+            const inboxCol = collection(db, 'users', resetUserId, 'private', 'social', 'inbox');
+            const inboxSnap = await getDocs(inboxCol);
+            await Promise.all(inboxSnap.docs.map(async (docSnap) => {
+              try { await deleteDoc(docSnap.ref); } catch (_) {}
+            }));
+
+            // Remove código de convite antigo, se existir
+            if (previousInviteCode && this.getSocialInviteCodeDocRef) {
+              try { await deleteDoc(this.getSocialInviteCodeDocRef(previousInviteCode)); } catch (_) {}
+            }
+          } catch (socialCleanupErr) {
+            console.warn('[Reset] Falha parcial ao limpar dados sociais na nuvem:', socialCleanupErr);
+          }
+        }
         const stateRef = this.getStateDocRef();
         const newCloudState = JSON.parse(JSON.stringify(window.sistemaVidaState));
         delete newCloudState.profile?.avatarUrl;

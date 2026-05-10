@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260509-ui-improvements-v159';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260509-ui-improvements-v159';
-import { attachNotifications } from './js/notifications.js?v=20260509-ui-improvements-v159';
-import { attachCadence } from './js/cadence.js?v=20260509-ui-improvements-v159';
-import { attachOnboarding } from './js/onboarding.js?v=20260509-ui-improvements-v159';
-import { attachIdentity } from './js/identity.js?v=20260509-ui-improvements-v159';
-import { attachHabits } from './js/habits.js?v=20260509-ui-improvements-v159';
-import { attachStateModule } from './js/state.js?v=20260509-ui-improvements-v159';
-import { attachRenderModule } from './js/render.js?v=20260509-ui-improvements-v159';
-import { attachPlanningModule } from './js/planning.js?v=20260509-ui-improvements-v159';
-import { attachGamificationModule } from './js/gamification.js?v=20260509-ui-improvements-v159';
-import { attachSocial } from './js/social.js?v=20260509-ui-improvements-v159';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260509-ui-improvements-v160';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260509-ui-improvements-v160';
+import { attachNotifications } from './js/notifications.js?v=20260509-ui-improvements-v160';
+import { attachCadence } from './js/cadence.js?v=20260509-ui-improvements-v160';
+import { attachOnboarding } from './js/onboarding.js?v=20260509-ui-improvements-v160';
+import { attachIdentity } from './js/identity.js?v=20260509-ui-improvements-v160';
+import { attachHabits } from './js/habits.js?v=20260509-ui-improvements-v160';
+import { attachStateModule } from './js/state.js?v=20260509-ui-improvements-v160';
+import { attachRenderModule } from './js/render.js?v=20260509-ui-improvements-v160';
+import { attachPlanningModule } from './js/planning.js?v=20260509-ui-improvements-v160';
+import { attachGamificationModule } from './js/gamification.js?v=20260509-ui-improvements-v160';
+import { attachSocial } from './js/social.js?v=20260509-ui-improvements-v160';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260509-ui-improvements-v159',
+    appBuildVersion: '20260509-ui-improvements-v160',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -6955,7 +6955,6 @@ onAuthStateChanged(auth, (user) => {
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
-
 
 
 
