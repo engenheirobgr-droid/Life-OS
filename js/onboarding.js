@@ -633,6 +633,7 @@ onboardingComplete: function() {
         this.onboardingSaveCurrentStep(false);
         this.ensureOnboardingStarterSetup();
         window.sistemaVidaState.onboardingComplete = true;
+        this.setForceOnboardingAfterReset?.(false);
         this.saveState();
         this.navigate('hoje');
         setTimeout(() => {

@@ -380,9 +380,11 @@ loadState: async function() {
         const localHasPending = !!(localData && localData._pendingLocalChanges);
         const localTs = Number(localData?._lastUpdatedAt || 0);
         const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
+        const forceOnboardingReset = this.isForceOnboardingAfterReset?.() === true;
         const shouldKeepLocal = !!localData && (
             !cloudData ||
-            (localHasPending && localTs >= cloudTs)
+            (localHasPending && localTs >= cloudTs) ||
+            forceOnboardingReset
         );
         let preferred = cloudData || localData;
         if (shouldKeepLocal) preferred = localData;
@@ -398,6 +400,7 @@ loadState: async function() {
         else console.log('[SYNC] Using cloud state (source of truth).');
 
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
+        if (forceOnboardingReset) this.applyForcedOnboardingResetState?.();
         if (forceCloudLoad && cloudData) {
             if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
             window.sistemaVidaState.profile.avatarUrl = '';
@@ -597,7 +600,7 @@ factoryReset: async function() {
       const baseState = {
         stateSchemaVersion: this.getCurrentStateSchemaVersion ? this.getCurrentStateSchemaVersion() : 2,
         profile: {
-          name: 'Viajante', level: 1, xp: 0, values: [], legacy: '',
+          name: '', level: 1, xp: 0, values: [], legacy: '',
           ikigai: { missao: '', vocacao: '', paixao: '', profissao: '', love: '', good: '', need: '', paid: '', sintese: '', sinteseResumo: '' },
           legacyObj: { familia: '', profissao: '', mundo: '', familiaResumo: '', profissaoResumo: '', mundoResumo: '' },
           vision: { saude: '', carreira: '', intelecto: '', quote: '', saudeResumo: '', carreiraResumo: '', intelectoResumo: '' },
@@ -781,6 +784,8 @@ factoryReset: async function() {
       window.sistemaVidaState = useMockup
         ? mergeDeep(baseState, mockupOverrides)
         : baseState;
+      try { this.setForceOnboardingAfterReset?.(!useMockup); } catch (_) {}
+      try { this.localSet('lifeos_onboarding_complete', useMockup ? '1' : '0'); } catch (_) {}
     
       let cloudResetOk = false;
       let cloudResetError = null;
@@ -822,6 +827,11 @@ factoryReset: async function() {
         // ── Grava o novo estado SEM merge ──
         await this.getAuthReady();
         const resetUserId = this.getActiveUserId();
+        try {
+          window.sistemaVidaState._pendingLocalChanges = !useMockup;
+          window.sistemaVidaState._lastUpdatedAt = this.getSafeMonotonicTs ? this.getSafeMonotonicTs() : Date.now();
+          this.persistLocalMirror(resetUserId);
+        } catch (_) {}
         const isCloudUser = !!(resetUserId && resetUserId !== 'guest' && !auth.currentUser?.isAnonymous);
         if (isCloudUser) {
           try {

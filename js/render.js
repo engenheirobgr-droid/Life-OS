@@ -1423,7 +1423,7 @@ render: {
             // e Step 1 (criar/entrar conta) — evita loop em quem já fez login mas
             // ainda não completou as etapas de Roda da Vida / Valores / Propósito.
             const isAccount = app.isRealAccount();
-            const startStep = isAccount ? 2 : 0;
+            const startStep = app.isForceOnboardingAfterReset?.() ? 0 : (isAccount ? 2 : 0);
             app.onboardingGoTo(startStep);
         },
         painel: function() {

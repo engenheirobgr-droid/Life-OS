@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260509-ui-improvements-v160';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260509-ui-improvements-v160';
-import { attachNotifications } from './js/notifications.js?v=20260509-ui-improvements-v160';
-import { attachCadence } from './js/cadence.js?v=20260509-ui-improvements-v160';
-import { attachOnboarding } from './js/onboarding.js?v=20260509-ui-improvements-v160';
-import { attachIdentity } from './js/identity.js?v=20260509-ui-improvements-v160';
-import { attachHabits } from './js/habits.js?v=20260509-ui-improvements-v160';
-import { attachStateModule } from './js/state.js?v=20260509-ui-improvements-v160';
-import { attachRenderModule } from './js/render.js?v=20260509-ui-improvements-v160';
-import { attachPlanningModule } from './js/planning.js?v=20260509-ui-improvements-v160';
-import { attachGamificationModule } from './js/gamification.js?v=20260509-ui-improvements-v160';
-import { attachSocial } from './js/social.js?v=20260509-ui-improvements-v160';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260510-onboarding-reset-v161';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260510-onboarding-reset-v161';
+import { attachNotifications } from './js/notifications.js?v=20260510-onboarding-reset-v161';
+import { attachCadence } from './js/cadence.js?v=20260510-onboarding-reset-v161';
+import { attachOnboarding } from './js/onboarding.js?v=20260510-onboarding-reset-v161';
+import { attachIdentity } from './js/identity.js?v=20260510-onboarding-reset-v161';
+import { attachHabits } from './js/habits.js?v=20260510-onboarding-reset-v161';
+import { attachStateModule } from './js/state.js?v=20260510-onboarding-reset-v161';
+import { attachRenderModule } from './js/render.js?v=20260510-onboarding-reset-v161';
+import { attachPlanningModule } from './js/planning.js?v=20260510-onboarding-reset-v161';
+import { attachGamificationModule } from './js/gamification.js?v=20260510-onboarding-reset-v161';
+import { attachSocial } from './js/social.js?v=20260510-onboarding-reset-v161';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -199,7 +199,8 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260509-ui-improvements-v160',
+    appBuildVersion: '20260510-onboarding-reset-v161',
+    forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
@@ -311,6 +312,24 @@ const app = {
             const completed = !!window.sistemaVidaState?.onboardingComplete;
             this.localSet('lifeos_onboarding_complete', completed ? '1' : '0', userId);
         } catch (_) {}
+    },
+    isForceOnboardingAfterReset: function() {
+        try { return localStorage.getItem(this.forceOnboardingResetKey) === '1'; } catch (_) {}
+        return false;
+    },
+    setForceOnboardingAfterReset: function(enabled) {
+        try {
+            if (enabled) localStorage.setItem(this.forceOnboardingResetKey, '1');
+            else localStorage.removeItem(this.forceOnboardingResetKey);
+        } catch (_) {}
+    },
+    applyForcedOnboardingResetState: function() {
+        if (!this.isForceOnboardingAfterReset()) return false;
+        if (!window.sistemaVidaState) return false;
+        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+        window.sistemaVidaState.onboardingComplete = false;
+        try { this.localSet('lifeos_onboarding_complete', '0'); } catch (_) {}
+        return true;
     },
     updateSyncBadge: function(state) {
         // state: 'ok' | 'error' | 'syncing' | 'offline'
@@ -2035,6 +2054,7 @@ openAvatarPicker: function() {
                 console.log('[SYNC] Real-time update received from cloud');
                 self.updateSyncBadge('ok');
                 window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remoteData);
+                app.applyForcedOnboardingResetState();
                 if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
                 window.sistemaVidaState._lastUpdatedAt = Number(remoteData?._lastUpdatedAt || window.sistemaVidaState._lastUpdatedAt || Date.now());
                 app.normalizeDimensionsState();
@@ -2085,6 +2105,7 @@ openAvatarPicker: function() {
                             if (remoteTs <= localTs) return;
                             console.log('[SYNC] Periodic pull: applying newer cloud state (remoteTs=' + remoteTs + ')');
                             window.sistemaVidaState = app.mergeDeep(window.sistemaVidaState, remote);
+                            app.applyForcedOnboardingResetState();
                             window.sistemaVidaState._lastUpdatedAt = remoteTs;
                             if (window.sistemaVidaState._pendingLocalChanges) window.sistemaVidaState._pendingLocalChanges = false;
                             app.normalizeDimensionsState();
@@ -2470,6 +2491,7 @@ renderProfileChrome: function() {
         } catch (_) {}
 
         // Always navigate — even if something above threw
+        this.applyForcedOnboardingResetState();
         if (!window.sistemaVidaState.onboardingComplete) {
             this.switchView('onboarding');
         } else {
