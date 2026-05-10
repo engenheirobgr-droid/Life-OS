@@ -1284,14 +1284,15 @@ renderDeepWorkClockVisual: function(options = {}) {
         }
 
         if (style === 'tree') {
-            const trunkScale = 0.35 + pct * 0.65;
-            const canopyScale = 0.45 + pct * 0.55;
+            const trunkScale = 0.32 + pct * 0.68;
+            const canopyScale = 0.38 + pct * 0.62;
+            const groundLift = (1 - pct) * 4;
             const fruitCount = canCompleteSelectedMicro || mode === 'break' ? 5 : Math.min(5, Math.floor(pct * 6));
             const fruitPoints = [
-                [48, 42], [65, 35], [78, 49], [58, 57], [72, 64]
+                [50, 42], [65, 35], [78, 47], [58, 55], [72, 61]
             ];
             const fruits = fruitPoints.map(([cx, cy], idx) => `
-                <circle cx="${cx}" cy="${cy}" r="${idx < fruitCount ? 3.6 : 2.2}" fill="${idx < fruitCount ? 'var(--md-sys-color-tertiary)' : 'var(--md-sys-color-outline-variant)'}" opacity="${idx < fruitCount ? '0.95' : '0.35'}"></circle>
+                <circle cx="${cx}" cy="${cy}" r="${idx < fruitCount ? 3.2 : 1.8}" fill="${idx < fruitCount ? 'var(--md-sys-color-tertiary)' : 'var(--md-sys-color-outline-variant)'}" opacity="${idx < fruitCount ? '0.95' : '0.25'}"></circle>
             `).join('');
             const waterOpacity = mode === 'break' ? 0.95 : (isPaused ? 0.5 : 0.16);
             const rootsOpacity = mode === 'break' ? 0.75 : 0.28;
@@ -1299,23 +1300,46 @@ renderDeepWorkClockVisual: function(options = {}) {
                 <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-4 text-center shadow-inner overflow-hidden">
                     <div class="relative mx-auto h-52 w-full max-w-[18rem]">
                         <svg viewBox="0 0 120 120" class="h-full w-full" role="img" aria-label="Arvore de foco ${pctLabel}">
-                            <rect x="8" y="92" width="104" height="10" rx="5" fill="var(--md-sys-color-primary)" opacity="0.08"></rect>
-                            <path d="M41 95 C52 86 67 86 79 95" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="2" opacity="${rootsOpacity}"></path>
-                            <path d="M48 98 C59 91 63 91 72 98" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="1.5" opacity="${rootsOpacity}"></path>
-                            <g transform="translate(60 93) scale(1 ${trunkScale.toFixed(3)}) translate(-60 -93)">
-                                <path d="M54 93 C55 77 56 63 60 51 C64 63 66 77 67 93 Z" fill="var(--md-sys-color-primary)" opacity="0.68"></path>
-                                <path d="M60 64 C53 58 48 54 42 49" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="3" stroke-linecap="round" opacity="0.58"></path>
-                                <path d="M62 62 C69 55 75 52 84 47" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="3" stroke-linecap="round" opacity="0.58"></path>
+                            <defs>
+                                <radialGradient id="deep-work-tree-sky" cx="36%" cy="24%" r="70%">
+                                    <stop offset="0%" stop-color="var(--md-sys-color-tertiary)" stop-opacity="0.20"></stop>
+                                    <stop offset="62%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.08"></stop>
+                                    <stop offset="100%" stop-color="var(--md-sys-color-surface-container-lowest)" stop-opacity="0.92"></stop>
+                                </radialGradient>
+                                <linearGradient id="deep-work-tree-soil" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.40"></stop>
+                                    <stop offset="100%" stop-color="var(--md-sys-color-on-surface)" stop-opacity="0.28"></stop>
+                                </linearGradient>
+                                <linearGradient id="deep-work-tree-leaf" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="var(--md-sys-color-tertiary)" stop-opacity="0.82"></stop>
+                                    <stop offset="100%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.92"></stop>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="60" cy="58" r="48" fill="url(#deep-work-tree-sky)"></circle>
+                            <circle cx="60" cy="58" r="48" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="2" opacity="0.20"></circle>
+                            <circle cx="92" cy="26" r="6" fill="var(--md-sys-color-tertiary)" opacity="${0.35 + pct * 0.45}"></circle>
+                            <g transform="translate(0 ${groundLift.toFixed(2)})">
+                                <ellipse cx="60" cy="85" rx="33" ry="9" fill="var(--md-sys-color-primary)" opacity="0.10"></ellipse>
+                                <path d="M29 78 C38 69 82 69 91 78 C88 93 78 101 60 101 C42 101 32 93 29 78Z" fill="url(#deep-work-tree-soil)"></path>
+                                <path d="M32 79 C43 86 76 86 88 79" fill="none" stroke="var(--md-sys-color-surface-container-lowest)" stroke-width="1.2" opacity="0.38"></path>
+                                <path d="M43 84 C51 81 70 81 78 84" fill="none" stroke="var(--md-sys-color-surface-container-lowest)" stroke-width="1" opacity="0.28"></path>
+                            </g>
+                            <path d="M43 84 C52 78 68 78 77 84" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="1.6" opacity="${rootsOpacity}"></path>
+                            <path d="M50 88 C57 84 64 84 71 88" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="1.2" opacity="${rootsOpacity}"></path>
+                            <g transform="translate(60 82) scale(1 ${trunkScale.toFixed(3)}) translate(-60 -82)">
+                                <path d="M56 82 C56.5 70 57.5 59 60 48 C63 59 64.5 70 65 82 Z" fill="var(--md-sys-color-primary)" opacity="0.74"></path>
+                                <path d="M60 58 C54 55 49 52 45 48" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="2.4" stroke-linecap="round" opacity="0.56"></path>
+                                <path d="M61 57 C68 53 73 50 79 45" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="2.4" stroke-linecap="round" opacity="0.56"></path>
                             </g>
                             <g transform="translate(62 54) scale(${canopyScale.toFixed(3)}) translate(-62 -54)" class="${activeMotion ? 'deep-work-tree-breathe' : ''}">
-                                <circle cx="47" cy="52" r="17" fill="var(--md-sys-color-primary)" opacity="0.18"></circle>
-                                <circle cx="64" cy="42" r="21" fill="var(--md-sys-color-primary)" opacity="0.24"></circle>
-                                <circle cx="79" cy="55" r="18" fill="var(--md-sys-color-tertiary)" opacity="0.20"></circle>
+                                <path d="M63 22 L82 52 H71 L87 74 H39 L53 54 H43 Z" fill="url(#deep-work-tree-leaf)" opacity="0.92"></path>
+                                <path d="M63 30 L75 50 H68 L78 64 H48 L58 51 H51 Z" fill="var(--md-sys-color-surface-container-lowest)" opacity="0.18"></path>
+                                <path d="M63 22 L82 52 H71 L87 74 H39 L53 54 H43 Z" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="1.2" opacity="0.22"></path>
                                 ${fruits}
                             </g>
                             <g opacity="${waterOpacity}">
-                                <path d="M98 85 C102 79 106 79 110 85 C110 90 107 94 104 94 C101 94 98 90 98 85Z" fill="var(--md-sys-color-tertiary)" opacity="0.45"></path>
-                                <path d="M15 84 C18 79 21 79 24 84 C24 88 22 91 19.5 91 C17 91 15 88 15 84Z" fill="var(--md-sys-color-tertiary)" opacity="0.32"></path>
+                                <path d="M95 80 C99 74 103 74 107 80 C107 85 104 89 101 89 C98 89 95 85 95 80Z" fill="var(--md-sys-color-tertiary)" opacity="0.42"></path>
+                                <path d="M18 78 C21 73 24 73 27 78 C27 82 25 85 22.5 85 C20 85 18 82 18 78Z" fill="var(--md-sys-color-tertiary)" opacity="0.30"></path>
                             </g>
                         </svg>
                         <div class="absolute inset-x-0 top-2 text-center">
