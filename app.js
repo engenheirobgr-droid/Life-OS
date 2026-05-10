@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260510-onboarding-reset-v161';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260510-onboarding-reset-v161';
-import { attachNotifications } from './js/notifications.js?v=20260510-onboarding-reset-v161';
-import { attachCadence } from './js/cadence.js?v=20260510-onboarding-reset-v161';
-import { attachOnboarding } from './js/onboarding.js?v=20260510-onboarding-reset-v161';
-import { attachIdentity } from './js/identity.js?v=20260510-onboarding-reset-v161';
-import { attachHabits } from './js/habits.js?v=20260510-onboarding-reset-v161';
-import { attachStateModule } from './js/state.js?v=20260510-onboarding-reset-v161';
-import { attachRenderModule } from './js/render.js?v=20260510-onboarding-reset-v161';
-import { attachPlanningModule } from './js/planning.js?v=20260510-onboarding-reset-v161';
-import { attachGamificationModule } from './js/gamification.js?v=20260510-onboarding-reset-v161';
-import { attachSocial } from './js/social.js?v=20260510-onboarding-reset-v161';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260510-focus-clock-v162';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260510-focus-clock-v162';
+import { attachNotifications } from './js/notifications.js?v=20260510-focus-clock-v162';
+import { attachCadence } from './js/cadence.js?v=20260510-focus-clock-v162';
+import { attachOnboarding } from './js/onboarding.js?v=20260510-focus-clock-v162';
+import { attachIdentity } from './js/identity.js?v=20260510-focus-clock-v162';
+import { attachHabits } from './js/habits.js?v=20260510-focus-clock-v162';
+import { attachStateModule } from './js/state.js?v=20260510-focus-clock-v162';
+import { attachRenderModule } from './js/render.js?v=20260510-focus-clock-v162';
+import { attachPlanningModule } from './js/planning.js?v=20260510-focus-clock-v162';
+import { attachGamificationModule } from './js/gamification.js?v=20260510-focus-clock-v162';
+import { attachSocial } from './js/social.js?v=20260510-focus-clock-v162';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -186,6 +186,7 @@ window.sistemaVidaState = {
     settings: {
         notificationsEnabled: false,
         theme: 'auto',
+        deepWorkClockStyle: 'classic',
         features: { social: false }
     },
     cycleStartDate: new Date(new Date(new Date().setDate(new Date().getDate() - 21)).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0],
@@ -199,7 +200,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260510-onboarding-reset-v161',
+    appBuildVersion: '20260510-focus-clock-v162',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -6683,6 +6684,14 @@ ensureNotesState: function() {
         dw.targetSec = safeMinutes * 60;
         dw.remainingSec = dw.targetSec;
         this.renderDeepWorkPanel();
+    },
+
+    setDeepWorkClockStyle: function(style) {
+        this.ensureSettingsState();
+        const safeStyle = ['classic', 'ring', 'tree'].includes(style) ? style : 'classic';
+        window.sistemaVidaState.settings.deepWorkClockStyle = safeStyle;
+        this.renderDeepWorkPanel();
+        this.saveState(true);
     },
 
     toggleDeepWorkPause: function() {

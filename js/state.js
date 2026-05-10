@@ -173,6 +173,9 @@ ensureSettingsState: function() {
         if (typeof window.sistemaVidaState.settings.soundEnabled !== 'boolean') {
             window.sistemaVidaState.settings.soundEnabled = false;
         }
+        if (!['classic', 'ring', 'tree'].includes(window.sistemaVidaState.settings.deepWorkClockStyle)) {
+            window.sistemaVidaState.settings.deepWorkClockStyle = 'classic';
+        }
         if (typeof window.sistemaVidaState.profile.avatarUrl !== 'string') {
             window.sistemaVidaState.profile.avatarUrl = '';
         }
@@ -644,6 +647,7 @@ factoryReset: async function() {
         settings: {
           notificationsEnabled: false,
           theme: 'auto',
+          deepWorkClockStyle: 'classic',
           features: { social: false }
         },
         onboardingComplete: false

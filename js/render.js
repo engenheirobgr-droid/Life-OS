@@ -1235,8 +1235,112 @@ renderTimeline: function() {
           </div>`;
     },
 
+renderDeepWorkClockVisual: function(options = {}) {
+        const {
+            style = 'classic',
+            timeText = '90:00',
+            phaseText = 'Bloco',
+            mode = 'focus',
+            isRunning = false,
+            isPaused = false,
+            progress = 0,
+            hasSelectedMicro = false,
+            canCompleteSelectedMicro = false
+        } = options;
+        const pct = Math.max(0, Math.min(1, Number(progress) || 0));
+        const pctLabel = `${Math.round(pct * 100)}%`;
+        const phaseLabel = mode === 'focus' ? 'Bloco' : 'Pausa';
+        const escapedTime = this.escapeHtml(timeText);
+        const escapedPhase = this.escapeHtml(phaseText || phaseLabel);
+        const activeMotion = isRunning && !isPaused;
+        const timerHtml = `<p id="deep-work-timer" class="mt-2 text-5xl md:text-6xl leading-none font-headline italic text-primary tabular-nums">${escapedTime}</p>`;
+        const phaseHtml = `<p id="deep-work-phase" class="mt-2 text-[11px] uppercase tracking-[0.12em] text-on-surface-variant">${escapedPhase}</p>`;
+
+        if (style === 'ring') {
+            const dash = 314;
+            const offset = Math.round(dash * (1 - pct));
+            return `
+                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-5 text-center shadow-inner">
+                    <div class="relative mx-auto h-48 w-48 max-w-full">
+                        <svg viewBox="0 0 120 120" class="h-full w-full" role="img" aria-label="Progresso do bloco ${pctLabel}">
+                            <defs>
+                                <linearGradient id="deep-work-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.95"></stop>
+                                    <stop offset="100%" stop-color="var(--md-sys-color-tertiary)" stop-opacity="0.85"></stop>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="60" cy="60" r="50" fill="none" stroke="var(--md-sys-color-surface-container-highest)" stroke-width="9"></circle>
+                            <circle cx="60" cy="60" r="50" fill="none" stroke="url(#deep-work-ring-gradient)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${dash}" stroke-dashoffset="${offset}" transform="rotate(-90 60 60)" class="${activeMotion ? 'deep-work-ring-pulse' : ''}"></circle>
+                            <path d="M60 18 C74 34 96 42 96 64 C96 86 78 102 60 102 C42 102 24 86 24 64 C24 42 46 34 60 18Z" fill="var(--md-sys-color-primary)" opacity="0.055"></path>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">${mode === 'break' ? 'Recuperacao' : 'Tempo restante'}</p>
+                            ${timerHtml}
+                            ${phaseHtml}
+                        </div>
+                    </div>
+                    <p class="mt-2 text-[11px] text-outline">${mode === 'break' ? 'Descanso alimenta o proximo bloco.' : `Progresso organico: ${pctLabel}`}</p>
+                </div>`;
+        }
+
+        if (style === 'tree') {
+            const trunkScale = 0.35 + pct * 0.65;
+            const canopyScale = 0.45 + pct * 0.55;
+            const fruitCount = canCompleteSelectedMicro || mode === 'break' ? 5 : Math.min(5, Math.floor(pct * 6));
+            const fruitPoints = [
+                [48, 42], [65, 35], [78, 49], [58, 57], [72, 64]
+            ];
+            const fruits = fruitPoints.map(([cx, cy], idx) => `
+                <circle cx="${cx}" cy="${cy}" r="${idx < fruitCount ? 3.6 : 2.2}" fill="${idx < fruitCount ? 'var(--md-sys-color-tertiary)' : 'var(--md-sys-color-outline-variant)'}" opacity="${idx < fruitCount ? '0.95' : '0.35'}"></circle>
+            `).join('');
+            const waterOpacity = mode === 'break' ? 0.95 : (isPaused ? 0.5 : 0.16);
+            const rootsOpacity = mode === 'break' ? 0.75 : 0.28;
+            return `
+                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-4 text-center shadow-inner overflow-hidden">
+                    <div class="relative mx-auto h-52 w-full max-w-[18rem]">
+                        <svg viewBox="0 0 120 120" class="h-full w-full" role="img" aria-label="Arvore de foco ${pctLabel}">
+                            <rect x="8" y="92" width="104" height="10" rx="5" fill="var(--md-sys-color-primary)" opacity="0.08"></rect>
+                            <path d="M41 95 C52 86 67 86 79 95" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="2" opacity="${rootsOpacity}"></path>
+                            <path d="M48 98 C59 91 63 91 72 98" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="1.5" opacity="${rootsOpacity}"></path>
+                            <g transform="translate(60 93) scale(1 ${trunkScale.toFixed(3)}) translate(-60 -93)">
+                                <path d="M54 93 C55 77 56 63 60 51 C64 63 66 77 67 93 Z" fill="var(--md-sys-color-primary)" opacity="0.68"></path>
+                                <path d="M60 64 C53 58 48 54 42 49" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="3" stroke-linecap="round" opacity="0.58"></path>
+                                <path d="M62 62 C69 55 75 52 84 47" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="3" stroke-linecap="round" opacity="0.58"></path>
+                            </g>
+                            <g transform="translate(62 54) scale(${canopyScale.toFixed(3)}) translate(-62 -54)" class="${activeMotion ? 'deep-work-tree-breathe' : ''}">
+                                <circle cx="47" cy="52" r="17" fill="var(--md-sys-color-primary)" opacity="0.18"></circle>
+                                <circle cx="64" cy="42" r="21" fill="var(--md-sys-color-primary)" opacity="0.24"></circle>
+                                <circle cx="79" cy="55" r="18" fill="var(--md-sys-color-tertiary)" opacity="0.20"></circle>
+                                ${fruits}
+                            </g>
+                            <g opacity="${waterOpacity}">
+                                <path d="M98 85 C102 79 106 79 110 85 C110 90 107 94 104 94 C101 94 98 90 98 85Z" fill="var(--md-sys-color-tertiary)" opacity="0.45"></path>
+                                <path d="M15 84 C18 79 21 79 24 84 C24 88 22 91 19.5 91 C17 91 15 88 15 84Z" fill="var(--md-sys-color-tertiary)" opacity="0.32"></path>
+                            </g>
+                        </svg>
+                        <div class="absolute inset-x-0 top-2 text-center">
+                            <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">${mode === 'break' ? 'Descanso regando' : 'Crescimento'}</p>
+                        </div>
+                        <div class="absolute inset-x-0 bottom-2 text-center">
+                            <p id="deep-work-timer" class="text-4xl leading-none font-headline italic text-primary tabular-nums">${escapedTime}</p>
+                            <p id="deep-work-phase" class="mt-1 text-[10px] uppercase tracking-[0.12em] text-on-surface-variant">${escapedPhase}</p>
+                        </div>
+                    </div>
+                    <p class="mt-1 text-[11px] text-outline">${hasSelectedMicro ? 'Sua micro vira fruto quando a sessao amadurece.' : 'Escolha uma micro para plantar a sessao.'}</p>
+                </div>`;
+        }
+
+        return `
+            <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-6 text-center shadow-inner">
+                <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">Tempo restante</p>
+                ${timerHtml}
+                ${phaseHtml}
+            </div>`;
+    },
+
 renderDeepWorkPanel: function() {
         this.normalizeDeepWorkState();
+        this.ensureSettingsState();
         const state = window.sistemaVidaState;
         const dw = state.deepWork;
 
@@ -1244,6 +1348,7 @@ renderDeepWorkPanel: function() {
         const stepEl = document.getElementById('deep-work-step');
         const timerEl = document.getElementById('deep-work-timer');
         const phaseEl = document.getElementById('deep-work-phase');
+        const clockVisualEl = document.getElementById('deep-work-clock-visual');
         const summaryEl = document.getElementById('deep-work-week-summary');
         const historyEl = document.getElementById('deep-work-history');
         const presetEl = document.getElementById('deep-work-preset');
@@ -1312,8 +1417,37 @@ renderDeepWorkPanel: function() {
             else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
             else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3: foco em execucao' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a micro' : 'Pausa estruturada');
         }
-        if (timerEl) timerEl.textContent = this.formatClock(dw.remainingSec);
-        if (phaseEl) phaseEl.textContent = dw.mode === 'focus' ? 'Bloco' : 'Pausa';
+        const timeText = this.formatClock(dw.remainingSec);
+        const phaseText = dw.mode === 'focus' ? 'Bloco' : 'Pausa';
+        const progressTotal = Math.max(1, dw.mode === 'focus' ? Number(dw.targetSec || 5400) : Number(dw.breakSec || 1200));
+        const progress = Math.max(0, Math.min(1, 1 - (Number(dw.remainingSec || 0) / progressTotal)));
+        const clockStyle = ['classic', 'ring', 'tree'].includes(state.settings?.deepWorkClockStyle)
+            ? state.settings.deepWorkClockStyle
+            : 'classic';
+        if (clockVisualEl) {
+            clockVisualEl.outerHTML = `<div id="deep-work-clock-visual">${this.renderDeepWorkClockVisual({
+                style: clockStyle,
+                timeText,
+                phaseText,
+                mode: dw.mode,
+                isRunning: dw.isRunning,
+                isPaused: dw.isPaused,
+                progress,
+                hasSelectedMicro,
+                canCompleteSelectedMicro
+            })}</div>`;
+        } else {
+            if (timerEl) timerEl.textContent = timeText;
+            if (phaseEl) phaseEl.textContent = phaseText;
+        }
+        document.querySelectorAll('.deep-work-clock-style-chip').forEach((chip) => {
+            const isActive = chip.getAttribute('data-deep-work-clock-style') === clockStyle;
+            chip.classList.toggle('bg-primary', isActive);
+            chip.classList.toggle('text-on-primary', isActive);
+            chip.classList.toggle('shadow-sm', isActive);
+            chip.classList.toggle('text-outline', !isActive);
+            chip.classList.toggle('bg-surface-container-high', !isActive);
+        });
 
         const baseBtn = 'px-3 md:px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50';
         const primaryBtn = `${baseBtn} bg-primary text-on-primary shadow-sm`;
