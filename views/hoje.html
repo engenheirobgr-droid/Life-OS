@@ -374,30 +374,26 @@
 <div class="fixed left-4 top-0 bottom-0 w-[1px] bg-primary/10 -z-10 pointer-events-none hidden lg:block"></div>
 <script>
 (function() {
-  // Auto-collapse "Como foi o dia" before 18h
+  // Toggle manual do diário — sempre aberto por padrão
   var diario = document.getElementById('diario-collapsible');
   var toggleLabel = document.getElementById('diario-toggle-label');
   var toggleIcon = document.getElementById('diario-toggle-icon');
-  var isOpen = new Date().getHours() >= 18;
+  var isOpen = true;
 
   function applyDiarioState(open) {
     isOpen = open;
-    if (diario) {
-      diario.style.display = open ? '' : 'none';
-    }
+    if (diario) diario.style.display = open ? '' : 'none';
     if (toggleLabel) toggleLabel.textContent = open ? 'Recolher' : 'Abrir';
     if (toggleIcon) toggleIcon.style.transform = open ? 'rotate(180deg)' : '';
   }
 
-  window.toggleDiarioSection = function() {
-    applyDiarioState(!isOpen);
-  };
+  window.toggleDiarioSection = function() { applyDiarioState(!isOpen); };
 
-  // Apply initial state once DOM is ready
+  // Inicializa aberto
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() { applyDiarioState(isOpen); });
+    document.addEventListener('DOMContentLoaded', function() { applyDiarioState(true); });
   } else {
-    applyDiarioState(isOpen);
+    applyDiarioState(true);
   }
 })();
 
