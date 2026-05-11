@@ -1257,243 +1257,66 @@ renderDeepWorkClockVisual: function(options = {}) {
         const phaseHtml = `<p id="deep-work-phase" class="mt-2 text-[11px] uppercase tracking-[0.12em] text-on-surface-variant">${escapedPhase}</p>`;
 
         if (style === 'ring') {
-            const dash = 314;
+            const dash = 339;
             const offset = Math.round(dash * (1 - pct));
+            const percent = Math.round(pct * 100);
+            const stateLabel = mode === 'break'
+                ? 'Recuperacao'
+                : (isPaused ? 'Pausado' : (isRunning ? 'Em foco' : (hasSelectedMicro ? 'Pronto' : 'Preparacao')));
+            const helperText = mode === 'break'
+                ? 'Pausa ativa para recuperar energia antes do proximo bloco.'
+                : (canCompleteSelectedMicro
+                    ? 'Bloco completo. Finalize a sessao e confirme a micro.'
+                    : (hasSelectedMicro ? 'Mantenha o ritmo ate o fechamento do ciclo.' : 'Escolha uma micro acao para iniciar o ciclo.'));
+            const dotAngle = -90 + (pct * 360);
+            const dotX = 60 + (54 * Math.cos(dotAngle * Math.PI / 180));
+            const dotY = 60 + (54 * Math.sin(dotAngle * Math.PI / 180));
+            const pulseClass = activeMotion ? 'deep-work-ring-pulse' : '';
             return `
-                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-5 text-center shadow-inner">
-                    <div class="relative mx-auto h-48 w-48 max-w-full">
+                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-surface-container-lowest px-4 py-4 text-center shadow-inner overflow-hidden">
+                    <div class="flex items-center justify-between gap-3 mb-3 text-left">
+                        <div class="min-w-0">
+                            <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">Anel de foco</p>
+                            <p class="text-sm font-bold text-on-surface truncate">${stateLabel}</p>
+                        </div>
+                        <span class="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">${percent}%</span>
+                    </div>
+                    <div class="relative mx-auto h-56 w-56 max-w-full">
                         <svg viewBox="0 0 120 120" class="h-full w-full" role="img" aria-label="Progresso do bloco ${pctLabel}">
                             <defs>
                                 <linearGradient id="deep-work-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
                                     <stop offset="0%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.95"></stop>
-                                    <stop offset="100%" stop-color="var(--md-sys-color-tertiary)" stop-opacity="0.85"></stop>
+                                    <stop offset="55%" stop-color="var(--md-sys-color-tertiary)" stop-opacity="0.9"></stop>
+                                    <stop offset="100%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.72"></stop>
+                                </linearGradient>
+                                <radialGradient id="deep-work-ring-core" cx="50%" cy="38%" r="62%">
+                                    <stop offset="0%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.14"></stop>
+                                    <stop offset="72%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.035"></stop>
+                                    <stop offset="100%" stop-color="var(--md-sys-color-primary)" stop-opacity="0"></stop>
                                 </linearGradient>
                             </defs>
-                            <circle cx="60" cy="60" r="50" fill="none" stroke="var(--md-sys-color-surface-container-highest)" stroke-width="9"></circle>
-                            <circle cx="60" cy="60" r="50" fill="none" stroke="url(#deep-work-ring-gradient)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${dash}" stroke-dashoffset="${offset}" transform="rotate(-90 60 60)" class="${activeMotion ? 'deep-work-ring-pulse' : ''}"></circle>
-                            <path d="M60 18 C74 34 96 42 96 64 C96 86 78 102 60 102 C42 102 24 86 24 64 C24 42 46 34 60 18Z" fill="var(--md-sys-color-primary)" opacity="0.055"></path>
+                            <circle cx="60" cy="60" r="57" fill="url(#deep-work-ring-core)"></circle>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="var(--md-sys-color-surface-container-highest)" stroke-width="5" opacity="0.82"></circle>
+                            <circle cx="60" cy="60" r="43" fill="none" stroke="var(--md-sys-color-outline-variant)" stroke-width="1" opacity="0.18"></circle>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="url(#deep-work-ring-gradient)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${dash}" stroke-dashoffset="${offset}" transform="rotate(-90 60 60)" class="${pulseClass}"></circle>
+                            <circle cx="${dotX.toFixed(2)}" cy="${dotY.toFixed(2)}" r="3.3" fill="var(--md-sys-color-primary)" stroke="var(--md-sys-color-surface-container-lowest)" stroke-width="2"></circle>
+                            <path d="M60 22 C75 38 94 46 94 66 C94 84 79 98 60 98 C41 98 26 84 26 66 C26 46 45 38 60 22Z" fill="var(--md-sys-color-primary)" opacity="0.045"></path>
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">${mode === 'break' ? 'Recuperacao' : 'Tempo restante'}</p>
+                            <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">${mode === 'break' ? 'Pausa' : 'Tempo restante'}</p>
                             ${timerHtml}
                             ${phaseHtml}
                         </div>
                     </div>
-                    <p class="mt-2 text-[11px] text-outline">${mode === 'break' ? 'Descanso alimenta o proximo bloco.' : `Progresso organico: ${pctLabel}`}</p>
+                    <div class="mt-3 grid grid-cols-3 gap-1.5" aria-hidden="true">
+                        <span class="h-1 rounded-full ${pct >= 0.25 ? 'bg-primary' : 'bg-outline-variant/35'}"></span>
+                        <span class="h-1 rounded-full ${pct >= 0.50 ? 'bg-primary' : 'bg-outline-variant/35'}"></span>
+                        <span class="h-1 rounded-full ${pct >= 0.75 ? 'bg-primary' : 'bg-outline-variant/35'}"></span>
+                    </div>
+                    <p class="mt-3 text-[11px] leading-relaxed text-outline">${helperText}</p>
                 </div>`;
         }
 
-        if (style === 'tree') {
-            const breadFocusScenes = [
-                { label: 'Ingredientes', note: 'Tudo pronto para comecar.', image: './assets/focus-bread/work-01.jpg' },
-                { label: 'Mistura', note: 'A massa ganha forma.', image: './assets/focus-bread/work-02.jpg' },
-                { label: 'Sova', note: 'Energia aplicada com presenca.', image: './assets/focus-bread/work-03.jpg' },
-                { label: 'Primeiro descanso', note: 'O foco comeca a fermentar.', image: './assets/focus-bread/work-04.jpg' },
-                { label: 'Crescimento', note: 'Volume visivel, ritmo consistente.', image: './assets/focus-bread/work-05.jpg' },
-                { label: 'Modelagem', note: 'A micro ganha acabamento.', image: './assets/focus-bread/work-06.jpg' },
-                { label: 'Forno', note: 'Ultimos minutos de calor.', image: './assets/focus-bread/work-07.jpg' },
-                { label: 'Pronto', note: 'Sua micro esta madura.', image: './assets/focus-bread/work-08.jpg' }
-            ];
-            const breadBreakScenes = [
-                { label: 'Mesa pronta', note: 'O bloco virou alimento.', image: './assets/focus-bread/rest-01.jpg' },
-                { label: 'Cafe', note: 'A pausa aquece a retomada.', image: './assets/focus-bread/rest-02.jpg' },
-                { label: 'Saborear', note: 'Recupere energia sem pressa.', image: './assets/focus-bread/rest-01.jpg' },
-                { label: 'Integrar', note: 'Descanso concluido, novo ciclo a vista.', image: './assets/focus-bread/rest-02.jpg' }
-            ];
-            const breadScenes = mode === 'break' ? breadBreakScenes : breadFocusScenes;
-            const breadStageRaw = pct * breadScenes.length;
-            const breadStageIndex = Math.min(breadScenes.length - 1, Math.max(0, Math.floor(breadStageRaw)));
-            const breadStage = breadScenes[breadStageIndex] || breadScenes[0];
-            const breadStageText = `${breadStageIndex + 1}/${breadScenes.length}`;
-            const breadProgressText = mode === 'break' ? 'Descanso' : 'Ciclo do pao';
-            const breadStageProgress = breadScenes.length > 1 ? breadStageIndex / (breadScenes.length - 1) : pct;
-            const sceneAlt = `${breadProgressText}: ${breadStage.label}`;
-            const stageDots = breadScenes.map((scene, index) => {
-                const isPast = index < breadStageIndex;
-                const isCurrent = index === breadStageIndex;
-                const widthClass = isCurrent ? 'w-7' : 'w-2';
-                const toneClass = isCurrent
-                    ? 'bg-primary'
-                    : (isPast ? 'bg-primary/55' : 'bg-on-surface/20');
-                return `<span title="${this.escapeHtml(scene.label)}" class="h-2 ${widthClass} rounded-full ${toneClass} transition-all"></span>`;
-            }).join('');
-
-            return `
-                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-surface-container-lowest p-3 text-left shadow-inner overflow-hidden">
-                    <div class="flex items-center justify-between gap-3 mb-3">
-                        <div>
-                            <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">${breadProgressText}</p>
-                            <p class="mt-0.5 text-sm font-bold text-on-surface">${this.escapeHtml(breadStage.label)}</p>
-                        </div>
-                        <p class="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] font-bold text-primary">${this.escapeHtml(breadStageText)}</p>
-                    </div>
-                    <div class="relative overflow-hidden rounded-xl border border-outline-variant/15 bg-surface-container-low aspect-[4/3]">
-                        <img src="${this.escapeHtml(breadStage.image)}" alt="${this.escapeHtml(sceneAlt)}" class="h-full w-full object-cover" loading="eager">
-                        <div class="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/45 to-transparent"></div>
-                        <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/65 to-transparent"></div>
-                        <div class="absolute left-3 right-3 top-3">
-                            <div class="h-1.5 overflow-hidden rounded-full bg-white/25">
-                                <div class="h-full rounded-full bg-white/90 transition-all" style="width:${Math.round(pct * 100)}%"></div>
-                            </div>
-                        </div>
-                        <div class="absolute left-3 right-3 bottom-3 flex items-end justify-between gap-3">
-                            <div class="min-w-0 text-white drop-shadow">
-                                <p id="deep-work-timer" class="text-4xl leading-none font-headline italic tabular-nums">${escapedTime}</p>
-                                <p id="deep-work-phase" class="mt-1 text-[10px] uppercase tracking-[0.14em] font-bold text-white/85">${escapedPhase}</p>
-                            </div>
-                            <div class="hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/20 text-xs font-bold text-white backdrop-blur">
-                                ${Math.round(breadStageProgress * 100)}%
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
-                        ${stageDots}
-                    </div>
-                    <p class="mt-2 text-center text-[11px] text-outline">${this.escapeHtml(breadStage.note)}</p>
-                </div>`;
-
-            const focusStages = [
-                { label: 'Ingredientes', note: 'Tudo pronto para comecar.' },
-                { label: 'Mistura', note: 'A massa ganha forma.' },
-                { label: 'Sova', note: 'Energia aplicada com presenca.' },
-                { label: 'Primeiro descanso', note: 'O foco comeca a fermentar.' },
-                { label: 'Crescimento', note: 'Volume visivel, ritmo consistente.' },
-                { label: 'Modelagem', note: 'A micro ganha acabamento.' },
-                { label: 'Forno', note: 'Ultimos minutos de calor.' },
-                { label: 'Pronto', note: 'Sua micro esta madura.' }
-            ];
-            const breakStages = [
-                { label: 'Mesa pronta', note: 'O bloco virou alimento.' },
-                { label: 'Cafe', note: 'A pausa aquece a retomada.' },
-                { label: 'Saborear', note: 'Recupere energia sem pressa.' },
-                { label: 'Integrar', note: 'Descanso concluido, novo ciclo a vista.' }
-            ];
-            const stageList = mode === 'break' ? breakStages : focusStages;
-            const stageRaw = pct * stageList.length;
-            const stageIndex = Math.min(stageList.length - 1, Math.max(0, Math.floor(stageRaw)));
-            const stagePct = Math.max(0, Math.min(1, stageRaw - stageIndex));
-            const stage = stageList[stageIndex] || stageList[0];
-            const breadDash = 307;
-            const breadOffset = Math.round(breadDash * (1 - pct));
-            const stageText = `${stageIndex + 1}/${stageList.length}`;
-            const warmClass = activeMotion ? 'deep-work-bread-warm' : '';
-            const riseClass = activeMotion ? 'deep-work-dough-rise' : '';
-            const steam = (delay = '0s', x = 0, opacity = 0.35) => `
-                                <path class="deep-work-bread-steam" style="animation-delay:${delay}" d="M${x} 42 C${x - 5} 34 ${x + 5} 29 ${x} 20" fill="none" stroke="#f7efe0" stroke-width="2.4" stroke-linecap="round" opacity="${opacity}"></path>`;
-            const ingredientsSvg = `
-                            <g opacity="${stageIndex === 0 ? 1 : 0.32}" transform="translate(0 ${stageIndex === 0 ? 0 : 2})">
-                                <ellipse cx="47" cy="72" rx="22" ry="9" fill="#8c6942" opacity="0.22"></ellipse>
-                                <path d="M25 58 C31 45 63 45 69 58 C66 73 29 73 25 58Z" fill="#d8c4a5" stroke="#8b6d4a" stroke-width="1.2"></path>
-                                <path d="M31 57 C38 51 56 51 63 57 C57 62 38 62 31 57Z" fill="#f4ead4"></path>
-                                <circle cx="84" cy="67" r="7" fill="#e7d0aa" stroke="#9c7a51" stroke-width="1"></circle>
-                                <circle cx="94" cy="65" r="4" fill="#c9a46b"></circle>
-                                <path d="M82 57 L95 57 L91 70 L85 70Z" fill="#bcd7dd" stroke="#6f9ca8" stroke-width="1"></path>
-                            </g>`;
-            const mixingSvg = `
-                            <g opacity="${stageIndex === 1 ? 1 : 0.18}" transform="translate(0 ${stageIndex === 1 ? 0 : 3})">
-                                <ellipse cx="60" cy="77" rx="31" ry="8" fill="#5b3f2b" opacity="0.18"></ellipse>
-                                <path d="M26 54 C34 39 86 39 94 54 C91 75 29 75 26 54Z" fill="#b98755" stroke="#7c5231" stroke-width="1.5"></path>
-                                <path class="${riseClass}" d="M36 55 C45 44 76 44 84 55 C80 64 42 64 36 55Z" fill="#f0d6a5"></path>
-                                <path d="M78 35 L86 52" stroke="#6f4a2e" stroke-width="3" stroke-linecap="round"></path>
-                            </g>`;
-            const kneadSvg = `
-                            <g opacity="${stageIndex === 2 ? 1 : 0.16}">
-                                <path d="M26 78 C42 86 78 86 94 78 L90 91 C74 98 46 98 30 91Z" fill="#8a5a2c" opacity="0.28"></path>
-                                <path class="${riseClass}" d="M36 61 C44 48 75 48 84 61 C86 74 33 75 36 61Z" fill="#efd1a0" stroke="#b88752" stroke-width="1.4"></path>
-                                <path d="M40 39 C48 43 54 47 57 56" fill="none" stroke="#c99b72" stroke-width="6" stroke-linecap="round"></path>
-                                <path d="M80 39 C72 43 66 47 63 56" fill="none" stroke="#c99b72" stroke-width="6" stroke-linecap="round"></path>
-                            </g>`;
-            const coveredSvg = `
-                            <g opacity="${stageIndex === 3 ? 1 : 0.15}">
-                                <ellipse cx="60" cy="82" rx="34" ry="7" fill="#1b1c1d" opacity="0.12"></ellipse>
-                                <path d="M27 63 C37 48 83 48 93 63 L88 83 C72 89 48 89 32 83Z" fill="#f2eadb" stroke="#c9b99e" stroke-width="1.3"></path>
-                                <path d="M35 63 C42 72 79 72 86 63" fill="none" stroke="#d6c7ae" stroke-width="1.2"></path>
-                                <path d="M48 52 L42 84 M62 51 L61 87 M76 52 L82 84" stroke="#d8ccb8" stroke-width="0.9" opacity="0.7"></path>
-                            </g>`;
-            const risenSvg = `
-                            <g opacity="${stageIndex === 4 ? 1 : 0.16}">
-                                <path d="M26 59 C33 42 87 42 94 59 C91 77 29 77 26 59Z" fill="#a87545" stroke="#765032" stroke-width="1.3"></path>
-                                <path class="${riseClass}" d="M35 55 C40 35 79 35 85 55 C80 67 40 67 35 55Z" fill="#f3d8a8"></path>
-                                <path d="M43 53 C50 48 70 48 78 53" fill="none" stroke="#d8ae75" stroke-width="1.4" opacity="0.65"></path>
-                            </g>`;
-            const proofSvg = `
-                            <g opacity="${stageIndex === 5 ? 1 : 0.16}">
-                                <ellipse cx="60" cy="78" rx="35" ry="9" fill="#5b3f2b" opacity="0.15"></ellipse>
-                                <path d="M28 58 C37 43 83 43 92 58 C88 76 32 76 28 58Z" fill="#d5b888" stroke="#8d6a42" stroke-width="1.4"></path>
-                                <path d="M36 58 C43 47 77 47 84 58 C79 68 41 68 36 58Z" fill="#f1d9ad"></path>
-                                <path d="M45 52 C52 57 64 59 75 52" fill="none" stroke="#fff3d5" stroke-width="2" stroke-linecap="round"></path>
-                                <path d="M34 62 C48 69 72 69 86 62" fill="none" stroke="#9e794b" stroke-width="1" opacity="0.55"></path>
-                            </g>`;
-            const ovenSvg = `
-                            <g opacity="${stageIndex === 6 ? 1 : 0.16}">
-                                ${activeMotion ? steam('0s', 49, 0.45) + steam('0.7s', 61, 0.38) + steam('1.3s', 73, 0.32) : ''}
-                                <path d="M27 66 C38 48 82 48 93 66 C91 82 29 82 27 66Z" fill="#2d2a25" opacity="0.18"></path>
-                                <path class="${warmClass}" d="M34 61 C40 41 81 41 87 61 C85 76 36 77 34 61Z" fill="#b86a24" stroke="#6d3514" stroke-width="1.5"></path>
-                                <path d="M42 57 C49 52 54 51 60 55 M63 54 C69 49 77 50 82 57" fill="none" stroke="#f2c073" stroke-width="2" stroke-linecap="round"></path>
-                                <path d="M39 64 C52 72 73 72 86 64" fill="none" stroke="#5c2b12" stroke-width="1" opacity="0.36"></path>
-                            </g>`;
-            const readySvg = `
-                            <g opacity="${stageIndex === 7 && mode !== 'break' ? 1 : (mode === 'break' ? 0.92 : 0.18)}">
-                                ${activeMotion && mode === 'break' ? steam('0s', 74, 0.42) + steam('1.1s', 84, 0.28) : ''}
-                                <path d="M23 81 C40 90 80 90 97 81 L93 92 C77 101 43 101 27 92Z" fill="#6e4726" opacity="0.24"></path>
-                                <path class="${warmClass}" d="M30 62 C36 39 82 36 93 60 C91 77 32 80 30 62Z" fill="#b86725" stroke="#683412" stroke-width="1.4"></path>
-                                <path d="M42 57 C48 50 54 50 60 57 M63 56 C70 48 79 50 85 58" fill="none" stroke="#f4c179" stroke-width="2.2" stroke-linecap="round"></path>
-                                <path d="M67 67 C76 61 92 64 96 75 C87 83 73 81 67 67Z" fill="#efd2a0" stroke="#9e6330" stroke-width="1.2"></path>
-                                <circle cx="82" cy="72" r="1.6" fill="#9d6c3b" opacity="0.55"></circle>
-                            </g>`;
-            const coffeeSvg = mode === 'break' ? `
-                            <g opacity="${stageIndex >= 1 ? 1 : 0.28}">
-                                ${stageIndex >= 1 && activeMotion ? steam('0.2s', 83, 0.42) + steam('1s', 91, 0.25) : ''}
-                                <path d="M76 68 C76 61 97 61 97 68 L94 83 C91 88 82 88 79 83Z" fill="#d8b98c" stroke="#8a6238" stroke-width="1.2"></path>
-                                <path d="M97 70 C106 69 106 82 96 80" fill="none" stroke="#8a6238" stroke-width="2"></path>
-                                <path d="M80 68 C84 71 91 71 94 68" fill="none" stroke="#6a3a17" stroke-width="1.6"></path>
-                                ${stageIndex === 1 ? '<path d="M101 37 C91 42 88 53 88 65" fill="none" stroke="#7b3f16" stroke-width="2.2" stroke-linecap="round"></path>' : ''}
-                            </g>` : '';
-            const plateSvg = mode === 'break' ? `
-                            <g opacity="${stageIndex >= 2 ? 1 : 0.18}">
-                                <ellipse cx="45" cy="84" rx="26" ry="9" fill="#f4eee0" stroke="#cdbb9b" stroke-width="1"></ellipse>
-                                <path d="M32 73 C38 65 59 65 65 73 C63 82 35 82 32 73Z" fill="#e3b36f" stroke="#9d6631" stroke-width="1"></path>
-                                <circle cx="49" cy="73" r="5" fill="#dd8d19" opacity="0.9"></circle>
-                                <path d="M25 87 L35 88 M62 88 L70 86" stroke="#9f764a" stroke-width="1" opacity="${stageIndex >= 3 ? 0.7 : 0}"></path>
-                            </g>` : '';
-            const visualSvg = mode === 'break'
-                ? `${readySvg}${coffeeSvg}${plateSvg}`
-                : `${ingredientsSvg}${mixingSvg}${kneadSvg}${coveredSvg}${risenSvg}${proofSvg}${ovenSvg}${readySvg}`;
-
-            return `
-                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-center shadow-inner overflow-hidden">
-                    <div class="flex items-center justify-between gap-3 mb-1">
-                        <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">${mode === 'break' ? 'Descanso' : 'Ciclo do pao'}</p>
-                        <p class="text-[10px] uppercase tracking-[0.12em] font-bold text-primary">${this.escapeHtml(stageText)}</p>
-                    </div>
-                    <div class="relative mx-auto w-full max-w-xs">
-                        <svg viewBox="0 0 120 110" class="w-full" style="height:196px" role="img" aria-label="Ciclo do pao ${pctLabel}">
-                            <defs>
-                                <radialGradient id="breadSceneBg" cx="45%" cy="28%" r="72%">
-                                    <stop offset="0%" stop-color="#fff8dd"></stop>
-                                    <stop offset="68%" stop-color="#f5dfb4"></stop>
-                                    <stop offset="100%" stop-color="#d7a45b"></stop>
-                                </radialGradient>
-                                <linearGradient id="breadRing" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#fff4a8"></stop>
-                                    <stop offset="52%" stop-color="#e6a22a"></stop>
-                                    <stop offset="100%" stop-color="#8f5627"></stop>
-                                </linearGradient>
-                            </defs>
-                            <circle cx="60" cy="53" r="49" fill="url(#breadSceneBg)" opacity="0.92"></circle>
-                            <circle cx="60" cy="53" r="49" fill="none" stroke="var(--md-sys-color-surface-container-lowest)" stroke-width="7" opacity="0.55"></circle>
-                            <circle cx="60" cy="53" r="49" fill="none" stroke="url(#breadRing)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${breadDash}" stroke-dashoffset="${breadOffset}" transform="rotate(-90 60 53)" opacity="0.88"></circle>
-                            <path d="M18 86 C36 74 83 74 102 86" fill="none" stroke="#906536" stroke-width="2" opacity="0.26"></path>
-                            <path d="M22 88 C38 98 82 98 98 88" fill="none" stroke="#5f3c23" stroke-width="2" opacity="0.18"></path>
-                            ${visualSvg}
-                        </svg>
-                    </div>
-                    <p id="deep-work-timer" class="mt-1 text-4xl leading-none font-headline italic text-primary tabular-nums">${escapedTime}</p>
-                    <p id="deep-work-phase" class="mt-1 text-[10px] uppercase tracking-[0.12em] text-on-surface-variant">${this.escapeHtml(stage.label)} - ${escapedPhase}</p>
-                    <p class="mt-2 text-[11px] text-outline">${this.escapeHtml(stage.note)}</p>
-                </div>`;
-
-        }
 
         return `
             <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-6 text-center shadow-inner">
@@ -1587,7 +1410,7 @@ renderDeepWorkPanel: function() {
         const phaseText = dw.mode === 'focus' ? 'Bloco' : 'Pausa';
         const progressTotal = Math.max(1, dw.mode === 'focus' ? Number(dw.targetSec || 5400) : Number(dw.breakSec || 1200));
         const progress = Math.max(0, Math.min(1, 1 - (Number(dw.remainingSec || 0) / progressTotal)));
-        const clockStyle = ['classic', 'ring', 'tree'].includes(state.settings?.deepWorkClockStyle)
+        const clockStyle = ['classic', 'ring'].includes(state.settings?.deepWorkClockStyle)
             ? state.settings.deepWorkClockStyle
             : 'classic';
         if (clockVisualEl) {

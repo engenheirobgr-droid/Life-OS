@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260511-bread-scenes-v171';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260511-bread-scenes-v171';
-import { attachNotifications } from './js/notifications.js?v=20260511-bread-scenes-v171';
-import { attachCadence } from './js/cadence.js?v=20260511-bread-scenes-v171';
-import { attachOnboarding } from './js/onboarding.js?v=20260511-bread-scenes-v171';
-import { attachIdentity } from './js/identity.js?v=20260511-bread-scenes-v171';
-import { attachHabits } from './js/habits.js?v=20260511-bread-scenes-v171';
-import { attachStateModule } from './js/state.js?v=20260511-bread-scenes-v171';
-import { attachRenderModule } from './js/render.js?v=20260511-bread-scenes-v171';
-import { attachPlanningModule } from './js/planning.js?v=20260511-bread-scenes-v171';
-import { attachGamificationModule } from './js/gamification.js?v=20260511-bread-scenes-v171';
-import { attachSocial } from './js/social.js?v=20260511-bread-scenes-v171';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260511-ring-focus-v172';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260511-ring-focus-v172';
+import { attachNotifications } from './js/notifications.js?v=20260511-ring-focus-v172';
+import { attachCadence } from './js/cadence.js?v=20260511-ring-focus-v172';
+import { attachOnboarding } from './js/onboarding.js?v=20260511-ring-focus-v172';
+import { attachIdentity } from './js/identity.js?v=20260511-ring-focus-v172';
+import { attachHabits } from './js/habits.js?v=20260511-ring-focus-v172';
+import { attachStateModule } from './js/state.js?v=20260511-ring-focus-v172';
+import { attachRenderModule } from './js/render.js?v=20260511-ring-focus-v172';
+import { attachPlanningModule } from './js/planning.js?v=20260511-ring-focus-v172';
+import { attachGamificationModule } from './js/gamification.js?v=20260511-ring-focus-v172';
+import { attachSocial } from './js/social.js?v=20260511-ring-focus-v172';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -200,7 +200,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260511-bread-scenes-v171',
+    appBuildVersion: '20260511-ring-focus-v172',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -6689,7 +6689,7 @@ ensureNotesState: function() {
 
     setDeepWorkClockStyle: function(style) {
         this.ensureSettingsState();
-        const safeStyle = ['classic', 'ring', 'tree'].includes(style) ? style : 'classic';
+        const safeStyle = ['classic', 'ring'].includes(style) ? style : 'classic';
         window.sistemaVidaState.settings.deepWorkClockStyle = safeStyle;
         this.stopDeepWorkClockPreview();
         this.renderDeepWorkPanel();
@@ -6720,7 +6720,7 @@ ensureNotesState: function() {
         }
         const state = window.sistemaVidaState;
         const dw = state.deepWork;
-        const style = ['classic', 'ring', 'tree'].includes(state.settings?.deepWorkClockStyle)
+        const style = ['classic', 'ring'].includes(state.settings?.deepWorkClockStyle)
             ? state.settings.deepWorkClockStyle
             : 'classic';
         const previewBtn = document.getElementById('deep-work-clock-preview-btn');
