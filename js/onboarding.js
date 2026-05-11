@@ -344,7 +344,7 @@ applyOnboardingAccountState: function() {
                 continueBtn.setAttribute('onclick', 'app.onboardingContinueLocal()');
             }
             if (noteEl) {
-                noteEl.textContent = 'Preferir testar primeiro? Continue localmente. Seus dados ficam apenas neste aparelho ate voce criar uma conta em Perfil.';
+                noteEl.textContent = 'Quer testar primeiro? Continue localmente. Seus dados ficam apenas neste aparelho até você criar uma conta em Perfil.';
             }
         }
     },
@@ -612,69 +612,27 @@ ensureOnboardingStarterSetup: function() {
         this.scheduleHabitReminders();
     },
 
-// ── Fase 3: Propósito — char counter + exemplos por valor ─────────────────────
+// ── Fase 3: Propósito — char counter ──────────────────────────────────────────
 onboardingPropostoInput: function(textarea) {
         const max = 160;
         const len = (textarea.value || '').length;
         const counter = document.getElementById('step4-char-count');
         if (counter) counter.textContent = `${len} / ${max}`;
-
-        // Só mostra exemplos se textarea ainda estiver vazio
-        if (textarea.value.trim()) {
-            const examplesEl = document.getElementById('step4-examples');
-            if (examplesEl) examplesEl.innerHTML = '';
-            return;
-        }
-        this._renderStep4Examples();
     },
 
-_renderStep4Examples: function() {
-        const examplesEl = document.getElementById('step4-examples');
-        if (!examplesEl) return;
-
-        // Pega os valores selecionados no passo anterior (step-3)
-        const state = window.sistemaVidaState;
-        const profile = state?.profile || {};
-        const identityValues = Array.isArray(profile.identityValues) ? profile.identityValues : [];
-
-        const examplesByValue = {
-            'Crescimento': 'Evoluir todos os dias, mesmo que um pouco.',
-            'Familia':     'Estar presente para quem eu amo.',
-            'Liberdade':   'Construir uma vida que nao me prende.',
-            'Saude':       'Cuidar do corpo e da mente como base de tudo.',
-            'Criatividade':'Criar algo que so eu poderia criar.',
-            'Impacto':     'Deixar cada ambiente melhor do que encontrei.',
-            'Conexao':     'Construir relacoes profundas e verdadeiras.',
-            'Integridade': 'Agir de acordo com o que acredito, sempre.',
-            'Lideranca':   'Inspirar outros a serem a melhor versao de si.',
-            'Autonomia':   'Viver segundo minhas proprias escolhas.',
-            'Excelencia':  'Fazer cada coisa com cuidado e dedicacao.',
-            'Paz':         'Manter a serenidade no meio do caos.',
-            'Proposito':   'Servir algo maior do que eu mesmo.',
-            'Aventura':    'Explorar o desconhecido com coragem.',
-            'Aprendizado': 'Nunca parar de aprender e me reinventar.',
-        };
-
-        // Gera exemplos a partir dos valores selecionados
-        const chips = [];
-        identityValues.slice(0, 3).forEach(v => {
-            const example = examplesByValue[v];
-            if (example) chips.push(example);
-        });
-
-        // Fallback se nenhum valor mapeado
-        if (chips.length === 0) {
-            chips.push('Viver com intencao e construir algo que importa.');
-        }
-
-        examplesEl.innerHTML = chips.map(c =>
-            `<button type="button"
-                class="text-[11px] bg-surface-container border border-outline-variant/20 rounded-lg px-3 py-1.5 text-outline hover:text-on-surface hover:border-primary/30 transition-colors text-left leading-snug"
-                onclick="document.getElementById('onboarding-proposito').value=${JSON.stringify(c)};document.getElementById('onboarding-proposito').dispatchEvent(new Event('input'));app.onboardingPropostoInput(document.getElementById('onboarding-proposito'))">
-                ${c}
-            </button>`
-        ).join('');
+// Preenche o textarea de propósito com o texto do botão de inspiração clicado
+onboardingSetProposta: function(btn) {
+        const ta = document.getElementById('onboarding-proposito');
+        if (!ta) return;
+        // Remove aspas tipográficas ou normais ao redor do texto
+        const text = btn.textContent.trim().replace(/^["“„]|["”‟]$/g, '');
+        ta.value = text;
+        this.onboardingPropostoInput(ta);
+        ta.focus();
     },
+
+// _renderStep4Examples: substituído por exemplos estáticos no HTML (step-4)
+_renderStep4Examples: function() { /* no-op — exemplos agora são HTML estático */ },
 
 // ── Fase 2: Sub-paineis do passo 1 (Nome → Conta) ─────────────────────────────
 onboardingStep1GoB: function() {

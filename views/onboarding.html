@@ -17,27 +17,27 @@
             Bem-vindo ao seu <span class="text-primary italic">Life OS</span>.
         </h1>
         <p class="text-on-surface-variant text-lg leading-relaxed max-w-lg">
-            Um app para transformar rotina em sistema: voce organiza seu dia, acompanha metas, cria habitos, revisa sua vida e usa seus valores como bussola.
+            Um sistema para transformar rotina em intenção: você organiza o dia, acompanha metas, cria hábitos e usa seus valores como bússola.
         </p>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
             <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4">
                 <span class="material-symbols-outlined text-primary text-2xl mb-2">today</span>
-                <p class="text-sm font-bold text-on-surface">Clareza diaria</p>
-                <p class="text-xs text-outline mt-1">Check-in, foco, intencao e diario.</p>
+                <p class="text-sm font-bold text-on-surface">Clareza diária</p>
+                <p class="text-xs text-outline mt-1">Check-in, foco, intenção e diário.</p>
             </div>
             <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4">
                 <span class="material-symbols-outlined text-primary text-2xl mb-2">flag</span>
                 <p class="text-sm font-bold text-on-surface">Planos vivos</p>
-                <p class="text-xs text-outline mt-1">Metas, OKRs, semana e revisoes.</p>
+                <p class="text-xs text-outline mt-1">Metas, OKRs, semana e revisões.</p>
             </div>
             <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4">
                 <span class="material-symbols-outlined text-primary text-2xl mb-2">auto_awesome</span>
-                <p class="text-sm font-bold text-on-surface">Proposito pratico</p>
-                <p class="text-xs text-outline mt-1">Valores, legado, visao e Flow.</p>
+                <p class="text-sm font-bold text-on-surface">Propósito prático</p>
+                <p class="text-xs text-outline mt-1">Valores, legado, visão e Flow.</p>
             </div>
         </div>
         <button onclick="app.onboardingNext()" class="mt-2 bg-primary text-on-primary py-4 px-8 rounded-2xl font-bold font-label uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-fit">
-            Comecar jornada
+            Começar jornada
         </button>
     </div>
 
@@ -66,7 +66,7 @@
             <div>
                 <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-3">Passo 2 de 2</p>
                 <h2 class="text-3xl font-headline font-bold italic text-on-background">Como quer guardar seus dados?</h2>
-                <p class="mt-2 text-outline text-sm">Com conta, tudo sincroniza entre dispositivos. No modo local, fica so neste aparelho.</p>
+                <p class="mt-2 text-outline text-sm">Com conta, tudo sincroniza entre dispositivos. No modo local, fica só neste aparelho.</p>
             </div>
 
             <!-- Opcao: Criar conta -->
@@ -110,7 +110,7 @@
                     <span class="material-symbols-outlined notranslate text-outline text-lg">smartphone</span>
                     <span class="text-left leading-tight">
                         <span class="block">Continuar local</span>
-                        <span class="block text-[10px] font-normal text-outline mt-0.5">So neste aparelho, por ora</span>
+                        <span class="block text-[10px] font-normal text-outline mt-0.5">Só neste aparelho, por ora</span>
                     </span>
                 </button>
             </div>
@@ -123,8 +123,8 @@
 
     <!-- PASSO 2: RODA DA VIDA -->
     <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-5" id="step-2">
-        <h2 class="text-3xl font-headline font-bold italic text-on-background">Como voce esta hoje?</h2>
-        <p class="text-outline text-sm">Marque como voce se sente em cada area da sua vida agora. E um retrato inicial, rapido e sem pressao.</p>
+        <h2 class="text-3xl font-headline font-bold italic text-on-background">Como você está hoje?</h2>
+        <p class="text-outline text-sm">Marque como se sente em cada área da vida agora. É um retrato inicial, rápido e sem pressão.</p>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 mt-1">
             <div class="space-y-2">
@@ -201,16 +201,16 @@
 
     <!-- PASSO 3: VALORES -->
     <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-6" id="step-3">
-        <h2 class="text-3xl font-headline font-bold italic text-on-background">Seus valores base</h2>
-        <p class="text-outline text-sm">Escolha ate 5 valores que devem orientar decisoes, metas e prioridades.</p>
+        <h2 class="text-3xl font-headline font-bold italic text-on-background">Seus valores essenciais</h2>
+        <p class="text-outline text-sm">Escolha até 5 valores que devem orientar decisões, metas e prioridades.</p>
 
         <div class="flex flex-wrap gap-2 mt-4" id="values-container">
             <button onclick="app.onboardingToggleValor(this)" data-valor="Liberdade" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Liberdade</button>
             <button onclick="app.onboardingToggleValor(this)" data-valor="Verdade" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Verdade</button>
             <button onclick="app.onboardingToggleValor(this)" data-valor="Impacto" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Impacto</button>
-            <button onclick="app.onboardingToggleValor(this)" data-valor="Equilibrio" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Equilibrio</button>
-            <button onclick="app.onboardingToggleValor(this)" data-valor="Saude" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Saude</button>
-            <button onclick="app.onboardingToggleValor(this)" data-valor="Familia" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Familia</button>
+            <button onclick="app.onboardingToggleValor(this)" data-valor="Equilibrio" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Equilíbrio</button>
+            <button onclick="app.onboardingToggleValor(this)" data-valor="Saude" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Saúde</button>
+            <button onclick="app.onboardingToggleValor(this)" data-valor="Familia" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Família</button>
             <button onclick="app.onboardingToggleValor(this)" data-valor="Conhecimento" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Conhecimento</button>
             <button onclick="app.onboardingToggleValor(this)" data-valor="Relacionamentos" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Relacionamentos</button>
             <button onclick="app.onboardingToggleValor(this)" data-valor="Prosperidade" class="px-4 py-2 rounded-full border border-outline-variant/40 text-sm font-medium hover:bg-primary/10 transition-all [&.selected]:bg-primary [&.selected]:text-white [&.selected]:border-primary">Prosperidade</button>
@@ -220,7 +220,7 @@
         </div>
 
         <div class="bg-surface-container-low p-4 rounded-xl mt-4">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Sua bussola</p>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Sua bússola</p>
             <p id="onboarding-valores-preview" class="text-sm italic text-primary">Selecione seus valores...</p>
         </div>
 
@@ -234,63 +234,77 @@
     <div class="onboarding-step step-transition step-hidden-right absolute inset-x-0 flex flex-col gap-5" id="step-4">
 
         <div>
-            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-3">Minha Bussola</p>
-            <h2 class="text-3xl md:text-4xl font-headline font-bold italic leading-tight text-on-background">O que orienta suas escolhas?</h2>
-            <p id="step4-values-hint" class="mt-3 text-sm text-outline leading-relaxed">Seus valores ja dizem muito. Agora transforme isso em uma frase que voce releria antes de tomar uma decisao importante.</p>
+            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-3">Minha Bússola</p>
+            <h2 class="text-3xl md:text-4xl font-headline font-bold italic leading-tight text-on-background">Qual é o fio que conecta tudo o que você faz?</h2>
+            <p class="mt-3 text-sm text-outline leading-relaxed">Uma frase que você releria antes de uma decisão importante. Não precisa ser filosófica — só precisa ser sua.</p>
         </div>
 
-        <!-- Frase-bussola: destaque principal -->
+        <!-- Campo principal -->
         <div class="rounded-2xl border-2 border-primary/20 bg-primary/5 p-5 space-y-3">
             <div class="flex items-center justify-between gap-3">
-                <label for="onboarding-proposito" class="text-[10px] font-bold uppercase tracking-widest text-primary">Sua frase-bussola</label>
+                <label for="onboarding-proposito" class="text-[10px] font-bold uppercase tracking-widest text-primary">Minha bússola</label>
                 <span id="step4-char-count" class="text-[10px] text-outline">0 / 160</span>
             </div>
             <textarea id="onboarding-proposito" rows="3"
                 class="w-full bg-surface-container-lowest border border-primary/20 rounded-xl p-4 text-sm italic focus:ring-2 focus:ring-primary/20 outline-none resize-none leading-relaxed"
-                placeholder="Uma frase que representa o que voce quer construir e como quer viver..."
+                placeholder="Ex.: Construir coisas que importam, enquanto cuido de quem amo e continuo crescendo."
                 maxlength="160"
                 oninput="app.onboardingPropostoInput(this)"></textarea>
-            <div id="step4-examples" class="flex flex-wrap gap-2"></div>
         </div>
 
-        <!-- Duas perguntas complementares -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <label class="block space-y-1.5">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-outline">O que voce quer construir ou transformar?</span>
-                <input type="text" id="onboarding-ikigai-missao"
-                    class="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                    placeholder="Ex.: uma vida mais intencional e presente">
-            </label>
-            <label class="block space-y-1.5">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-outline">Como voce quer contribuir para o mundo?</span>
-                <input type="text" id="onboarding-ikigai-vocacao"
-                    class="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                    placeholder="Ex.: criando, ensinando, cuidando, liderando">
-            </label>
+        <!-- Inspirações estáticas — sempre visíveis -->
+        <div class="space-y-2">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Inspirações — clique para usar</p>
+            <div class="flex flex-col gap-2" id="step4-examples">
+                <button type="button" onclick="app.onboardingSetProposta(this)"
+                    class="text-left text-sm text-on-surface-variant bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 hover:border-primary/30 hover:bg-surface-container-high transition-colors leading-relaxed">
+                    "Construir algo que ainda vai existir quando eu não estiver mais, sem abrir mão de quem eu amo."
+                </button>
+                <button type="button" onclick="app.onboardingSetProposta(this)"
+                    class="text-left text-sm text-on-surface-variant bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 hover:border-primary/30 hover:bg-surface-container-high transition-colors leading-relaxed">
+                    "Crescer todos os dias e usar o que aprendo para ajudar as pessoas ao meu redor."
+                </button>
+                <button type="button" onclick="app.onboardingSetProposta(this)"
+                    class="text-left text-sm text-on-surface-variant bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 hover:border-primary/30 hover:bg-surface-container-high transition-colors leading-relaxed">
+                    "Ser a pessoa mais presente possível — no trabalho, em casa e comigo mesmo."
+                </button>
+            </div>
         </div>
 
-        <!-- Explorar mais (opcional, recolhido) -->
+        <!-- Aprofundar (opcional, colapsado) -->
         <details class="rounded-2xl border border-outline-variant/20 bg-surface-container-low overflow-hidden">
             <summary class="list-none cursor-pointer px-4 py-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-outline hover:text-on-surface transition-colors">
                 <span class="material-symbols-outlined notranslate text-[16px] text-primary">expand_more</span>
-                Aprofundar proposito (opcional)
+                Aprofundar propósito (opcional)
             </summary>
             <div class="px-4 pb-4 space-y-3 border-t border-outline-variant/10 pt-3">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <label class="block space-y-1.5">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-outline">O que quero construir ou transformar</span>
+                        <input type="text" id="onboarding-ikigai-missao"
+                            class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                            placeholder="Ex.: uma carreira com mais autonomia e impacto">
+                    </label>
+                    <label class="block space-y-1.5">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-outline">Como quero contribuir para o mundo</span>
+                        <input type="text" id="onboarding-ikigai-vocacao"
+                            class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                            placeholder="Ex.: criando, ensinando, conectando pessoas">
+                    </label>
                     <input type="text" id="onboarding-ikigai-love" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Amo fazer: aprender, criar, ensinar...">
                     <input type="text" id="onboarding-ikigai-good" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Sou bom em: resolver, liderar, conectar...">
                     <input type="text" id="onboarding-ikigai-need" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="O mundo precisa de: clareza, ferramentas...">
-                    <input type="text" id="onboarding-ikigai-paid" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Posso ser remunerado por: produto, servico...">
+                    <input type="text" id="onboarding-ikigai-paid" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Posso ser pago por: produto, serviço...">
                 </div>
                 <div class="grid grid-cols-1 gap-3">
-                    <textarea id="onboarding-legacy-familia" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Familia: como voce quer ser lembrado em casa?"></textarea>
-                    <textarea id="onboarding-legacy-profissao" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Profissao: qual impacto no trabalho?"></textarea>
-                    <textarea id="onboarding-legacy-mundo" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Mundo: que marca quer deixar alem de voce?"></textarea>
+                    <textarea id="onboarding-legacy-familia" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Família: como quer ser lembrado em casa?"></textarea>
+                    <textarea id="onboarding-legacy-profissao" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Profissão: qual impacto no trabalho?"></textarea>
+                    <textarea id="onboarding-legacy-mundo" rows="2" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Mundo: que marca quer deixar além de você?"></textarea>
                 </div>
             </div>
         </details>
 
-        <p class="text-[11px] text-outline italic">Nao precisa estar perfeito agora. Voce pode editar isso a qualquer momento em Proposito.</p>
+        <p class="text-[11px] text-outline italic">Não precisa ser perfeito agora — você edita isso a qualquer momento em Propósito.</p>
 
         <div class="flex gap-4 mt-2">
             <button onclick="app.onboardingBack()" class="flex-1 border-2 border-outline-variant/30 py-4 rounded-xl font-bold uppercase text-xs tracking-widest text-outline">Voltar</button>
@@ -303,13 +317,13 @@
         <div class="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-2">
             <span class="material-symbols-outlined text-4xl">route</span>
         </div>
-        <h2 class="text-3xl font-headline font-bold italic text-on-background">Seu plano de arranque</h2>
-        <p class="text-outline text-sm max-w-2xl">Vamos sair do onboarding com uma trilha inicial (Meta, OKR, Macro e Micro) e um habito pronto para hoje. Depois voce ajusta com calma.</p>
+        <h2 class="text-3xl font-headline font-bold italic text-on-background">Seu plano de partida</h2>
+        <p class="text-outline text-sm max-w-2xl">Vamos criar uma trilha inicial (Meta, OKR, Macro e Micro) e um hábito pronto para hoje. Você ajusta com calma depois.</p>
 
         <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-5 space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Area foco inicial</label>
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Área de foco</label>
                     <select id="onboarding-starter-dimension" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface">
                         <option value="Carreira">Carreira</option>
                         <option value="Saúde">Saúde</option>
@@ -322,23 +336,23 @@
                     </select>
                 </div>
                 <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Habito ancora (obrigatorio)</label>
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Hábito âncora (obrigatório)</label>
                     <input type="text" id="onboarding-starter-habit" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface" placeholder="Ex.: 15 min de planejamento da manha">
                 </div>
             </div>
 
             <div class="space-y-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Meta inicial (obrigatorio)</label>
+                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Meta inicial (obrigatório)</label>
                 <input type="text" id="onboarding-starter-goal" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface" placeholder="Ex.: Organizar minha rotina de foco e entrega nas proximas 12 semanas">
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Horario do habito</label>
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Horário do hábito</label>
                     <input type="time" id="onboarding-starter-time" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface">
                 </div>
                 <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Forca para treinar</label>
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Força para treinar</label>
                     <input type="text" id="onboarding-strength" list="onboarding-strength-catalog" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface" placeholder="Ex.: Disciplina">
                     <datalist id="onboarding-strength-catalog"></datalist>
                 </div>
@@ -348,7 +362,7 @@
                     <datalist id="onboarding-shadow-catalog"></datalist>
                 </div>
             </div>
-            <p class="text-[11px] text-outline">Sugestoes de forcas e sombras sincronizadas com Proposito &gt; Identidade.</p>
+            <p class="text-[11px] text-outline">Sugestões de forças e sombras sincronizadas com Propósito &gt; Identidade.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
@@ -418,7 +432,7 @@
         </div>
 
         <button onclick="app.onboardingComplete()" class="mt-5 bg-primary text-on-primary py-5 rounded-2xl font-bold font-label uppercase tracking-[0.2em] text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-full">
-            Confirmar e comecar
+            Confirmar e começar
         </button>
     </div>
 </main>

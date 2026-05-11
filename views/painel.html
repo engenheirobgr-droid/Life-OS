@@ -16,6 +16,35 @@
             class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Painel de
             Evolução</h2>
         <div class="mt-6 h-px w-24 bg-primary"></div>
+        <!-- Anchor Chips -->
+        <div class="overflow-x-auto no-scrollbar mt-4">
+            <div class="inline-flex min-w-max gap-2 py-1">
+                <button onclick="document.getElementById('painel-situacao-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
+                    <span class="material-symbols-outlined notranslate text-[14px]">monitoring</span>Situação
+                </button>
+                <button onclick="document.getElementById('painel-diagnostico-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
+                    <span class="material-symbols-outlined notranslate text-[14px]">troubleshoot</span>Diagnóstico
+                </button>
+                <button onclick="document.getElementById('painel-evolucao-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
+                    <span class="material-symbols-outlined notranslate text-[14px]">trending_up</span>Evolução
+                </button>
+                <button onclick="document.getElementById('painel-padroes-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
+                    <span class="material-symbols-outlined notranslate text-[14px]">hub</span>Padrões
+                </button>
+                <button onclick="document.getElementById('painel-gestao-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
+                    <span class="material-symbols-outlined notranslate text-[14px]">grid_view</span>Áreas
+                </button>
+                <button onclick="document.getElementById('painel-weekly-review-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
+                    <span class="material-symbols-outlined notranslate text-[14px]">flag</span>OKRs
+                </button>
+                <button onclick="document.getElementById('painel-execucao-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
+                    <span class="material-symbols-outlined notranslate text-[14px]">local_fire_department</span>Execução
+                </button>
+                <button onclick="document.getElementById('painel-focus-distribution-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
+                    <span class="material-symbols-outlined notranslate text-[14px]">pie_chart</span>Foco
+                </button>
+            </div>
+        </div>
         <div class="mt-4 mb-2">
             <div class="grid grid-cols-3 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
             <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')"
@@ -28,7 +57,7 @@
         </div>
     </header>
 
-    <section class="mt-4 space-y-4">
+    <section id="painel-situacao-section" class="mt-4 space-y-4">
         <div class="space-y-1">
             <h3 class="font-headline text-2xl italic">Situação</h3>
             <p class="text-sm text-on-surface-variant leading-relaxed">O estado real do ciclo, da semana e do seu ritmo de execução.</p>
@@ -93,7 +122,7 @@
         </div>
     </section>
 
-    <section class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <section id="painel-diagnostico-section" class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="space-y-4">
             <div class="space-y-1">
                 <h3 class="font-headline text-2xl italic">Diagnóstico</h3>
@@ -110,7 +139,7 @@
         </div>
     </section>
 
-    <section class="mt-8 space-y-4">
+    <section id="painel-evolucao-section" class="mt-8 space-y-4">
         <div class="space-y-1">
             <h3 class="font-headline text-2xl italic">Evolução Pessoal</h3>
             <p class="text-sm text-on-surface-variant leading-relaxed">Como suas forças, sombras e hábitos estão conversando nesta semana.</p>
@@ -121,7 +150,7 @@
         <div id="cadence-history-panel"></div>
     </section>
 
-    <section class="mt-8 space-y-4">
+    <section id="painel-padroes-section" class="mt-8 space-y-4">
         <div class="space-y-1">
             <h3 class="font-headline text-2xl italic">Padrões</h3>
             <p class="text-sm text-on-surface-variant leading-relaxed">Cruzamentos leves entre check-in, execução, hábitos e carga.</p>
@@ -131,7 +160,7 @@
     </section>
 
     <!-- Progresso por Área -->
-    <section class="mt-8 space-y-4">
+    <section id="painel-gestao-section" class="mt-8 space-y-4">
         <div class="space-y-1 mb-6">
             <h3 class="font-headline text-2xl italic">Gestão de Áreas (O que eu faço)</h3>
             <p class="text-sm text-on-surface-variant leading-relaxed">Progresso de Execução por Dimensão</p>
@@ -332,7 +361,7 @@
         </div>
     </section>
     <!-- Execução -->
-    <section class="mt-8 space-y-4">
+    <section id="painel-execucao-section" class="mt-8 space-y-4">
         <div class="flex justify-between items-baseline mb-2">
             <div class="space-y-0.5">
                 <h3 class="font-headline text-2xl italic">Execução do ciclo</h3>
