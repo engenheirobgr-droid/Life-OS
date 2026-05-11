@@ -1284,8 +1284,6 @@ renderDeepWorkClockVisual: function(options = {}) {
         }
 
         if (style === 'tree') {
-            // Atributos SVG (stroke=, fill=) nao resolvem var() css aqui — usar hex
-            // alinhado com a paleta Tailwind do app (teal-600 / amber-500 / on-surface).
             const TREE_PRIMARY = '#0d9488';
             const TREE_PRIMARY_DEEP = '#0f766e';
             const TREE_TERTIARY = '#f59e0b';
@@ -1293,8 +1291,7 @@ renderDeepWorkClockVisual: function(options = {}) {
             const TREE_LEAF_MID = '#14b8a6';
             const TREE_SOIL_DARK = '#1c2826';
             const TREE_SHADOW = '#000000';
-            // Crescimento continuo: cada elemento tem janela [start, end] de progresso.
-            // grow() retorna 0..1 dentro dessa janela, easeOut suaviza.
+
             const grow = (start, end) => {
                 if (end <= start) return pct >= start ? 1 : 0;
                 if (pct <= start) return 0;
@@ -1303,67 +1300,82 @@ renderDeepWorkClockVisual: function(options = {}) {
             };
             const easeOut = t => 1 - Math.pow(1 - t, 2.4);
 
-            // Caule cresce de baixo para cima ao longo de 0% -> 60%.
+            // Raizes surgem primeiro (0-20%)
+            const rootSpecs = [
+                ['M60 88 Q50 94 40 100', 0.00, 0.15],
+                ['M60 88 Q70 94 80 100', 0.00, 0.15],
+                ['M60 89 Q44 97 33 104', 0.05, 0.20],
+                ['M60 89 Q76 97 87 104', 0.05, 0.20]
+            ];
+            const rootPaths = rootSpecs.map(([d, s, e]) => {
+                const g = easeOut(grow(s, e));
+                if (g <= 0) return '';
+                const off = ((1 - g) * 100).toFixed(2);
+                const op = (0.45 + 0.40 * g).toFixed(2);
+                return `<path d="${d}" pathLength="100" fill="none" stroke="${TREE_PRIMARY_DEEP}" stroke-width="2.2" stroke-linecap="round" opacity="${op}" stroke-dasharray="100" stroke-dashoffset="${off}"></path>`;
+            }).join('');
+
+            // Caule duplo para profundidade (0-60%)
             const stemGrow = easeOut(grow(0.00, 0.60));
             const stemOffset = ((1 - stemGrow) * 100).toFixed(2);
 
-            // Galhos: cada um com sua janela. Desenhados via stroke-dashoffset.
+            // 6 galhos em sequencia
             const branchSpecs = [
-                ['M60 70 Q53 65 46 60', 0.18, 0.32],
-                ['M60 68 Q67 63 74 58', 0.22, 0.36],
-                ['M60 52 Q50 49 42 46', 0.40, 0.54],
-                ['M60 50 Q70 47 78 44', 0.44, 0.58],
-                ['M60 38 Q60 33 60 28', 0.58, 0.72]
+                ['M60 72 Q52 67 43 62', 0.18, 0.32],
+                ['M60 70 Q68 65 77 60', 0.22, 0.36],
+                ['M60 55 Q49 50 40 47', 0.38, 0.52],
+                ['M60 53 Q71 48 80 45', 0.42, 0.56],
+                ['M60 40 Q54 33 49 26', 0.56, 0.70],
+                ['M60 40 Q66 33 71 26', 0.58, 0.72]
             ];
             const branchPaths = branchSpecs.map(([d, s, e]) => {
                 const g = easeOut(grow(s, e));
                 const off = ((1 - g) * 100).toFixed(2);
-                const op = (0.55 + 0.25 * g).toFixed(2);
-                return `<path d="${d}" pathLength="100" fill="none" stroke="${TREE_PRIMARY}" stroke-width="1.9" stroke-linecap="round" opacity="${op}" stroke-dasharray="100" stroke-dashoffset="${off}"></path>`;
+                const op = (0.55 + 0.35 * g).toFixed(2);
+                return `<path d="${d}" pathLength="100" fill="none" stroke="${TREE_PRIMARY}" stroke-width="2.2" stroke-linecap="round" opacity="${op}" stroke-dasharray="100" stroke-dashoffset="${off}"></path>`;
             }).join('');
 
-            // Folhas: brotam em sequencia com opacity + scale interpoladas.
-            // [cx, cy, rotation, baseScale, startPct, endPct]
+            // 19 folhas maiores brotando em sequencia
             const leafSpecs = [
-                [44, 56, -30, 0.95, 0.28, 0.40],
-                [40, 60, -10, 0.85, 0.30, 0.42],
-                [48, 62,  20, 0.80, 0.32, 0.44],
-                [76, 56,  30, 0.95, 0.32, 0.44],
-                [80, 60,  10, 0.85, 0.34, 0.46],
-                [72, 62, -20, 0.80, 0.36, 0.48],
-                [40, 44, -35, 0.90, 0.50, 0.62],
-                [36, 46,  -5, 0.85, 0.52, 0.64],
-                [46, 50,  15, 0.78, 0.54, 0.66],
-                [80, 44,  35, 0.90, 0.54, 0.66],
-                [84, 46,   5, 0.85, 0.56, 0.68],
-                [74, 50, -15, 0.78, 0.58, 0.70],
-                [54, 32, -20, 0.85, 0.70, 0.82],
-                [60, 26,   0, 1.00, 0.72, 0.84],
-                [66, 32,  20, 0.85, 0.74, 0.86],
-                [56, 38, -10, 0.70, 0.76, 0.88],
-                [64, 38,  10, 0.70, 0.78, 0.90]
+                [42, 58, -30, 0.95, 0.28, 0.40],
+                [38, 62, -10, 0.85, 0.30, 0.42],
+                [46, 64,  20, 0.80, 0.32, 0.44],
+                [78, 56,  30, 0.95, 0.32, 0.44],
+                [82, 60,  10, 0.85, 0.34, 0.46],
+                [74, 64, -20, 0.80, 0.36, 0.48],
+                [38, 46, -35, 0.90, 0.48, 0.60],
+                [34, 50,  -5, 0.85, 0.50, 0.62],
+                [44, 52,  15, 0.78, 0.52, 0.64],
+                [82, 44,  35, 0.90, 0.52, 0.64],
+                [86, 48,   5, 0.85, 0.54, 0.66],
+                [76, 52, -15, 0.78, 0.56, 0.68],
+                [48, 28, -20, 0.85, 0.68, 0.80],
+                [60, 22,   0, 1.00, 0.70, 0.82],
+                [66, 28,  20, 0.85, 0.72, 0.84],
+                [54, 34, -10, 0.72, 0.74, 0.86],
+                [64, 34,  10, 0.72, 0.76, 0.88],
+                [50, 24, -25, 0.78, 0.72, 0.84],
+                [70, 24,  25, 0.78, 0.74, 0.86]
             ];
-            const leafPath = 'M0 0 C-3 -2 -3.2 -6 0 -8 C3.2 -6 3 -2 0 0Z';
+            const leafPath = 'M0 0 C-3.8 -2.5 -4.2 -7.5 0 -10.5 C4.2 -7.5 3.8 -2.5 0 0Z';
             const leafEls = leafSpecs.map(([x, y, r, baseScale, s, e]) => {
                 const g = easeOut(grow(s, e));
                 if (g <= 0) return '';
                 const op = (g * 0.92).toFixed(2);
-                const sc = (baseScale * (0.35 + 0.65 * g)).toFixed(3);
+                const sc = (baseScale * (0.30 + 0.70 * g)).toFixed(3);
                 return `<path d="${leafPath}" fill="url(#deep-work-tree-leaf)" transform="translate(${x} ${y}) rotate(${r}) scale(${sc})" opacity="${op}"></path>`;
             }).join('');
 
-            // Fruto unico aparece no fim e ganha glow quando a micro pode ser concluida.
-            const fruitProgress = easeOut(grow(0.86, 0.98));
+            // Fruto grande — aparece no fim com glow se pronto
+            const fruitProgress = easeOut(grow(0.84, 0.97));
             const fruitReady = canCompleteSelectedMicro || pct >= 0.99;
             const fruitOp = fruitProgress.toFixed(2);
-            const fruitScale = (0.4 + 0.6 * fruitProgress).toFixed(3);
+            const fruitScale = (0.25 + 0.75 * fruitProgress).toFixed(3);
             const fruitClass = fruitReady && fruitProgress > 0 ? 'deep-work-tree-fruit-glow' : '';
 
-            // Solo intensifica nos primeiros 25% (acompanha o broto).
             const soilOp = (0.55 + 0.40 * Math.min(1, pct * 4)).toFixed(2);
             const shadowOp = (0.10 + 0.18 * pct).toFixed(2);
 
-            // Orvalho so aparece na pausa, partriculas sobem ciclicamente.
             const dewEls = mode === 'break' ? `
                             <g class="deep-work-tree-dew">
                                 <g class="deep-work-tree-dew-1"><circle cx="34" cy="82" r="1.4" fill="${TREE_LEAF_LIGHT}" opacity="0.85"></circle></g>
@@ -1372,18 +1384,19 @@ renderDeepWorkClockVisual: function(options = {}) {
                             </g>` : '';
 
             const phaseTitle = mode === 'break' ? 'Descanso' : 'Crescimento';
-            const subText = !hasSelectedMicro
-                ? 'Escolha uma micro para plantar a sessao.'
-                : (fruitReady
-                    ? 'Sua micro esta madura.'
-                    : (mode === 'break'
-                        ? 'Orvalho renova as folhas durante a pausa.'
+            const subText = fruitReady
+                ? 'Sua micro esta madura.'
+                : (mode === 'break'
+                    ? 'Orvalho renova as folhas.'
+                    : (pct > 0.70
+                        ? 'Quase la — concentracao total!'
                         : 'A arvore cresce conforme voce foca.'));
 
             return `
-                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-4 text-center shadow-inner overflow-hidden">
-                    <div class="relative mx-auto h-52 w-full max-w-[18rem]">
-                        <svg viewBox="0 0 120 120" class="h-full w-full" role="img" aria-label="Arvore de foco ${pctLabel}">
+                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-center shadow-inner overflow-hidden">
+                    <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline mb-1">${phaseTitle}</p>
+                    <div class="relative mx-auto w-full max-w-xs">
+                        <svg viewBox="0 0 120 110" class="w-full" style="height:196px" role="img" aria-label="Arvore de foco ${pctLabel}">
                             <defs>
                                 <radialGradient id="deep-work-tree-sky" cx="50%" cy="38%" r="70%">
                                     <stop offset="0%" stop-color="${TREE_TERTIARY}" stop-opacity="0.10"></stop>
@@ -1404,36 +1417,27 @@ renderDeepWorkClockVisual: function(options = {}) {
                                     <stop offset="100%" stop-color="#d97a2e" stop-opacity="0.92"></stop>
                                 </radialGradient>
                             </defs>
-                            <circle cx="60" cy="58" r="48" fill="url(#deep-work-tree-sky)"></circle>
-                            <circle cx="60" cy="58" r="48" fill="none" stroke="${TREE_PRIMARY}" stroke-width="1.4" opacity="0.22"></circle>
-
-                            <ellipse cx="60" cy="93" rx="32" ry="3.6" fill="${TREE_SHADOW}" opacity="${shadowOp}"></ellipse>
-                            <path d="M28 86 C40 80 80 80 92 86 C90 96 78 100 60 100 C42 100 30 96 28 86Z" fill="url(#deep-work-tree-soil)" opacity="${soilOp}"></path>
-
-                            <path d="M60 95 Q58 75 60 30" pathLength="100" fill="none" stroke="${TREE_PRIMARY}" stroke-width="3" stroke-linecap="round" opacity="0.92" stroke-dasharray="100" stroke-dashoffset="${stemOffset}"></path>
-
+                            <circle cx="60" cy="52" r="50" fill="url(#deep-work-tree-sky)"></circle>
+                            <circle cx="60" cy="52" r="50" fill="none" stroke="${TREE_PRIMARY}" stroke-width="1.4" opacity="0.22"></circle>
+                            <ellipse cx="60" cy="98" rx="26" ry="2.8" fill="${TREE_SHADOW}" opacity="${shadowOp}"></ellipse>
+                            <path d="M32 86 C42 80 78 80 88 86 C86 95 74 100 60 100 C46 100 34 95 32 86Z" fill="url(#deep-work-tree-soil)" opacity="${soilOp}"></path>
+                            ${rootPaths}
+                            <path d="M60 90 Q57 70 60 20" pathLength="100" fill="none" stroke="${TREE_PRIMARY_DEEP}" stroke-width="5" stroke-linecap="round" opacity="0.88" stroke-dasharray="100" stroke-dashoffset="${stemOffset}"></path>
+                            <path d="M60 90 Q63 70 60 20" pathLength="100" fill="none" stroke="${TREE_PRIMARY}" stroke-width="3" stroke-linecap="round" opacity="0.65" stroke-dasharray="100" stroke-dashoffset="${stemOffset}"></path>
                             ${branchPaths}
-
                             <g class="${activeMotion ? 'deep-work-tree-breathe' : ''}">
                                 ${leafEls}
                             </g>
-
-                            <g transform="translate(60 24) scale(${fruitScale}) translate(-60 -24)" opacity="${fruitOp}" class="${fruitClass}">
-                                <circle cx="60" cy="24" r="3.6" fill="url(#deep-work-tree-fruit)"></circle>
-                                <path d="M60 21 Q60 18 62 17" fill="none" stroke="${TREE_PRIMARY}" stroke-width="0.9" stroke-linecap="round" opacity="0.85"></path>
+                            <g transform="translate(60 20) scale(${fruitScale}) translate(-60 -20)" opacity="${fruitOp}" class="${fruitClass}">
+                                <circle cx="60" cy="20" r="8" fill="url(#deep-work-tree-fruit)"></circle>
+                                <path d="M60 14 Q62 10 65 9" fill="none" stroke="${TREE_PRIMARY}" stroke-width="1.2" stroke-linecap="round" opacity="0.85"></path>
                             </g>
-
                             ${dewEls}
                         </svg>
-                        <div class="absolute inset-x-0 top-2 text-center">
-                            <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">${phaseTitle}</p>
-                        </div>
-                        <div class="absolute inset-x-0 bottom-2 text-center">
-                            <p id="deep-work-timer" class="text-4xl leading-none font-headline italic text-primary tabular-nums">${escapedTime}</p>
-                            <p id="deep-work-phase" class="mt-1 text-[10px] uppercase tracking-[0.12em] text-on-surface-variant">${escapedPhase}</p>
-                        </div>
                     </div>
-                    <p class="mt-1 text-[11px] text-outline">${subText}</p>
+                    <p id="deep-work-timer" class="mt-2 text-4xl leading-none font-headline italic text-primary tabular-nums">${escapedTime}</p>
+                    <p id="deep-work-phase" class="mt-1 text-[10px] uppercase tracking-[0.12em] text-on-surface-variant">${escapedPhase}</p>
+                    <p class="mt-2 text-[11px] text-outline">${subText}</p>
                 </div>`;
         }
 
