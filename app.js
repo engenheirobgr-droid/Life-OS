@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260511-tree-badge-v169';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260511-tree-badge-v169';
-import { attachNotifications } from './js/notifications.js?v=20260511-tree-badge-v169';
-import { attachCadence } from './js/cadence.js?v=20260511-tree-badge-v169';
-import { attachOnboarding } from './js/onboarding.js?v=20260511-tree-badge-v169';
-import { attachIdentity } from './js/identity.js?v=20260511-tree-badge-v169';
-import { attachHabits } from './js/habits.js?v=20260511-tree-badge-v169';
-import { attachStateModule } from './js/state.js?v=20260511-tree-badge-v169';
-import { attachRenderModule } from './js/render.js?v=20260511-tree-badge-v169';
-import { attachPlanningModule } from './js/planning.js?v=20260511-tree-badge-v169';
-import { attachGamificationModule } from './js/gamification.js?v=20260511-tree-badge-v169';
-import { attachSocial } from './js/social.js?v=20260511-tree-badge-v169';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260511-bread-cycle-v170';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260511-bread-cycle-v170';
+import { attachNotifications } from './js/notifications.js?v=20260511-bread-cycle-v170';
+import { attachCadence } from './js/cadence.js?v=20260511-bread-cycle-v170';
+import { attachOnboarding } from './js/onboarding.js?v=20260511-bread-cycle-v170';
+import { attachIdentity } from './js/identity.js?v=20260511-bread-cycle-v170';
+import { attachHabits } from './js/habits.js?v=20260511-bread-cycle-v170';
+import { attachStateModule } from './js/state.js?v=20260511-bread-cycle-v170';
+import { attachRenderModule } from './js/render.js?v=20260511-bread-cycle-v170';
+import { attachPlanningModule } from './js/planning.js?v=20260511-bread-cycle-v170';
+import { attachGamificationModule } from './js/gamification.js?v=20260511-bread-cycle-v170';
+import { attachSocial } from './js/social.js?v=20260511-bread-cycle-v170';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -200,7 +200,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260511-tree-badge-v169',
+    appBuildVersion: '20260511-bread-cycle-v170',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
