@@ -228,6 +228,51 @@ unregisterPushSubscription: async function() {
         return true;
     },
 
+notifySelfPushEvent: async function(payload = {}, options = {}) {
+        try {
+            const state = window.sistemaVidaState || {};
+            if (!state.settings?.notificationsEnabled) return false;
+            if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return false;
+            if (!this.isRealAccount || !this.isRealAccount()) return false;
+            const idToken = await this.getCurrentIdToken();
+            const body = String(payload.body || '').trim();
+            if (!body) return false;
+            const requestBody = {
+                title: String(payload.title || 'Life OS'),
+                body,
+                tag: String(payload.tag || 'lifeos-push'),
+                url: String(payload.url || '/'),
+                requireInteraction: !!payload.requireInteraction
+            };
+            if (options.dedupeId) requestBody.dedupeId = String(options.dedupeId);
+
+            const currentOrigin = (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin : '';
+            const endpoints = [
+                '/api/internal-event-push',
+                'https://life-os-mu-ashy.vercel.app/api/internal-event-push'
+            ].filter((url, index, arr) => {
+                if (url.startsWith('https://') && currentOrigin && url.startsWith(currentOrigin)) return index === 1;
+                return arr.indexOf(url) === index;
+            });
+
+            for (const endpoint of endpoints) {
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${idToken}`
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                    if (!res.ok) continue;
+                    return true;
+                } catch (_) {}
+            }
+        } catch (_) {}
+        return false;
+    },
+
 showNotification: function(messageOrOptions, toastType = 'success') {
         const payload = typeof messageOrOptions === 'string'
             ? { body: messageOrOptions }
@@ -426,14 +471,55 @@ scheduleLocalNotifications: function() {
 
         nudges.forEach((nudge, idx) => {
             setTimeout(() => {
-                this.showNotification({
+                const payload = {
                     title: nudge.title,
                     body: nudge.body,
                     tag: nudge.tag,
                     url: '/'
-                }, 'info');
+                };
+                this.showNotification(payload, 'info');
+                this.notifySelfPushEvent(payload, { dedupeId: `open_nudge_${todayKey}_${nudge.id}` }).catch(() => {});
                 this.markOpenNudgeShownToday(nudge.id, todayKey);
             }, 2500 + (idx * 1800));
+        });
+    },
+
+scheduleRiskNotifications: function() {
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+        const state = window.sistemaVidaState;
+        if (!state?.settings?.notificationsEnabled) return;
+        if (!this.getRiskAlerts) return;
+
+        const dateKey = this.getLocalDateKey();
+        let sentLog = {};
+        try { sentLog = JSON.parse(this.localGet('lifeos_risk_alerts_sent') || '{}') || {}; } catch (_) { sentLog = {}; }
+        const alerts = this.getRiskAlerts().slice(0, 3);
+
+        alerts.forEach((alert, idx) => {
+            const microId = String(alert.id || 'micro');
+            const type = String(alert.tipo || 'risk');
+            const dedupeKey = `${dateKey}:${microId}:${type}`;
+            if (sentLog[dedupeKey]) return;
+
+            const bodyByType = {
+                overdue: `Micro em atraso: ${alert.title}. Hora de renegociar prazo ou executar agora.`,
+                hoje: `Micro vence hoje: ${alert.title}. Reserve um bloco para fechar isso hoje.`,
+                urgente: `Micro urgente sem inicio: ${alert.title}. Defina a primeira acao agora.`,
+                risco: `Micro em risco: ${alert.title}. Vale iniciar hoje para evitar atraso.`
+            };
+            const payload = {
+                title: 'Life OS - Risco de execucao',
+                body: bodyByType[type] || `Micro em risco: ${alert.title}`,
+                tag: `lifeos-risk-${type}`,
+                url: '/?view=planos'
+            };
+
+            setTimeout(() => {
+                this.showNotification(payload, 'info');
+                this.notifySelfPushEvent(payload, { dedupeId: `risk_${dedupeKey}` }).catch(() => {});
+                sentLog[dedupeKey] = true;
+                try { this.localSet('lifeos_risk_alerts_sent', JSON.stringify(sentLog)); } catch (_) {}
+            }, 2200 + (idx * 1300));
         });
     },
 

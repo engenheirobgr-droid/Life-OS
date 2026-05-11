@@ -588,6 +588,13 @@ const app = {
             new Promise((_, reject) => setTimeout(() => reject(new Error(label + '_timeout')), ms))
         ]);
     },
+
+    getCurrentIdToken: async function(forceRefresh = false) {
+        await this.withTimeout(this.getAuthReady(), 8000, 'auth_ready_token');
+        const user = auth.currentUser;
+        if (!user || user.isAnonymous) throw new Error('auth_signed_out');
+        return user.getIdToken(!!forceRefresh);
+    },
     normalizeDimensionKey: function(dimRaw) {
         const txt = String(dimRaw || '').toLowerCase()
             .normalize('NFD')
@@ -2178,6 +2185,7 @@ openAvatarPicker: function() {
         // Agenda notificações locais do SO (apenas se permissão concedida)
         setTimeout(() => this.scheduleLocalNotifications(), 5000);
         setTimeout(() => this.scheduleHabitReminders(), 5200);
+        setTimeout(() => this.scheduleRiskNotifications?.(), 5600);
 
         const diffDaysCycle = Math.floor((today - new Date(state.cycleStartDate)) / (1000 * 60 * 60 * 24));
         if (diffDaysCycle >= 84) setTimeout(() => this.showNotification("🔄 Ciclo concluído! Reavalie a Roda da Vida e o PERMA na aba Propósito."), 4000);
@@ -6533,7 +6541,16 @@ ensureNotesState: function() {
             dw.mode = 'break';
             dw.remainingSec = dw.breakSec;
             dw.lastTickAt = Date.now();
-            if (this.showNotification) this.showNotification('Bloco de foco concluído. Iniciando pausa de 20 minutos. Use "Concluir micro" para fechar a ação.');
+            if (this.showNotification) {
+                const payload = {
+                    title: 'Life OS - Foco',
+                    body: 'Bloco de foco concluído. Iniciando pausa de 20 minutos. Use "Concluir micro" para fechar a ação.',
+                    tag: 'lifeos-focus-ended',
+                    url: '/?view=foco'
+                };
+                this.showNotification(payload);
+                this.notifySelfPushEvent?.(payload, { dedupeId: `focus_end_${endedAtTs}` }).catch(() => {});
+            }
             this.saveState(true);
             this.ensureDeepWorkTicking();
             if (this.currentView === 'foco' && this.render.foco) this.render.foco();
@@ -6547,7 +6564,17 @@ ensureNotesState: function() {
         dw.lastTickAt = 0;
         this.stopDeepWorkTicking();
         this.saveState(true);
-        if (this.showNotification) this.showNotification('Pausa concluída. Você está pronto para o próximo bloco.');
+        if (this.showNotification) {
+            const breakEndedAt = new Date().toISOString();
+            const payload = {
+                title: 'Life OS - Foco',
+                body: 'Pausa concluída. Você está pronto para o próximo bloco.',
+                tag: 'lifeos-break-ended',
+                url: '/?view=foco'
+            };
+            this.showNotification(payload);
+            this.notifySelfPushEvent?.(payload, { dedupeId: `break_end_${breakEndedAt}` }).catch(() => {});
+        }
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
     },
 
@@ -6818,11 +6845,31 @@ ensureNotesState: function() {
 
         if (canCompleteLinkedMicro) {
             this.completeMicroAction(linkedMicro.id);
-            if (this.showNotification) this.showNotification('Sessão encerrada e micro concluída.');
+            if (this.showNotification) {
+                const doneAt = new Date().toISOString();
+                const payload = {
+                    title: 'Life OS - Foco',
+                    body: 'Sessão encerrada e micro concluída.',
+                    tag: 'lifeos-focus-session-complete',
+                    url: '/?view=foco'
+                };
+                this.showNotification(payload);
+                this.notifySelfPushEvent?.(payload, { dedupeId: `focus_manual_complete_${doneAt}` }).catch(() => {});
+            }
             return;
         }
 
-        if (this.showNotification) this.showNotification('Pausa encerrada.');
+        if (this.showNotification) {
+            const breakStoppedAt = new Date().toISOString();
+            const payload = {
+                title: 'Life OS - Foco',
+                body: 'Pausa encerrada.',
+                tag: 'lifeos-break-stopped',
+                url: '/?view=foco'
+            };
+            this.showNotification(payload);
+            this.notifySelfPushEvent?.(payload, { dedupeId: `break_manual_end_${breakStoppedAt}` }).catch(() => {});
+        }
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
     },
 
@@ -6837,7 +6884,17 @@ ensureNotesState: function() {
         dw.lastTickAt = 0;
         this.stopDeepWorkTicking();
         this.saveState(true);
-        if (this.showNotification) this.showNotification('Descanso pulado. Pronto para nova sessão.');
+        if (this.showNotification) {
+            const breakSkippedAt = new Date().toISOString();
+            const payload = {
+                title: 'Life OS - Foco',
+                body: 'Descanso pulado. Pronto para nova sessão.',
+                tag: 'lifeos-break-skipped',
+                url: '/?view=foco'
+            };
+            this.showNotification(payload);
+            this.notifySelfPushEvent?.(payload, { dedupeId: `break_skipped_${breakSkippedAt}` }).catch(() => {});
+        }
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
     },
 
