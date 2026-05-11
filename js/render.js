@@ -1259,48 +1259,31 @@ renderDeepWorkClockVisual: function(options = {}) {
         if (style === 'ring') {
             const dash = 339;
             const offset = Math.round(dash * (1 - pct));
-            const percent = Math.round(pct * 100);
-            const stateLabel = mode === 'break'
-                ? 'Recuperacao'
-                : (isPaused ? 'Pausado' : (isRunning ? 'Em foco' : (hasSelectedMicro ? 'Pronto' : 'Preparacao')));
-            const helperText = mode === 'break'
-                ? 'Pausa ativa para recuperar energia antes do proximo bloco.'
-                : (canCompleteSelectedMicro
-                    ? 'Bloco completo. Finalize a sessao e confirme a micro.'
-                    : (hasSelectedMicro ? 'Mantenha o ritmo ate o fechamento do ciclo.' : 'Escolha uma micro acao para iniciar o ciclo.'));
             const dotAngle = -90 + (pct * 360);
             const dotX = 60 + (54 * Math.cos(dotAngle * Math.PI / 180));
             const dotY = 60 + (54 * Math.sin(dotAngle * Math.PI / 180));
             const pulseClass = activeMotion ? 'deep-work-ring-pulse' : '';
             return `
-                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-surface-container-lowest px-4 py-4 text-center shadow-inner overflow-hidden">
-                    <div class="flex items-center justify-between gap-3 mb-3 text-left">
-                        <div class="min-w-0">
-                            <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">Anel de foco</p>
-                            <p class="text-sm font-bold text-on-surface truncate">${stateLabel}</p>
-                        </div>
-                        <span class="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">${percent}%</span>
-                    </div>
+                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-surface-container-lowest px-4 py-5 text-center shadow-inner overflow-hidden">
                     <div class="relative mx-auto h-56 w-56 max-w-full">
-                        <svg viewBox="0 0 120 120" class="h-full w-full" role="img" aria-label="Progresso do bloco ${pctLabel}">
+                        <svg viewBox="0 0 120 120" class="h-full w-full text-primary" role="img" aria-label="Progresso do bloco ${pctLabel}">
                             <defs>
                                 <linearGradient id="deep-work-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.95"></stop>
-                                    <stop offset="55%" stop-color="var(--md-sys-color-tertiary)" stop-opacity="0.9"></stop>
-                                    <stop offset="100%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.72"></stop>
+                                    <stop offset="0%" stop-color="currentColor" stop-opacity="1"></stop>
+                                    <stop offset="100%" stop-color="currentColor" stop-opacity="0.62"></stop>
                                 </linearGradient>
                                 <radialGradient id="deep-work-ring-core" cx="50%" cy="38%" r="62%">
-                                    <stop offset="0%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.14"></stop>
-                                    <stop offset="72%" stop-color="var(--md-sys-color-primary)" stop-opacity="0.035"></stop>
-                                    <stop offset="100%" stop-color="var(--md-sys-color-primary)" stop-opacity="0"></stop>
+                                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.14"></stop>
+                                    <stop offset="72%" stop-color="currentColor" stop-opacity="0.035"></stop>
+                                    <stop offset="100%" stop-color="currentColor" stop-opacity="0"></stop>
                                 </linearGradient>
                             </defs>
                             <circle cx="60" cy="60" r="57" fill="url(#deep-work-ring-core)"></circle>
                             <circle cx="60" cy="60" r="54" fill="none" stroke="var(--md-sys-color-surface-container-highest)" stroke-width="5" opacity="0.82"></circle>
                             <circle cx="60" cy="60" r="43" fill="none" stroke="var(--md-sys-color-outline-variant)" stroke-width="1" opacity="0.18"></circle>
                             <circle cx="60" cy="60" r="54" fill="none" stroke="url(#deep-work-ring-gradient)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${dash}" stroke-dashoffset="${offset}" transform="rotate(-90 60 60)" class="${pulseClass}"></circle>
-                            <circle cx="${dotX.toFixed(2)}" cy="${dotY.toFixed(2)}" r="3.3" fill="var(--md-sys-color-primary)" stroke="var(--md-sys-color-surface-container-lowest)" stroke-width="2"></circle>
-                            <path d="M60 22 C75 38 94 46 94 66 C94 84 79 98 60 98 C41 98 26 84 26 66 C26 46 45 38 60 22Z" fill="var(--md-sys-color-primary)" opacity="0.045"></path>
+                            <circle cx="${dotX.toFixed(2)}" cy="${dotY.toFixed(2)}" r="3.3" fill="currentColor" stroke="var(--md-sys-color-surface-container-lowest)" stroke-width="2"></circle>
+                            <path d="M60 22 C75 38 94 46 94 66 C94 84 79 98 60 98 C41 98 26 84 26 66 C26 46 45 38 60 22Z" fill="currentColor" opacity="0.045"></path>
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
                             <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">${mode === 'break' ? 'Pausa' : 'Tempo restante'}</p>
@@ -1308,12 +1291,6 @@ renderDeepWorkClockVisual: function(options = {}) {
                             ${phaseHtml}
                         </div>
                     </div>
-                    <div class="mt-3 grid grid-cols-3 gap-1.5" aria-hidden="true">
-                        <span class="h-1 rounded-full ${pct >= 0.25 ? 'bg-primary' : 'bg-outline-variant/35'}"></span>
-                        <span class="h-1 rounded-full ${pct >= 0.50 ? 'bg-primary' : 'bg-outline-variant/35'}"></span>
-                        <span class="h-1 rounded-full ${pct >= 0.75 ? 'bg-primary' : 'bg-outline-variant/35'}"></span>
-                    </div>
-                    <p class="mt-3 text-[11px] leading-relaxed text-outline">${helperText}</p>
                 </div>`;
         }
 
