@@ -36,8 +36,20 @@ A arquitetura da sua intenção: metas, OKRs, macros, micros, timeline e planeja
 <!-- Tab Navigation -->
 <nav class="flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0">
 <button class="tab-btn active text-primary hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="metas" onclick="window.app.switchPlanosTab('metas')">Metas</button>
-<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="okrs" onclick="window.app.switchPlanosTab('okrs')">OKRs</button>
-<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="macro" onclick="window.app.switchPlanosTab('macro')">Macro</button>
+<div class="relative group inline-flex items-end shrink-0">
+  <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="okrs" onclick="window.app.switchPlanosTab('okrs')">OKRs</button>
+  <div class="pointer-events-none hidden group-hover:block absolute top-full left-0 mt-1 z-30 w-60 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs text-on-surface-variant leading-relaxed shadow-xl">
+    <p class="font-bold text-on-surface mb-1">Objectives & Key Results</p>
+    Define o que voce quer atingir (objetivo) e como vai medir o sucesso (resultados-chave), dentro de um ciclo de 12 semanas.
+  </div>
+</div>
+<div class="relative group inline-flex items-end shrink-0">
+  <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="macro" onclick="window.app.switchPlanosTab('macro')">Macro</button>
+  <div class="pointer-events-none hidden group-hover:block absolute top-full left-0 mt-1 z-30 w-60 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs text-on-surface-variant leading-relaxed shadow-xl">
+    <p class="font-bold text-on-surface mb-1">Macro Acao</p>
+    Um projeto ou sprint de 1-4 semanas ligado a um OKR. Agrupa as micros (tarefas) que voce vai executar para avan&ccedil;ar.
+  </div>
+</div>
 <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="micro" onclick="window.app.switchPlanosTab('micro')">Micro</button>
 <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="timeline" onclick="window.app.switchPlanosTab('timeline')">Timeline</button>
 <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="semanal" onclick="window.app.switchPlanosTab('semanal')">Semanal</button>

@@ -7,19 +7,40 @@ getStarterJourneyState: function() {
         const weekKey = this._getWeekKey();
         const cadence = window.sistemaVidaState.profile?.cadence || {};
         const weekPlan = (window.sistemaVidaState.weekPlans || {})[weekKey];
-        const hasTrail = (window.sistemaVidaState.entities?.metas || []).length > 0 &&
-            (window.sistemaVidaState.entities?.okrs || []).length > 0 &&
-            (window.sistemaVidaState.entities?.macros || []).length > 0 &&
-            (window.sistemaVidaState.entities?.micros || []).length > 0;
-        // Require a habit with meaning (linked to a meta or identity trait) for the guided journey
-        const hasHabit = (window.sistemaVidaState.habits || []).some(h => h.linkedMetaId || h.sourceType);
+        const state = window.sistemaVidaState;
+
+        // Item 1: check-in do dia
         const checkinToday = cadence.checkin?.lastAt === today;
+
+        // Item 2: plano da semana com pelo menos uma micro selecionada
         const weeklyPlanned = !!(weekPlan && Array.isArray(weekPlan.selectedMicros) && weekPlan.selectedMicros.length > 0);
+
+        // Item 3: sessao de foco hoje (deepWork.sessions com startedAt/endedAt de hoje)
+        const focusToday = (state.deepWork?.sessions || []).some(s =>
+            (s.endedAt || s.startedAt || '').startsWith(today));
+
         const items = [
-            { id: 'trail', label: 'Trilha inicial', done: hasTrail, action: () => this.openMetaTrailWizard() },
-            { id: 'habit', label: 'Hábito com propósito', done: hasHabit, action: () => this.navigate('hoje') },
-            { id: 'checkin', label: 'Check-in do dia', done: checkinToday, action: () => this.flowNavigate('hoje', 'daily-checkin-panel') },
-            { id: 'weekly', label: 'Plano da semana', done: weeklyPlanned, action: () => this.flowNavigate('planos', 'tab-semanal', 'semanal') }
+            {
+                id: 'checkin',
+                label: 'Check-in do dia',
+                description: 'Como voce esta? 1 minuto de autoconhecimento.',
+                icon: 'self_improvement',
+                done: checkinToday
+            },
+            {
+                id: 'weekly',
+                label: 'Plano da semana',
+                description: 'Escolha as micros que vai executar essa semana.',
+                icon: 'calendar_view_week',
+                done: weeklyPlanned
+            },
+            {
+                id: 'focus',
+                label: 'Primeira sessao de foco',
+                description: 'Execute uma micro em sessao de trabalho profundo.',
+                icon: 'timer',
+                done: focusToday
+            }
         ];
         const doneCount = items.filter((item) => item.done).length;
         return { items, doneCount, total: items.length, pct: Math.round((doneCount / items.length) * 100) };
@@ -41,12 +62,15 @@ renderStarterJourneyCard: function() {
         }
         const nextPending = journey.items.find((item) => !item.done);
         const list = journey.items.map((item) => `
-            <div class="flex items-center justify-between gap-3 rounded-xl px-3 py-2 ${item.done ? 'bg-emerald-500/[0.06]' : 'bg-surface-container-low'} border ${item.done ? 'border-emerald-500/20' : 'border-outline-variant/15'}">
-                <div class="flex items-center gap-2 min-w-0">
-                    <span class="material-symbols-outlined notranslate text-[16px] ${item.done ? 'text-emerald-500' : 'text-outline'}" ${item.done ? "style=\"font-variation-settings:'FILL' 1;\"" : ''}>${item.done ? 'check_circle' : 'radio_button_unchecked'}</span>
-                    <p class="text-xs font-semibold text-on-surface truncate">${this.escapeHtml(item.label)}</p>
+            <div class="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 ${item.done ? 'bg-emerald-500/[0.06]' : 'bg-surface-container-low'} border ${item.done ? 'border-emerald-500/20' : 'border-outline-variant/15'}">
+                <div class="flex items-start gap-2.5 min-w-0">
+                    <span class="material-symbols-outlined notranslate text-[18px] mt-0.5 shrink-0 ${item.done ? 'text-emerald-500' : 'text-primary/60'}" ${item.done ? "style=\"font-variation-settings:'FILL' 1;\"" : ''}>${item.done ? 'check_circle' : (item.icon || 'radio_button_unchecked')}</span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold ${item.done ? 'text-emerald-700 dark:text-emerald-300 line-through' : 'text-on-surface'}">${this.escapeHtml(item.label)}</p>
+                        ${item.done ? '' : `<p class="text-[11px] text-outline mt-0.5 leading-snug">${this.escapeHtml(item.description || '')}</p>`}
+                    </div>
                 </div>
-                ${item.done ? '' : `<button type="button" onclick="window.app.onStarterJourneyAction('${item.id}')" class="shrink-0 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors">Abrir</button>`}
+                ${item.done ? '' : `<button type="button" onclick="window.app.onStarterJourneyAction('${item.id}')" class="shrink-0 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors mt-0.5">Ir</button>`}
             </div>
         `).join('');
         container.innerHTML = `
@@ -68,10 +92,12 @@ renderStarterJourneyCard: function() {
 
 onStarterJourneyAction: function(itemId) {
         const actions = {
+            checkin: () => this.flowNavigate('hoje', 'daily-checkin-panel'),
+            weekly:  () => this.flowNavigate('planos', 'tab-semanal', 'semanal'),
+            focus:   () => this.navigate('foco'),
+            // legado
             trail: () => this.openMetaTrailWizard(),
             habit: () => this.flowNavigate('hoje', 'hoje-habits-section'),
-            checkin: () => this.flowNavigate('hoje', 'daily-checkin-panel'),
-            weekly: () => this.flowNavigate('planos', 'tab-semanal', 'semanal')
         };
         if (actions[itemId]) actions[itemId]();
     },
@@ -105,6 +131,15 @@ onboardingGoTo: function(step) {
         
         const indicator = document.getElementById('onboarding-step-indicator');
         if (indicator) indicator.textContent = `${step + 1}/${steps.length}`;
+
+        // Renderiza exemplos de proposito ao entrar no step-4
+        const step4Index = Array.from(steps).findIndex(s => s.id === 'step-4');
+        if (step === step4Index) {
+            const propostoTA = document.getElementById('onboarding-proposito');
+            if (propostoTA && !propostoTA.value.trim()) {
+                this._renderStep4Examples();
+            }
+        }
 
         // Renderização especial do resumo
         if (step === steps.length - 1) {
@@ -577,6 +612,102 @@ ensureOnboardingStarterSetup: function() {
         this.scheduleHabitReminders();
     },
 
+// ── Fase 3: Propósito — char counter + exemplos por valor ─────────────────────
+onboardingPropostoInput: function(textarea) {
+        const max = 160;
+        const len = (textarea.value || '').length;
+        const counter = document.getElementById('step4-char-count');
+        if (counter) counter.textContent = `${len} / ${max}`;
+
+        // Só mostra exemplos se textarea ainda estiver vazio
+        if (textarea.value.trim()) {
+            const examplesEl = document.getElementById('step4-examples');
+            if (examplesEl) examplesEl.innerHTML = '';
+            return;
+        }
+        this._renderStep4Examples();
+    },
+
+_renderStep4Examples: function() {
+        const examplesEl = document.getElementById('step4-examples');
+        if (!examplesEl) return;
+
+        // Pega os valores selecionados no passo anterior (step-3)
+        const state = window.sistemaVidaState;
+        const profile = state?.profile || {};
+        const identityValues = Array.isArray(profile.identityValues) ? profile.identityValues : [];
+
+        const examplesByValue = {
+            'Crescimento': 'Evoluir todos os dias, mesmo que um pouco.',
+            'Familia':     'Estar presente para quem eu amo.',
+            'Liberdade':   'Construir uma vida que nao me prende.',
+            'Saude':       'Cuidar do corpo e da mente como base de tudo.',
+            'Criatividade':'Criar algo que so eu poderia criar.',
+            'Impacto':     'Deixar cada ambiente melhor do que encontrei.',
+            'Conexao':     'Construir relacoes profundas e verdadeiras.',
+            'Integridade': 'Agir de acordo com o que acredito, sempre.',
+            'Lideranca':   'Inspirar outros a serem a melhor versao de si.',
+            'Autonomia':   'Viver segundo minhas proprias escolhas.',
+            'Excelencia':  'Fazer cada coisa com cuidado e dedicacao.',
+            'Paz':         'Manter a serenidade no meio do caos.',
+            'Proposito':   'Servir algo maior do que eu mesmo.',
+            'Aventura':    'Explorar o desconhecido com coragem.',
+            'Aprendizado': 'Nunca parar de aprender e me reinventar.',
+        };
+
+        // Gera exemplos a partir dos valores selecionados
+        const chips = [];
+        identityValues.slice(0, 3).forEach(v => {
+            const example = examplesByValue[v];
+            if (example) chips.push(example);
+        });
+
+        // Fallback se nenhum valor mapeado
+        if (chips.length === 0) {
+            chips.push('Viver com intencao e construir algo que importa.');
+        }
+
+        examplesEl.innerHTML = chips.map(c =>
+            `<button type="button"
+                class="text-[11px] bg-surface-container border border-outline-variant/20 rounded-lg px-3 py-1.5 text-outline hover:text-on-surface hover:border-primary/30 transition-colors text-left leading-snug"
+                onclick="document.getElementById('onboarding-proposito').value=${JSON.stringify(c)};document.getElementById('onboarding-proposito').dispatchEvent(new Event('input'));app.onboardingPropostoInput(document.getElementById('onboarding-proposito'))">
+                ${c}
+            </button>`
+        ).join('');
+    },
+
+// ── Fase 2: Sub-paineis do passo 1 (Nome → Conta) ─────────────────────────────
+onboardingStep1GoB: function() {
+        // Salva o nome antes de ir para o sub-painel B
+        const nameInput = document.getElementById('onboarding-nome');
+        if (nameInput) {
+            const raw = nameInput.value.trim();
+            window.sistemaVidaState.profile.name = raw || 'Viajante';
+        }
+        const panelA = document.getElementById('step-1-panel-a');
+        const panelB = document.getElementById('step-1-panel-b');
+        if (panelA && panelB) {
+            panelA.classList.add('hidden');
+            panelA.classList.remove('flex');
+            panelB.classList.remove('hidden');
+            panelB.classList.add('flex');
+        }
+        this.applyOnboardingAccountState();
+        this.scrollOnboardingToTop();
+    },
+
+onboardingStep1GoA: function() {
+        const panelA = document.getElementById('step-1-panel-a');
+        const panelB = document.getElementById('step-1-panel-b');
+        if (panelA && panelB) {
+            panelB.classList.add('hidden');
+            panelB.classList.remove('flex');
+            panelA.classList.remove('hidden');
+            panelA.classList.add('flex');
+        }
+        this.scrollOnboardingToTop();
+    },
+
 onboardingNext: function() {
         this.onboardingSaveCurrentStep();
         if (this.onboardingStep === 5 && !this.validateOnboardingStarterDraft({ showError: true })) {
@@ -584,6 +715,17 @@ onboardingNext: function() {
         }
         const total = document.querySelectorAll('.onboarding-step').length;
         if (this.onboardingStep < total - 1) {
+            // Ao sair do passo 1, garantir que panel-a esteja visível para retorno
+            if (this.onboardingStep === 1) {
+                const panelA = document.getElementById('step-1-panel-a');
+                const panelB = document.getElementById('step-1-panel-b');
+                if (panelA && panelB) {
+                    panelA.classList.remove('hidden');
+                    panelA.classList.add('flex');
+                    panelB.classList.add('hidden');
+                    panelB.classList.remove('flex');
+                }
+            }
             this.onboardingGoTo(this.onboardingStep + 1);
         }
     },

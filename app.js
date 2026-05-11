@@ -128,7 +128,7 @@ function getAuthReady() {
 window.sistemaVidaState = {
     stateSchemaVersion: CURRENT_STATE_SCHEMA_VERSION,
     profile: {
-        name: "Bruno",
+        name: "",
         level: 1,
         xp: 0,
         values: [],
@@ -2270,7 +2270,7 @@ renderProfileChrome: function() {
         const profile = window.sistemaVidaState.profile || {};
         const avatarUrl = String(profile.avatarUrl || '').trim();
         const nameEl = document.getElementById('perfil-sidebar-name');
-        if (nameEl) nameEl.textContent = profile.name || 'Bruno';
+        if (nameEl) nameEl.textContent = profile.name || 'Você';
 
         [
             { img: 'profile-nav-avatar-mobile', icon: 'profile-nav-icon-mobile' },

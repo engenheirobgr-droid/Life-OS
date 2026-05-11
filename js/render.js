@@ -678,11 +678,48 @@ renderPatternsPanel: function() {
         if (!container) return;
         const gate = this.hasEnoughData('checkin', 14);
         if (!gate.ok) {
+            const pct = Math.min(100, Math.round((gate.count / gate.minDays) * 100));
+            const remaining = gate.minDays - gate.count;
             container.innerHTML = `
-                <div class="lg:col-span-3 rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-5">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Dados insuficientes</p>
-                    <h4 class="mt-2 font-headline text-xl font-bold text-on-surface">Precisa de ${gate.minDays} dias de check-in</h4>
-                    <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Hoje existem ${gate.count}. Quando houver base suficiente, o Painel cruza sono, humor, estresse, execução de micros e hábitos. Correlação não é causalidade.</p>
+                <div class="lg:col-span-3 rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-6 space-y-5">
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined notranslate text-primary text-2xl">query_stats</span>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Padroes desbloqueavel</p>
+                            <h4 class="mt-1 font-headline text-xl font-bold text-on-surface">Correlacoes de bem-estar</h4>
+                            <p class="mt-1.5 text-sm text-on-surface-variant leading-relaxed max-w-2xl">Quando houver ${gate.minDays} check-ins, o Painel vai cruzar sono, humor, estresse, micros e habitos — mostrando o que realmente impacta seu desempenho.</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-on-surface">${gate.count} de ${gate.minDays} check-ins registrados</span>
+                            <span class="text-xs font-bold text-primary">${pct}%</span>
+                        </div>
+                        <div class="h-2.5 w-full rounded-full bg-surface-container-high overflow-hidden">
+                            <div class="h-full rounded-full bg-primary transition-all duration-500" style="width:${pct}%"></div>
+                        </div>
+                        <p class="text-[11px] text-outline">${remaining > 0 ? `Faltam ${remaining} dia${remaining === 1 ? '' : 's'} de check-in para desbloquear.` : 'Quase la!'}</p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        ${[
+                            { icon: 'bedtime', label: 'Sono vs Micros', desc: 'Noites bem dormidas aumentam execucao?' },
+                            { icon: 'mood', label: 'Humor vs Habitos', desc: 'Dias mais alegres manteem habitos?' },
+                            { icon: 'stress_management', label: 'Estresse vs Entregas', desc: 'Pressao alta reduz performance?' }
+                        ].map(c => `
+                        <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-3 opacity-50 select-none">
+                            <span class="material-symbols-outlined notranslate text-outline text-xl">${c.icon}</span>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mt-1.5">${c.label}</p>
+                            <p class="text-[11px] text-outline/70 mt-1 leading-snug italic">${c.desc}</p>
+                        </div>`).join('')}
+                    </div>
+                    <div class="pt-2 border-t border-outline-variant/10">
+                        <button type="button" onclick="window.app.flowNavigate('hoje','daily-checkin-panel')" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-on-primary text-xs font-bold uppercase tracking-wider rounded-xl shadow-sm hover:opacity-90 active:scale-95 transition-all">
+                            <span class="material-symbols-outlined notranslate text-[15px]">self_improvement</span>
+                            Fazer check-in agora
+                        </button>
+                    </div>
                 </div>`;
             return;
         }
@@ -2000,7 +2037,7 @@ render: {
             const welcomeGreeting = document.getElementById('welcome-greeting');
             if (welcomeAvatar && welcomeMessage && welcomeGreeting) {
                 const profile = state.profile || {};
-                const name = profile.name || 'Bruno';
+                const rawName = String(profile.name || '').trim();
                 const avatarUrl = profile.avatarUrl || '';
 
                 // Configurar avatar
@@ -2012,18 +2049,19 @@ render: {
                     welcomeAvatar.style.display = 'none';
                 }
 
-                // Configurar nome
-                welcomeMessage.textContent = `Olá, ${name}!`;
+                // Configurar nome — quando sem nome, mensagem de boas-vindas neutra
+                welcomeMessage.textContent = rawName ? `Olá, ${rawName}!` : 'Bem-vindo!';
 
                 // Configurar saudação baseada no horário
                 const hour = new Date().getHours();
+                const suffix = rawName ? 'Bem-vindo de volta.' : 'Pronto para começar?';
                 let greeting = '';
                 if (hour >= 5 && hour < 12) {
-                    greeting = 'Bom dia! Bem-vindo de volta.';
+                    greeting = `Bom dia! ${suffix}`;
                 } else if (hour >= 12 && hour < 18) {
-                    greeting = 'Boa tarde! Bem-vindo de volta.';
+                    greeting = `Boa tarde! ${suffix}`;
                 } else {
-                    greeting = 'Boa noite! Bem-vindo de volta.';
+                    greeting = `Boa noite! ${suffix}`;
                 }
                 welcomeGreeting.textContent = greeting;
             }

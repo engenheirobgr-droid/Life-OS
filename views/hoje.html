@@ -22,6 +22,22 @@
     <div class="mt-6 h-px w-24 bg-primary"></div>
 </section>
 
+<!-- Anchor chips -->
+<div class="mt-4 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+    <button onclick="document.getElementById('daily-checkin-panel').scrollIntoView({behavior:'smooth',block:'start'})" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 text-[11px] font-bold text-outline hover:text-primary hover:border-primary/30 transition-colors">
+        <span class="material-symbols-outlined notranslate text-[13px]">self_improvement</span> Check-in
+    </button>
+    <button onclick="document.getElementById('hoje-checklist-section').scrollIntoView({behavior:'smooth',block:'start'})" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 text-[11px] font-bold text-outline hover:text-primary hover:border-primary/30 transition-colors">
+        <span class="material-symbols-outlined notranslate text-[13px]">task_alt</span> Para hoje
+    </button>
+    <button onclick="document.getElementById('hoje-habits-section').scrollIntoView({behavior:'smooth',block:'start'})" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 text-[11px] font-bold text-outline hover:text-primary hover:border-primary/30 transition-colors">
+        <span class="material-symbols-outlined notranslate text-[13px]">repeat</span> Hábitos
+    </button>
+    <button onclick="document.getElementById('hoje-diario-section').scrollIntoView({behavior:'smooth',block:'start'})" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 text-[11px] font-bold text-outline hover:text-primary hover:border-primary/30 transition-colors">
+        <span class="material-symbols-outlined notranslate text-[13px]">bedtime</span> Diário
+    </button>
+</div>
+
 <!-- Boas-vindas -->
 <section class="mt-8">
     <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-6 flex items-center gap-4">
@@ -32,8 +48,8 @@
             </div>
         </div>
         <div class="flex-1">
-            <h3 id="welcome-message" class="font-headline text-xl font-bold text-on-background mb-1">Olá, Bruno!</h3>
-            <p id="welcome-greeting" class="text-sm text-outline">Bom dia! Bem-vindo de volta.</p>
+            <h3 id="welcome-message" class="font-headline text-xl font-bold text-on-background mb-1">Bem-vindo!</h3>
+            <p id="welcome-greeting" class="text-sm text-outline">&nbsp;</p>
         </div>
     </div>
 </section>
@@ -287,11 +303,18 @@
 </section>
 <!-- Section: Diário -->
 <section id="hoje-diario-section" class="mt-6 space-y-6">
-<div class="flex items-center gap-3 mb-6">
-<span class="material-symbols-outlined notranslate text-tertiary">bedtime</span>
-<h3 class="font-headline text-2xl italic">Como foi o dia</h3>
+<div class="flex items-center justify-between gap-3 mb-4">
+    <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined notranslate text-tertiary">bedtime</span>
+        <h3 class="font-headline text-2xl italic">Como foi o dia</h3>
+    </div>
+    <button type="button" id="diario-toggle-btn" onclick="window.toggleDiarioSection()"
+        class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors">
+        <span id="diario-toggle-label">Abrir</span>
+        <span id="diario-toggle-icon" class="material-symbols-outlined notranslate text-[16px] transition-transform">expand_more</span>
+    </button>
 </div>
-    <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
+    <div id="diario-collapsible" class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
         <div class="space-y-2">
             <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Pelo que sou grato hoje?</label>
             <textarea id="diario-gratidao" class="w-full bg-transparent border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none" placeholder="Escreva aqui..." rows="3"></textarea>
@@ -335,9 +358,13 @@
 </section>
 </main>
 <!-- FABs -->
-<div class="fixed bottom-28 right-6 z-50 flex flex-col gap-4">
+<div class="fixed bottom-28 right-6 z-50 flex flex-col items-end gap-2">
+    <!-- Label hint (shown on md+) -->
+    <span class="hidden md:inline-block text-[10px] font-bold uppercase tracking-widest text-outline bg-surface-container-lowest/80 backdrop-blur-sm px-2 py-1 rounded-full border border-outline-variant/20 shadow-sm pointer-events-none">Criar</span>
     <!-- Primary Add Button -->
     <button onclick="window.app.toggleFabMenu(event)"
+        aria-label="Criar"
+        title="Criar"
         class="w-14 h-14 bg-primary text-on-primary rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-90 transition-transform">
         <span class="material-symbols-outlined notranslate text-2xl" style="font-variation-settings: 'wght' 500;">add</span>
     </button>
@@ -346,6 +373,34 @@
 <!-- Progress Thread (Decorative background element) -->
 <div class="fixed left-4 top-0 bottom-0 w-[1px] bg-primary/10 -z-10 pointer-events-none hidden lg:block"></div>
 <script>
+(function() {
+  // Auto-collapse "Como foi o dia" before 18h
+  var diario = document.getElementById('diario-collapsible');
+  var toggleLabel = document.getElementById('diario-toggle-label');
+  var toggleIcon = document.getElementById('diario-toggle-icon');
+  var isOpen = new Date().getHours() >= 18;
+
+  function applyDiarioState(open) {
+    isOpen = open;
+    if (diario) {
+      diario.style.display = open ? '' : 'none';
+    }
+    if (toggleLabel) toggleLabel.textContent = open ? 'Recolher' : 'Abrir';
+    if (toggleIcon) toggleIcon.style.transform = open ? 'rotate(180deg)' : '';
+  }
+
+  window.toggleDiarioSection = function() {
+    applyDiarioState(!isOpen);
+  };
+
+  // Apply initial state once DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { applyDiarioState(isOpen); });
+  } else {
+    applyDiarioState(isOpen);
+  }
+})();
+
 (function() {
   const identityMap = {
     'Saúde': 'atleta 💪',
