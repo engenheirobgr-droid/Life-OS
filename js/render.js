@@ -1284,6 +1284,74 @@ renderDeepWorkClockVisual: function(options = {}) {
         }
 
         if (style === 'tree') {
+            const breadFocusScenes = [
+                { label: 'Ingredientes', note: 'Tudo pronto para comecar.', image: './assets/focus-bread/work-01.jpg' },
+                { label: 'Mistura', note: 'A massa ganha forma.', image: './assets/focus-bread/work-02.jpg' },
+                { label: 'Sova', note: 'Energia aplicada com presenca.', image: './assets/focus-bread/work-03.jpg' },
+                { label: 'Primeiro descanso', note: 'O foco comeca a fermentar.', image: './assets/focus-bread/work-04.jpg' },
+                { label: 'Crescimento', note: 'Volume visivel, ritmo consistente.', image: './assets/focus-bread/work-05.jpg' },
+                { label: 'Modelagem', note: 'A micro ganha acabamento.', image: './assets/focus-bread/work-06.jpg' },
+                { label: 'Forno', note: 'Ultimos minutos de calor.', image: './assets/focus-bread/work-07.jpg' },
+                { label: 'Pronto', note: 'Sua micro esta madura.', image: './assets/focus-bread/work-08.jpg' }
+            ];
+            const breadBreakScenes = [
+                { label: 'Mesa pronta', note: 'O bloco virou alimento.', image: './assets/focus-bread/rest-01.jpg' },
+                { label: 'Cafe', note: 'A pausa aquece a retomada.', image: './assets/focus-bread/rest-02.jpg' },
+                { label: 'Saborear', note: 'Recupere energia sem pressa.', image: './assets/focus-bread/rest-01.jpg' },
+                { label: 'Integrar', note: 'Descanso concluido, novo ciclo a vista.', image: './assets/focus-bread/rest-02.jpg' }
+            ];
+            const breadScenes = mode === 'break' ? breadBreakScenes : breadFocusScenes;
+            const breadStageRaw = pct * breadScenes.length;
+            const breadStageIndex = Math.min(breadScenes.length - 1, Math.max(0, Math.floor(breadStageRaw)));
+            const breadStage = breadScenes[breadStageIndex] || breadScenes[0];
+            const breadStageText = `${breadStageIndex + 1}/${breadScenes.length}`;
+            const breadProgressText = mode === 'break' ? 'Descanso' : 'Ciclo do pao';
+            const breadStageProgress = breadScenes.length > 1 ? breadStageIndex / (breadScenes.length - 1) : pct;
+            const sceneAlt = `${breadProgressText}: ${breadStage.label}`;
+            const stageDots = breadScenes.map((scene, index) => {
+                const isPast = index < breadStageIndex;
+                const isCurrent = index === breadStageIndex;
+                const widthClass = isCurrent ? 'w-7' : 'w-2';
+                const toneClass = isCurrent
+                    ? 'bg-primary'
+                    : (isPast ? 'bg-primary/55' : 'bg-on-surface/20');
+                return `<span title="${this.escapeHtml(scene.label)}" class="h-2 ${widthClass} rounded-full ${toneClass} transition-all"></span>`;
+            }).join('');
+
+            return `
+                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-surface-container-lowest p-3 text-left shadow-inner overflow-hidden">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">${breadProgressText}</p>
+                            <p class="mt-0.5 text-sm font-bold text-on-surface">${this.escapeHtml(breadStage.label)}</p>
+                        </div>
+                        <p class="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] font-bold text-primary">${this.escapeHtml(breadStageText)}</p>
+                    </div>
+                    <div class="relative overflow-hidden rounded-xl border border-outline-variant/15 bg-surface-container-low aspect-[4/3]">
+                        <img src="${this.escapeHtml(breadStage.image)}" alt="${this.escapeHtml(sceneAlt)}" class="h-full w-full object-cover" loading="eager">
+                        <div class="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/45 to-transparent"></div>
+                        <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/65 to-transparent"></div>
+                        <div class="absolute left-3 right-3 top-3">
+                            <div class="h-1.5 overflow-hidden rounded-full bg-white/25">
+                                <div class="h-full rounded-full bg-white/90 transition-all" style="width:${Math.round(pct * 100)}%"></div>
+                            </div>
+                        </div>
+                        <div class="absolute left-3 right-3 bottom-3 flex items-end justify-between gap-3">
+                            <div class="min-w-0 text-white drop-shadow">
+                                <p id="deep-work-timer" class="text-4xl leading-none font-headline italic tabular-nums">${escapedTime}</p>
+                                <p id="deep-work-phase" class="mt-1 text-[10px] uppercase tracking-[0.14em] font-bold text-white/85">${escapedPhase}</p>
+                            </div>
+                            <div class="hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/20 text-xs font-bold text-white backdrop-blur">
+                                ${Math.round(breadStageProgress * 100)}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
+                        ${stageDots}
+                    </div>
+                    <p class="mt-2 text-center text-[11px] text-outline">${this.escapeHtml(breadStage.note)}</p>
+                </div>`;
+
             const focusStages = [
                 { label: 'Ingredientes', note: 'Tudo pronto para comecar.' },
                 { label: 'Mistura', note: 'A massa ganha forma.' },
