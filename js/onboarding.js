@@ -6,29 +6,49 @@ getStarterJourneyState: function() {
         const state = window.sistemaVidaState;
         const today = this.getLocalDateKey();
         const weekKey = this._getWeekKey();
-        const cadence = state.profile?.cadence || {};
         const weekPlan = (state.weekPlans || {})[weekKey];
         const activeMicros = (state.entities?.micros || []).filter(m => m && m.id && m.status !== 'done' && m.status !== 'abandoned' && !m.completed);
         const activeHabits = (state.habits || []).filter(h => h && h.id && h.archived !== true && h.status !== 'archived');
-        const pendingHabit = activeHabits.find(h => !this.isHabitDoneOnDate(h, today));
+        const dayIndex = String(new Date(today + 'T12:00:00').getDay());
+        const habitsForToday = activeHabits.filter(h => h.frequency !== 'specific' || !Array.isArray(h.specificDays) || !h.specificDays.length || h.specificDays.map(String).includes(dayIndex));
+        const pendingHabit = habitsForToday.find(h => !this.isHabitDoneOnDate(h, today));
         const weeklyPlanned = !!(weekPlan && Array.isArray(weekPlan.selectedMicros) && weekPlan.selectedMicros.length > 0);
-        const checkinDone = cadence.checkin?.lastAt === today;
-        const diaryDone = cadence.diary?.lastAt === today || cadence.shutdown?.lastAt === today;
         const next = this.getNextBestAction({ scope: 'today' });
+        const nextRitual = this.getNextRitualSuggestion?.();
         const hasMicroParent = (state.entities?.macros || []).some(item => item && item.status !== 'done' && item.status !== 'abandoned');
 
         const queue = [];
         const push = (item) => {
-            if (queue.length < 3 && item && !queue.some(existing => existing.id === item.id)) queue.push(item);
+            if (queue.length < 3 && item && !queue.some(existing => existing.id === item.id || (existing.action && existing.action === item.action))) queue.push(item);
         };
 
-        if (!checkinDone) {
+        if (nextRitual) {
             push({
-                id: 'checkin',
-                label: 'Check-in do dia',
-                description: 'Calibre energia, humor e intencao antes de decidir.',
-                icon: 'self_improvement',
-                action: 'checkin'
+                id: `ritual-${nextRitual.key || nextRitual.label || 'next'}`,
+                label: 'Proximo ritual',
+                description: nextRitual.label || 'Abra o ritual mais importante agora.',
+                icon: nextRitual.icon || 'event_repeat',
+                action: 'ritual',
+                route: nextRitual.route
+            });
+        }
+
+        if (!activeHabits.length) {
+            push({
+                id: 'create-habit',
+                label: 'Criar habito ancora',
+                description: 'Inclua um comportamento pequeno para sustentar a rotina.',
+                icon: 'repeat',
+                action: 'create-habit'
+            });
+        } else if (pendingHabit) {
+            push({
+                id: 'do-habit',
+                label: 'Registrar habito',
+                description: pendingHabit.title || 'Marque o habito previsto para hoje.',
+                icon: 'check_circle',
+                action: 'do-habit',
+                habitId: pendingHabit.id
             });
         }
 
@@ -48,7 +68,7 @@ getStarterJourneyState: function() {
                     icon: 'account_tree',
                     action: 'create-trail'
                 });
-        } else if (!weeklyPlanned) {
+        } else if (!weeklyPlanned && nextRitual?.key !== 'weeklyPlan') {
             push({
                 id: 'weekly',
                 label: 'Planejar semana',
@@ -58,61 +78,32 @@ getStarterJourneyState: function() {
             });
         }
 
-        if (!activeHabits.length) {
-            push({
-                id: 'create-habit',
-                label: 'Criar habito ancora',
-                description: 'Adicione um comportamento pequeno para sustentar a rotina.',
-                icon: 'repeat',
-                action: 'create-habit'
-            });
-        } else if (pendingHabit) {
-            push({
-                id: 'do-habit',
-                label: 'Realizar habito',
-                description: pendingHabit.title || 'Marque o habito previsto para hoje.',
-                icon: 'check_circle',
-                action: 'do-habit',
-                habitId: pendingHabit.id
-            });
-        }
-
         if (weeklyPlanned && next?.micro) {
             push({
                 id: 'next-best',
-                label: 'Proxima melhor acao',
-                description: next.micro.title || 'Avance a micro mais importante de hoje.',
+                label: 'Ir para proxima melhor acao',
+                description: next.micro.title ? `Pra hoje recomenda: ${next.micro.title}` : 'Use a recomendacao existente em Pra hoje.',
                 icon: 'task_alt',
                 action: 'next-best',
                 microId: next.micro.id
             });
         }
 
-        if (!diaryDone) {
-            push({
-                id: 'diary',
-                label: 'Fechar o dia',
-                description: 'Registre aprendizado, gratidao ou ajuste de rota.',
-                icon: 'bedtime',
-                action: 'diary'
-            });
-        }
-
         const doneSignals = [
-            checkinDone,
+            !nextRitual,
+            activeHabits.length > 0,
+            activeHabits.length > 0 && (!habitsForToday.length || !pendingHabit),
             activeMicros.length > 0,
             weeklyPlanned,
-            activeHabits.length > 0,
-            activeHabits.length > 0 && !pendingHabit,
-            !!(weeklyPlanned && next?.micro),
-            diaryDone
+            !!(weeklyPlanned && next?.micro)
         ].filter(Boolean).length;
+        const totalSignals = 6;
 
         return {
             items: queue,
             doneCount: doneSignals,
-            total: 7,
-            pct: Math.min(100, Math.round((doneSignals / 7) * 100))
+            total: totalSignals,
+            pct: Math.min(100, Math.round((doneSignals / totalSignals) * 100))
         };
     },
 
@@ -164,6 +155,7 @@ onStarterJourneyAction: function(itemId) {
         const action = item?.action || itemId;
 
         const actions = {
+            ritual: () => item?.route ? this.flowNavigate(item.route.view || '', item.route.sectionId || '', item.route.tabId || '') : this.openFlowModal?.(),
             checkin: () => this.flowNavigate('hoje', 'daily-checkin-panel'),
             weekly:  () => this.flowNavigate('planos', 'tab-semanal', 'semanal'),
             'create-trail': () => this.openMetaTrailWizard(),
