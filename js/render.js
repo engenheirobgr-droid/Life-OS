@@ -1863,7 +1863,7 @@ render: {
                 // Ordenar por prazo
                 filtered.sort((a,b) => (a.prazo || '9999').localeCompare(b.prazo || '9999'));
 
-                listContainer.innerHTML = filtered.map(m => {
+                listContainer.innerHTML = filtered.map((m, idx) => {
                     const ctx = app.getMicroPlanContext(m);
                     const focusText = app.formatDurationHuman(m.focusSec || 0);
                     const sessionCount = Number(m.focusSessions || 0);
@@ -1890,6 +1890,8 @@ render: {
                     const focoPlannedBadge = isFocoPlanned
                         ? '<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
                         : '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-widest">Captura</span>';
+                    const trailId = `foco-trail-${idx}`;
+                    const toggleTrail = `const p=document.getElementById('${trailId}'); if(!p) return; p.classList.toggle('hidden');`;
                     return `
                     <div class="relative overflow-hidden p-5 rounded-2xl border ${cardStateClass} hover:shadow-md transition-all group min-w-0">
                         <div class="absolute left-0 top-0 bottom-0 w-1 ${accentClass}"></div>
@@ -1905,7 +1907,7 @@ render: {
                         </div>
                         <h3 class="font-bold text-on-surface mb-1 line-clamp-2">${app.escapeHtml(m.title)}</h3>
                         <div class="mb-2">${focoPlannedBadge}</div>
-                        <p class="text-xs text-outline mb-3 line-clamp-2">${app.escapeHtml(ctx.path)}</p>
+                        <p class="text-xs text-outline mb-3 line-clamp-1">${app.escapeHtml(ctx.parentLabel || 'Sem vínculo em Planos')}</p>
                         <div class="grid grid-cols-2 gap-2 mb-4 text-[10px]">
                             <div class="rounded-lg bg-surface-container-low px-3 py-2">
                                 <span class="block uppercase tracking-widest text-outline font-bold">Foco</span>
@@ -1924,11 +1926,20 @@ render: {
                                 <span class="text-[10px] font-bold uppercase rounded-full px-2 py-0.5 ${statusBadge}">${statusText}</span>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" onclick="${toggleTrail}" class="px-3 py-1.5 rounded-lg border border-outline-variant/20 text-outline text-[10px] font-bold uppercase tracking-widest hover:text-on-surface hover:bg-surface-container-high transition-colors">Trilha</button>
                                 ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">${actionLabel}</button>` : ''}
                                 ${m.status === 'done' ?
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">Reabrir</button>` :
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
                                 }
+                            </div>
+                        </div>
+                        <div id="${trailId}" class="hidden mt-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-3 space-y-2">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Trilha</p>
+                            <div class="text-xs text-on-surface-variant space-y-1">
+                                <p><span class="font-semibold text-on-surface">Meta:</span> ${app.escapeHtml(ctx.meta?.title || '-')}</p>
+                                <p><span class="font-semibold text-on-surface">OKR:</span> ${app.escapeHtml(ctx.okr?.title || '-')}</p>
+                                <p><span class="font-semibold text-on-surface">Macro:</span> ${app.escapeHtml(ctx.macro?.title || '-')}</p>
                             </div>
                         </div>
                     </div>

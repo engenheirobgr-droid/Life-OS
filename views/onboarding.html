@@ -324,7 +324,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Área de foco</label>
-                    <select id="onboarding-starter-dimension" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface">
+                    <select id="onboarding-starter-dimension" onchange="app.onboardingStarterDimensionChanged()" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-3 text-sm text-on-surface">
                         <option value="Carreira">Carreira</option>
                         <option value="Saúde">Saúde</option>
                         <option value="Mente">Mente</option>
@@ -363,6 +363,23 @@
                 </div>
             </div>
             <p class="text-[11px] text-outline">Sugestões de forças e sombras sincronizadas com Propósito &gt; Identidade.</p>
+        </div>
+
+        <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-5 space-y-4">
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Sugestoes de habito por area</p>
+                <span id="onboarding-habit-suggestion-dim" class="text-[10px] text-outline">Carreira</span>
+            </div>
+            <div id="onboarding-habit-suggestions" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        </div>
+
+        <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-5 space-y-4">
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Trilhas prontas por area</p>
+                <span id="onboarding-trail-template-dim" class="text-[10px] text-outline">Carreira</span>
+            </div>
+            <div id="onboarding-trail-templates" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+            <p class="text-[11px] text-outline">As trilhas prontas reduzem atrito para quem esta começando e ainda nao sabe por onde organizar.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">

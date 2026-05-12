@@ -66,6 +66,10 @@ const HABIT_SUGGESTIONS = [
         targetValue: 8,
         frequency: 'daily',
         startTime: '08:00',
+        reminderIntervalEnabled: true,
+        reminderWindowStart: '08:00',
+        reminderWindowEnd: '20:00',
+        reminderIntervalMin: 60,
         continuous: true
     },
     /* ── Carreira ───────────────────────────────────────────── */
@@ -255,6 +259,14 @@ function createHabitFromSuggestion(id) {
         setValue('habit-frequency', suggestion.frequency || 'daily');
         if (typeof this.onHabitFreqChange === 'function') this.onHabitFreqChange(suggestion.frequency || 'daily');
         setValue('habit-start-time', suggestion.startTime || '');
+        const reminderToggle = document.getElementById('habit-reminder-enabled');
+        if (reminderToggle) reminderToggle.checked = true;
+        const reminderIntervalToggle = document.getElementById('habit-reminder-interval-enabled');
+        if (reminderIntervalToggle) reminderIntervalToggle.checked = !!suggestion.reminderIntervalEnabled;
+        if (typeof this.onHabitReminderIntervalToggle === 'function') this.onHabitReminderIntervalToggle(!!suggestion.reminderIntervalEnabled);
+        setValue('habit-reminder-window-start', suggestion.reminderWindowStart || '');
+        setValue('habit-reminder-window-end', suggestion.reminderWindowEnd || '');
+        setValue('habit-reminder-interval-min', suggestion.reminderIntervalMin || 60);
         const continuousEl = document.getElementById('habit-continuous');
         if (continuousEl) {
             continuousEl.checked = !!suggestion.continuous;

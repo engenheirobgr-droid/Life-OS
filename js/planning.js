@@ -14,6 +14,7 @@ onTypeChange: function(type) {
         const rewardInput = document.getElementById('habit-reward');
         const habitControls = document.getElementById('crud-habit-controls');
         const habitContinuousRow = document.getElementById('habit-continuous-row');
+        const habitReminderAdvanced = document.getElementById('habit-reminder-advanced');
         const woopGroup = document.getElementById('crud-woop-group');
         const metaHorizonGroup = document.getElementById('crud-meta-horizon-group');
         const successCriteriaGroup = document.getElementById('crud-success-criteria-group');
@@ -33,6 +34,7 @@ onTypeChange: function(type) {
         setGroupVisible(triggerGroup, false);
         setGroupVisible(habitControls, false);
         setGroupVisible(habitContinuousRow, false, 'block');
+        setGroupVisible(habitReminderAdvanced, false);
         setGroupVisible(woopGroup, false);
         setGroupVisible(habitIdentityGroup, false);
         setGroupVisible(habitStepsChecklistWrap, false);
@@ -54,6 +56,7 @@ onTypeChange: function(type) {
             setGroupVisible(triggerGroup, true);
             setGroupVisible(habitIdentityGroup, true);
             setGroupVisible(habitControls, true);
+            setGroupVisible(habitReminderAdvanced, true);
             setGroupVisible(habitStepsChecklistWrap, !!this.editingEntity && this.editingEntity.type === 'habits');
             if (habitControls) {
                 // Força atualização da visibilidade dos sub-campos baseando nos valores dos selects
@@ -61,6 +64,8 @@ onTypeChange: function(type) {
                 if (modeInput) this.onHabitModeChange(modeInput.value);
                 const freqInput = document.getElementById('habit-frequency');
                 if (freqInput) this.onHabitFreqChange(freqInput.value);
+                const reminderIntervalToggle = document.getElementById('habit-reminder-interval-enabled');
+                if (reminderIntervalToggle) this.onHabitReminderIntervalToggle(!!reminderIntervalToggle.checked);
             }
             this.populateHabitLinkedMeta();
             this.populateHabitIdentitySource();
@@ -1115,6 +1120,15 @@ saveNewEntity: function() {
             obj.startTime = document.getElementById('habit-start-time') ? document.getElementById('habit-start-time').value : '';
             obj.reminderEnabled = !!(document.getElementById('habit-reminder-enabled') && document.getElementById('habit-reminder-enabled').checked);
             obj.reminderTime = obj.startTime || '';
+            obj.reminderIntervalEnabled = !!document.getElementById('habit-reminder-interval-enabled')?.checked;
+            obj.reminderWindowStart = String(document.getElementById('habit-reminder-window-start')?.value || '').trim();
+            obj.reminderWindowEnd = String(document.getElementById('habit-reminder-window-end')?.value || '').trim();
+            obj.reminderIntervalMin = Math.max(15, Number(document.getElementById('habit-reminder-interval-min')?.value || 60));
+            if (!obj.reminderIntervalEnabled) {
+                obj.reminderWindowStart = '';
+                obj.reminderWindowEnd = '';
+                obj.reminderIntervalMin = 0;
+            }
             if (obj.reminderEnabled && typeof Notification !== 'undefined' && Notification.permission === 'default') {
                 Notification.requestPermission().catch(() => {});
             }
@@ -1442,6 +1456,11 @@ editEntity: function(id, type) {
             if (document.getElementById('habit-frequency')) document.getElementById('habit-frequency').value = item.frequency || 'daily';
             if (document.getElementById('habit-start-time')) document.getElementById('habit-start-time').value = item.startTime || item.reminderTime || '';
             if (document.getElementById('habit-reminder-enabled')) document.getElementById('habit-reminder-enabled').checked = !!item.reminderEnabled;
+            if (document.getElementById('habit-reminder-interval-enabled')) document.getElementById('habit-reminder-interval-enabled').checked = !!item.reminderIntervalEnabled;
+            if (document.getElementById('habit-reminder-window-start')) document.getElementById('habit-reminder-window-start').value = item.reminderWindowStart || '';
+            if (document.getElementById('habit-reminder-window-end')) document.getElementById('habit-reminder-window-end').value = item.reminderWindowEnd || '';
+            if (document.getElementById('habit-reminder-interval-min')) document.getElementById('habit-reminder-interval-min').value = Number(item.reminderIntervalMin || 60);
+            this.onHabitReminderIntervalToggle(!!item.reminderIntervalEnabled);
             if (document.getElementById('habit-days') && item.specificDays) {
                 Array.from(document.getElementById('habit-days').options).forEach(opt => {
                     opt.selected = item.specificDays.includes(opt.value);

@@ -47,6 +47,10 @@ ensureHabitMaturityState: function() {
                 else if (habit.sourceShadowId) habit.sourceType = 'shadow';
             }
             if (!habit.sourceId) habit.sourceId = habit.sourceStrengthId || habit.sourceShadowId || '';
+            if (typeof habit.reminderIntervalEnabled !== 'boolean') habit.reminderIntervalEnabled = false;
+            if (typeof habit.reminderWindowStart !== 'string') habit.reminderWindowStart = '';
+            if (typeof habit.reminderWindowEnd !== 'string') habit.reminderWindowEnd = '';
+            if (!Number.isFinite(Number(habit.reminderIntervalMin))) habit.reminderIntervalMin = 0;
         });
     },
 
@@ -356,6 +360,18 @@ onHabitFreqChange: function(freq) {
             daysContainer.classList.add('hidden');
             daysContainer.classList.remove('flex');
             daysContainer.style.display = 'none';
+        }
+    },
+
+onHabitReminderIntervalToggle: function(enabled) {
+        const fields = document.getElementById('habit-reminder-interval-fields');
+        if (!fields) return;
+        if (enabled) {
+            fields.classList.remove('hidden');
+            fields.classList.add('grid');
+        } else {
+            fields.classList.add('hidden');
+            fields.classList.remove('grid');
         }
     },
 

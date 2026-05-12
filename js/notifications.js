@@ -1,9 +1,9 @@
-import { setDoc, deleteDoc } from './firebase.js';
+﻿import { setDoc, deleteDoc } from './firebase.js';
 
 export function attachNotifications(app) {
     Object.assign(app, {
 getPushErrorMessage: function(error) {
-        const msg = String(error?.message || error?.code || error || '');
+        const msg = String(error.message || error.code || error || '');
         if (msg.includes('push_public_key') || msg.includes('Unexpected token') || msg.includes('api')) {
             return 'nao consegui conectar ao servico de push. Recarregue o app e tente novamente.';
         }
@@ -75,7 +75,7 @@ revalidateNotificationState: async function(options = {}) {
             try {
                 const pushOk = await this.withTimeout(this.registerPushSubscription(), 10000, 'push_revalidate');
                 this.lastPushRegistrationOk = !!pushOk;
-                this.lastPushRegistrationError = pushOk ? '' : 'Push em segundo plano indisponivel neste navegador.';
+                this.lastPushRegistrationError = pushOk  '' : 'Push em segundo plano indisponivel neste navegador.';
             } catch (err) {
                 this.lastPushRegistrationOk = false;
                 this.lastPushRegistrationError = this.getPushErrorMessage(err);
@@ -109,20 +109,20 @@ toggleDailyNotifications: async function() {
         }
         this._notificationToggleBusy = true;
         window.sistemaVidaState.settings.notificationsEnabled = enabled;
-        try { this.localSet('lifeos_notif_enabled', enabled ? '1' : '0'); } catch (_) {}
+        try { this.localSet('lifeos_notif_enabled', enabled  '1' : '0'); } catch (_) {}
         this.lastPushRegistrationOk = null;
         this.lastPushRegistrationError = '';
         if (enabled) this.scheduleHabitReminders();
         else if (this._habitReminderTimers) this._habitReminderTimers.forEach(timerId => clearTimeout(timerId));
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
-        this.showToast(enabled ? 'Notificações ativadas.' : 'Notificações desativadas.', 'success');
+        this.showToast(enabled  'NotificaÃ§Ãµes ativadas.' : 'NotificaÃ§Ãµes desativadas.', 'success');
 
         try {
             if (enabled) {
                 try {
                     const pushOk = await this.withTimeout(this.registerPushSubscription(), 10000, 'push_register');
                     this.lastPushRegistrationOk = !!pushOk;
-                    this.lastPushRegistrationError = pushOk ? '' : 'Push em segundo plano indisponivel neste navegador.';
+                    this.lastPushRegistrationError = pushOk  '' : 'Push em segundo plano indisponivel neste navegador.';
                 } catch (err) {
                     this.lastPushRegistrationOk = false;
                     this.lastPushRegistrationError = this.getPushErrorMessage(err);
@@ -132,12 +132,12 @@ toggleDailyNotifications: async function() {
                 try { await this.withTimeout(this.unregisterPushSubscription(), 6000, 'push_unregister'); } catch (err) { console.warn('[PUSH] Falha ao remover assinatura:', err); }
                 this.lastPushRegistrationOk = false;
             }
-            try { await this.saveState(true); } catch (err) { console.warn('[PUSH] Falha ao salvar preferência de notificações:', err); }
+            try { await this.saveState(true); } catch (err) { console.warn('[PUSH] Falha ao salvar preferÃªncia de notificaÃ§Ãµes:', err); }
         } finally {
             this._notificationToggleBusy = false;
             if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
             if (enabled && this.lastPushRegistrationOk === false) {
-                this.showToast('Notificações no app ativadas, mas push em segundo plano falhou: ' + this.lastPushRegistrationError, 'error');
+                this.showToast('NotificaÃ§Ãµes no app ativadas, mas push em segundo plano falhou: ' + this.lastPushRegistrationError, 'error');
             }
         }
     },
@@ -161,7 +161,7 @@ getPushSubscriptionDocId: function(endpoint = '') {
 
 getWebPushPublicKey: async function() {
         if (this.webPushPublicKey) return this.webPushPublicKey;
-        const currentOrigin = (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin : '';
+        const currentOrigin = (typeof window !== 'undefined' && window.location.origin)  window.location.origin : '';
         const endpoints = [
             '/api/push-public-key',
             'https://life-os-mu-ashy.vercel.app/api/push-public-key'
@@ -175,7 +175,7 @@ getWebPushPublicKey: async function() {
                 const res = await fetch(endpoint, { cache: 'no-store' });
                 if (!res.ok) throw new Error('push_public_key_unavailable_' + res.status);
                 const data = await res.json();
-                if (!data?.publicKey) throw new Error('push_public_key_missing');
+                if (!data.publicKey) throw new Error('push_public_key_missing');
                 this.webPushPublicKey = String(data.publicKey);
                 return this.webPushPublicKey;
             } catch (err) {
@@ -231,7 +231,7 @@ unregisterPushSubscription: async function() {
 notifySelfPushEvent: async function(payload = {}, options = {}) {
         try {
             const state = window.sistemaVidaState || {};
-            if (!state.settings?.notificationsEnabled) return false;
+            if (!state.settings.notificationsEnabled) return false;
             if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return false;
             if (!this.isRealAccount || !this.isRealAccount()) return false;
             const idToken = await this.getCurrentIdToken();
@@ -246,7 +246,7 @@ notifySelfPushEvent: async function(payload = {}, options = {}) {
             };
             if (options.dedupeId) requestBody.dedupeId = String(options.dedupeId);
 
-            const currentOrigin = (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin : '';
+            const currentOrigin = (typeof window !== 'undefined' && window.location.origin)  window.location.origin : '';
             const endpoints = [
                 '/api/internal-event-push',
                 'https://life-os-mu-ashy.vercel.app/api/internal-event-push'
@@ -275,7 +275,7 @@ notifySelfPushEvent: async function(payload = {}, options = {}) {
 
 showNotification: function(messageOrOptions, toastType = 'success') {
         const payload = typeof messageOrOptions === 'string'
-            ? { body: messageOrOptions }
+             { body: messageOrOptions }
             : (messageOrOptions || {});
         const body = String(payload.body || payload.message || '').trim();
         if (!body) return;
@@ -285,7 +285,7 @@ showNotification: function(messageOrOptions, toastType = 'success') {
         const requireInteraction = !!payload.requireInteraction;
 
         this.showToast(body, payload.toastType || toastType);
-        // Mostra notificação real do SO se permissão concedida e app aberto
+        // Mostra notificaÃ§Ã£o real do SO se permissÃ£o concedida e app aberto
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             try {
                 if ('serviceWorker' in navigator) {
@@ -316,7 +316,7 @@ getOpenNudgeLog: function() {
 
 wasOpenNudgeShownToday: function(id, dateKey = this.getLocalDateKey()) {
         const log = this.getOpenNudgeLog();
-        return log?.[id] === dateKey;
+        return log.[id] === dateKey;
     },
 
 markOpenNudgeShownToday: function(id, dateKey = this.getLocalDateKey()) {
@@ -327,18 +327,18 @@ markOpenNudgeShownToday: function(id, dateKey = this.getLocalDateKey()) {
 
 isMockupPurposeValue: function(value) {
         const sampleTexts = new Set([
-            'Criar sistemas que ajudam pessoas a viverem com mais intenção.',
-            'Desenvolvimento de software, pensamento sistêmico e design de produto.',
-            'Ferramentas práticas de autogestão e produtividade com propósito.',
+            'Criar sistemas que ajudam pessoas a viverem com mais intenÃ§Ã£o.',
+            'Desenvolvimento de software, pensamento sistÃªmico e design de produto.',
+            'Ferramentas prÃ¡ticas de autogestÃ£o e produtividade com propÃ³sito.',
             'Desenvolvimento de apps, consultoria de produto e software sob medida.',
             'Construir tecnologia que transforma rotinas em jornadas com sentido.',
-            'Ser presença constante e inspiração de integridade para minha família.',
+            'Ser presenÃ§a constante e inspiraÃ§Ã£o de integridade para minha famÃ­lia.',
             'Criar produtos que simplificam a vida de milhares de pessoas.',
             'Contribuir para uma cultura de autoconhecimento e intencionalidade.',
             'Energia alta e consistente. Treinar 4x por semana e dormir bem.',
-            'Liderar meu próprio produto com autonomia e impacto real.',
-            'Aprender continuamente. Ler 1 livro por mês e criar com frequência.',
-            'A disciplina é a ponte entre metas e realizações. — Jim Rohn'
+            'Liderar meu prÃ³prio produto com autonomia e impacto real.',
+            'Aprender continuamente. Ler 1 livro por mÃªs e criar com frequÃªncia.',
+            'A disciplina Ã© a ponte entre metas e realizaÃ§Ãµes. - Jim Rohn'
         ]);
         return sampleTexts.has(String(value || '').trim());
     },
@@ -371,10 +371,10 @@ buildOpenNudges: function() {
             nudges.push({
                 id: 'weekly-plan-open',
                 priority: 100,
-                title: 'Life OS — Planejamento semanal',
+                title: 'Life OS - Planejamento semanal',
                 body: hasPlan
-                    ? 'Sua semana já tem plano, mas está na hora de revisitar a carga e a intenção.'
-                    : 'Sua semana ainda não foi planejada. Defina a intenção e escolha os micros prioritários.',
+                    ? 'Sua semana ja tem plano, mas esta na hora de revisitar a carga e a intencao.'
+                    : 'Sua semana ainda nao foi planejada. Defina a intencao e escolha os micros prioritarios.',
                 tag: 'lifeos-weekly-plan-open'
             });
         }
@@ -383,8 +383,8 @@ buildOpenNudges: function() {
             nudges.push({
                 id: 'weekly-review-open',
                 priority: 95,
-                title: 'Life OS — Revisão semanal',
-                body: 'Fim de semana pede fechamento. Revise execução, padrões e próximos ajustes.',
+                title: 'Life OS - RevisÃ£o semanal',
+                body: 'Fim de semana pede fechamento. Revise execuÃ§Ã£o, padrÃµes e prÃ³ximos ajustes.',
                 tag: 'lifeos-weekly-review-open'
             });
         }
@@ -393,8 +393,8 @@ buildOpenNudges: function() {
             nudges.push({
                 id: 'purpose-mockup-open',
                 priority: 92,
-                title: 'Life OS — Propósito',
-                body: 'Sua aba Propósito ainda está com textos de exemplo. Vale personalizar Visão, Legado e Ikigai.',
+                title: 'Life OS - PropÃ³sito',
+                body: 'Sua aba PropÃ³sito ainda estÃ¡ com textos de exemplo. Vale personalizar VisÃ£o, Legado e Ikigai.',
                 tag: 'lifeos-purpose-mockup-open'
             });
         } else {
@@ -402,33 +402,33 @@ buildOpenNudges: function() {
                 {
                     key: 'ikigai',
                     id: 'ikigai-cadence-open',
-                    title: 'Life OS — Ikigai',
-                    body: 'Seu Ikigai está pedindo revisão. Releia amor, talento, necessidade, sustento e síntese.',
+                    title: 'Life OS - Ikigai',
+                    body: 'Seu Ikigai estÃ¡ pedindo revisÃ£o. Releia amor, talento, necessidade, sustento e sÃ­ntese.',
                     tag: 'lifeos-ikigai-cadence-open'
                 },
                 {
                     key: 'legacy',
                     id: 'legacy-cadence-open',
-                    title: 'Life OS — Legado',
-                    body: 'Seu legado está pedindo revisão. Releia o impacto desejado em família, profissão e mundo.',
+                    title: 'Life OS - Legado',
+                    body: 'Seu legado estÃ¡ pedindo revisÃ£o. Releia o impacto desejado em famÃ­lia, profissÃ£o e mundo.',
                     tag: 'lifeos-legacy-cadence-open'
                 },
                 {
                     key: 'vision',
                     id: 'vision-cadence-open',
-                    title: 'Life OS — Visão de Vida',
-                    body: 'Sua Visão de Vida está pedindo revisão. Ajuste a vida concreta que você escolhe construir.',
+                    title: 'Life OS - VisÃ£o de Vida',
+                    body: 'Sua VisÃ£o de Vida estÃ¡ pedindo revisÃ£o. Ajuste a vida concreta que vocÃª escolhe construir.',
                     tag: 'lifeos-vision-cadence-open'
                 }
             ];
             const hasToolContent = {
-                ikigai: this.hasCompleteIkigaiContent?.(),
-                legacy: this.hasCompleteLegacyContent?.(),
-                vision: this.hasCompleteVisionContent?.()
+                ikigai: this.hasCompleteIkigaiContent.(),
+                legacy: this.hasCompleteLegacyContent.(),
+                vision: this.hasCompleteVisionContent.()
             };
             const duePurposeTool = purposeTools.find((tool) => {
                 const status = cadence(tool.key);
-                const hasCadence = !!window.sistemaVidaState.profile?.cadence?.[tool.key]?.lastAt;
+                const hasCadence = !!window.sistemaVidaState.profile.cadence.[tool.key].lastAt;
                 return status.state === 'overdue' && (hasCadence || hasToolContent[tool.key]);
             });
             if (duePurposeTool) {
@@ -446,8 +446,8 @@ buildOpenNudges: function() {
             nudges.push({
                 id: 'life-goals-open',
                 priority: 80,
-                title: 'Life OS — Metas de vida',
-                body: 'Suas metas de 1 a 5 anos merecem uma revisão. Confira se o rumo de longo prazo continua fazendo sentido.',
+                title: 'Life OS - Metas de vida',
+                body: 'Suas metas de 1 a 5 anos merecem uma revisÃ£o. Confira se o rumo de longo prazo continua fazendo sentido.',
                 tag: 'lifeos-life-goals-open'
             });
         }
@@ -456,8 +456,8 @@ buildOpenNudges: function() {
             nudges.push({
                 id: 'odyssey-open',
                 priority: 78,
-                title: 'Life OS — Odyssey Plan',
-                body: 'Já faz tempo desde a última revisão dos seus cenários de vida. Atualize os próximos 5 anos possíveis.',
+                title: 'Life OS - Odyssey Plan',
+                body: 'JÃ¡ faz tempo desde a Ãºltima revisÃ£o dos seus cenÃ¡rios de vida. Atualize os prÃ³ximos 5 anos possÃ­veis.',
                 tag: 'lifeos-odyssey-open'
             });
         }
@@ -466,8 +466,8 @@ buildOpenNudges: function() {
             nudges.push({
                 id: 'wheel-open',
                 priority: 74,
-                title: 'Life OS — Roda da Vida',
-                body: 'A Roda da Vida está atrasada. Vale medir novamente como estão suas 8 áreas.',
+                title: 'Life OS - Roda da Vida',
+                body: 'A Roda da Vida estÃ¡ atrasada. Vale medir novamente como estÃ£o suas 8 Ã¡reas.',
                 tag: 'lifeos-wheel-open'
             });
         }
@@ -476,8 +476,8 @@ buildOpenNudges: function() {
             nudges.push({
                 id: 'perma-open',
                 priority: 72,
-                title: 'Life OS — PERMA',
-                body: 'Seu diagnóstico de florescimento está desatualizado. Reavalie o PERMA para recalibrar o bem-estar.',
+                title: 'Life OS - PERMA',
+                body: 'Seu diagnÃ³stico de florescimento estÃ¡ desatualizado. Reavalie o PERMA para recalibrar o bem-estar.',
                 tag: 'lifeos-perma-open'
             });
         }
@@ -486,8 +486,8 @@ buildOpenNudges: function() {
             nudges.push({
                 id: 'swls-open',
                 priority: 70,
-                title: 'Life OS — SWLS',
-                body: 'A satisfação com a vida ainda não foi revisitada neste ciclo. Responder o SWLS ajuda a checar o panorama geral.',
+                title: 'Life OS - SWLS',
+                body: 'A satisfaÃ§Ã£o com a vida ainda nÃ£o foi revisitada neste ciclo. Responder o SWLS ajuda a checar o panorama geral.',
                 tag: 'lifeos-swls-open'
             });
         }
@@ -498,7 +498,7 @@ buildOpenNudges: function() {
 scheduleLocalNotifications: function() {
         if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
         const state = window.sistemaVidaState;
-        if (!state.settings?.notificationsEnabled) return;
+        if (!state.settings.notificationsEnabled) return;
         const todayKey = this.getLocalDateKey();
         const nudges = this.buildOpenNudges()
             .filter((item) => !this.wasOpenNudgeShownToday(item.id, todayKey))
@@ -522,7 +522,7 @@ scheduleLocalNotifications: function() {
 scheduleRiskNotifications: function() {
         if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
         const state = window.sistemaVidaState;
-        if (!state?.settings?.notificationsEnabled) return;
+        if (!state.settings.notificationsEnabled) return;
         if (!this.getRiskAlerts) return;
 
         const dateKey = this.getLocalDateKey();
@@ -546,7 +546,7 @@ scheduleRiskNotifications: function() {
                 title: 'Life OS - Risco de execucao',
                 body: bodyByType[type] || `Micro em risco: ${alert.title}`,
                 tag: `lifeos-risk-${type}`,
-                url: '/?view=planos'
+                url: '/view=planos'
             };
 
             setTimeout(() => {
@@ -561,11 +561,37 @@ scheduleRiskNotifications: function() {
 scheduleHabitReminders: function() {
         if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
         const state = window.sistemaVidaState;
-        if (!state.settings?.notificationsEnabled) return;
+        if (!state.settings.notificationsEnabled) return;
         if (!Array.isArray(state.habits)) return;
         if (!this._habitReminderTimers) this._habitReminderTimers = [];
         this._habitReminderTimers.forEach(timerId => clearTimeout(timerId));
         this._habitReminderTimers = [];
+
+        const toMinutes = (hhmm) => {
+            const parts = String(hhmm || '').slice(0, 5).split(':');
+            const hh = Number(parts[0]);
+            const mm = Number(parts[1]);
+            if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+            return hh * 60 + mm;
+        };
+        const toHHMM = (minutes) => {
+            const safe = Math.max(0, Math.min(1439, Number(minutes) || 0));
+            const hh = String(Math.floor(safe / 60)).padStart(2, '0');
+            const mm = String(safe % 60).padStart(2, '0');
+            return hh + ':' + mm;
+        };
+        const getReminderTimes = (habit) => {
+            const single = String(habit.reminderTime || '').slice(0, 5);
+            if (!habit.reminderIntervalEnabled) return single ? [single] : [];
+            const startM = toMinutes(habit.reminderWindowStart);
+            const endM = toMinutes(habit.reminderWindowEnd);
+            const step = Math.max(15, Number(habit.reminderIntervalMin || 60));
+            if (startM == null || endM == null || endM < startM) return single ? [single] : [];
+            const times = [];
+            for (let cursor = startM; cursor <= endM; cursor += step) times.push(toHHMM(cursor));
+            if (!times.length && single) times.push(single);
+            return times;
+        };
 
         const today = new Date();
         const todayKey = this.getLocalDateKey();
@@ -574,51 +600,64 @@ scheduleHabitReminders: function() {
         try { sent = JSON.parse(this.localGet('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
 
         state.habits.forEach(habit => {
-            if (!habit || !habit.reminderEnabled || !habit.reminderTime) return;
+            if (!habit || !habit.reminderEnabled) return;
             if (habit.frequency === 'specific' && Array.isArray(habit.specificDays) && habit.specificDays.length > 0 && !habit.specificDays.includes(dayIndex)) return;
-            const [hhRaw, mmRaw] = String(habit.reminderTime).slice(0, 5).split(':');
-            const hh = Number(hhRaw);
-            const mm = Number(mmRaw);
-            if (!Number.isFinite(hh) || !Number.isFinite(mm)) return;
-
-            const trigger = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hh, mm, 0, 0);
-            const reminderHHMM = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
-            const reminderKey = `${habit.id}:${todayKey}:${reminderHHMM}`;
-            const delay = trigger.getTime() - Date.now();
-            const notify = () => {
-                if (sent[reminderKey]) return;
-                sent[reminderKey] = true;
-                try { this.localSet('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
-                this.showNotification(`Lembrete de hábito: ${habit.title}`);
-            };
-
-            if (delay > 0) {
-                this._habitReminderTimers.push(setTimeout(notify, delay));
-            } else if (delay > -90 * 60 * 1000) {
-                notify();
-            }
+            getReminderTimes(habit).forEach((reminderHHMM) => {
+                const parts = String(reminderHHMM).slice(0, 5).split(':');
+                const hh = Number(parts[0]);
+                const mm = Number(parts[1]);
+                if (!Number.isFinite(hh) || !Number.isFinite(mm)) return;
+                const trigger = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hh, mm, 0, 0);
+                const reminderKey = habit.id + ':' + todayKey + ':' + reminderHHMM;
+                const delay = trigger.getTime() - Date.now();
+                const notify = () => {
+                    if (sent[reminderKey]) return;
+                    sent[reminderKey] = true;
+                    try { this.localSet('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
+                    this.showNotification('Lembrete de habito: ' + habit.title);
+                };
+                if (delay > 0) this._habitReminderTimers.push(setTimeout(notify, delay));
+                else if (delay > -90 * 60 * 1000) notify();
+            });
         });
     },
 
 startHabitReminderWatcher: function() {
         if (this._habitReminderWatcher) return;
         const toMinutes = (hhmm) => {
-            const [h, m] = String(hhmm || '').slice(0, 5).split(':');
-            const hh = Number(h);
-            const mm = Number(m);
+            const parts = String(hhmm || '').slice(0, 5).split(':');
+            const hh = Number(parts[0]);
+            const mm = Number(parts[1]);
             if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
             return hh * 60 + mm;
         };
+        const toHHMM = (minutes) => {
+            const safe = Math.max(0, Math.min(1439, Number(minutes) || 0));
+            const hh = String(Math.floor(safe / 60)).padStart(2, '0');
+            const mm = String(safe % 60).padStart(2, '0');
+            return hh + ':' + mm;
+        };
+        const getReminderTimes = (habit) => {
+            const single = String(habit.reminderTime || '').slice(0, 5);
+            if (!habit.reminderIntervalEnabled) return single ? [single] : [];
+            const startM = toMinutes(habit.reminderWindowStart);
+            const endM = toMinutes(habit.reminderWindowEnd);
+            const step = Math.max(15, Number(habit.reminderIntervalMin || 60));
+            if (startM == null || endM == null || endM < startM) return single ? [single] : [];
+            const times = [];
+            for (let cursor = startM; cursor <= endM; cursor += step) times.push(toHHMM(cursor));
+            if (!times.length && single) times.push(single);
+            return times;
+        };
+
         this._habitReminderWatcher = setInterval(() => {
             try {
                 const state = window.sistemaVidaState;
-                if (!state?.settings?.notificationsEnabled) return;
+                if (!state.settings.notificationsEnabled) return;
                 if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
                 if (!Array.isArray(state.habits) || state.habits.length === 0) return;
                 const now = new Date();
-                const hh = String(now.getHours()).padStart(2, '0');
-                const mm = String(now.getMinutes()).padStart(2, '0');
-                const nowHHMM = `${hh}:${mm}`;
+                const nowHHMM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
                 const nowMinutes = toMinutes(nowHHMM);
                 const dayIndex = String(now.getDay());
                 const todayKey = this.getLocalDateKey();
@@ -626,21 +665,24 @@ startHabitReminderWatcher: function() {
                 try { sent = JSON.parse(this.localGet('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
 
                 state.habits.forEach(habit => {
-                    if (!habit || !habit.reminderEnabled || !habit.reminderTime) return;
+                    if (!habit || !habit.reminderEnabled) return;
                     if (habit.frequency === 'specific' && Array.isArray(habit.specificDays) && habit.specificDays.length > 0 && !habit.specificDays.includes(dayIndex)) return;
-                    const reminderHHMM = String(habit.reminderTime).slice(0, 5);
-                    const reminderMinutes = toMinutes(reminderHHMM);
-                    if (nowMinutes == null || reminderMinutes == null) return;
-                    const diff = nowMinutes - reminderMinutes;
-                    if (diff < 0 || diff > 2) return; // tolera atraso de timer/background
-                    const reminderKey = `${habit.id}:${todayKey}:${reminderHHMM}`;
-                    if (sent[reminderKey]) return;
-                    sent[reminderKey] = true;
-                    try { this.localSet('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
-                    this.showNotification(`Lembrete de hábito: ${habit.title}`);
+                    getReminderTimes(habit).forEach((reminderHHMM) => {
+                        const reminderMinutes = toMinutes(reminderHHMM);
+                        if (nowMinutes == null || reminderMinutes == null) return;
+                        const diff = nowMinutes - reminderMinutes;
+                        if (diff < 0 || diff > 2) return;
+                        const reminderKey = habit.id + ':' + todayKey + ':' + reminderHHMM;
+                        if (sent[reminderKey]) return;
+                        sent[reminderKey] = true;
+                        try { this.localSet('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
+                        this.showNotification('Lembrete de habito: ' + habit.title);
+                    });
                 });
             } catch (_) {}
         }, 30000);
     },
     });
 }
+
+

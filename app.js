@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260512-guided-routine-v187';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260512-guided-routine-v187';
-import { attachNotifications } from './js/notifications.js?v=20260512-guided-routine-v187';
-import { attachCadence } from './js/cadence.js?v=20260512-guided-routine-v187';
-import { attachOnboarding } from './js/onboarding.js?v=20260512-guided-routine-v187';
-import { attachIdentity } from './js/identity.js?v=20260512-guided-routine-v187';
-import { attachHabits } from './js/habits.js?v=20260512-guided-routine-v187';
-import { attachStateModule } from './js/state.js?v=20260512-guided-routine-v187';
-import { attachRenderModule } from './js/render.js?v=20260512-guided-routine-v187';
-import { attachPlanningModule } from './js/planning.js?v=20260512-guided-routine-v187';
-import { attachGamificationModule } from './js/gamification.js?v=20260512-guided-routine-v187';
-import { attachSocial } from './js/social.js?v=20260512-guided-routine-v187';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260512-guided-routine-v193';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260512-guided-routine-v193';
+import { attachNotifications } from './js/notifications.js?v=20260512-guided-routine-v193';
+import { attachCadence } from './js/cadence.js?v=20260512-guided-routine-v193';
+import { attachOnboarding } from './js/onboarding.js?v=20260512-guided-routine-v193';
+import { attachIdentity } from './js/identity.js?v=20260512-guided-routine-v193';
+import { attachHabits } from './js/habits.js?v=20260512-guided-routine-v193';
+import { attachStateModule } from './js/state.js?v=20260512-guided-routine-v193';
+import { attachRenderModule } from './js/render.js?v=20260512-guided-routine-v193';
+import { attachPlanningModule } from './js/planning.js?v=20260512-guided-routine-v193';
+import { attachGamificationModule } from './js/gamification.js?v=20260512-guided-routine-v193';
+import { attachSocial } from './js/social.js?v=20260512-guided-routine-v193';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -200,7 +200,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260512-guided-routine-v187',
+    appBuildVersion: '20260512-guided-routine-v193',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -3024,6 +3024,108 @@ renderProfileChrome: function() {
         if (legacyOut) legacyOut.textContent = legacyText;
     },
 
+    getTrailTemplateCatalog: function() {
+        const onboardingTemplates = typeof this.getOnboardingTrailTemplates === 'function'
+            ? this.getOnboardingTrailTemplates()
+            : [];
+        if (Array.isArray(onboardingTemplates) && onboardingTemplates.length) {
+            return onboardingTemplates.map((item, idx) => ({
+                id: item.id || `tpl_${idx + 1}`,
+                dimension: item.dimension || 'Geral',
+                label: item.label || item.goalTitle || 'Trilha pronta',
+                goalTitle: item.goalTitle || '',
+                okrTitle: item.okrTitle || '',
+                macroTitle: item.macroTitle || '',
+                microTitle: item.microTitle || '',
+                microIndicator: item.microIndicator || ''
+            }));
+        }
+        return [];
+    },
+
+    refreshTrailTemplateOptions: function() {
+        const select = document.getElementById('trail-template-select');
+        if (!select) return;
+        const templates = this.getTrailTemplateCatalog();
+        if (!templates.length) {
+            select.innerHTML = '<option value="">Sem trilhas prontas cadastradas</option>';
+            return;
+        }
+        select.innerHTML = '<option value="">Escolha uma trilha pronta para personalizar...</option>' +
+            templates.map((item) => `<option value="${this.escapeHtml(item.id)}">${this.escapeHtml(item.dimension)} · ${this.escapeHtml(item.label)}</option>`).join('');
+    },
+
+    applyTrailTemplateSelection: function() {
+        const select = document.getElementById('trail-template-select');
+        if (!select) return;
+        const templateId = String(select.value || '').trim();
+        if (!templateId) {
+            this.showToast('Selecione uma trilha pronta para aplicar.', 'error');
+            return;
+        }
+        const template = this.getTrailTemplateCatalog().find((item) => item.id === templateId);
+        if (!template) {
+            this.showToast('Template de trilha não encontrado.', 'error');
+            return;
+        }
+        this.applyTrailTemplateToWizard(template);
+        this.showToast(`Trilha aplicada: ${template.label}. Ajuste os campos antes de salvar.`, 'success');
+    },
+
+    applyTrailTemplateToWizard: function(template) {
+        if (!template) return;
+        const toDate = (dateObj) => {
+            const local = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000));
+            return local.toISOString().split('T')[0];
+        };
+        const today = new Date();
+        const metaDeadline = new Date(today);
+        metaDeadline.setDate(metaDeadline.getDate() + 84);
+        const macroDeadline = new Date(today);
+        macroDeadline.setDate(macroDeadline.getDate() + 30);
+        const microDeadline = new Date(today);
+        microDeadline.setDate(microDeadline.getDate() + 7);
+
+        const titleEl = document.getElementById('trail-meta-title');
+        const dimEl = document.getElementById('trail-meta-dimension');
+        const successEl = document.getElementById('trail-meta-success');
+        const whyEl = document.getElementById('trail-meta-why');
+        if (titleEl) titleEl.value = template.goalTitle || '';
+        if (dimEl) dimEl.value = template.dimension || '';
+        if (successEl) successEl.value = template.microIndicator || template.goalTitle || '';
+        if (whyEl && !whyEl.value.trim()) whyEl.value = `Evoluir ${String(template.dimension || 'esta dimensão').toLowerCase()} com consistência.`;
+
+        const okrList = document.getElementById('trail-okrs-list');
+        const macroList = document.getElementById('trail-macros-list');
+        const microList = document.getElementById('trail-micros-list');
+        if (okrList) okrList.innerHTML = '';
+        if (macroList) macroList.innerHTML = '';
+        if (microList) microList.innerHTML = '';
+
+        this.addTrailOkrRow({
+            title: template.okrTitle || '',
+            metric: template.microIndicator || '',
+            inicioDate: toDate(today),
+            prazo: toDate(metaDeadline),
+            keyResults: [{ title: template.microIndicator || 'Resultado inicial da trilha', current: 0, target: 1 }]
+        });
+        this.addTrailMacroRow({
+            title: template.macroTitle || '',
+            inicioDate: toDate(today),
+            prazo: toDate(macroDeadline),
+            description: 'Macro inicial baseada em trilha pronta'
+        });
+        this.addTrailMicroRow({
+            title: template.microTitle || '',
+            inicioDate: toDate(today),
+            prazo: toDate(microDeadline)
+        });
+        this.refreshTrailMacroParentOptions();
+        this.refreshTrailMicroParentOptions();
+        this.updateTrailPurposePanel();
+        this.refreshTrailSummary();
+    },
+
     toggleFabMenu: function(event) {
         if (event && event.stopPropagation) event.stopPropagation();
         const menu = document.getElementById('fab-context-menu');
@@ -3082,6 +3184,9 @@ renderProfileChrome: function() {
         if (successEl) successEl.value = '';
         if (challengeEl) challengeEl.value = '3';
         if (commitmentEl) commitmentEl.value = '3';
+        this.refreshTrailTemplateOptions();
+        const trailTemplateSelect = document.getElementById('trail-template-select');
+        if (trailTemplateSelect) trailTemplateSelect.value = '';
 
         const okrList = document.getElementById('trail-okrs-list');
         const macroList = document.getElementById('trail-macros-list');
@@ -3167,27 +3272,39 @@ renderProfileChrome: function() {
                 <p class="text-[10px] font-bold uppercase tracking-widest text-outline">OKR</p>
                 <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
             </div>
-            <input type="text" class="trail-okr-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Resultado-chave (ex.: Publicar 12 artigos)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
-            <input type="text" class="trail-okr-metric w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Métrica de sucesso (ex.: 12 artigos publicados até o prazo)" value="${this.escapeHtml(prefill.metric || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Objetivo do OKR</label>
+                <input type="text" class="trail-okr-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Resultado-chave (ex.: Publicar 12 artigos)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Métrica principal</label>
+                <input type="text" class="trail-okr-metric w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Métrica de sucesso (ex.: 12 artigos publicados até o prazo)" value="${this.escapeHtml(prefill.metric || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input type="date" class="trail-okr-inicio w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.inicioDate || '')}" onchange="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
                 <input type="date" class="trail-okr-prazo w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" value="${this.escapeHtml(prefill.prazo || '')}" onchange="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <select class="trail-okr-challenge w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()">
-                    <option value="1" ${Number(prefill.challengeLevel) === 1 ? 'selected' : ''}>1 - Muito baixo</option>
-                    <option value="2" ${Number(prefill.challengeLevel) === 2 ? 'selected' : ''}>2 - Baixo</option>
-                    <option value="3" ${(Number(prefill.challengeLevel || 3) === 3) ? 'selected' : ''}>3 - Moderado</option>
-                    <option value="4" ${Number(prefill.challengeLevel) === 4 ? 'selected' : ''}>4 - Alto</option>
-                    <option value="5" ${Number(prefill.challengeLevel) === 5 ? 'selected' : ''}>5 - Muito alto</option>
-                </select>
-                <select class="trail-okr-commitment w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()">
-                    <option value="1" ${Number(prefill.commitmentLevel) === 1 ? 'selected' : ''}>1 - Muito baixo</option>
-                    <option value="2" ${Number(prefill.commitmentLevel) === 2 ? 'selected' : ''}>2 - Baixo</option>
-                    <option value="3" ${(Number(prefill.commitmentLevel || 3) === 3) ? 'selected' : ''}>3 - Moderado</option>
-                    <option value="4" ${Number(prefill.commitmentLevel) === 4 ? 'selected' : ''}>4 - Alto</option>
-                    <option value="5" ${Number(prefill.commitmentLevel) === 5 ? 'selected' : ''}>5 - Muito alto</option>
-                </select>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Nível de desafio</label>
+                    <select class="trail-okr-challenge w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()">
+                        <option value="1" ${Number(prefill.challengeLevel) === 1 ? 'selected' : ''}>1 - Muito baixo</option>
+                        <option value="2" ${Number(prefill.challengeLevel) === 2 ? 'selected' : ''}>2 - Baixo</option>
+                        <option value="3" ${(Number(prefill.challengeLevel || 3) === 3) ? 'selected' : ''}>3 - Moderado</option>
+                        <option value="4" ${Number(prefill.challengeLevel) === 4 ? 'selected' : ''}>4 - Alto</option>
+                        <option value="5" ${Number(prefill.challengeLevel) === 5 ? 'selected' : ''}>5 - Muito alto</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Comprometimento esperado</label>
+                    <select class="trail-okr-commitment w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" onchange="window.app.refreshTrailSummary()">
+                        <option value="1" ${Number(prefill.commitmentLevel) === 1 ? 'selected' : ''}>1 - Muito baixo</option>
+                        <option value="2" ${Number(prefill.commitmentLevel) === 2 ? 'selected' : ''}>2 - Baixo</option>
+                        <option value="3" ${(Number(prefill.commitmentLevel || 3) === 3) ? 'selected' : ''}>3 - Moderado</option>
+                        <option value="4" ${Number(prefill.commitmentLevel) === 4 ? 'selected' : ''}>4 - Alto</option>
+                        <option value="5" ${Number(prefill.commitmentLevel) === 5 ? 'selected' : ''}>5 - Muito alto</option>
+                    </select>
+                </div>
             </div>
             <div class="trail-okr-krs-wrap space-y-2">
                 <div class="grid gap-2 px-1" style="grid-template-columns: 1fr 72px 72px 32px;">
@@ -3196,6 +3313,7 @@ renderProfileChrome: function() {
                     <span class="text-[10px] font-label uppercase tracking-widest text-outline text-center">Meta</span>
                     <span></span>
                 </div>
+                <p class="text-[10px] text-outline">KR (Key Result) é um indicador mensurável que mostra avanço real do OKR.</p>
                 <div class="trail-kr-rows flex flex-col gap-2"></div>
                 <button type="button" onclick="window.app.addTrailKrRow(this)"
                     class="flex items-center gap-1.5 text-[11px] text-primary font-bold uppercase tracking-widest py-2 px-3 rounded-lg border border-primary/20 hover:bg-primary/5 transition-colors w-fit">
@@ -7224,6 +7342,7 @@ onAuthStateChanged(auth, (user) => {
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
+
 
 
 

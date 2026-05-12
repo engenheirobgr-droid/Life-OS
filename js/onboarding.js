@@ -271,8 +271,125 @@ onboardingSaveStarterDraft: function() {
         draft.habitTime = read('onboarding-starter-time', draft.habitTime || '');
         draft.strength = read('onboarding-strength', draft.strength || '');
         draft.shadow = read('onboarding-shadow', draft.shadow || '');
+        draft.habitSuggestionId = String(draft.habitSuggestionId || '');
+        draft.trailTemplateId = String(draft.trailTemplateId || '');
         window.sistemaVidaState.profile.onboardingStarter = draft;
         return draft;
+    },
+
+getOnboardingTrailTemplates: function() {
+        const T = [
+            { id: 'carreira_execucao', dimension: 'Carreira', label: 'Execução de trabalho', goalTitle: 'Construir ritmo de execução semanal consistente', okrTitle: 'OKR inicial - Entregar prioridades da semana', macroTitle: 'Macro inicial - Organizar blocos de foco e entregas', microTitle: 'Micro inicial - Definir 3 entregas da semana', microIndicator: '3 entregas definidas e agendadas no plano semanal' },
+            { id: 'saude_base', dimension: 'Saúde', label: 'Base de energia', goalTitle: 'Estabilizar energia com rotina de saúde simples', okrTitle: 'OKR inicial - Melhorar energia diária nas próximas 12 semanas', macroTitle: 'Macro inicial - Rotina mínima de sono e movimento', microTitle: 'Micro inicial - Planejar 3 caminhadas desta semana', microIndicator: '3 caminhadas planejadas e com horário' },
+            { id: 'mente_clareza', dimension: 'Mente', label: 'Clareza mental', goalTitle: 'Reduzir sobrecarga mental e aumentar clareza', okrTitle: 'OKR inicial - Criar rotina curta de clareza diária', macroTitle: 'Macro inicial - Ritual diário de organização mental', microTitle: 'Micro inicial - Fazer check-in e priorizar 1 foco por dia', microIndicator: 'Check-in feito e foco diário definido' },
+            { id: 'financas_controle', dimension: 'Finanças', label: 'Controle financeiro', goalTitle: 'Organizar fluxo financeiro pessoal com previsibilidade', okrTitle: 'OKR inicial - Consolidar controle semanal de finanças', macroTitle: 'Macro inicial - Rotina de revisão de entradas e gastos', microTitle: 'Micro inicial - Registrar gastos dos últimos 7 dias', microIndicator: 'Gastos da semana registrados e categorizados' },
+            { id: 'relacoes_presenca', dimension: 'Relacionamentos', label: 'Presença relacional', goalTitle: 'Melhorar presença e constância com pessoas importantes', okrTitle: 'OKR inicial - Aumentar consistência de contato qualificado', macroTitle: 'Macro inicial - Ritual semanal de conexão', microTitle: 'Micro inicial - Definir 2 conversas relevantes da semana', microIndicator: '2 conversas agendadas com pessoas importantes' },
+            { id: 'familia_ritual', dimension: 'Família', label: 'Ritual familiar', goalTitle: 'Criar rituais familiares pequenos e consistentes', okrTitle: 'OKR inicial - Estabelecer rotina semanal com a família', macroTitle: 'Macro inicial - Planejar momentos familiares intencionais', microTitle: 'Micro inicial - Agendar 1 momento familiar nesta semana', microIndicator: 'Momento familiar planejado no calendário da semana' },
+            { id: 'lazer_recarga', dimension: 'Lazer', label: 'Recarga ativa', goalTitle: 'Recuperar energia com lazer intencional', okrTitle: 'OKR inicial - Garantir espaço semanal de recuperação', macroTitle: 'Macro inicial - Planejamento de pausas e experiências leves', microTitle: 'Micro inicial - Definir 1 atividade de recarga para a semana', microIndicator: 'Atividade de recarga escolhida e com horário' },
+            { id: 'proposito_direcao', dimension: 'Propósito', label: 'Direção de vida', goalTitle: 'Aumentar coerência entre rotina e propósito pessoal', okrTitle: 'OKR inicial - Traduzir propósito em escolhas semanais', macroTitle: 'Macro inicial - Ritual semanal de revisão de direção', microTitle: 'Micro inicial - Revisar visão e definir intenção da semana', microIndicator: 'Intenção semanal alinhada ao propósito registrada' }
+        ];
+        return T.map((item) => ({ ...item }));
+    },
+
+getOnboardingHabitSuggestions: function() {
+        const fallback = [
+            { id: 'career_focus_block', dimension: 'Carreira', title: 'Bloco de foco de 90 minutos', description: 'Sessao protegida para a tarefa mais importante do dia.', trigger: 'Ao iniciar o primeiro bloco de trabalho', routine: 'Trabalhar por 90 minutos sem interrupcao', reward: 'Avanco concreto no que importa', steps: ['Definir uma meta unica', 'Silenciar notificacoes', 'Concluir o bloco'], trackMode: 'timer', targetValue: 90, frequency: 'daily', startTime: '09:00' },
+            { id: 'health_walk', dimension: 'Saude', title: 'Caminhada de 20 minutos', description: 'Movimento simples para energia e clareza mental.', trigger: 'Depois do cafe da manha', routine: 'Caminhar por 20 minutos', reward: 'Corpo mais desperto', steps: ['Calcar tenis', 'Sair de casa', 'Caminhar por 20 minutos'], trackMode: 'timer', targetValue: 20, frequency: 'daily', startTime: '07:30' },
+            { id: 'health_water', dimension: 'Saude', title: 'Beber agua ao longo do dia', description: 'Ritmo de hidratacao com lembretes em intervalos.', trigger: 'Ao iniciar o dia', routine: 'Beber agua ao longo do dia', reward: 'Mais energia e foco', steps: ['Encher a garrafa', 'Beber 1 copo por intervalo', 'Concluir a meta diaria'], trackMode: 'numeric', targetValue: 8, frequency: 'daily', startTime: '08:00', reminderIntervalEnabled: true, reminderWindowStart: '08:00', reminderWindowEnd: '20:00', reminderIntervalMin: 60 },
+            { id: 'mind_reading', dimension: 'Mente', title: 'Leitura de 15 minutos', description: 'Ritual curto para nutrir repertorio e profundidade.', trigger: 'Depois do almoco ou antes de dormir', routine: 'Ler por 15 minutos', reward: 'Mais repertorio e calma', steps: ['Escolher o livro', 'Ler 15 minutos', 'Registrar 1 ideia'], trackMode: 'timer', targetValue: 15, frequency: 'daily', startTime: '21:30' },
+            { id: 'finance_review', dimension: 'Financas', title: 'Revisao financeira rapida', description: 'Acompanhar entradas e gastos para manter previsibilidade.', trigger: 'Ao encerrar o dia', routine: 'Revisar gastos e saldo', reward: 'Mais controle financeiro', steps: ['Abrir registros', 'Conferir despesas', 'Ajustar categoria'], trackMode: 'boolean', targetValue: 1, frequency: 'daily', startTime: '20:00' },
+            { id: 'relationships_checkin', dimension: 'Relacionamentos', title: 'Check-in com alguem importante', description: 'Mensagem ou ligacao para manter vinculos ativos.', trigger: 'Na quarta ou no fim de semana', routine: 'Entrar em contato com uma pessoa proxima', reward: 'Relacionamento mais presente', steps: ['Escolher quem', 'Enviar mensagem', 'Perguntar como a pessoa esta'], trackMode: 'boolean', targetValue: 1, frequency: 'specific', specificDays: ['3'], startTime: '18:00' },
+            { id: 'family_ritual', dimension: 'Familia', title: 'Momento de presenca familiar', description: 'Ritual curto para fortalecer convivio.', trigger: 'No inicio da noite', routine: 'Conversar sem telas por 15 minutos', reward: 'Conexao e presenca real', steps: ['Guardar celular', 'Sentar junto', 'Conversar com atencao'], trackMode: 'timer', targetValue: 15, frequency: 'daily', startTime: '19:30' },
+            { id: 'leisure_recharge', dimension: 'Lazer', title: 'Bloco de recarga intencional', description: 'Pausa para recuperar energia sem culpa.', trigger: 'Depois do trabalho', routine: 'Fazer atividade de lazer escolhida', reward: 'Mais leveza e energia', steps: ['Escolher atividade', 'Reservar 30 min', 'Executar sem interrupcao'], trackMode: 'timer', targetValue: 30, frequency: 'specific', specificDays: ['6'], startTime: '16:00' },
+            { id: 'purpose_review', dimension: 'Proposito', title: 'Revisao semanal de proposito', description: 'Pausa para alinhar rotina com direcao de vida.', trigger: 'No domingo a noite', routine: 'Revisar visao e intencao da semana', reward: 'Mais clareza de direcao', steps: ['Abrir aba Proposito', 'Reler visao', 'Ajustar intencao da semana'], trackMode: 'boolean', targetValue: 1, frequency: 'specific', specificDays: ['0'], startTime: '20:00' }
+        ];
+        const source = typeof this.getHabitSuggestionsCatalog === 'function'
+            ? this.getHabitSuggestionsCatalog()
+            : fallback;
+        return (Array.isArray(source) ? source : []).map((item) => ({
+            ...item,
+            steps: Array.isArray(item.steps) ? [...item.steps] : [],
+            specificDays: Array.isArray(item.specificDays) ? [...item.specificDays] : []
+        }));
+    },
+
+normalizeDimensionKey: function(value) {
+        return String(value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    },
+
+renderOnboardingStarterSuggestions: function() {
+        const draft = this.onboardingGetStarterDraft();
+        const dimension = String(draft.dimension || 'Carreira');
+        const dimensionKey = this.normalizeDimensionKey(dimension);
+        const habitWrap = document.getElementById('onboarding-habit-suggestions');
+        const habitDim = document.getElementById('onboarding-habit-suggestion-dim');
+        const trailWrap = document.getElementById('onboarding-trail-templates');
+        const trailDim = document.getElementById('onboarding-trail-template-dim');
+
+        if (habitDim) habitDim.textContent = dimension;
+        if (trailDim) trailDim.textContent = dimension;
+
+        const habitCatalog = this.getOnboardingHabitSuggestions();
+        const habitItems = habitCatalog
+            .filter((item) => this.normalizeDimensionKey(item.dimension) === dimensionKey)
+            .slice(0, 4);
+        if (habitWrap) {
+            habitWrap.innerHTML = habitItems.length
+                ? habitItems.map((item) => `
+                    <button type="button" onclick="window.app.onboardingApplyHabitSuggestion('${this.escapeHtml(item.id)}')" class="text-left rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 hover:bg-surface-container-high transition-colors">
+                        <p class="text-xs font-bold text-on-surface">${this.escapeHtml(item.title || '')}</p>
+                        <p class="mt-1 text-[11px] text-outline leading-relaxed">${this.escapeHtml(item.description || '')}</p>
+                    </button>
+                `).join('')
+                : '<p class="text-xs text-outline italic">Sem sugestoes prontas para esta area no momento.</p>';
+        }
+
+        const templates = this.getOnboardingTrailTemplates()
+            .filter((item) => this.normalizeDimensionKey(item.dimension) === dimensionKey)
+            .slice(0, 3);
+        if (trailWrap) {
+            trailWrap.innerHTML = templates.length
+                ? templates.map((item) => `
+                    <button type="button" onclick="window.app.onboardingApplyTrailTemplate('${this.escapeHtml(item.id)}')" class="text-left rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 hover:bg-surface-container-high transition-colors">
+                        <p class="text-xs font-bold text-on-surface">${this.escapeHtml(item.label || '')}</p>
+                        <p class="mt-1 text-[11px] text-outline leading-relaxed">${this.escapeHtml(item.goalTitle || '')}</p>
+                    </button>
+                `).join('')
+                : '<p class="text-xs text-outline italic">Sem trilhas prontas para esta area no momento.</p>';
+        }
+    },
+
+onboardingApplyHabitSuggestion: function(suggestionId) {
+        const suggestion = this.getOnboardingHabitSuggestions().find((item) => item.id === suggestionId);
+        if (!suggestion) return;
+        const input = document.getElementById('onboarding-starter-habit');
+        const timeInput = document.getElementById('onboarding-starter-time');
+        if (input) input.value = String(suggestion.title || '').trim();
+        if (timeInput && !timeInput.value && suggestion.startTime) timeInput.value = String(suggestion.startTime);
+        const draft = this.onboardingSaveStarterDraft();
+        draft.habitSuggestionId = String(suggestion.id || '');
+        window.sistemaVidaState.profile.onboardingStarter = draft;
+        this.showToast(`Habito sugerido aplicado: ${suggestion.title}.`, 'success');
+    },
+
+onboardingApplyTrailTemplate: function(templateId) {
+        const template = this.getOnboardingTrailTemplates().find((item) => item.id === templateId);
+        if (!template) return;
+        const goalInput = document.getElementById('onboarding-starter-goal');
+        if (goalInput) goalInput.value = String(template.goalTitle || '');
+        const draft = this.onboardingSaveStarterDraft();
+        draft.trailTemplateId = String(template.id || '');
+        window.sistemaVidaState.profile.onboardingStarter = draft;
+        this.showToast(`Trilha aplicada: ${template.label}.`, 'success');
+    },
+
+onboardingStarterDimensionChanged: function() {
+        this.onboardingSaveStarterDraft();
+        this.renderOnboardingStarterSuggestions();
     },
 
 populateOnboardingIdentityCatalogs: function() {
@@ -367,6 +484,7 @@ onboardingHydrateFields: function() {
                 : 'Selecione seus valores...';
         }
         this.populateOnboardingIdentityCatalogs();
+        this.renderOnboardingStarterSuggestions();
 
         // Adapta o Step 1 caso o usuario ja esteja logado em uma conta real:
         // esconde inputs de email/senha, troca botoes para refletir o estado.
@@ -506,8 +624,11 @@ ensureOnboardingStarterSetup: function() {
 
         const draft = this.onboardingSaveStarterDraft();
         const dim = state.dimensions?.[draft.dimension] ? draft.dimension : 'Carreira';
-        const goalTitle = draft.goalTitle || `Evoluir ${dim.toLowerCase()} com consistencia`;
-        const habitTitle = draft.habitTitle || 'Habito ancora diario';
+        const dimKey = this.normalizeDimensionKey(dim);
+        const selectedTemplate = this.getOnboardingTrailTemplates().find((item) => item.id === draft.trailTemplateId && this.normalizeDimensionKey(item.dimension) === dimKey) || null;
+        const selectedHabitSuggestion = this.getOnboardingHabitSuggestions().find((item) => item.id === draft.habitSuggestionId && this.normalizeDimensionKey(item.dimension) === dimKey) || null;
+        const goalTitle = draft.goalTitle || selectedTemplate?.goalTitle || `Evoluir ${dim.toLowerCase()} com consistencia`;
+        const habitTitle = draft.habitTitle || selectedHabitSuggestion?.title || 'Habito ancora diario';
         const todayKey = this.getLocalDateKey();
         const nowIso = new Date().toISOString();
         const makeId = (prefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -583,7 +704,7 @@ ensureOnboardingStarterSetup: function() {
             state.entities.okrs.push({
                 id: okrId,
                 metaId,
-                title: `OKR inicial - ${goalTitle}`,
+                title: selectedTemplate?.okrTitle || `OKR inicial - ${goalTitle}`,
                 dimension: dim,
                 inicioDate: todayKey,
                 prazo: datePlus(84),
@@ -601,7 +722,7 @@ ensureOnboardingStarterSetup: function() {
                 id: macroId,
                 metaId,
                 okrId,
-                title: `Macro inicial - ${goalTitle}`,
+                title: selectedTemplate?.macroTitle || `Macro inicial - ${goalTitle}`,
                 dimension: dim,
                 inicioDate: todayKey,
                 prazo: datePlus(30),
@@ -617,12 +738,12 @@ ensureOnboardingStarterSetup: function() {
                 metaId,
                 okrId,
                 macroId,
-                title: `Micro inicial - primeiro passo de ${goalTitle}`,
+                title: selectedTemplate?.microTitle || `Micro inicial - primeiro passo de ${goalTitle}`,
                 dimension: dim,
                 inicioDate: todayKey,
                 prazo: datePlus(7),
                 createdAt: todayKey,
-                indicator: 'Primeiro passo da trilha',
+                indicator: selectedTemplate?.microIndicator || 'Primeiro passo da trilha',
                 purpose: goalTitle,
                 effort: 'medio',
                 status: 'pending',
@@ -654,17 +775,21 @@ ensureOnboardingStarterSetup: function() {
                 dimension: dim,
                 context: '',
                 completed: false,
-                trigger: draft.habitTime ? `Quando der ${draft.habitTime}` : 'Ao iniciar o dia',
-                routine: habitTitle,
-                reward: 'Marcar o habito concluido no Life OS',
-                steps: [],
-                trackMode: 'boolean',
-                targetValue: 1,
-                frequency: 'daily',
-                startTime: draft.habitTime || '',
-                reminderEnabled: !!draft.habitTime,
-                reminderTime: draft.habitTime || '',
-                specificDays: [],
+                trigger: selectedHabitSuggestion?.trigger || (draft.habitTime ? `Quando der ${draft.habitTime}` : 'Ao iniciar o dia'),
+                routine: selectedHabitSuggestion?.routine || habitTitle,
+                reward: selectedHabitSuggestion?.reward || 'Marcar o habito concluido no Life OS',
+                steps: Array.isArray(selectedHabitSuggestion?.steps) ? [...selectedHabitSuggestion.steps] : [],
+                trackMode: selectedHabitSuggestion?.trackMode || 'boolean',
+                targetValue: Number(selectedHabitSuggestion?.targetValue || 1),
+                frequency: selectedHabitSuggestion?.frequency || 'daily',
+                startTime: draft.habitTime || selectedHabitSuggestion?.startTime || '',
+                reminderEnabled: !!(draft.habitTime || selectedHabitSuggestion?.startTime),
+                reminderTime: draft.habitTime || selectedHabitSuggestion?.startTime || '',
+                reminderIntervalEnabled: !!selectedHabitSuggestion?.reminderIntervalEnabled,
+                reminderWindowStart: selectedHabitSuggestion?.reminderWindowStart || '',
+                reminderWindowEnd: selectedHabitSuggestion?.reminderWindowEnd || '',
+                reminderIntervalMin: Number(selectedHabitSuggestion?.reminderIntervalMin || 0),
+                specificDays: Array.isArray(selectedHabitSuggestion?.specificDays) ? [...selectedHabitSuggestion.specificDays] : [],
                 logs: {},
                 stepLogs: {},
                 maturity: 'forming',

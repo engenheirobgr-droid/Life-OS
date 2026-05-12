@@ -1833,6 +1833,27 @@
                             </label>
                         </div>
                     </div>
+                    <div id="habit-reminder-advanced" class="flex flex-col gap-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/60 p-3">
+                        <label class="flex items-center gap-2 text-xs font-label uppercase tracking-widest text-outline font-bold">
+                            <input type="checkbox" id="habit-reminder-interval-enabled" class="accent-primary" onchange="window.app.onHabitReminderIntervalToggle(this.checked)">
+                            Lembretes ao longo do dia
+                        </label>
+                        <div id="habit-reminder-interval-fields" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="flex flex-col gap-1">
+                                <label for="habit-reminder-window-start" class="text-[10px] font-bold uppercase tracking-widest text-outline">Início</label>
+                                <input type="time" id="habit-reminder-window-start" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label for="habit-reminder-window-end" class="text-[10px] font-bold uppercase tracking-widest text-outline">Fim</label>
+                                <input type="time" id="habit-reminder-window-end" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label for="habit-reminder-interval-min" class="text-[10px] font-bold uppercase tracking-widest text-outline">Intervalo (min)</label>
+                                <input type="number" id="habit-reminder-interval-min" min="15" step="5" value="60" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-outline">Ex.: beber água entre 08:00 e 20:00 a cada 60 min.</p>
+                    </div>
 
                     <div class="flex flex-col gap-1.5">
                         <label for="habit-linked-meta"
@@ -2050,6 +2071,18 @@
             <div class="p-6 overflow-y-auto no-scrollbar flex-1 space-y-6">
                 <section id="meta-trail-step-1" class="meta-trail-step space-y-4">
                     <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 1 — Intenção</h4>
+                    <div class="rounded-xl border border-outline-variant/20 bg-surface-container-low p-3 space-y-2">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Trilha exemplo</p>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <select id="trail-template-select" class="flex-1 bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
+                                <option value="">Escolha uma trilha pronta para personalizar...</option>
+                            </select>
+                            <button type="button" onclick="window.app.applyTrailTemplateSelection()" class="px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors">
+                                Aplicar
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-outline">A trilha aplicada pode ser editada em todos os campos antes de salvar.</p>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5 md:col-span-2">
                             <label for="trail-meta-title" class="text-xs uppercase tracking-widest font-bold text-outline">Nome da Meta</label>
@@ -2759,7 +2792,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260512-guided-routine-v187"></script>
+    <script type="module" src="app.js?v=20260512-guided-routine-v193"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -2853,6 +2886,7 @@
     </div>
 </body>
 </html>
+
 
 
 
