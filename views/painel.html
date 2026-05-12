@@ -16,8 +16,19 @@
             class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Painel de
             Evolução</h2>
         <div class="mt-6 h-px w-24 bg-primary"></div>
+        <nav class="mt-4 flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0">
+            <button data-painel-screen="situacao" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-primary border-b-2 border-primary" onclick="window.app.switchPainelScreen('situacao')">Situação</button>
+            <button data-painel-screen="diagnostico" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('diagnostico')">Diagnóstico</button>
+            <button data-painel-screen="evolucao" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('evolucao')">Evolução</button>
+            <button data-painel-screen="padroes" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('padroes')">Padrões</button>
+            <button data-painel-screen="areas" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('areas')">Áreas</button>
+            <button data-painel-screen="okrs" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('okrs')">OKRs</button>
+            <button data-painel-screen="execucao" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('execucao')">Execução</button>
+            <button data-painel-screen="foco" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('foco')">Foco</button>
+            <button data-painel-screen="timeline" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('timeline')">Timeline</button>
+        </nav>
         <!-- Anchor Chips -->
-        <div class="overflow-x-auto no-scrollbar mt-4">
+        <div class="overflow-x-auto no-scrollbar mt-4 hidden">
             <div class="inline-flex min-w-max gap-2 py-1">
                 <button onclick="document.getElementById('painel-situacao-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
                     <span class="material-symbols-outlined notranslate text-[14px]">monitoring</span>Situação
@@ -45,8 +56,8 @@
                 </button>
             </div>
         </div>
-        <div class="mt-4 mb-2">
-            <div class="grid grid-cols-3 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
+        <div class="mt-5 mb-2 overflow-x-auto no-scrollbar">
+            <div class="inline-flex min-w-max gap-1 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
             <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')"
                 class="px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-wider transition-all shadow-sm">Ciclo</button>
             <button data-painel-filter="mes" onclick="app.setPainelFilter('mes')"
@@ -57,7 +68,7 @@
         </div>
     </header>
 
-    <section id="painel-situacao-section" class="mt-4 space-y-4">
+    <section id="painel-situacao-section" data-painel-screen-content="situacao" class="mt-4 space-y-4">
         <div class="space-y-1">
             <h3 class="font-headline text-2xl italic">Situação</h3>
             <p class="text-sm text-on-surface-variant leading-relaxed">O estado real do ciclo, da semana e do seu ritmo de execução.</p>
@@ -65,7 +76,7 @@
     </section>
 
     <!-- Progresso Semana: Foco & Execução -->
-    <section
+    <section data-painel-screen-content="situacao"
         class="mt-4 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
         <div class="grid md:grid-cols-2 gap-8">
             <div class="space-y-3">
@@ -122,7 +133,7 @@
         </div>
     </section>
 
-    <section id="painel-diagnostico-section" class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <section id="painel-diagnostico-section" data-painel-screen-content="diagnostico" class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
         <div class="space-y-4">
             <div class="space-y-1">
                 <h3 class="font-headline text-2xl italic">Diagnóstico</h3>
@@ -139,7 +150,7 @@
         </div>
     </section>
 
-    <section id="painel-evolucao-section" class="mt-8 space-y-4">
+    <section id="painel-evolucao-section" data-painel-screen-content="evolucao" class="mt-8 space-y-4 hidden">
         <div class="space-y-1">
             <h3 class="font-headline text-2xl italic">Evolução Pessoal</h3>
             <p class="text-sm text-on-surface-variant leading-relaxed">Como suas forças, sombras e hábitos estão conversando nesta semana.</p>
@@ -150,7 +161,7 @@
         <div id="cadence-history-panel"></div>
     </section>
 
-    <section id="painel-padroes-section" class="mt-8 space-y-4">
+    <section id="painel-padroes-section" data-painel-screen-content="padroes" class="mt-8 space-y-4 hidden">
         <div class="space-y-1">
             <h3 class="font-headline text-2xl italic">Padrões</h3>
             <p class="text-sm text-on-surface-variant leading-relaxed">Cruzamentos leves entre check-in, execução, hábitos e carga.</p>
@@ -160,7 +171,7 @@
     </section>
 
     <!-- Progresso por Área -->
-    <section id="painel-gestao-section" class="mt-8 space-y-4">
+    <section id="painel-gestao-section" data-painel-screen-content="areas" class="mt-8 space-y-4 hidden">
         <div class="space-y-1 mb-6">
             <h3 class="font-headline text-2xl italic">Gestão de Áreas (O que eu faço)</h3>
             <p class="text-sm text-on-surface-variant leading-relaxed">Progresso de Execução por Dimensão</p>
@@ -329,7 +340,7 @@
     </section>
 
     <!-- OKR do Ciclo Atual -->
-    <section id="painel-weekly-review-section" class="mt-8 space-y-4">
+    <section id="painel-weekly-review-section" data-painel-screen-content="okrs" class="mt-8 space-y-4 hidden">
         <div class="mb-6">
             <h3 class="font-headline text-2xl italic">OKR do Ciclo Atual</h3>
         </div>
@@ -361,7 +372,7 @@
         </div>
     </section>
     <!-- Execução -->
-    <section id="painel-execucao-section" class="mt-8 space-y-4">
+    <section id="painel-execucao-section" data-painel-screen-content="execucao" class="mt-8 space-y-4 hidden">
         <div class="flex justify-between items-baseline mb-2">
             <div class="space-y-0.5">
                 <h3 class="font-headline text-2xl italic">Execução do ciclo</h3>
@@ -381,7 +392,7 @@
     </section>
 
     <!-- Distribuição de Foco -->
-    <section id="painel-focus-distribution-section" class="mt-8 space-y-4">
+    <section id="painel-focus-distribution-section" data-painel-screen-content="foco" class="mt-8 space-y-4 hidden">
         <div class="space-y-4 mb-6">
             <div class="flex justify-between items-end">
                 <div class="space-y-1">
@@ -432,7 +443,7 @@
 
 
     <!-- Linha do Tempo -->
-    <section class="mt-8 space-y-4">
+    <section id="painel-timeline-section" data-painel-screen-content="timeline" class="mt-8 space-y-4 hidden">
         <div class="space-y-1">
             <h3 class="font-headline text-2xl italic">Linha do Tempo</h3>
             <p class="text-sm text-on-surface-variant leading-relaxed">Agenda histórica — o que você fez e viveu em cada dia.</p>

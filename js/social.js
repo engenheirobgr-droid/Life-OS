@@ -92,28 +92,23 @@ export function attachSocial(app) {
         },
 
         switchSocialTab: function(tabId) {
-            const container = document.querySelector('main.pt-6'); // O container principal
-            if (!container) return;
+            const nav = document.getElementById('social-tabs-nav');
+            if (!nav) return;
             
             // Remove active das abas
-            container.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active', 'text-outline');
-                if(btn.dataset.tab === tabId) {
-                    btn.classList.add('active');
-                    btn.classList.remove('text-outline');
-                } else {
-                    btn.classList.add('text-outline');
-                }
+            nav.querySelectorAll('.social-tab-btn').forEach(btn => {
+                const isActive = btn.dataset.tab === tabId;
+                btn.classList.toggle('active', isActive);
+                btn.classList.toggle('text-primary', isActive);
+                btn.classList.toggle('text-outline', !isActive);
             });
 
             // Mostra o conteúdo correto
-            container.querySelectorAll('.tab-content').forEach(content => {
+            document.querySelectorAll('.social-tab-content').forEach(content => {
                 content.classList.remove('active');
             });
             const activeContent = document.getElementById(tabId);
-            if (activeContent) {
-                activeContent.classList.add('active');
-            }
+            if (activeContent) activeContent.classList.add('active');
         },
 
         getSocialDefaultVisibility: function() {

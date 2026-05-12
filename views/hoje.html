@@ -22,8 +22,15 @@
     <div class="mt-6 h-px w-24 bg-primary"></div>
 </section>
 
+<nav class="mt-4 flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0">
+    <button data-hoje-screen="checkin" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-primary border-b-2 border-primary" onclick="window.app.switchHojeScreen('checkin')">Check-in</button>
+    <button data-hoje-screen="checklist" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchHojeScreen('checklist')">Para hoje</button>
+    <button data-hoje-screen="habitos" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchHojeScreen('habitos')">Hábitos</button>
+    <button data-hoje-screen="diario" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchHojeScreen('diario')">Diário</button>
+</nav>
+
 <!-- Anchor chips -->
-<div class="mt-4 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+<div class="mt-4 flex gap-2 overflow-x-auto no-scrollbar pb-1 hidden">
     <button onclick="document.getElementById('daily-checkin-panel').scrollIntoView({behavior:'smooth',block:'start'})" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 text-[11px] font-bold text-outline hover:text-primary hover:border-primary/30 transition-colors">
         <span class="material-symbols-outlined notranslate text-[13px]">self_improvement</span> Check-in
     </button>
@@ -39,7 +46,7 @@
 </div>
 
 <!-- Boas-vindas -->
-<section class="mt-8">
+<section data-hoje-screen-content="checkin" class="mt-8">
     <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-6 flex items-center gap-4">
         <div class="relative">
             <img id="welcome-avatar" class="w-16 h-16 rounded-full object-cover border-2 border-primary/20" alt="Foto de perfil" src="">
@@ -55,13 +62,13 @@
 </section>
 
 <!-- Bússola do Dia -->
-<section class="mt-8">
+<section data-hoje-screen-content="checkin" class="mt-8">
   <div id="daily-compass-container"></div>
   <div id="starter-journey-container" class="mt-6"></div>
 </section>
 
     <!-- Check-in Diário -->
-    <section id="daily-checkin-panel" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-4">
+    <section id="daily-checkin-panel" data-hoje-screen-content="checkin" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-4">
         <div class="flex items-center justify-between gap-3">
             <div>
                 <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Check-in diário</p>
@@ -200,7 +207,7 @@
     </section>
 
     <!-- Progresso da Semana -->
-    <section class="mt-6 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6">
+    <section id="hoje-week-progress-section" data-hoje-screen-content="checkin" class="mt-6 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6">
             <div class="mb-5">
               <div>
                 <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Progresso da Semana</p>
@@ -226,7 +233,7 @@
     </section>
 
 <!-- Section: Checklist do dia -->
-<section id="hoje-checklist-section" class="mt-8 space-y-6">
+<section id="hoje-checklist-section" data-hoje-screen-content="checklist" class="mt-8 space-y-6 hidden">
 <div class="flex items-baseline justify-between mb-6">
 <h3 class="font-headline text-2xl italic">Para hoje</h3>
 <span id="macros-pendentes-badge" class="text-xs font-label uppercase tracking-wider text-outline font-medium">0 Pendentes</span>
@@ -245,7 +252,7 @@
 
 </section>
 <!-- Section: Hábitos -->
-<section id="hoje-habits-section" class="mt-8 space-y-4">
+<section id="hoje-habits-section" data-hoje-screen-content="habitos" class="mt-8 space-y-4 hidden">
 <div class="mb-6 flex items-center justify-between gap-4">
     <h3 class="font-headline text-2xl italic">Hábitos de hoje</h3>
     <div class="flex items-center gap-2">
@@ -302,7 +309,7 @@
 </div>
 </section>
 <!-- Section: Diário -->
-<section id="hoje-diario-section" class="mt-6 space-y-6">
+<section id="hoje-diario-section" data-hoje-screen-content="diario" class="mt-6 space-y-6 hidden">
 <div class="flex items-center justify-between gap-3 mb-4">
     <div class="flex items-center gap-3">
         <span class="material-symbols-outlined notranslate text-tertiary">bedtime</span>

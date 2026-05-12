@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260512-purpose-journey-rollback-v181';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260512-purpose-journey-rollback-v181';
-import { attachNotifications } from './js/notifications.js?v=20260512-purpose-journey-rollback-v181';
-import { attachCadence } from './js/cadence.js?v=20260512-purpose-journey-rollback-v181';
-import { attachOnboarding } from './js/onboarding.js?v=20260512-purpose-journey-rollback-v181';
-import { attachIdentity } from './js/identity.js?v=20260512-purpose-journey-rollback-v181';
-import { attachHabits } from './js/habits.js?v=20260512-purpose-journey-rollback-v181';
-import { attachStateModule } from './js/state.js?v=20260512-purpose-journey-rollback-v181';
-import { attachRenderModule } from './js/render.js?v=20260512-purpose-journey-rollback-v181';
-import { attachPlanningModule } from './js/planning.js?v=20260512-purpose-journey-rollback-v181';
-import { attachGamificationModule } from './js/gamification.js?v=20260512-purpose-journey-rollback-v181';
-import { attachSocial } from './js/social.js?v=20260512-purpose-journey-rollback-v181';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260512-ui-tabs-audit-v182';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260512-ui-tabs-audit-v182';
+import { attachNotifications } from './js/notifications.js?v=20260512-ui-tabs-audit-v182';
+import { attachCadence } from './js/cadence.js?v=20260512-ui-tabs-audit-v182';
+import { attachOnboarding } from './js/onboarding.js?v=20260512-ui-tabs-audit-v182';
+import { attachIdentity } from './js/identity.js?v=20260512-ui-tabs-audit-v182';
+import { attachHabits } from './js/habits.js?v=20260512-ui-tabs-audit-v182';
+import { attachStateModule } from './js/state.js?v=20260512-ui-tabs-audit-v182';
+import { attachRenderModule } from './js/render.js?v=20260512-ui-tabs-audit-v182';
+import { attachPlanningModule } from './js/planning.js?v=20260512-ui-tabs-audit-v182';
+import { attachGamificationModule } from './js/gamification.js?v=20260512-ui-tabs-audit-v182';
+import { attachSocial } from './js/social.js?v=20260512-ui-tabs-audit-v182';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -200,7 +200,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260512-purpose-journey-rollback-v181',
+    appBuildVersion: '20260512-ui-tabs-audit-v182',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -1668,6 +1668,43 @@ _getAudioContext: function() {
         }
 
         if (sectionId) {
+            if (this.currentView === 'painel' && this.switchPainelScreen) {
+                const painelMap = {
+                    'painel-situacao-section': 'situacao',
+                    'painel-diagnostico-section': 'diagnostico',
+                    'painel-evolucao-section': 'evolucao',
+                    'painel-padroes-section': 'padroes',
+                    'painel-gestao-section': 'areas',
+                    'painel-weekly-review-section': 'okrs',
+                    'painel-execucao-section': 'execucao',
+                    'painel-focus-distribution-section': 'foco',
+                    'timeline-history-container': 'timeline'
+                };
+                if (painelMap[sectionId]) this.switchPainelScreen(painelMap[sectionId]);
+            }
+            if (this.currentView === 'hoje' && this.switchHojeScreen) {
+                const hojeMap = {
+                    'daily-checkin-panel': 'checkin',
+                    'hoje-checklist-section': 'checklist',
+                    'hoje-habits-section': 'habitos',
+                    'hoje-diario-section': 'diario'
+                };
+                if (hojeMap[sectionId]) this.switchHojeScreen(hojeMap[sectionId]);
+            }
+            if (this.currentView === 'proposito' && this.switchPropositoScreen) {
+                const propositoMap = {
+                    'proposito-identity-section': 'identidade',
+                    'values-selection-tool': 'identidade',
+                    'proposito-roda-section': 'bemestar',
+                    'perma-section': 'bemestar',
+                    'swls-section': 'bemestar',
+                    'proposito-legado-section': 'direcao',
+                    'odyssey-section': 'direcao',
+                    'proposito-ikigai-section': 'direcao',
+                    'proposito-visao-section': 'direcao'
+                };
+                if (propositoMap[sectionId]) this.switchPropositoScreen(propositoMap[sectionId]);
+            }
             // Usa requestAnimationFrame para esperar pelo próximo ciclo de renderização
             requestAnimationFrame(() => {
                 const scrollToSection = () => {
@@ -2563,6 +2600,9 @@ renderProfileChrome: function() {
             if (this.render[viewName]) {
                 try { this.render[viewName](); } catch (e) { console.warn('render error:', e); }
             }
+            if (viewName === 'painel' && this.switchPainelScreen) this.switchPainelScreen(this.painelScreen || 'situacao');
+            if (viewName === 'hoje' && this.switchHojeScreen) this.switchHojeScreen(this.hojeScreen || 'checkin');
+            if (viewName === 'proposito' && this.switchPropositoScreen) this.switchPropositoScreen(this.propositoScreen || 'identidade');
             if (this.renderAppNotificationCenter) {
                 try { this.renderAppNotificationCenter(); } catch (_) {}
             }
@@ -2603,6 +2643,7 @@ renderProfileChrome: function() {
     openFocusDetails: function() {
         this.navigate('painel');
         setTimeout(() => {
+            if (this.switchPainelScreen) this.switchPainelScreen('foco');
             const section = document.getElementById('painel-focus-distribution-section');
             if (!section) return;
             section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2831,6 +2872,57 @@ renderProfileChrome: function() {
     setPainelFilter: function(filter) {
         this.painelFilter = filter;
         if (this.render.painel) this.render.painel();
+    },
+    switchPainelScreen: function(screenId) {
+        const nextScreen = String(screenId || this.painelScreen || 'situacao');
+        this.painelScreen = nextScreen;
+
+        document.querySelectorAll('[data-painel-screen]').forEach((btn) => {
+            const isActive = btn.getAttribute('data-painel-screen') === nextScreen;
+            btn.classList.toggle('text-primary', isActive);
+            btn.classList.toggle('border-b-2', isActive);
+            btn.classList.toggle('border-primary', isActive);
+            btn.classList.toggle('text-outline', !isActive);
+        });
+
+        document.querySelectorAll('[data-painel-screen-content]').forEach((section) => {
+            const shouldShow = section.getAttribute('data-painel-screen-content') === nextScreen;
+            section.classList.toggle('hidden', !shouldShow);
+        });
+    },
+    switchHojeScreen: function(screenId) {
+        const nextScreen = String(screenId || this.hojeScreen || 'checkin');
+        this.hojeScreen = nextScreen;
+
+        document.querySelectorAll('[data-hoje-screen]').forEach((btn) => {
+            const isActive = btn.getAttribute('data-hoje-screen') === nextScreen;
+            btn.classList.toggle('text-primary', isActive);
+            btn.classList.toggle('border-b-2', isActive);
+            btn.classList.toggle('border-primary', isActive);
+            btn.classList.toggle('text-outline', !isActive);
+        });
+
+        document.querySelectorAll('[data-hoje-screen-content]').forEach((section) => {
+            const shouldShow = section.getAttribute('data-hoje-screen-content') === nextScreen;
+            section.classList.toggle('hidden', !shouldShow);
+        });
+    },
+    switchPropositoScreen: function(screenId) {
+        const nextScreen = String(screenId || this.propositoScreen || 'identidade');
+        this.propositoScreen = nextScreen;
+
+        document.querySelectorAll('[data-proposito-screen]').forEach((btn) => {
+            const isActive = btn.getAttribute('data-proposito-screen') === nextScreen;
+            btn.classList.toggle('text-primary', isActive);
+            btn.classList.toggle('border-b-2', isActive);
+            btn.classList.toggle('border-primary', isActive);
+            btn.classList.toggle('text-outline', !isActive);
+        });
+
+        document.querySelectorAll('[data-proposito-screen-content]').forEach((section) => {
+            const shouldShow = section.getAttribute('data-proposito-screen-content') === nextScreen;
+            section.classList.toggle('hidden', !shouldShow);
+        });
     },
 
     isDateInCurrentWeek: function(dateStr) {
@@ -5263,6 +5355,18 @@ ensureNotesState: function() {
     },
 
     openPurposeJourneyStep: function(stepId) {
+        const screenMap = {
+            identity: 'identidade',
+            wheel: 'bemestar',
+            'ikigai-base': 'direcao',
+            'ikigai-synthesis': 'direcao',
+            legacy: 'direcao',
+            vision: 'direcao',
+            odyssey: 'direcao'
+        };
+        if (this.switchPropositoScreen && screenMap[stepId]) {
+            this.switchPropositoScreen(screenMap[stepId]);
+        }
         const map = {
             identity: 'top-values-banner',
             wheel: 'proposito-roda-section',

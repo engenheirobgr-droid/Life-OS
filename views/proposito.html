@@ -16,8 +16,14 @@
     <div class="mt-6 h-px w-24 bg-primary"></div>
 </section>
 
+<nav class="mt-4 flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0 mb-6">
+    <button data-proposito-screen="identidade" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-primary border-b-2 border-primary" onclick="window.app.switchPropositoScreen('identidade')">Identidade</button>
+    <button data-proposito-screen="bemestar" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPropositoScreen('bemestar')">Bem-estar</button>
+    <button data-proposito-screen="direcao" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPropositoScreen('direcao')">Direção</button>
+</nav>
+
 <!-- Anchor Chips -->
-<div class="overflow-x-auto no-scrollbar mb-6">
+<div class="overflow-x-auto no-scrollbar mb-6 hidden">
     <div class="inline-flex min-w-max gap-2 py-1">
         <button onclick="document.getElementById('proposito-identity-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
             <span class="material-symbols-outlined notranslate text-[14px]">person</span>Identidade
@@ -46,7 +52,7 @@
     </div>
 </div>
 
-<section id="proposito-identity-section">
+<section id="proposito-identity-section" data-proposito-screen-content="identidade">
     <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">Quem eu sou</p>
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
         <div class="flex items-start justify-between mb-6">
@@ -106,7 +112,7 @@
 </section>
 
 <!-- Roda da Vida Section -->
-<section id="proposito-roda-section" class="mt-8">
+<section id="proposito-roda-section" data-proposito-screen-content="bemestar" class="mt-8 hidden">
     <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">Como estou</p>
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
         <div class="flex items-start justify-between mb-6">
@@ -163,7 +169,7 @@
 </section>
 
 <!-- Bem-Estar PERMA -->
-<section id="perma-section" class="mt-8">
+<section id="perma-section" data-proposito-screen-content="bemestar" class="mt-8 hidden">
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
         <div class="flex items-start justify-between mb-8">
             <div>
@@ -195,7 +201,7 @@
 </section>
 
 <!-- SWLS (Satisfaction With Life Scale) -->
-<section id="swls-section" class="mt-8">
+<section id="swls-section" data-proposito-screen-content="bemestar" class="mt-8 hidden">
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
         <div class="flex items-start justify-between mb-6">
             <div>
@@ -241,7 +247,7 @@
 </section>
 
 <!-- Meus Valores (Ferramenta de Seleção) -->
-<section id="values-selection-tool" class="mt-8">
+<section id="values-selection-tool" data-proposito-screen-content="identidade" class="mt-8">
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-10 border border-outline-variant/10 shadow-lg flex flex-col max-w-2xl mx-auto">
         <div class="flex justify-between items-center mb-10">
             <div>
@@ -312,7 +318,7 @@
 </section>
 
 <!-- Meu Legado Card -->
-<section id="proposito-legado-section" class="mt-8">
+<section id="proposito-legado-section" data-proposito-screen-content="direcao" class="mt-8 hidden">
 <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">O que quero deixar</p>
 <div class="md:col-span-1 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col h-full">
         <div class="flex items-start justify-between mb-6">
@@ -361,7 +367,7 @@
 </section>
 
 <!-- Odyssey Plans Card -->
-<section id="odyssey-section" class="mt-8">
+<section id="odyssey-section" data-proposito-screen-content="direcao" class="mt-8 hidden">
     <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">O que posso viver</p>
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col">
         
@@ -452,7 +458,7 @@
 </section>
 
 <!-- Meu Ikigai Section -->
-<section id="proposito-ikigai-section" class="mt-8">
+<section id="proposito-ikigai-section" data-proposito-screen-content="direcao" class="mt-8 hidden">
     <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">O que me move</p>
     <div class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col relative">
         <div class="space-y-6 w-full">
@@ -538,7 +544,7 @@
 </section>
 
 <!-- Visão de Vida Section -->
-<section id="proposito-visao-section" class="mt-8">
+<section id="proposito-visao-section" data-proposito-screen-content="direcao" class="mt-8 hidden">
     <p class="font-label text-[10px] uppercase tracking-[0.22em] text-primary font-bold mb-3">Quem quero me tornar</p>
     <div class="md:col-span-2 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm flex flex-col h-full">
         <div class="max-w-3xl mx-auto w-full">

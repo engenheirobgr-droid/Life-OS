@@ -1,28 +1,28 @@
-﻿const CACHE_NAME = 'sistema-vida-v181';
+const CACHE_NAME = 'sistema-vida-v182';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260512-purpose-journey-rollback-v181',
-    './js/habitSuggestions.js?v=20260512-purpose-journey-rollback-v181',
-    './js/subjectiveScales.js?v=20260512-purpose-journey-rollback-v181',
-    './js/notifications.js?v=20260512-purpose-journey-rollback-v181',
-    './js/cadence.js?v=20260512-purpose-journey-rollback-v181',
-    './js/onboarding.js?v=20260512-purpose-journey-rollback-v181',
-    './js/identity.js?v=20260512-purpose-journey-rollback-v181',
-    './js/habits.js?v=20260512-purpose-journey-rollback-v181',
-    './js/state.js?v=20260512-purpose-journey-rollback-v181',
-    './js/render.js?v=20260512-purpose-journey-rollback-v181',
-    './js/planning.js?v=20260512-purpose-journey-rollback-v181',
-    './js/gamification.js?v=20260512-purpose-journey-rollback-v181',
-    './js/social.js?v=20260512-purpose-journey-rollback-v181',
-    './views/hoje.html?v=20260512-purpose-journey-rollback-v181',
-    './views/planos.html?v=20260512-purpose-journey-rollback-v181',
-    './views/proposito.html?v=20260512-purpose-journey-rollback-v181',
-    './views/perfil.html?v=20260512-purpose-journey-rollback-v181',
-    './views/painel.html?v=20260512-purpose-journey-rollback-v181',
-    './views/foco.html?v=20260512-purpose-journey-rollback-v181',
-    './views/onboarding.html?v=20260512-purpose-journey-rollback-v181',
-    './views/social.html?v=20260512-purpose-journey-rollback-v181'
+    './app.js?v=20260512-ui-tabs-audit-v182',
+    './js/habitSuggestions.js?v=20260512-ui-tabs-audit-v182',
+    './js/subjectiveScales.js?v=20260512-ui-tabs-audit-v182',
+    './js/notifications.js?v=20260512-ui-tabs-audit-v182',
+    './js/cadence.js?v=20260512-ui-tabs-audit-v182',
+    './js/onboarding.js?v=20260512-ui-tabs-audit-v182',
+    './js/identity.js?v=20260512-ui-tabs-audit-v182',
+    './js/habits.js?v=20260512-ui-tabs-audit-v182',
+    './js/state.js?v=20260512-ui-tabs-audit-v182',
+    './js/render.js?v=20260512-ui-tabs-audit-v182',
+    './js/planning.js?v=20260512-ui-tabs-audit-v182',
+    './js/gamification.js?v=20260512-ui-tabs-audit-v182',
+    './js/social.js?v=20260512-ui-tabs-audit-v182',
+    './views/hoje.html?v=20260512-ui-tabs-audit-v182',
+    './views/planos.html?v=20260512-ui-tabs-audit-v182',
+    './views/proposito.html?v=20260512-ui-tabs-audit-v182',
+    './views/perfil.html?v=20260512-ui-tabs-audit-v182',
+    './views/painel.html?v=20260512-ui-tabs-audit-v182',
+    './views/foco.html?v=20260512-ui-tabs-audit-v182',
+    './views/onboarding.html?v=20260512-ui-tabs-audit-v182',
+    './views/social.html?v=20260512-ui-tabs-audit-v182'
 ];
 
 self.addEventListener('install', (event) => {
@@ -52,17 +52,12 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Allow pages to tell the waiting SW to skip waiting and take control immediately
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
 });
 
-// -- Push Notifications --------------------------------------------------------
-// Recebe mensagens push do servidor (requer backend + VAPID keys para funcionar).
-// Para notificações locais sem backend, o app usa registration.showNotification()
-// diretamente a partir do contexto da página.
 self.addEventListener('push', (event) => {
     let data = { title: 'Life OS', body: 'Nova notificação.' };
     try {
@@ -100,11 +95,8 @@ self.addEventListener('notificationclick', (event) => {
 
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
-    
-    // Optional: Only cache requests for our own origin to avoid external API mismatches
     if (!event.request.url.startsWith(self.location.origin)) return;
 
-    // Network First Strategy
     event.respondWith(
         fetch(event.request)
             .then((response) => {
@@ -116,19 +108,6 @@ self.addEventListener('fetch', (event) => {
                 }
                 return response;
             })
-            .catch(() => {
-                return caches.match(event.request);
-            })
+            .catch(() => caches.match(event.request))
     );
 });
-
-
-
-
-
-
-
-
-
-
-
