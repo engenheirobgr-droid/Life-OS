@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260512-guided-routine-v193';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260512-guided-routine-v193';
-import { attachNotifications } from './js/notifications.js?v=20260512-guided-routine-v193';
-import { attachCadence } from './js/cadence.js?v=20260512-guided-routine-v193';
-import { attachOnboarding } from './js/onboarding.js?v=20260512-guided-routine-v193';
-import { attachIdentity } from './js/identity.js?v=20260512-guided-routine-v193';
-import { attachHabits } from './js/habits.js?v=20260512-guided-routine-v193';
-import { attachStateModule } from './js/state.js?v=20260512-guided-routine-v193';
-import { attachRenderModule } from './js/render.js?v=20260512-guided-routine-v193';
-import { attachPlanningModule } from './js/planning.js?v=20260512-guided-routine-v193';
-import { attachGamificationModule } from './js/gamification.js?v=20260512-guided-routine-v193';
-import { attachSocial } from './js/social.js?v=20260512-guided-routine-v193';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260512-guided-routine-v194';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260512-guided-routine-v194';
+import { attachNotifications } from './js/notifications.js?v=20260512-guided-routine-v194';
+import { attachCadence } from './js/cadence.js?v=20260512-guided-routine-v194';
+import { attachOnboarding } from './js/onboarding.js?v=20260512-guided-routine-v194';
+import { attachIdentity } from './js/identity.js?v=20260512-guided-routine-v194';
+import { attachHabits } from './js/habits.js?v=20260512-guided-routine-v194';
+import { attachStateModule } from './js/state.js?v=20260512-guided-routine-v194';
+import { attachRenderModule } from './js/render.js?v=20260512-guided-routine-v194';
+import { attachPlanningModule } from './js/planning.js?v=20260512-guided-routine-v194';
+import { attachGamificationModule } from './js/gamification.js?v=20260512-guided-routine-v194';
+import { attachSocial } from './js/social.js?v=20260512-guided-routine-v194';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -200,7 +200,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260512-guided-routine-v193',
+    appBuildVersion: '20260512-guided-routine-v194',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -7342,6 +7342,7 @@ onAuthStateChanged(auth, (user) => {
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
+
 
 
 
