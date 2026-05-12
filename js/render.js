@@ -310,6 +310,7 @@ renderWeeklyPlans: function() {
         const state = window.sistemaVidaState;
         const weekPlans = state.weekPlans || {};
         const weekKey = this._getWeekKey();
+        const hasWeeklyReview = !!((state.reviews || {})[weekKey]);
 
         const fmt = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
         const labelEl = document.getElementById('semanal-week-label');
@@ -351,6 +352,17 @@ renderWeeklyPlans: function() {
                     actionOptions: `weekKey: '${nextWeekKey}', nextWeek: true`,
                     isCurrent: false,
                     emptyText: ''
+                });
+            } else if (!hasWeeklyReview) {
+                nextCard.innerHTML = this._renderWeeklyPlanShell({
+                    weekKey: nextWeekKey,
+                    plan: null,
+                    label: 'PrÃ³xima Semana',
+                    actionLabel: '',
+                    actionIcon: '',
+                    actionOptions: '',
+                    isCurrent: false,
+                    emptyText: 'A opÃ§Ã£o de planejar a prÃ³xima semana habilita junto com a revisÃ£o da semana atual.'
                 });
             } else if (suggestions.length > 0) {
                 nextCard.innerHTML = this._renderWeeklyPlanShell({

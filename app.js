@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260512-ui-tabs-audit-v182';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260512-ui-tabs-audit-v182';
-import { attachNotifications } from './js/notifications.js?v=20260512-ui-tabs-audit-v182';
-import { attachCadence } from './js/cadence.js?v=20260512-ui-tabs-audit-v182';
-import { attachOnboarding } from './js/onboarding.js?v=20260512-ui-tabs-audit-v182';
-import { attachIdentity } from './js/identity.js?v=20260512-ui-tabs-audit-v182';
-import { attachHabits } from './js/habits.js?v=20260512-ui-tabs-audit-v182';
-import { attachStateModule } from './js/state.js?v=20260512-ui-tabs-audit-v182';
-import { attachRenderModule } from './js/render.js?v=20260512-ui-tabs-audit-v182';
-import { attachPlanningModule } from './js/planning.js?v=20260512-ui-tabs-audit-v182';
-import { attachGamificationModule } from './js/gamification.js?v=20260512-ui-tabs-audit-v182';
-import { attachSocial } from './js/social.js?v=20260512-ui-tabs-audit-v182';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260512-guided-journey-rules-v183';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260512-guided-journey-rules-v183';
+import { attachNotifications } from './js/notifications.js?v=20260512-guided-journey-rules-v183';
+import { attachCadence } from './js/cadence.js?v=20260512-guided-journey-rules-v183';
+import { attachOnboarding } from './js/onboarding.js?v=20260512-guided-journey-rules-v183';
+import { attachIdentity } from './js/identity.js?v=20260512-guided-journey-rules-v183';
+import { attachHabits } from './js/habits.js?v=20260512-guided-journey-rules-v183';
+import { attachStateModule } from './js/state.js?v=20260512-guided-journey-rules-v183';
+import { attachRenderModule } from './js/render.js?v=20260512-guided-journey-rules-v183';
+import { attachPlanningModule } from './js/planning.js?v=20260512-guided-journey-rules-v183';
+import { attachGamificationModule } from './js/gamification.js?v=20260512-guided-journey-rules-v183';
+import { attachSocial } from './js/social.js?v=20260512-guided-journey-rules-v183';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -200,7 +200,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260512-ui-tabs-audit-v182',
+    appBuildVersion: '20260512-guided-journey-rules-v183',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -1685,6 +1685,7 @@ _getAudioContext: function() {
             if (this.currentView === 'hoje' && this.switchHojeScreen) {
                 const hojeMap = {
                     'daily-checkin-panel': 'checkin',
+                    'next-best-action-container': 'checklist',
                     'hoje-checklist-section': 'checklist',
                     'hoje-habits-section': 'habitos',
                     'hoje-diario-section': 'diario'

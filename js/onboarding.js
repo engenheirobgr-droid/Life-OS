@@ -3,74 +3,143 @@ import { auth, signOut, LOCAL_USER_SCOPE } from './firebase.js';
 export function attachOnboarding(app) {
     Object.assign(app, {
 getStarterJourneyState: function() {
+        const state = window.sistemaVidaState;
         const today = this.getLocalDateKey();
         const weekKey = this._getWeekKey();
-        const cadence = window.sistemaVidaState.profile?.cadence || {};
-        const weekPlan = (window.sistemaVidaState.weekPlans || {})[weekKey];
-        const state = window.sistemaVidaState;
-
-        // Item 1: check-in do dia
-        const checkinToday = cadence.checkin?.lastAt === today;
-
-        // Item 2: plano da semana com pelo menos uma micro selecionada
+        const cadence = state.profile?.cadence || {};
+        const weekPlan = (state.weekPlans || {})[weekKey];
+        const activeMicros = (state.entities?.micros || []).filter(m => m && m.id && m.status !== 'done' && m.status !== 'abandoned' && !m.completed);
+        const activeHabits = (state.habits || []).filter(h => h && h.id && h.archived !== true && h.status !== 'archived');
+        const pendingHabit = activeHabits.find(h => !this.isHabitDoneOnDate(h, today));
         const weeklyPlanned = !!(weekPlan && Array.isArray(weekPlan.selectedMicros) && weekPlan.selectedMicros.length > 0);
+        const checkinDone = cadence.checkin?.lastAt === today;
+        const diaryDone = cadence.diary?.lastAt === today || cadence.shutdown?.lastAt === today;
+        const next = this.getNextBestAction({ scope: 'today' });
+        const hasMicroParent = (state.entities?.macros || []).some(item => item && item.status !== 'done' && item.status !== 'abandoned');
 
-        // Item 3: sessao de foco hoje (deepWork.sessions com startedAt/endedAt de hoje)
-        const focusToday = (state.deepWork?.sessions || []).some(s =>
-            (s.endedAt || s.startedAt || '').startsWith(today));
+        const queue = [];
+        const push = (item) => {
+            if (queue.length < 3 && item && !queue.some(existing => existing.id === item.id)) queue.push(item);
+        };
 
-        const items = [
-            {
+        if (!checkinDone) {
+            push({
                 id: 'checkin',
                 label: 'Check-in do dia',
-                description: 'Como voce esta? 1 minuto de autoconhecimento.',
+                description: 'Calibre energia, humor e intencao antes de decidir.',
                 icon: 'self_improvement',
-                done: checkinToday
-            },
-            {
+                action: 'checkin'
+            });
+        }
+
+        if (!activeMicros.length) {
+            push(hasMicroParent
+                ? {
+                    id: 'create-micro',
+                    label: 'Criar micro acao',
+                    description: 'Transforme sua trilha em uma proxima acao executavel.',
+                    icon: 'bolt',
+                    action: 'create-micro'
+                }
+                : {
+                    id: 'create-trail',
+                    label: 'Criar trilha guiada',
+                    description: 'Monte a cadeia meta, OKR, macro e micro inicial.',
+                    icon: 'account_tree',
+                    action: 'create-trail'
+                });
+        } else if (!weeklyPlanned) {
+            push({
                 id: 'weekly',
-                label: 'Plano da semana',
-                description: 'Escolha as micros que vai executar essa semana.',
+                label: 'Planejar semana',
+                description: 'Escolha quais micros entram no plano desta semana.',
                 icon: 'calendar_view_week',
-                done: weeklyPlanned
-            },
-            {
-                id: 'focus',
-                label: 'Primeira sessao de foco',
-                description: 'Execute uma micro em sessao de trabalho profundo.',
-                icon: 'timer',
-                done: focusToday
-            }
-        ];
-        const doneCount = items.filter((item) => item.done).length;
-        return { items, doneCount, total: items.length, pct: Math.round((doneCount / items.length) * 100) };
+                action: 'weekly'
+            });
+        }
+
+        if (!activeHabits.length) {
+            push({
+                id: 'create-habit',
+                label: 'Criar habito ancora',
+                description: 'Adicione um comportamento pequeno para sustentar a rotina.',
+                icon: 'repeat',
+                action: 'create-habit'
+            });
+        } else if (pendingHabit) {
+            push({
+                id: 'do-habit',
+                label: 'Realizar habito',
+                description: pendingHabit.title || 'Marque o habito previsto para hoje.',
+                icon: 'check_circle',
+                action: 'do-habit',
+                habitId: pendingHabit.id
+            });
+        }
+
+        if (weeklyPlanned && next?.micro) {
+            push({
+                id: 'next-best',
+                label: 'Proxima melhor acao',
+                description: next.micro.title || 'Avance a micro mais importante de hoje.',
+                icon: 'task_alt',
+                action: 'next-best',
+                microId: next.micro.id
+            });
+        }
+
+        if (!diaryDone) {
+            push({
+                id: 'diary',
+                label: 'Fechar o dia',
+                description: 'Registre aprendizado, gratidao ou ajuste de rota.',
+                icon: 'bedtime',
+                action: 'diary'
+            });
+        }
+
+        const doneSignals = [
+            checkinDone,
+            activeMicros.length > 0,
+            weeklyPlanned,
+            activeHabits.length > 0,
+            activeHabits.length > 0 && !pendingHabit,
+            !!(weeklyPlanned && next?.micro),
+            diaryDone
+        ].filter(Boolean).length;
+
+        return {
+            items: queue,
+            doneCount: doneSignals,
+            total: 7,
+            pct: Math.min(100, Math.round((doneSignals / 7) * 100))
+        };
     },
 
 renderStarterJourneyCard: function() {
         const container = document.getElementById('starter-journey-container');
         if (!container) return;
         const journey = this.getStarterJourneyState();
-        if (journey.doneCount >= journey.total) {
+        if (!journey.items.length) {
             container.innerHTML = `
                 <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
                     <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
                         <span class="material-symbols-outlined notranslate text-[18px]">check_circle</span>
-                        <p class="text-xs font-bold uppercase tracking-widest">Base inicial concluida</p>
+                        <p class="text-xs font-bold uppercase tracking-widest">Jornada de hoje concluida</p>
                     </div>
                 </div>`;
             return;
         }
-        const nextPending = journey.items.find((item) => !item.done);
         const list = journey.items.map((item) => `
-            <div class="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 ${item.done ? 'bg-emerald-500/[0.06]' : 'bg-surface-container-low'} border ${item.done ? 'border-emerald-500/20' : 'border-outline-variant/15'}">
+            <div class="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 bg-surface-container-low border border-outline-variant/15">
                 <div class="flex items-start gap-2.5 min-w-0">
-                    <span class="material-symbols-outlined notranslate text-[18px] mt-0.5 shrink-0 ${item.done ? 'text-emerald-500' : 'text-primary/60'}" ${item.done ? "style=\"font-variation-settings:'FILL' 1;\"" : ''}>${item.done ? 'check_circle' : (item.icon || 'radio_button_unchecked')}</span>
+                    <span class="material-symbols-outlined notranslate text-[18px] mt-0.5 shrink-0 text-primary/60">${item.icon || 'radio_button_unchecked'}</span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold ${item.done ? 'text-emerald-700 dark:text-emerald-300 line-through' : 'text-on-surface'}">${this.escapeHtml(item.label)}</p>
-                        ${item.done ? '' : `<p class="text-[11px] text-outline mt-0.5 leading-snug">${this.escapeHtml(item.description || '')}</p>`}
+                        <p class="text-xs font-semibold text-on-surface">${this.escapeHtml(item.label)}</p>
+                        <p class="text-[11px] text-outline mt-0.5 leading-snug">${this.escapeHtml(item.description || '')}</p>
                     </div>
                 </div>
-                ${item.done ? '' : `<button type="button" onclick="window.app.onStarterJourneyAction('${item.id}')" class="shrink-0 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors mt-0.5">Ir</button>`}
+                <button type="button" onclick="window.app.onStarterJourneyAction('${item.id}')" class="shrink-0 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors mt-0.5">Ir</button>
             </div>
         `).join('');
         container.innerHTML = `
@@ -78,7 +147,7 @@ renderStarterJourneyCard: function() {
                 <div class="flex items-center justify-between gap-3">
                     <div>
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Jornada guiada</p>
-                        <p class="text-xs text-outline mt-1">${journey.doneCount}/${journey.total} passos base concluidos</p>
+                        <p class="text-xs text-outline mt-1">${journey.items.length} proximos movimentos sugeridos</p>
                     </div>
                     <span class="text-xs font-bold text-primary">${journey.pct}%</span>
                 </div>
@@ -86,20 +155,33 @@ renderStarterJourneyCard: function() {
                     <div class="h-full rounded-full bg-primary transition-all duration-500" style="width:${journey.pct}%"></div>
                 </div>
                 <div class="space-y-2">${list}</div>
-                ${nextPending ? `<p class="text-[11px] text-outline">Proximo passo recomendado: <span class="font-semibold text-on-surface">${this.escapeHtml(nextPending.label)}</span>.</p>` : ''}
+                <p class="text-[11px] text-outline">A fila se atualiza conforme voce conclui cada movimento.</p>
             </div>`;
     },
 
 onStarterJourneyAction: function(itemId) {
+        const item = this.getStarterJourneyState().items.find(entry => entry.id === itemId);
+        const action = item?.action || itemId;
+
         const actions = {
             checkin: () => this.flowNavigate('hoje', 'daily-checkin-panel'),
             weekly:  () => this.flowNavigate('planos', 'tab-semanal', 'semanal'),
-            focus:   () => this.navigate('foco'),
-            // legado
+            'create-trail': () => this.openMetaTrailWizard(),
+            'create-micro': () => {
+                this.flowNavigate('planos', 'tab-semanal', 'semanal');
+                setTimeout(() => this.openWeeklyPlanModal({ addMicro: true }), 360);
+            },
+            'create-habit': () => {
+                this.flowNavigate('hoje', 'hoje-habits-section');
+                setTimeout(() => this.openCreateModal('habits'), 360);
+            },
+            'do-habit': () => item?.habitId ? this.openHabitToday(item.habitId) : this.flowNavigate('hoje', 'hoje-habits-section'),
+            'next-best': () => this.flowNavigate('hoje', 'next-best-action-container'),
+            diary: () => this.flowNavigate('hoje', 'hoje-diario-section'),
             trail: () => this.openMetaTrailWizard(),
-            habit: () => this.flowNavigate('hoje', 'hoje-habits-section'),
+            habit: () => this.flowNavigate('hoje', 'hoje-habits-section')
         };
-        if (actions[itemId]) actions[itemId]();
+        if (actions[action]) actions[action]();
     },
 
 scrollOnboardingToTop: function() {
