@@ -1,4 +1,4 @@
-﻿import { auth, db, getDoc, setDoc, deleteDoc, getDocs, collection } from './firebase.js';
+import { auth, db, getDoc, setDoc, deleteDoc, getDocs, collection } from './firebase.js';
 
 export function attachStateModule(app) {
     Object.assign(app, {
@@ -16,9 +16,9 @@ normalizeEntitiesState: function() {
             if (!Number.isFinite(n)) return 0;
             return Math.max(0, Math.min(100, Math.round(n)));
         };
-        // Para micros: progress 100 OU completed implica done (binÃ¡rio/atÃ´mico).
-        // Para macro/okr/meta: done depende EXCLUSIVAMENTE de decisÃ£o explÃ­cita do usuÃ¡rio.
-        // Ter 100% de progresso significa "pronto para fechar", nÃ£o "fechado automaticamente".
+        // Para micros: progress 100 OU completed implica done (binário/atômico).
+        // Para macro/okr/meta: done depende EXCLUSIVAMENTE de decisão explícita do usuário.
+        // Ter 100% de progresso significa "pronto para fechar", não "fechado automaticamente".
         const normalizedStatus = (rawStatus, progress, completedRaw = false, isAtomic = false) => {
             if (rawStatus === 'done') return 'done';
             if (isAtomic && (completedRaw || progress >= 100)) return 'done';
@@ -33,54 +33,54 @@ normalizeEntitiesState: function() {
         };
 
         state.entities.metas = state.entities.metas.map((meta) => {
-            const progress = clampProgress(meta.progress);
-            const status = normalizedStatus(meta.status, progress, meta.completed, false);
+            const progress = clampProgress(meta?.progress);
+            const status = normalizedStatus(meta?.status, progress, meta?.completed, false);
             return {
                 ...meta,
-                id: String(meta.id || ''),
-                title: String(meta.title || '').trim(),
-                dimension: String(meta.dimension || ''),
-                progress: status === 'done'  100 : progress,
+                id: String(meta?.id || ''),
+                title: String(meta?.title || '').trim(),
+                dimension: String(meta?.dimension || ''),
+                progress: status === 'done' ? 100 : progress,
                 status,
                 completed: status === 'done',
-                successCriteria: String(meta.successCriteria || ''),
-                challengeLevel: clampLevel(meta.challengeLevel),
-                commitmentLevel: clampLevel(meta.commitmentLevel)
+                successCriteria: String(meta?.successCriteria || ''),
+                challengeLevel: clampLevel(meta?.challengeLevel),
+                commitmentLevel: clampLevel(meta?.commitmentLevel)
             };
         }).filter((meta) => meta.id && meta.title);
 
         state.entities.okrs = state.entities.okrs.map((okr) => {
-            const keyResults = this.normalizeKeyResultsList(okr.keyResults);
-            let progress = clampProgress(okr.progress);
-            if (!Number.isFinite(Number(okr.progress)) && keyResults.length) {
+            const keyResults = this.normalizeKeyResultsList(okr?.keyResults);
+            let progress = clampProgress(okr?.progress);
+            if (!Number.isFinite(Number(okr?.progress)) && keyResults.length) {
                 const krProgress = this.computeKeyResultsProgress(keyResults);
-                progress = krProgress === null  0 : krProgress;
+                progress = krProgress === null ? 0 : krProgress;
             }
-            const status = normalizedStatus(okr.status, progress, okr.completed, false);
+            const status = normalizedStatus(okr?.status, progress, okr?.completed, false);
             return {
                 ...okr,
-                id: String(okr.id || ''),
-                title: String(okr.title || '').trim(),
-                dimension: String(okr.dimension || ''),
-                progress: status === 'done'  100 : progress,
+                id: String(okr?.id || ''),
+                title: String(okr?.title || '').trim(),
+                dimension: String(okr?.dimension || ''),
+                progress: status === 'done' ? 100 : progress,
                 status,
                 completed: status === 'done',
-                successCriteria: String(okr.successCriteria || ''),
-                challengeLevel: clampLevel(okr.challengeLevel),
-                commitmentLevel: clampLevel(okr.commitmentLevel),
+                successCriteria: String(okr?.successCriteria || ''),
+                challengeLevel: clampLevel(okr?.challengeLevel),
+                commitmentLevel: clampLevel(okr?.commitmentLevel),
                 keyResults
             };
         }).filter((okr) => okr.id && okr.title);
 
         state.entities.macros = state.entities.macros.map((macro) => {
-            const progress = clampProgress(macro.progress);
-            const status = normalizedStatus(macro.status, progress, macro.completed, false);
+            const progress = clampProgress(macro?.progress);
+            const status = normalizedStatus(macro?.status, progress, macro?.completed, false);
             return {
                 ...macro,
-                id: String(macro.id || ''),
-                title: String(macro.title || '').trim(),
-                dimension: String(macro.dimension || ''),
-                progress: status === 'done'  100 : progress,
+                id: String(macro?.id || ''),
+                title: String(macro?.title || '').trim(),
+                dimension: String(macro?.dimension || ''),
+                progress: status === 'done' ? 100 : progress,
                 status,
                 completed: status === 'done'
             };
@@ -88,14 +88,14 @@ normalizeEntitiesState: function() {
 
         const beforeCount = state.entities.micros.length;
         state.entities.micros = state.entities.micros.map((micro) => {
-            const progress = clampProgress(micro.progress);
-            const status = normalizedStatus(micro.status, progress, micro.completed, true);
+            const progress = clampProgress(micro?.progress);
+            const status = normalizedStatus(micro?.status, progress, micro?.completed, true);
             return {
                 ...micro,
-                id: String(micro.id || ''),
-                title: String(micro.title || micro.nome || micro.name || micro.tarefa || '').trim(),
-                dimension: String(micro.dimension || micro.dimensao || micro.area || ''),
-                progress: status === 'done'  100 : progress,
+                id: String(micro?.id || ''),
+                title: String(micro?.title || micro?.nome || micro?.name || micro?.tarefa || '').trim(),
+                dimension: String(micro?.dimension || micro?.dimensao || micro?.area || ''),
+                progress: status === 'done' ? 100 : progress,
                 status,
                 completed: status === 'done',
                 effort: this.getMicroEffort(micro)
@@ -106,7 +106,7 @@ normalizeEntitiesState: function() {
             return keep;
         });
         if (beforeCount !== state.entities.micros.length) {
-            console.log(`[normalizeEntitiesState] Micros filtered: ${beforeCount} ï¿½  ${state.entities.micros.length}`);
+            console.log(`[normalizeEntitiesState] Micros filtered: ${beforeCount} → ${state.entities.micros.length}`);
         }
 
         // Orfanizacao: pais com status in_progress mas sem filhos ativos voltam para pending.
@@ -229,7 +229,7 @@ ensureSettingsState: function() {
         });
         // Compatibilidade retroativa: onboarding antigo salvava em profile.purpose.
         const legacyPurpose = typeof window.sistemaVidaState.profile.purpose === 'string'
-             window.sistemaVidaState.profile.purpose.trim()
+            ? window.sistemaVidaState.profile.purpose.trim()
             : '';
         if (legacyPurpose) {
             if (!window.sistemaVidaState.profile.ikigai.sintese) window.sistemaVidaState.profile.ikigai.sintese = legacyPurpose;
@@ -243,9 +243,9 @@ ensureSettingsState: function() {
         }
         if (!window.sistemaVidaState.profile.odysseyTitles || typeof window.sistemaVidaState.profile.odysseyTitles !== 'object') {
             window.sistemaVidaState.profile.odysseyTitles = {
-                cenarioA: "CenÃ¡rio A",
-                cenarioB: "CenÃ¡rio B",
-                cenarioC: "CenÃ¡rio C"
+                cenarioA: "Cenário A",
+                cenarioB: "Cenário B",
+                cenarioC: "Cenário C"
             };
         }
         if (typeof window.sistemaVidaState.settings.odysseySplashFilter !== 'string') {
@@ -334,9 +334,9 @@ loadState: async function() {
             try {
                 await this.withTimeout(this.getAuthReady(), 8000, 'auth_ready');
             } catch (authError) {
-                const authGateCode = this.getAuthGateCode  this.getAuthGateCode(authError) : '';
+                const authGateCode = this.getAuthGateCode ? this.getAuthGateCode(authError) : '';
                 if (authGateCode) {
-                    console.log('[SYNC] SessÃ£o sem auth de nuvem; carregando sem criar visitante.', authGateCode);
+                    console.log('[SYNC] Sessão sem auth de nuvem; carregando sem criar visitante.', authGateCode);
                     this.updateSyncBadge('offline');
                     localOnlyLoad = true;
                 } else {
@@ -365,25 +365,25 @@ loadState: async function() {
                     cloudData = docSnap.data();
                     if (forceCloudLoad) this.clearForceCloudLoadForUser(activeUserId);
                 } else {
-                    console.log("Primeiro acesso deste usuÃ¡rio. Documento serÃ¡ criado apÃ³s normalizaÃ§Ã£o.");
+                    console.log("Primeiro acesso deste usuário. Documento será criado após normalização.");
                     shouldSeedCloudAfterLoad = !forceCloudLoad;
                     if (forceCloudLoad) {
-                        this.showToast('Conta autenticada, mas ainda nÃ£o encontrei dados salvos na nuvem. Evitei misturar dados locais.', 'error');
+                        this.showToast('Conta autenticada, mas ainda não encontrei dados salvos na nuvem. Evitei misturar dados locais.', 'error');
                     }
                 }
             }
         } catch (error) {
             cloudLoadFailed = true;
             this.lastCloudSyncOk = false;
-            this.lastCloudSyncErrorCode = String(error.code || error.message || '').trim();
+            this.lastCloudSyncErrorCode = String(error?.code || error?.message || '').trim();
             this.updateSyncBadge('error');
             console.error("Erro ao carregar o estado do Firestore:", error);
         }
 
         const localHasPending = !!(localData && localData._pendingLocalChanges);
-        const localTs = Number(localData._lastUpdatedAt || 0);
-        const cloudTs = Number(cloudData._lastUpdatedAt || 0);
-        const forceOnboardingReset = this.isForceOnboardingAfterReset.() === true;
+        const localTs = Number(localData?._lastUpdatedAt || 0);
+        const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
+        const forceOnboardingReset = this.isForceOnboardingAfterReset?.() === true;
         const shouldKeepLocal = !!localData && (
             !cloudData ||
             (localHasPending && localTs >= cloudTs) ||
@@ -392,31 +392,31 @@ loadState: async function() {
         let preferred = cloudData || localData;
         if (shouldKeepLocal) preferred = localData;
 
-        const cloudTsStr = cloudData  new Date(Number(cloudData._lastUpdatedAt||0)).toISOString() : 'n/a';
-        const localTsStr = localData  new Date(Number(localData._lastUpdatedAt||0)).toISOString() : 'n/a';
+        const cloudTsStr = cloudData ? new Date(Number(cloudData._lastUpdatedAt||0)).toISOString() : 'n/a';
+        const localTsStr = localData ? new Date(Number(localData._lastUpdatedAt||0)).toISOString() : 'n/a';
         console.log('[SYNC] cloudTs=' + cloudTsStr + '  localTs=' + localTsStr + '  localHasPending=' + localHasPending + '  shouldKeepLocal=' + shouldKeepLocal);
         if (shouldKeepLocal && cloudData && localHasPending) console.log('[SYNC] Keeping local pending state because it is newer/equal to cloud. Will retry cloud sync.');
-        else if (shouldKeepLocal && !cloudData) console.warn('[SYNC] Firestore unavailable ï¿½- using local backup.');
-        else if (localHasPending && cloudData) console.warn('[SYNC] Local pending state is older than cloud ï¿½- applying cloud source of truth.');
+        else if (shouldKeepLocal && !cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
+        else if (localHasPending && cloudData) console.warn('[SYNC] Local pending state is older than cloud — applying cloud source of truth.');
         else if (localOnlyLoad) console.log('[SYNC] Using local guest state.');
-        else if (!cloudData) console.warn('[SYNC] Firestore unavailable ï¿½- using local backup.');
+        else if (!cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
         else console.log('[SYNC] Using cloud state (source of truth).');
 
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
-        if (forceOnboardingReset) this.applyForcedOnboardingResetState.();
+        if (forceOnboardingReset) this.applyForcedOnboardingResetState?.();
         if (forceCloudLoad && cloudData) {
             if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
             window.sistemaVidaState.profile.avatarUrl = '';
             window.sistemaVidaState.profile.odysseyImages = this.getEmptyOdysseyImages();
         }
         if (cloudLoadFailed && !preferred && this.showToast) {
-            this.showToast('NÃ£o consegui carregar seus dados da nuvem agora. Evitei sobrescrever a conta; tente recarregar em instantes.', 'error');
+            this.showToast('Não consegui carregar seus dados da nuvem agora. Evitei sobrescrever a conta; tente recarregar em instantes.', 'error');
         }
         try {
             const dailyBackup = JSON.parse(this.localGet('lifeos_daily_checkins_backup') || 'null');
             if (Array.isArray(dailyBackup) && dailyBackup.length) {
                 const today = this.getLocalDateKey();
-                const todayBackupEntry = dailyBackup.find(entry => entry.date === today);
+                const todayBackupEntry = dailyBackup.find(entry => entry?.date === today);
                 if (todayBackupEntry) {
                     if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
                     const checkins = window.sistemaVidaState.profile.dailyCheckins || [];
@@ -426,7 +426,7 @@ loadState: async function() {
                         checkins.unshift(todayBackupEntry);
                         window.sistemaVidaState.profile.dailyCheckins = checkins.sort((a,b) => b.date.localeCompare(a.date)).slice(0, 180);
                     } else {
-                        // Cloud has today but might be missing emotion ï¿½- use backup if backup has more data
+                        // Cloud has today but might be missing emotion — use backup if backup has more data
                         const cloudToday = checkins.find(e => e.date === today);
                         if (!cloudToday.emotion && todayBackupEntry.emotion) {
                             Object.assign(cloudToday, todayBackupEntry);
@@ -454,7 +454,7 @@ loadState: async function() {
             // Fallback to local cache if Firestore images doc unavailable
             if (!forceCloudLoad) try {
                 const cachedAvatar = this.localGet('lifeos_profile_avatar');
-                if (cachedAvatar && !window.sistemaVidaState.profile.avatarUrl) {
+                if (cachedAvatar && !window.sistemaVidaState.profile?.avatarUrl) {
                     if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
                     window.sistemaVidaState.profile.avatarUrl = cachedAvatar;
                 }
@@ -496,7 +496,7 @@ saveState: function(silent = true) {
         this.lastCloudSyncOk = null;
         this.lastCloudSyncErrorCode = '';
 
-        // Durabilidade imediata no dispositivo para nÃ£o perder progresso em refresh/reload.
+        // Durabilidade imediata no dispositivo para não perder progresso em refresh/reload.
         const fullSnapshot = this.getPersistableState('full');
         const coreSnapshot = this.getPersistableState('core');
         try {
@@ -518,9 +518,9 @@ saveState: function(silent = true) {
                 try {
                     await this.withTimeout(this.getAuthReady(), 8000, 'auth_ready');
                 } catch (authError) {
-                    const authGateCode = this.getAuthGateCode  this.getAuthGateCode(authError) : '';
+                    const authGateCode = this.getAuthGateCode ? this.getAuthGateCode(authError) : '';
                     if (authGateCode) {
-                        console.log('[SYNC] Auth indisponÃ­vel agora; mantendo dados apenas localmente.', authGateCode);
+                        console.log('[SYNC] Auth indisponível agora; mantendo dados apenas localmente.', authGateCode);
                         this.lastCloudSyncOk = null;
                         this.lastCloudSyncErrorCode = authGateCode;
                         this.updateSyncBadge('offline');
@@ -538,7 +538,7 @@ saveState: function(silent = true) {
                 }
                 const stateRef = this.getStateDocRef();
                 const cloudSnapshot = this.getPersistableState('cloud');
-                const cloudTs = Number(window.sistemaVidaState._lastUpdatedAt || enqueueTs || this.getSafeMonotonicTs());
+                const cloudTs = Number(window.sistemaVidaState?._lastUpdatedAt || enqueueTs || this.getSafeMonotonicTs());
                 cloudSnapshot._lastUpdatedAt = cloudTs;
                 cloudSnapshot._pendingLocalChanges = false;
                 await this.withTimeout(setDoc(stateRef, cloudSnapshot, { merge: true }), 10000, 'firestore_setDoc');
@@ -549,25 +549,25 @@ saveState: function(silent = true) {
                         console.warn('[SOCIAL] Falha ao atualizar perfil publico apos save:', socialErr);
                     }
                 }
-                console.log("SincronizaÃ§Ã£o com Nuvem: ConcluÃ­da.");
+                console.log("Sincronização com Nuvem: Concluída.");
                 this.lastCloudSyncOk = true;
                 this.updateSyncBadge('ok');
-                const currentTs = Number(window.sistemaVidaState._lastUpdatedAt || 0);
+                const currentTs = Number(window.sistemaVidaState?._lastUpdatedAt || 0);
                 window.sistemaVidaState._pendingLocalChanges = currentTs > cloudTs;
                 this.persistLocalMirror();
-                if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem!', 'success');
+                if (!silent && this.showToast) this.showToast('Progresso guardado na nuvem! ✨', 'success');
             } catch (error) {
                 console.error("Erro ao salvar o estado no Firestore:", error);
                 this.lastCloudSyncOk = false;
-                this.lastCloudSyncErrorCode = String(error.code || error.message || '').trim();
+                this.lastCloudSyncErrorCode = String(error?.code || error?.message || '').trim();
                 this.updateSyncBadge('error');
-                // Mostra toast na primeira falha da sessÃ£o (independente de silent)
+                // Mostra toast na primeira falha da sessão (independente de silent)
                 if (!this._shownSyncError && this.showToast) {
                     this._shownSyncError = true;
-                    const reason = this.lastCloudSyncErrorCode  ' (' + this.lastCloudSyncErrorCode + ')' : '';
-                    this.showToast('Sem sincronizaÃ§Ã£o com a nuvem' + reason + '. Dados salvos localmente.', 'error');
+                    const reason = this.lastCloudSyncErrorCode ? ' (' + this.lastCloudSyncErrorCode + ')' : '';
+                    this.showToast('Sem sincronização com a nuvem' + reason + '. Dados salvos localmente.', 'error');
                 } else if (!silent && this.showToast) {
-                    this.showToast('Salvo localmente. Falha na sincronizaÃ§Ã£o com nuvem.', 'error');
+                    this.showToast('Salvo localmente. Falha na sincronização com nuvem.', 'error');
                 }
             } finally {
                 this._isSaving = false;
@@ -577,86 +577,31 @@ saveState: function(silent = true) {
         this._saveChain = op.catch(() => {});
         return op;
     },
-requestStrictDangerToken: function(options = {}) {
-      const phrase = String(options.phrase || 'ZERAR');
-      const title = String(options.title || 'Confirmacao de seguranca');
-      const message = String(options.message || ('Digite ' + phrase + ' para continuar.'));
-      return new Promise((resolve) => {
-        const existing = document.getElementById('danger-token-modal');
-        if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 
-        const modal = document.createElement('div');
-        modal.id = 'danger-token-modal';
-        modal.className = 'fixed inset-0 z-[100200] flex items-center justify-center bg-black/70 p-4';
-        modal.innerHTML = `
-          <div class="w-full max-w-md rounded-2xl border border-error/30 bg-surface-container-lowest shadow-2xl p-5 space-y-4">
-            <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-error">Zona de perigo</p>
-              <h3 class="mt-1 text-lg font-bold text-on-surface">${this.escapeHtml(title)}</h3>
-              <p class="mt-2 text-sm text-outline leading-relaxed">${this.escapeHtml(message)}</p>
-            </div>
-            <div class="space-y-2">
-              <label for="danger-token-input" class="text-[10px] font-bold uppercase tracking-widest text-outline">Digite exatamente: ${this.escapeHtml(phrase)}</label>
-              <input id="danger-token-input" type="text" autocomplete="off"
-                class="w-full h-11 rounded-xl border border-outline-variant/30 bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-error/30 outline-none"
-                placeholder="${this.escapeHtml(phrase)}">
-            </div>
-            <div class="flex items-center justify-end gap-2 pt-1">
-              <button type="button" id="danger-token-cancel" class="px-4 py-2 rounded-lg bg-surface-container-high text-outline text-xs font-bold uppercase tracking-wider hover:text-on-surface">Cancelar</button>
-              <button type="button" id="danger-token-confirm" class="px-4 py-2 rounded-lg bg-error text-white text-xs font-bold uppercase tracking-wider hover:opacity-90">Confirmar</button>
-            </div>
-          </div>
-        `;
-
-        const cleanup = (value) => {
-          if (modal.parentNode) modal.parentNode.removeChild(modal);
-          resolve(value);
-        };
-
-        document.body.appendChild(modal);
-        const input = document.getElementById('danger-token-input');
-        const cancelBtn = document.getElementById('danger-token-cancel');
-        const confirmBtn = document.getElementById('danger-token-confirm');
-        if (input) setTimeout(() => input.focus(), 30);
-
-        if (cancelBtn) cancelBtn.onclick = () => cleanup(null);
-        if (confirmBtn) confirmBtn.onclick = () => cleanup(String(input.value || ''));
-        modal.addEventListener('click', (event) => {
-          if (event.target === modal) cleanup(null);
-        });
-        modal.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') cleanup(null);
-          if (event.key === 'Enter') cleanup(String(input.value || ''));
-        });
-      });
-    },
 factoryReset: async function() {
       const firstConfirm = window.confirm(
-        'ATENCAO EXTREMA: apagar TODOS os seus dados salvos na nuvem - Metas, OKRs, Diarios e Roda da Vida. Essa acao NAO pode ser desfeita. Tem certeza absoluta'
+        'ATENÇÃO EXTREMA: apagar TODOS os seus dados salvos na nuvem — Metas, OKRs, Diários, Roda da Vida. Essa ação NÃO pode ser desfeita. Tem certeza absoluta?'
       );
       if (!firstConfirm) return;
     
-      const secondInput = await this.requestStrictDangerToken({
-        phrase: 'ZERAR',
-        title: 'Confirmar reset total',
-        message: 'Para confirmar a exclusao total dos dados, digite ZERAR em letras maiusculas.'
-      });
-      const confirmToken = String(secondInput || '').trim();
-      if (confirmToken !== 'ZERAR') {
-        alert('Reset cancelado. Seus dados estao seguros.');
+      const secondInput = window.prompt(
+        'Para confirmar a exclusão total, digite a palavra ZERAR'
+      );
+      if (secondInput !== 'ZERAR') {
+        alert('Reset cancelado. Seus dados estão seguros.');
         return;
       }
     
-      // Pergunta o modo de reinÃ­cio
+      // Pergunta o modo de reinício
       const useMockup = window.confirm(
-        'Como deseja reiniciar\n\nOK -> Carregar dados de exemplo (recomendado para explorar o app)\nCancelar -> Comecar completamente do zero (Onboarding)'
+        'Como deseja reiniciar?\n\nOK → Carregar dados de exemplo (recomendado para explorar o app)\nCancelar → Começar completamente do zero (Onboarding)'
       );
-      const previousSocialState = window.sistemaVidaState.profile.social || {};
-      const previousInviteCode = String(previousSocialState.invites.lastCode || '').trim().toUpperCase();
+      const previousSocialState = window.sistemaVidaState?.profile?.social || {};
+      const previousInviteCode = String(previousSocialState?.invites?.lastCode || '').trim().toUpperCase();
     
-      // ï¿½-ï¿½ï¿½-ï¿½ Estado base virgem ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½
+      // ── Estado base virgem ──────────────────────────────────────────────────
       const baseState = {
-        stateSchemaVersion: this.getCurrentStateSchemaVersion  this.getCurrentStateSchemaVersion() : 2,
+        stateSchemaVersion: this.getCurrentStateSchemaVersion ? this.getCurrentStateSchemaVersion() : 2,
         profile: {
           name: '', level: 1, xp: 0, values: [], legacy: '',
           ikigai: { missao: '', vocacao: '', paixao: '', profissao: '', love: '', good: '', need: '', paid: '', sintese: '', sinteseResumo: '' },
@@ -675,9 +620,9 @@ factoryReset: async function() {
         },
         energy: 5,
         dimensions: {
-          'SaÃºde': { score: 1 }, 'Mente': { score: 1 }, 'Carreira': { score: 1 },
-          'FinanÃ§as': { score: 1 }, 'Relacionamentos': { score: 1 },
-          'FamÃ­lia': { score: 1 }, 'Lazer': { score: 1 }, 'PropÃ³sito': { score: 1 }
+          'Saúde': { score: 1 }, 'Mente': { score: 1 }, 'Carreira': { score: 1 },
+          'Finanças': { score: 1 }, 'Relacionamentos': { score: 1 },
+          'Família': { score: 1 }, 'Lazer': { score: 1 }, 'Propósito': { score: 1 }
         },
         perma: { P: 5, E: 5, R: 5, M: 5, A: 5 },
         swls: { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} },
@@ -708,40 +653,40 @@ factoryReset: async function() {
         onboardingComplete: false
       };
     
-      // ï¿½-ï¿½ï¿½-ï¿½ Dados de demonstraÃ§Ã£o (injetados se useMockup = true) ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½
+      // ── Dados de demonstração (injetados se useMockup = true) ───────────────
       const mockupOverrides = {
         onboardingComplete: true,
         profile: {
           name: 'Bruno',
           level: 3,
           xp: 420,
-          values: ['Liberdade', 'Integridade', 'Curiosidade', 'Impacto Social', 'FamÃ­lia'],
+          values: ['Liberdade', 'Integridade', 'Curiosidade', 'Impacto Social', 'Família'],
           ikigai: {
-            love: 'Criar sistemas que ajudam pessoas a viverem com mais intenÃ§Ã£o.',
-            good: 'Desenvolvimento de software, pensamento sistÃªmico e design de produto.',
-            need: 'Ferramentas prÃ¡ticas de autogestÃ£o e produtividade com propÃ³sito.',
+            love: 'Criar sistemas que ajudam pessoas a viverem com mais intenção.',
+            good: 'Desenvolvimento de software, pensamento sistêmico e design de produto.',
+            need: 'Ferramentas práticas de autogestão e produtividade com propósito.',
             paid: 'Desenvolvimento de apps, consultoria de produto e software sob medida.',
             paixao: 'Criar e ensinar com profundidade, transformando ideias em algo vivo.',
-            profissao: 'Construir produtos digitais e liderar decisÃµes de produto orientadas por dados.',
+            profissao: 'Construir produtos digitais e liderar decisões de produto orientadas por dados.',
             vocacao: 'Usar tecnologia para ampliar autonomia e clareza na vida das pessoas.',
-            missao: 'Conectar propÃ³sito humano e execuÃ§Ã£o prÃ¡tica para gerar transformaÃ§Ã£o real.',
+            missao: 'Conectar propósito humano e execução prática para gerar transformação real.',
             sintese: 'Construir tecnologia que transforma rotinas em jornadas com sentido.'
           },
           legacyObj: {
-            familia: 'Ser presenÃ§a constante e inspiraÃ§Ã£o de integridade para minha famÃ­lia.',
+            familia: 'Ser presença constante e inspiração de integridade para minha família.',
             profissao: 'Criar produtos que simplificam a vida de milhares de pessoas.',
             mundo: 'Contribuir para uma cultura de autoconhecimento e intencionalidade.'
           },
           vision: {
             saude: 'Energia alta e consistente. Treinar 4x por semana e dormir bem.',
-            carreira: 'Liderar meu prÃ³prio produto com autonomia e impacto real.',
-            intelecto: 'Aprender continuamente. Ler 1 livro por mÃªs e criar com frequÃªncia.',
-            quote: 'A disciplina Ã© a ponte entre metas e realizaÃ§Ãµes. ï¿½- Jim Rohn'
+            carreira: 'Liderar meu próprio produto com autonomia e impacto real.',
+            intelecto: 'Aprender continuamente. Ler 1 livro por mês e criar com frequência.',
+            quote: 'A disciplina é a ponte entre metas e realizações. — Jim Rohn'
           },
           identity: {
             strengths: [
               { id: 'strength-clareza', title: 'Clareza' },
-              { id: 'strength-pensamento-analitico', title: 'Pensamento analÃ­tico' },
+              { id: 'strength-pensamento-analitico', title: 'Pensamento analítico' },
               { id: 'strength-responsabilidade', title: 'Responsabilidade' }
             ],
             shadows: [
@@ -765,9 +710,9 @@ factoryReset: async function() {
           }
         },
         dimensions: {
-          'SaÃºde': { score: 7 }, 'Mente': { score: 8 }, 'Carreira': { score: 6 },
-          'FinanÃ§as': { score: 5 }, 'Relacionamentos': { score: 8 },
-          'FamÃ­lia': { score: 9 }, 'Lazer': { score: 4 }, 'PropÃ³sito': { score: 8 }
+          'Saúde': { score: 7 }, 'Mente': { score: 8 }, 'Carreira': { score: 6 },
+          'Finanças': { score: 5 }, 'Relacionamentos': { score: 8 },
+          'Família': { score: 9 }, 'Lazer': { score: 4 }, 'Propósito': { score: 8 }
         },
         perma: { P: 7.2, E: 6.8, R: 8.5, M: 7.5, A: 6 },
         swls: {
@@ -800,34 +745,34 @@ factoryReset: async function() {
           ]
         },
         habits: [
-          { id: 'h1', title: 'MeditaÃ§Ã£o matinal', dimension: 'Mente', trigger: 'ApÃ³s acordar e antes do cafÃ©', completed: false, context: 'Clareza mental para o dia' },
-          { id: 'h2', title: 'Treino fÃ­sico', dimension: 'SaÃºde', trigger: 'Segunda, quarta e sexta Ã s 7h', completed: false, context: 'Energia e disposiÃ§Ã£o' },
-          { id: 'h3', title: 'Leitura (30 min)', dimension: 'Mente', trigger: 'Antes de dormir', completed: false, context: 'Aprendizado contÃ­nuo' }
+          { id: 'h1', title: 'Meditação matinal', dimension: 'Mente', trigger: 'Após acordar e antes do café', completed: false, context: 'Clareza mental para o dia' },
+          { id: 'h2', title: 'Treino físico', dimension: 'Saúde', trigger: 'Segunda, quarta e sexta às 7h', completed: false, context: 'Energia e disposição' },
+          { id: 'h3', title: 'Leitura (30 min)', dimension: 'Mente', trigger: 'Antes de dormir', completed: false, context: 'Aprendizado contínuo' }
         ],
         entities: {
           metas: [
-            { id: 'm1', title: 'LanÃ§ar o Sistema Vida para usuÃ¡rios reais', dimension: 'Carreira', purpose: 'Criar impacto real e validar o produto que estou construindo.', progress: 35, status: 'active', prazo: '2026-12-31' },
-            { id: 'm2', title: 'Construir reserva de emergÃªncia de 6 meses', dimension: 'FinanÃ§as', purpose: 'SeguranÃ§a financeira para tomar decisÃµes com liberdade.', progress: 50, status: 'active', prazo: '2026-12-31' }
+            { id: 'm1', title: 'Lançar o Sistema Vida para usuários reais', dimension: 'Carreira', purpose: 'Criar impacto real e validar o produto que estou construindo.', progress: 35, status: 'active', prazo: '2026-12-31' },
+            { id: 'm2', title: 'Construir reserva de emergência de 6 meses', dimension: 'Finanças', purpose: 'Segurança financeira para tomar decisões com liberdade.', progress: 50, status: 'active', prazo: '2026-12-31' }
           ],
           okrs: [
-            { id: 'o1', title: 'Ter o app funcional e testÃ¡vel atÃ© junho', dimension: 'Carreira', metaId: 'm1', progress: 40, status: 'active', prazo: '2026-06-30' },
-            { id: 'o2', title: 'Aumentar renda mensal em 30%', dimension: 'FinanÃ§as', metaId: 'm2', progress: 20, status: 'active', prazo: '2026-06-30' }
+            { id: 'o1', title: 'Ter o app funcional e testável até junho', dimension: 'Carreira', metaId: 'm1', progress: 40, status: 'active', prazo: '2026-06-30' },
+            { id: 'o2', title: 'Aumentar renda mensal em 30%', dimension: 'Finanças', metaId: 'm2', progress: 20, status: 'active', prazo: '2026-06-30' }
           ],
           macros: [
-            { id: 'mac1', title: 'Corrigir todos os bugs crÃ­ticos do app', dimension: 'Carreira', okrId: 'o1', metaId: 'm1', description: 'App funcional sem erros bloqueantes', progress: 50, status: 'active', prazo: '2026-04-30' },
-            { id: 'mac2', title: 'Implementar autenticaÃ§Ã£o de usuÃ¡rios', dimension: 'Carreira', okrId: 'o1', metaId: 'm1', description: 'Login real com mÃºltiplos perfis', progress: 0, status: 'active', prazo: '2026-05-31' },
-            { id: 'mac3', title: 'Reduzir gastos fixos mensais', dimension: 'FinanÃ§as', okrId: 'o2', metaId: 'm2', description: 'Identificar e cortar despesas desnecessÃ¡rias', progress: 30, status: 'active', prazo: '2026-04-30' }
+            { id: 'mac1', title: 'Corrigir todos os bugs críticos do app', dimension: 'Carreira', okrId: 'o1', metaId: 'm1', description: 'App funcional sem erros bloqueantes', progress: 50, status: 'active', prazo: '2026-04-30' },
+            { id: 'mac2', title: 'Implementar autenticação de usuários', dimension: 'Carreira', okrId: 'o1', metaId: 'm1', description: 'Login real com múltiplos perfis', progress: 0, status: 'active', prazo: '2026-05-31' },
+            { id: 'mac3', title: 'Reduzir gastos fixos mensais', dimension: 'Finanças', okrId: 'o2', metaId: 'm2', description: 'Identificar e cortar despesas desnecessárias', progress: 30, status: 'active', prazo: '2026-04-30' }
           ],
           micros: [
             { id: 'mic1', title: 'Corrigir bug das tabs na tela Planos', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'done', completed: true, progress: 100, prazo: '2026-04-07' },
             { id: 'mic2', title: 'Remover hardcodes do painel.html', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'pending', completed: false, progress: 0, prazo: '2026-04-10' },
-            { id: 'mic3', title: 'Implementar render.perfil com ediÃ§Ã£o de nome', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'pending', completed: false, progress: 0, prazo: '2026-04-14' },
-            { id: 'mic4', title: 'Levantar todos os gastos fixos do mÃªs', dimension: 'FinanÃ§as', macroId: 'mac3', okrId: 'o2', metaId: 'm2', status: 'pending', completed: false, progress: 0, prazo: '2026-04-15' }
+            { id: 'mic3', title: 'Implementar render.perfil com edição de nome', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'pending', completed: false, progress: 0, prazo: '2026-04-14' },
+            { id: 'mic4', title: 'Levantar todos os gastos fixos do mês', dimension: 'Finanças', macroId: 'mac3', okrId: 'o2', metaId: 'm2', status: 'pending', completed: false, progress: 0, prazo: '2026-04-15' }
           ]
         }
       };
     
-      // ï¿½-ï¿½ï¿½-ï¿½ Mescla estado base com mockups se escolhido ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½
+      // ── Mescla estado base com mockups se escolhido ─────────────────────────
       const mergeDeep = (target, source) => {
         for (const key in source) {
           if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
@@ -841,15 +786,15 @@ factoryReset: async function() {
       };
     
       window.sistemaVidaState = useMockup
-         mergeDeep(baseState, mockupOverrides)
+        ? mergeDeep(baseState, mockupOverrides)
         : baseState;
-      try { this.setForceOnboardingAfterReset.(!useMockup); } catch (_) {}
-      try { this.localSet('lifeos_onboarding_complete', useMockup  '1' : '0'); } catch (_) {}
+      try { this.setForceOnboardingAfterReset?.(!useMockup); } catch (_) {}
+      try { this.localSet('lifeos_onboarding_complete', useMockup ? '1' : '0'); } catch (_) {}
     
       let cloudResetOk = false;
       let cloudResetError = null;
       try {
-        // ï¿½-ï¿½ï¿½-ï¿½ Apaga imagens do Firestore ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½
+        // ── Apaga imagens do Firestore ──────────────────────────────────────────
         try {
           const imagesRef = this.getImagesDocRef();
           await this.withTimeout(
@@ -859,10 +804,10 @@ factoryReset: async function() {
         } catch (imgErr) {
           console.warn('[Reset] Falha ao limpar imagens do Firestore (ignorado):', imgErr);
         }
-        // ï¿½-ï¿½ï¿½-ï¿½ Apaga imagens do localStorage ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½ï¿½-ï¿½
+        // ── Apaga imagens do localStorage ──────────────────────────────────────
         this.localRemove('lifeos_profile_avatar');
         this.localRemove('lifeos_odyssey_images');
-        // ï¿½-ï¿½ï¿½-ï¿½ Apaga backups locais para evitar que estado antigo sobreponha o reset ï¿½-ï¿½
+        // ── Apaga backups locais para evitar que estado antigo sobreponha o reset ─
         this.localRemove('lifeos_state_backup');
         this.localRemove('lifeos_state_backup_core');
         this.localRemove('lifeos_daily_checkins_backup');
@@ -876,43 +821,43 @@ factoryReset: async function() {
         this.localRemove('lifeos_theme_pref');
         this.localRemove('lifeos_notif_enabled');
         this.localRemove('lifeos_state_version');
-        // ï¿½-ï¿½ï¿½-ï¿½ Se for reset total (sem mockup), forÃ§a onboarding na prÃ³xima carga ï¿½-ï¿½
+        // ── Se for reset total (sem mockup), força onboarding na próxima carga ─
         if (!useMockup) {
           try { this.localSet('lifeos_onboarding_complete', '0'); } catch (_) {}
         }
-        // ï¿½-ï¿½ï¿½-ï¿½ Desliga listeners em tempo real ï¿½-ï¿½ï¿½-ï¿½
+        // ── Desliga listeners em tempo real ──
         try { if (this._realtimeSyncUnsub) { this._realtimeSyncUnsub(); this._realtimeSyncUnsub = null; } } catch (_) {}
         try { if (this._imagesSyncUnsub) { this._imagesSyncUnsub(); this._imagesSyncUnsub = null; } } catch (_) {}
-        // ï¿½-ï¿½ï¿½-ï¿½ Grava o novo estado SEM merge ï¿½-ï¿½ï¿½-ï¿½
+        // ── Grava o novo estado SEM merge ──
         await this.getAuthReady();
         const resetUserId = this.getActiveUserId();
         try {
           window.sistemaVidaState._pendingLocalChanges = !useMockup;
-          window.sistemaVidaState._lastUpdatedAt = this.getSafeMonotonicTs  this.getSafeMonotonicTs() : Date.now();
+          window.sistemaVidaState._lastUpdatedAt = this.getSafeMonotonicTs ? this.getSafeMonotonicTs() : Date.now();
           this.persistLocalMirror(resetUserId);
         } catch (_) {}
-        const isCloudUser = !!(resetUserId && resetUserId !== 'guest' && !auth.currentUser.isAnonymous);
+        const isCloudUser = !!(resetUserId && resetUserId !== 'guest' && !auth.currentUser?.isAnonymous);
         if (isCloudUser) {
           try {
-            // Limpeza de documentos sociais do prÃ³prio usuÃ¡rio
+            // Limpeza de documentos sociais do próprio usuário
             const cleanupRefs = [
-              this.getSocialPublicProfileDocRef  this.getSocialPublicProfileDocRef(resetUserId) : null,
-              this.getSocialPrivateDocRef  this.getSocialPrivateDocRef(resetUserId) : null,
-              this.getSocialConnectionsDocRef  this.getSocialConnectionsDocRef(resetUserId) : null,
-              this.getSocialEngagementDocRef  this.getSocialEngagementDocRef(resetUserId) : null
+              this.getSocialPublicProfileDocRef ? this.getSocialPublicProfileDocRef(resetUserId) : null,
+              this.getSocialPrivateDocRef ? this.getSocialPrivateDocRef(resetUserId) : null,
+              this.getSocialConnectionsDocRef ? this.getSocialConnectionsDocRef(resetUserId) : null,
+              this.getSocialEngagementDocRef ? this.getSocialEngagementDocRef(resetUserId) : null
             ].filter(Boolean);
             await Promise.all(cleanupRefs.map(async (ref) => {
               try { await deleteDoc(ref); } catch (_) {}
             }));
 
-            // Limpa inbox social (subcoleÃ§Ã£o)
+            // Limpa inbox social (subcoleção)
             const inboxCol = collection(db, 'users', resetUserId, 'private', 'social', 'inbox');
             const inboxSnap = await getDocs(inboxCol);
             await Promise.all(inboxSnap.docs.map(async (docSnap) => {
               try { await deleteDoc(docSnap.ref); } catch (_) {}
             }));
 
-            // Remove cÃ³digo de convite antigo, se existir
+            // Remove código de convite antigo, se existir
             if (previousInviteCode && this.getSocialInviteCodeDocRef) {
               try { await deleteDoc(this.getSocialInviteCodeDocRef(previousInviteCode)); } catch (_) {}
             }
@@ -922,12 +867,12 @@ factoryReset: async function() {
         }
         const stateRef = this.getStateDocRef();
         const newCloudState = JSON.parse(JSON.stringify(window.sistemaVidaState));
-        delete newCloudState.profile.avatarUrl;
-        delete newCloudState.profile.odysseyImages;
+        delete newCloudState.profile?.avatarUrl;
+        delete newCloudState.profile?.odysseyImages;
         newCloudState._lastUpdatedAt = Date.now();
         await this.withTimeout(setDoc(stateRef, newCloudState), 10000, 'firestore_reset');
         cloudResetOk = true;
-        // NÃ’O usa localStorage.clear() ï¿½- bloqueado em ambientes sandbox/iframe
+        // NÃO usa localStorage.clear() — bloqueado em ambientes sandbox/iframe
       } catch (error) {
         console.error('Erro ao resetar o sistema:', error);
         cloudResetError = error;
@@ -937,7 +882,7 @@ factoryReset: async function() {
       if (cloudResetOk) {
         this.showNotification(
           useMockup
-             'App carregado com dados de exemplo. Explore Ã  vontade!'
+            ? 'App carregado com dados de exemplo. Explore à vontade!'
             : 'Sistema zerado. Iniciando o Onboarding...'
         );
       } else {
@@ -952,11 +897,11 @@ importFromExcel: async function(event) {
         if (!file) return;
 
         if (typeof XLSX === "undefined") {
-            alert("SheetJS nÃ£o carregado. Verifique a conexÃ£o com a internet.");
+            alert("SheetJS não carregado. Verifique a conexão com a internet.");
             return;
         }
 
-        // Helper para busca flexÃ­vel de colunas
+        // Helper para busca flexível de colunas
         const getValue = (row, possibleKeys) => {
             for (let key of possibleKeys) {
                 if (row[key] !== undefined && row[key] !== null) return row[key];
@@ -995,25 +940,25 @@ importFromExcel: async function(event) {
                     } else {
                         progressVal = parseFloat(progressRaw) || 0;
                     }
-                    let numericProgress = (progressVal <= 1 && progressVal > 0)  progressVal * 100 : progressVal;
-                    let status = (numericProgress >= 100)  'done' : 'active';
+                    let numericProgress = (progressVal <= 1 && progressVal > 0) ? progressVal * 100 : progressVal;
+                    let status = (numericProgress >= 100) ? 'done' : 'active';
                     
-                    let idFromSheet = getValue(row, ['ID', 'Id', 'id', 'CÃ³digo', 'Codigo']);
+                    let idFromSheet = getValue(row, ['ID', 'Id', 'id', 'Código', 'Codigo']);
                     let parentId = getValue(row, ['Pai', 'Parent', 'Pai ID', 'ID_Pai', 'ID Pai', 'metaId', 'okrId', 'macroId']);
                     
                     let obj = {
-                        id: idFromSheet  String(idFromSheet) : ('ent_' + Date.now() + Math.random().toString(36).substr(2, 9)),
-                        title: getValue(row, ['TÃ­tulo', 'Nome', 'Tarefa', 'Title']),
-                        dimension: getValue(row, ['DimensÃ£o', 'Ãrea', 'Dimension', 'Area']) || 'Geral',
+                        id: idFromSheet ? String(idFromSheet) : ('ent_' + Date.now() + Math.random().toString(36).substr(2, 9)),
+                        title: getValue(row, ['Título', 'Nome', 'Tarefa', 'Title']),
+                        dimension: getValue(row, ['Dimensão', 'Área', 'Dimension', 'Area']) || 'Geral',
                         status: status,
                         progress: Math.min(100, Math.max(0, numericProgress))
                     };
-                    const successCriteria = String(getValue(row, ['CritÃ©rio_Sucesso', 'CritÃ©rio de Sucesso', 'Success Criteria']) || '').trim();
+                    const successCriteria = String(getValue(row, ['Critério_Sucesso', 'Critério de Sucesso', 'Success Criteria']) || '').trim();
                     const challengeLevel = Number(getValue(row, ['Desafio', 'Challenge', 'Challenge Level']) || 0);
                     const commitmentLevel = Number(getValue(row, ['Comprometimento', 'Commitment', 'Commitment Level']) || 0);
                     const keyResultsText = String(getValue(row, ['Key_Results', 'Key Results', 'KRs']) || '');
 
-                    let context = getValue(row, ['Contexto / Indicador', 'Contexto', 'Notes', 'DescriÃ§Ã£o']);
+                    let context = getValue(row, ['Contexto / Indicador', 'Contexto', 'Notes', 'Descrição']);
                     let prazo = getValue(row, ['Prazo / Ciclo', 'Prazo', 'Ciclo', 'Deadline', 'Data']);
                     
                     if (type === 'metas' || type === 'okrs') {
@@ -1048,21 +993,21 @@ importFromExcel: async function(event) {
                 });
             }
 
-            // 2. Aba: PropÃ³sito
-            const wsProp = workbook.Sheets['PropÃ³sito'] || workbook.Sheets['Proposito'];
+            // 2. Aba: Propósito
+            const wsProp = workbook.Sheets['Propósito'] || workbook.Sheets['Proposito'];
             if (wsProp) {
                 if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = { values: [] };
                 if (!window.sistemaVidaState.profile.ikigai) window.sistemaVidaState.profile.ikigai = {};
                 if (!window.sistemaVidaState.profile.legacyObj) window.sistemaVidaState.profile.legacyObj = {};
                 if (!window.sistemaVidaState.profile.vision) window.sistemaVidaState.profile.vision = {};
-                if (!window.sistemaVidaState.dimensions) window.sistemaVidaState.dimensions = { 'SaÃºde':{score:1}, 'Mente':{score:1}, 'Carreira':{score:1}, 'FinanÃ§as':{score:1}, 'Relacionamentos':{score:1}, 'FamÃ­lia':{score:1}, 'Lazer':{score:1}, 'PropÃ³sito':{score:1} };
+                if (!window.sistemaVidaState.dimensions) window.sistemaVidaState.dimensions = { 'Saúde':{score:1}, 'Mente':{score:1}, 'Carreira':{score:1}, 'Finanças':{score:1}, 'Relacionamentos':{score:1}, 'Família':{score:1}, 'Lazer':{score:1}, 'Propósito':{score:1} };
                 if (!window.sistemaVidaState.perma) window.sistemaVidaState.perma = {P:0, E:0, R:0, M:0, A:0};
                 if (!window.sistemaVidaState.swls) window.sistemaVidaState.swls = { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
 
                 const propArr = XLSX.utils.sheet_to_json(wsProp);
                 propArr.forEach(row => {
                     let cat = String(getValue(row, ['Categoria', 'Category']) || '').trim().toLowerCase();
-                    let key = String(getValue(row, ['Chave', 'DimensÃ£o', 'Item']) || '').trim();
+                    let key = String(getValue(row, ['Chave', 'Dimensão', 'Item']) || '').trim();
                     let val = getValue(row, ['Texto_Preenchido', 'Texto Preenchido', 'Valor', 'Score']);
                     
                     if (!key || val === undefined || val === '') return;
@@ -1070,7 +1015,7 @@ importFromExcel: async function(event) {
 
                     // Mapeamento Direcionado por Categoria
                     if (cat.includes('roda')) {
-                        let dimKey = Object.keys(window.sistemaVidaState.dimensions).find(k => k.toLowerCase().replace(/[Ã¡Ã Ã£Ã¢Ã¤Ã©Ã¨ÃªÃ«Ã­Ã¬Ã®Ã¯Ã³Ã²ÃµÃ´Ã¶ÃºÃ¹Ã»Ã¼Ã§]/g, '') === kLow.replace(/[Ã¡Ã Ã£Ã¢Ã¤Ã©Ã¨ÃªÃ«Ã­Ã¬Ã®Ã¯Ã³Ã²ÃµÃ´Ã¶ÃºÃ¹Ã»Ã¼Ã§]/g, '')) || key;
+                        let dimKey = Object.keys(window.sistemaVidaState.dimensions).find(k => k.toLowerCase().replace(/[áàãâäéèêëíìîïóòõôöúùûüç]/g, '') === kLow.replace(/[áàãâäéèêëíìîïóòõôöúùûüç]/g, '')) || key;
                         if (!window.sistemaVidaState.dimensions[dimKey]) window.sistemaVidaState.dimensions[dimKey] = { score: 1 };
                         window.sistemaVidaState.dimensions[dimKey].score = parseFloat(val) || 1;
                     } 
@@ -1098,13 +1043,13 @@ importFromExcel: async function(event) {
                         else if (kLow.includes('bom')) window.sistemaVidaState.profile.ikigai.good = val;
                         else if (kLow.includes('precisa')) window.sistemaVidaState.profile.ikigai.need = val;
                         else if (kLow.includes('pago')) window.sistemaVidaState.profile.ikigai.paid = val;
-                        else if (kLow.includes('sÃ­n') || kLow.includes('sin')) window.sistemaVidaState.profile.ikigai.sintese = val;
+                        else if (kLow.includes('sín') || kLow.includes('sin')) window.sistemaVidaState.profile.ikigai.sintese = val;
                     } 
                     else if (cat.includes('valor')) {
-                        window.sistemaVidaState.profile.values = typeof val === 'string'  val.split(/[,\n]/).map(s=>s.trim()) : [val];
+                        window.sistemaVidaState.profile.values = typeof val === 'string' ? val.split(/[,\n]/).map(s=>s.trim()) : [val];
                     } 
                     else if (cat.includes('vis')) {
-                        if (kLow.includes('saÃº') || kLow.includes('sau')) window.sistemaVidaState.profile.vision.saude = val;
+                        if (kLow.includes('saú') || kLow.includes('sau')) window.sistemaVidaState.profile.vision.saude = val;
                         else if (kLow.includes('carr')) window.sistemaVidaState.profile.vision.carreira = val;
                         else if (kLow.includes('intel')) window.sistemaVidaState.profile.vision.intelecto = val;
                         else if (kLow.includes('cit') || kLow.includes('quote')) window.sistemaVidaState.profile.vision.quote = val;
@@ -1123,30 +1068,30 @@ importFromExcel: async function(event) {
                 }
             }
 
-            // 3. Aba: HÃ¡bitos
-            const wsHabits = workbook.Sheets['HÃ¡bitos'] || workbook.Sheets['Habitos'];
+            // 3. Aba: Hábitos
+            const wsHabits = workbook.Sheets['Hábitos'] || workbook.Sheets['Habitos'];
             if (wsHabits) {
                 const habArr = XLSX.utils.sheet_to_json(wsHabits);
                 window.sistemaVidaState.habits = [];
                 habArr.forEach(row => {
-                    const title = getValue(row, ['TÃ­tulo', 'Titulo', 'HÃ¡bito']);
+                    const title = getValue(row, ['Título', 'Titulo', 'Hábito']);
                     if (title) {
                         window.sistemaVidaState.habits.push({
                             id: getValue(row, ['ID', 'Id']) || ('hab_' + Date.now() + Math.random().toString(36).substr(2, 9)),
                             title: title,
-                            dimension: getValue(row, ['DimensÃ£o', 'Dimensao', 'Ãrea']) || 'Geral',
+                            dimension: getValue(row, ['Dimensão', 'Dimensao', 'Área']) || 'Geral',
                             trigger: getValue(row, ['Gatilho', 'Contexto']) || '',
-                            routine: getValue(row, ['Rotina', 'Rotina do Habito', 'AÃ§Ã£o']) || '',
+                            routine: getValue(row, ['Rotina', 'Rotina do Habito', 'Ação']) || '',
                             reward: getValue(row, ['Recompensa', 'Recompensa do Dia']) || '',
-                            status: getValue(row, ['Status', 'SituaÃ§Ã£o']) || 'Ativo',
-                            completed: String(getValue(row, ['Status', 'SituaÃ§Ã£o']) || '').toLowerCase().includes('conclu')
+                            status: getValue(row, ['Status', 'Situação']) || 'Ativo',
+                            completed: String(getValue(row, ['Status', 'Situação']) || '').toLowerCase().includes('conclu')
                         });
                     }
                 });
             }
 
-            // 4. Aba: DiÃ¡rio
-            const wsDiario = workbook.Sheets['DiÃ¡rio'] || workbook.Sheets['Diario'];
+            // 4. Aba: Diário
+            const wsDiario = workbook.Sheets['Diário'] || workbook.Sheets['Diario'];
             if (wsDiario) {
                 const logArr = XLSX.utils.sheet_to_json(wsDiario);
                 window.sistemaVidaState.dailyLogs = window.sistemaVidaState.dailyLogs || {};
@@ -1160,7 +1105,7 @@ importFromExcel: async function(event) {
                     
                     if (dateStr && dateStr.length >= 10) {
                         window.sistemaVidaState.dailyLogs[dateStr.substring(0,10)] = {
-                            gratidao: getValue(row, ['GratidÃ£o', 'Gratidao']),
+                            gratidao: getValue(row, ['Gratidão', 'Gratidao']),
                             funcionou: getValue(row, ['O_Que_Funcionou', 'O Que Funcionou', 'Funcionou']),
                             aprendi: getValue(row, ['O_Que_Aprendi', 'O Que Aprendi', 'Aprendi']),
                             shutdown: [
@@ -1174,8 +1119,8 @@ importFromExcel: async function(event) {
                 });
             }
 
-            // 5. Aba: RevisÃµes
-            const wsRev = workbook.Sheets['RevisÃµes'] || workbook.Sheets['Revisoes'];
+            // 5. Aba: Revisões
+            const wsRev = workbook.Sheets['Revisões'] || workbook.Sheets['Revisoes'];
             if (wsRev) {
                 const revArr = XLSX.utils.sheet_to_json(wsRev);
                 window.sistemaVidaState.reviews = window.sistemaVidaState.reviews || {};
@@ -1193,25 +1138,25 @@ importFromExcel: async function(event) {
                             q2: getValue(row, ['O_Que_Executei', 'O Que Executei']),
                             q3: getValue(row, ['Aprendizado', 'Aprendi']),
                             q4: getValue(row, ['Ajuste', 'Ajustes']),
-                            q5: getValue(row, ['Intencao_Proxima', 'Intencao Proxima', 'IntenÃ§Ã£o'])
+                            q5: getValue(row, ['Intencao_Proxima', 'Intencao Proxima', 'Intenção'])
                         };
                     }
                 });
             }
 
-            // FinalizaÃ§Ã£o
+            // Finalização
             this.normalizeSwlsState();
             this.normalizePermaState();
             this.normalizeEntitiesState();
             this.normalizeDailyLogsState();
             this.normalizeDeepWorkState();
             await window.app.saveState(false);
-            alert('Sistema Vida Importado com Sucesso (PadrÃ£o Ouro)!');
+            alert('Sistema Vida Importado com Sucesso (Padrão Ouro)!');
             window.app.switchView('painel');
             
         } catch (error) {
-            console.error("Erro PadrÃ£o Ouro na importaÃ§Ã£o:", error);
-            alert(`Erro na importaÃ§Ã£o: ${error.message}`);
+            console.error("Erro Padrão Ouro na importação:", error);
+            alert(`Erro na importação: ${error.message}`);
         }
         
         event.target.value = '';
@@ -1219,7 +1164,7 @@ importFromExcel: async function(event) {
 
 exportToExcel: function() {
         if (typeof XLSX === "undefined") {
-            alert("SheetJS nÃ£o carregado. Verifique a conexÃ£o com a internet.");
+            alert("SheetJS não carregado. Verifique a conexão com a internet.");
             return;
         }
 
@@ -1232,25 +1177,25 @@ exportToExcel: function() {
         const summaryData = [
             ["Campo", "Valor"],
             ["Exportado em", exportedAt],
-            ["Versao do app", String(window.app.appBuildVersion || "")],
-            ["Perfil", String(state.profile.name || "Sem nome")],
-            ["Metas", Number((state.entities.metas || []).length)],
-            ["OKRs", Number((state.entities.okrs || []).length)],
-            ["Macros", Number((state.entities.macros || []).length)],
-            ["Micros", Number((state.entities.micros || []).length)],
+            ["Versao do app", String(window.app?.appBuildVersion || "")],
+            ["Perfil", String(state.profile?.name || "Sem nome")],
+            ["Metas", Number((state.entities?.metas || []).length)],
+            ["OKRs", Number((state.entities?.okrs || []).length)],
+            ["Macros", Number((state.entities?.macros || []).length)],
+            ["Micros", Number((state.entities?.micros || []).length)],
             ["Habitos", Number((state.habits || []).length)],
             ["Registros diarios", Number(Object.keys(state.dailyLogs || {}).length)],
             ["Revisoes", Number(Object.keys(state.reviews || {}).length)],
-            ["Sessoes de foco", Number((state.deepWork.sessions || []).length)],
+            ["Sessoes de foco", Number((state.deepWork?.sessions || []).length)],
             ["Planos semanais", Number(Object.keys(state.weekPlans || {}).length)],
-            ["Notas", Number((state.profile.notes || []).length)]
+            ["Notas", Number((state.profile?.notes || []).length)]
         ];
         const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
         wsSummary['!cols'] = [{ wch: 26 }, { wch: 64 }];
         XLSX.utils.book_append_sheet(wb, wsSummary, "Resumo");
 
         // 1. Aba: Planos
-        const planosCol = ["ID", "Tipo", "DimensÃ£o", "TÃ­tulo", "Contexto_Indicador", "Prazo", "Progresso", "ID_Pai", "CritÃ©rio_Sucesso", "Desafio", "Comprometimento", "Key_Results", "Notas"];
+        const planosCol = ["ID", "Tipo", "Dimensão", "Título", "Contexto_Indicador", "Prazo", "Progresso", "ID_Pai", "Critério_Sucesso", "Desafio", "Comprometimento", "Key_Results", "Notas"];
         const planosData = [planosCol];
         const types = ['metas', 'okrs', 'macros', 'micros'];
         types.forEach(t => {
@@ -1272,7 +1217,7 @@ exportToExcel: function() {
         wsPlanos['!cols'] = [{wch:15}, {wch:10}, {wch:15}, {wch:40}, {wch:40}, {wch:15}, {wch:10}, {wch:15}, {wch:30}, {wch:12}, {wch:16}, {wch:42}, {wch:30}];
         XLSX.utils.book_append_sheet(wb, wsPlanos, "Planos");
 
-        // 2. Aba: PropÃ³sito
+        // 2. Aba: Propósito
         const propCol = ["Categoria", "Chave", "Texto_Preenchido"];
         const propData = [propCol];
 
@@ -1280,34 +1225,34 @@ exportToExcel: function() {
 
         const ikigaiM = {
             love: "O que ama",
-            good: "No que Ã© bom",
+            good: "No que é bom",
             need: "O que o mundo precisa",
             paid: "Pelo que pode ser pago",
-            paixao: "PaixÃ£o (Amo + Bom)",
-            profissao: "ProfissÃ£o (Bom + Pago)",
-            vocacao: "VocaÃ§Ã£o (Pago + Mundo)",
-            missao: "MissÃ£o (Amo + Mundo)",
-            sintese: "SÃ­ntese Ikigai"
+            paixao: "Paixão (Amo + Bom)",
+            profissao: "Profissão (Bom + Pago)",
+            vocacao: "Vocação (Pago + Mundo)",
+            missao: "Missão (Amo + Mundo)",
+            sintese: "Síntese Ikigai"
         };
         Object.entries(ikigaiM).forEach(([k, label]) => {
-            propData.push(["Ikigai", label, state.profile.ikigai.[k] || ""]);
+            propData.push(["Ikigai", label, state.profile.ikigai?.[k] || ""]);
         });
 
-        const visionM = { saude: "VisÃ£o SaÃºde", carreira: "VisÃ£o Carreira", intelecto: "VisÃ£o Intelectual", quote: "CitaÃ§Ã£o Inspiradora" };
+        const visionM = { saude: "Visão Saúde", carreira: "Visão Carreira", intelecto: "Visão Intelectual", quote: "Citação Inspiradora" };
         Object.entries(visionM).forEach(([k, label]) => {
-            propData.push(["VisÃ£o", label, state.profile.vision.[k] || ""]);
+            propData.push(["Visão", label, state.profile.vision?.[k] || ""]);
         });
 
-        const legacyM = { familia: "Legado FamÃ­lia", profissao: "Legado Profissional", mundo: "Legado Mundo" };
+        const legacyM = { familia: "Legado Família", profissao: "Legado Profissional", mundo: "Legado Mundo" };
         Object.entries(legacyM).forEach(([k, label]) => {
-            propData.push(["Legado", label, state.profile.legacyObj.[k] || ""]);
+            propData.push(["Legado", label, state.profile.legacyObj?.[k] || ""]);
         });
 
-        // ForÃ§as e Sombras (Identidade)
-        (state.profile.identity.strengths || []).forEach(s => {
-            propData.push(["ForÃ§a", s.title || "", s.description || s.quote || ""]);
+        // Forças e Sombras (Identidade)
+        (state.profile.identity?.strengths || []).forEach(s => {
+            propData.push(["Força", s.title || "", s.description || s.quote || ""]);
         });
-        (state.profile.identity.shadows || []).forEach(s => {
+        (state.profile.identity?.shadows || []).forEach(s => {
             propData.push(["Sombra", s.title || "", s.description || s.desiredResponse || ""]);
         });
 
@@ -1316,9 +1261,9 @@ exportToExcel: function() {
             propData.push(["Roda da Vida", dim, data.score || 0]);
         });
 
-        const permaM = { P: "EmoÃ§Ãµes Positivas (P)", E: "Engajamento (E)", R: "Relacionamentos (R)", M: "Significado (M)", A: "RealizaÃ§Ã£o (A)" };
+        const permaM = { P: "Emoções Positivas (P)", E: "Engajamento (E)", R: "Relacionamentos (R)", M: "Significado (M)", A: "Realização (A)" };
         Object.entries(permaM).forEach(([k, label]) => {
-            propData.push(["PERMA", label, state.perma.[k] || 0]);
+            propData.push(["PERMA", label, state.perma?.[k] || 0]);
         });
 
         const swls = state.swls || { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
@@ -1330,13 +1275,13 @@ exportToExcel: function() {
 
         const wsProp = XLSX.utils.aoa_to_sheet(propData);
         wsProp['!cols'] = [{wch:15}, {wch:30}, {wch:60}];
-        XLSX.utils.book_append_sheet(wb, wsProp, "PropÃ³sito");
+        XLSX.utils.book_append_sheet(wb, wsProp, "Propósito");
 
         // 2b. Aba: Odyssey
-        const odyCol = ["CenÃ¡rio", "Texto"];
+        const odyCol = ["Cenário", "Texto"];
         const odyData = [odyCol];
         const ody = state.profile.odyssey || {};
-        const odyLabels = { cenarioA: "CenÃ¡rio A ï¿½- Caminho Principal", cenarioB: "CenÃ¡rio B ï¿½- Plano Alternativo", cenarioC: "CenÃ¡rio C ï¿½- E se tudo mudasse" };
+        const odyLabels = { cenarioA: "Cenário A — Caminho Principal", cenarioB: "Cenário B — Plano Alternativo", cenarioC: "Cenário C — E se tudo mudasse?" };
         Object.entries(odyLabels).forEach(([k, label]) => {
             odyData.push([label, ody[k] || ""]);
         });
@@ -1344,8 +1289,8 @@ exportToExcel: function() {
         wsOdy['!cols'] = [{wch:40}, {wch:80}];
         XLSX.utils.book_append_sheet(wb, wsOdy, "Odyssey");
 
-        // 3. Aba: HÃ¡bitos
-        const habCol = ["ID", "DimensÃ£o", "TÃ­tulo", "Gatilho", "Rotina", "Recompensa", "Status"];
+        // 3. Aba: Hábitos
+        const habCol = ["ID", "Dimensão", "Título", "Gatilho", "Rotina", "Recompensa", "Status"];
         const habData = [habCol];
         (state.habits || []).forEach(h => {
             habData.push([
@@ -1355,16 +1300,16 @@ exportToExcel: function() {
                 h.trigger || "",
                 h.routine || h.context || "",
                 h.reward || "",
-                h.completed  "Ativo" : "Inativo"
+                h.completed ? "Ativo" : "Inativo"
             ]);
         });
         const wsHabits = XLSX.utils.aoa_to_sheet(habData);
         wsHabits['!cols'] = [{wch:15}, {wch:15}, {wch:32}, {wch:26}, {wch:32}, {wch:24}, {wch:10}];
-        XLSX.utils.book_append_sheet(wb, wsHabits, "HÃ¡bitos");
+        XLSX.utils.book_append_sheet(wb, wsHabits, "Hábitos");
 
-        // 4. Aba: DiÃ¡rio (inclui check-in + shutdown por dimensÃ£o)
-        const dims = ['SaÃºde','Mente','Carreira','FinanÃ§as','Relacionamentos','FamÃ­lia','Lazer','PropÃ³sito'];
-        const logCol = ["Data", "Sono_h", "Qualidade_Sono", "Energia", "Humor", "Estresse", "EmoÃ§Ã£o", "IntenÃ§Ã£o", "GratidÃ£o", "O_Que_Funcionou",
+        // 4. Aba: Diário (inclui check-in + shutdown por dimensão)
+        const dims = ['Saúde','Mente','Carreira','Finanças','Relacionamentos','Família','Lazer','Propósito'];
+        const logCol = ["Data", "Sono_h", "Qualidade_Sono", "Energia", "Humor", "Estresse", "Emoção", "Intenção", "Gratidão", "O_Que_Funcionou",
             ...dims.map(d => `Shutdown_${d}`)];
         const logData = [logCol];
         // Merge checkins and logs by date
@@ -1393,26 +1338,26 @@ exportToExcel: function() {
         const wsDiario = XLSX.utils.aoa_to_sheet(logData);
         wsDiario['!cols'] = [{wch:12}, {wch:8}, {wch:10}, {wch:8}, {wch:8}, {wch:8}, {wch:12}, {wch:40}, {wch:40}, {wch:40},
             ...dims.map(() => ({wch:30}))];
-        XLSX.utils.book_append_sheet(wb, wsDiario, "DiÃ¡rio");
+        XLSX.utils.book_append_sheet(wb, wsDiario, "Diário");
 
-        // 4b. Aba: HÃ¡bitos ï¿½- com histÃ³rico dos Ãºltimos 30 dias
+        // 4b. Aba: Hábitos — com histórico dos últimos 30 dias
         const habDays = Array.from({length:30}, (_, i) => {
             const d = new Date(); d.setDate(d.getDate() - i);
             return app.getLocalDateKey(d);
         }).reverse();
-        const habCol2 = ["ID", "DimensÃ£o", "TÃ­tulo", "Gatilho", "Rotina", "Recompensa", ...habDays];
+        const habCol2 = ["ID", "Dimensão", "Título", "Gatilho", "Rotina", "Recompensa", ...habDays];
         const habData2 = [habCol2];
         (state.habits || []).forEach(h => {
             habData2.push([
                 h.id, h.dimension || "Geral", h.title, h.trigger || "", h.routine || h.context || "", h.reward || "",
-                ...habDays.map(dk => app.isHabitDoneOnDate(h, dk)  1 : 0)
+                ...habDays.map(dk => app.isHabitDoneOnDate(h, dk) ? 1 : 0)
             ]);
         });
         const wsHab2 = XLSX.utils.aoa_to_sheet(habData2);
         wsHab2['!cols'] = [{wch:15},{wch:15},{wch:32},{wch:26},{wch:32},{wch:24},...habDays.map(()=>({wch:10}))];
-        XLSX.utils.book_append_sheet(wb, wsHab2, "HÃ¡bitos_HistÃ³rico");
+        XLSX.utils.book_append_sheet(wb, wsHab2, "Hábitos_Histórico");
 
-        // 5. Aba: RevisÃµes
+        // 5. Aba: Revisões
         const revCol = ["Data", "O_Que_Planejei", "O_Que_Executei", "Aprendizado", "Ajuste", "Intencao_Proxima"];
         const revData = [revCol];
         Object.entries(state.reviews || {}).sort().forEach(([date, rev]) => {
@@ -1427,19 +1372,19 @@ exportToExcel: function() {
         });
         const wsRevisoes = XLSX.utils.aoa_to_sheet(revData);
         wsRevisoes['!cols'] = [{wch:12}, {wch:40}, {wch:40}, {wch:40}, {wch:40}, {wch:40}];
-        XLSX.utils.book_append_sheet(wb, wsRevisoes, "RevisÃµes");
+        XLSX.utils.book_append_sheet(wb, wsRevisoes, "Revisões");
 
         // 6. Aba: Planos Semanais
         const weeklyCol = ["Semana", "Intencao", "Micros_Selecionadas", "Feito_Em", "Origem"];
         const weeklyData = [weeklyCol];
         Object.entries(state.weekPlans || {}).sort().forEach(([weekKey, plan]) => {
-            const selected = Array.isArray(plan.selectedMicros)  plan.selectedMicros : [];
+            const selected = Array.isArray(plan?.selectedMicros) ? plan.selectedMicros : [];
             weeklyData.push([
                 weekKey,
-                String(plan.intention || plan.focus || ""),
+                String(plan?.intention || plan?.focus || ""),
                 selected.join(", "),
-                String(plan.updatedAt || plan.createdAt || ""),
-                String(plan.origin || "")
+                String(plan?.updatedAt || plan?.createdAt || ""),
+                String(plan?.origin || "")
             ]);
         });
         const wsWeekly = XLSX.utils.aoa_to_sheet(weeklyData);
@@ -1449,17 +1394,17 @@ exportToExcel: function() {
         // 7. Aba: Foco Profundo
         const focusCol = ["Inicio", "Fim", "Minutos_Foco", "Minutos_Pausa", "Micro_ID", "Intencao", "Concluida"];
         const focusData = [focusCol];
-        (state.deepWork.sessions || []).forEach((session) => {
-            const focusMin = Math.max(0, Math.round((Number(session.focusSec) || 0) / 60));
-            const breakMin = Math.max(0, Math.round((Number(session.breakSec) || 0) / 60));
+        (state.deepWork?.sessions || []).forEach((session) => {
+            const focusMin = Math.max(0, Math.round((Number(session?.focusSec) || 0) / 60));
+            const breakMin = Math.max(0, Math.round((Number(session?.breakSec) || 0) / 60));
             focusData.push([
-                String(session.startedAt || ""),
-                String(session.endedAt || ""),
+                String(session?.startedAt || ""),
+                String(session?.endedAt || ""),
                 focusMin,
                 breakMin,
-                String(session.microId || ""),
-                String(session.intention || ""),
-                session.completed  "sim" : "nao"
+                String(session?.microId || ""),
+                String(session?.intention || ""),
+                session?.completed ? "sim" : "nao"
             ]);
         });
         const wsFocus = XLSX.utils.aoa_to_sheet(focusData);
@@ -1469,18 +1414,18 @@ exportToExcel: function() {
         // 8. Aba: Notas
         const notesCol = ["ID", "Titulo", "Conteudo", "Criada_Em", "Atualizada_Em", "Vinculos"];
         const notesData = [notesCol];
-        (state.profile.notes || []).forEach((note) => {
-            const links = Array.isArray(note.links)
-                 note.links
-                    .map((item) => `${item.entityType || ""}:${item.entityId || ""}`)
+        (state.profile?.notes || []).forEach((note) => {
+            const links = Array.isArray(note?.links)
+                ? note.links
+                    .map((item) => `${item?.entityType || "?"}:${item?.entityId || "?"}`)
                     .join(", ")
                 : "";
             notesData.push([
-                String(note.id || ""),
-                String(note.title || ""),
-                String(note.content || ""),
-                String(note.createdAt || ""),
-                String(note.updatedAt || ""),
+                String(note?.id || ""),
+                String(note?.title || ""),
+                String(note?.content || ""),
+                String(note?.createdAt || ""),
+                String(note?.updatedAt || ""),
                 links
             ]);
         });
@@ -1489,9 +1434,7 @@ exportToExcel: function() {
         XLSX.utils.book_append_sheet(wb, wsNotes, "Notas");
 
         XLSX.writeFile(wb, "SISTEMA_VIDA_PADRAO_OURO.xls", { bookType: "biff8" });
-        console.log("ExportaÃ§Ã£o Excel (.xls) concluÃ­da.");
+        console.log("Exportação Excel (.xls) concluída.");
     },
     });
 }
-
-

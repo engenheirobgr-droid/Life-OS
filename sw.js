@@ -1,28 +1,28 @@
-﻿const CACHE_NAME = 'sistema-vida-v193';
+const CACHE_NAME = 'sistema-vida-v187';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.jsv=20260512-guided-routine-v193',
-    './js/habitSuggestions.jsv=20260512-guided-routine-v193',
-    './js/subjectiveScales.jsv=20260512-guided-routine-v193',
-    './js/notifications.jsv=20260512-guided-routine-v193',
-    './js/cadence.jsv=20260512-guided-routine-v193',
-    './js/onboarding.jsv=20260512-guided-routine-v193',
-    './js/identity.jsv=20260512-guided-routine-v193',
-    './js/habits.jsv=20260512-guided-routine-v193',
-    './js/state.jsv=20260512-guided-routine-v193',
-    './js/render.jsv=20260512-guided-routine-v193',
-    './js/planning.jsv=20260512-guided-routine-v193',
-    './js/gamification.jsv=20260512-guided-routine-v193',
-    './js/social.jsv=20260512-guided-routine-v193',
-    './views/hoje.htmlv=20260512-guided-routine-v193',
-    './views/planos.htmlv=20260512-guided-routine-v193',
-    './views/proposito.htmlv=20260512-guided-routine-v193',
-    './views/perfil.htmlv=20260512-guided-routine-v193',
-    './views/painel.htmlv=20260512-guided-routine-v193',
-    './views/foco.htmlv=20260512-guided-routine-v193',
-    './views/onboarding.htmlv=20260512-guided-routine-v193',
-    './views/social.htmlv=20260512-guided-routine-v193'
+    './app.js?v=20260512-guided-routine-v187',
+    './js/habitSuggestions.js?v=20260512-guided-routine-v187',
+    './js/subjectiveScales.js?v=20260512-guided-routine-v187',
+    './js/notifications.js?v=20260512-guided-routine-v187',
+    './js/cadence.js?v=20260512-guided-routine-v187',
+    './js/onboarding.js?v=20260512-guided-routine-v187',
+    './js/identity.js?v=20260512-guided-routine-v187',
+    './js/habits.js?v=20260512-guided-routine-v187',
+    './js/state.js?v=20260512-guided-routine-v187',
+    './js/render.js?v=20260512-guided-routine-v187',
+    './js/planning.js?v=20260512-guided-routine-v187',
+    './js/gamification.js?v=20260512-guided-routine-v187',
+    './js/social.js?v=20260512-guided-routine-v187',
+    './views/hoje.html?v=20260512-guided-routine-v187',
+    './views/planos.html?v=20260512-guided-routine-v187',
+    './views/proposito.html?v=20260512-guided-routine-v187',
+    './views/perfil.html?v=20260512-guided-routine-v187',
+    './views/painel.html?v=20260512-guided-routine-v187',
+    './views/foco.html?v=20260512-guided-routine-v187',
+    './views/onboarding.html?v=20260512-guided-routine-v187',
+    './views/social.html?v=20260512-guided-routine-v187'
 ];
 
 self.addEventListener('install', (event) => {
@@ -59,7 +59,7 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-    let data = { title: 'Life OS', body: 'Nova notificacao.' };
+    let data = { title: 'Life OS', body: 'Nova notificação.' };
     try {
         if (event.data) data = event.data.json();
     } catch (_) {
@@ -80,7 +80,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const url = (event.notification.data && event.notification.data.url)  event.notification.data.url : '/';
+    const url = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/';
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
             for (const client of clientList) {
@@ -111,5 +111,3 @@ self.addEventListener('fetch', (event) => {
             .catch(() => caches.match(event.request))
     );
 });
-
-
