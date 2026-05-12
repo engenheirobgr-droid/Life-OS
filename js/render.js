@@ -357,12 +357,12 @@ renderWeeklyPlans: function() {
                 nextCard.innerHTML = this._renderWeeklyPlanShell({
                     weekKey: nextWeekKey,
                     plan: null,
-                    label: 'PrÃ³xima Semana',
+                    label: 'Próxima Semana',
                     actionLabel: '',
                     actionIcon: '',
                     actionOptions: '',
                     isCurrent: false,
-                    emptyText: 'A opÃ§Ã£o de planejar a prÃ³xima semana habilita junto com a revisÃ£o da semana atual.'
+                    emptyText: 'A opção de planejar a próxima semana é habilitada junto com a revisão da semana atual.'
                 });
             } else if (suggestions.length > 0) {
                 nextCard.innerHTML = this._renderWeeklyPlanShell({
