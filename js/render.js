@@ -126,8 +126,10 @@ renderFlowModal: function() {
             ) +
             section('Horizonte Vital', 'auto_awesome',
                 row('flag', 'Metas de vida', 'Metas de 1 a 5 anos alinhadas ao propósito de vida', '', s.lifeGoalsFilled, 'planos', '', 'metas', 'lifeGoals', true) +
-                row('explore', 'Odyssey Plan', 'Três cenários possíveis para os próximos 5 anos da sua vida', '', s.odysseyFilled, 'proposito', 'odyssey-section', '', 'odyssey', true) +
-                row('self_improvement', 'Visão, Legado & Ikigai', 'O que você quer deixar, ser e fazer no mundo', '', s.purposeFilled, 'proposito', 'proposito-ikigai-section', '', 'purpose', true)
+                row('explore', 'Odyssey Plan', 'Opcional: descreva 1 a 3 futuros possíveis para os próximos 5 anos', '', s.odysseyFilled, 'proposito', 'odyssey-section', '', 'odyssey', true) +
+                row('star', 'Ikigai', 'Mapa completo de amor, talento, necessidade, sustento e síntese', '', s.ikigaiFilled, 'proposito', 'proposito-ikigai-section', '', 'ikigai', true) +
+                row('auto_stories', 'Legado', 'Impacto desejado em família, profissão e mundo', '', s.legacyFilled, 'proposito', 'proposito-legado-section', '', 'legacy', true) +
+                row('visibility', 'Visão de Vida', 'Vida concreta escolhida em saúde, carreira, intelecto e frase-guia', '', s.visionFilled, 'proposito', 'proposito-visao-section', '', 'vision', true)
             );
     },
 

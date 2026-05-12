@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260511-ring-color-v174';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260511-ring-color-v174';
-import { attachNotifications } from './js/notifications.js?v=20260511-ring-color-v174';
-import { attachCadence } from './js/cadence.js?v=20260511-ring-color-v174';
-import { attachOnboarding } from './js/onboarding.js?v=20260511-ring-color-v174';
-import { attachIdentity } from './js/identity.js?v=20260511-ring-color-v174';
-import { attachHabits } from './js/habits.js?v=20260511-ring-color-v174';
-import { attachStateModule } from './js/state.js?v=20260511-ring-color-v174';
-import { attachRenderModule } from './js/render.js?v=20260511-ring-color-v174';
-import { attachPlanningModule } from './js/planning.js?v=20260511-ring-color-v174';
-import { attachGamificationModule } from './js/gamification.js?v=20260511-ring-color-v174';
-import { attachSocial } from './js/social.js?v=20260511-ring-color-v174';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260511-purpose-tools-v180';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260511-purpose-tools-v180';
+import { attachNotifications } from './js/notifications.js?v=20260511-purpose-tools-v180';
+import { attachCadence } from './js/cadence.js?v=20260511-purpose-tools-v180';
+import { attachOnboarding } from './js/onboarding.js?v=20260511-purpose-tools-v180';
+import { attachIdentity } from './js/identity.js?v=20260511-purpose-tools-v180';
+import { attachHabits } from './js/habits.js?v=20260511-purpose-tools-v180';
+import { attachStateModule } from './js/state.js?v=20260511-purpose-tools-v180';
+import { attachRenderModule } from './js/render.js?v=20260511-purpose-tools-v180';
+import { attachPlanningModule } from './js/planning.js?v=20260511-purpose-tools-v180';
+import { attachGamificationModule } from './js/gamification.js?v=20260511-purpose-tools-v180';
+import { attachSocial } from './js/social.js?v=20260511-purpose-tools-v180';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -200,7 +200,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260511-ring-color-v174',
+    appBuildVersion: '20260511-purpose-tools-v180',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -1744,8 +1744,10 @@ _getAudioContext: function() {
             swlsThisQuarter: cadenceOk('swls'),
             cycleReviewDone: cadenceOk('cycleReview'),
             okrsExist: (state.entities.okrs || []).length > 0,
-            odysseyFilled: cadenceOk('odyssey'),
-            purposeFilled: cadenceOk('purpose'),
+            odysseyFilled: this.hasCompleteOdysseyContent?.() && cadenceOk('odyssey'),
+            ikigaiFilled: this.hasCompleteIkigaiContent?.() && cadenceOk('ikigai'),
+            legacyFilled: this.hasCompleteLegacyContent?.() && cadenceOk('legacy'),
+            visionFilled: this.hasCompleteVisionContent?.() && cadenceOk('vision'),
             lifeGoalsFilled: this.hasLifeGoalsContent() && cadenceOk('lifeGoals'),
         };
     },
@@ -3832,8 +3834,14 @@ openCreateModal: function(type = 'metas', parentId = null) {
                 window.sistemaVidaState.profile[this.currentTextGroup] = {};
             }
             window.sistemaVidaState.profile[this.currentTextGroup][this.currentTextKey] = val;
-            if (['ikigai', 'legacyObj', 'vision'].includes(this.currentTextGroup)) {
-                this.markCadence('purpose');
+            if (this.currentTextGroup === 'ikigai') {
+                this.markCadence('ikigai');
+            } else if (this.currentTextGroup === 'legacyObj') {
+                this.markCadence('legacy');
+            } else if (this.currentTextGroup === 'vision') {
+                this.markCadence('vision');
+            } else if (this.currentTextGroup === 'odyssey') {
+                this.markCadence('odyssey');
             }
             this.saveState(true);
             this.closeTextModal();
@@ -5214,7 +5222,12 @@ ensureNotesState: function() {
         const container = document.getElementById('purpose-journey-container');
         if (!container) return;
         const journey = this.getPurposeJourneyState();
-        const nextPending = journey.items.find((item) => !item.done);
+        const requiredItems = journey.items.filter((item) => item.required);
+        const optionalItems = journey.items.filter((item) => !item.required);
+        const nextPending = requiredItems.find((item) => !item.done) || optionalItems.find((item) => !item.done);
+        const statusLabel = journey.minimumReady ? 'Essencial pronto' : 'Essencial em aberto';
+        const statusIcon = journey.minimumReady ? 'verified' : 'flag';
+        const statusClass = journey.minimumReady ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary';
         const itemHtml = journey.items.map((item) => `
             <button type="button" onclick="window.app.openPurposeJourneyStep('${item.id}')"
                 class="text-left rounded-xl border ${item.done ? 'border-emerald-500/20 bg-emerald-500/[0.06]' : 'border-outline-variant/15 bg-surface-container-low'} px-3 py-3 hover:bg-surface-container-high transition-colors">
@@ -5223,6 +5236,7 @@ ensureNotesState: function() {
                         <div class="flex items-center gap-2">
                             <span class="material-symbols-outlined notranslate text-[16px] ${item.done ? 'text-emerald-500' : 'text-outline'}" ${item.done ? "style=\"font-variation-settings:'FILL' 1;\"" : ''}>${item.done ? 'check_circle' : 'radio_button_unchecked'}</span>
                             <p class="text-xs font-semibold text-on-surface truncate">${this.escapeHtml(item.label)}</p>
+                            <span class="text-[9px] font-bold uppercase tracking-widest ${item.required ? 'text-primary' : 'text-outline'}">${item.required ? 'Minimo' : 'Opcional'}</span>
                         </div>
                         <p class="mt-1 text-[11px] text-outline">${this.escapeHtml(item.hint)}</p>
                     </div>
@@ -5236,17 +5250,17 @@ ensureNotesState: function() {
                 <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div class="max-w-2xl">
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Jornada de propósito</p>
-                        <h3 class="mt-2 font-headline text-2xl font-bold text-on-background">Monte sua bússola em etapas.</h3>
-                        <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Cada passo constrói sua clareza — de quem você é até onde quer chegar.</p>
+                        <h3 class="mt-2 font-headline text-2xl font-bold text-on-background">Monte sua bússola sem precisar preencher tudo.</h3>
+                        <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">O minimo mantem o restante do app orientado. Os demais exercicios aprofundam sua clareza quando fizer sentido.</p>
                     </div>
                     <div class="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 min-w-[160px]">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Progresso</p>
-                        <p class="mt-2 text-2xl font-headline font-bold text-on-background">${journey.doneCount}/${journey.total}</p>
-                        <p class="text-xs text-outline mt-1">${journey.pct}% da bussola montada</p>
+                        <p class="text-[10px] font-bold uppercase tracking-widest ${statusClass} flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[14px]">${statusIcon}</span>${statusLabel}</p>
+                        <p class="mt-2 text-2xl font-headline font-bold text-on-background">${journey.requiredDone}/${journey.requiredTotal}</p>
+                        <p class="text-xs text-outline mt-1">Aprofundamento ${journey.optionalDone}/${journey.optionalTotal}</p>
                     </div>
                 </div>
                 <div class="mt-4 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
-                    <div class="h-full rounded-full bg-primary transition-all duration-500" style="width:${journey.pct}%"></div>
+                    <div class="h-full rounded-full bg-primary transition-all duration-500" style="width:${journey.requiredPct}%"></div>
                 </div>
                 ${nextPending ? `<p class="mt-3 text-xs text-outline">Proximo passo recomendado: <span class="font-semibold text-on-surface">${this.escapeHtml(nextPending.label)}</span>.</p>` : ''}
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${itemHtml}</div>
@@ -5258,8 +5272,8 @@ ensureNotesState: function() {
         const map = {
             identity: 'top-values-banner',
             wheel: 'proposito-roda-section',
-            'ikigai-base': 'proposito-ikigai-section',
-            'ikigai-synthesis': 'display-ikigai-sintese',
+            perma: 'perma-section',
+            ikigai: 'proposito-ikigai-section',
             legacy: 'proposito-legado-section',
             vision: 'proposito-visao-section',
             odyssey: 'odyssey-section'

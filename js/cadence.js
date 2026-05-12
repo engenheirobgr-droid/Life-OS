@@ -44,16 +44,21 @@ ensureCadenceState: function() {
             };
             this._cadenceNeedsMigrationSave = true;
         }
-        if (!profile.cadence.purpose?.lastAt && this.hasPurposeContent()) {
-            const fallbackLastAt = profile.cadence.odyssey?.lastAt || this.getLocalDateKey();
-            profile.cadence.purpose = {
-                ...(profile.cadence.purpose || {}),
-                lastAt: fallbackLastAt,
-                updatedAt: new Date().toISOString(),
+        const legacyPurposeCadence = profile.cadence.purpose || {};
+        [
+            ['ikigai', this.hasCompleteIkigaiContent?.()],
+            ['legacy', this.hasCompleteLegacyContent?.()],
+            ['vision', this.hasCompleteVisionContent?.()]
+        ].forEach(([key, hasContent]) => {
+            if (!hasContent || profile.cadence[key]?.lastAt) return;
+            profile.cadence[key] = {
+                ...(profile.cadence[key] || {}),
+                lastAt: legacyPurposeCadence.lastAt || this.getLocalDateKey(),
+                updatedAt: legacyPurposeCadence.updatedAt || new Date().toISOString(),
                 migratedFromContent: true
             };
             this._cadenceNeedsMigrationSave = true;
-        }
+        });
     },
 
 hasLifeGoalsContent: function() {
@@ -88,6 +93,34 @@ hasPurposeContent: function() {
         return fields.some((value) => typeof value === 'string' ? value.trim() !== '' : Boolean(value));
     },
 
+hasCompleteIkigaiContent: function() {
+        const ikigai = window.sistemaVidaState.profile?.ikigai || {};
+        return ['love', 'good', 'need', 'paid', 'paixao', 'profissao', 'vocacao', 'missao', 'sintese']
+            .every((key) => String(ikigai[key] || '').trim());
+    },
+
+hasCompleteLegacyContent: function() {
+        const legacyObj = window.sistemaVidaState.profile?.legacyObj || {};
+        return ['familia', 'profissao', 'mundo']
+            .every((key) => String(legacyObj[key] || '').trim());
+    },
+
+hasCompleteVisionContent: function() {
+        const vision = window.sistemaVidaState.profile?.vision || {};
+        return ['saude', 'carreira', 'intelecto', 'quote']
+            .every((key) => String(vision[key] || '').trim());
+    },
+
+hasCompleteOdysseyContent: function() {
+        const odyssey = window.sistemaVidaState.profile?.odyssey || {};
+        return ['cenarioA', 'cenarioB', 'cenarioC']
+            .some((key) => String(odyssey[key] || '').trim());
+    },
+
+hasMinimumPurposeContent: function() {
+        return !!(this.getPurposeJourneyState?.().minimumReady);
+    },
+
 getCadenceFrequencyLabel: function(expectedDays) {
         const safeDays = Math.max(0, Number(expectedDays) || 0);
         if (safeDays <= 1) return 'Diário';
@@ -112,7 +145,9 @@ getCadenceConfig: function() {
             swls: { label: 'SWLS', expectedDays: 30, icon: 'monitoring', why: 'Termômetro rápido de satisfação global.' },
             lifeGoals: { label: 'Metas de vida', expectedDays: 180, icon: 'flag', why: 'Revisão semestral das metas de 1 a 5 anos e do rumo de longo prazo.' },
             odyssey: { label: 'Odyssey Plan', expectedDays: 180, icon: 'explore', why: 'Revisão semestral dos cenários de vida.' },
-            purpose: { label: 'Visão, Legado & Ikigai', expectedDays: 180, icon: 'self_improvement', why: 'Revisão semestral do norte existencial e do legado desejado.' }
+            ikigai: { label: 'Ikigai', expectedDays: 180, icon: 'star', why: 'Revisão semestral do mapa completo de amor, talento, necessidade e sustento.' },
+            legacy: { label: 'Legado', expectedDays: 180, icon: 'auto_stories', why: 'Revisão semestral do impacto desejado em família, profissão e mundo.' },
+            vision: { label: 'Visão de Vida', expectedDays: 180, icon: 'visibility', why: 'Revisão semestral da vida concreta que você escolhe construir.' }
         };
     },
 
@@ -219,7 +254,7 @@ renderCadenceHistoryPanel: function() {
         const container = document.getElementById('cadence-history-panel');
         if (!container) return;
         const config = this.getCadenceConfig();
-        const focusKeys = ['weeklyPlan', 'weeklyReview', 'cycleReview', 'wheel', 'perma', 'swls', 'lifeGoals', 'odyssey', 'purpose'];
+        const focusKeys = ['weeklyPlan', 'weeklyReview', 'cycleReview', 'wheel', 'perma', 'swls', 'lifeGoals', 'odyssey', 'ikigai', 'legacy', 'vision'];
         const formatDate = (dateKey) => dateKey
             ? new Date(dateKey + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
             : 'Nunca feito';
@@ -279,7 +314,9 @@ getNextRitualSuggestion: function() {
             perma:        { view: 'proposito', sectionId: 'perma-section',          tabId: '' },
             swls:         { view: 'proposito', sectionId: 'swls-section',           tabId: '' },
             odyssey:      { view: 'proposito', sectionId: 'odyssey-section',        tabId: '' },
-            purpose:      { view: 'proposito', sectionId: 'proposito-ikigai-section', tabId: '' },
+            ikigai:       { view: 'proposito', sectionId: 'proposito-ikigai-section', tabId: '' },
+            legacy:       { view: 'proposito', sectionId: 'proposito-legado-section', tabId: '' },
+            vision:       { view: 'proposito', sectionId: 'proposito-visao-section', tabId: '' },
             lifeGoals:    { view: 'planos',  sectionId: '',                         tabId: 'metas' }
         };
         // diary/shutdown só fazem sentido no fim do dia; weeklyReview/Plan/cycle em dias certos
@@ -290,6 +327,16 @@ getNextRitualSuggestion: function() {
             if (k === 'weeklyReview') return [5, 6, 0].includes(dow);
             if (k === 'weeklyPlan')   return [0, 1].includes(dow);
             if (k === 'cycleReview')  return [0, 1].includes(dow);
+            if (['odyssey', 'ikigai', 'legacy', 'vision'].includes(k)) {
+                const hasCadence = !!window.sistemaVidaState.profile?.cadence?.[k]?.lastAt;
+                const hasContent = {
+                    odyssey: this.hasCompleteOdysseyContent?.(),
+                    ikigai: this.hasCompleteIkigaiContent?.(),
+                    legacy: this.hasCompleteLegacyContent?.(),
+                    vision: this.hasCompleteVisionContent?.()
+                }[k];
+                return hasCadence || !!hasContent;
+            }
             return true;
         });
         const statuses = keys.map(key => ({ key, route: routeMap[key], ...this.getCadenceStatus(key) }));

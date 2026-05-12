@@ -1667,63 +1667,109 @@ getPurposeJourneyState: function() {
         const vision = profile.vision || {};
         const odyssey = profile.odyssey || {};
         const dimensions = window.sistemaVidaState.dimensions || {};
+        const perma = window.sistemaVidaState.perma || {};
 
         const wheelCount = Object.values(dimensions).filter((entry) => Number(entry?.score) > 0).length;
+        const permaCount = ['P', 'E', 'R', 'M', 'A'].filter((key) => Number(perma?.[key]) > 0).length;
         const ikigaiBaseCount = [ikigai.love, ikigai.good, ikigai.need, ikigai.paid].filter((value) => String(value || '').trim()).length;
+        const ikigaiIntersectionsCount = [ikigai.paixao, ikigai.profissao, ikigai.vocacao, ikigai.missao].filter((value) => String(value || '').trim()).length;
         const legacyCount = [legacyObj.familia, legacyObj.profissao, legacyObj.mundo].filter((value) => String(value || '').trim()).length;
         const visionCount = [vision.saude, vision.carreira, vision.intelecto, vision.quote].filter((value) => String(value || '').trim()).length;
         const odysseyCount = [odyssey.cenarioA, odyssey.cenarioB, odyssey.cenarioC].filter((value) => String(value || '').trim()).length;
+        const identityCount = ((identity.strengths || []).length + (identity.shadows || []).length);
+        const hasDiagnostic = wheelCount === 8 || permaCount === 5;
+        const hasCompleteIkigai = this.hasCompleteIkigaiContent ? this.hasCompleteIkigaiContent() : false;
+        const hasCompleteLegacy = this.hasCompleteLegacyContent ? this.hasCompleteLegacyContent() : legacyCount === 3;
+        const hasCompleteVision = this.hasCompleteVisionContent ? this.hasCompleteVisionContent() : visionCount === 4;
+        const hasCompleteOdyssey = this.hasCompleteOdysseyContent ? this.hasCompleteOdysseyContent() : odysseyCount >= 1;
+        const completeDirectionTools = [
+            hasCompleteVision,
+            hasCompleteLegacy,
+            hasCompleteIkigai,
+            hasCompleteOdyssey
+        ].filter(Boolean).length;
 
         const items = [
             {
                 id: 'identity',
                 label: 'Identidade base',
-                hint: 'Valores, forcas e sombras',
-                done: values.length > 0 && (((identity.strengths || []).length + (identity.shadows || []).length) > 0)
+                hint: values.length > 0 ? `${values.length} valores + ${identityCount} forcas/sombras` : 'Defina valores para orientar o app',
+                required: true,
+                done: values.length > 0 && identityCount > 0
+            },
+            {
+                id: wheelCount === 8 ? 'wheel' : 'perma',
+                label: 'Diagnostico atual',
+                hint: wheelCount === 8 ? 'Roda da Vida completa' : (permaCount === 5 ? 'PERMA completo' : `Roda ${wheelCount}/8 ou PERMA ${permaCount}/5`),
+                required: true,
+                done: hasDiagnostic
+            },
+            {
+                id: 'vision',
+                label: 'Ferramenta de direcao',
+                hint: completeDirectionTools > 0 ? `${completeDirectionTools} ferramenta(s) completas` : 'Complete Visao, Legado, Ikigai ou Odyssey',
+                required: true,
+                done: completeDirectionTools > 0
             },
             {
                 id: 'wheel',
-                label: 'Roda da vida',
+                label: 'Roda da vida completa',
                 hint: `${wheelCount}/8 dimensoes pontuadas`,
+                required: false,
                 done: wheelCount === 8
             },
             {
-                id: 'ikigai-base',
-                label: 'Base do Ikigai',
-                hint: `${ikigaiBaseCount}/4 blocos preenchidos`,
-                done: ikigaiBaseCount === 4
+                id: 'perma',
+                label: 'PERMA completo',
+                hint: `${permaCount}/5 pilares avaliados`,
+                required: false,
+                done: permaCount === 5
             },
             {
-                id: 'ikigai-synthesis',
-                label: 'Sintese do Ikigai',
-                hint: 'Frase central de direcao',
-                done: !!String(ikigai.sintese || '').trim()
+                id: 'ikigai',
+                label: 'Ikigai completo',
+                hint: `${ikigaiBaseCount}/4 bases, ${ikigaiIntersectionsCount}/4 intersecoes e sintese`,
+                required: false,
+                done: hasCompleteIkigai
             },
             {
                 id: 'legacy',
                 label: 'Legado',
                 hint: `${legacyCount}/3 frentes preenchidas`,
-                done: legacyCount === 3
+                required: false,
+                done: hasCompleteLegacy
             },
             {
                 id: 'vision',
                 label: 'Visao de vida',
                 hint: `${visionCount}/4 blocos preenchidos`,
-                done: visionCount === 4
+                required: false,
+                done: hasCompleteVision
             },
             {
                 id: 'odyssey',
                 label: 'Odyssey plans',
-                hint: `${odysseyCount}/3 cenarios descritos`,
-                done: odysseyCount === 3
+                hint: odysseyCount > 0 ? `${odysseyCount}/3 cenarios descritos` : 'Opcional: 1 a 3 futuros plausiveis',
+                required: false,
+                done: hasCompleteOdyssey
             }
         ];
         const doneCount = items.filter((item) => item.done).length;
+        const requiredItems = items.filter((item) => item.required);
+        const requiredDone = requiredItems.filter((item) => item.done).length;
+        const optionalItems = items.filter((item) => !item.required);
+        const optionalDone = optionalItems.filter((item) => item.done).length;
         return {
             items,
             doneCount,
             total: items.length,
-            pct: Math.round((doneCount / items.length) * 100)
+            pct: Math.round((doneCount / items.length) * 100),
+            requiredDone,
+            requiredTotal: requiredItems.length,
+            requiredPct: Math.round((requiredDone / requiredItems.length) * 100),
+            optionalDone,
+            optionalTotal: optionalItems.length,
+            minimumReady: requiredDone === requiredItems.length
         };
     },
     });

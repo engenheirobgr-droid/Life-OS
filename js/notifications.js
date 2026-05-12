@@ -397,14 +397,49 @@ buildOpenNudges: function() {
                 body: 'Sua aba Propósito ainda está com textos de exemplo. Vale personalizar Visão, Legado e Ikigai.',
                 tag: 'lifeos-purpose-mockup-open'
             });
-        } else if (cadence('purpose').state === 'overdue') {
-            nudges.push({
-                id: 'purpose-cadence-open',
-                priority: 84,
-                title: 'Life OS — Visão, Legado & Ikigai',
-                body: 'Seu norte existencial está pedindo revisão. Releia e ajuste quem você quer ser e deixar no mundo.',
-                tag: 'lifeos-purpose-cadence-open'
+        } else {
+            const purposeTools = [
+                {
+                    key: 'ikigai',
+                    id: 'ikigai-cadence-open',
+                    title: 'Life OS — Ikigai',
+                    body: 'Seu Ikigai está pedindo revisão. Releia amor, talento, necessidade, sustento e síntese.',
+                    tag: 'lifeos-ikigai-cadence-open'
+                },
+                {
+                    key: 'legacy',
+                    id: 'legacy-cadence-open',
+                    title: 'Life OS — Legado',
+                    body: 'Seu legado está pedindo revisão. Releia o impacto desejado em família, profissão e mundo.',
+                    tag: 'lifeos-legacy-cadence-open'
+                },
+                {
+                    key: 'vision',
+                    id: 'vision-cadence-open',
+                    title: 'Life OS — Visão de Vida',
+                    body: 'Sua Visão de Vida está pedindo revisão. Ajuste a vida concreta que você escolhe construir.',
+                    tag: 'lifeos-vision-cadence-open'
+                }
+            ];
+            const hasToolContent = {
+                ikigai: this.hasCompleteIkigaiContent?.(),
+                legacy: this.hasCompleteLegacyContent?.(),
+                vision: this.hasCompleteVisionContent?.()
+            };
+            const duePurposeTool = purposeTools.find((tool) => {
+                const status = cadence(tool.key);
+                const hasCadence = !!window.sistemaVidaState.profile?.cadence?.[tool.key]?.lastAt;
+                return status.state === 'overdue' && (hasCadence || hasToolContent[tool.key]);
             });
+            if (duePurposeTool) {
+                nudges.push({
+                    id: duePurposeTool.id,
+                    priority: 84,
+                    title: duePurposeTool.title,
+                    body: duePurposeTool.body,
+                    tag: duePurposeTool.tag
+                });
+            }
         }
 
         if (cadence('lifeGoals').state === 'overdue') {
