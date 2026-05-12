@@ -1170,6 +1170,29 @@ exportToExcel: function() {
 
         const wb = XLSX.utils.book_new();
         const state = window.sistemaVidaState;
+        const now = new Date();
+        const exportedAt = now.toISOString();
+
+        // 0. Aba: Resumo
+        const summaryData = [
+            ["Campo", "Valor"],
+            ["Exportado em", exportedAt],
+            ["Versao do app", String(window.app?.appBuildVersion || "")],
+            ["Perfil", String(state.profile?.name || "Sem nome")],
+            ["Metas", Number((state.entities?.metas || []).length)],
+            ["OKRs", Number((state.entities?.okrs || []).length)],
+            ["Macros", Number((state.entities?.macros || []).length)],
+            ["Micros", Number((state.entities?.micros || []).length)],
+            ["Habitos", Number((state.habits || []).length)],
+            ["Registros diarios", Number(Object.keys(state.dailyLogs || {}).length)],
+            ["Revisoes", Number(Object.keys(state.reviews || {}).length)],
+            ["Sessoes de foco", Number((state.deepWork?.sessions || []).length)],
+            ["Planos semanais", Number(Object.keys(state.weekPlans || {}).length)],
+            ["Notas", Number((state.profile?.notes || []).length)]
+        ];
+        const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+        wsSummary['!cols'] = [{ wch: 26 }, { wch: 64 }];
+        XLSX.utils.book_append_sheet(wb, wsSummary, "Resumo");
 
         // 1. Aba: Planos
         const planosCol = ["ID", "Tipo", "Dimensão", "Título", "Contexto_Indicador", "Prazo", "Progresso", "ID_Pai", "Critério_Sucesso", "Desafio", "Comprometimento", "Key_Results", "Notas"];
@@ -1351,8 +1374,67 @@ exportToExcel: function() {
         wsRevisoes['!cols'] = [{wch:12}, {wch:40}, {wch:40}, {wch:40}, {wch:40}, {wch:40}];
         XLSX.utils.book_append_sheet(wb, wsRevisoes, "Revisões");
 
-        XLSX.writeFile(wb, "SISTEMA_VIDA_PADRAO_OURO.xlsx");
-        console.log("Exportação Excel Padrão Ouro concluída.");
+        // 6. Aba: Planos Semanais
+        const weeklyCol = ["Semana", "Intencao", "Micros_Selecionadas", "Feito_Em", "Origem"];
+        const weeklyData = [weeklyCol];
+        Object.entries(state.weekPlans || {}).sort().forEach(([weekKey, plan]) => {
+            const selected = Array.isArray(plan?.selectedMicros) ? plan.selectedMicros : [];
+            weeklyData.push([
+                weekKey,
+                String(plan?.intention || plan?.focus || ""),
+                selected.join(", "),
+                String(plan?.updatedAt || plan?.createdAt || ""),
+                String(plan?.origin || "")
+            ]);
+        });
+        const wsWeekly = XLSX.utils.aoa_to_sheet(weeklyData);
+        wsWeekly['!cols'] = [{ wch: 14 }, { wch: 40 }, { wch: 48 }, { wch: 24 }, { wch: 16 }];
+        XLSX.utils.book_append_sheet(wb, wsWeekly, "Planos_Semanais");
+
+        // 7. Aba: Foco Profundo
+        const focusCol = ["Inicio", "Fim", "Minutos_Foco", "Minutos_Pausa", "Micro_ID", "Intencao", "Concluida"];
+        const focusData = [focusCol];
+        (state.deepWork?.sessions || []).forEach((session) => {
+            const focusMin = Math.max(0, Math.round((Number(session?.focusSec) || 0) / 60));
+            const breakMin = Math.max(0, Math.round((Number(session?.breakSec) || 0) / 60));
+            focusData.push([
+                String(session?.startedAt || ""),
+                String(session?.endedAt || ""),
+                focusMin,
+                breakMin,
+                String(session?.microId || ""),
+                String(session?.intention || ""),
+                session?.completed ? "sim" : "nao"
+            ]);
+        });
+        const wsFocus = XLSX.utils.aoa_to_sheet(focusData);
+        wsFocus['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 20 }, { wch: 40 }, { wch: 10 }];
+        XLSX.utils.book_append_sheet(wb, wsFocus, "Foco_Profundo");
+
+        // 8. Aba: Notas
+        const notesCol = ["ID", "Titulo", "Conteudo", "Criada_Em", "Atualizada_Em", "Vinculos"];
+        const notesData = [notesCol];
+        (state.profile?.notes || []).forEach((note) => {
+            const links = Array.isArray(note?.links)
+                ? note.links
+                    .map((item) => `${item?.entityType || "?"}:${item?.entityId || "?"}`)
+                    .join(", ")
+                : "";
+            notesData.push([
+                String(note?.id || ""),
+                String(note?.title || ""),
+                String(note?.content || ""),
+                String(note?.createdAt || ""),
+                String(note?.updatedAt || ""),
+                links
+            ]);
+        });
+        const wsNotes = XLSX.utils.aoa_to_sheet(notesData);
+        wsNotes['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 70 }, { wch: 24 }, { wch: 24 }, { wch: 44 }];
+        XLSX.utils.book_append_sheet(wb, wsNotes, "Notas");
+
+        XLSX.writeFile(wb, "SISTEMA_VIDA_PADRAO_OURO.xls", { bookType: "biff8" });
+        console.log("Exportação Excel (.xls) concluída.");
     },
     });
 }
