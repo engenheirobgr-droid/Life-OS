@@ -118,7 +118,7 @@ hasCompleteOdysseyContent: function() {
     },
 
 hasMinimumPurposeContent: function() {
-        return !!(this.getPurposeJourneyState?.().minimumReady);
+        return this.hasPurposeContent();
     },
 
 getCadenceFrequencyLabel: function(expectedDays) {
