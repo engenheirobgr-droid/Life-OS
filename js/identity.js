@@ -208,7 +208,10 @@ getIdentityLinkedHabits: function(type, id) {
 openHabitToday: async function(habitId) {
         if (!habitId) return;
         await this.switchView('hoje', { preserveScroll: true });
+        if (this.switchHojeScreen) this.switchHojeScreen('habitos');
         setTimeout(() => {
+            const habitsSection = document.getElementById('hoje-habits-section');
+            if (habitsSection) habitsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             const card = document.getElementById(`habit-card-${habitId}`);
             if (!card) {
                 this.showToast('Hábito ligado, mas ele não está visível no Hoje agora.', 'info');
