@@ -314,11 +314,21 @@ getOnboardingHabitSuggestions: function() {
     },
 
 normalizeDimensionKey: function(value) {
-        return String(value || '')
+        const txt = String(value || '')
             .toLowerCase()
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .trim();
+        const compact = txt.replace(/[^a-z]/g, '');
+        if (compact.includes('saud')) return 'Saúde';
+        if (compact.includes('mente') || compact.includes('mental')) return 'Mente';
+        if (compact.includes('carre') || compact.includes('profiss') || compact.includes('trabalh')) return 'Carreira';
+        if (compact.includes('finan')) return 'Finanças';
+        if (compact.includes('relac')) return 'Relacionamentos';
+        if (compact.includes('fam')) return 'Família';
+        if (compact.includes('lazer')) return 'Lazer';
+        if (compact.includes('propos') || compact.includes('contribu')) return 'Propósito';
+        return '';
     },
 
 renderOnboardingStarterSuggestions: function() {
