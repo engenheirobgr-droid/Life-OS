@@ -682,7 +682,7 @@
             font-variation-settings: 'FILL' 1;
         }
 
-        /* Anima��es do Onboarding */
+        /* Animações do Onboarding */
         .step-transition {
             transition: opacity 0.4s ease, transform 0.4s ease;
         }
@@ -733,18 +733,18 @@
 
     </style>
 
-    <!-- -----------------------------------------------
-         LIFE OS � THEME SYSTEM v2
-         3 temas: teal � amber � rose
-         Sem altera��es em app.js ou views.
-    ----------------------------------------------- -->
+    <!-- ═══════════════════════════════════════════════
+         LIFE OS — THEME SYSTEM v2
+         3 temas: teal · amber · rose
+         Sem alterações em app.js ou views.
+    ═══════════════════════════════════════════════ -->
     <style id="lo-theme-system">
 
-        /* ----------------------------------------------
-           TEMA: vari�veis por [data-theme]
-        ---------------------------------------------- */
+        /* ══════════════════════════════════════════════
+           TEMA: variáveis por [data-theme]
+        ══════════════════════════════════════════════ */
 
-        /* -- Teal (padr�o) ---------------------------- */
+        /* ── Teal (padrão) ──────────────────────────── */
         :root, [data-theme="teal"] {
             --lo-p:            #0d9488;
             --lo-p-dark:       #2dd4bf;
@@ -759,7 +759,7 @@
             --lo-dark-card2:   #162120;
         }
 
-        /* -- Amber vivo ------------------------------- */
+        /* ── Amber vivo ─────────────────────────────── */
         [data-theme="amber"] {
             --lo-p:            #f59e0b;
             --lo-p-dark:       #fcd34d;
@@ -774,7 +774,7 @@
             --lo-dark-card2:   #242111;
         }
 
-        /* -- Rose ------------------------------------- */
+        /* ── Rose ───────────────────────────────────── */
         [data-theme="rose"] {
             --lo-p:            #e11d48;
             --lo-p-dark:       #fb7185;
@@ -789,7 +789,7 @@
             --lo-dark-card2:   #251519;
         }
 
-        /* -- Tokens compartilhados -------------------- */
+        /* ── Tokens compartilhados ──────────────────── */
         :root {
             --lo-surface:          #ffffff;
             --lo-surface-mid:      #e8eaeb;
@@ -803,9 +803,9 @@
             --lo-dark-border:      rgba(255,255,255,0.07);
         }
 
-        /* ----------------------------------------------
+        /* ══════════════════════════════════════════════
            LIGHT MODE
-        ---------------------------------------------- */
+        ══════════════════════════════════════════════ */
 
         html:not(.dark) body {
             font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -894,7 +894,7 @@
             outline: none !important; background: var(--lo-surface) !important;
         }
 
-        /* Bot�es */
+        /* Botões */
         html:not(.dark) .bg-primary {
             background-color: var(--lo-p) !important;
             box-shadow: 0 2px 12px var(--lo-p-shadow) !important;
@@ -959,9 +959,9 @@
         html:not(.dark) ::-webkit-scrollbar-thumb { background: var(--lo-p-tint2); border-radius: 99px; }
         html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: var(--lo-p-border); }
 
-        /* ----------------------------------------------
+        /* ══════════════════════════════════════════════
            DARK MODE
-        ---------------------------------------------- */
+        ══════════════════════════════════════════════ */
 
         html.dark {
             color-scheme: dark;
@@ -1088,10 +1088,10 @@
         html.dark ::-webkit-scrollbar-track { background: transparent; }
         html.dark ::-webkit-scrollbar-thumb { background: var(--lo-p-tint2, rgba(13,148,136,0.15)); border-radius: 99px; }
 
-        /* ----------------------------------------------
+        /* ══════════════════════════════════════════════
            METRIC HIGHLIGHT SYSTEM
-           Aplicado via JS � classes lo-metric-*
-        ---------------------------------------------- */
+           Aplicado via JS — classes lo-metric-*
+        ══════════════════════════════════════════════ */
         .lo-metric-high   { color: #16a34a !important; font-weight: 800 !important; }
         .lo-metric-mid    { color: #d97706 !important; font-weight: 800 !important; }
         .lo-metric-low    { color: #dc2626 !important; font-weight: 800 !important; }
@@ -1099,9 +1099,9 @@
         html.dark .lo-metric-mid  { color: #fbbf24 !important; }
         html.dark .lo-metric-low  { color: #f87171 !important; }
 
-        /* ----------------------------------------------
+        /* ══════════════════════════════════════════════
            THEME SWITCHER
-        ---------------------------------------------- */
+        ══════════════════════════════════════════════ */
         #header-theme-switcher {
             position: fixed;
             right: 16px;
@@ -1152,7 +1152,7 @@
     </style>
 
     <script>
-    // -- Theme Switcher -----------------------------
+    // ── Theme Switcher ─────────────────────────────
     (function() {
         const THEMES = {
             teal:  { label: 'Teal',  color: '#0d9488' },
@@ -1217,7 +1217,7 @@
         });
     })();
 
-    // -- Metric Highlighter -------------------------
+    // ── Metric Highlighter ─────────────────────────
     (function() {
         function classify(val) {
             if (val >= 75) return 'lo-metric-high';
@@ -1274,13 +1274,13 @@
                 <!-- Sync status badge (mobile header) -->
                 <div class="lifeos-sync-badge flex items-center gap-0.5 text-outline text-[9px] font-bold">
                     <span class="material-symbols-outlined notranslate" style="font-size:11px">cloud_sync</span>
-                    <span>Conectando�</span>
+                    <span>Conectando…</span>
                 </div>
             </div>
         </div>
         <div class="flex items-center gap-2">
             <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-outline transition-colors"
-                onclick="app.openFlowModal()" title="Flow � Fluxo de trabalho">
+                onclick="app.openFlowModal()" title="Flow — Fluxo de trabalho">
                 <span class="material-symbols-outlined notranslate text-[20px]">account_tree</span>
             </button>
             <button class="relative w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-outline transition-colors"
@@ -1362,7 +1362,7 @@
                     class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
                     onclick="app.navigate('proposito')">
                     <span class="material-symbols-outlined notranslate">auto_awesome</span>
-                    Prop�sito
+                    Propósito
                 </button>
                 <button data-view="social"
                     class="nav-item-link w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-surface-container text-on-surface-variant font-medium"
@@ -1399,7 +1399,7 @@
                         <span id="profile-sidebar-icon" class="material-symbols-outlined notranslate text-[22px]">account_circle</span>
                     </span>
                     <div class="flex flex-col text-left min-w-0 flex-1">
-                        <span class="text-sm font-bold text-on-background w-full truncate" id="perfil-sidebar-name">Voc�/span>
+                        <span class="text-sm font-bold text-on-background w-full truncate" id="perfil-sidebar-name">Você/span>
                         <span class="text-[10px] text-outline uppercase tracking-wider">Ver Perfil</span>
                     </div>
                 </button>
@@ -1408,7 +1408,7 @@
             <div class="px-4 pb-4 shrink-0">
                 <div class="lifeos-sync-badge flex items-center gap-1 text-outline text-[10px] font-bold">
                     <span class="material-symbols-outlined notranslate text-sm">cloud_sync</span>
-                    <span>Conectando�</span>
+                    <span>Conectando…</span>
                 </div>
             </div>
         </aside>
@@ -1472,7 +1472,7 @@
             <div class="w-12 h-8 rounded-full flex items-center justify-center transition-colors">
                 <span class="material-symbols-outlined notranslate text-outline">auto_awesome</span>
             </div>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Prop�sito</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-outline">Propósito</span>
         </button>
         <button data-view="social" class="nav-item-link flex flex-col items-center gap-1 transition-all [&:not(.active)>span:last-child]:hidden"
             onclick="app.navigate('social')">
@@ -1500,7 +1500,7 @@
                 <div id="crud-blocking-message" class="hidden rounded-xl border border-error/30 bg-error/10 text-error px-4 py-3 text-sm font-medium leading-relaxed"></div>
                 <div class="flex flex-col gap-1.5">
                     <label for="crud-title"
-                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">T�tulo</label>
+                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Título</label>
                     <input type="text" id="crud-title"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
                         required>
@@ -1510,7 +1510,7 @@
                     <label class="flex items-start gap-3 p-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/50 cursor-pointer">
                         <input type="checkbox" id="habit-continuous" class="accent-primary mt-0.5 shrink-0" onchange="window.app.onHabitContinuousChange(this.checked)">
                         <div class="min-w-0">
-                            <span class="text-xs font-bold text-on-surface">H�bito cont�nuo (sem prazo)</span>
+                            <span class="text-xs font-bold text-on-surface">Hábito contínuo (sem prazo)</span>
                             <p class="text-[10px] text-outline mt-0.5">Para algo que faz parte da rotina ou identidade, sem data final.</p>
                         </div>
                     </label>
@@ -1525,26 +1525,26 @@
                             required onchange="window.app.onTypeChange(this.value)">
                             <option value="metas">Metas</option>
                             <option value="okrs">OKRs</option>
-                            <option value="macros">Macro A��es</option>
-                            <option value="micros">Micro A��es</option>
-                            <option value="habits">H�bito Recorrente</option>
+                            <option value="macros">Macro Ações</option>
+                            <option value="micros">Micro Ações</option>
+                            <option value="habits">Hábito Recorrente</option>
                         </select>
                     </div>
 
                     <div id="crud-dimension-group" class="flex flex-col gap-1.5">
                         <label for="crud-dimension"
-                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dimens�o</label>
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dimensão</label>
                         <select id="crud-dimension"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
                             required onchange="window.app.updateParentList(document.getElementById('crud-type').value); window.app.updatePurposePanel(this.value, document.getElementById('crud-type').value)">
-                            <option value="Sa�de">Sa�de</option>
+                            <option value="Saúde">Saúde</option>
                             <option value="Mente">Mente</option>
                             <option value="Carreira">Carreira</option>
-                            <option value="Finan�as">Finan�as</option>
+                            <option value="Finanças">Finanças</option>
                             <option value="Relacionamentos">Relacionamentos</option>
-                            <option value="Fam�lia">Fam�lia</option>
+                            <option value="Família">Família</option>
                             <option value="Lazer">Lazer</option>
-                            <option value="Prop�sito">Prop�sito</option>
+                            <option value="Propósito">Propósito</option>
                         </select>
                     </div>
                 </div>
@@ -1571,11 +1571,11 @@
 
                     <div id="prazo-agendamento-group" class="hidden flex flex-col gap-2">
                         <label class="text-xs font-bold uppercase tracking-widest text-outline">
-                            Janela de Execu��o
+                            Janela de Execução
                         </label>
                         <div class="flex flex-col sm:grid sm:grid-cols-2 gap-2">
                             <div class="flex flex-col gap-1.5">
-                                <label for="crud-inicio-date" class="text-xs text-outline font-bold uppercase tracking-widest">In�cio</label>
+                                <label for="crud-inicio-date" class="text-xs text-outline font-bold uppercase tracking-widest">Início</label>
                                 <input type="date" id="crud-inicio-date"
                                     onchange="window.app.applyDefaultDeadlineByType(document.getElementById('crud-type').value, true)"
                                     class="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface">
@@ -1598,31 +1598,31 @@
 
                 <div id="crud-effort-group" class="hidden flex-col gap-1.5">
                     <label for="crud-effort"
-                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Esfor�o</label>
+                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Esforço</label>
                     <select id="crud-effort"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
-                        <option value="leve">Leve � cabe em energia baixa</option>
-                        <option value="medio" selected>M�dio � exige presen�a normal</option>
-                        <option value="denso">Denso � exige foco alto</option>
+                        <option value="leve">Leve — cabe em energia baixa</option>
+                        <option value="medio" selected>Médio — exige presença normal</option>
+                        <option value="denso">Denso — exige foco alto</option>
                     </select>
-                    <p class="text-[10px] text-outline">Usado pela Pr�xima Melhor A��o para combinar tarefa e energia do dia.</p>
+                    <p class="text-[10px] text-outline">Usado pela Próxima Melhor Ação para combinar tarefa e energia do dia.</p>
                 </div>
 
-                <!-- Seletor de Prop�sito � apenas para Metas, usa resumos do perfil -->
+                <!-- Seletor de Propósito — apenas para Metas, usa resumos do perfil -->
                 <div id="crud-purpose-selector-group" class="hidden flex-col gap-2">
-                    <label class="text-xs font-bold uppercase tracking-widest text-outline">Vincular ao Prop�sito</label>
-                    <p class="text-[11px] text-outline -mt-1">Selecione o prop�sito do seu perfil que esta meta serve.</p>
+                    <label class="text-xs font-bold uppercase tracking-widest text-outline">Vincular ao Propósito</label>
+                    <p class="text-[11px] text-outline -mt-1">Selecione o propósito do seu perfil que esta meta serve.</p>
                     <div id="crud-purpose-options" class="flex flex-wrap gap-2"></div>
-                    <p id="crud-purpose-none" class="hidden text-xs text-outline italic">Nenhum resumo de prop�sito encontrado. Preencha Ikigai, Legado e Vis�o na aba Prop�sito.</p>
+                    <p id="crud-purpose-none" class="hidden text-xs text-outline italic">Nenhum resumo de propósito encontrado. Preencha Ikigai, Legado e Visão na aba Propósito.</p>
                 </div>
 
-                <!-- Painel de Prop�sito � mostra valores/ikigai/legado filtrados pela dimens�o -->
+                <!-- Painel de Propósito — mostra valores/ikigai/legado filtrados pela dimensão -->
                 <div id="crud-purpose-panel" class="hidden flex-col gap-2 rounded-xl bg-primary/5 border border-primary/15 p-3">
                     <button type="button" id="crud-purpose-toggle"
                         onclick="window.app.togglePurposePanel()"
                         class="flex items-center justify-between w-full text-left">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-primary/70">?? Seu Prop�sito nesta Dimens�o</span>
-                        <span id="crud-purpose-chevron" class="text-primary/50 text-xs transition-transform">?</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-primary/70">💡 Seu Propósito nesta Dimensão</span>
+                        <span id="crud-purpose-chevron" class="text-primary/50 text-xs transition-transform">▼</span>
                     </button>
                     <div id="crud-purpose-body" class="flex flex-col gap-2 text-xs text-on-surface/70">
                         <div id="crud-purpose-values" class="hidden flex-col gap-0.5">
@@ -1646,12 +1646,12 @@
                         Detalhe</label>
                     <input type="text" id="crud-context"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
-                        placeholder="Contexto, prop�sito ou observa��o" required>
+                        placeholder="Contexto, propósito ou observação" required>
                 </div>
 
                 <div id="crud-success-criteria-group" class="hidden flex-col gap-1.5">
                     <label for="crud-success-criteria"
-                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Crit�rio de Sucesso</label>
+                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Critério de Sucesso</label>
                     <input type="text" id="crud-success-criteria"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
                         placeholder="Como vamos saber que foi bem-sucedido?">
@@ -1662,22 +1662,22 @@
                         class="w-full flex items-center justify-between gap-3 p-3 text-left text-primary hover:bg-primary/5 transition-colors rounded-xl">
                         <span class="flex items-center gap-2">
                             <span class="material-symbols-outlined notranslate text-[18px]">psychology_alt</span>
-                            <span class="text-xs font-bold uppercase tracking-widest">Antecipar obst�culo</span>
+                            <span class="text-xs font-bold uppercase tracking-widest">Antecipar obstáculo</span>
                         </span>
                         <span id="crud-woop-chevron" class="material-symbols-outlined notranslate text-[18px] transition-transform">expand_more</span>
                     </button>
                     <div id="crud-woop-body" class="hidden p-3 pt-0 space-y-3">
                         <div class="flex flex-col gap-1.5">
-                            <label for="crud-obstacle" class="text-[10px] font-bold uppercase tracking-widest text-outline">Obst�culo previsto</label>
+                            <label for="crud-obstacle" class="text-[10px] font-bold uppercase tracking-widest text-outline">Obstáculo previsto</label>
                             <input type="text" id="crud-obstacle"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
                                 placeholder="O que provavelmente vai atrapalhar?">
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <label for="crud-ifthen" class="text-[10px] font-bold uppercase tracking-widest text-outline">Plano se-ent�o</label>
+                            <label for="crud-ifthen" class="text-[10px] font-bold uppercase tracking-widest text-outline">Plano se-então</label>
                             <input type="text" id="crud-ifthen"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface placeholder-outline-variant"
-                                placeholder="Se X acontecer, ent�o farei Y.">
+                                placeholder="Se X acontecer, então farei Y.">
                         </div>
                     </div>
                 </div>
@@ -1685,7 +1685,7 @@
                 <div id="crud-goal-rigor-group" class="hidden flex-col sm:grid sm:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1.5">
                         <label for="crud-challenge-level"
-                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">N�vel de Desafio (1-5)</label>
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Nível de Desafio (1-5)</label>
                         <select id="crud-challenge-level"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                             <option value="1">1 - Muito baixo</option>
@@ -1711,7 +1711,7 @@
 
                 <div id="crud-key-results-group" class="hidden flex-col gap-2">
                     <label class="text-xs font-label uppercase tracking-widest text-outline font-bold">Key Results</label>
-                    <!-- Cabe�alho das colunas -->
+                    <!-- Cabeçalho das colunas -->
                     <div id="kr-rows-header" class="hidden grid gap-2 px-1" style="grid-template-columns: 1fr 72px 72px 32px;">
                         <span class="text-[10px] font-label uppercase tracking-widest text-outline">Resultado</span>
                         <span class="text-[10px] font-label uppercase tracking-widest text-outline text-center">Atual</span>
@@ -1732,16 +1732,16 @@
                     <input type="text" id="crud-trigger"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
                         placeholder="Ex: Depois de escovar os dentes, eu farei...">
-                    <p class="text-[10px] text-outline mt-0.5">Ancore este novo h�bito a uma a��o que voc� j� faz todos os dias.</p>
+                    <p class="text-[10px] text-outline mt-0.5">Ancore este novo hábito a uma ação que você já faz todos os dias.</p>
                 </div>
 
                 <div id="crud-habit-identity" class="hidden flex-col gap-3">
                     <div class="flex flex-col gap-1.5">
                         <label for="habit-routine"
-                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Rotina do H�bito</label>
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Rotina do Hábito</label>
                         <input type="text" id="habit-routine"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface placeholder-outline-variant"
-                            placeholder="Ex: Ler 10 p�ginas ap�s o caf�">
+                            placeholder="Ex: Ler 10 páginas após o café">
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label for="habit-reward"
@@ -1755,7 +1755,7 @@
                             class="text-xs font-label uppercase tracking-widest text-outline font-bold">Passos da Rotina (Opcional)</label>
                         <textarea id="habit-steps" rows="3"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface placeholder-outline-variant resize-none"
-                            placeholder="Um passo por linha. Ex:&#10;1) Separar roupa&#10;2) Cal�ar t�nis&#10;3) Caminhar 20 minutos"></textarea>
+                            placeholder="Um passo por linha. Ex:&#10;1) Separar roupa&#10;2) Calçar tênis&#10;3) Caminhar 20 minutos"></textarea>
                     </div>
                     <div id="habit-steps-checklist-wrap" class="hidden"></div>
                     <div id="habit-steps-checklist" class="hidden"></div>
@@ -1766,8 +1766,8 @@
                     <label class="flex items-start gap-3 p-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/50 cursor-pointer">
                         <input type="checkbox" id="habit-key" class="accent-primary mt-0.5 shrink-0">
                         <div class="min-w-0">
-                            <span class="text-xs font-bold text-on-surface">H�bito-chave</span>
-                            <p class="text-[10px] text-outline mt-0.5">Marque quando este h�bito for alavanca central da sua evolu��o.</p>
+                            <span class="text-xs font-bold text-on-surface">Hábito-chave</span>
+                            <p class="text-[10px] text-outline mt-0.5">Marque quando este hábito for alavanca central da sua evolução.</p>
                         </div>
                     </label>
                     <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
@@ -1778,14 +1778,14 @@
                             <select id="habit-track-mode"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
                                 onchange="window.app.onHabitModeChange(this.value)">
-                                <option value="boolean">Check (Feito / N�o Feito)</option>
-                                <option value="numeric">Quantidade (N� de p�ginas, copos)</option>
+                                <option value="boolean">Check (Feito / Não Feito)</option>
+                                <option value="numeric">Quantidade (Nº de páginas, copos)</option>
                                 <option value="timer">Tempo (Minutos por dia)</option>
                             </select>
                         </div>
                         <div id="habit-target-container" class="flex-col gap-1.5" style="display: none;">
                             <label for="habit-target"
-                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Meta Di�ria
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Meta Diária
                                 (Alvo)</label>
                             <input type="number" id="habit-target"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
@@ -1796,12 +1796,12 @@
                     <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
                             <label for="habit-frequency"
-                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Frequ�ncia</label>
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Frequência</label>
                             <select id="habit-frequency"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
                                 onchange="window.app.onHabitFreqChange(this.value)">
                                 <option value="daily">Todos os dias</option>
-                                <option value="specific">Dias Espec�ficos</option>
+                                <option value="specific">Dias Específicos</option>
                             </select>
                         </div>
                         <div id="habit-days-container" class="flex-col gap-1.5" style="display: none;">
@@ -1811,19 +1811,19 @@
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm px-4 text-on-surface h-20">
                                 <option value="0">Domingo</option>
                                 <option value="1">Segunda</option>
-                                <option value="2">Ter�a</option>
+                                <option value="2">Terça</option>
                                 <option value="3">Quarta</option>
                                 <option value="4">Quinta</option>
                                 <option value="5">Sexta</option>
-                                <option value="6">S�bado</option>
+                                <option value="6">Sábado</option>
                             </select>
-                            <p class="text-[10px] text-outline">Segure Ctrl (ou Cmd) para selecionar v�rios.</p>
+                            <p class="text-[10px] text-outline">Segure Ctrl (ou Cmd) para selecionar vários.</p>
                         </div>
                     </div>
                     <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
                         <div id="habit-single-time-wrap" class="flex flex-col gap-1.5">
                             <label for="habit-start-time"
-                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Hor�rio �nico</label>
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Horário único</label>
                             <input type="time" id="habit-start-time"
                                 onchange="window.app.updateHabitReminderPreview()"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
@@ -1843,7 +1843,7 @@
                         <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Janela de lembretes</p>
                         <div id="habit-reminder-interval-fields" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="flex flex-col gap-1">
-                                <label for="habit-reminder-window-start" class="text-[10px] font-bold uppercase tracking-widest text-outline">In�cio</label>
+                                <label for="habit-reminder-window-start" class="text-[10px] font-bold uppercase tracking-widest text-outline">Início</label>
                                 <input type="time" id="habit-reminder-window-start" onchange="window.app.updateHabitReminderPreview()" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
                             </div>
                             <div class="flex flex-col gap-1">
@@ -1855,7 +1855,7 @@
                                 <input type="number" id="habit-reminder-interval-min" min="5" step="5" value="60" onchange="window.app.updateHabitReminderPreview()" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
                             </div>
                         </div>
-                        <p class="text-[10px] text-outline">Ex.: beber �gua entre 08:00 e 20:00 a cada 60 min.</p>
+                        <p class="text-[10px] text-outline">Ex.: beber água entre 08:00 e 20:00 a cada 60 min.</p>
                         <p id="habit-next-reminder-preview" class="text-[11px] text-primary font-semibold"></p>
                     </div>
 
@@ -1864,30 +1864,30 @@
                             class="text-xs font-label uppercase tracking-widest text-outline font-bold">Vincular a Meta (opcional)</label>
                         <select id="habit-linked-meta"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
-                            <option value="">� Sem v�nculo �</option>
+                            <option value="">— Sem vínculo —</option>
                         </select>
-                        <p class="text-[10px] text-outline">Conecta este h�bito a uma Meta estrat�gica para mostrar o impacto no Hoje.</p>
+                        <p class="text-[10px] text-outline">Conecta este hábito a uma Meta estratégica para mostrar o impacto no Hoje.</p>
                     </div>
 
                     <div class="flex flex-col gap-3 rounded-xl bg-primary/5 border border-primary/15 p-3">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Conectar � Identidade (opcional)</p>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Conectar à Identidade (opcional)</p>
                         <div id="habit-identity-empty-notice" class="hidden rounded-lg bg-surface-container-low border border-outline-variant/20 p-3 flex items-start gap-2">
                             <span class="material-symbols-outlined notranslate text-outline text-[18px] shrink-0 mt-0.5">info</span>
                             <div class="min-w-0">
-                                <p class="text-[11px] text-on-surface-variant leading-relaxed">Nenhuma for�a ou sombra cadastrada.</p>
+                                <p class="text-[11px] text-on-surface-variant leading-relaxed">Nenhuma força ou sombra cadastrada.</p>
                                 <button type="button" onclick="window.app.closeModal(); window.app.switchView('proposito')"
-                                    class="mt-1 text-[11px] font-bold text-primary hover:underline">Definir minha identidade ?</button>
+                                    class="mt-1 text-[11px] font-bold text-primary hover:underline">Definir minha identidade →</button>
                             </div>
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label for="habit-strength-source"
                                 class="text-xs font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1">
                                 <span class="material-symbols-outlined notranslate text-[13px] text-primary" style="font-variation-settings:'FILL' 1">workspace_premium</span>
-                                For�a praticada
+                                Força praticada
                             </label>
                             <select id="habit-strength-source"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
-                                <option value="">� Nenhuma �</option>
+                                <option value="">— Nenhuma —</option>
                             </select>
                         </div>
                         <div class="flex flex-col gap-1.5">
@@ -1899,19 +1899,19 @@
                             <select id="habit-shadow-source"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
                                 onchange="window.app.onHabitShadowSourceChange(this.value)">
-                                <option value="">� Nenhuma �</option>
+                                <option value="">— Nenhuma —</option>
                             </select>
                         </div>
                         <div id="habit-shadow-mode-wrap" class="hidden flex-col gap-1.5">
                             <label for="habit-shadow-mode"
-                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de transforma��o da sombra</label>
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de transformação da sombra</label>
                             <select id="habit-shadow-mode"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
-                                <option value="reduce">Reduzir padr�o</option>
+                                <option value="reduce">Reduzir padrão</option>
                                 <option value="replace">Substituir por resposta melhor</option>
                             </select>
                         </div>
-                        <p class="text-[10px] text-outline">Conecte a uma for�a, uma sombra, ou ambos.</p>
+                        <p class="text-[10px] text-outline">Conecte a uma força, uma sombra, ou ambos.</p>
                     </div>
                 </div>
             </form>
@@ -1960,7 +1960,7 @@
 
     <!-- FAB Context Menu -->
     <div id="fab-context-menu" class="hidden fixed inset-0 z-[96]">
-        <button type="button" aria-label="Fechar menu r�pido" onclick="window.app.closeFabMenu()"
+        <button type="button" aria-label="Fechar menu rápido" onclick="window.app.closeFabMenu()"
             class="absolute inset-0 bg-black/20 backdrop-blur-[1px]"></button>
         <div class="absolute bottom-28 right-6 w-72 bg-surface-container-lowest border border-outline-variant/20 rounded-2xl shadow-2xl p-3 space-y-2">
             <button type="button" onclick="window.app.openMetaTrailWizard()"
@@ -1975,8 +1975,8 @@
                 class="w-full text-left px-4 py-3 rounded-xl bg-surface-container-high border border-outline-variant/20 text-on-surface font-bold text-sm hover:bg-surface-container-highest transition-colors flex items-start gap-3">
                 <span class="material-symbols-outlined notranslate text-lg mt-0.5">bolt</span>
                 <span class="leading-tight">
-                    <span class="block">Captura r�pida</span>
-                    <span class="block text-[10px] font-medium text-outline mt-1">Registrar uma a��o avulsa sem entrar na trilha</span>
+                    <span class="block">Captura rápida</span>
+                    <span class="block text-[10px] font-medium text-outline mt-1">Registrar uma ação avulsa sem entrar na trilha</span>
                 </span>
             </button>
             <button type="button" onclick="window.app.openQuickNoteFromFab()"
@@ -1984,21 +1984,21 @@
                 <span class="material-symbols-outlined notranslate text-lg mt-0.5">sticky_note_2</span>
                 <span class="leading-tight">
                     <span class="block">Nova nota</span>
-                    <span class="block text-[10px] font-medium text-outline mt-1">Registrar contexto, links ou informa��es de qualquer tarefa</span>
+                    <span class="block text-[10px] font-medium text-outline mt-1">Registrar contexto, links ou informações de qualquer tarefa</span>
                 </span>
             </button>
             <button type="button" onclick="window.app.closeFabMenu(); window.app.navigate('hoje'); setTimeout(function(){ window.app.openHabitSuggestionsModal(); }, 150);"
                 class="w-full text-left px-4 py-3 rounded-xl bg-surface-container-high border border-outline-variant/20 text-on-surface font-bold text-sm hover:bg-surface-container-highest transition-colors flex items-start gap-3">
                 <span class="material-symbols-outlined notranslate text-lg mt-0.5">repeat</span>
                 <span class="leading-tight">
-                    <span class="block">Novo h�bito</span>
-                    <span class="block text-[10px] font-medium text-outline mt-1">Criar um h�bito ancora ou de apoio para sua meta</span>
+                    <span class="block">Novo hábito</span>
+                    <span class="block text-[10px] font-medium text-outline mt-1">Criar um hábito ancora ou de apoio para sua meta</span>
                 </span>
             </button>
         </div>
     </div>
 
-    <!-- Modal: Nova Nota R�pida -->
+    <!-- Modal: Nova Nota Rápida -->
     <div id="quick-note-modal" class="hidden fixed inset-0 z-[108] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
         <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[92vh]">
             <div class="p-5 border-b border-outline-variant/20 flex items-center justify-between gap-4 shrink-0">
@@ -2014,24 +2014,24 @@
             <div class="p-5 space-y-3 overflow-y-auto flex-1">
                 <input id="quick-note-title" type="text" maxlength="120"
                     class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
-                    placeholder="T�tulo (opcional)">
+                    placeholder="Título (opcional)">
                 <textarea id="quick-note-body" rows="4"
                     class="w-full rounded-lg border-none bg-surface-container-low p-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none resize-none"
-                    placeholder="Conte�do da nota..."></textarea>
+                    placeholder="Conteúdo da nota..."></textarea>
                 <input id="quick-note-url" type="url"
                     class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
                     placeholder="URL (opcional)">
                 <input id="quick-note-tags" type="text"
                     class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
-                    placeholder="Tags separadas por v�rgula (opcional)">
+                    placeholder="Tags separadas por vírgula (opcional)">
                 <select id="quick-note-linked"
                     class="w-full h-11 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none">
-                    <option value="">Sem v�nculo (nota avulsa)</option>
+                    <option value="">Sem vínculo (nota avulsa)</option>
                 </select>
                 <input type="hidden" id="quick-note-edit-id">
                 <p class="text-[10px] text-outline leading-relaxed flex items-center gap-1.5">
                     <span class="material-symbols-outlined notranslate text-[13px]">info</span>
-                    Notas ficam salvas em <button type="button" onclick="window.app.closeQuickNoteModal(); window.app.switchView('perfil')" class="underline hover:text-primary transition-colors">Perfil ? Notas</button>, onde voc� pode buscar, editar e vincular.
+                    Notas ficam salvas em <button type="button" onclick="window.app.closeQuickNoteModal(); window.app.switchView('perfil')" class="underline hover:text-primary transition-colors">Perfil → Notas</button>, onde você pode buscar, editar e vincular.
                 </p>
             </div>
             <div class="p-5 border-t border-outline-variant/20 flex gap-3 shrink-0">
@@ -2074,7 +2074,7 @@
 
             <div class="p-6 overflow-y-auto no-scrollbar flex-1 space-y-6">
                 <section id="meta-trail-step-1" class="meta-trail-step space-y-4">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 1 � Inten��o</h4>
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 1 — Intenção</h4>
                     <div class="rounded-xl border border-outline-variant/20 bg-surface-container-low p-3 space-y-2">
                         <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Trilha exemplo</p>
                         <div class="flex flex-col sm:flex-row gap-2">
@@ -2092,21 +2092,21 @@
                             <label for="trail-meta-title" class="text-xs uppercase tracking-widest font-bold text-outline">Nome da Meta</label>
                             <input id="trail-meta-title" type="text"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
-                                placeholder="Ex.: Dobrar minha produ��o t�cnica com consist�ncia">
+                                placeholder="Ex.: Dobrar minha produção técnica com consistência">
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <label for="trail-meta-dimension" class="text-xs uppercase tracking-widest font-bold text-outline">Dimens�o</label>
+                            <label for="trail-meta-dimension" class="text-xs uppercase tracking-widest font-bold text-outline">Dimensão</label>
                             <select id="trail-meta-dimension" onchange="window.app.updateTrailPurposePanel(); window.app.refreshTrailSummary()"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                                 <option value="">Selecione...</option>
-                                <option value="Sa�de">Sa�de</option>
+                                <option value="Saúde">Saúde</option>
                                 <option value="Mente">Mente</option>
                                 <option value="Carreira">Carreira</option>
-                                <option value="Finan�as">Finan�as</option>
+                                <option value="Finanças">Finanças</option>
                                 <option value="Relacionamentos">Relacionamentos</option>
-                                <option value="Fam�lia">Fam�lia</option>
+                                <option value="Família">Família</option>
                                 <option value="Lazer">Lazer</option>
-                                <option value="Prop�sito">Prop�sito</option>
+                                <option value="Propósito">Propósito</option>
                             </select>
                         </div>
                         <div class="flex flex-col gap-1.5">
@@ -2124,13 +2124,13 @@
                             </select>
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <label for="trail-meta-success" class="text-xs uppercase tracking-widest font-bold text-outline">Crit�rio de Sucesso</label>
+                            <label for="trail-meta-success" class="text-xs uppercase tracking-widest font-bold text-outline">Critério de Sucesso</label>
                             <input id="trail-meta-success" type="text"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
-                                placeholder="Como saberemos que essa meta foi alcan�ada?">
+                                placeholder="Como saberemos que essa meta foi alcançada?">
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <label for="trail-meta-challenge" class="text-xs uppercase tracking-widest font-bold text-outline">N�vel de Desafio (1-5)</label>
+                            <label for="trail-meta-challenge" class="text-xs uppercase tracking-widest font-bold text-outline">Nível de Desafio (1-5)</label>
                             <select id="trail-meta-challenge"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                                 <option value="1">1 - Muito baixo</option>
@@ -2153,13 +2153,13 @@
                         </div>
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <label for="trail-meta-why" class="text-xs uppercase tracking-widest font-bold text-outline">Por qu� (motiva��o)</label>
+                        <label for="trail-meta-why" class="text-xs uppercase tracking-widest font-bold text-outline">Por quê (motivação)</label>
                         <textarea id="trail-meta-why" rows="3"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"
-                            placeholder="Qual transforma��o essa meta gera na sua vida?"></textarea>
+                            placeholder="Qual transformação essa meta gera na sua vida?"></textarea>
                     </div>
                     <div id="trail-purpose-panel" class="hidden rounded-xl bg-primary/5 border border-primary/15 p-3 space-y-2">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Refer�ncia de Prop�sito da Dimens�o</p>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Referência de Propósito da Dimensão</p>
                         <div id="trail-purpose-values" class="hidden">
                             <p class="text-[10px] uppercase tracking-widest text-outline font-bold">Valores</p>
                             <p id="trail-purpose-values-text" class="text-xs text-on-surface/80 leading-relaxed"></p>
@@ -2177,43 +2177,43 @@
 
                 <section id="meta-trail-step-2" class="meta-trail-step hidden space-y-4">
                     <div class="flex items-center justify-between gap-3">
-                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 2 � Resultados (OKRs)</h4>
+                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 2 — Resultados (OKRs)</h4>
                         <button type="button" onclick="window.app.addTrailOkrRow()"
                             class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors">
                             + Adicionar OKR
                         </button>
                     </div>
-                    <p class="text-xs text-outline">Defina de 1 a 3 OKRs com m�trica e prazo (in�cio opcional) em janela m�xima de 92 dias.</p>
+                    <p class="text-xs text-outline">Defina de 1 a 3 OKRs com métrica e prazo (início opcional) em janela máxima de 92 dias.</p>
                     <div id="trail-okrs-list" class="space-y-3"></div>
                 </section>
 
                 <section id="meta-trail-step-3" class="meta-trail-step hidden space-y-4">
                     <div class="flex items-center justify-between gap-3">
-                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 3 � Projetos (Macros)</h4>
+                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 3 — Projetos (Macros)</h4>
                         <button type="button" onclick="window.app.addTrailMacroRow()"
                             class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors">
                             + Adicionar Macro
                         </button>
                     </div>
-                    <p class="text-xs text-outline">Liste de 2 a 5 iniciativas, vincule ao OKR e defina in�cio/prazo (m�x. 31 dias).</p>
+                    <p class="text-xs text-outline">Liste de 2 a 5 iniciativas, vincule ao OKR e defina início/prazo (máx. 31 dias).</p>
                     <div id="trail-macros-list" class="space-y-3"></div>
                 </section>
 
                 <section id="meta-trail-step-4" class="meta-trail-step hidden space-y-4">
                     <div class="flex items-center justify-between gap-3">
-                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 4 � Primeiros passos (Micros)</h4>
+                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 4 — Primeiros passos (Micros)</h4>
                         <button type="button" onclick="window.app.addTrailMicroRow()"
                             class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors">
                             + Adicionar Micro
                         </button>
                     </div>
-                    <p class="text-xs text-outline">Defina a��es concretas para as pr�ximas 2 semanas, j� linkadas �s Macros (m�x. 7 dias por micro).</p>
+                    <p class="text-xs text-outline">Defina ações concretas para as próximas 2 semanas, já linkadas às Macros (máx. 7 dias por micro).</p>
                     <div id="trail-micros-list" class="space-y-3"></div>
                 </section>
 
                 <section id="meta-trail-step-5" class="meta-trail-step hidden space-y-4">
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 5 � Confirma��o</h4>
-                    <p class="text-xs text-outline">Revise o que ser� criado antes de iniciar a semana.</p>
+                    <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 5 — Confirmação</h4>
+                    <p class="text-xs text-outline">Revise o que será criado antes de iniciar a semana.</p>
                     <div id="trail-summary" class="space-y-3"></div>
                 </section>
             </div>
@@ -2230,11 +2230,11 @@
                     </button>
                     <button type="button" id="trail-next-btn" onclick="window.app.metaTrailNextStep()"
                         class="px-5 py-2.5 rounded-lg bg-primary text-on-primary text-sm font-bold shadow-md hover:shadow-lg active:scale-95 transition-all">
-                        Pr�ximo
+                        Próximo
                     </button>
                     <button type="button" id="trail-finish-btn" onclick="window.app.finishMetaTrailWizard()"
                         class="hidden px-5 py-2.5 rounded-lg bg-primary text-on-primary text-sm font-bold shadow-md hover:shadow-lg active:scale-95 transition-all">
-                        Come�ar a semana
+                        Começar a semana
                     </button>
                 </div>
             </div>
@@ -2254,14 +2254,14 @@
                     <textarea id="text-edit-input" rows="5"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
                 </div>
-                <!-- Campo resumo � vis�vel apenas quando o campo tem resumo associado -->
+                <!-- Campo resumo — visível apenas quando o campo tem resumo associado -->
                 <div id="text-edit-resumo-group" class="hidden flex-col gap-1.5">
                     <label class="text-xs font-bold uppercase tracking-widest text-outline">
                         Resumo para trilha <span class="text-primary">*</span>
                     </label>
                     <textarea id="text-edit-resumo" rows="2" maxlength="80"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"
-                        placeholder="Vers�o curta (m�x. 80 caracteres) � aparece nos cards e na trilha"
+                        placeholder="Versão curta (máx. 80 caracteres) — aparece nos cards e na trilha"
                         oninput="document.getElementById('text-edit-resumo-count').textContent = this.value.length"></textarea>
                     <p class="text-[10px] text-outline text-right"><span id="text-edit-resumo-count">0</span>/80</p>
                 </div>
@@ -2285,7 +2285,7 @@
         class="hidden fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-outline-variant/20 flex flex-col">
-                <h3 class="font-headline text-xl font-bold text-on-background">Revis�o Semanal</h3>
+                <h3 class="font-headline text-xl font-bold text-on-background">Revisão Semanal</h3>
                 <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Fechamento de Ciclo</p>
             </div>
 
@@ -2320,8 +2320,8 @@
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    <label for="rev-q5" class="text-xs uppercase text-primary font-bold tracking-wider">Inten��o da
-                        pr�xima semana</label>
+                    <label for="rev-q5" class="text-xs uppercase text-primary font-bold tracking-wider">Intenção da
+                        próxima semana</label>
                     <textarea id="rev-q5" rows="2"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"></textarea>
                 </div>
@@ -2329,24 +2329,24 @@
                 <div class="rounded-2xl border border-primary/15 bg-primary/5 p-4 space-y-4">
                     <div>
                         <p class="text-xs uppercase text-primary font-bold tracking-wider">Autoconhecimento aplicado</p>
-                        <p id="review-identity-suggestion" class="text-[11px] text-outline mt-1 leading-relaxed">Opcional: conecte a semana �s suas for�as e sombras.</p>
+                        <p id="review-identity-suggestion" class="text-[11px] text-outline mt-1 leading-relaxed">Opcional: conecte a semana às suas forças e sombras.</p>
                     </div>
                     <div id="review-identity-cta" class="hidden rounded-xl bg-surface-container-low border border-primary/10 p-3 flex items-start gap-3">
                         <span class="material-symbols-outlined notranslate text-primary text-[20px] shrink-0 mt-0.5">person_pin</span>
                         <div class="min-w-0">
-                            <p class="text-xs font-bold text-on-surface">Identidade n�o definida</p>
-                            <p class="text-[11px] text-outline mt-0.5 leading-relaxed">Definir for�as e sombras torna esta revis�o muito mais poderosa.</p>
+                            <p class="text-xs font-bold text-on-surface">Identidade não definida</p>
+                            <p class="text-[11px] text-outline mt-0.5 leading-relaxed">Definir forças e sombras torna esta revisão muito mais poderosa.</p>
                             <button type="button" onclick="window.app.closeReviewModal(); window.app.switchView('proposito')"
-                                class="mt-2 text-[11px] font-bold text-primary hover:underline">Configurar identidade ?</button>
+                                class="mt-2 text-[11px] font-bold text-primary hover:underline">Configurar identidade →</button>
                         </div>
                     </div>
                     <div id="review-identity-selects" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
-                            <label for="rev-strength" class="text-[10px] uppercase tracking-widest text-outline font-bold">For�a usada</label>
+                            <label for="rev-strength" class="text-[10px] uppercase tracking-widest text-outline font-bold">Força usada</label>
                             <select id="rev-strength"
                                 onchange="window.app.showIdentityReviewContext('strengths', this.value)"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface">
-                                <option value="">� Opcional �</option>
+                                <option value="">— Opcional —</option>
                             </select>
                         </div>
                         <div class="flex flex-col gap-1.5">
@@ -2354,23 +2354,23 @@
                             <select id="rev-shadow"
                                 onchange="window.app.showIdentityReviewContext('shadows', this.value)"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface">
-                                <option value="">� Opcional �</option>
+                                <option value="">— Opcional —</option>
                             </select>
                         </div>
                     </div>
-                    <!-- Contexto rico da for�a/sombra selecionada -->
+                    <!-- Contexto rico da força/sombra selecionada -->
                     <div id="review-identity-context" class="hidden mt-1 px-4 py-3 rounded-xl bg-surface-container border border-outline-variant/15 text-[11px]"></div>
                     <div class="flex flex-col gap-2">
                         <label for="rev-response" class="text-[10px] uppercase tracking-widest text-outline font-bold">Resposta melhor praticada</label>
                         <textarea id="rev-response" rows="2"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none"
-                            placeholder="Qual resposta mais madura voc� praticou ou quer praticar?"></textarea>
+                            placeholder="Qual resposta mais madura você praticou ou quer praticar?"></textarea>
                     </div>
                     <div class="flex flex-col gap-2">
-                        <label for="rev-habit-adjust" class="text-[10px] uppercase tracking-widest text-outline font-bold">H�bito a ajustar</label>
+                        <label for="rev-habit-adjust" class="text-[10px] uppercase tracking-widest text-outline font-bold">Hábito a ajustar</label>
                         <textarea id="rev-habit-adjust" rows="2"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none"
-                            placeholder="Qual h�bito precisa mudar de dose, gatilho ou rotina?"></textarea>
+                            placeholder="Qual hábito precisa mudar de dose, gatilho ou rotina?"></textarea>
                     </div>
                 </div>
             </form>
@@ -2383,7 +2383,7 @@
                 </button>
                 <button type="button" id="btn-save-review" onclick="window.app.saveReview()"
                     class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">
-                    Salvar Revis�o
+                    Salvar Revisão
                 </button>
             </div>
         </div>
@@ -2411,33 +2411,33 @@
                     <span class="material-symbols-outlined notranslate text-amber-500 text-[18px] shrink-0 mt-0.5">warning</span>
                     <div>
                         <p class="text-xs font-bold text-amber-700 dark:text-amber-400">Semana atual sem plano</p>
-                        <p class="text-[11px] text-on-surface-variant mt-0.5 leading-relaxed">Voc� ainda n�o planejou a semana em curso. Considere planejar a semana atual antes para manter a continuidade.</p>
+                        <p class="text-[11px] text-on-surface-variant mt-0.5 leading-relaxed">Você ainda não planejou a semana em curso. Considere planejar a semana atual antes para manter a continuidade.</p>
                         <button type="button" onclick="window.app.closeWeeklyPlanModal(); setTimeout(()=> window.app.openWeeklyPlanModal(), 50)"
                             class="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 hover:underline">Planejar semana atual</button>
                     </div>
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    <label for="wp-intention" class="text-xs uppercase text-primary font-bold tracking-wider">Inten��o da Semana</label>
+                    <label for="wp-intention" class="text-xs uppercase text-primary font-bold tracking-wider">Intenção da Semana</label>
                     <textarea id="wp-intention" rows="2"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-4 text-on-surface resize-none"
-                        placeholder="Qual � o foco principal desta semana?"></textarea>
+                        placeholder="Qual é o foco principal desta semana?"></textarea>
                 </div>
 
                 <div class="flex flex-col gap-2">
                     <label class="text-xs uppercase text-primary font-bold tracking-wider">Micros da Semana</label>
                     <p class="text-[11px] text-outline -mt-1">Selecione os itens que planeja trabalhar esta semana.</p>
                     <div id="wp-micros-list" class="flex flex-col gap-2 max-h-52 overflow-y-auto no-scrollbar rounded-xl bg-surface-container p-3">
-                        <p class="text-xs text-outline italic">Nenhum micro ativo dispon�vel.</p>
+                        <p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>
                     </div>
                     <div id="wp-load-meter" class="flex items-center justify-between gap-3 rounded-lg bg-surface-container-low px-3 py-2 mt-1">
                         <div class="flex flex-col">
                             <span class="text-[10px] font-bold uppercase tracking-widest text-outline">Carga planejada</span>
-                            <span id="wp-load-hint" class="text-[10px] text-outline">�</span>
+                            <span id="wp-load-hint" class="text-[10px] text-outline">—</span>
                         </div>
                         <div class="flex items-baseline gap-2">
                             <span id="wp-load-count" class="text-lg font-bold text-primary">0</span>
-                            <span class="text-xs text-outline">/ <span id="wp-load-average">�</span> m�dia</span>
+                            <span class="text-xs text-outline">/ <span id="wp-load-average">—</span> média</span>
                         </div>
                     </div>
                     <!-- Criar micro inline -->
@@ -2454,16 +2454,16 @@
                                     class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20">
                                     <option value="">Selecione um macro...</option>
                                 </select>
-                                <p id="wp-new-micro-dimension" class="text-[10px] text-outline">Dimens�o herdada do macro selecionado.</p>
+                                <p id="wp-new-micro-dimension" class="text-[10px] text-outline">Dimensão herdada do macro selecionado.</p>
                             </div>
                             <div class="flex flex-col gap-1.5">
-                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">T�tulo *</label>
-                                <input type="text" id="wp-new-micro-title" placeholder="Descreva a a��o..."
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Título *</label>
+                                <input type="text" id="wp-new-micro-title" placeholder="Descreva a ação..."
                                     class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20" />
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div class="flex flex-col gap-1.5">
-                                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">In�cio</label>
+                                    <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Início</label>
                                     <input type="date" id="wp-new-micro-start"
                                         class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20" />
                                 </div>
@@ -2474,11 +2474,11 @@
                                 </div>
                             </div>
                             <div class="flex flex-col gap-1.5">
-                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Esfor�o</label>
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Esforço</label>
                                 <select id="wp-new-micro-effort" class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20">
-                                    <option value="rapido">? R�pido</option>
-                                    <option value="medio" selected>?? M�dio</option>
-                                    <option value="pesado">?? Pesado</option>
+                                    <option value="rapido">⚡ Rápido</option>
+                                    <option value="medio" selected>💪 Médio</option>
+                                    <option value="pesado">🔥 Pesado</option>
                                 </select>
                             </div>
                             <div class="flex items-center gap-2 pt-1">
@@ -2496,14 +2496,14 @@
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    <label for="wp-energy" class="text-xs uppercase text-primary font-bold tracking-wider">Previs�o de Energia (1�5)</label>
+                    <label for="wp-energy" class="text-xs uppercase text-primary font-bold tracking-wider">Previsão de Energia (1–5)</label>
                     <select id="wp-energy"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
-                        <option value="1">1 � Semana leve</option>
-                        <option value="2">2 � Abaixo do normal</option>
-                        <option value="3" selected>3 � Normal</option>
-                        <option value="4">4 � Energia alta</option>
-                        <option value="5">5 � Semana de pico</option>
+                        <option value="1">1 — Semana leve</option>
+                        <option value="2">2 — Abaixo do normal</option>
+                        <option value="3" selected>3 — Normal</option>
+                        <option value="4">4 — Energia alta</option>
+                        <option value="5">5 — Semana de pico</option>
                     </select>
                 </div>
 
@@ -2522,7 +2522,7 @@
         </div>
     </div>
 
-    <!-- Modal Reavalia��o PERMA (Migrado) -->
+    <!-- Modal Reavaliação PERMA (Migrado) -->
     <div id="perma-modal"
         class="fixed inset-0 bg-black/60 z-[130] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div
@@ -2538,7 +2538,7 @@
             <div class="space-y-5">
                 <div class="space-y-1">
                     <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
-                            for="p-slider">P - Emo��o Positiva (0-10)</label><span id="val-p" class="text-primary">8.5</span>
+                            for="p-slider">P - Emoção Positiva (0-10)</label><span id="val-p" class="text-primary">8.5</span>
                     </div>
                     <input type="range" id="p-slider" min="0" max="10" step="0.1" value="8.5" class="w-full accent-primary"
                         oninput="document.getElementById('val-p').textContent = this.value"
@@ -2568,7 +2568,7 @@
                 </div>
                 <div class="space-y-1">
                     <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
-                            for="a-slider">A - Realiza��o (0-10)</label><span id="val-a" class="text-primary">7.5</span></div>
+                            for="a-slider">A - Realização (0-10)</label><span id="val-a" class="text-primary">7.5</span></div>
                     <input type="range" id="a-slider" min="0" max="10" step="0.1" value="7.5" class="w-full accent-primary"
                         oninput="document.getElementById('val-a').textContent = this.value"
                         style="touch-action: pan-y; overscroll-behavior: contain;">
@@ -2577,7 +2577,7 @@
 
             <button onclick="window.app.savePerma()"
                 class="w-full mt-8 bg-primary text-on-primary py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-transform active:scale-95">
-                Salvar Avalia��o
+                Salvar Avaliação
             </button>
         </div>
     </div>
@@ -2588,7 +2588,7 @@
         <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-2xl w-full p-6 md:p-8 shadow-xl max-h-[90vh] overflow-y-auto no-scrollbar">
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h3 class="font-headline text-2xl italic font-bold">Avalia��o SWLS</h3>
+                    <h3 class="font-headline text-2xl italic font-bold">Avaliação SWLS</h3>
                     <p class="text-xs text-outline mt-1 uppercase tracking-widest font-bold">Escala de 1 (discordo) a 7 (concordo)</p>
                 </div>
                 <button onclick="window.app.closeSwlsModal()"
@@ -2599,13 +2599,13 @@
 
             <div class="space-y-4">
                 <div class="space-y-2">
-                    <label for="swls-q1" class="text-sm text-on-surface-variant">1. Em muitos aspectos, minha vida est� pr�xima do ideal.</label>
+                    <label for="swls-q1" class="text-sm text-on-surface-variant">1. Em muitos aspectos, minha vida está próxima do ideal.</label>
                     <input id="swls-q1" type="range" min="1" max="7" step="1" value="4" class="w-full accent-primary"
                         oninput="document.getElementById('swls-q1-val').textContent=this.value">
                     <p class="text-xs text-primary font-bold">Resposta: <span id="swls-q1-val">4</span></p>
                 </div>
                 <div class="space-y-2">
-                    <label for="swls-q2" class="text-sm text-on-surface-variant">2. As condi��es da minha vida s�o excelentes.</label>
+                    <label for="swls-q2" class="text-sm text-on-surface-variant">2. As condições da minha vida são excelentes.</label>
                     <input id="swls-q2" type="range" min="1" max="7" step="1" value="4" class="w-full accent-primary"
                         oninput="document.getElementById('swls-q2-val').textContent=this.value">
                     <p class="text-xs text-primary font-bold">Resposta: <span id="swls-q2-val">4</span></p>
@@ -2617,7 +2617,7 @@
                     <p class="text-xs text-primary font-bold">Resposta: <span id="swls-q3-val">4</span></p>
                 </div>
                 <div class="space-y-2">
-                    <label for="swls-q4" class="text-sm text-on-surface-variant">4. At� agora, consegui as coisas importantes que quero na vida.</label>
+                    <label for="swls-q4" class="text-sm text-on-surface-variant">4. Até agora, consegui as coisas importantes que quero na vida.</label>
                     <input id="swls-q4" type="range" min="1" max="7" step="1" value="4" class="w-full accent-primary"
                         oninput="document.getElementById('swls-q4-val').textContent=this.value">
                     <p class="text-xs text-primary font-bold">Resposta: <span id="swls-q4-val">4</span></p>
@@ -2663,13 +2663,13 @@
         </div>
     </div>
 
-    <!-- Modal Hist�rico do Di�rio -->
+    <!-- Modal Histórico do Diário -->
     <div id="history-log-modal"
         class="hidden fixed inset-0 z-[125] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-outline-variant/20 flex flex-col">
-                <h3 class="font-headline text-xl font-bold text-on-background">Di�rio de Bordo</h3>
-                <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Hist�rico de Reflex�es</p>
+                <h3 class="font-headline text-xl font-bold text-on-background">Diário de Bordo</h3>
+                <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Histórico de Reflexões</p>
             </div>
 
             <div id="history-log-list" class="p-6 flex flex-col gap-4 overflow-y-auto no-scrollbar flex-1">
@@ -2688,19 +2688,19 @@
     <div id="odyssey-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
         <div
             class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-lg w-full p-6 shadow-xl flex flex-col">
-            <h3 class="font-headline text-2xl italic mb-4">Editar Cen�rio Odyssey</h3>
+            <h3 class="font-headline text-2xl italic mb-4">Editar Cenário Odyssey</h3>
             <input type="hidden" id="odyssey-id">
             <div class="space-y-4 mb-6">
-                <div><label class="text-[10px] font-bold uppercase text-outline">T�tulo do Cen�rio</label><input
+                <div><label class="text-[10px] font-bold uppercase text-outline">Título do Cenário</label><input
                         type="text" id="odyssey-title"
                         class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm">
                 </div>
-                <div><label class="text-[10px] font-bold uppercase text-outline">Descri��o / Foco</label><textarea
+                <div><label class="text-[10px] font-bold uppercase text-outline">Descrição / Foco</label><textarea
                         id="odyssey-desc" rows="2"
                         class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm resize-none"></textarea>
                 </div>
                 <div class="flex gap-4">
-                    <div class="flex-1"><label class="text-[10px] font-bold uppercase text-outline">Confian�a
+                    <div class="flex-1"><label class="text-[10px] font-bold uppercase text-outline">Confiança
                             (1-5)</label><input type="number" id="odyssey-conf" min="1" max="5"
                             class="w-full p-3 bg-surface-container border border-outline-variant rounded-lg mt-1 text-sm">
                     </div>
@@ -2715,12 +2715,12 @@
                     class="px-5 py-2.5 text-sm font-bold text-outline rounded-lg">Cancelar</button>
                 <button type="button" onclick="window.app.saveOdyssey()"
                     class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md active:scale-95 transition-all">Salvar
-                    Cen�rio</button>
+                    Cenário</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Gerir Entidade (Review Pr�ximo N�vel) -->
+    <!-- Modal Gerir Entidade (Review Próximo Nível) -->
     <div id="review-entity-modal"
         class="fixed inset-0 bg-black/60 z-[150] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div
@@ -2732,14 +2732,14 @@
             </div>
 
             <div class="p-6 space-y-8 overflow-y-auto max-h-[70vh] no-scrollbar">
-                <!-- Promo��o -->
+                <!-- Promoção -->
                 <div id="promote-section" class="space-y-3">
                     <div class="flex items-center gap-2 text-primary">
                         <span class="material-symbols-outlined notranslate text-lg">upgrade</span>
-                        <h4 class="text-xs font-bold uppercase tracking-wider">Promover para N�vel Superior</h4>
+                        <h4 class="text-xs font-bold uppercase tracking-wider">Promover para Nível Superior</h4>
                     </div>
-                    <p class="text-xs text-outline leading-relaxed">Eleve esta inten��o para o pr�ximo patamar na sua
-                        hierarquia estrat�gica.</p>
+                    <p class="text-xs text-outline leading-relaxed">Eleve esta intenção para o próximo patamar na sua
+                        hierarquia estratégica.</p>
                     <button id="btn-promote-entity" onclick="window.app.promoteEntity()"
                         class="w-full py-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-sm font-bold border border-primary/20 transition-all flex items-center justify-center gap-2 group">
                         <span id="promote-label">Promover</span>
@@ -2748,14 +2748,14 @@
                     </button>
                 </div>
 
-                <!-- Reatribui��o (Mesma Hierarquia) -->
+                <!-- Reatribuição (Mesma Hierarquia) -->
                 <div id="reassign-section" class="space-y-3">
                     <div class="flex items-center gap-2 text-secondary">
                         <span class="material-symbols-outlined notranslate text-lg">rebase_edit</span>
                         <h4 class="text-xs font-bold uppercase tracking-wider">Mudar para Mesma Hierarquia</h4>
                     </div>
-                    <p class="text-xs text-outline leading-relaxed">Mova esta entidade para uma refer�ncia (pai)
-                        diferente no mesmo n�vel.</p>
+                    <p class="text-xs text-outline leading-relaxed">Mova esta entidade para uma referência (pai)
+                        diferente no mesmo nível.</p>
                     <div class="space-y-2">
                         <label id="reassign-parent-label"
                             class="text-[10px] font-bold text-outline-variant uppercase">Pai Atual</label>
@@ -2766,11 +2766,11 @@
                     </div>
                     <button id="btn-save-reassign" onclick="window.app.reassignEntity()"
                         class="w-full py-3 bg-secondary/10 hover:bg-secondary/20 text-secondary rounded-xl text-sm font-bold border border-secondary/20 transition-all">
-                        Salvar Nova Refer�ncia
+                        Salvar Nova Referência
                     </button>
                 </div>
 
-                <!-- Exclus�o -->
+                <!-- Exclusão -->
                 <div class="pt-4 border-t border-outline-variant/10">
                     <button id="btn-delete-review" onclick="window.app.deleteEntityFromReview()"
                         class="w-full py-2.5 text-error hover:bg-error/10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
@@ -2793,7 +2793,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260512-guided-routine-v198"></script>
+    <script type="module" src="app.js?v=20260512-guided-routine-v199"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
