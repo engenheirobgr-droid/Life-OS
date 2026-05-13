@@ -365,14 +365,82 @@ onHabitFreqChange: function(freq) {
 
 onHabitReminderIntervalToggle: function(enabled) {
         const fields = document.getElementById('habit-reminder-interval-fields');
+        const singleTimeWrap = document.getElementById('habit-single-time-wrap');
         if (!fields) return;
         if (enabled) {
             fields.classList.remove('hidden');
             fields.classList.add('grid');
+            if (singleTimeWrap) {
+                singleTimeWrap.classList.add('opacity-50', 'pointer-events-none');
+            }
         } else {
             fields.classList.add('hidden');
             fields.classList.remove('grid');
+            if (singleTimeWrap) {
+                singleTimeWrap.classList.remove('opacity-50', 'pointer-events-none');
+            }
         }
+        this.updateHabitReminderPreview();
+    },
+
+updateHabitReminderPreview: function() {
+        const preview = document.getElementById('habit-next-reminder-preview');
+        if (!preview) return;
+        const enabled = !!document.getElementById('habit-reminder-enabled')?.checked;
+        if (!enabled) {
+            preview.textContent = '';
+            return;
+        }
+        const intervalMode = !!document.getElementById('habit-reminder-interval-enabled')?.checked;
+        const now = new Date();
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        const fmt = (mins) => {
+            const safe = ((mins % 1440) + 1440) % 1440;
+            const hh = String(Math.floor(safe / 60)).padStart(2, '0');
+            const mm = String(safe % 60).padStart(2, '0');
+            return `${hh}:${mm}`;
+        };
+        const toMins = (value) => {
+            const parts = String(value || '').slice(0, 5).split(':');
+            const hh = Number(parts[0]);
+            const mm = Number(parts[1]);
+            if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+            return (hh * 60) + mm;
+        };
+
+        if (!intervalMode) {
+            const single = toMins(document.getElementById('habit-start-time')?.value);
+            if (single == null) {
+                preview.textContent = 'Defina um horário único para o lembrete.';
+                return;
+            }
+            preview.textContent = `Próximo lembrete às ${fmt(single)} h.`;
+            return;
+        }
+
+        const start = toMins(document.getElementById('habit-reminder-window-start')?.value);
+        const end = toMins(document.getElementById('habit-reminder-window-end')?.value);
+        const step = Math.max(5, Number(document.getElementById('habit-reminder-interval-min')?.value || 60));
+        if (start == null || end == null) {
+            preview.textContent = 'Defina início e fim da janela de lembretes.';
+            return;
+        }
+        if (end < start) {
+            preview.textContent = 'Janela inválida: o fim precisa ser maior ou igual ao início.';
+            return;
+        }
+        let next = null;
+        for (let cursor = start; cursor <= end; cursor += step) {
+            if (cursor >= nowMin) {
+                next = cursor;
+                break;
+            }
+        }
+        if (next == null) {
+            preview.textContent = `Próximo lembrete amanhã às ${fmt(start)} h.`;
+            return;
+        }
+        preview.textContent = `Próximo lembrete às ${fmt(next)} h.`;
     },
 
 onHabitContinuousChange: function(checked) {

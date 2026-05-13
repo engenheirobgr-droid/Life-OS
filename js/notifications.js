@@ -573,30 +573,55 @@ scheduleHabitReminders: function() {
         let sent = {};
         try { sent = JSON.parse(this.localGet('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
 
+        const toMinutes = (hhmm) => {
+            const [h, m] = String(hhmm || '').slice(0, 5).split(':');
+            const hh = Number(h);
+            const mm = Number(m);
+            if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+            return hh * 60 + mm;
+        };
+        const toHHMM = (mins) => {
+            const safe = Math.max(0, Math.min(1439, Number(mins) || 0));
+            return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
+        };
+        const getReminderTimes = (habit) => {
+            const single = String(habit?.reminderTime || '').slice(0, 5);
+            if (!habit?.reminderIntervalEnabled) return single ? [single] : [];
+            const startM = toMinutes(habit.reminderWindowStart);
+            const endM = toMinutes(habit.reminderWindowEnd);
+            const step = Math.max(5, Number(habit.reminderIntervalMin || 60));
+            if (startM == null || endM == null || endM < startM) return single ? [single] : [];
+            const times = [];
+            for (let cursor = startM; cursor <= endM; cursor += step) times.push(toHHMM(cursor));
+            if (!times.length && single) times.push(single);
+            return times;
+        };
+
         state.habits.forEach(habit => {
-            if (!habit || !habit.reminderEnabled || !habit.reminderTime) return;
+            if (!habit || !habit.reminderEnabled) return;
             if (habit.frequency === 'specific' && Array.isArray(habit.specificDays) && habit.specificDays.length > 0 && !habit.specificDays.includes(dayIndex)) return;
-            const [hhRaw, mmRaw] = String(habit.reminderTime).slice(0, 5).split(':');
-            const hh = Number(hhRaw);
-            const mm = Number(mmRaw);
-            if (!Number.isFinite(hh) || !Number.isFinite(mm)) return;
+            getReminderTimes(habit).forEach((reminderHHMM) => {
+                const [hhRaw, mmRaw] = String(reminderHHMM).slice(0, 5).split(':');
+                const hh = Number(hhRaw);
+                const mm = Number(mmRaw);
+                if (!Number.isFinite(hh) || !Number.isFinite(mm)) return;
 
-            const trigger = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hh, mm, 0, 0);
-            const reminderHHMM = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
-            const reminderKey = `${habit.id}:${todayKey}:${reminderHHMM}`;
-            const delay = trigger.getTime() - Date.now();
-            const notify = () => {
-                if (sent[reminderKey]) return;
-                sent[reminderKey] = true;
-                try { this.localSet('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
-                this.showNotification(`Lembrete de hábito: ${habit.title}`);
-            };
+                const trigger = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hh, mm, 0, 0);
+                const reminderKey = `${habit.id}:${todayKey}:${reminderHHMM}`;
+                const delay = trigger.getTime() - Date.now();
+                const notify = () => {
+                    if (sent[reminderKey]) return;
+                    sent[reminderKey] = true;
+                    try { this.localSet('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
+                    this.showNotification(`Lembrete de habito: ${habit.title}`);
+                };
 
-            if (delay > 0) {
-                this._habitReminderTimers.push(setTimeout(notify, delay));
-            } else if (delay > -90 * 60 * 1000) {
-                notify();
-            }
+                if (delay > 0) {
+                    this._habitReminderTimers.push(setTimeout(notify, delay));
+                } else if (delay > -90 * 60 * 1000) {
+                    notify();
+                }
+            });
         });
     },
 
@@ -608,6 +633,22 @@ startHabitReminderWatcher: function() {
             const mm = Number(m);
             if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
             return hh * 60 + mm;
+        };
+        const toHHMM = (mins) => {
+            const safe = Math.max(0, Math.min(1439, Number(mins) || 0));
+            return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
+        };
+        const getReminderTimes = (habit) => {
+            const single = String(habit?.reminderTime || '').slice(0, 5);
+            if (!habit?.reminderIntervalEnabled) return single ? [single] : [];
+            const startM = toMinutes(habit.reminderWindowStart);
+            const endM = toMinutes(habit.reminderWindowEnd);
+            const step = Math.max(5, Number(habit.reminderIntervalMin || 60));
+            if (startM == null || endM == null || endM < startM) return single ? [single] : [];
+            const times = [];
+            for (let cursor = startM; cursor <= endM; cursor += step) times.push(toHHMM(cursor));
+            if (!times.length && single) times.push(single);
+            return times;
         };
         this._habitReminderWatcher = setInterval(() => {
             try {
@@ -626,18 +667,19 @@ startHabitReminderWatcher: function() {
                 try { sent = JSON.parse(this.localGet('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
 
                 state.habits.forEach(habit => {
-                    if (!habit || !habit.reminderEnabled || !habit.reminderTime) return;
+                    if (!habit || !habit.reminderEnabled) return;
                     if (habit.frequency === 'specific' && Array.isArray(habit.specificDays) && habit.specificDays.length > 0 && !habit.specificDays.includes(dayIndex)) return;
-                    const reminderHHMM = String(habit.reminderTime).slice(0, 5);
-                    const reminderMinutes = toMinutes(reminderHHMM);
-                    if (nowMinutes == null || reminderMinutes == null) return;
-                    const diff = nowMinutes - reminderMinutes;
-                    if (diff < 0 || diff > 2) return; // tolera atraso de timer/background
-                    const reminderKey = `${habit.id}:${todayKey}:${reminderHHMM}`;
-                    if (sent[reminderKey]) return;
-                    sent[reminderKey] = true;
-                    try { this.localSet('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
-                    this.showNotification(`Lembrete de hábito: ${habit.title}`);
+                    getReminderTimes(habit).forEach((reminderHHMM) => {
+                        const reminderMinutes = toMinutes(reminderHHMM);
+                        if (nowMinutes == null || reminderMinutes == null) return;
+                        const diff = nowMinutes - reminderMinutes;
+                        if (diff < 0 || diff > 2) return; // tolera atraso de timer/background
+                        const reminderKey = `${habit.id}:${todayKey}:${reminderHHMM}`;
+                        if (sent[reminderKey]) return;
+                        sent[reminderKey] = true;
+                        try { this.localSet('lifeos_habit_reminders_sent', JSON.stringify(sent)); } catch (_) {}
+                        this.showNotification(`Lembrete de habito: ${habit.title}`);
+                    });
                 });
             } catch (_) {}
         }, 30000);

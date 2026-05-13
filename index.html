@@ -1820,39 +1820,42 @@
                         </div>
                     </div>
                     <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-1.5">
+                        <div id="habit-single-time-wrap" class="flex flex-col gap-1.5">
                             <label for="habit-start-time"
-                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Horário de início</label>
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Horário único</label>
                             <input type="time" id="habit-start-time"
+                                onchange="window.app.updateHabitReminderPreview()"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                         </div>
                         <div class="flex items-end">
                             <label class="h-12 w-full px-4 rounded-lg border border-outline-variant/20 bg-surface-container-low flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" id="habit-reminder-enabled" class="accent-primary">
-                                <span class="text-xs font-label uppercase tracking-widest text-on-surface font-bold">Lembrete no celular</span>
-                            </label>
-                        </div>
+                            <input type="checkbox" id="habit-reminder-enabled" class="accent-primary" onchange="window.app.updateHabitReminderPreview()">
+                            <span class="text-xs font-label uppercase tracking-widest text-on-surface font-bold">Lembrete no celular</span>
+                        </label>
                     </div>
+                </div>
                     <div id="habit-reminder-advanced" class="flex flex-col gap-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/60 p-3">
                         <label class="flex items-center gap-2 text-xs font-label uppercase tracking-widest text-outline font-bold">
                             <input type="checkbox" id="habit-reminder-interval-enabled" class="accent-primary" onchange="window.app.onHabitReminderIntervalToggle(this.checked)">
                             Lembretes ao longo do dia
                         </label>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Janela de lembretes</p>
                         <div id="habit-reminder-interval-fields" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="flex flex-col gap-1">
                                 <label for="habit-reminder-window-start" class="text-[10px] font-bold uppercase tracking-widest text-outline">Início</label>
-                                <input type="time" id="habit-reminder-window-start" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
+                                <input type="time" id="habit-reminder-window-start" onchange="window.app.updateHabitReminderPreview()" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label for="habit-reminder-window-end" class="text-[10px] font-bold uppercase tracking-widest text-outline">Fim</label>
-                                <input type="time" id="habit-reminder-window-end" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
+                                <input type="time" id="habit-reminder-window-end" onchange="window.app.updateHabitReminderPreview()" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label for="habit-reminder-interval-min" class="text-[10px] font-bold uppercase tracking-widest text-outline">Intervalo (min)</label>
-                                <input type="number" id="habit-reminder-interval-min" min="15" step="5" value="60" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
+                                <input type="number" id="habit-reminder-interval-min" min="5" step="5" value="60" onchange="window.app.updateHabitReminderPreview()" class="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface">
                             </div>
                         </div>
                         <p class="text-[10px] text-outline">Ex.: beber água entre 08:00 e 20:00 a cada 60 min.</p>
+                        <p id="habit-next-reminder-preview" class="text-[11px] text-primary font-semibold"></p>
                     </div>
 
                     <div class="flex flex-col gap-1.5">
@@ -2681,9 +2684,6 @@
             </div>
         </div>
     </div>
-
-
-
     <div id="odyssey-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
         <div
             class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-lg w-full p-6 shadow-xl flex flex-col">
@@ -2792,7 +2792,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260512-guided-routine-v194"></script>
+    <script type="module" src="app.js?v=20260512-guided-routine-v197"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -2886,6 +2886,9 @@
     </div>
 </body>
 </html>
+
+
+
 
 
 

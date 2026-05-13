@@ -66,6 +66,7 @@ onTypeChange: function(type) {
                 if (freqInput) this.onHabitFreqChange(freqInput.value);
                 const reminderIntervalToggle = document.getElementById('habit-reminder-interval-enabled');
                 if (reminderIntervalToggle) this.onHabitReminderIntervalToggle(!!reminderIntervalToggle.checked);
+                if (typeof this.updateHabitReminderPreview === 'function') this.updateHabitReminderPreview();
             }
             this.populateHabitLinkedMeta();
             this.populateHabitIdentitySource();
@@ -1123,7 +1124,7 @@ saveNewEntity: function() {
             obj.reminderIntervalEnabled = !!document.getElementById('habit-reminder-interval-enabled')?.checked;
             obj.reminderWindowStart = String(document.getElementById('habit-reminder-window-start')?.value || '').trim();
             obj.reminderWindowEnd = String(document.getElementById('habit-reminder-window-end')?.value || '').trim();
-            obj.reminderIntervalMin = Math.max(15, Number(document.getElementById('habit-reminder-interval-min')?.value || 60));
+            obj.reminderIntervalMin = Math.max(5, Number(document.getElementById('habit-reminder-interval-min')?.value || 60));
             if (!obj.reminderIntervalEnabled) {
                 obj.reminderWindowStart = '';
                 obj.reminderWindowEnd = '';
