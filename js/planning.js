@@ -144,8 +144,10 @@ onTypeChange: function(type) {
             const hoje = new Date().toISOString().split('T')[0];
             const inicioInput = document.getElementById('crud-inicio-date');
             const prazoInput = document.getElementById('crud-prazo-date');
-            if (type !== 'okrs' && inicioInput && !inicioInput.value) inicioInput.value = hoje;
-            if (prazoInput && !prazoInput.value) prazoInput.value = hoje;
+            if (inicioInput && !inicioInput.value) inicioInput.value = hoje;
+            this.applyDefaultDeadlineByType(type, false);
+        } else if (type === 'metas') {
+            this.applyDefaultDeadlineByType(type, false);
         }
 
         // Toggle "Adicionar ao Plano da Semana" — apenas para micros com plano ativo
@@ -179,6 +181,41 @@ onTypeChange: function(type) {
         } else {
             if (toggleWrap) toggleWrap.classList.add('hidden');
         }
+    },
+
+applyDefaultDeadlineByType: function(type, forceRecalc = false) {
+        if (this.editingEntity) return;
+        const today = this.getLocalDateKey();
+        const addDays = (dateKey, days) => {
+            const base = new Date(String(dateKey || today) + 'T00:00:00');
+            base.setDate(base.getDate() + Number(days || 0));
+            return this.getLocalDateKey(base);
+        };
+        const addYears = (dateKey, years) => {
+            const base = new Date(String(dateKey || today) + 'T00:00:00');
+            base.setFullYear(base.getFullYear() + Number(years || 0));
+            return this.getLocalDateKey(base);
+        };
+        const setIfAllowed = (input, value) => {
+            if (!input) return;
+            if (forceRecalc || !input.value) input.value = value;
+        };
+
+        if (type === 'metas') {
+            const horizonYears = Number(document.getElementById('crud-meta-horizon')?.value || 1);
+            const years = Number.isFinite(horizonYears) && horizonYears > 0 ? horizonYears : 1;
+            const deadlineInput = document.getElementById('create-prazo');
+            setIfAllowed(deadlineInput, addYears(today, years));
+            return;
+        }
+
+        if (!['okrs', 'macros', 'micros'].includes(type)) return;
+        const inicioInput = document.getElementById('crud-inicio-date');
+        const prazoInput = document.getElementById('crud-prazo-date');
+        const startDate = String(inicioInput?.value || today);
+        const offsets = { okrs: 90, macros: 30, micros: 7 };
+        const offsetDays = offsets[type] || 0;
+        setIfAllowed(prazoInput, addDays(startDate, offsetDays));
     },
 
 finishMetaTrailWizard: function() {

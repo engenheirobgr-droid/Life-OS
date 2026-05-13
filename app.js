@@ -6135,28 +6135,40 @@ ensureNotesState: function() {
         }
     },
 
-    saveWheel: function() {
-        const state = window.sistemaVidaState;
-        this.normalizeDimensionsState();
-        const container = document.getElementById('wheel-sliders-container');
-        if (container) {
+    saveWheel: async function() {
+        try {
+            const state = window.sistemaVidaState;
+            this.normalizeDimensionsState();
+            const container = document.getElementById('wheel-sliders-container');
+            if (!container) {
+                this.showToast('Não foi possível salvar: sliders da roda não encontrados.', 'error');
+                return;
+            }
             const ranges = container.querySelectorAll('input[type="range"]');
+            if (!ranges.length) {
+                this.showToast('Não foi possível salvar: nenhum valor da roda foi carregado.', 'error');
+                return;
+            }
+
             ranges.forEach(range => {
                 const dim = this.normalizeDimensionKey(range.getAttribute('data-dim') || '');
-                if (dim) {
-                    if (!state.dimensions[dim]) state.dimensions[dim] = { score: 1 };
-                    state.dimensions[dim].score = Math.max(1, Math.min(100, parseInt(range.value, 10) || 1));
-                }
+                if (!dim) return;
+                if (!state.dimensions[dim]) state.dimensions[dim] = { score: 1 };
+                state.dimensions[dim].score = Math.max(1, Math.min(100, parseInt(range.value, 10) || 1));
             });
-        }
 
-        this.updateWheelPolygon();
-        this.recordWellbeingSnapshot('wheel');
-        this.markCadence('wheel');
-        this.saveState(false);
-        this.closeWheelModal();
-        if (this.currentView === 'proposito' && this.render.proposito) this.render.proposito();
-        if (this.render.painel) this.render.painel();
+            this.updateWheelPolygon();
+            this.recordWellbeingSnapshot('wheel');
+            this.markCadence('wheel');
+            await this.saveState(true);
+            this.closeWheelModal();
+            if (this.currentView === 'proposito' && this.render.proposito) this.render.proposito();
+            if (this.render.painel) this.render.painel();
+            this.showToast('Roda da Vida salva com sucesso.', 'success');
+        } catch (error) {
+            console.error('[WHEEL] Falha ao salvar Roda da Vida:', error);
+            this.showToast('Falha ao salvar a Roda da Vida. Tente novamente.', 'error');
+        }
     },
 
     migrateOverdueTasks: function() {
