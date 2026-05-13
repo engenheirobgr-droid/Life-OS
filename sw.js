@@ -1,28 +1,28 @@
-﻿const CACHE_NAME = 'sistema-vida-v197';
+const CACHE_NAME = 'sistema-vida-v198';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260512-guided-routine-v197',
-    './js/habitSuggestions.js?v=20260512-guided-routine-v197',
-    './js/subjectiveScales.js?v=20260512-guided-routine-v197',
-    './js/notifications.js?v=20260512-guided-routine-v197',
-    './js/cadence.js?v=20260512-guided-routine-v197',
-    './js/onboarding.js?v=20260512-guided-routine-v197',
-    './js/identity.js?v=20260512-guided-routine-v197',
-    './js/habits.js?v=20260512-guided-routine-v197',
-    './js/state.js?v=20260512-guided-routine-v197',
-    './js/render.js?v=20260512-guided-routine-v197',
-    './js/planning.js?v=20260512-guided-routine-v197',
-    './js/gamification.js?v=20260512-guided-routine-v197',
-    './js/social.js?v=20260512-guided-routine-v197',
-    './views/hoje.html?v=20260512-guided-routine-v197',
-    './views/planos.html?v=20260512-guided-routine-v197',
-    './views/proposito.html?v=20260512-guided-routine-v197',
-    './views/perfil.html?v=20260512-guided-routine-v197',
-    './views/painel.html?v=20260512-guided-routine-v197',
-    './views/foco.html?v=20260512-guided-routine-v197',
-    './views/onboarding.html?v=20260512-guided-routine-v197',
-    './views/social.html?v=20260512-guided-routine-v197'
+    './app.js?v=20260512-guided-routine-v198',
+    './js/habitSuggestions.js?v=20260512-guided-routine-v198',
+    './js/subjectiveScales.js?v=20260512-guided-routine-v198',
+    './js/notifications.js?v=20260512-guided-routine-v198',
+    './js/cadence.js?v=20260512-guided-routine-v198',
+    './js/onboarding.js?v=20260512-guided-routine-v198',
+    './js/identity.js?v=20260512-guided-routine-v198',
+    './js/habits.js?v=20260512-guided-routine-v198',
+    './js/state.js?v=20260512-guided-routine-v198',
+    './js/render.js?v=20260512-guided-routine-v198',
+    './js/planning.js?v=20260512-guided-routine-v198',
+    './js/gamification.js?v=20260512-guided-routine-v198',
+    './js/social.js?v=20260512-guided-routine-v198',
+    './views/hoje.html?v=20260512-guided-routine-v198',
+    './views/planos.html?v=20260512-guided-routine-v198',
+    './views/proposito.html?v=20260512-guided-routine-v198',
+    './views/perfil.html?v=20260512-guided-routine-v198',
+    './views/painel.html?v=20260512-guided-routine-v198',
+    './views/foco.html?v=20260512-guided-routine-v198',
+    './views/onboarding.html?v=20260512-guided-routine-v198',
+    './views/social.html?v=20260512-guided-routine-v198'
 ];
 
 self.addEventListener('install', (event) => {
@@ -59,7 +59,7 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-    let data = { title: 'Life OS', body: 'Nova notificaÃ§Ã£o.' };
+    let data = { title: 'Life OS', body: 'Nova notificação.' };
     try {
         if (event.data) data = event.data.json();
     } catch (_) {

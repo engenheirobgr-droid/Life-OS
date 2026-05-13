@@ -282,7 +282,7 @@ ensureSettingsState: function() {
             window.sistemaVidaState.deepWork = {
                 isRunning: false, isPaused: false, mode: 'focus',
                 remainingSec: 5400, targetSec: 5400, breakSec: 1200,
-                microId: '', intention: '', lastTickAt: 0, sessions: []
+                microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0, sessions: []
             };
         }
         if (typeof window.sistemaVidaState.onboardingComplete !== 'boolean') {
@@ -630,7 +630,7 @@ factoryReset: async function() {
         deepWork: {
           isRunning: false, isPaused: false, mode: 'focus',
           remainingSec: 5400, targetSec: 5400, breakSec: 1200,
-          microId: '', intention: '', lastTickAt: 0, sessions: []
+          microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0, sessions: []
         },
         entities: { metas: [], okrs: [], macros: [], micros: [] },
         dailyLogs: {},
@@ -738,7 +738,7 @@ factoryReset: async function() {
         deepWork: {
           isRunning: false, isPaused: false, mode: 'focus',
           remainingSec: 5400, targetSec: 5400, breakSec: 1200,
-          microId: '', intention: '', lastTickAt: 0,
+          microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0,
           sessions: [
             { endedAt: '2026-04-06', focusSec: 3600, mode: 'focus', microId: 'mic2', intention: 'Remover hardcodes do painel' },
             { endedAt: '2026-04-08', focusSec: 5400, mode: 'focus', microId: 'mic3', intention: 'Refinar render do perfil' }

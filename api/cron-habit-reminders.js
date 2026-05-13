@@ -87,6 +87,22 @@ function getDueHabitItems(habits, nowMinutes, todayDow, toleranceMin) {
   }).filter(Boolean);
 }
 
+function getDueDeepWorkItem(state, nowTs, toleranceMs) {
+  const dw = state?.deepWork || {};
+  if (!dw || !dw.isRunning || dw.isPaused) return null;
+  const mode = dw.mode === 'break' ? 'break' : 'focus';
+  const deadlineAtMs = Number(dw.deadlineAtMs || 0);
+  if (!Number.isFinite(deadlineAtMs) || deadlineAtMs <= 0) return null;
+  const diff = nowTs - deadlineAtMs;
+  if (diff < 0 || diff > toleranceMs) return null;
+  return {
+    mode,
+    deadlineAtMs,
+    microId: String(dw.microId || ''),
+    intention: String(dw.intention || '')
+  };
+}
+
 module.exports = async function handler(req, res) {
   try {
     const authHeader = req.headers.authorization || '';
@@ -101,10 +117,13 @@ module.exports = async function handler(req, res) {
     const now = nowInTimeZoneParts(tz);
     const todayDow = weekdayToIndex(now.weekdayShort);
     const nowMinutes = hhmmToMinutes(now.hhmm);
+    const nowTs = Date.now();
+    const toleranceMs = toleranceMin * 60 * 1000;
     const usersSnap = await db.collection('users').get();
 
     let checkedUsers = 0;
     let dueHabits = 0;
+    let dueDeepWork = 0;
     let skippedNoSubs = 0;
     let sent = 0;
     let removed = 0;
@@ -118,11 +137,11 @@ module.exports = async function handler(req, res) {
       const settings = state.settings || {};
       if (!settings.notificationsEnabled) continue;
       const habits = Array.isArray(state.habits) ? state.habits : [];
-      if (!habits.length) continue;
-
-      const dueItems = getDueHabitItems(habits, nowMinutes, todayDow, toleranceMin);
-      if (!dueItems.length) continue;
+      const dueItems = habits.length ? getDueHabitItems(habits, nowMinutes, todayDow, toleranceMin) : [];
+      const dueDeepWorkItem = getDueDeepWorkItem(state, nowTs, toleranceMs);
+      if (!dueItems.length && !dueDeepWorkItem) continue;
       dueHabits += dueItems.length;
+      if (dueDeepWorkItem) dueDeepWork += 1;
 
       const subsSnap = await stateRef.collection('push_subscriptions').get();
       if (subsSnap.empty) {
@@ -165,8 +184,57 @@ module.exports = async function handler(req, res) {
           scheduledHHMM: item.reminderHHMM,
           sentAtHHMM: now.hhmm,
           dateKey: now.dateKey,
+          type: 'habit',
           createdAt: Date.now()
         }, { merge: false });
+      }
+
+      if (dueDeepWorkItem) {
+        const dedupeId = `deepwork_${dueDeepWorkItem.mode}_${Math.round(dueDeepWorkItem.deadlineAtMs)}`.replace(/[^\w-]/g, '_');
+        const dedupeRef = sentLogRef.doc(dedupeId);
+        const dedupeSnap = await dedupeRef.get();
+        if (!dedupeSnap.exists) {
+          const payload = dueDeepWorkItem.mode === 'focus'
+            ? {
+                title: 'Life OS - Foco',
+                body: 'Bloco de foco concluido. Abra o app para iniciar a pausa e concluir a micro.',
+                tag: 'lifeos-focus-ended',
+                url: '/?view=foco'
+              }
+            : {
+                title: 'Life OS - Foco',
+                body: 'Pausa concluida. Voce esta pronto para o proximo bloco.',
+                tag: 'lifeos-break-ended',
+                url: '/?view=foco'
+              };
+
+          for (const subDoc of subsSnap.docs) {
+            const data = subDoc.data() || {};
+            const subscription = { endpoint: data.endpoint, keys: data.keys || {} };
+            if (!subscription.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) continue;
+            try {
+              await sendWebPush(subscription, payload);
+              sent += 1;
+            } catch (err) {
+              const code = Number(err?.statusCode || 0);
+              if (code === 404 || code === 410) {
+                await subDoc.ref.delete();
+                removed += 1;
+              }
+            }
+          }
+
+          await dedupeRef.set({
+            type: 'deepwork',
+            mode: dueDeepWorkItem.mode,
+            microId: dueDeepWorkItem.microId,
+            intention: dueDeepWorkItem.intention,
+            deadlineAtMs: dueDeepWorkItem.deadlineAtMs,
+            sentAtHHMM: now.hhmm,
+            dateKey: now.dateKey,
+            createdAt: Date.now()
+          }, { merge: false });
+        }
       }
     }
 
@@ -176,6 +244,7 @@ module.exports = async function handler(req, res) {
       removed,
       checkedUsers,
       dueHabits,
+      dueDeepWork,
       skippedNoSubs,
       hhmm: now.hhmm,
       dateKey: now.dateKey,
