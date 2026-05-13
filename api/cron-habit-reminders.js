@@ -41,18 +41,49 @@ function normalizeHHMM(hhmm) {
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
+function minutesToHHMM(minutes) {
+  const safe = Math.max(0, Math.min(1439, Number(minutes) || 0));
+  return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
+}
+
+function getReminderTimes(habit) {
+  const single = normalizeHHMM(habit?.reminderTime || '');
+  if (!habit?.reminderIntervalEnabled) return single ? [single] : [];
+
+  const startM = hhmmToMinutes(habit.reminderWindowStart);
+  const endM = hhmmToMinutes(habit.reminderWindowEnd);
+  const step = Math.max(5, Number(habit.reminderIntervalMin || 60));
+  if (startM == null || endM == null || endM < startM) return single ? [single] : [];
+
+  const times = [];
+  for (let cursor = startM; cursor <= endM; cursor += step) {
+    times.push(minutesToHHMM(cursor));
+  }
+  if (!times.length && single) times.push(single);
+  return times;
+}
+
 function getDueHabitItems(habits, nowMinutes, todayDow, toleranceMin) {
   return habits.map((h) => {
-    if (!h || !h.reminderEnabled || !h.reminderTime) return null;
-    const reminderMinutes = hhmmToMinutes(h.reminderTime);
-    const reminderHHMM = normalizeHHMM(h.reminderTime);
-    if (nowMinutes == null || reminderMinutes == null || !reminderHHMM) return null;
-    const diff = nowMinutes - reminderMinutes;
-    if (diff < 0 || diff > toleranceMin) return null;
+    if (!h || !h.reminderEnabled) return null;
     if (h.frequency === 'specific' && Array.isArray(h.specificDays) && h.specificDays.length > 0) {
       if (!h.specificDays.map(String).includes(todayDow)) return null;
     }
-    return { habit: h, reminderHHMM };
+
+    const dueTimes = getReminderTimes(h)
+      .map((reminderHHMM) => {
+        const reminderMinutes = hhmmToMinutes(reminderHHMM);
+        if (nowMinutes == null || reminderMinutes == null || !reminderHHMM) return null;
+        const diff = nowMinutes - reminderMinutes;
+        if (diff < 0 || diff > toleranceMin) return null;
+        return { reminderHHMM, diff };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.diff - b.diff);
+
+    // If the scheduler was delayed, send the most recent due slot only.
+    if (!dueTimes.length) return null;
+    return { habit: h, reminderHHMM: dueTimes[0].reminderHHMM };
   }).filter(Boolean);
 }
 
