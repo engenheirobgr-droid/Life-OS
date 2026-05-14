@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260512-guided-routine-v200';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260512-guided-routine-v200';
-import { attachNotifications } from './js/notifications.js?v=20260512-guided-routine-v200';
-import { attachCadence } from './js/cadence.js?v=20260512-guided-routine-v200';
-import { attachOnboarding } from './js/onboarding.js?v=20260512-guided-routine-v200';
-import { attachIdentity } from './js/identity.js?v=20260512-guided-routine-v200';
-import { attachHabits } from './js/habits.js?v=20260512-guided-routine-v200';
-import { attachStateModule } from './js/state.js?v=20260512-guided-routine-v200';
-import { attachRenderModule } from './js/render.js?v=20260512-guided-routine-v200';
-import { attachPlanningModule } from './js/planning.js?v=20260512-guided-routine-v200';
-import { attachGamificationModule } from './js/gamification.js?v=20260512-guided-routine-v200';
-import { attachSocial } from './js/social.js?v=20260512-guided-routine-v200';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260514-purpose-catalog-v201';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260514-purpose-catalog-v201';
+import { attachNotifications } from './js/notifications.js?v=20260514-purpose-catalog-v201';
+import { attachCadence } from './js/cadence.js?v=20260514-purpose-catalog-v201';
+import { attachOnboarding } from './js/onboarding.js?v=20260514-purpose-catalog-v201';
+import { attachIdentity } from './js/identity.js?v=20260514-purpose-catalog-v201';
+import { attachHabits } from './js/habits.js?v=20260514-purpose-catalog-v201';
+import { attachStateModule } from './js/state.js?v=20260514-purpose-catalog-v201';
+import { attachRenderModule } from './js/render.js?v=20260514-purpose-catalog-v201';
+import { attachPlanningModule } from './js/planning.js?v=20260514-purpose-catalog-v201';
+import { attachGamificationModule } from './js/gamification.js?v=20260514-purpose-catalog-v201';
+import { attachSocial } from './js/social.js?v=20260514-purpose-catalog-v201';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -201,7 +201,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260512-guided-routine-v200',
+    appBuildVersion: '20260514-purpose-catalog-v201',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -5467,9 +5467,9 @@ ensureNotesState: function() {
                         <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Cada passo constrói sua clareza — de quem você é até onde quer chegar.</p>
                     </div>
                     <div class="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 min-w-[160px]">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Progresso</p>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Etapas completas</p>
                         <p class="mt-2 text-2xl font-headline font-bold text-on-background">${journey.doneCount}/${journey.total}</p>
-                        <p class="text-xs text-outline mt-1">${journey.pct}% da bussola montada</p>
+                        <p class="text-xs text-outline mt-1">${journey.pct}% dos blocos de Propósito preenchidos</p>
                     </div>
                 </div>
                 <div class="mt-4 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
@@ -5485,6 +5485,7 @@ ensureNotesState: function() {
         const screenMap = {
             identity: 'identidade',
             wheel: 'bemestar',
+            wellbeing: 'bemestar',
             'ikigai-base': 'direcao',
             'ikigai-synthesis': 'direcao',
             legacy: 'direcao',
@@ -5497,6 +5498,7 @@ ensureNotesState: function() {
         const map = {
             identity: 'top-values-banner',
             wheel: 'proposito-roda-section',
+            wellbeing: 'perma-section',
             'ikigai-base': 'proposito-ikigai-section',
             'ikigai-synthesis': 'display-ikigai-sintese',
             legacy: 'proposito-legado-section',
@@ -7359,6 +7361,7 @@ attachGamificationModule(app);
 attachSocial(app);
 
 window.app = app;
+globalThis.app = app;
 
 onAuthStateChanged(auth, (user) => {
     app.lastAuthUserId = user?.uid || '';

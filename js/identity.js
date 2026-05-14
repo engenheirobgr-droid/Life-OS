@@ -37,14 +37,19 @@ ensureIdentityState: function() {
 
 getIdentityCatalog: function(type) {
         const strengths = [
-            'Clareza', 'Disciplina', 'Coragem', 'Criatividade', 'Empatia',
-            'Pensamento analítico', 'Resiliência', 'Comunicação', 'Autonomia', 'Curiosidade',
-            'Organização', 'Liderança', 'Foco', 'Aprendizado rápido', 'Responsabilidade'
+            'Pensamento analítico', 'Aprendizado rápido', 'Coragem', 'Resiliência',
+            'Resolução de problemas', 'Determinação', 'Visão de longo prazo', 'Escuta',
+            'Empatia', 'Liderança', 'Objetividade', 'Autonomia', 'Curiosidade',
+            'Disciplina', 'Clareza', 'Comunicação', 'Responsabilidade', 'Criatividade',
+            'Organização', 'Foco'
         ];
         const shadows = [
-            'Impaciência', 'Procrastinação', 'Perfeccionismo', 'Autocrítica excessiva', 'Dispersão',
-            'Dificuldade de pedir ajuda', 'Reatividade', 'Evitação de conflito', 'Ansiedade de controle', 'Rigidez',
-            'Inconstância', 'Sobrecarga', 'Comparação', 'Dificuldade de dizer não', 'Paralisia por análise'
+            'Hipervigilância', 'Necessidade de controle', 'Autoimagem por desempenho',
+            'Apego ansioso', 'Procrastinação existencial', 'Procrastinação',
+            'Dopamina barata', 'Perfeccionismo', 'Autocrítica excessiva', 'Rigidez',
+            'Teimosia', 'Persistência destrutiva', 'Dificuldade de vulnerabilidade',
+            'Reatividade', 'Evitação de conflito', 'Ansiedade de controle',
+            'Paralisia por análise', 'Sobrecarga', 'Dispersão'
         ];
         return type === 'strengths' ? strengths : shadows;
     },

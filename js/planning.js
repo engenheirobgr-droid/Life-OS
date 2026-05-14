@@ -1724,8 +1724,12 @@ getPurposeJourneyState: function() {
         const vision = profile.vision || {};
         const odyssey = profile.odyssey || {};
         const dimensions = window.sistemaVidaState.dimensions || {};
+        const perma = window.sistemaVidaState.perma || {};
+        const swls = window.sistemaVidaState.swls || {};
 
         const wheelCount = Object.values(dimensions).filter((entry) => Number(entry?.score) > 0).length;
+        const permaCount = ['P', 'E', 'R', 'M', 'A'].filter((key) => Number(perma?.[key]) > 0).length;
+        const hasSwls = Number(swls?.lastScore) >= 5 && !!String(swls?.lastDate || '').trim();
         const ikigaiBaseCount = [ikigai.love, ikigai.good, ikigai.need, ikigai.paid].filter((value) => String(value || '').trim()).length;
         const legacyCount = [legacyObj.familia, legacyObj.profissao, legacyObj.mundo].filter((value) => String(value || '').trim()).length;
         const visionCount = [vision.saude, vision.carreira, vision.intelecto, vision.quote].filter((value) => String(value || '').trim()).length;
@@ -1743,6 +1747,12 @@ getPurposeJourneyState: function() {
                 label: 'Roda da vida',
                 hint: `${wheelCount}/8 dimensoes pontuadas`,
                 done: wheelCount === 8
+            },
+            {
+                id: 'wellbeing',
+                label: 'PERMA e SWLS',
+                hint: `PERMA ${permaCount}/5 + SWLS ${hasSwls ? 'registrado' : 'pendente'}`,
+                done: permaCount === 5 && hasSwls
             },
             {
                 id: 'ikigai-base',
