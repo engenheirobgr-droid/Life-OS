@@ -709,7 +709,8 @@ ensureOnboardingStarterSetup: function() {
                 commitmentLevel: 3,
                 status: 'pending',
                 progress: 0,
-                completed: false
+                completed: false,
+                createdBy: 'onboarding'
             });
             state.entities.okrs.push({
                 id: okrId,
@@ -726,7 +727,8 @@ ensureOnboardingStarterSetup: function() {
                 keyResults: [],
                 status: 'pending',
                 progress: 0,
-                completed: false
+                completed: false,
+                createdBy: 'onboarding'
             });
             state.entities.macros.push({
                 id: macroId,
@@ -741,7 +743,8 @@ ensureOnboardingStarterSetup: function() {
                 purpose: goalTitle,
                 status: 'pending',
                 progress: 0,
-                completed: false
+                completed: false,
+                createdBy: 'onboarding'
             });
             state.entities.micros.push({
                 id: microId,
@@ -758,7 +761,8 @@ ensureOnboardingStarterSetup: function() {
                 effort: 'medio',
                 status: 'pending',
                 progress: 0,
-                completed: false
+                completed: false,
+                createdBy: 'onboarding'
             });
 
             this.markCadence('lifeGoals', todayKey);
@@ -810,7 +814,8 @@ ensureOnboardingStarterSetup: function() {
                 habitMode: sourceType === 'shadow' ? 'replace' : (sourceType === 'strength' ? 'build' : ''),
                 obstacle: shadowItem ? `Sombra alvo: ${shadowItem.title}` : '',
                 ifThen: shadowItem ? `Se perceber ${shadowItem.title.toLowerCase()}, entao inicio este habito por 5 minutos.` : '',
-                createdAt: todayKey
+                createdAt: todayKey,
+                createdBy: 'onboarding'
             };
             state.habits.push(habit);
         }

@@ -311,8 +311,11 @@ ensureSettingsState: function() {
             }
             const onboardingFlag = this.localGet('lifeos_onboarding_complete');
             if (onboardingFlag === '1') window.sistemaVidaState.onboardingComplete = true;
-            if (onboardingFlag === '0') window.sistemaVidaState.onboardingComplete = false;
+            if (onboardingFlag === '0' && window.sistemaVidaState.onboardingComplete !== true) {
+                window.sistemaVidaState.onboardingComplete = false;
+            }
         } catch (_) {}
+        this.reconcileOnboardingCompletion?.();
         this.normalizePermaState();
         this.normalizeEntitiesState();
         this.normalizeSwlsState();
@@ -471,6 +474,7 @@ loadState: async function() {
         }
         this.persistLocalMirror();
         this.ensureSettingsState();
+        this.reconcileOnboardingCompletion?.();
         this.normalizePermaState();
         this.normalizeDimensionsState();
         this.normalizeEntitiesState();

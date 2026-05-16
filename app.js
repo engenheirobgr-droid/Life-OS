@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260514-purpose-catalog-v201';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260514-purpose-catalog-v201';
-import { attachNotifications } from './js/notifications.js?v=20260514-purpose-catalog-v201';
-import { attachCadence } from './js/cadence.js?v=20260514-purpose-catalog-v201';
-import { attachOnboarding } from './js/onboarding.js?v=20260514-purpose-catalog-v201';
-import { attachIdentity } from './js/identity.js?v=20260514-purpose-catalog-v201';
-import { attachHabits } from './js/habits.js?v=20260514-purpose-catalog-v201';
-import { attachStateModule } from './js/state.js?v=20260514-purpose-catalog-v201';
-import { attachRenderModule } from './js/render.js?v=20260514-purpose-catalog-v201';
-import { attachPlanningModule } from './js/planning.js?v=20260514-purpose-catalog-v201';
-import { attachGamificationModule } from './js/gamification.js?v=20260514-purpose-catalog-v201';
-import { attachSocial } from './js/social.js?v=20260514-purpose-catalog-v201';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-onboarding-reconcile-v202';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260516-onboarding-reconcile-v202';
+import { attachNotifications } from './js/notifications.js?v=20260516-onboarding-reconcile-v202';
+import { attachCadence } from './js/cadence.js?v=20260516-onboarding-reconcile-v202';
+import { attachOnboarding } from './js/onboarding.js?v=20260516-onboarding-reconcile-v202';
+import { attachIdentity } from './js/identity.js?v=20260516-onboarding-reconcile-v202';
+import { attachHabits } from './js/habits.js?v=20260516-onboarding-reconcile-v202';
+import { attachStateModule } from './js/state.js?v=20260516-onboarding-reconcile-v202';
+import { attachRenderModule } from './js/render.js?v=20260516-onboarding-reconcile-v202';
+import { attachPlanningModule } from './js/planning.js?v=20260516-onboarding-reconcile-v202';
+import { attachGamificationModule } from './js/gamification.js?v=20260516-onboarding-reconcile-v202';
+import { attachSocial } from './js/social.js?v=20260516-onboarding-reconcile-v202';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -201,7 +201,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260514-purpose-catalog-v201',
+    appBuildVersion: '20260516-onboarding-reconcile-v202',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -332,6 +332,68 @@ const app = {
         window.sistemaVidaState.onboardingComplete = false;
         try { this.localSet('lifeos_onboarding_complete', '0'); } catch (_) {}
         return true;
+    },
+    hasOnboardingCompletionEvidence: function(state = window.sistemaVidaState) {
+        const profile = state?.profile || {};
+        const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+        const hasArrayItems = (value) => Array.isArray(value) && value.length > 0;
+        const countTextFields = (obj) => obj && typeof obj === 'object'
+            ? Object.values(obj).filter(hasText).length
+            : 0;
+
+        const valuesOk = Array.isArray(profile.values)
+            && profile.values.filter((value) => hasText(value)).length >= 3;
+
+        const dimensionScores = Object.values(state?.dimensions || {})
+            .map((dimension) => Number(dimension?.score))
+            .filter((score) => Number.isFinite(score) && score > 0);
+        const dimensionsOk = dimensionScores.length >= 6;
+
+        const purposeOk =
+            countTextFields(profile.ikigai) >= 2 ||
+            countTextFields(profile.legacyObj) >= 1 ||
+            countTextFields(profile.vision) >= 1 ||
+            hasText(profile.legacy);
+
+        const isOnboardingCreated = (item) => {
+            if (!item || typeof item !== 'object') return false;
+            if (item.createdBy === 'onboarding' || item.origin === 'onboarding') return true;
+            const text = [
+                item.title,
+                item.successCriteria,
+                item.description,
+                item.indicator,
+                item.context,
+                item.purpose
+            ].filter(hasText).join(' ').toLowerCase();
+            return text.includes('onboarding') ||
+                text.includes('meta inicial') ||
+                text.includes('okr inicial') ||
+                text.includes('macro inicial') ||
+                text.includes('micro inicial') ||
+                text.includes('primeiro passo da trilha');
+        };
+        const starterHabitTitle = String(profile.onboardingStarter?.habitTitle || '').trim().toLowerCase();
+        const hasOnboardingHabit = Array.isArray(state?.habits) && state.habits.some((habit) => {
+            if (isOnboardingCreated(habit)) return true;
+            return starterHabitTitle && String(habit?.title || '').trim().toLowerCase() === starterHabitTitle;
+        });
+        const executionOk =
+            (Array.isArray(state?.entities?.metas) && state.entities.metas.some(isOnboardingCreated)) ||
+            (Array.isArray(state?.entities?.micros) && state.entities.micros.some(isOnboardingCreated)) ||
+            hasOnboardingHabit;
+
+        return valuesOk && dimensionsOk && purposeOk && executionOk;
+    },
+    reconcileOnboardingCompletion: function() {
+        if (!window.sistemaVidaState || window.sistemaVidaState.onboardingComplete) return;
+        if (this.isForceOnboardingAfterReset?.()) return;
+        if (!this.hasOnboardingCompletionEvidence?.(window.sistemaVidaState)) return;
+
+        window.sistemaVidaState.onboardingComplete = true;
+        this._stateSchemaNeedsSave = true;
+        try { this.localSet('lifeos_onboarding_complete', '1'); } catch (_) {}
+        console.log('[Onboarding] Evidência estrutural de onboarding detectada; onboarding marcado como concluído.');
     },
     updateSyncBadge: function(state) {
         // state: 'ok' | 'error' | 'syncing' | 'offline'
