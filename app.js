@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-onboarding-reconcile-v202';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260516-onboarding-reconcile-v202';
-import { attachNotifications } from './js/notifications.js?v=20260516-onboarding-reconcile-v202';
-import { attachCadence } from './js/cadence.js?v=20260516-onboarding-reconcile-v202';
-import { attachOnboarding } from './js/onboarding.js?v=20260516-onboarding-reconcile-v202';
-import { attachIdentity } from './js/identity.js?v=20260516-onboarding-reconcile-v202';
-import { attachHabits } from './js/habits.js?v=20260516-onboarding-reconcile-v202';
-import { attachStateModule } from './js/state.js?v=20260516-onboarding-reconcile-v202';
-import { attachRenderModule } from './js/render.js?v=20260516-onboarding-reconcile-v202';
-import { attachPlanningModule } from './js/planning.js?v=20260516-onboarding-reconcile-v202';
-import { attachGamificationModule } from './js/gamification.js?v=20260516-onboarding-reconcile-v202';
-import { attachSocial } from './js/social.js?v=20260516-onboarding-reconcile-v202';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachNotifications } from './js/notifications.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachCadence } from './js/cadence.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachOnboarding } from './js/onboarding.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachIdentity } from './js/identity.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachHabits } from './js/habits.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachStateModule } from './js/state.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachRenderModule } from './js/render.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachPlanningModule } from './js/planning.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachGamificationModule } from './js/gamification.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachSocial } from './js/social.js?v=20260516-onboarding-cloud-reload-v203';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -201,7 +201,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260516-onboarding-reconcile-v202',
+    appBuildVersion: '20260516-onboarding-cloud-reload-v203',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -218,6 +218,9 @@ const app = {
     },
     shouldForceCloudLoadForUser: function(uid) {
         return shouldForceCloudLoadForUser(uid);
+    },
+    setForceCloudLoadForUser: function(uid) {
+        return setForceCloudLoadForUser(uid);
     },
     clearForceCloudLoadForUser: function(uid) {
         return clearForceCloudLoadForUser(uid);
@@ -394,6 +397,41 @@ const app = {
         this._stateSchemaNeedsSave = true;
         try { this.localSet('lifeos_onboarding_complete', '1'); } catch (_) {}
         console.log('[Onboarding] Evidência estrutural de onboarding detectada; onboarding marcado como concluído.');
+    },
+    reloadCloudStateForCurrentUser: async function(options = {}) {
+        if (!this.isRealAccount()) return false;
+        const userId = this.getActiveUserId();
+        if (!userId || userId === LOCAL_USER_SCOPE) return false;
+
+        const previousPending = !!window.sistemaVidaState?._pendingLocalChanges;
+        try {
+            this.updateSyncBadge('syncing');
+            const stateSnap = await this.withTimeout(getDoc(this.getStateDocRef(userId)), options.timeoutMs || 12000, 'reload_cloud_getDoc');
+            if (!stateSnap.exists()) {
+                this.updateSyncBadge('error');
+                return false;
+            }
+            this.setForceCloudLoadForUser(userId);
+            await this.withTimeout(this.loadState(), options.timeoutMs || 12000, 'reload_cloud_state');
+            this.clearForceCloudLoadForUser(userId);
+            if (this._stateSchemaNeedsSave) {
+                this._stateSchemaNeedsSave = false;
+                await this.saveState(true);
+            } else {
+                this.persistLocalMirror(userId);
+            }
+            this.setupRealtimeSync();
+            this.updateSyncBadge('ok');
+            return true;
+        } catch (error) {
+            this.clearForceCloudLoadForUser(userId);
+            if (previousPending && window.sistemaVidaState) {
+                window.sistemaVidaState._pendingLocalChanges = true;
+            }
+            console.warn('[SYNC] Falha ao recarregar dados da conta na nuvem:', error);
+            this.updateSyncBadge('error');
+            return false;
+        }
     },
     updateSyncBadge: function(state) {
         // state: 'ok' | 'error' | 'syncing' | 'offline'

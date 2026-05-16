@@ -917,9 +917,22 @@ onboardingCreateAccount: async function() {
 onboardingSignInAccount: async function() {
         this.onboardingSaveCurrentStep(false);
         // Se ja tem conta real autenticada, nao precisa logar novamente -
-        // apenas avanca para o proximo step (evita loop de reload no onboarding).
+        // primeiro recarrega a nuvem para nao prender uma conta pronta no onboarding local.
         if (this.isRealAccount()) {
-            this.showToast(`Voce ja esta logado como ${auth.currentUser?.email || 'usuario'}.`, 'success');
+            const loaded = await this.reloadCloudStateForCurrentUser?.({ timeoutMs: 15000 });
+            this.applyOnboardingAccountState();
+            this.onboardingHydrateFields?.();
+            if (!loaded) {
+                this.showToast('Nao consegui ler os dados da nuvem agora. Tente novamente em instantes.', 'error');
+                return;
+            }
+            this.reconcileOnboardingCompletion?.();
+            if (window.sistemaVidaState?.onboardingComplete) {
+                this.showToast(`Conta carregada: ${auth.currentUser?.email || 'usuario'}.`, 'success');
+                this.navigate('hoje');
+                return;
+            }
+            this.showToast('Dados da conta carregados. Continue de onde parou.', 'success');
             this.onboardingNext();
             return;
         }
