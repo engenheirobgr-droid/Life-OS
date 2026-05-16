@@ -928,7 +928,7 @@ onboardingSignInAccount: async function() {
             }
             this.reconcileOnboardingCompletion?.();
             if (window.sistemaVidaState?.onboardingComplete) {
-                this.showToast(`Conta carregada: ${auth.currentUser?.email || 'usuario'}.`, 'success');
+                this.showToast('Conta com dados preenchidos encontrada. Pulando onboarding.', 'success');
                 this.navigate('hoje');
                 return;
             }

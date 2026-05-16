@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachNotifications } from './js/notifications.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachCadence } from './js/cadence.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachOnboarding } from './js/onboarding.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachIdentity } from './js/identity.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachHabits } from './js/habits.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachStateModule } from './js/state.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachRenderModule } from './js/render.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachPlanningModule } from './js/planning.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachGamificationModule } from './js/gamification.js?v=20260516-onboarding-cloud-reload-v203';
-import { attachSocial } from './js/social.js?v=20260516-onboarding-cloud-reload-v203';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-onboarding-existing-data-v204';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260516-onboarding-existing-data-v204';
+import { attachNotifications } from './js/notifications.js?v=20260516-onboarding-existing-data-v204';
+import { attachCadence } from './js/cadence.js?v=20260516-onboarding-existing-data-v204';
+import { attachOnboarding } from './js/onboarding.js?v=20260516-onboarding-existing-data-v204';
+import { attachIdentity } from './js/identity.js?v=20260516-onboarding-existing-data-v204';
+import { attachHabits } from './js/habits.js?v=20260516-onboarding-existing-data-v204';
+import { attachStateModule } from './js/state.js?v=20260516-onboarding-existing-data-v204';
+import { attachRenderModule } from './js/render.js?v=20260516-onboarding-existing-data-v204';
+import { attachPlanningModule } from './js/planning.js?v=20260516-onboarding-existing-data-v204';
+import { attachGamificationModule } from './js/gamification.js?v=20260516-onboarding-existing-data-v204';
+import { attachSocial } from './js/social.js?v=20260516-onboarding-existing-data-v204';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -201,7 +201,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260516-onboarding-cloud-reload-v203',
+    appBuildVersion: '20260516-onboarding-existing-data-v204',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -388,15 +388,48 @@ const app = {
 
         return valuesOk && dimensionsOk && purposeOk && executionOk;
     },
+    hasMeaningfulSavedData: function(state = window.sistemaVidaState) {
+        const profile = state?.profile || {};
+        const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+        const countTextFields = (obj) => obj && typeof obj === 'object'
+            ? Object.values(obj).filter(hasText).length
+            : 0;
+        const hasItems = (value) => Array.isArray(value) && value.length > 0;
+        const hasObjectItems = (value) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length > 0;
+        const hasEntityItems = ['metas', 'okrs', 'macros', 'micros'].some((type) => hasItems(state?.entities?.[type]));
+        const hasIdentityItems = hasItems(profile.identity?.strengths) || hasItems(profile.identity?.shadows);
+        const hasPurpose =
+            countTextFields(profile.ikigai) > 0 ||
+            countTextFields(profile.legacyObj) > 0 ||
+            countTextFields(profile.vision) > 0 ||
+            hasText(profile.legacy) ||
+            hasText(profile.purpose);
+        const hasWheelScores = Object.values(state?.dimensions || {}).some((dimension) => {
+            const score = Number(dimension?.score);
+            return Number.isFinite(score) && score > 0;
+        });
+
+        return hasItems(profile.values) ||
+            hasWheelScores ||
+            hasPurpose ||
+            hasEntityItems ||
+            hasItems(state?.habits) ||
+            hasIdentityItems ||
+            hasItems(profile.notes) ||
+            hasObjectItems(state?.weekPlans) ||
+            hasObjectItems(state?.reviews);
+    },
     reconcileOnboardingCompletion: function() {
         if (!window.sistemaVidaState || window.sistemaVidaState.onboardingComplete) return;
         if (this.isForceOnboardingAfterReset?.()) return;
-        if (!this.hasOnboardingCompletionEvidence?.(window.sistemaVidaState)) return;
+        const hasCompletionEvidence = this.hasOnboardingCompletionEvidence?.(window.sistemaVidaState);
+        const hasSavedData = this.hasMeaningfulSavedData?.(window.sistemaVidaState);
+        if (!hasCompletionEvidence && !hasSavedData) return;
 
         window.sistemaVidaState.onboardingComplete = true;
         this._stateSchemaNeedsSave = true;
         try { this.localSet('lifeos_onboarding_complete', '1'); } catch (_) {}
-        console.log('[Onboarding] Evidência estrutural de onboarding detectada; onboarding marcado como concluído.');
+        console.log('[Onboarding] Dados existentes detectados; onboarding marcado como concluído.');
     },
     reloadCloudStateForCurrentUser: async function(options = {}) {
         if (!this.isRealAccount()) return false;
