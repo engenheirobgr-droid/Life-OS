@@ -15,18 +15,18 @@ import {
 } from './js/firebase.js';
 
 // Phase 9 extracted modules — attached to app after object definition
-import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-onboarding-existing-data-v204';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260516-onboarding-existing-data-v204';
-import { attachNotifications } from './js/notifications.js?v=20260516-onboarding-existing-data-v204';
-import { attachCadence } from './js/cadence.js?v=20260516-onboarding-existing-data-v204';
-import { attachOnboarding } from './js/onboarding.js?v=20260516-onboarding-existing-data-v204';
-import { attachIdentity } from './js/identity.js?v=20260516-onboarding-existing-data-v204';
-import { attachHabits } from './js/habits.js?v=20260516-onboarding-existing-data-v204';
-import { attachStateModule } from './js/state.js?v=20260516-onboarding-existing-data-v204';
-import { attachRenderModule } from './js/render.js?v=20260516-onboarding-existing-data-v204';
-import { attachPlanningModule } from './js/planning.js?v=20260516-onboarding-existing-data-v204';
-import { attachGamificationModule } from './js/gamification.js?v=20260516-onboarding-existing-data-v204';
-import { attachSocial } from './js/social.js?v=20260516-onboarding-existing-data-v204';
+import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260516-wellbeing-prompts-v205';
+import { attachNotifications } from './js/notifications.js?v=20260516-wellbeing-prompts-v205';
+import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
+import { attachOnboarding } from './js/onboarding.js?v=20260516-wellbeing-prompts-v205';
+import { attachIdentity } from './js/identity.js?v=20260516-wellbeing-prompts-v205';
+import { attachHabits } from './js/habits.js?v=20260516-wellbeing-prompts-v205';
+import { attachStateModule } from './js/state.js?v=20260516-wellbeing-prompts-v205';
+import { attachRenderModule } from './js/render.js?v=20260516-wellbeing-prompts-v205';
+import { attachPlanningModule } from './js/planning.js?v=20260516-wellbeing-prompts-v205';
+import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
+import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -201,7 +201,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260516-onboarding-existing-data-v204',
+    appBuildVersion: '20260516-wellbeing-prompts-v205',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -6247,6 +6247,16 @@ ensureNotesState: function() {
 
         this.normalizeDimensionsState();
         const dimensions = this.getWheelAxes();
+        const wheelPrompts = {
+            'Saúde': 'Quanta energia, sono, movimento e cuidado com o corpo voce sente hoje?',
+            'Mente': 'O quanto sua mente esta clara, curiosa, aprendendo e emocionalmente regulada?',
+            'Carreira': 'O quanto voce se sente em crescimento, utilidade e movimento profissional?',
+            'Finanças': 'Quanta seguranca, previsibilidade e controle financeiro voce percebe agora?',
+            'Relacionamentos': 'O quanto suas conexoes estao presentes, honestas e nutritivas?',
+            'Família': 'O quanto voce se sente presente, em paz e conectado com sua familia?',
+            'Lazer': 'O quanto existe descanso, prazer, leveza e espaco para respirar?',
+            'Propósito': 'O quanto sua rotina parece alinhada a algo com sentido para voce?'
+        };
         let html = '';
 
         dimensions.forEach((dim, idx) => {
@@ -6258,6 +6268,7 @@ ensureNotesState: function() {
                     <label>${dim}</label>
                     <span id="${targetId}">${score}</span>
                 </div>
+                <p class="text-xs leading-snug text-on-surface-variant">${wheelPrompts[dim] || 'Como esta esta area da sua vida neste momento?'}</p>
                 <input type="range" id="slider-wheel-${idx}" data-dim="${dim}" data-target="${targetId}" min="1" max="100" value="${score}" class="w-full accent-primary" oninput="window.app.updateDimensionVisual(this.getAttribute('data-dim'), this.value); const target=document.getElementById(this.getAttribute('data-target')); if(target) target.textContent = this.value;" style="touch-action: none; overscroll-behavior: contain;">
             </div>`;
         });

@@ -2526,7 +2526,7 @@
     <div id="perma-modal"
         class="fixed inset-0 bg-black/60 z-[130] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div
-            class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-sm w-full p-8 shadow-xl">
+            class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl max-w-md w-full p-6 md:p-8 shadow-xl max-h-[90vh] overflow-y-auto no-scrollbar">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="font-headline text-2xl italic font-bold">Reavaliar PERMA</h3>
                 <button onclick="window.app.closePermaModal()"
@@ -2540,6 +2540,7 @@
                     <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
                             for="p-slider">P - Emoção Positiva (0-10)</label><span id="val-p" class="text-primary">8.5</span>
                     </div>
+                    <p class="text-xs leading-snug text-on-surface-variant">Com que frequencia voce tem sentido alegria, gratidao, esperanca ou serenidade?</p>
                     <input type="range" id="p-slider" min="0" max="10" step="0.1" value="8.5" class="w-full accent-primary"
                         oninput="document.getElementById('val-p').textContent = this.value"
                         style="touch-action: pan-y; overscroll-behavior: contain;">
@@ -2547,6 +2548,7 @@
                 <div class="space-y-1">
                     <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
                             for="e-slider">E - Engajamento (0-10)</label><span id="val-e" class="text-primary">7.0</span></div>
+                    <p class="text-xs leading-snug text-on-surface-variant">O quanto voce entra em estado de foco, interesse e presenca no que faz?</p>
                     <input type="range" id="e-slider" min="0" max="10" step="0.1" value="7.0" class="w-full accent-primary"
                         oninput="document.getElementById('val-e').textContent = this.value"
                         style="touch-action: pan-y; overscroll-behavior: contain;">
@@ -2555,6 +2557,7 @@
                     <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
                             for="r-slider">R - Relacionamentos (0-10)</label><span id="val-r" class="text-primary">9.2</span>
                     </div>
+                    <p class="text-xs leading-snug text-on-surface-variant">O quanto voce se sente amado, apoiado, conectado e presente nas relacoes?</p>
                     <input type="range" id="r-slider" min="0" max="10" step="0.1" value="9.2" class="w-full accent-primary"
                         oninput="document.getElementById('val-r').textContent = this.value"
                         style="touch-action: pan-y; overscroll-behavior: contain;">
@@ -2562,6 +2565,7 @@
                 <div class="space-y-1">
                     <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
                             for="m-slider">M - Significado (0-10)</label><span id="val-m" class="text-primary">6.0</span></div>
+                    <p class="text-xs leading-snug text-on-surface-variant">O quanto suas escolhas parecem conectadas a valores, proposito e contribuicao?</p>
                     <input type="range" id="m-slider" min="0" max="10" step="0.1" value="6.0" class="w-full accent-primary"
                         oninput="document.getElementById('val-m').textContent = this.value"
                         style="touch-action: pan-y; overscroll-behavior: contain;">
@@ -2569,6 +2573,7 @@
                 <div class="space-y-1">
                     <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
                             for="a-slider">A - Realização (0-10)</label><span id="val-a" class="text-primary">7.5</span></div>
+                    <p class="text-xs leading-snug text-on-surface-variant">O quanto voce sente progresso, competencia e conclusao nas coisas importantes?</p>
                     <input type="range" id="a-slider" min="0" max="10" step="0.1" value="7.5" class="w-full accent-primary"
                         oninput="document.getElementById('val-a').textContent = this.value"
                         style="touch-action: pan-y; overscroll-behavior: contain;">
@@ -2793,7 +2798,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260516-onboarding-existing-data-v204"></script>
+    <script type="module" src="app.js?v=20260516-wellbeing-prompts-v205"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
