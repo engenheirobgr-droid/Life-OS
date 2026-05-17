@@ -2114,7 +2114,7 @@
                     <span class="block text-[10px] font-medium text-outline mt-1">Registrar contexto, links ou informações de qualquer tarefa</span>
                 </span>
             </button>
-            <button type="button" onclick="window.app.closeFabMenu(); window.app.navigate('hoje'); setTimeout(function(){ window.app.openHabitSuggestionsModal(); }, 150);"
+            <button type="button" onclick="window.app.openHabitSuggestionsFromFab()"
                 class="w-full text-left px-4 py-3 rounded-xl bg-surface-container-high border border-outline-variant/20 text-on-surface font-bold text-sm hover:bg-surface-container-highest transition-colors flex items-start gap-3">
                 <span class="material-symbols-outlined notranslate text-lg mt-0.5">repeat</span>
                 <span class="leading-tight">
@@ -2925,7 +2925,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260517-protocols-focus-v1"></script>
+    <script type="module" src="app.js?v=20260517-protocols-focus-v2"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
