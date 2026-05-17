@@ -2266,12 +2266,12 @@ render: {
 
                 const todayStr = app.getLocalDateKey();
 
-                // Build card HTML for one habit (returns '' if habit is not scheduled for today)
+                // Build card HTML for one habit.
+                // In the Hábitos tab we show all active habits; those scheduled for today come first.
                 const buildHabitCard = (habit) => {
                     const visibleToday = habit.frequency === 'manual'
                         ? true
                         : (typeof app.isHabitScheduledForDate === 'function' ? app.isHabitScheduledForDate(habit, todayStr) : true);
-                    if (!visibleToday) return '';
 
                     const icon = habitIconMap[habit.dimension] || 'stars';
                     const target = habit.targetValue || 1;
@@ -2297,15 +2297,18 @@ render: {
                             ? `window.app.toggleHabitAllSteps('${habit.id}', '${todayStr}', ${allStepsDone ? 'true' : 'false'})`
                             : `window.app.updateHabitLog('${habit.id}', '${todayStr}', ${isDone ? 0 : 1})`;
                         controlHtml = `
-                        <div class="w-7 h-7 rounded-full ${isDone ? 'bg-primary' : 'border-2 border-outline-variant hover:border-primary'} flex items-center justify-center shrink-0 cursor-pointer transition-colors" onclick="event.stopPropagation(); ${actionClick}">
+                        <div class="w-7 h-7 rounded-full ${isDone ? 'bg-primary' : 'border-2 border-outline-variant hover:border-primary'} ${visibleToday ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'} flex items-center justify-center shrink-0 transition-colors" ${visibleToday ? `onclick="event.stopPropagation(); ${actionClick}"` : `title="Esse hábito não está previsto para hoje."`}>
                             ${isDone ? '<span class="material-symbols-outlined notranslate text-white text-[16px]" style="font-variation-settings: \\\'wght\\\' 700;">check</span>' : ''}
                         </div>`;
                     } else if (mode === 'numeric' || mode === 'timer') {
-                        controlHtml = `
+                        controlHtml = visibleToday ? `
                         <div class="flex items-center gap-1 bg-surface-container rounded-lg p-1 shrink-0" onclick="event.stopPropagation()">
                             <button class="w-6 h-6 flex justify-center items-center rounded-md hover:bg-outline-variant/20 text-on-surface" onclick="window.app.updateHabitLog('${habit.id}', '${todayStr}', Math.max(0, ${currentVal} - 1))">-</button>
                             <span class="text-xs font-semibold text-primary w-6 text-center">${currentVal}</span>
                             <button class="w-6 h-6 flex justify-center items-center rounded-md hover:bg-outline-variant/20 text-on-surface" onclick="window.app.updateHabitLog('${habit.id}', '${todayStr}', ${currentVal} + 1)">+</button>
+                        </div>` : `
+                        <div class="flex items-center gap-1 rounded-lg border border-outline-variant/15 bg-surface-container-low px-2 py-1 shrink-0 opacity-60" title="Esse hábito não está previsto para hoje.">
+                            <span class="text-xs font-semibold text-outline">${currentVal}</span>
                         </div>`;
                     }
 
@@ -2346,7 +2349,7 @@ render: {
                     if (hasSteps) {
                         const stepsListItems = steps.map((step, idx) => {
                             const done = !!(todayStepMap[idx] || todayStepMap[String(idx)]);
-                            return `<label class="flex items-center gap-2 cursor-pointer py-1" onclick="event.stopPropagation(); window.app.toggleHabitStepLog('${habit.id}', '${todayStr}', ${idx})">
+                            return `<label class="flex items-center gap-2 py-1 ${visibleToday ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}" ${visibleToday ? `onclick="event.stopPropagation(); window.app.toggleHabitStepLog('${habit.id}', '${todayStr}', ${idx})"` : `title="Esse hábito não está previsto para hoje."`}>
                                 <div class="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${done ? 'bg-primary border-primary' : 'border-outline-variant'}">
                                     ${done ? '<span class="material-symbols-outlined notranslate text-white text-[10px]" style="font-variation-settings: \\\'wght\\\' 700;">check</span>' : ''}
                                 </div>
@@ -2386,6 +2389,9 @@ render: {
                                 Foco
                            </button>`
                         : '';
+                    const scheduleChip = visibleToday
+                        ? `<span class="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]">today</span>Hoje</span>`
+                        : `<span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high text-outline px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]">event</span>Não é para hoje</span>`;
                     const maturityClass = habit.isKey
                         ? 'border-amber-500/25 bg-amber-500/[0.04]'
                         : habit.maturity === 'graduated'
@@ -2400,6 +2406,7 @@ render: {
                                 ${maturityChip}
                                 ${continuousChip}
                                 ${keyChip}
+                                ${scheduleChip}
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined notranslate text-[18px] opacity-0 group-hover:opacity-100 transition-all p-1 cursor-pointer ${habit.isKey ? 'text-amber-500' : 'text-outline hover:text-amber-500'}" onclick="event.stopPropagation(); window.app.toggleManualKeyHabit('${habit.id}')" title="${habit.isKey ? 'Remover Hábito-Chave' : 'Marcar como Hábito-Chave'}" style="font-variation-settings:'FILL' ${habit.isKey ? 1 : 0}">key</span>
@@ -2445,7 +2452,16 @@ render: {
                 let habitsHtml = '';
                 let totalRendered = 0;
                 intentOrder.forEach(key => {
-                    const cards = (grouped[key] || []).map(buildHabitCard).filter(Boolean);
+                    const cards = (grouped[key] || [])
+                        .slice()
+                        .sort((a, b) => {
+                            const aToday = a.frequency === 'manual' ? true : (typeof app.isHabitScheduledForDate === 'function' ? app.isHabitScheduledForDate(a, todayStr) : true);
+                            const bToday = b.frequency === 'manual' ? true : (typeof app.isHabitScheduledForDate === 'function' ? app.isHabitScheduledForDate(b, todayStr) : true);
+                            if (aToday !== bToday) return aToday ? -1 : 1;
+                            return String(a.title || '').localeCompare(String(b.title || ''), 'pt-BR');
+                        })
+                        .map(buildHabitCard)
+                        .filter(Boolean);
                     if (!cards.length) return;
                     totalRendered += cards.length;
                     const cfg = intentConfig[key];
@@ -2464,7 +2480,7 @@ render: {
                     habitsHtml = `
                     <div class="flex flex-col items-center py-6 text-center gap-3">
                         <span class="material-symbols-outlined notranslate text-outline text-4xl">self_improvement</span>
-                        <p class="text-sm text-outline">${state.habits.length === 0 ? 'Nenhum hábito criado ainda.' : 'Nenhum hábito agendado para hoje.'}</p>
+                        <p class="text-sm text-outline">${state.habits.length === 0 ? 'Nenhum hábito criado ainda.' : 'Nenhum hábito ativo para mostrar.'}</p>
                         ${state.habits.length === 0 ? `<button type="button" onclick="window.app.openCreateModal('habits')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all"><span class="material-symbols-outlined notranslate text-[16px]">add</span>Criar hábito</button>` : ''}
                     </div>`;
                 }

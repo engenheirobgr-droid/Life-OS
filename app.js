@@ -16,17 +16,17 @@ import {
 
 // Phase 9 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260516-wellbeing-prompts-v205';
-import { attachNotifications } from './js/notifications.js?v=20260517-protocols-focus-v2';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260517-protocols-focus-v3';
+import { attachNotifications } from './js/notifications.js?v=20260517-protocols-focus-v3';
 import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
-import { attachOnboarding } from './js/onboarding.js?v=20260517-protocols-focus-v2';
+import { attachOnboarding } from './js/onboarding.js?v=20260517-protocols-focus-v3';
 import { attachIdentity } from './js/identity.js?v=20260516-wellbeing-prompts-v205';
-import { attachHabits } from './js/habits.js?v=20260517-protocols-focus-v2';
-import { attachProtocolsModule } from './js/protocols.js?v=20260517-protocols-focus-v2';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260517-protocols-focus-v2';
-import { attachStateModule } from './js/state.js?v=20260517-protocols-focus-v2';
-import { attachRenderModule } from './js/render.js?v=20260517-protocols-focus-v2';
-import { attachPlanningModule } from './js/planning.js?v=20260517-protocols-focus-v2';
+import { attachHabits } from './js/habits.js?v=20260517-protocols-focus-v3';
+import { attachProtocolsModule } from './js/protocols.js?v=20260517-protocols-focus-v3';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260517-protocols-focus-v3';
+import { attachStateModule } from './js/state.js?v=20260517-protocols-focus-v3';
+import { attachRenderModule } from './js/render.js?v=20260517-protocols-focus-v3';
+import { attachPlanningModule } from './js/planning.js?v=20260517-protocols-focus-v3';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260517-protocols-focus-v2',
+    appBuildVersion: '20260517-protocols-focus-v3',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {

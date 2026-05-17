@@ -231,7 +231,14 @@ function renderHabitSuggestionsModal() {
 
 function openHabitSuggestionsModal() {
     const modal = document.getElementById('habit-suggestions-modal');
-    if (!modal) return;
+    if (!modal) {
+        if (this.currentView !== 'hoje' && typeof this.switchView === 'function') {
+            this.switchView('hoje').then(() => {
+                setTimeout(() => this.openHabitSuggestionsModal?.(), 80);
+            });
+        }
+        return;
+    }
     this.renderHabitSuggestionsModal();
     modal.classList.remove('hidden');
     modal.classList.add('flex');
