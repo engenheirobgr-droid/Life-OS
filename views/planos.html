@@ -309,7 +309,7 @@ A arquitetura da sua intenção: metas, OKRs, macros, micros, timeline e planeja
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label for="protocol-suggested-frequency" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Frequencia</label>
-                        <select id="protocol-suggested-frequency" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                        <select id="protocol-suggested-frequency" onchange="window.app.onProtocolSuggestedFrequencyChange(this.value)" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                             <option value="">Nao definir</option>
                             <option value="daily">Todos os dias</option>
                             <option value="specific">Dias especificos</option>
@@ -330,15 +330,15 @@ A arquitetura da sua intenção: metas, OKRs, macros, micros, timeline e planeja
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="flex flex-col gap-1.5">
+                    <div id="protocol-suggested-interval-container" class="hidden flex-col gap-1.5">
                         <label for="protocol-suggested-interval-days" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Intervalo</label>
                         <input id="protocol-suggested-interval-days" type="number" min="2" max="365" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" placeholder="Ex.: 14">
                     </div>
-                    <div class="flex flex-col gap-1.5">
+                    <div id="protocol-suggested-monthly-container" class="hidden flex-col gap-1.5">
                         <label for="protocol-suggested-day-of-month" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dia do mes</label>
                         <input id="protocol-suggested-day-of-month" type="number" min="1" max="31" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" placeholder="Ex.: 5">
                     </div>
-                    <div class="flex flex-col gap-1.5">
+                    <div id="protocol-suggested-start-container" class="hidden flex-col gap-1.5">
                         <label for="protocol-suggested-start-date" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Data inicial</label>
                         <input id="protocol-suggested-start-date" type="date" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                     </div>

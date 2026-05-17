@@ -62,14 +62,26 @@ export function attachHabitFocusModule(app) {
             const modal = document.getElementById('habit-focus-modal');
             const macroSelect = document.getElementById('habit-focus-macro');
             if (!modal || !macroSelect) return;
+            const linkedMeta = habit.linkedMetaId
+                ? (window.sistemaVidaState?.entities?.metas || []).find(item => item.id === habit.linkedMetaId)
+                : null;
+            const protocol = habit.protocolId ? this.getProtocolById?.(habit.protocolId) : null;
 
             document.getElementById('habit-focus-habit-id').value = habit.id;
             document.getElementById('habit-focus-title').textContent = habit.title || 'Sessão de foco';
             document.getElementById('habit-focus-delivery').value = '';
             document.getElementById('habit-focus-minutes').value = String(Math.max(25, Math.round(Number(habit.targetValue) || 90)));
             document.getElementById('habit-focus-helper').textContent = habit.protocolId
-                ? 'Defina a entrega desta sessão. O protocolo já organiza os passos do hábito.'
-                : 'Defina a entrega desta sessão e vincule-a a uma macro para o plano avançar.';
+                ? 'Defina a entrega desta sessao. O protocolo ja organiza os passos do habito.'
+                : 'Defina a entrega desta sessao e vincule-a a uma macro para o plano avancar.';
+            const contextEl = document.getElementById('habit-focus-context');
+            if (contextEl) {
+                contextEl.textContent = [
+                    linkedMeta?.title ? `Meta: ${linkedMeta.title}` : '',
+                    protocol?.title ? `Protocolo: ${protocol.title}` : '',
+                    habit.targetValue && String(habit.trackMode || '') === 'timer' ? `Meta diaria: ${Math.round(Number(habit.targetValue) || 0)} min` : ''
+                ].filter(Boolean).join(' | ');
+            }
 
             macroSelect.innerHTML = macros.map((macro) =>
                 `<option value="${this.escapeHtml(macro.id)}">${this.escapeHtml(this.buildHabitFocusMacroLabel(macro))}</option>`
@@ -179,6 +191,7 @@ export function attachHabitFocusModule(app) {
             const micro = (state.entities?.micros || []).find(item => item.id === closure.microId);
             if (!micro) return;
             const habit = (state.habits || []).find(item => item.id === closure.habitId);
+            const protocol = closure.protocolId ? this.getProtocolById?.(closure.protocolId) : null;
             const modal = document.getElementById('habit-focus-closure-modal');
             if (!modal) return;
 
@@ -186,11 +199,18 @@ export function attachHabitFocusModule(app) {
             document.getElementById('habit-focus-closure-subtitle').textContent = habit?.title
                 ? `Sessão encerrada a partir do hábito ${habit.title}.`
                 : 'Sessão encerrada. Registre a entrega antes de seguir.';
-            document.getElementById('habit-focus-closure-delivery').value = '';
+            document.getElementById('habit-focus-closure-delivery').value = micro.title || '';
             document.getElementById('habit-focus-closure-evidence').value = '';
             document.getElementById('habit-focus-closure-gaps').value = '';
             document.getElementById('habit-focus-closure-next-step').value = '';
             document.getElementById('habit-focus-closure-complete').checked = true;
+            const closureContextEl = document.getElementById('habit-focus-closure-context');
+            if (closureContextEl) {
+                closureContextEl.textContent = [
+                    protocol?.title ? `Protocolo: ${protocol.title}` : '',
+                    closure.focusSec ? `Tempo: ${Math.max(1, Math.round(Number(closure.focusSec || 0) / 60))} min` : ''
+                ].filter(Boolean).join(' | ');
+            }
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');

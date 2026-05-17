@@ -323,6 +323,34 @@ function normalizeProtocol(protocol = {}) {
 
 export function attachProtocolsModule(app) {
     Object.assign(app, {
+        formatProtocolSuggestedHabitSummary: function(protocol) {
+            const suggested = protocol?.suggestedHabit || {};
+            const pieces = [];
+            if (suggested.dimension) pieces.push(suggested.dimension);
+
+            const frequency = String(suggested.frequency || '').trim();
+            if (frequency === 'daily') pieces.push('Todos os dias');
+            else if (frequency === 'specific') {
+                const days = Array.isArray(suggested.specificDays) ? suggested.specificDays : [];
+                pieces.push(days.length ? 'Dias específicos' : 'Frequencia personalizada');
+            } else if (frequency === 'every_x_days' && Number(suggested.intervalDays) > 0) {
+                pieces.push(`A cada ${Number(suggested.intervalDays)} dias`);
+            } else if (frequency === 'monthly' && Number(suggested.dayOfMonth) > 0) {
+                pieces.push(`Todo dia ${Number(suggested.dayOfMonth)}`);
+            } else if (frequency === 'manual') {
+                pieces.push('Sob demanda');
+            }
+
+            if (String(suggested.trackMode || '') === 'timer' && Number(suggested.targetValue) > 0) {
+                pieces.push(`${Number(suggested.targetValue)} min`);
+            } else if (String(suggested.trackMode || '') === 'numeric' && Number(suggested.targetValue) > 0) {
+                pieces.push(`Meta ${Number(suggested.targetValue)}`);
+            }
+
+            if (suggested.startTime) pieces.push(suggested.startTime);
+            return pieces.filter(Boolean).join(' · ');
+        },
+
         getBaseProtocolsCatalog: function() {
             return BASE_PROTOCOLS.map(cloneProtocol);
         },
@@ -387,7 +415,15 @@ export function attachProtocolsModule(app) {
                 return acc;
             }, {});
 
-            const families = Object.keys(grouped);
+            const familyOrder = ['estudo', 'limpeza', 'treino', 'financas', 'geral'];
+            const families = Object.keys(grouped).sort((a, b) => {
+                const ia = familyOrder.indexOf(a);
+                const ib = familyOrder.indexOf(b);
+                if (ia === -1 && ib === -1) return a.localeCompare(b);
+                if (ia === -1) return 1;
+                if (ib === -1) return -1;
+                return ia - ib;
+            });
             container.innerHTML = `
                 <div class="flex flex-col gap-4">
                     <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-5 shadow-sm">
@@ -417,6 +453,7 @@ export function attachProtocolsModule(app) {
                                     ${items.map((protocol) => {
                                         const references = protocol.evidenceCard.references || [];
                                         const principles = protocol.evidenceCard.principles || [];
+                                        const suggestedHabitSummary = this.formatProtocolSuggestedHabitSummary(protocol);
                                         return `
                                             <article class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-5 shadow-sm space-y-4">
                                                 <div class="flex items-start justify-between gap-3">
@@ -449,6 +486,12 @@ export function attachProtocolsModule(app) {
                                                         `).join('')}
                                                     </div>
                                                 </div>
+                                                ${suggestedHabitSummary ? `
+                                                    <div class="rounded-xl border border-primary/10 bg-primary/5 px-4 py-3">
+                                                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Sugestao de habito</p>
+                                                        <p class="mt-1 text-sm text-on-surface-variant leading-relaxed">${this.escapeHtml(suggestedHabitSummary)}</p>
+                                                    </div>
+                                                ` : ''}
                                                 <div class="flex flex-wrap gap-2 pt-1">
                                                     <button type="button" onclick="window.app.openProtocolModal('${protocol.id}')"
                                                         class="inline-flex items-center gap-2 rounded-lg bg-surface-container-high px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-on-surface hover:bg-surface-container-highest transition-colors">
@@ -501,6 +544,7 @@ export function attachProtocolsModule(app) {
             document.getElementById('protocol-suggested-routine').value = protocol?.suggestedHabit?.routine || '';
             document.getElementById('protocol-suggested-reward').value = protocol?.suggestedHabit?.reward || '';
             document.getElementById('protocol-modal-title').textContent = protocol ? `Editar protocolo: ${protocol.title}` : 'Novo protocolo';
+            this.onProtocolSuggestedFrequencyChange?.(document.getElementById('protocol-suggested-frequency')?.value || '');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         },
@@ -510,6 +554,21 @@ export function attachProtocolsModule(app) {
             if (!modal) return;
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+        },
+
+        onProtocolSuggestedFrequencyChange: function(freq) {
+            const daysContainer = document.getElementById('protocol-suggested-interval-container');
+            const monthlyContainer = document.getElementById('protocol-suggested-monthly-container');
+            const startContainer = document.getElementById('protocol-suggested-start-container');
+            const setVisible = (el, show) => {
+                if (!el) return;
+                el.classList.toggle('hidden', !show);
+                el.classList.toggle('flex', show);
+                el.style.display = show ? 'flex' : 'none';
+            };
+            setVisible(daysContainer, freq === 'every_x_days');
+            setVisible(startContainer, freq === 'every_x_days');
+            setVisible(monthlyContainer, freq === 'monthly');
         },
 
         saveProtocolFromModal: function() {
