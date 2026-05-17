@@ -1422,14 +1422,17 @@ renderDeepWorkPanel: function() {
         const hasSelectedMicro = !!(dw.microId || microEl?.value);
         const selectedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
         const canCompleteSelectedMicro = !!(selectedMicro && selectedMicro.status !== 'done');
+        const hasPendingClosure = !!(dw.pendingClosure?.microId && selectedMicro && dw.pendingClosure.microId === selectedMicro.id);
         if (statusEl) {
             if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Selecione uma micro acao';
+            else if (hasPendingClosure) statusEl.textContent = 'Fechamento da sessao pendente';
             else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
             else if (dw.isPaused) statusEl.textContent = 'Sessao pausada';
             else statusEl.textContent = dw.mode === 'focus' ? 'Bloco em andamento' : (canCompleteSelectedMicro ? 'Sessao concluida: confirme a micro' : 'Pausa de recuperacao');
         }
         if (stepEl) {
             if (!dw.isRunning && !hasSelectedMicro) stepEl.textContent = 'Passo 1: escolha a micro';
+            else if (hasPendingClosure) stepEl.textContent = 'Registre a entrega e as notas da sessao';
             else if (!dw.isRunning) stepEl.textContent = 'Passo 2: inicie o bloco';
             else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
             else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3: foco em execucao' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a micro' : 'Pausa estruturada');
@@ -1506,11 +1509,20 @@ renderDeepWorkPanel: function() {
 
         if (contextActionsEl) {
             const shouldShowQuickComplete = !!(hasSelectedMicro && canCompleteSelectedMicro && (dw.mode === 'break' || !dw.isRunning));
-            contextActionsEl.classList.toggle('hidden', !shouldShowQuickComplete);
-            if (shouldShowQuickComplete && selectedMicro) {
+            const shouldShowClosure = !!(hasPendingClosure && typeof window.app.openHabitFocusClosureModal === 'function');
+            contextActionsEl.classList.toggle('hidden', !(shouldShowQuickComplete || shouldShowClosure));
+            if (shouldShowClosure && selectedMicro) {
                 contextActionsEl.innerHTML = `
                     <div class="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center justify-between gap-3">
-                        <p class="text-[11px] text-on-surface-variant leading-snug">Sessão finalizada para <span class="font-bold text-on-surface">${this.escapeHtml(selectedMicro.title)}</span>. Concluir agora?</p>
+                        <p class="text-[11px] text-on-surface-variant leading-snug">A sessao de <span class="font-bold text-on-surface">${this.escapeHtml(selectedMicro.title)}</span> terminou. Registre a entrega antes de seguir.</p>
+                        <button onclick="window.app.openHabitFocusClosureModal()" class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-widest hover:opacity-90">
+                            Fechar sessao
+                        </button>
+                    </div>`;
+            } else if (shouldShowQuickComplete && selectedMicro) {
+                contextActionsEl.innerHTML = `
+                    <div class="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center justify-between gap-3">
+                        <p class="text-[11px] text-on-surface-variant leading-snug">Sessao finalizada para <span class="font-bold text-on-surface">${this.escapeHtml(selectedMicro.title)}</span>. Concluir agora?</p>
                         <button onclick="window.app.completeMicroAction('${selectedMicro.id}')" class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-widest hover:opacity-90">
                             Concluir
                         </button>
@@ -1958,16 +1970,24 @@ render: {
             if (app.pendingFocusMicroId) {
                 const pendingId = app.pendingFocusMicroId;
                 const autoStart = !!app.pendingFocusAutoStart;
+                const pendingMinutes = Math.max(0, Math.round(Number(app.pendingFocusMinutes) || 0));
                 app.pendingFocusMicroId = '';
                 app.pendingFocusAutoStart = false;
+                app.pendingFocusMinutes = 0;
                 const micro = app.getPlanMicros({ includeDone: false }).find(m => m.id === pendingId);
                 if (micro) {
                     state.deepWork.microId = micro.id;
                     state.deepWork.intention = micro.title || '';
                     const microEl = document.getElementById('deep-work-micro');
                     const intentionEl = document.getElementById('deep-work-intention');
+                    const presetEl = document.getElementById('deep-work-preset');
                     if (microEl) microEl.value = micro.id;
                     if (intentionEl) intentionEl.value = micro.title || '';
+                    if (presetEl && pendingMinutes > 0) presetEl.value = String(pendingMinutes);
+                    if (pendingMinutes > 0) {
+                        state.deepWork.targetSec = pendingMinutes * 60;
+                        state.deepWork.remainingSec = state.deepWork.targetSec;
+                    }
                     if (autoStart && !state.deepWork.isRunning) app.startDeepWorkSession();
                     else app.renderDeepWorkPanel();
                     const panel = document.getElementById('deep-work-panel');
@@ -2245,13 +2265,13 @@ render: {
                 };
 
                 const todayStr = app.getLocalDateKey();
-                const dayIndex = new Date().getDay().toString(); // 0(Sun) to 6(Sat)
 
                 // Build card HTML for one habit (returns '' if habit is not scheduled for today)
                 const buildHabitCard = (habit) => {
-                    if (habit.frequency === 'specific' && habit.specificDays && habit.specificDays.length > 0) {
-                        if (!habit.specificDays.includes(dayIndex)) return '';
-                    }
+                    const visibleToday = habit.frequency === 'manual'
+                        ? true
+                        : (typeof app.isHabitScheduledForDate === 'function' ? app.isHabitScheduledForDate(habit, todayStr) : true);
+                    if (!visibleToday) return '';
 
                     const icon = habitIconMap[habit.dimension] || 'stars';
                     const target = habit.targetValue || 1;
@@ -2360,6 +2380,12 @@ render: {
                     const keyChip = habit.isKey
                         ? `<span class="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 text-amber-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]" style="font-variation-settings:'FILL' 1">key</span>Chave</span>`
                         : '';
+                    const focusCta = app.canStartFocusFromHabit?.(habit)
+                        ? `<button type="button" onclick="event.stopPropagation(); window.app.openHabitFocusModal('${habit.id}')" class="mt-3 inline-flex items-center gap-1 rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/15 transition-colors">
+                                <span class="material-symbols-outlined notranslate text-[12px]">timer</span>
+                                Foco
+                           </button>`
+                        : '';
                     const maturityClass = habit.isKey
                         ? 'border-amber-500/25 bg-amber-500/[0.04]'
                         : habit.maturity === 'graduated'
@@ -2392,6 +2418,7 @@ render: {
                                     ${habit.routine ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Rotina: ${habit.routine}</p>` : ''}
                                     ${habit.startTime ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Horário: ${habit.startTime}${habit.reminderEnabled ? ' - Lembrete ativo' : ''}</p>` : ''}
                                     ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight truncate">Recompensa: ${habit.reward}</p>` : ''}
+                                    ${focusCta}
                                 </div>
                                 ${progressText ? `<span class="text-xs font-bold text-primary shrink-0">${progressText}</span>` : ''}
                             </div>
@@ -3149,6 +3176,7 @@ render: {
 
             const microC = document.getElementById('micro-container');
             if (microC) microC.innerHTML = buildCards(state.entities.micros, 'micros');
+            if (typeof app.renderProtocolsPanel === 'function' && app.planosActiveTab === 'protocolos') app.renderProtocolsPanel();
             if (app.planosActiveTab === 'ciclo') app.renderCycleReviewPanel();
         },
 

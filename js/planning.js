@@ -69,6 +69,7 @@ onTypeChange: function(type) {
                 if (typeof this.updateHabitReminderPreview === 'function') this.updateHabitReminderPreview();
             }
             this.populateHabitLinkedMeta();
+            if (typeof this.populateHabitProtocolSelect === 'function') this.populateHabitProtocolSelect();
             this.populateHabitIdentitySource();
             if (contextGroup) contextGroup.classList.add('hidden');
             if (contextInput) contextInput.required = false;
@@ -1155,6 +1156,9 @@ saveNewEntity: function() {
             obj.trackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
             obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
             obj.frequency = document.getElementById('habit-frequency') ? document.getElementById('habit-frequency').value : 'daily';
+            obj.intervalDays = Math.max(0, Math.round(Number(document.getElementById('habit-interval-days')?.value || 0)));
+            obj.dayOfMonth = Math.max(0, Math.round(Number(document.getElementById('habit-day-of-month')?.value || 0)));
+            obj.scheduleStartDate = String(document.getElementById('habit-schedule-start-date')?.value || '').trim();
             obj.startTime = document.getElementById('habit-start-time') ? document.getElementById('habit-start-time').value : '';
             obj.reminderEnabled = !!(document.getElementById('habit-reminder-enabled') && document.getElementById('habit-reminder-enabled').checked);
             obj.reminderTime = obj.startTime || '';
@@ -1176,6 +1180,13 @@ saveNewEntity: function() {
             } else {
                 obj.specificDays = [];
             }
+            if (obj.frequency !== 'every_x_days') {
+                obj.intervalDays = 0;
+                obj.scheduleStartDate = '';
+            }
+            if (obj.frequency !== 'monthly') {
+                obj.dayOfMonth = 0;
+            }
             obj.logs = isEditing ? (getOldItem(id, 'habits').logs || {}) : {};
             obj.stepLogs = isEditing ? (getOldItem(id, 'habits').stepLogs || {}) : {};
             obj.maturity = isEditing ? (getOldItem(id, 'habits').maturity || 'forming') : 'forming';
@@ -1189,6 +1200,8 @@ saveNewEntity: function() {
             if (oldDismissed) obj.keyDismissedAt = oldDismissed;
             const linkedSel = document.getElementById('habit-linked-meta');
             obj.linkedMetaId = linkedSel && linkedSel.value ? linkedSel.value : null;
+            const protocolSel = document.getElementById('habit-protocol');
+            obj.protocolId = protocolSel && protocolSel.value ? protocolSel.value : '';
             obj.sourceStrengthId = document.getElementById('habit-strength-source')?.value || '';
             obj.sourceShadowId = document.getElementById('habit-shadow-source')?.value || '';
             const shadowModeEl = document.getElementById('habit-shadow-mode');
@@ -1492,6 +1505,9 @@ editEntity: function(id, type) {
             if (document.getElementById('habit-track-mode')) document.getElementById('habit-track-mode').value = item.trackMode || 'boolean';
             if (document.getElementById('habit-target')) document.getElementById('habit-target').value = item.targetValue || 1;
             if (document.getElementById('habit-frequency')) document.getElementById('habit-frequency').value = item.frequency || 'daily';
+            if (document.getElementById('habit-interval-days')) document.getElementById('habit-interval-days').value = Number(item.intervalDays || 0) || '';
+            if (document.getElementById('habit-day-of-month')) document.getElementById('habit-day-of-month').value = Number(item.dayOfMonth || 0) || '';
+            if (document.getElementById('habit-schedule-start-date')) document.getElementById('habit-schedule-start-date').value = item.scheduleStartDate || '';
             if (document.getElementById('habit-start-time')) document.getElementById('habit-start-time').value = item.startTime || item.reminderTime || '';
             if (document.getElementById('habit-reminder-enabled')) document.getElementById('habit-reminder-enabled').checked = !!item.reminderEnabled;
             if (document.getElementById('habit-reminder-interval-enabled')) document.getElementById('habit-reminder-interval-enabled').checked = !!item.reminderIntervalEnabled;
@@ -1504,6 +1520,7 @@ editEntity: function(id, type) {
                     opt.selected = item.specificDays.includes(opt.value);
                 });
             }
+            this.onHabitFreqChange(item.frequency || 'daily');
         }
 
         this.onTypeChange(type);
@@ -1516,6 +1533,11 @@ editEntity: function(id, type) {
                 if (linkedSel.querySelector(`option[value="${item.linkedMetaId}"]`)) {
                     linkedSel.value = item.linkedMetaId;
                 }
+            }
+            const protocolSel = document.getElementById('habit-protocol');
+            if (typeof this.populateHabitProtocolSelect === 'function') this.populateHabitProtocolSelect(item.protocolId || '');
+            if (protocolSel && item.protocolId && protocolSel.querySelector(`option[value="${item.protocolId}"]`)) {
+                protocolSel.value = item.protocolId;
             }
             const strengthSel = document.getElementById('habit-strength-source');
             const shadowSel = document.getElementById('habit-shadow-source');

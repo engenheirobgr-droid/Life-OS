@@ -10,7 +10,7 @@ getStarterJourneyState: function() {
         const activeMicros = (state.entities?.micros || []).filter(m => m && m.id && m.status !== 'done' && m.status !== 'abandoned' && !m.completed);
         const activeHabits = (state.habits || []).filter(h => h && h.id && h.archived !== true && h.status !== 'archived');
         const dayIndex = String(new Date(today + 'T12:00:00').getDay());
-        const habitsForToday = activeHabits.filter(h => h.frequency !== 'specific' || !Array.isArray(h.specificDays) || !h.specificDays.length || h.specificDays.map(String).includes(dayIndex));
+        const habitsForToday = activeHabits.filter(h => typeof this.isHabitScheduledForDate === 'function' ? this.isHabitScheduledForDate(h, todayKey) : (h.frequency !== 'specific' || !Array.isArray(h.specificDays) || !h.specificDays.length || h.specificDays.map(String).includes(dayIndex)));
         const pendingHabit = habitsForToday.find(h => !this.isHabitDoneOnDate(h, today));
         const weeklyPlanned = !!(weekPlan && Array.isArray(weekPlan.selectedMicros) && weekPlan.selectedMicros.length > 0);
         const next = this.getNextBestAction({ scope: 'today' });

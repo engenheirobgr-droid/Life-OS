@@ -186,6 +186,7 @@ ensureSettingsState: function() {
         this.ensureDailyCheckinState();
         this.ensureCadenceState();
         this.ensureNotesState();
+        if (typeof this.ensureProtocolsState === 'function') this.ensureProtocolsState();
         this.ensureHabitMaturityState();
         if (this.ensureSocialState) this.ensureSocialState();
         if (typeof window.sistemaVidaState.profile.legacy !== 'string') {

@@ -51,16 +51,61 @@ ensureHabitMaturityState: function() {
             if (typeof habit.reminderWindowStart !== 'string') habit.reminderWindowStart = '';
             if (typeof habit.reminderWindowEnd !== 'string') habit.reminderWindowEnd = '';
             if (!Number.isFinite(Number(habit.reminderIntervalMin))) habit.reminderIntervalMin = 0;
+            if (!Number.isFinite(Number(habit.intervalDays))) habit.intervalDays = 0;
+            if (!Number.isFinite(Number(habit.dayOfMonth))) habit.dayOfMonth = 0;
+            if (typeof habit.scheduleStartDate !== 'string') habit.scheduleStartDate = '';
         });
+    },
+
+getHabitScheduleAnchorDate: function(habit) {
+        const raw = String(habit?.scheduleStartDate || habit?.createdAt || '').trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+        if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) return raw.slice(0, 10);
+        return this.getLocalDateKey();
+    },
+
+getHabitScheduleDayOfMonth: function(habit) {
+        const parsed = Math.round(Number(habit?.dayOfMonth) || 0);
+        if (parsed >= 1 && parsed <= 31) return parsed;
+        const anchor = this.getHabitScheduleAnchorDate(habit);
+        const anchorDate = new Date(`${anchor}T00:00:00`);
+        return Math.max(1, Math.min(31, Number.isNaN(anchorDate.getTime()) ? 1 : anchorDate.getDate()));
+    },
+
+isHabitScheduledForDate: function(habit, dateKey = this.getLocalDateKey()) {
+        if (!habit || !dateKey) return false;
+        const date = new Date(`${dateKey}T00:00:00`);
+        if (Number.isNaN(date.getTime())) return false;
+        const freq = String(habit.frequency || 'daily');
+        const specific = Array.isArray(habit.specificDays) ? habit.specificDays.map(String) : [];
+
+        if (freq === 'specific') {
+            if (!specific.length) return true;
+            return specific.includes(String(date.getDay()));
+        }
+
+        if (freq === 'every_x_days') {
+            const interval = Math.max(2, Math.round(Number(habit.intervalDays) || 0));
+            if (!interval) return true;
+            const anchorDate = new Date(`${this.getHabitScheduleAnchorDate(habit)}T00:00:00`);
+            if (Number.isNaN(anchorDate.getTime())) return true;
+            const diffDays = Math.floor((date.getTime() - anchorDate.getTime()) / 86400000);
+            return diffDays >= 0 && diffDays % interval === 0;
+        }
+
+        if (freq === 'monthly') {
+            const targetDay = this.getHabitScheduleDayOfMonth(habit);
+            const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+            return date.getDate() === Math.min(targetDay, lastDay);
+        }
+
+        if (freq === 'manual') return false;
+        return true;
     },
 
 getHabitExpectedDatesForWeek: function(habit, weekKey = this._getWeekKey()) {
         const dates = this.getWeekDateKeys(weekKey);
-        const specific = Array.isArray(habit?.specificDays) ? habit.specificDays.map(String) : [];
-        if (habit?.frequency === 'specific' && specific.length) {
-            return dates.filter(dateKey => specific.includes(String(new Date(dateKey + 'T00:00:00').getDay())));
-        }
-        return dates;
+        return dates.filter(dateKey => this.isHabitScheduledForDate(habit, dateKey));
     },
 
 getHabitWeekRate: function(habit, weekKey = this._getWeekKey()) {
@@ -73,12 +118,16 @@ getHabitWeekRate: function(habit, weekKey = this._getWeekKey()) {
 getHabitConsecutiveStreak: function(habit) {
         const today = new Date();
         let streak = 0;
-        for (let i = 0; i < 90; i++) {
+        for (let i = 0; i < 365; i++) {
             const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
             const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            if (this.isHabitDoneOnDate(habit, dk)) { streak++; }
-            else if (i === 0) { continue; } // allow today not yet done
-            else { break; }
+            if (!this.isHabitScheduledForDate(habit, dk)) continue;
+            if (this.isHabitDoneOnDate(habit, dk)) {
+                streak++;
+                continue;
+            }
+            if (i === 0) continue; // allow today not yet done
+            break;
         }
         return streak;
     },
@@ -351,17 +400,20 @@ onHabitModeChange: function(mode) {
 
 onHabitFreqChange: function(freq) {
         const daysContainer = document.getElementById('habit-days-container');
-        if (!daysContainer) return;
-        if (freq === 'specific') {
-            daysContainer.classList.remove('hidden');
-            daysContainer.classList.add('flex');
-            daysContainer.style.display = 'flex';
-        } else {
-            daysContainer.classList.add('hidden');
-            daysContainer.classList.remove('flex');
-            daysContainer.style.display = 'none';
-        }
-    },
+        const intervalContainer = document.getElementById('habit-interval-container');
+        const monthlyContainer = document.getElementById('habit-monthly-container');
+        const startContainer = document.getElementById('habit-schedule-start-container');
+        const setVisible = (el, show) => {
+            if (!el) return;
+            el.classList.toggle('hidden', !show);
+            el.classList.toggle('flex', show);
+            el.style.display = show ? 'flex' : 'none';
+        };
+        setVisible(daysContainer, freq === 'specific');
+        setVisible(intervalContainer, freq === 'every_x_days');
+        setVisible(startContainer, freq === 'every_x_days');
+        setVisible(monthlyContainer, freq === 'monthly');
+     },
 
 onHabitReminderIntervalToggle: function(enabled) {
         const fields = document.getElementById('habit-reminder-interval-fields');

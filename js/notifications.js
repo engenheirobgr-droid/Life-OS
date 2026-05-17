@@ -599,7 +599,7 @@ scheduleHabitReminders: function() {
 
         state.habits.forEach(habit => {
             if (!habit || !habit.reminderEnabled) return;
-            if (habit.frequency === 'specific' && Array.isArray(habit.specificDays) && habit.specificDays.length > 0 && !habit.specificDays.includes(dayIndex)) return;
+            if (typeof this.isHabitScheduledForDate === 'function' && !this.isHabitScheduledForDate(habit, todayKey)) return;
             getReminderTimes(habit).forEach((reminderHHMM) => {
                 const [hhRaw, mmRaw] = String(reminderHHMM).slice(0, 5).split(':');
                 const hh = Number(hhRaw);
@@ -661,14 +661,13 @@ startHabitReminderWatcher: function() {
                 const mm = String(now.getMinutes()).padStart(2, '0');
                 const nowHHMM = `${hh}:${mm}`;
                 const nowMinutes = toMinutes(nowHHMM);
-                const dayIndex = String(now.getDay());
                 const todayKey = this.getLocalDateKey();
                 let sent = {};
                 try { sent = JSON.parse(this.localGet('lifeos_habit_reminders_sent') || '{}') || {}; } catch (_) { sent = {}; }
 
                 state.habits.forEach(habit => {
                     if (!habit || !habit.reminderEnabled) return;
-                    if (habit.frequency === 'specific' && Array.isArray(habit.specificDays) && habit.specificDays.length > 0 && !habit.specificDays.includes(dayIndex)) return;
+                    if (typeof this.isHabitScheduledForDate === 'function' && !this.isHabitScheduledForDate(habit, todayKey)) return;
                     getReminderTimes(habit).forEach((reminderHHMM) => {
                         const reminderMinutes = toMinutes(reminderHHMM);
                         if (nowMinutes == null || reminderMinutes == null) return;

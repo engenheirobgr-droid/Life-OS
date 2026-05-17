@@ -17,20 +17,22 @@ import {
 // Phase 9 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260516-wellbeing-prompts-v205';
-import { attachNotifications } from './js/notifications.js?v=20260516-wellbeing-prompts-v205';
+import { attachNotifications } from './js/notifications.js?v=20260517-protocols-focus-v1';
 import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
-import { attachOnboarding } from './js/onboarding.js?v=20260516-wellbeing-prompts-v205';
+import { attachOnboarding } from './js/onboarding.js?v=20260517-protocols-focus-v1';
 import { attachIdentity } from './js/identity.js?v=20260516-wellbeing-prompts-v205';
-import { attachHabits } from './js/habits.js?v=20260516-wellbeing-prompts-v205';
-import { attachStateModule } from './js/state.js?v=20260516-wellbeing-prompts-v205';
-import { attachRenderModule } from './js/render.js?v=20260516-wellbeing-prompts-v205';
-import { attachPlanningModule } from './js/planning.js?v=20260516-wellbeing-prompts-v205';
+import { attachHabits } from './js/habits.js?v=20260517-protocols-focus-v1';
+import { attachProtocolsModule } from './js/protocols.js?v=20260517-protocols-focus-v1';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260517-protocols-focus-v1';
+import { attachStateModule } from './js/state.js?v=20260517-protocols-focus-v1';
+import { attachRenderModule } from './js/render.js?v=20260517-protocols-focus-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260517-protocols-focus-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
-const CURRENT_STATE_SCHEMA_VERSION = 2;
+const CURRENT_STATE_SCHEMA_VERSION = 3;
 let initialAuthStatePromise = null;
 let authInteractiveOperation = false;
 
@@ -170,10 +172,12 @@ window.sistemaVidaState = {
         intention: '',
         lastTickAt: 0,
         deadlineAtMs: 0,
-        sessions: []
+        sessions: [],
+        pendingClosure: null
     },
     entities: { metas: [], okrs: [], macros: [], micros: [] },
     habits: [],
+    protocols: [],
     dailyLogs: {},
     reviews: {},
     weekPlans: {},
@@ -293,6 +297,12 @@ const app = {
                 profile.cadence.cycleReview = {};
             }
             state.stateSchemaVersion = 2;
+            this._stateSchemaNeedsSave = true;
+        }
+
+        if (version < 3) {
+            if (!Array.isArray(state.protocols)) state.protocols = [];
+            state.stateSchemaVersion = 3;
             this._stateSchemaNeedsSave = true;
         }
 
@@ -880,7 +890,8 @@ normalizeSwlsAnswer: function(rawValue) {
                 intention: '',
                 lastTickAt: 0,
                 deadlineAtMs: 0,
-                sessions: []
+                sessions: [],
+                pendingClosure: null
             };
         }
         const dw = state.deepWork;
@@ -894,6 +905,18 @@ normalizeSwlsAnswer: function(rawValue) {
         dw.intention = String(dw.intention || '');
         dw.lastTickAt = Math.max(0, Math.round(Number(dw.lastTickAt) || 0));
         dw.deadlineAtMs = Math.max(0, Math.round(Number(dw.deadlineAtMs) || 0));
+        if (!dw.pendingClosure || typeof dw.pendingClosure !== 'object') {
+            dw.pendingClosure = null;
+        } else {
+            dw.pendingClosure = {
+                microId: String(dw.pendingClosure.microId || ''),
+                habitId: String(dw.pendingClosure.habitId || ''),
+                protocolId: String(dw.pendingClosure.protocolId || ''),
+                focusSec: Math.max(0, Math.round(Number(dw.pendingClosure.focusSec) || 0)),
+                sessionEndedAtTs: String(dw.pendingClosure.sessionEndedAtTs || '')
+            };
+            if (!dw.pendingClosure.microId) dw.pendingClosure = null;
+        }
         if (dw.isRunning && !dw.isPaused && dw.remainingSec > 0 && dw.deadlineAtMs <= 0) {
             dw.deadlineAtMs = Date.now() + (dw.remainingSec * 1000);
         } else if (!dw.isRunning || dw.isPaused || dw.remainingSec <= 0) {
@@ -2144,6 +2167,7 @@ openAvatarPicker: function() {
     currentView: '',
     pendingFocusMicroId: '',
     pendingFocusAutoStart: false,
+    pendingFocusMinutes: 0,
     painelFilter: 'ciclo',
     planosFilter: 'Todas',
     planosStatusFilter: 'all',
@@ -2504,10 +2528,17 @@ renderProfileChrome: function() {
         if (this.currentView === 'planos' && this.render.planos) this.render.planos();
       }
 
+      const shouldShowPlanFilters = tabId !== 'protocolos';
+      const dimensionFilters = document.getElementById('planos-dimension-filters');
+      const advancedFilters = document.getElementById('planos-advanced-filters');
+      if (dimensionFilters) dimensionFilters.classList.toggle('hidden', !shouldShowPlanFilters);
+      if (advancedFilters) advancedFilters.classList.toggle('hidden', !shouldShowPlanFilters);
+
       // Reação em cadeia: renderiza conteúdo específico da tab
       if (tabId === 'timeline') this.renderTimeline();
       if (tabId === 'semanal') this.renderWeeklyPlans();
       if (tabId === 'ciclo') this.renderCycleReviewPanel();
+      if (tabId === 'protocolos') this.renderProtocolsPanel?.();
     },
 
     renderCycleReviewPanel: function() {
@@ -3722,6 +3753,10 @@ openCreateModal: function(type = 'metas', parentId = null) {
         if (effortInput) effortInput.value = 'medio';
         if (obstacleInput) obstacleInput.value = '';
         if (ifThenInput) ifThenInput.value = '';
+        ['habit-interval-days', 'habit-day-of-month', 'habit-schedule-start-date'].forEach((fieldId) => {
+            const field = document.getElementById(fieldId);
+            if (field) field.value = '';
+        });
         this.toggleCrudWoop(false);
 
         const notesBtn = document.getElementById('crud-notes-btn');
@@ -5172,11 +5207,7 @@ ensureNotesState: function() {
 
     getDailyHabitAdherenceRate: function(dateKey) {
         const habits = window.sistemaVidaState.habits || [];
-        const day = String(new Date(dateKey + 'T00:00:00').getDay());
-        const expected = habits.filter(h => {
-            const days = Array.isArray(h.specificDays) ? h.specificDays.map(String) : [];
-            return h.frequency !== 'specific' || !days.length || days.includes(day);
-        });
+        const expected = habits.filter(h => typeof this.isHabitScheduledForDate === 'function' ? this.isHabitScheduledForDate(h, dateKey) : true);
         const done = expected.filter(h => this.isHabitDoneOnDate(h, dateKey)).length;
         return expected.length ? done / expected.length : null;
     },
@@ -6917,6 +6948,9 @@ ensureNotesState: function() {
                 linkedMicro.lastFocusDate = dateKey;
                 if (wasNotInProgress) this.cascadeStartUp(linkedMicro.id);
             }
+            if (linkedMicro?.sourceHabitId && typeof this.recordHabitFocusExecution === 'function') {
+                this.recordHabitFocusExecution(linkedMicro.sourceHabitId, focusSec);
+            }
             const endedAtTs = new Date().toISOString();
             dw.sessions.unshift({
                 endedAt: dateKey,
@@ -6926,6 +6960,15 @@ ensureNotesState: function() {
                 microId: dw.microId || '',
                 intention: dw.intention || ''
             });
+            if (linkedMicro?.sourceHabitId) {
+                dw.pendingClosure = {
+                    microId: linkedMicro.id,
+                    habitId: String(linkedMicro.sourceHabitId || ''),
+                    protocolId: String(linkedMicro.sourceProtocolId || ''),
+                    focusSec,
+                    sessionEndedAtTs: endedAtTs
+                };
+            }
             const award = this.awardGamification('deep_work', {
                 key: `deep:${endedAtTs}`,
                 id: endedAtTs,
@@ -6952,6 +6995,7 @@ ensureNotesState: function() {
             this.saveState(true);
             this.ensureDeepWorkTicking();
             if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+            if (dw.pendingClosure && typeof this.openHabitFocusClosureModal === 'function') this.openHabitFocusClosureModal();
             return;
         }
 
@@ -6982,6 +7026,11 @@ ensureNotesState: function() {
         const state = window.sistemaVidaState;
         const dw = state.deepWork;
         if (dw.isRunning && !dw.isPaused) return;
+        if (dw.pendingClosure?.microId) {
+            this.showToast('Feche a sessao anterior antes de iniciar um novo bloco de foco.', 'error');
+            if (typeof this.openHabitFocusClosureModal === 'function') this.openHabitFocusClosureModal();
+            return;
+        }
 
         const presetEl = document.getElementById('deep-work-preset');
         const microEl = document.getElementById('deep-work-micro');
@@ -7227,6 +7276,10 @@ ensureNotesState: function() {
         const canCompleteLinkedMicro = !!(linkedMicro && linkedMicro.status !== 'done');
         const dw = window.sistemaVidaState.deepWork;
         if (!dw.isRunning) {
+            if (dw.pendingClosure?.microId && typeof this.openHabitFocusClosureModal === 'function') {
+                this.openHabitFocusClosureModal();
+                return;
+            }
             if (canCompleteLinkedMicro) {
                 this.completeMicroAction(linkedMicro.id);
                 if (this.showNotification) this.showNotification('Micro ação concluída.');
@@ -7249,6 +7302,11 @@ ensureNotesState: function() {
         dw.deadlineAtMs = 0;
         this.stopDeepWorkTicking();
         this.saveState(true);
+
+        if (dw.pendingClosure?.microId && typeof this.openHabitFocusClosureModal === 'function') {
+            this.openHabitFocusClosureModal();
+            return;
+        }
 
         if (canCompleteLinkedMicro) {
             this.completeMicroAction(linkedMicro.id);
@@ -7498,6 +7556,8 @@ attachCadence(app);
 attachOnboarding(app);
 attachIdentity(app);
 attachHabits(app);
+attachProtocolsModule(app);
+attachHabitFocusModule(app);
 attachStateModule(app);
 attachRenderModule(app);
 attachPlanningModule(app);

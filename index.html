@@ -1802,6 +1802,9 @@
                                 onchange="window.app.onHabitFreqChange(this.value)">
                                 <option value="daily">Todos os dias</option>
                                 <option value="specific">Dias Específicos</option>
+                                <option value="every_x_days">A cada X dias</option>
+                                <option value="monthly">Mensal</option>
+                                <option value="manual">Sob demanda</option>
                             </select>
                         </div>
                         <div id="habit-days-container" class="flex-col gap-1.5" style="display: none;">
@@ -1818,6 +1821,28 @@
                                 <option value="6">Sábado</option>
                             </select>
                             <p class="text-[10px] text-outline">Segure Ctrl (ou Cmd) para selecionar vários.</p>
+                        </div>
+                        <div id="habit-interval-container" class="hidden flex-col gap-1.5">
+                            <label for="habit-interval-days"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Intervalo</label>
+                            <input id="habit-interval-days" type="number" min="2" max="365"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                placeholder="Ex.: 14">
+                            <p class="text-[10px] text-outline">Use para hábitos quinzenais ou recorrências em intervalo fixo.</p>
+                        </div>
+                        <div id="habit-schedule-start-container" class="hidden flex-col gap-1.5">
+                            <label for="habit-schedule-start-date"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Data inicial</label>
+                            <input id="habit-schedule-start-date" type="date"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                        </div>
+                        <div id="habit-monthly-container" class="hidden flex-col gap-1.5">
+                            <label for="habit-day-of-month"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dia do mês</label>
+                            <input id="habit-day-of-month" type="number" min="1" max="31"
+                                class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
+                                placeholder="Ex.: 5">
+                            <p class="text-[10px] text-outline">Se o mês não tiver esse dia, o hábito cai no último dia do mês.</p>
                         </div>
                     </div>
                     <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
@@ -1857,6 +1882,22 @@
                         </div>
                         <p class="text-[10px] text-outline">Ex.: beber água entre 08:00 e 20:00 a cada 60 min.</p>
                         <p id="habit-next-reminder-preview" class="text-[11px] text-primary font-semibold"></p>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between gap-3">
+                            <label for="habit-protocol"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Protocolo (opcional)</label>
+                            <button type="button" onclick="window.app.closeModal(); window.app.openProtocolsLibrary();"
+                                class="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline">
+                                Abrir protocolos
+                            </button>
+                        </div>
+                        <select id="habit-protocol" onchange="window.app.onHabitProtocolChange(this.value)"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                            <option value="">- Sem protocolo -</option>
+                        </select>
+                        <p class="text-[10px] text-outline">Usa um protocolo para preencher os passos do habito com uma estrutura pronta.</p>
                     </div>
 
                     <div class="flex flex-col gap-1.5">
@@ -1954,6 +1995,90 @@
                     <span class="material-symbols-outlined notranslate text-[18px]">add</span>
                     Nova nota vinculada
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="habit-focus-modal" class="hidden fixed inset-0 z-[111] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="w-full max-w-2xl rounded-3xl border border-outline-variant/10 bg-surface-container-lowest shadow-2xl overflow-hidden">
+            <div class="px-6 py-5 border-b border-outline-variant/10 flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Sessao de foco</p>
+                    <h3 id="habit-focus-title" class="mt-1 font-headline text-2xl italic font-bold text-on-background">Nova entrega</h3>
+                    <p id="habit-focus-helper" class="mt-2 text-sm text-on-surface-variant"></p>
+                </div>
+                <button type="button" onclick="window.app.closeHabitFocusModal()" class="rounded-full p-2 text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
+                    <span class="material-symbols-outlined notranslate">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="habit-focus-habit-id">
+                <div class="flex flex-col gap-1.5">
+                    <label for="habit-focus-delivery" class="text-xs font-label uppercase tracking-widest text-outline font-bold">O que vou entregar</label>
+                    <input id="habit-focus-delivery" type="text" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" placeholder="Ex.: Ler o capitulo 3 e fazer resumo">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-focus-macro" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Macro vinculada</label>
+                        <select id="habit-focus-macro" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"></select>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-focus-minutes" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duracao</label>
+                        <select id="habit-focus-minutes" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                            <option value="60">60 minutos</option>
+                            <option value="90" selected>90 minutos</option>
+                            <option value="120">120 minutos</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-outline-variant/10 bg-surface-container-low/30 flex items-center justify-end gap-3">
+                <button type="button" onclick="window.app.closeHabitFocusModal()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">Cancelar</button>
+                <button type="button" onclick="window.app.startHabitFocusSession()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Criar sessao</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="habit-focus-closure-modal" class="hidden fixed inset-0 z-[112] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="w-full max-w-2xl rounded-3xl border border-outline-variant/10 bg-surface-container-lowest shadow-2xl overflow-hidden">
+            <div class="px-6 py-5 border-b border-outline-variant/10 flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Fechamento da sessao</p>
+                    <h3 id="habit-focus-closure-title" class="mt-1 font-headline text-2xl italic font-bold text-on-background">Registrar entrega</h3>
+                    <p id="habit-focus-closure-subtitle" class="mt-2 text-sm text-on-surface-variant"></p>
+                </div>
+                <button type="button" onclick="window.app.remindHabitFocusClosureLater()" class="rounded-full p-2 text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
+                    <span class="material-symbols-outlined notranslate">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex flex-col gap-1.5">
+                    <label for="habit-focus-closure-delivery" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Entrega da sessao</label>
+                    <textarea id="habit-focus-closure-delivery" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que voce realmente entregou nesta sessao?"></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-focus-closure-evidence" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Evidencia</label>
+                        <textarea id="habit-focus-closure-evidence" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="Resumo criado, exercicios resolvidos, arquivo salvo..."></textarea>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-focus-closure-gaps" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duvidas e lacunas</label>
+                        <textarea id="habit-focus-closure-gaps" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que ainda ficou confuso?"></textarea>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="habit-focus-closure-next-step" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Proximo passo</label>
+                    <textarea id="habit-focus-closure-next-step" rows="2" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que faz sentido estudar ou entregar depois?"></textarea>
+                </div>
+                <label class="flex items-center gap-3 rounded-xl border border-outline-variant/15 bg-surface-container-low px-4 py-3 cursor-pointer">
+                    <input id="habit-focus-closure-complete" type="checkbox" class="accent-primary" checked>
+                    <span class="text-sm text-on-surface">Concluir a micro desta sessao depois de salvar a nota</span>
+                </label>
+            </div>
+            <div class="px-6 py-4 border-t border-outline-variant/10 bg-surface-container-low/30 flex flex-wrap items-center justify-end gap-3">
+                <button type="button" onclick="window.app.remindHabitFocusClosureLater()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">Depois</button>
+                <button type="button" onclick="window.app.saveHabitFocusClosure({ forceComplete: false })" class="px-5 py-2.5 bg-surface-container-high border border-outline-variant/20 text-on-surface text-sm font-bold rounded-lg hover:bg-surface-container-highest transition-colors">Salvar nota</button>
+                <button type="button" onclick="window.app.saveHabitFocusClosure({ forceComplete: true })" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Salvar e concluir</button>
             </div>
         </div>
     </div>
@@ -2798,7 +2923,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260516-wellbeing-prompts-v205"></script>
+    <script type="module" src="app.js?v=20260517-protocols-focus-v1"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
