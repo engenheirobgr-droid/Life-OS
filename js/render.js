@@ -1304,8 +1304,8 @@ renderDeepWorkClockVisual: function(options = {}) {
         const escapedTime = this.escapeHtml(timeText);
         const escapedPhase = this.escapeHtml(phaseText || phaseLabel);
         const activeMotion = isRunning && !isPaused;
-        const timerHtml = `<p id="deep-work-timer" class="mt-2 text-5xl md:text-6xl leading-none font-headline italic text-primary tabular-nums">${escapedTime}</p>`;
-        const phaseHtml = `<p id="deep-work-phase" class="mt-2 text-[11px] uppercase tracking-[0.12em] text-on-surface-variant">${escapedPhase}</p>`;
+        const timerHtml = `<p id="deep-work-timer" class="mt-2 text-5xl md:text-6xl lg:text-7xl leading-none font-headline italic text-primary tabular-nums">${escapedTime}</p>`;
+        const phaseHtml = `<p id="deep-work-phase" class="mt-2 text-xs uppercase tracking-[0.12em] text-on-surface-variant">${escapedPhase}</p>`;
 
         if (style === 'ring') {
             const dash = 339;
@@ -1315,8 +1315,8 @@ renderDeepWorkClockVisual: function(options = {}) {
             const dotY = 60 + (54 * Math.sin(dotAngle * Math.PI / 180));
             const pulseClass = activeMotion ? 'deep-work-ring-pulse' : '';
             return `
-                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-surface-container-lowest px-4 py-5 text-center shadow-inner overflow-hidden">
-                    <div class="relative mx-auto h-56 w-56 max-w-full">
+                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-surface-container-lowest px-4 py-6 md:py-7 text-center shadow-inner overflow-hidden h-full flex items-center justify-center">
+                    <div class="relative mx-auto h-60 w-60 md:h-64 md:w-64 max-w-full">
                         <svg viewBox="0 0 120 120" class="h-full w-full text-primary" role="img" aria-label="Progresso do bloco ${pctLabel}">
                             <defs>
                                 <linearGradient id="deep-work-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1337,7 +1337,7 @@ renderDeepWorkClockVisual: function(options = {}) {
                             <path d="M60 22 C75 38 94 46 94 66 C94 84 79 98 60 98 C41 98 26 84 26 66 C26 46 45 38 60 22Z" fill="currentColor" opacity="0.045"></path>
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">${mode === 'break' ? 'Pausa' : 'Tempo restante'}</p>
+                            <p class="text-xs uppercase tracking-[0.14em] font-bold text-outline">${mode === 'break' ? 'Pausa' : 'Tempo restante'}</p>
                             ${timerHtml}
                             ${phaseHtml}
                         </div>
@@ -1347,8 +1347,8 @@ renderDeepWorkClockVisual: function(options = {}) {
 
 
         return `
-            <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-6 text-center shadow-inner">
-                <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">Tempo restante</p>
+            <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-6 md:py-7 text-center shadow-inner h-full flex flex-col justify-center">
+                <p class="text-xs uppercase tracking-[0.14em] font-bold text-outline">Tempo restante</p>
                 ${timerHtml}
                 ${phaseHtml}
             </div>`;
@@ -1472,9 +1472,9 @@ renderDeepWorkImmersiveOverlay: function() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
+                    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.22fr)_minmax(360px,0.78fr)]">
                         <section class="rounded-[28px] border border-white/10 bg-[rgba(255,255,255,0.045)] p-5 md:p-7 shadow-[0_30px_80px_rgba(0,0,0,0.34)] backdrop-blur-sm">
-                            <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(320px,1.1fr)_minmax(280px,0.9fr)] lg:items-stretch">
+                            <div class="grid h-full grid-cols-1 gap-5 lg:grid-cols-[minmax(360px,1.15fr)_minmax(280px,0.85fr)] lg:items-stretch">
                                 <div class="min-w-0">
                                     ${this.renderDeepWorkClockVisual({
                                         style: clockStyle,
@@ -1488,36 +1488,36 @@ renderDeepWorkImmersiveOverlay: function() {
                                         canCompleteSelectedMicro: !!(selectedMicro && selectedMicro.status !== 'done')
                                     })}
                                 </div>
-                                <div class="min-w-0 space-y-4">
+                                <div class="min-w-0 h-full flex flex-col justify-between gap-4">
                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Micro ativa</p>
-                                            <p class="mt-1 text-sm font-semibold text-white">${this.escapeHtml(selectedMicro?.title || 'Sem micro ativa')}</p>
+                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Micro ativa</p>
+                                            <p class="mt-1 text-base font-semibold text-white">${this.escapeHtml(selectedMicro?.title || 'Sem micro ativa')}</p>
                                         </div>
                                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Habito origem</p>
-                                            <p class="mt-1 text-sm font-semibold text-white">${this.escapeHtml(linkedHabit?.title || 'Sessao livre')}</p>
+                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Habito origem</p>
+                                            <p class="mt-1 text-base font-semibold text-white">${this.escapeHtml(linkedHabit?.title || 'Sessao livre')}</p>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-2 gap-3">
                                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Meta do bloco</p>
-                                            <p class="mt-1 text-sm font-semibold text-white">${Math.max(5, Math.round(Number(dw.targetSec || 5400) / 60))} min</p>
+                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Meta do bloco</p>
+                                            <p class="mt-1 text-base font-semibold text-white">${Math.max(5, Math.round(Number(dw.targetSec || 5400) / 60))} min</p>
                                         </div>
                                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Modo atual</p>
-                                            <p class="mt-1 text-sm font-semibold text-white">${dw.mode === 'break' ? 'Pausa' : 'Foco'}</p>
+                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Modo atual</p>
+                                            <p class="mt-1 text-base font-semibold text-white">${dw.mode === 'break' ? 'Pausa' : 'Foco'}</p>
                                         </div>
                                     </div>
                                     <div class="rounded-xl border border-white/10 bg-white/5 p-1">
                                         <div class="grid grid-cols-3 gap-1.5">
-                                        <button type="button" data-deep-work-action="pause" class="rounded-lg border border-white/12 bg-white/10 px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-white/14 transition-colors">
+                                        <button type="button" data-deep-work-action="pause" class="rounded-lg border border-white/12 bg-white/10 px-2 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white hover:bg-white/14 transition-colors">
                                             ${dw.isPaused ? 'Retomar' : 'Pausar'}
                                         </button>
-                                        <button type="button" data-deep-work-action="reset" class="rounded-lg border border-white/12 bg-white/5 px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-white/88 hover:bg-white/10 transition-colors">
+                                        <button type="button" data-deep-work-action="reset" class="rounded-lg border border-white/12 bg-white/5 px-2 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white/90 hover:bg-white/10 transition-colors">
                                             Reiniciar
                                         </button>
-                                        <button type="button" data-deep-work-action="finish" class="rounded-lg bg-primary px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-on-primary shadow-lg shadow-primary/25 hover:opacity-95 transition-all">
+                                        <button type="button" data-deep-work-action="finish" class="rounded-lg bg-primary px-2 py-2.5 text-[11px] font-bold uppercase tracking-wider text-on-primary shadow-lg shadow-primary/25 hover:opacity-95 transition-all">
                                             ${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}
                                         </button>
                                         </div>
