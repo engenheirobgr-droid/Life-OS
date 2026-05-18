@@ -1430,11 +1430,11 @@ renderDeepWorkImmersiveOverlay: function() {
                 ? 'bg-amber-500/12 text-amber-100 border border-amber-400/25'
                 : 'bg-primary/12 text-teal-50 border border-primary/30');
         const statusText = dw.mode === 'break'
-            ? 'Pausa guiada em andamento'
-            : (dw.isPaused ? 'Sessao pausada' : 'Sessao de foco em andamento');
+            ? 'Pausa guiada'
+            : (dw.isPaused ? 'Sessao pausada' : 'Foco em andamento');
         const helperText = dw.mode === 'break'
-            ? 'O app fica em espera ate o fim da pausa ou ate voce retomar o fluxo.'
-            : 'O app fica travado nesta sessao para manter sua execucao no mesmo contexto.';
+            ? 'Pausa ativa para recuperar energia antes do proximo bloco.'
+            : 'Modo imersivo ativo para proteger sua concentracao.';
         const checklistHtml = dw.mode === 'focus' && selectedMicro
             ? this.renderDeepWorkExecutionChecklistHTML(selectedMicro, {
                 containerClass: 'rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3 shadow-[0_18px_50px_rgba(0,0,0,0.22)]',
@@ -1451,8 +1451,8 @@ renderDeepWorkImmersiveOverlay: function() {
                 <div class="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col gap-6">
                     <div class="flex items-start justify-between gap-4">
                         <div class="min-w-0">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-white/55">${dw.mode === 'break' ? 'Modo pausa' : 'Modo foco'}</p>
-                            <h2 class="mt-2 text-3xl md:text-5xl font-headline italic font-bold text-white">${this.escapeHtml(selectedMicro?.title || dw.intention || 'Sessao ativa')}</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-white/55">${dw.mode === 'break' ? 'Pausa' : 'Modo foco'}</p>
+                            <h2 class="mt-2 text-3xl md:text-5xl font-headline italic font-bold text-white">${dw.mode === 'break' ? 'Pausa em andamento' : 'Sessao de foco'}</h2>
                             <p class="mt-3 max-w-2xl text-sm md:text-base text-white/68">${this.escapeHtml(helperText)}</p>
                         </div>
                         <span class="shrink-0 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest ${statusTone}">${this.escapeHtml(statusText)}</span>
@@ -1495,14 +1495,14 @@ renderDeepWorkImmersiveOverlay: function() {
                                             <p class="mt-1 text-sm font-semibold text-white">${dw.mode === 'break' ? 'Pausa' : 'Foco'}</p>
                                         </div>
                                     </div>
-                                    <div class="flex flex-wrap gap-2 pt-1">
-                                        <button type="button" onclick="window.app.toggleDeepWorkPause()" class="rounded-xl border border-white/12 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white hover:bg-white/14 transition-colors">
+                                    <div class="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
+                                        <button type="button" onclick="window.app.toggleDeepWorkPause()" class="rounded-xl border border-white/12 bg-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-white/14 transition-colors">
                                             ${dw.isPaused ? 'Retomar' : 'Pausar'}
                                         </button>
-                                        <button type="button" onclick="window.app.resetDeepWorkSession()" class="rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white/88 hover:bg-white/10 transition-colors">
+                                        <button type="button" onclick="window.app.resetDeepWorkSession()" class="rounded-xl border border-white/12 bg-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white/88 hover:bg-white/10 transition-colors">
                                             Reiniciar
                                         </button>
-                                        <button type="button" onclick="window.app.${dw.mode === 'break' ? 'skipBreak' : 'finishDeepWorkNow'}()" class="rounded-xl bg-primary px-4 py-2 text-xs font-bold uppercase tracking-widest text-on-primary shadow-lg shadow-primary/25 hover:opacity-95 transition-all">
+                                        <button type="button" onclick="window.app.${dw.mode === 'break' ? 'skipBreak' : 'finishDeepWorkNow'}()" class="sm:col-span-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-on-primary shadow-lg shadow-primary/25 hover:opacity-95 transition-all">
                                             ${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}
                                         </button>
                                     </div>
@@ -1513,12 +1513,10 @@ renderDeepWorkImmersiveOverlay: function() {
                         <aside class="space-y-4">
                             ${checklistHtml || `<div class="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/70 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">${dw.mode === 'break' ? 'A pausa fica em tela cheia ate o encerramento para manter a recuperacao no mesmo fluxo.' : 'Selecione uma micro com passos para acompanhar o roteiro completo aqui.'}</div>`}
                             <div class="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Estado atual</p>
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Como usar</p>
                                 <p class="mt-2 text-sm leading-relaxed text-white/78">${this.escapeHtml(dw.mode === 'break'
-                                    ? 'A pausa esta protegida. Quando terminar, voce volta ao app com o bloco concluido e o proximo passo claro.'
-                                    : (dw.isPaused
-                                        ? 'O bloco foi pausado, mas o contexto continua travado para voce retomar sem dispersao.'
-                                        : 'A sessao esta priorizando uma unica micro ativa, com os passos visiveis e sincronizados.'))}</p>
+                                    ? 'Use a pausa para recuperar o ritmo. Encerrando, voce volta para o fluxo normal.'
+                                    : 'Mantenha uma unica micro por sessao. Finalize o bloco e registre a entrega no fechamento.')}</p>
                             </div>
                         </aside>
                     </div>
