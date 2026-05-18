@@ -22,6 +22,7 @@ onTypeChange: function(type) {
         const goalRigorGroup = document.getElementById('crud-goal-rigor-group');
         const keyResultsGroup = document.getElementById('crud-key-results-group');
         const effortGroup = document.getElementById('crud-effort-group');
+        const estimatedGroup = document.getElementById('crud-estimated-group');
         const successCriteriaLabel = document.querySelector('label[for="crud-success-criteria"]');
         const setGroupVisible = (el, visible, displayMode = 'flex') => {
             if (!el) return;
@@ -44,6 +45,7 @@ onTypeChange: function(type) {
         setGroupVisible(goalRigorGroup, false);
         setGroupVisible(keyResultsGroup, false);
         setGroupVisible(effortGroup, false);
+        setGroupVisible(estimatedGroup, false);
         if (metaHorizonGroup) metaHorizonGroup.classList.add('hidden');
         if (dimensionGroup) dimensionGroup.classList.remove('hidden'); // Dimensão visível quase sempre
         if (contextGroup) contextGroup.classList.remove('hidden');
@@ -58,6 +60,7 @@ onTypeChange: function(type) {
             setGroupVisible(triggerGroup, true);
             setGroupVisible(habitIdentityGroup, true);
             setGroupVisible(habitControls, true);
+            setGroupVisible(estimatedGroup, true);
             setGroupVisible(habitReminderAdvanced, true);
             setGroupVisible(habitStepsChecklistWrap, !!this.editingEntity && this.editingEntity.type === 'habits');
             if (habitControls) {
@@ -105,6 +108,7 @@ onTypeChange: function(type) {
             if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério de Sucesso';
             if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
             if (type === 'micros') setGroupVisible(effortGroup, true);
+            if (type === 'micros') setGroupVisible(estimatedGroup, true);
             if (type === 'micros') {
                 setGroupVisible(microExecutionGroup, true);
                 if (typeof this.populateMicroProtocolSelect === 'function') this.populateMicroProtocolSelect();
@@ -788,6 +792,60 @@ getDailyCompassQuotes: function() {
     },
 
 _renderNextActionCard: function(next, variant = 'today') {
+        if (next?.sourceType && next.sourceType !== 'micro') {
+            const title = next.title || 'Próxima melhor ação';
+            const reason = next.reason || (Array.isArray(next.reasons) ? next.reasons[0] : '') || '';
+            const sourceType = next.sourceType;
+            const sourceId = String(next.sourceId || '');
+            const icon = ({
+                focus: 'timer',
+                habit: 'repeat',
+                routine: 'event_repeat',
+                checkin: 'self_improvement',
+                rest: 'hotel'
+            })[sourceType] || 'task_alt';
+            let actionsHtml = '';
+            if (sourceType === 'habit' || sourceType === 'routine') {
+                const cta = sourceType === 'routine' ? 'Abrir rotina' : 'Abrir habito';
+                actionsHtml = `
+                    <button type="button" onclick="window.app.openHabitToday('${this.escapeHtml(sourceId)}')"
+                        class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">${cta}</button>
+                    <button type="button" onclick="window.app.switchHojeScreen('habitos')"
+                        class="flex-1 md:flex-none px-4 py-2 rounded-xl border border-outline-variant/30 text-outline text-xs font-bold uppercase tracking-widest hover:bg-surface-container-high active:scale-95 transition-all">Ver todos</button>`;
+            } else if (sourceType === 'focus') {
+                actionsHtml = `<button type="button" onclick="window.app.switchView('foco')"
+                    class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">Abrir foco</button>`;
+            } else if (sourceType === 'checkin') {
+                actionsHtml = `<button type="button" onclick="window.app.flowNavigate('hoje','daily-checkin-panel')"
+                    class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">Fazer check-in</button>`;
+            } else if (sourceType === 'rest') {
+                actionsHtml = `<button type="button" onclick="window.app.flowNavigate('hoje','daily-checkin-panel')"
+                    class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest active:scale-95 transition-all">Ajustar o dia</button>`;
+            }
+            const wrapper = variant === 'panel'
+                ? 'bg-primary/5 border-primary/20'
+                : 'bg-surface-container-lowest border-primary/20 shadow-sm';
+            return `
+                <div class="${wrapper} border rounded-2xl p-5 md:p-6">
+                    <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">Próxima melhor ação</p>
+                            <h4 class="font-headline text-xl md:text-2xl font-bold text-on-background leading-tight flex items-center gap-2">
+                                <span class="material-symbols-outlined notranslate text-primary text-[20px]">${icon}</span>
+                                <span class="min-w-0 truncate">${this.escapeHtml(title)}</span>
+                            </h4>
+                            ${reason ? `<p class="mt-3 text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(reason)}</p>` : ''}
+                        </div>
+                        <div class="flex flex-wrap md:flex-col gap-2 md:min-w-[140px]">${actionsHtml}</div>
+                    </div>
+                </div>`;
+        }
+        if (!next?.sourceType && next?.micro?.id) {
+            next.sourceType = 'micro';
+            next.sourceId = next.micro.id;
+            if (!next.title) next.title = next.micro.title || 'Micro ação';
+            if (!next.reason && Array.isArray(next.reasons) && next.reasons.length) next.reason = next.reasons[0];
+        }
         if (!next?.micro) {
             // Gap in hierarchy — guide user to complete the chain
             if (next?.gapType) {
@@ -835,7 +893,7 @@ _renderNextActionCard: function(next, variant = 'today') {
         const effortLabel = this.getMicroEffortLabel(next.effort || micro.effort);
         const reasons = [
             `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">Esforço ${effortLabel}</span>`,
-            ...next.reasons.map(r => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">${this.escapeHtml(r)}</span>`)
+            ...(next.reasons || []).map(r => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">${this.escapeHtml(r)}</span>`)
         ].join('');
         const wrapper = variant === 'panel'
             ? 'bg-primary/5 border-primary/20'
@@ -868,11 +926,164 @@ _renderNextActionCard: function(next, variant = 'today') {
             </div>`;
     },
 
+getMicroEstimatedMinutes: function(micro) {
+        if (!micro) return 0;
+        const manual = Math.round(Number(micro.estimatedMinutes) || 0);
+        if (manual > 0) return manual;
+        const effort = this.getMicroEffort(micro);
+        if (effort === 'leve') return 15;
+        if (effort === 'denso') return 60;
+        return 30;
+    },
+
+toClockMinutes: function(hhmm = '') {
+        const raw = String(hhmm || '').trim();
+        const match = raw.match(/^(\d{1,2}):(\d{2})$/);
+        if (!match) return null;
+        const h = Number(match[1]);
+        const m = Number(match[2]);
+        if (!Number.isFinite(h) || !Number.isFinite(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+        return (h * 60) + m;
+    },
+
+getDayPartByClockMinutes: function(totalMinutes = null) {
+        if (!Number.isFinite(totalMinutes)) return 'sem_horario';
+        if (totalMinutes < 720) return 'manha';
+        if (totalMinutes < 1080) return 'tarde';
+        return 'noite';
+    },
+
+getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
+        const state = window.sistemaVidaState;
+        const today = String(dateKey || this.getLocalDateKey());
+        const now = new Date(`${today}T00:00:00`);
+        const items = [];
+
+        const habits = (state.habits || []).filter((habit) =>
+            habit && habit.id && habit.archived !== true && habit.status !== 'archived'
+        );
+        habits.forEach((habit) => {
+            const isScheduled = typeof this.isHabitScheduledForDate === 'function'
+                ? this.isHabitScheduledForDate(habit, today)
+                : true;
+            if (!isScheduled) return;
+            const isRoutine = typeof this.isHabitRoutine === 'function' ? this.isHabitRoutine(habit) : false;
+            const progress = this.getHabitTodayProgressSnapshot?.(habit, today) || { done: false, label: '0/1' };
+            const startMinutes = this.toClockMinutes(habit.startTime || '');
+            const estimatedMinutes = Math.max(1, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
+            items.push({
+                id: `habit:${habit.id}`,
+                sourceType: isRoutine ? 'routine' : 'habit',
+                sourceId: habit.id,
+                title: habit.title || (isRoutine ? 'Rotina' : 'Hábito'),
+                dimension: habit.dimension || 'Geral',
+                estimatedMinutes,
+                startTime: String(habit.startTime || ''),
+                startMinutes,
+                dayPart: this.getDayPartByClockMinutes(startMinutes),
+                done: !!progress.done,
+                progressLabel: progress.label || '',
+                urgency: progress.done ? 0 : 55
+            });
+        });
+
+        const micros = (state.entities?.micros || []).filter((micro) =>
+            micro && micro.id && micro.status !== 'abandoned'
+        );
+        const isMicroInWindow = (micro) => {
+            const start = micro.inicioDate ? new Date(`${micro.inicioDate}T00:00:00`) : null;
+            const due = micro.prazo ? new Date(`${micro.prazo}T00:00:00`) : null;
+            if (!due || Number.isNaN(due.getTime())) return false;
+            if (start && !Number.isNaN(start.getTime())) return start <= now && due >= now;
+            return due >= now;
+        };
+
+        micros.filter(isMicroInWindow).forEach((micro) => {
+            const done = micro.status === 'done' || !!micro.completed;
+            const estimatedMinutes = Math.max(1, Number(this.getMicroEstimatedMinutes(micro)) || 0);
+            const dueDays = micro.prazo
+                ? Math.floor((new Date(`${micro.prazo}T00:00:00`) - now) / 86400000)
+                : null;
+            let urgency = done ? 0 : 45;
+            if (!done && dueDays !== null && dueDays < 0) urgency = 95;
+            else if (!done && dueDays === 0) urgency = 85;
+            else if (!done && micro.status === 'in_progress') urgency = 80;
+            items.push({
+                id: `micro:${micro.id}`,
+                sourceType: 'micro',
+                sourceId: micro.id,
+                title: micro.title || 'Micro ação',
+                dimension: micro.dimension || 'Geral',
+                estimatedMinutes,
+                startTime: '',
+                startMinutes: null,
+                dayPart: 'sem_horario',
+                done,
+                progressLabel: done ? 'Concluida' : (micro.status === 'in_progress' ? 'Em andamento' : 'Pendente'),
+                urgency
+            });
+        });
+
+        return items.sort((a, b) => {
+            if (a.done !== b.done) return a.done ? 1 : -1;
+            if (b.urgency !== a.urgency) return b.urgency - a.urgency;
+            if ((a.startMinutes ?? 9999) !== (b.startMinutes ?? 9999)) return (a.startMinutes ?? 9999) - (b.startMinutes ?? 9999);
+            return String(a.title || '').localeCompare(String(b.title || ''), 'pt-BR');
+        });
+    },
+
+getTodayCapacityState: function(dateKey = this.getLocalDateKey()) {
+        const defaults = {
+            awakeMinutes: 16 * 60,
+            fixedCommitmentsMinutes: 8 * 60,
+            dailyBasicsMinutes: 2 * 60,
+            bufferMinutes: 60
+        };
+        const capacityMinutes = Math.max(60, defaults.awakeMinutes - defaults.fixedCommitmentsMinutes - defaults.dailyBasicsMinutes - defaults.bufferMinutes);
+        const items = this.getTodayActionItems(dateKey);
+        const plannedMinutes = items.reduce((sum, item) => sum + Math.max(0, Number(item.estimatedMinutes) || 0), 0);
+        const remainingMinutes = capacityMinutes - plannedMinutes;
+        const usage = capacityMinutes > 0 ? (plannedMinutes / capacityMinutes) : 0;
+        let status = 'ok';
+        if (usage > 1.05) status = 'sobrecarregado';
+        else if (usage > 0.85) status = 'cheio';
+        const suggestions = [];
+        if (status !== 'ok') {
+            suggestions.push('Reduza ou mova ações de baixa prioridade.');
+            suggestions.push('Proteja ao menos um bloco real de descanso.');
+        }
+        return {
+            dateKey: dateKey || this.getLocalDateKey(),
+            defaults,
+            capacityMinutes,
+            plannedMinutes,
+            remainingMinutes,
+            status,
+            usagePct: Math.round(Math.max(0, usage) * 100),
+            items,
+            suggestions
+        };
+    },
+
 getNextBestAction: function(options = {}) {
         const state = window.sistemaVidaState;
         const todayStr = this.getLocalDateKey();
         const today = new Date(todayStr + 'T00:00:00');
         const scope = options.scope || 'today';
+        const hourNow = new Date().getHours();
+        const deepWork = state.deepWork || {};
+        if (deepWork.isRunning && deepWork.microId) {
+            const runningMicro = (state.entities?.micros || []).find(item => item.id === deepWork.microId) || null;
+            return {
+                sourceType: 'focus',
+                sourceId: String(deepWork.microId || ''),
+                title: runningMicro?.title ? `Foco em andamento: ${runningMicro.title}` : 'Foco em andamento',
+                reason: 'Existe um bloco de foco ativo.',
+                reasons: ['foco em andamento'],
+                action: 'open_focus',
+                micro: runningMicro
+            };
+        }
         const micros = (state.entities?.micros || []).filter(m =>
             m && m.id && m.status !== 'done' && m.status !== 'abandoned' && !m.completed
         );
@@ -975,13 +1186,85 @@ getNextBestAction: function(options = {}) {
             return aDue - bDue;
         });
 
-        const top = ranked[0] || null;
-        if (!top) {
-            // No actionable micro found — surface hierarchy gap as next best action instead
-            return this._detectHierarchyGap(state);
+        const criticalMicro = ranked.find(item => item.daysToDue !== null && item.daysToDue <= 0) || null;
+        if (criticalMicro) {
+            if (criticalMicro.reasons.length === 0) criticalMicro.reasons.push('micro critica para hoje');
+            return {
+                ...criticalMicro,
+                sourceType: 'micro',
+                sourceId: criticalMicro.micro.id,
+                title: criticalMicro.micro.title || 'Micro ação',
+                reason: criticalMicro.reasons[0] || 'Micro critica para hoje.',
+                action: 'open_micro'
+            };
         }
-        if (top.reasons.length === 0) top.reasons.push('é a melhor próxima micro ativa');
-        return top;
+
+        const habits = (state.habits || []).filter(habit =>
+            habit && habit.id && habit.archived !== true && habit.status !== 'archived' &&
+            (typeof this.isHabitScheduledForDate === 'function' ? this.isHabitScheduledForDate(habit, todayStr) : true) &&
+            !this.isHabitDoneOnDate(habit, todayStr)
+        );
+        if (habits.length > 0) {
+            const nowMinutes = (new Date().getHours() * 60) + new Date().getMinutes();
+            habits.sort((a, b) => {
+                const aStart = this.toClockMinutes ? this.toClockMinutes(a.startTime || '') : null;
+                const bStart = this.toClockMinutes ? this.toClockMinutes(b.startTime || '') : null;
+                const aDist = Number.isFinite(aStart) ? Math.abs(aStart - nowMinutes) : 9999;
+                const bDist = Number.isFinite(bStart) ? Math.abs(bStart - nowMinutes) : 9999;
+                return aDist - bDist;
+            });
+            const picked = habits[0];
+            const isRoutine = typeof this.isHabitRoutine === 'function' ? this.isHabitRoutine(picked) : false;
+            return {
+                sourceType: isRoutine ? 'routine' : 'habit',
+                sourceId: picked.id,
+                title: picked.title || (isRoutine ? 'Rotina' : 'Hábito'),
+                dimension: picked.dimension || 'Geral',
+                reason: picked.startTime ? `Horário sugerido ${picked.startTime}.` : 'Hábito previsto para hoje.',
+                reasons: ['hábito previsto para hoje'],
+                action: 'open_habit'
+            };
+        }
+
+        const todayCheckin = this.getTodayDailyCheckin?.();
+        if (!todayCheckin && hourNow < 14) {
+            return {
+                sourceType: 'checkin',
+                sourceId: todayStr,
+                title: 'Check-in do dia',
+                reason: 'Check-in pendente para calibrar seu dia.',
+                reasons: ['check-in pendente'],
+                action: 'open_checkin'
+            };
+        }
+
+        const top = ranked[0] || null;
+        if (top) {
+            if (top.reasons.length === 0) top.reasons.push('melhor proxima micro ativa');
+            return {
+                ...top,
+                sourceType: 'micro',
+                sourceId: top.micro.id,
+                title: top.micro.title || 'Micro ação',
+                reason: top.reasons[0] || 'Melhor micro para agora.',
+                action: 'open_micro'
+            };
+        }
+
+        const stress = Number(todayCheckin?.stress || 0);
+        const energyNow = Math.max(0, Math.min(5, Number(state.energy || 0)));
+        if (scope === 'today' && (energyNow <= 2 || stress >= 4)) {
+            return {
+                sourceType: 'rest',
+                sourceId: todayStr,
+                title: 'Ajustar ritmo antes de acelerar',
+                reason: 'Energia baixa ou carga alta pedem ajuste de ritmo.',
+                reasons: ['recuperacao estrategica'],
+                action: 'open_checkin'
+            };
+        }
+
+        return this._detectHierarchyGap(state) || null;
     },
 
 saveNewEntity: function() {
@@ -1028,6 +1311,7 @@ saveNewEntity: function() {
         const commitmentLevel = Number(document.getElementById('crud-commitment-level')?.value || 3);
         const keyResults = this.readKrRows();
         const effort = this.getMicroEffort({ effort: document.getElementById('crud-effort')?.value || 'medio' });
+        const estimatedMinutes = Math.max(0, Math.round(Number(document.getElementById('crud-estimated-minutes')?.value || 0)));
         const obstacle = (document.getElementById('crud-obstacle')?.value || '').trim();
         const ifThen = (document.getElementById('crud-ifthen')?.value || '').trim();
 
@@ -1133,6 +1417,7 @@ saveNewEntity: function() {
             }
             obj.indicator = context || '';
             obj.effort = effort;
+            obj.estimatedMinutes = estimatedMinutes > 0 ? estimatedMinutes : 0;
             obj.obstacle = obstacle;
             obj.ifThen = ifThen;
             const oldItem = getOldItem(id, 'micros');
@@ -1182,6 +1467,7 @@ saveNewEntity: function() {
             obj.steps = stepsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
             obj.trackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
             obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
+            obj.estimatedMinutes = estimatedMinutes > 0 ? estimatedMinutes : 0;
             obj.frequency = document.getElementById('habit-frequency') ? document.getElementById('habit-frequency').value : 'daily';
             obj.intervalDays = Math.max(0, Math.round(Number(document.getElementById('habit-interval-days')?.value || 0)));
             obj.dayOfMonth = Math.max(0, Math.round(Number(document.getElementById('habit-day-of-month')?.value || 0)));
@@ -1508,7 +1794,9 @@ editEntity: function(id, type) {
         const commitmentInput = document.getElementById('crud-commitment-level');
         if (commitmentInput) commitmentInput.value = String(item.commitmentLevel || 3);
         const effortInput = document.getElementById('crud-effort');
+        const estimatedInput = document.getElementById('crud-estimated-minutes');
         if (effortInput) effortInput.value = this.getMicroEffort(item);
+        if (estimatedInput) estimatedInput.value = Number(item.estimatedMinutes || 0) > 0 ? String(Math.round(Number(item.estimatedMinutes))) : '';
         const obstacleInput = document.getElementById('crud-obstacle');
         if (obstacleInput) obstacleInput.value = item.obstacle || '';
         const ifThenInput = document.getElementById('crud-ifthen');

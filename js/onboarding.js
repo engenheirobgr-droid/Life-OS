@@ -78,14 +78,14 @@ getStarterJourneyState: function() {
             });
         }
 
-        if (weeklyPlanned && next?.micro) {
+        if (weeklyPlanned && next && (next.sourceType || next.micro)) {
             push({
                 id: 'next-best',
                 label: 'Ir para proxima melhor acao',
-                description: next.micro.title ? `Pra hoje recomenda: ${next.micro.title}` : 'Use a recomendacao existente em Pra hoje.',
+                description: (next.title || next.micro?.title) ? `Pra hoje recomenda: ${next.title || next.micro?.title}` : 'Use a recomendacao existente em Pra hoje.',
                 icon: 'task_alt',
                 action: 'next-best',
-                microId: next.micro.id
+                microId: next.micro?.id || next.sourceId || ''
             });
         }
 
@@ -95,7 +95,7 @@ getStarterJourneyState: function() {
             activeHabits.length > 0 && (!habitsForToday.length || !pendingHabit),
             activeMicros.length > 0,
             weeklyPlanned,
-            !!(weeklyPlanned && next?.micro)
+            !!(weeklyPlanned && next && (next.sourceType || next.micro))
         ].filter(Boolean).length;
         const totalSignals = 6;
 

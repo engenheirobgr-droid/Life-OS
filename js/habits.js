@@ -13,6 +13,53 @@ isHabitDoneOnDate: function(habit, dateStr) {
         return mode === 'boolean' ? value > 0 : value >= target;
     },
 
+isHabitRoutine: function(habit) {
+        if (!habit) return false;
+        const hasProtocol = !!String(habit.protocolId || '').trim();
+        const hasSteps = Array.isArray(habit.steps) && habit.steps.some(step => String(step || '').trim() !== '');
+        return hasProtocol || hasSteps;
+    },
+
+getHabitEstimatedMinutes: function(habit) {
+        if (!habit) return 0;
+        const manual = Math.round(Number(habit.estimatedMinutes) || 0);
+        if (manual > 0) return manual;
+
+        const mode = String(habit.trackMode || 'boolean').toLowerCase();
+        if (mode === 'timer' || mode === 'tempo' || mode === 'time') {
+            return Math.max(1, Math.round(Number(habit.targetValue) || 0));
+        }
+
+        const steps = Array.isArray(habit.steps) ? habit.steps.filter(step => String(step || '').trim() !== '') : [];
+        if (steps.length > 0) return Math.max(8, steps.length * 8);
+
+        if (mode === 'numeric') return 10;
+        return 5;
+    },
+
+getHabitTodayProgressSnapshot: function(habit, dateStr = this.getLocalDateKey()) {
+        if (!habit) {
+            return { done: false, current: 0, target: 1, percent: 0, label: '0/1' };
+        }
+        const mode = String(habit.trackMode || 'boolean');
+        const target = Math.max(1, Number(habit.targetValue) || 1);
+        const logs = habit.logs || {};
+        const steps = Array.isArray(habit.steps) ? habit.steps.filter(Boolean) : [];
+        const stepMap = habit.stepLogs?.[dateStr] || {};
+        if (mode === 'boolean' && steps.length) {
+            const current = steps.reduce((acc, _, idx) => acc + (stepMap[idx] || stepMap[String(idx)] ? 1 : 0), 0);
+            const done = current >= steps.length;
+            const percent = Math.round((current / Math.max(1, steps.length)) * 100);
+            return { done, current, target: steps.length, percent, label: `${current}/${steps.length}` };
+        }
+        const current = Math.max(0, Number(logs[dateStr]) || 0);
+        const done = mode === 'boolean' ? current > 0 : current >= target;
+        const denom = mode === 'boolean' ? 1 : target;
+        const shownCurrent = mode === 'boolean' ? (done ? 1 : 0) : current;
+        const percent = Math.max(0, Math.min(100, Math.round((shownCurrent / Math.max(1, denom)) * 100)));
+        return { done, current: shownCurrent, target: denom, percent, label: `${shownCurrent}/${denom}` };
+    },
+
 getHabitDoneDates: function(habit) {
         const logs = habit?.logs || {};
         const stepLogs = habit?.stepLogs || {};

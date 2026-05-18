@@ -19,14 +19,14 @@ import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-well
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
 import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
-import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v1';
+import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v2';
 import { attachIdentity } from './js/identity.js?v=20260516-wellbeing-prompts-v205';
-import { attachHabits } from './js/habits.js?v=20260518-exec-flow-v1';
+import { attachHabits } from './js/habits.js?v=20260518-exec-flow-v2';
 import { attachProtocolsModule } from './js/protocols.js?v=20260518-protocols-v2';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-focus-flow-v16';
 import { attachStateModule } from './js/state.js?v=20260518-exec-flow-v1';
-import { attachRenderModule } from './js/render.js?v=20260518-focus-ui-v13';
-import { attachPlanningModule } from './js/planning.js?v=20260518-exec-flow-v1';
+import { attachRenderModule } from './js/render.js?v=20260518-day-capacity-v19';
+import { attachPlanningModule } from './js/planning.js?v=20260518-day-capacity-v19';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260518-focus-flow-v17',
+    appBuildVersion: '20260518-day-capacity-v19',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -3783,6 +3783,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         const inicioDateInput = document.getElementById('crud-inicio-date');
         const prazoDateInput = document.getElementById('crud-prazo-date');
         const effortInput = document.getElementById('crud-effort');
+        const estimatedInput = document.getElementById('crud-estimated-minutes');
         const obstacleInput = document.getElementById('crud-obstacle');
         const ifThenInput = document.getElementById('crud-ifthen');
         if (successCriteriaInput) successCriteriaInput.value = '';
@@ -3793,6 +3794,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         if (inicioDateInput) inicioDateInput.value = '';
         if (prazoDateInput) prazoDateInput.value = '';
         if (effortInput) effortInput.value = 'medio';
+        if (estimatedInput) estimatedInput.value = '';
         if (obstacleInput) obstacleInput.value = '';
         if (ifThenInput) ifThenInput.value = '';
         ['habit-interval-days', 'habit-day-of-month', 'habit-schedule-start-date'].forEach((fieldId) => {
@@ -5582,7 +5584,7 @@ ensureNotesState: function() {
             .map(([dim, data]) => ({ dim, score: Number(data?.score) || 0 }))
             .filter(item => item.score > 0)
             .sort((a, b) => a.score - b.score);
-        const theme = next?.micro?.dimension || dimScores[0]?.dim || values[0] || 'Geral';
+        const theme = next?.micro?.dimension || next?.dimension || dimScores[0]?.dim || values[0] || 'Geral';
         const quotes = this.getDailyCompassQuotes();
         const pool = quotes.filter(q => q.theme === theme);
         const fallback = quotes.filter(q => q.theme === 'Geral');
@@ -5604,8 +5606,9 @@ ensureNotesState: function() {
         ].map(v => String(v || '').trim()).filter(Boolean);
         const personalAnchor = purposePieces[seed % Math.max(1, purposePieces.length)] || values[0] || theme;
         const valueText = values.length ? `valor ${values[0]}` : `área ${theme}`;
-        const direction = next?.micro?.title
-            ? `Direção: avance "${next.micro.title}" sem perder de vista ${valueText}.`
+        const suggestedTitle = next?.title || next?.micro?.title || '';
+        const direction = suggestedTitle
+            ? `Direção: avance "${suggestedTitle}" sem perder de vista ${valueText}.`
             : `Direção: escolha uma micro ação que torne ${valueText} visível hoje.`;
 
         return {
@@ -7655,9 +7658,6 @@ onAuthStateChanged(auth, (user) => {
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
-
-
-
 
 
 

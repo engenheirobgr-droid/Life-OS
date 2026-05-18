@@ -923,17 +923,33 @@ manualGuideChapters: [
             icon: 'compass_calibration',
             title: 'Ritmo e Sugestão de Ritual',
             subtitle: 'Como o app orienta o próximo passo certo',
-            what: 'A <strong>Bússola do Dia</strong> (aba Hoje) usa o estado de cadência para sugerir o próximo ritual mais urgente: Diário Shutdown (após as 14h), Revisão Semanal (sexta a domingo), Planejamento Semanal (domingo/segunda) ou Check-in de bem-estar. Se nada estiver atrasado, ela sugere o que está "próximo do prazo".',
-            why: 'Decisão de "o que fazer agora" consome energia cognitiva (ego depletion). Um sistema que recomenda a próxima ação contextualmente reduz esse atrito. Rituals específicos a momentos do dia ou da semana (implementation intentions contextuais) têm taxa de adesão significativamente maior do que lembretes genéricos.',
+            what: 'A <strong>Bússola do Dia</strong> (aba Hoje) organiza o ritmo em duas camadas: cadência (check-in, shutdown, revisão e planejamento) e execução (micro, hábito, rotina ou foco). A <strong>Próxima Melhor Ação</strong> não é mais só uma micro recomendada: ela pode apontar para foco em andamento, micro urgente, hábito/rotina do horário, check-in pendente ou ajuste de ritmo.',
+            why: 'Decisão de "o que fazer agora" consome energia cognitiva (ego depletion). Separar cadência de execução reduz fricção sem confundir ritual semanal com tarefa de curto prazo. Recomendações contextuais (implementation intentions) têm taxa de adesão maior do que lembretes genéricos.',
             refs: ['Gollwitzer — Implementation Intentions', 'Roy Baumeister — Ego Depletion', 'Ecological Momentary Assessment'],
             how: [
-                'A sugestão aparece na Bússola do Dia; toque nela para ir diretamente à ferramenta recomendada.',
-                'Dias úteis (seg–qui): a bússola prioriza check-in e diário/shutdown.',
-                'Fim de semana (sex–dom): a bússola prioriza Revisão Semanal.',
-                'Segunda: a bússola prioriza Planejamento Semanal.',
-                'Se nada estiver urgente, a bússola mostra uma frase de propósito em vez de pressionar.'
+                'Use a Bússola para rituais de cadência (check-in, shutdown, revisão e planejamento).',
+                'Use a Próxima Melhor Ação para decidir a execução imediata do dia.',
+                'Quando houver foco em andamento, a recomendação prioriza terminar o bloco antes de abrir nova frente.',
+                'Quando não houver urgência, a recomendação pode sugerir ajuste de ritmo em vez de empurrar volume.'
             ],
             cta: { label: 'Ir para Hoje', view: 'hoje' }
+        },
+        {
+            id: 'mapa-capacidade',
+            icon: 'schedule',
+            title: 'Para Hoje e Capacidade',
+            subtitle: 'Planejar o dia sem estourar energia e tempo',
+            what: 'A seção <strong>Para hoje</strong> virou o centro operacional do dia. Ela agrega micros, hábitos previstos e rotinas (hábitos com protocolo ou checklist). O <strong>Mapa do Dia</strong> mostra capacidade planejável, tempo planejado e saldo em minutos. Hábitos de tempo usam meta em minutos; micros sem estimativa usam padrões por esforço; rotinas sem estimativa usam padrão por passos.',
+            why: 'Planejamento sem noção de capacidade cria sobrecarga silenciosa. Estimar tempo por padrão reduz barreira de entrada e permite ajuste rápido antes de travar o dia. Mostrar fricção sem bloquear decisão preserva autonomia do usuário.',
+            refs: ['Timeboxing', 'Planning fallacy (Kahneman & Tversky)', 'Behavioral design — friction as signal'],
+            how: [
+                'Na aba Hoje > Para hoje, leia primeiro o status de capacidade (executável, no limite ou sobrecarregado).',
+                'Se o dia ficar no limite, adie micros de menor impacto ou simplifique rotinas.',
+                'Defina estimativa manual quando souber melhor seu tempo real para aquela ação.',
+                'Hábito com protocolo ou passos aparece como rotina automaticamente na experiência de hoje.',
+                'A aba Hábitos continua sendo biblioteca completa; Para hoje mostra apenas o recorte do dia.'
+            ],
+            cta: { label: 'Abrir Para hoje', view: 'hoje' }
         },
         {
             id: 'hierarquia-diagnostico',

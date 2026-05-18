@@ -1773,6 +1773,124 @@ renderNextBestAction: function() {
         container.innerHTML = this._renderNextActionCard(this.getNextBestAction({ scope: 'today' }), 'today');
     },
 
+renderTodayCapacityMap: function() {
+        const container = document.getElementById('today-capacity-map');
+        if (!container) return;
+        const state = this.getTodayCapacityState ? this.getTodayCapacityState(this.getLocalDateKey()) : null;
+        if (!state) {
+            container.innerHTML = '';
+            return;
+        }
+        const statusMap = {
+            ok: { label: 'Executável', tone: 'text-emerald-700 dark:text-emerald-300', badge: 'bg-emerald-500/10 border-emerald-500/25' },
+            cheio: { label: 'No limite', tone: 'text-amber-700 dark:text-amber-300', badge: 'bg-amber-500/10 border-amber-500/25' },
+            sobrecarregado: { label: 'Sobrecarregado', tone: 'text-rose-700 dark:text-rose-300', badge: 'bg-rose-500/10 border-rose-500/25' }
+        };
+        const cfg = statusMap[state.status] || statusMap.ok;
+        const usageWidth = Math.max(0, Math.min(100, Number(state.usagePct || 0)));
+        const suggestions = (state.suggestions || []).slice(0, 2).map((item) =>
+            `<li class="text-[11px] text-on-surface-variant">${this.escapeHtml(item)}</li>`
+        ).join('');
+        container.innerHTML = `
+            <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Mapa do dia</p>
+                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${cfg.badge} ${cfg.tone}">${cfg.label}</span>
+                </div>
+                <div class="mt-3 grid grid-cols-3 gap-2">
+                    <div class="rounded-lg bg-surface-container-low border border-outline-variant/10 px-2.5 py-2">
+                        <p class="text-[10px] uppercase tracking-widest text-outline">Capacidade</p>
+                        <p class="text-sm font-bold text-on-surface">${Math.round(state.capacityMinutes)} min</p>
+                    </div>
+                    <div class="rounded-lg bg-surface-container-low border border-outline-variant/10 px-2.5 py-2">
+                        <p class="text-[10px] uppercase tracking-widest text-outline">Planejado</p>
+                        <p class="text-sm font-bold text-on-surface">${Math.round(state.plannedMinutes)} min</p>
+                    </div>
+                    <div class="rounded-lg bg-surface-container-low border border-outline-variant/10 px-2.5 py-2">
+                        <p class="text-[10px] uppercase tracking-widest text-outline">Saldo</p>
+                        <p class="text-sm font-bold ${state.remainingMinutes < 0 ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}">${Math.round(state.remainingMinutes)} min</p>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+                        <div class="h-full rounded-full ${state.status === 'sobrecarregado' ? 'bg-rose-500' : state.status === 'cheio' ? 'bg-amber-500' : 'bg-emerald-500'}" style="width:${usageWidth}%"></div>
+                    </div>
+                </div>
+                ${suggestions ? `<ul class="mt-3 space-y-1">${suggestions}</ul>` : ''}
+            </div>`;
+    },
+
+renderTodayActionList: function() {
+        const container = document.getElementById('today-action-list');
+        if (!container) return;
+        const items = this.getTodayActionItems ? this.getTodayActionItems(this.getLocalDateKey()) : [];
+        if (!items.length) {
+            container.innerHTML = '<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 text-xs text-outline italic">Sem ações previstas para hoje.</div>';
+            return;
+        }
+        const groups = { manha: [], tarde: [], noite: [], sem_horario: [] };
+        items.forEach((item) => {
+            const key = groups[item.dayPart] ? item.dayPart : 'sem_horario';
+            groups[key].push(item);
+        });
+        const labels = {
+            manha: 'Manha',
+            tarde: 'Tarde',
+            noite: 'Noite',
+            sem_horario: 'Sem horário'
+        };
+        const sectionHtml = ['manha', 'tarde', 'noite', 'sem_horario']
+            .filter((key) => groups[key].length > 0)
+            .map((key) => {
+                const cards = groups[key].map((item) => {
+                    const isHabit = item.sourceType === 'habit' || item.sourceType === 'routine';
+                    const isMicro = item.sourceType === 'micro';
+                    const typeLabel = item.sourceType === 'routine' ? 'Rotina' : (isHabit ? 'Hábito' : 'Micro');
+                    const tone = item.done
+                        ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
+                        : isMicro
+                            ? 'border-primary/20 bg-primary/[0.03]'
+                            : 'border-outline-variant/15 bg-surface-container-lowest';
+                    let ctas = '';
+                    if (isMicro) {
+                        ctas = `
+                            <button type="button" onclick="window.app.openMicroInFocus('${this.escapeHtml(item.sourceId)}', true)" class="px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Iniciar</button>
+                            <button type="button" onclick="window.app.postponeMicroOneDay('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-outline-variant/30 text-outline text-[10px] font-bold uppercase tracking-wider hover:bg-surface-container-high transition-colors">Adiar</button>`;
+                    } else if (isHabit) {
+                        const habitObj = (window.sistemaVidaState?.habits || []).find((habit) => habit.id === item.sourceId);
+                        const focusBtn = (habitObj && this.canStartFocusFromHabit?.(habitObj))
+                            ? `<button type="button" onclick="window.app.openHabitFocusModal('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Foco</button>`
+                            : '';
+                        ctas = `
+                            <button type="button" onclick="window.app.openHabitToday('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Registrar</button>
+                            ${focusBtn}`;
+                    }
+                    return `
+                        <div class="rounded-xl border ${tone} px-3 py-2.5">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-[10px] uppercase tracking-widest text-outline">${typeLabel} ${item.startTime ? `· ${this.escapeHtml(item.startTime)}` : ''}</p>
+                                    <p class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(item.title)}</p>
+                                    <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(item.dimension || 'Geral')} · ${Math.round(Number(item.estimatedMinutes) || 0)} min ${item.progressLabel ? `· ${this.escapeHtml(item.progressLabel)}` : ''}</p>
+                                </div>
+                                ${item.done ? '<span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Feito</span>' : ''}
+                            </div>
+                            ${item.done ? '' : `<div class="mt-2 flex flex-wrap gap-1.5">${ctas}</div>`}
+                        </div>`;
+                }).join('');
+                return `
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-outline">${labels[key]}</span>
+                            <span class="h-px flex-1 bg-outline-variant/20"></span>
+                            <span class="text-[10px] text-outline">${groups[key].length}</span>
+                        </div>
+                        <div class="space-y-2">${cards}</div>
+                    </div>`;
+            }).join('');
+        container.innerHTML = sectionHtml;
+    },
+
 render: {
         onboarding: function() {
             app.onboardingHydrateFields();
@@ -2697,6 +2815,8 @@ render: {
             app.renderDailyCompass();
             app.renderStarterJourneyCard();
             app.renderNextBestAction();
+            app.renderTodayCapacityMap();
+            app.renderTodayActionList();
 
             const container = document.getElementById('checklist-container');
             if (!container) return;
