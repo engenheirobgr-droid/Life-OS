@@ -756,16 +756,34 @@ manualGuideChapters: [
             icon: 'timer',
             title: 'Foco: Pomodoro 90/20 & Deep Work',
             subtitle: 'Atenção profunda em ritmos ultradianos',
-            what: 'Timer de <strong>90 minutos de foco + 20 minutos de pausa</strong>, conectado a um Micro específico. Ao final da sessão, registra Deep Work e atribui XP.',
+            what: 'Timer de <strong>90 minutos de foco + 20 minutos de pausa</strong>, conectado a um Micro específico. Ao finalizar, o app registra Deep Work, abre o <strong>fechamento da sessão</strong> (entrega, evidências, lacunas e próximo passo) e conduz a pausa estruturada quando aplicável.',
             why: 'O ciclo 90/20 segue os ritmos ultradianos (Kleitman) — o cérebro alterna entre alta e baixa ativação a cada ~90 minutos. Pomodoros de 25 minutos são bons para tarefas leves, mas trabalho profundo (Deep Work, Cal Newport) exige blocos longos sem interrupção. A pausa de 20 minutos permite consolidação e redução de fadiga atencional (depleção de glicose pré-frontal).',
             refs: ['Nathan Kleitman — BRAC (Basic Rest-Activity Cycle)', 'Cal Newport — Deep Work', 'Csikszentmihalyi — Flow'],
             how: [
                 'Antes de iniciar, escolha UM Micro — multitarefa destrói deep work.',
                 'Desligue notificações; o ambiente deve sinalizar "agora é foco".',
                 'Use a pausa de 20 min para movimento físico ou descanso real, não redes sociais.',
+                'Use "Salvar apenas nota" quando quiser registrar contexto sem concluir a micro.',
+                'Use "Salvar e concluir" quando a entrega realmente terminou.',
                 'Faça no máximo 3-4 sessões por dia; deep work é caro biologicamente.'
             ],
             cta: { label: 'Iniciar Foco', view: 'foco' }
+        },
+        {
+            id: 'protocolos-base',
+            icon: 'rule_settings',
+            title: 'Protocolos Base e Editáveis',
+            subtitle: 'Roteiros práticos para executar sem travar',
+            what: 'A aba <strong>Protocolos</strong> (em Planos) reúne protocolos base e personalizados. Hoje o app inclui base para <strong>início do dia</strong>, <strong>noite</strong>, <strong>limpeza</strong> (diário, semanal e mensal), estudo, treino e finanças. Todo protocolo é editável e pode ser convertido em hábito pré-preenchido.',
+            why: 'Protocolos diminuem carga de decisão e aumentam consistência em tarefas recorrentes. Começar por um modelo sólido acelera adesão; manter edição livre evita rigidez e permite personalização real.',
+            refs: ['Implementation intentions', 'Checklists operacionais', 'Behavior design - reducing decision load'],
+            how: [
+                'Em Planos > Protocolos, abra um protocolo base e revise os passos.',
+                'Use "Criar hábito" para transformar o protocolo em rotina executável.',
+                'Ajuste horário, frequência e meta antes de salvar.',
+                'Hábito com protocolo ou checklist aparece como rotina na experiência de Para hoje.'
+            ],
+            cta: { label: 'Abrir Protocolos', view: 'planos' }
         },
         {
             id: 'habitos',
@@ -881,7 +899,8 @@ manualGuideChapters: [
                 'Retomar um hábito após pausa rende +3 XP de bônus de retomada, uma vez por mês por hábito.',
                 'Manter o Hábito-Chave por 7 ou 30 dias consecutivos desbloqueia conquistas especiais.',
                 'Hábitos automáticos rendem XP reduzido — sinal de que o comportamento já está internalizado.',
-                'Streaks quebrados não apagam progresso; o nível e o histórico persistem.'
+                'Streaks quebrados não apagam progresso; o nível e o histórico persistem.',
+                'Sessão de foco ligada a hábito de tempo soma minutos no hábito; em hábitos não-temporais, o foco registra entrega e nota, sem marcar progresso automático.'
             ],
             cta: { label: 'Abrir Painel', view: 'painel' }
         },
