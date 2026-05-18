@@ -148,12 +148,16 @@ export function attachHabitFocusModule(app) {
             const mode = String(habit.trackMode || 'boolean');
             const normalizedMode = mode.toLowerCase();
             const isTimerMode = ['timer', 'time', 'tempo', 'minutes', 'minutos'].includes(normalizedMode);
-            const minutes = Math.max(1, Math.round(Number(focusSec || 0) / 60));
+            const minutes = Math.max(0, Math.round((Number(focusSec || 0) / 60) * 10) / 10);
             const currentValue = Math.max(0, Number(habit.logs?.[today]) || 0);
-            const nextValue = isTimerMode
-                ? currentValue + minutes
-                : 1;
-            this.updateHabitLog(habitId, today, nextValue);
+            if (isTimerMode) {
+                if (minutes <= 0) return;
+                this.updateHabitLog(habitId, today, currentValue + minutes);
+                return;
+            }
+            // For non-timer habits, focus sessions do not auto-complete progress.
+            // They still generate micro output and notes in the focus flow.
+            return;
         },
 
         startHabitFocusSession: function() {

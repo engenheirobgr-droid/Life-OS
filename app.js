@@ -23,7 +23,7 @@ import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v1';
 import { attachIdentity } from './js/identity.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabits } from './js/habits.js?v=20260518-exec-flow-v1';
 import { attachProtocolsModule } from './js/protocols.js?v=20260518-exec-flow-v1';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-focus-ui-v7';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-focus-flow-v14';
 import { attachStateModule } from './js/state.js?v=20260518-exec-flow-v1';
 import { attachRenderModule } from './js/render.js?v=20260518-focus-ui-v13';
 import { attachPlanningModule } from './js/planning.js?v=20260518-exec-flow-v1';
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260518-focus-ui-v13',
+    appBuildVersion: '20260518-focus-flow-v14',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
