@@ -23,9 +23,9 @@ import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v1';
 import { attachIdentity } from './js/identity.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabits } from './js/habits.js?v=20260518-exec-flow-v1';
 import { attachProtocolsModule } from './js/protocols.js?v=20260518-exec-flow-v1';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-exec-flow-v1';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-focus-ui-v7';
 import { attachStateModule } from './js/state.js?v=20260518-exec-flow-v1';
-import { attachRenderModule } from './js/render.js?v=20260518-focus-ui-v5';
+import { attachRenderModule } from './js/render.js?v=20260518-focus-ui-v7';
 import { attachPlanningModule } from './js/planning.js?v=20260518-exec-flow-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260518-focus-ui-v5',
+    appBuildVersion: '20260518-focus-ui-v7',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -7339,9 +7339,12 @@ ensureNotesState: function() {
             return;
         }
         if (dw.mode === 'focus') {
-            dw.completedFocusSec = Math.max(60, Math.round((Number(dw.targetSec) || 0) - (Number(dw.remainingSec) || 0)));
+            const elapsedFocusSec = Math.max(60, Math.round((Number(dw.targetSec) || 0) - (Number(dw.remainingSec) || 0)));
+            dw.completedFocusSec = elapsedFocusSec;
             dw.remainingSec = 0;
             this.onDeepWorkCountdownEnd();
+            // Keep user feedback explicit in immersive mode: manual finish ends the block and moves to break.
+            this.showToast(`Bloco finalizado: ${Math.max(1, Math.round(elapsedFocusSec / 60))} min registrados.`);
             return;
         }
 

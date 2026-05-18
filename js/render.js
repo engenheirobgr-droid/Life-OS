@@ -1424,14 +1424,6 @@ renderDeepWorkImmersiveOverlay: function() {
             : 'ring';
         const progressTotal = Math.max(1, dw.mode === 'focus' ? Number(dw.targetSec || 5400) : Number(dw.breakSec || 1200));
         const progress = Math.max(0, Math.min(1, 1 - (Number(dw.remainingSec || 0) / progressTotal)));
-        const statusTone = dw.mode === 'break'
-            ? 'bg-sky-500/12 text-sky-100 border border-sky-400/25'
-            : (dw.isPaused
-                ? 'bg-amber-500/12 text-amber-100 border border-amber-400/25'
-                : 'bg-primary/12 text-teal-50 border border-primary/30');
-        const statusText = dw.mode === 'break'
-            ? 'Pausa guiada'
-            : (dw.isPaused ? 'Foco pausado' : 'Foco em andamento');
         const helperText = dw.mode === 'break'
             ? 'Pausa ativa para recuperar energia antes do proximo bloco.'
             : '';
@@ -1454,7 +1446,6 @@ renderDeepWorkImmersiveOverlay: function() {
                             <h2 class="text-2xl md:text-4xl font-headline italic font-bold text-white">${dw.mode === 'break' ? 'Pausa em andamento' : 'Foco em andamento'}</h2>
                             ${helperText ? `<p class="mt-2 max-w-2xl text-sm md:text-base text-white/68">${this.escapeHtml(helperText)}</p>` : ''}
                         </div>
-                        <span class="shrink-0 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest ${statusTone}">${this.escapeHtml(statusText)}</span>
                     </div>
 
                     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
