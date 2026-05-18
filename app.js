@@ -25,7 +25,7 @@ import { attachHabits } from './js/habits.js?v=20260518-exec-flow-v1';
 import { attachProtocolsModule } from './js/protocols.js?v=20260518-exec-flow-v1';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-focus-ui-v7';
 import { attachStateModule } from './js/state.js?v=20260518-exec-flow-v1';
-import { attachRenderModule } from './js/render.js?v=20260518-focus-ui-v12';
+import { attachRenderModule } from './js/render.js?v=20260518-focus-ui-v13';
 import { attachPlanningModule } from './js/planning.js?v=20260518-exec-flow-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260518-focus-ui-v12',
+    appBuildVersion: '20260518-focus-ui-v13',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -6980,6 +6980,7 @@ ensureNotesState: function() {
         const dw = state.deepWork;
         if (dw.mode === 'focus') {
             const manualFocusSec = Number(dw.completedFocusSec);
+            const finishedManually = Number.isFinite(manualFocusSec) && manualFocusSec > 0;
             const focusSec = Number.isFinite(manualFocusSec) && manualFocusSec > 0 ? manualFocusSec : dw.targetSec;
             delete dw.completedFocusSec;
             const dateKey = this.getLocalDateKey();
@@ -7023,6 +7024,24 @@ ensureNotesState: function() {
             });
             this.showGamificationToast(award);
             dw.sessions = dw.sessions.slice(0, 50);
+
+            if (finishedManually) {
+                dw.isRunning = false;
+                dw.isPaused = false;
+                dw.mode = 'focus';
+                dw.remainingSec = dw.targetSec || 5400;
+                dw.lastTickAt = 0;
+                dw.deadlineAtMs = 0;
+                this.stopDeepWorkTicking();
+                this.saveState(true);
+                if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+                else this.renderDeepWorkImmersiveOverlay?.();
+                if (dw.pendingClosure && typeof this.openHabitFocusClosureModal === 'function') {
+                    setTimeout(() => this.openHabitFocusClosureModal(), 0);
+                }
+                return;
+            }
+
             dw.mode = 'break';
             dw.remainingSec = dw.breakSec;
             dw.lastTickAt = Date.now();
