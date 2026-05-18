@@ -48,6 +48,104 @@ const BASE_PROTOCOLS = [
         userEditable: true
     },
     {
+        id: 'protocol_start_day',
+        slug: 'start-day',
+        title: 'Inicio do dia',
+        family: 'rotina',
+        cadence: 'diario',
+        description: 'Ritual de abertura do dia para ativar corpo, mente e clareza de prioridade.',
+        rationaleShort: 'Uma sequencia curta e previsivel reduz atrito de inicio e melhora direcao do dia.',
+        evidenceCard: {
+            summary: 'Combina design de ambiente, acao em sequencia e foco nas primeiras decisoes para reduzir piloto automatico.',
+            principles: [
+                'Sequencias estaveis no mesmo horario aumentam consistencia de execucao.',
+                'Comecar com passos simples reduz resistencia e acelera entrada em acao.',
+                'Definir prioridade e agenda cedo reduz dispersao ao longo do dia.'
+            ],
+            references: [
+                { label: 'Lally et al. 2010', url: 'https://pubmed.ncbi.nlm.nih.gov/20364849/' },
+                { label: 'Gollwitzer 1999 (Implementation Intentions)', url: 'https://psycnet.apa.org/record/1999-05116-005' }
+            ]
+        },
+        steps: [
+            { id: 'start_day_1', title: 'Organizar a cama', optional: false, kind: 'reset' },
+            { id: 'start_day_2', title: 'Beber agua', optional: false, kind: 'care' },
+            { id: 'start_day_3', title: 'Meditar', optional: false, kind: 'mind' },
+            { id: 'start_day_4', title: 'Higiene basica', optional: false, kind: 'care' },
+            { id: 'start_day_5', title: 'Skincare: limpeza do rosto, hidratante e protetor solar', optional: false, kind: 'care' },
+            { id: 'start_day_6', title: 'Cafe da manha', optional: false, kind: 'care' },
+            { id: 'start_day_7', title: 'Check-in do dia no Life OS', optional: false, kind: 'plan' },
+            { id: 'start_day_8', title: 'Revisar agenda do dia', optional: false, kind: 'plan' },
+            { id: 'start_day_9', title: 'Acompanhar noticias com tempo limitado', optional: true, kind: 'review' }
+        ],
+        suggestedHabit: {
+            dimension: 'Mente',
+            trackMode: 'boolean',
+            targetValue: 1,
+            frequency: 'daily',
+            specificDays: [],
+            intervalDays: 0,
+            dayOfMonth: 0,
+            scheduleStartDate: '',
+            startTime: '06:30',
+            continuous: true,
+            trigger: 'Ao acordar',
+            routine: 'Executar o protocolo de inicio do dia.',
+            reward: 'Comecar o dia com presenca, clareza e prioridade definida.'
+        },
+        isBase: true,
+        userEditable: true
+    },
+    {
+        id: 'protocol_night',
+        slug: 'night',
+        title: 'Noite',
+        family: 'rotina',
+        cadence: 'diario',
+        description: 'Ritual de fechamento para desacelerar, organizar o proximo dia e proteger o sono.',
+        rationaleShort: 'Fechar o dia com intencao reduz carga mental e melhora preparacao para o dia seguinte.',
+        evidenceCard: {
+            summary: 'Combina descarregamento mental, reducao de estimulacao e rotina previsivel de sono.',
+            principles: [
+                'Reduzir estimulacao noturna favorece transicao para descanso.',
+                'Preparar o dia seguinte diminui ansiedade de inicio do proximo ciclo.',
+                'Ritual noturno consistente melhora regularidade de sono.'
+            ],
+            references: [
+                { label: 'AASM Sleep Hygiene Guidance', url: 'https://sleepeducation.org/healthy-sleep/healthy-sleep-habits/' },
+                { label: 'CDC Sleep Hygiene', url: 'https://www.cdc.gov/sleep/about_sleep/sleep_hygiene.html' }
+            ]
+        },
+        steps: [
+            { id: 'night_1', title: 'Higiene basica', optional: false, kind: 'care' },
+            { id: 'night_2', title: 'Skincare: limpeza do rosto, tratamento especifico (se usar) e hidratante', optional: false, kind: 'care' },
+            { id: 'night_3', title: 'Alinhar a barba, se necessario', optional: true, kind: 'care' },
+            { id: 'night_4', title: 'Organizar o dia seguinte: roupa, mochila, mesa e materiais', optional: false, kind: 'prepare' },
+            { id: 'night_5', title: 'Checkout diario no Life OS', optional: false, kind: 'review' },
+            { id: 'night_6', title: 'Reduzir telas, trabalho, redes sociais e noticias pesadas', optional: false, kind: 'mind' },
+            { id: 'night_7', title: 'Leitura leve', optional: true, kind: 'mind' },
+            { id: 'night_8', title: 'Oracao', optional: true, kind: 'mind' },
+            { id: 'night_9', title: 'Dormir', optional: false, kind: 'close' }
+        ],
+        suggestedHabit: {
+            dimension: 'Saude',
+            trackMode: 'boolean',
+            targetValue: 1,
+            frequency: 'daily',
+            specificDays: [],
+            intervalDays: 0,
+            dayOfMonth: 0,
+            scheduleStartDate: '',
+            startTime: '21:30',
+            continuous: true,
+            trigger: 'Ao iniciar o fechamento do dia',
+            routine: 'Executar o protocolo da noite.',
+            reward: 'Encerrar o dia com mente leve e sono protegido.'
+        },
+        isBase: true,
+        userEditable: true
+    },
+    {
         id: 'protocol_cleaning_daily',
         slug: 'cleaning-daily',
         title: 'Limpeza diaria',
@@ -384,6 +482,7 @@ export function attachProtocolsModule(app) {
         getProtocolFamilies: function() {
             return {
                 estudo: 'Estudo',
+                rotina: 'Rotina',
                 limpeza: 'Limpeza',
                 treino: 'Treino',
                 financas: 'Financas',

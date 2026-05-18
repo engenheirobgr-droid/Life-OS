@@ -22,7 +22,7 @@ import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205
 import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v1';
 import { attachIdentity } from './js/identity.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabits } from './js/habits.js?v=20260518-exec-flow-v1';
-import { attachProtocolsModule } from './js/protocols.js?v=20260518-exec-flow-v1';
+import { attachProtocolsModule } from './js/protocols.js?v=20260518-protocols-v2';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-focus-flow-v16';
 import { attachStateModule } from './js/state.js?v=20260518-exec-flow-v1';
 import { attachRenderModule } from './js/render.js?v=20260518-focus-ui-v13';
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260518-focus-flow-v16',
+    appBuildVersion: '20260518-focus-flow-v17',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
