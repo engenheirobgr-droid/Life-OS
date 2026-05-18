@@ -1359,7 +1359,10 @@ renderDeepWorkExecutionChecklistHTML: function(micro, options = {}) {
             containerClass = 'rounded-xl border border-outline-variant/20 bg-surface-container-low p-4 space-y-3',
             itemClassDone = 'bg-primary/8 text-primary',
             itemClassPending = 'hover:bg-surface-container-high text-on-surface',
-            noteClass = 'text-[10px] text-outline'
+            noteClass = 'text-[10px] text-outline',
+            listClass = 'rounded-lg border border-outline-variant/15 bg-surface-container-lowest p-2.5 space-y-1.5',
+            pendingTextClass = 'text-on-surface-variant',
+            doneTextClass = 'line-through text-outline'
         } = options;
         if (!micro || !Array.isArray(micro.steps) || !micro.steps.length) return '';
         const state = window.sistemaVidaState || {};
@@ -1384,7 +1387,7 @@ renderDeepWorkExecutionChecklistHTML: function(micro, options = {}) {
                         ${allDone ? 'Reabrir passos' : 'Concluir passos'}
                     </button>
                 </div>
-                <div class="rounded-lg border border-outline-variant/15 bg-surface-container-lowest p-2.5 space-y-1.5">
+                <div class="${listClass}">
                     ${steps.map((step, idx) => {
                         const done = !!(stepMap[idx] || stepMap[String(idx)]);
                         return `
@@ -1392,7 +1395,7 @@ renderDeepWorkExecutionChecklistHTML: function(micro, options = {}) {
                             <span class="w-4 h-4 rounded-full border-2 ${done ? 'bg-primary border-primary' : 'border-outline-variant'} flex items-center justify-center shrink-0">
                                 ${done ? '<span class="material-symbols-outlined notranslate text-white text-[10px]">check</span>' : ''}
                             </span>
-                            <span class="text-xs leading-relaxed ${done ? 'line-through text-outline' : 'text-on-surface-variant'}">${this.escapeHtml(step)}</span>
+                            <span class="text-xs leading-relaxed ${done ? doneTextClass : pendingTextClass}">${this.escapeHtml(step)}</span>
                         </button>`;
                     }).join('')}
                 </div>
@@ -1450,7 +1453,10 @@ renderDeepWorkImmersiveOverlay: function() {
                 containerClass: 'rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3 shadow-[0_18px_50px_rgba(0,0,0,0.22)]',
                 itemClassDone: 'bg-primary/12 text-teal-50',
                 itemClassPending: 'hover:bg-white/8 text-white',
-                noteClass: 'text-[10px] text-white/55'
+                noteClass: 'text-[10px] text-white/55',
+                listClass: 'rounded-lg border border-white/10 bg-black/20 p-2.5 space-y-1.5',
+                pendingTextClass: 'text-white/80',
+                doneTextClass: 'line-through text-white/45'
             })
             : '';
 
@@ -1458,7 +1464,7 @@ renderDeepWorkImmersiveOverlay: function() {
         document.body.style.overflow = 'hidden';
         content.innerHTML = `
             <div class="min-h-screen px-4 py-6 md:px-8 md:py-8 text-white">
-                <div class="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col gap-6">
+                <div class="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl flex-col gap-6">
                     <div class="flex items-start justify-between gap-4">
                         <div class="min-w-0">
                             <h2 class="text-2xl md:text-4xl font-headline italic font-bold text-white">${dw.mode === 'break' ? 'Pausa em andamento' : 'Foco em andamento'}</h2>
@@ -1466,9 +1472,9 @@ renderDeepWorkImmersiveOverlay: function() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+                    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
                         <section class="rounded-[28px] border border-white/10 bg-[rgba(255,255,255,0.045)] p-5 md:p-7 shadow-[0_30px_80px_rgba(0,0,0,0.34)] backdrop-blur-sm">
-                            <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
+                            <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(320px,1.1fr)_minmax(280px,0.9fr)] lg:items-stretch">
                                 <div class="min-w-0">
                                     ${this.renderDeepWorkClockVisual({
                                         style: clockStyle,
