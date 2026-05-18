@@ -659,9 +659,17 @@ export function attachProtocolsModule(app) {
             const familyMap = this.getProtocolFamilies();
             let html = '<option value="">- Sem protocolo -</option>';
             Object.keys(grouped).forEach((family) => {
-                html += `<optgroup label="${this.escapeHtml(familyMap[family] || family)}">`;
+                const familyLabel = this.escapeHtml(familyMap[family] || family);
+                html += `<optgroup label="${familyLabel}">`;
                 grouped[family].forEach((protocol) => {
-                    html += `<option value="${this.escapeHtml(protocol.id)}">${this.escapeHtml(protocol.title)}</option>`;
+                    const title = String(protocol.title || '').trim();
+                    const cadence = this.getProtocolCadenceLabel?.(protocol.cadence) || '';
+                    const normalizedTitle = title.toLowerCase();
+                    const normalizedFamily = String(familyMap[family] || family).trim().toLowerCase();
+                    const optionLabel = normalizedTitle === normalizedFamily && cadence
+                        ? `${title} (${cadence})`
+                        : title;
+                    html += `<option value="${this.escapeHtml(protocol.id)}">${this.escapeHtml(optionLabel)}</option>`;
                 });
                 html += '</optgroup>';
             });
@@ -669,6 +677,55 @@ export function attachProtocolsModule(app) {
             if (selectedId && select.querySelector(`option[value="${selectedId}"]`)) {
                 select.value = selectedId;
             }
+        },
+
+        populateMicroProtocolSelect: function(selectedId = '') {
+            this.ensureProtocolsState();
+            const select = document.getElementById('micro-protocol');
+            if (!select) return;
+            const protocols = this.getAllProtocols();
+            const grouped = protocols.reduce((acc, item) => {
+                if (!acc[item.family]) acc[item.family] = [];
+                acc[item.family].push(item);
+                return acc;
+            }, {});
+            const familyMap = this.getProtocolFamilies();
+            let html = '<option value="">- Sem protocolo -</option>';
+            Object.keys(grouped).forEach((family) => {
+                html += `<optgroup label="${this.escapeHtml(familyMap[family] || family)}">`;
+                grouped[family].forEach((protocol) => {
+                    html += `<option value="${this.escapeHtml(protocol.id)}">${this.escapeHtml(protocol.title || '')}</option>`;
+                });
+                html += '</optgroup>';
+            });
+            select.innerHTML = html;
+            if (selectedId && select.querySelector(`option[value="${selectedId}"]`)) {
+                select.value = selectedId;
+            }
+        },
+
+        inferProtocolIdFromSteps: function(steps = []) {
+            const normalizedSteps = (Array.isArray(steps) ? steps : [])
+                .map(step => String(step || '').trim().toLowerCase())
+                .filter(Boolean);
+            if (!normalizedSteps.length) return '';
+            const signature = normalizedSteps.join('\n');
+            const protocols = this.getAllProtocols();
+            const match = protocols.find((protocol) => {
+                const protocolSteps = (protocol.steps || [])
+                    .map(step => String(step?.title || '').trim().toLowerCase())
+                    .filter(Boolean);
+                return protocolSteps.length && protocolSteps.join('\n') === signature;
+            });
+            return match?.id || '';
+        },
+
+        inferHabitProtocolIdFromSteps: function(steps = []) {
+            return this.inferProtocolIdFromSteps(steps);
+        },
+
+        inferMicroProtocolIdFromSteps: function(steps = []) {
+            return this.inferProtocolIdFromSteps(steps);
         },
 
         applyProtocolToHabitForm: function(protocolId, options = {}) {
@@ -730,9 +787,30 @@ export function attachProtocolsModule(app) {
             return true;
         },
 
+        applyProtocolToMicroForm: function(protocolId, options = {}) {
+            const protocol = this.getProtocolById(protocolId);
+            if (!protocol) return false;
+            const stepsInput = document.getElementById('micro-steps');
+            const existingSteps = String(stepsInput?.value || '').trim();
+            const nextSteps = protocol.steps.map(step => step.title).join('\n');
+            if (!options.force && existingSteps && existingSteps !== nextSteps) {
+                const confirmed = confirm(`Substituir os passos atuais da micro pelo protocolo "${protocol.title}"?`);
+                if (!confirmed) return false;
+            }
+            if (stepsInput) stepsInput.value = nextSteps;
+            const select = document.getElementById('micro-protocol');
+            if (select) select.value = protocol.id;
+            return true;
+        },
+
         onHabitProtocolChange: function(protocolId) {
             if (!protocolId) return;
             this.applyProtocolToHabitForm(protocolId);
+        },
+
+        onMicroProtocolChange: function(protocolId) {
+            if (!protocolId) return;
+            this.applyProtocolToMicroForm(protocolId);
         },
 
         createHabitFromProtocol: function(protocolId) {

@@ -1608,6 +1608,31 @@
                     <p class="text-[10px] text-outline">Usado pela Próxima Melhor Ação para combinar tarefa e energia do dia.</p>
                 </div>
 
+                <div id="crud-micro-execution-group" class="hidden flex-col gap-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/50 p-3">
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between gap-3">
+                            <label for="micro-protocol"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Protocolo (opcional)</label>
+                            <button type="button" onclick="window.app.closeModal(); window.app.openProtocolsLibrary();"
+                                class="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline">
+                                Abrir protocolos
+                            </button>
+                        </div>
+                        <select id="micro-protocol" onchange="window.app.onMicroProtocolChange(this.value)"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                            <option value="">- Sem protocolo -</option>
+                        </select>
+                        <p class="text-[10px] text-outline">Aplicar protocolo copia os passos para o roteiro da micro.</p>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="micro-steps"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Passos da Micro (Opcional)</label>
+                        <textarea id="micro-steps" rows="3"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface placeholder-outline-variant resize-none"
+                            placeholder="Um passo por linha. Ex:&#10;1) Definir escopo&#10;2) Executar&#10;3) Registrar entrega"></textarea>
+                    </div>
+                </div>
+
                 <!-- Seletor de Propósito — apenas para Metas, usa resumos do perfil -->
                 <div id="crud-purpose-selector-group" class="hidden flex-col gap-2">
                     <label class="text-xs font-bold uppercase tracking-widest text-outline">Vincular ao Propósito</label>
@@ -1751,6 +1776,21 @@
                             placeholder="Ex: 20 minutos de lazer sem culpa">
                     </div>
                     <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between gap-3">
+                            <label for="habit-protocol"
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Protocolo (opcional)</label>
+                            <button type="button" onclick="window.app.closeModal(); window.app.openProtocolsLibrary();"
+                                class="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline">
+                                Abrir protocolos
+                            </button>
+                        </div>
+                        <select id="habit-protocol" onchange="window.app.onHabitProtocolChange(this.value)"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                            <option value="">- Sem protocolo -</option>
+                        </select>
+                        <p class="text-[10px] text-outline">Usa um protocolo para preencher os passos do habito com uma estrutura pronta.</p>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
                         <label for="habit-steps"
                             class="text-xs font-label uppercase tracking-widest text-outline font-bold">Passos da Rotina (Opcional)</label>
                         <textarea id="habit-steps" rows="3"
@@ -1885,22 +1925,6 @@
                     </div>
 
                     <div class="flex flex-col gap-1.5">
-                        <div class="flex items-center justify-between gap-3">
-                            <label for="habit-protocol"
-                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Protocolo (opcional)</label>
-                            <button type="button" onclick="window.app.closeModal(); window.app.openProtocolsLibrary();"
-                                class="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline">
-                                Abrir protocolos
-                            </button>
-                        </div>
-                        <select id="habit-protocol" onchange="window.app.onHabitProtocolChange(this.value)"
-                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
-                            <option value="">- Sem protocolo -</option>
-                        </select>
-                        <p class="text-[10px] text-outline">Usa um protocolo para preencher os passos do habito com uma estrutura pronta.</p>
-                    </div>
-
-                    <div class="flex flex-col gap-1.5">
                         <label for="habit-linked-meta"
                             class="text-xs font-label uppercase tracking-widest text-outline font-bold">Vincular a Meta (opcional)</label>
                         <select id="habit-linked-meta"
@@ -1999,6 +2023,13 @@
         </div>
     </div>
 
+    <div id="deep-work-immersive-overlay" class="hidden fixed inset-0 z-[109] bg-[rgba(8,15,17,0.92)] backdrop-blur-md">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(19,155,145,0.18),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_55%)]"></div>
+        <div class="relative h-full overflow-y-auto">
+            <div id="deep-work-immersive-content" class="min-h-full"></div>
+        </div>
+    </div>
+
     <div id="habit-focus-modal" class="hidden fixed inset-0 z-[111] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
         <div class="w-full max-w-2xl rounded-3xl border border-outline-variant/10 bg-surface-container-lowest shadow-2xl overflow-hidden">
             <div class="px-6 py-5 border-b border-outline-variant/10 flex items-start justify-between gap-4">
@@ -2041,7 +2072,7 @@
     </div>
 
     <div id="habit-focus-closure-modal" class="hidden fixed inset-0 z-[112] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-        <div class="w-full max-w-2xl rounded-3xl border border-outline-variant/10 bg-surface-container-lowest shadow-2xl overflow-hidden">
+        <div class="w-full max-w-2xl rounded-3xl border border-outline-variant/10 bg-surface-container-lowest shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
             <div class="px-6 py-5 border-b border-outline-variant/10 flex items-start justify-between gap-4">
                 <div class="min-w-0">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Fechamento da sessao</p>
@@ -2053,7 +2084,7 @@
                     <span class="material-symbols-outlined notranslate">close</span>
                 </button>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-6 space-y-4 overflow-y-auto flex-1">
                 <div class="flex flex-col gap-1.5">
                     <label for="habit-focus-closure-delivery" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Entrega da sessao</label>
                     <textarea id="habit-focus-closure-delivery" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que voce realmente entregou nesta sessao?"></textarea>
@@ -2925,7 +2956,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260517-protocols-focus-v3"></script>
+    <script type="module" src="app.js?v=20260518-exec-flow-v3"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>

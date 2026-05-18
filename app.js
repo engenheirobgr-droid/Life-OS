@@ -16,17 +16,17 @@ import {
 
 // Phase 9 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
-import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260517-protocols-focus-v3';
-import { attachNotifications } from './js/notifications.js?v=20260517-protocols-focus-v3';
+import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
+import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
 import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
-import { attachOnboarding } from './js/onboarding.js?v=20260517-protocols-focus-v3';
+import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v1';
 import { attachIdentity } from './js/identity.js?v=20260516-wellbeing-prompts-v205';
-import { attachHabits } from './js/habits.js?v=20260517-protocols-focus-v3';
-import { attachProtocolsModule } from './js/protocols.js?v=20260517-protocols-focus-v3';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260517-protocols-focus-v3';
-import { attachStateModule } from './js/state.js?v=20260517-protocols-focus-v3';
-import { attachRenderModule } from './js/render.js?v=20260517-protocols-focus-v3';
-import { attachPlanningModule } from './js/planning.js?v=20260517-protocols-focus-v3';
+import { attachHabits } from './js/habits.js?v=20260518-exec-flow-v1';
+import { attachProtocolsModule } from './js/protocols.js?v=20260518-exec-flow-v1';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-exec-flow-v1';
+import { attachStateModule } from './js/state.js?v=20260518-exec-flow-v1';
+import { attachRenderModule } from './js/render.js?v=20260518-exec-flow-v2';
+import { attachPlanningModule } from './js/planning.js?v=20260518-exec-flow-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260517-protocols-focus-v3',
+    appBuildVersion: '20260518-exec-flow-v3',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -941,6 +941,18 @@ normalizeSwlsAnswer: function(rawValue) {
                 intention: String(session?.intention || '')
             };
         }).slice(0, 200);
+    },
+    isDeepWorkInteractionLocked: function() {
+        this.normalizeDeepWorkState();
+        const dw = window.sistemaVidaState?.deepWork;
+        return !!(dw && dw.isRunning);
+    },
+    enforceDeepWorkInteractionLock: function(message = 'A sessao de foco esta ativa. Finalize, pause ou reinicie antes de abrir outro fluxo.') {
+        if (!this.isDeepWorkInteractionLocked()) return false;
+        this.showToast(message, 'error');
+        if (this.currentView !== 'foco') this.switchView('foco').catch(() => {});
+        this.renderDeepWorkImmersiveOverlay?.();
+        return true;
     },
     syncDeepWorkMicroStatus: function() {
         this.normalizeDeepWorkState();
@@ -2738,6 +2750,12 @@ renderProfileChrome: function() {
 
     switchView: async function(viewName, options = {}) {
         if (!viewName) return;
+        this.normalizeDeepWorkState?.();
+        if (!options.force && viewName !== 'foco' && window.sistemaVidaState?.deepWork?.isRunning) {
+            this.showToast('A sessao de foco esta ativa. Finalize ou reinicie o bloco antes de sair da tela imersiva.', 'error');
+            this.renderDeepWorkImmersiveOverlay?.();
+            return;
+        }
         this.currentView = viewName;
         this.closeFabMenu();
         this.updateNavUI(viewName);
@@ -2778,6 +2796,9 @@ renderProfileChrome: function() {
             if (viewName === 'proposito' && this.switchPropositoScreen) this.switchPropositoScreen(this.propositoScreen || 'identidade');
             if (this.renderAppNotificationCenter) {
                 try { this.renderAppNotificationCenter(); } catch (_) {}
+            }
+            if (this.renderDeepWorkImmersiveOverlay) {
+                try { this.renderDeepWorkImmersiveOverlay(); } catch (_) {}
             }
             if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
             resolve();
@@ -3299,6 +3320,7 @@ renderProfileChrome: function() {
     },
 
     toggleFabMenu: function(event) {
+        if (this.enforceDeepWorkInteractionLock('A sessao de foco esta ativa. Use os controles da sessao para continuar.')) return;
         if (event && event.stopPropagation) event.stopPropagation();
         const menu = document.getElementById('fab-context-menu');
         if (!menu) {
@@ -3315,21 +3337,30 @@ renderProfileChrome: function() {
     },
 
     openQuickCaptureFromFab: function() {
+        if (this.enforceDeepWorkInteractionLock('A sessao de foco esta ativa. Capture novas acoes quando concluir este bloco.')) return;
         this.closeFabMenu();
         this.openCreateModal('micros');
     },
 
     openHabitSuggestionsFromFab: async function() {
+        if (this.enforceDeepWorkInteractionLock('A sessao de foco esta ativa. Conclua o bloco antes de abrir novos habitos.')) return;
         this.closeFabMenu();
         await this.switchView('hoje');
-        setTimeout(() => {
-            if (typeof this.openHabitSuggestionsModal === 'function') {
-                this.openHabitSuggestionsModal();
+        if (typeof this.switchHojeScreen === 'function') this.switchHojeScreen('habitos');
+        const tryOpen = (attempt = 0) => {
+            if (typeof this.openHabitSuggestionsModal !== 'function') return;
+            const modalExists = !!document.getElementById('habit-suggestions-modal');
+            if (!modalExists && attempt < 8) {
+                setTimeout(() => tryOpen(attempt + 1), 80);
+                return;
             }
-        }, 40);
+            this.openHabitSuggestionsModal();
+        };
+        setTimeout(() => tryOpen(0), 40);
     },
 
     openMetaTrailWizard: function() {
+        if (this.enforceDeepWorkInteractionLock('A sessao de foco esta ativa. Finalize o bloco antes de iniciar uma nova trilha.')) return;
         this.closeFabMenu();
         const modal = document.getElementById('meta-trail-modal');
         if (!modal) return;
@@ -3734,6 +3765,7 @@ renderProfileChrome: function() {
 
         // Extracted in Phase 9: planning module
 openCreateModal: function(type = 'metas', parentId = null) {
+        if (this.enforceDeepWorkInteractionLock('A sessao de foco esta ativa. Finalize o bloco antes de abrir o cadastro.')) return;
         this.closeFabMenu();
         this.editingEntity = null; // Limpa estado de edição
         this.clearBlockingMessage();
@@ -4556,6 +4588,7 @@ ensureNotesState: function() {
     },
 
     openQuickNoteFromFab: function() {
+        if (this.enforceDeepWorkInteractionLock('A sessao de foco esta ativa. Registre novas notas ao finalizar o bloco.')) return;
         this.closeFabMenu();
         const modal = document.getElementById('quick-note-modal');
         if (!modal) return;
@@ -4623,7 +4656,7 @@ ensureNotesState: function() {
                             <span class="material-symbols-outlined notranslate text-[16px]">edit</span>
                         </button>
                     </div>
-                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(note.body)}</p>` : ''}
+                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line break-words">${this.escapeHtml(note.body)}</p>` : ''}
                     ${note.tags?.length ? `<div class="flex flex-wrap gap-1 pt-1">${note.tags.map(t => `<span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">${this.escapeHtml(t)}</span>`).join('')}</div>` : ''}
                 </div>
             `).join('');
@@ -6936,6 +6969,8 @@ ensureNotesState: function() {
             this.onDeepWorkCountdownEnd();
         } else if (this.currentView === 'foco') {
             this.renderDeepWorkPanel();
+        } else {
+            this.renderDeepWorkImmersiveOverlay?.();
         }
     },
 
@@ -7005,6 +7040,7 @@ ensureNotesState: function() {
             this.saveState(true);
             this.ensureDeepWorkTicking();
             if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+            else this.renderDeepWorkImmersiveOverlay?.();
             if (dw.pendingClosure && typeof this.openHabitFocusClosureModal === 'function') this.openHabitFocusClosureModal();
             return;
         }
@@ -7029,6 +7065,7 @@ ensureNotesState: function() {
             this.notifySelfPushEvent?.(payload, { dedupeId: `break_end_${breakEndedAt}` }).catch(() => {});
         }
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
+        else this.renderDeepWorkImmersiveOverlay?.();
     },
 
     startDeepWorkSession: function() {
@@ -7077,7 +7114,7 @@ ensureNotesState: function() {
 
         this.ensureDeepWorkTicking();
         if (this.currentView === 'foco' && this.render.foco) this.render.foco();
-        else this.renderDeepWorkPanel();
+        else this.renderDeepWorkImmersiveOverlay?.();
         this.saveState(true);
     },
     startDeepWorkForMicro: function(microId) {
@@ -7158,7 +7195,8 @@ ensureNotesState: function() {
             const intentionEl = document.getElementById('deep-work-intention');
             if (intentionEl) intentionEl.value = '';
         }
-        this.renderDeepWorkPanel();
+        if (this.currentView === 'foco') this.renderDeepWorkPanel();
+        else this.renderDeepWorkImmersiveOverlay?.();
     },
 
     setDeepWorkPreset: function(minutes) {
@@ -7170,7 +7208,8 @@ ensureNotesState: function() {
         if (presetEl) presetEl.value = String(safeMinutes);
         dw.targetSec = safeMinutes * 60;
         dw.remainingSec = dw.targetSec;
-        this.renderDeepWorkPanel();
+        if (this.currentView === 'foco') this.renderDeepWorkPanel();
+        else this.renderDeepWorkImmersiveOverlay?.();
     },
 
     setDeepWorkClockStyle: function(style) {
@@ -7178,7 +7217,8 @@ ensureNotesState: function() {
         const safeStyle = ['classic', 'ring'].includes(style) ? style : 'classic';
         window.sistemaVidaState.settings.deepWorkClockStyle = safeStyle;
         this.stopDeepWorkClockPreview();
-        this.renderDeepWorkPanel();
+        if (this.currentView === 'foco') this.renderDeepWorkPanel();
+        else this.renderDeepWorkImmersiveOverlay?.();
         this.saveState(true);
     },
 
@@ -7261,7 +7301,8 @@ ensureNotesState: function() {
             dw.deadlineAtMs = dw.lastTickAt + (Math.max(0, Number(dw.remainingSec) || 0) * 1000);
             this.ensureDeepWorkTicking();
         }
-        this.renderDeepWorkPanel();
+        if (this.currentView === 'foco') this.renderDeepWorkPanel();
+        else this.renderDeepWorkImmersiveOverlay?.();
         this.saveState(true);
     },
 
@@ -7275,7 +7316,8 @@ ensureNotesState: function() {
         dw.lastTickAt = 0;
         dw.deadlineAtMs = 0;
         this.stopDeepWorkTicking();
-        this.renderDeepWorkPanel();
+        if (this.currentView === 'foco') this.renderDeepWorkPanel();
+        else this.renderDeepWorkImmersiveOverlay?.();
         this.saveState(true);
     },
 
@@ -7346,6 +7388,7 @@ ensureNotesState: function() {
             this.notifySelfPushEvent?.(payload, { dedupeId: `break_manual_end_${breakStoppedAt}` }).catch(() => {});
         }
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
+        else this.renderDeepWorkImmersiveOverlay?.();
     },
 
     skipBreak: function() {
@@ -7372,6 +7415,7 @@ ensureNotesState: function() {
             this.notifySelfPushEvent?.(payload, { dedupeId: `break_skipped_${breakSkippedAt}` }).catch(() => {});
         }
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
+        else this.renderDeepWorkImmersiveOverlay?.();
     },
 
     openSwlsModal: function() {

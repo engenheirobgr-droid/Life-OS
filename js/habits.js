@@ -5,7 +5,7 @@ isHabitDoneOnDate: function(habit, dateStr) {
         const mode = habit.trackMode || 'boolean';
         const target = Number(habit.targetValue) || 1;
         const steps = Array.isArray(habit.steps) ? habit.steps.filter(Boolean) : [];
-        if (steps.length) {
+        if (mode === 'boolean' && steps.length) {
             const map = habit.stepLogs?.[dateStr] || {};
             return steps.every((_, idx) => !!(map[idx] || map[String(idx)]));
         }
@@ -661,12 +661,15 @@ updateHabitLog: function(habitId, dateStr, value) {
             const previousValue = Number(habit.logs[dateStr]) || 0;
             const wasDone = (habit.trackMode || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
             habit.logs[dateStr] = value;
-            if (Array.isArray(habit.steps) && habit.steps.length > 0) {
+            if ((habit.trackMode || 'boolean') === 'boolean' && Array.isArray(habit.steps) && habit.steps.length > 0) {
                 if (!habit.stepLogs) habit.stepLogs = {};
                 const markAll = value > 0;
                 const map = {};
                 if (markAll) habit.steps.forEach((_, idx) => { map[idx] = true; });
                 habit.stepLogs[dateStr] = map;
+                habit.steps.forEach((_, idx) => {
+                    this.syncHabitStepStateToLinkedMicro(habit, dateStr, idx, markAll);
+                });
             }
 
             // Toast feedback based on new value
@@ -711,7 +714,156 @@ updateHabitLog: function(habitId, dateStr, value) {
             if (this.currentView === 'hoje' && this.render.hoje) {
                 this.render.hoje();
             }
+            if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+            if (this.currentView === 'habitos' && this.render.habitos) this.render.habitos();
         }
+    },
+
+getActiveLinkedMicroForHabit: function(habitId, dateStr = this.getLocalDateKey()) {
+        const state = window.sistemaVidaState || {};
+        const micros = state.entities?.micros || [];
+        const dw = state.deepWork || {};
+        const safeHabitId = String(habitId || '').trim();
+        if (!safeHabitId) return null;
+
+        const isSameSessionDate = (micro) => {
+            if (!micro) return false;
+            const stepLogs = micro.stepLogs && typeof micro.stepLogs === 'object' ? micro.stepLogs : {};
+            if (stepLogs[dateStr]) return true;
+            const createdAt = String(micro.createdAt || '').trim();
+            if (!createdAt) return false;
+            const dt = new Date(createdAt);
+            if (Number.isNaN(dt.getTime())) return false;
+            return this.getLocalDateKey(dt) === dateStr;
+        };
+
+        const isCandidate = (micro) => {
+            if (!micro) return false;
+            if (String(micro.sourceHabitId || '') !== safeHabitId) return false;
+            if (String(micro.status || '') === 'done') return false;
+            if (!Array.isArray(micro.steps) || micro.steps.length === 0) return false;
+            return isSameSessionDate(micro);
+        };
+
+        const preferredIds = [String(dw.microId || ''), String(dw.pendingClosure?.microId || '')].filter(Boolean);
+        for (const preferredId of preferredIds) {
+            const preferred = micros.find(m => String(m.id || '') === preferredId);
+            if (isCandidate(preferred)) return preferred;
+        }
+
+        const candidates = micros.filter(isCandidate);
+        if (!candidates.length) return null;
+        candidates.sort((a, b) => {
+            const aInProgress = a.status === 'in_progress' ? 1 : 0;
+            const bInProgress = b.status === 'in_progress' ? 1 : 0;
+            if (aInProgress !== bInProgress) return bInProgress - aInProgress;
+            const aTs = new Date(a.createdAt || 0).getTime() || 0;
+            const bTs = new Date(b.createdAt || 0).getTime() || 0;
+            return bTs - aTs;
+        });
+        return candidates[0];
+    },
+
+_setHabitStepState: function(habit, dateStr, stepIndex, isDone) {
+        if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return null;
+        const idx = Math.max(0, Math.floor(Number(stepIndex) || 0));
+        if (idx >= habit.steps.length) return null;
+        if (!habit.stepLogs || typeof habit.stepLogs !== 'object') habit.stepLogs = {};
+        if (!habit.stepLogs[dateStr] || typeof habit.stepLogs[dateStr] !== 'object') habit.stepLogs[dateStr] = {};
+        const map = habit.stepLogs[dateStr];
+        if (isDone) map[idx] = true;
+        else {
+            delete map[idx];
+            delete map[String(idx)];
+        }
+        const doneCount = habit.steps.reduce((acc, _, i) => acc + (map[i] || map[String(i)] ? 1 : 0), 0);
+        const allDone = doneCount === habit.steps.length;
+        if (!habit.logs || typeof habit.logs !== 'object') habit.logs = {};
+        if ((habit.trackMode || 'boolean') === 'boolean') {
+            habit.logs[dateStr] = allDone ? 1 : 0;
+        }
+        return { doneCount, total: habit.steps.length, allDone };
+    },
+
+_setMicroStepState: function(micro, dateStr, stepIndex, isDone) {
+        if (!micro || !Array.isArray(micro.steps) || !micro.steps.length) return null;
+        const idx = Math.max(0, Math.floor(Number(stepIndex) || 0));
+        if (idx >= micro.steps.length) return null;
+        if (!micro.stepLogs || typeof micro.stepLogs !== 'object') micro.stepLogs = {};
+        if (!micro.stepLogs[dateStr] || typeof micro.stepLogs[dateStr] !== 'object') micro.stepLogs[dateStr] = {};
+        const map = micro.stepLogs[dateStr];
+        if (isDone) map[idx] = true;
+        else {
+            delete map[idx];
+            delete map[String(idx)];
+        }
+        const doneCount = micro.steps.reduce((acc, _, i) => acc + (map[i] || map[String(i)] ? 1 : 0), 0);
+        const allDone = doneCount === micro.steps.length;
+        micro.progress = Math.round((doneCount / micro.steps.length) * 100);
+        if (micro.status === 'pending' && doneCount > 0) micro.status = 'in_progress';
+        if (micro.status !== 'done') micro.completed = false;
+        return { doneCount, total: micro.steps.length, allDone };
+    },
+
+syncHabitStepStateToLinkedMicro: function(habitOrId, dateStr, stepIndex, isDone) {
+        const state = window.sistemaVidaState || {};
+        const habit = typeof habitOrId === 'string'
+            ? (state.habits || []).find(h => h.id === habitOrId)
+            : habitOrId;
+        if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return null;
+        const activeMicro = this.getActiveLinkedMicroForHabit(habit.id, dateStr);
+        if (!activeMicro) return null;
+        if (!Array.isArray(activeMicro.steps) || stepIndex >= activeMicro.steps.length) return null;
+        return this._setMicroStepState(activeMicro, dateStr, stepIndex, !!isDone);
+    },
+
+syncMicroStepStateToLinkedHabit: function(microOrId, dateStr, stepIndex, isDone) {
+        const state = window.sistemaVidaState || {};
+        const micro = typeof microOrId === 'string'
+            ? (state.entities?.micros || []).find(m => m.id === microOrId)
+            : microOrId;
+        if (!micro) return null;
+        const habitId = String(micro.sourceHabitId || '').trim();
+        if (!habitId) return null;
+        const habit = (state.habits || []).find(h => h.id === habitId);
+        if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return null;
+        if (stepIndex >= habit.steps.length) return null;
+        return this._setHabitStepState(habit, dateStr, stepIndex, !!isDone);
+    },
+
+toggleMicroExecutionStep: function(microId, dateStr, stepIndex) {
+        const state = window.sistemaVidaState || {};
+        const micro = (state.entities?.micros || []).find(m => m.id === microId);
+        if (!micro || !Array.isArray(micro.steps) || !micro.steps.length) return;
+        const day = String(dateStr || this.getLocalDateKey());
+        if (!micro.stepLogs || typeof micro.stepLogs !== 'object') micro.stepLogs = {};
+        if (!micro.stepLogs[day] || typeof micro.stepLogs[day] !== 'object') micro.stepLogs[day] = {};
+        const current = !!(micro.stepLogs[day][stepIndex] || micro.stepLogs[day][String(stepIndex)]);
+        const next = !current;
+        this._setMicroStepState(micro, day, stepIndex, next);
+        this.syncMicroStepStateToLinkedHabit(micro, day, stepIndex, next);
+        this.saveState(true);
+        if (this.currentView === 'foco' && this.render?.foco) this.render.foco();
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+        if (this.currentView === 'habitos' && this.render?.habitos) this.render.habitos();
+        if (this.currentView === 'planos' && this.render?.planos) this.render.planos();
+    },
+
+toggleMicroExecutionAllSteps: function(microId, dateStr, currentlyDone) {
+        const state = window.sistemaVidaState || {};
+        const micro = (state.entities?.micros || []).find(m => m.id === microId);
+        if (!micro || !Array.isArray(micro.steps) || !micro.steps.length) return;
+        const day = String(dateStr || this.getLocalDateKey());
+        const markAll = !currentlyDone;
+        micro.steps.forEach((_, idx) => {
+            this._setMicroStepState(micro, day, idx, markAll);
+            this.syncMicroStepStateToLinkedHabit(micro, day, idx, markAll);
+        });
+        this.saveState(true);
+        if (this.currentView === 'foco' && this.render?.foco) this.render.foco();
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+        if (this.currentView === 'habitos' && this.render?.habitos) this.render.habitos();
+        if (this.currentView === 'planos' && this.render?.planos) this.render.planos();
     },
 
 toggleHabitStepLog: function(habitId, dateStr, stepIndex) {
@@ -725,6 +877,7 @@ toggleHabitStepLog: function(habitId, dateStr, stepIndex) {
         const wasDone = (habit.trackMode || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
         const current = !!(habit.stepLogs[dateStr][stepIndex] || habit.stepLogs[dateStr][String(stepIndex)]);
         habit.stepLogs[dateStr][stepIndex] = !current;
+        this.syncHabitStepStateToLinkedMicro(habit, dateStr, stepIndex, !current);
         const doneCount = habit.steps.reduce((acc, _, idx) => acc + (habit.stepLogs[dateStr][idx] ? 1 : 0), 0);
         const allDone = doneCount === habit.steps.length;
         if (!habit.logs) habit.logs = {};
@@ -764,6 +917,8 @@ toggleHabitStepLog: function(habitId, dateStr, stepIndex) {
         this.saveState(true);
         this.renderHabitStepsChecklist(habitId);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+        if (this.currentView === 'habitos' && this.render.habitos) this.render.habitos();
     },
 
 toggleHabitAllSteps: function(habitId, dateStr, currentlyDone) {
@@ -778,11 +933,17 @@ toggleHabitAllSteps: function(habitId, dateStr, currentlyDone) {
         if (currentlyDone) {
             habit.stepLogs[dateStr] = {};
             if ((habit.trackMode || 'boolean') === 'boolean') habit.logs[dateStr] = 0;
+            habit.steps.forEach((_, idx) => {
+                this.syncHabitStepStateToLinkedMicro(habit, dateStr, idx, false);
+            });
         } else {
             const all = {};
             habit.steps.forEach((_, idx) => { all[idx] = true; });
             habit.stepLogs[dateStr] = all;
             if ((habit.trackMode || 'boolean') === 'boolean') habit.logs[dateStr] = 1;
+            habit.steps.forEach((_, idx) => {
+                this.syncHabitStepStateToLinkedMicro(habit, dateStr, idx, true);
+            });
             if (!wasDone) {
                 const award = this.awardGamification('habit_complete', {
                     key: `habit:${habit.id}:${dateStr}`,
@@ -817,6 +978,8 @@ toggleHabitAllSteps: function(habitId, dateStr, currentlyDone) {
         this.saveState(true);
         this.renderHabitStepsChecklist(habitId);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+        if (this.currentView === 'habitos' && this.render.habitos) this.render.habitos();
     },
 
 renderHabitStepsChecklist: function(habitId) {

@@ -105,6 +105,10 @@ export function attachHabitFocusModule(app) {
             if (!habit || !macro) return null;
             const now = new Date();
             const today = this.getLocalDateKey(now);
+            const protocol = habit.protocolId ? this.getProtocolById?.(habit.protocolId) : null;
+            const habitSteps = Array.isArray(habit.steps) ? habit.steps.map(step => String(step || '').trim()).filter(Boolean) : [];
+            const protocolSteps = Array.isArray(protocol?.steps) ? protocol.steps.map(step => String(step?.title || '').trim()).filter(Boolean) : [];
+            const inheritedSteps = habitSteps.length ? habitSteps : protocolSteps;
             const micro = {
                 id: `micro_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
                 title: String(title || '').trim(),
@@ -124,11 +128,15 @@ export function attachHabitFocusModule(app) {
                 progress: 0,
                 focusSec: 0,
                 focusSessions: 0,
+                steps: inheritedSteps,
+                stepLogs: {},
+                protocolId: String(habit.protocolId || ''),
                 sourceHabitId: habit.id,
                 sourceProtocolId: habit.protocolId || '',
                 sourceType: 'habit_focus_session',
                 createdAt: now.toISOString()
             };
+            if (inheritedSteps.length) micro.stepLogs[today] = {};
             state.entities.micros.unshift(micro);
             return micro;
         },
@@ -138,9 +146,11 @@ export function attachHabitFocusModule(app) {
             if (!habit) return;
             const today = this.getLocalDateKey();
             const mode = String(habit.trackMode || 'boolean');
+            const normalizedMode = mode.toLowerCase();
+            const isTimerMode = ['timer', 'time', 'tempo', 'minutes', 'minutos'].includes(normalizedMode);
             const minutes = Math.max(1, Math.round(Number(focusSec || 0) / 60));
             const currentValue = Math.max(0, Number(habit.logs?.[today]) || 0);
-            const nextValue = mode === 'timer'
+            const nextValue = isTimerMode
                 ? currentValue + minutes
                 : 1;
             this.updateHabitLog(habitId, today, nextValue);
@@ -203,12 +213,18 @@ export function attachHabitFocusModule(app) {
             document.getElementById('habit-focus-closure-evidence').value = '';
             document.getElementById('habit-focus-closure-gaps').value = '';
             document.getElementById('habit-focus-closure-next-step').value = '';
-            document.getElementById('habit-focus-closure-complete').checked = true;
+            const todayKey = this.getLocalDateKey();
+            const microSteps = Array.isArray(micro.steps) ? micro.steps.filter(Boolean) : [];
+            const microStepMap = (micro.stepLogs && typeof micro.stepLogs === 'object') ? (micro.stepLogs[todayKey] || {}) : {};
+            const doneSteps = microSteps.reduce((acc, _, idx) => acc + (microStepMap[idx] || microStepMap[String(idx)] ? 1 : 0), 0);
+            const allStepsDone = microSteps.length > 0 && doneSteps === microSteps.length;
+            document.getElementById('habit-focus-closure-complete').checked = microSteps.length === 0 || allStepsDone;
             const closureContextEl = document.getElementById('habit-focus-closure-context');
             if (closureContextEl) {
                 closureContextEl.textContent = [
                     protocol?.title ? `Protocolo: ${protocol.title}` : '',
-                    closure.focusSec ? `Tempo: ${Math.max(1, Math.round(Number(closure.focusSec || 0) / 60))} min` : ''
+                    closure.focusSec ? `Tempo: ${Math.max(1, Math.round(Number(closure.focusSec || 0) / 60))} min` : '',
+                    microSteps.length ? `Passos: ${doneSteps}/${microSteps.length}` : ''
                 ].filter(Boolean).join(' | ');
             }
 

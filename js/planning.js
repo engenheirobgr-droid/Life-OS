@@ -13,6 +13,7 @@ onTypeChange: function(type) {
         const routineInput = document.getElementById('habit-routine');
         const rewardInput = document.getElementById('habit-reward');
         const habitControls = document.getElementById('crud-habit-controls');
+        const microExecutionGroup = document.getElementById('crud-micro-execution-group');
         const habitContinuousRow = document.getElementById('habit-continuous-row');
         const habitReminderAdvanced = document.getElementById('habit-reminder-advanced');
         const woopGroup = document.getElementById('crud-woop-group');
@@ -33,6 +34,7 @@ onTypeChange: function(type) {
         if (parentGroup) parentGroup.classList.add('hidden');
         setGroupVisible(triggerGroup, false);
         setGroupVisible(habitControls, false);
+        setGroupVisible(microExecutionGroup, false);
         setGroupVisible(habitContinuousRow, false, 'block');
         setGroupVisible(habitReminderAdvanced, false);
         setGroupVisible(woopGroup, false);
@@ -103,6 +105,10 @@ onTypeChange: function(type) {
             if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério de Sucesso';
             if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
             if (type === 'micros') setGroupVisible(effortGroup, true);
+            if (type === 'micros') {
+                setGroupVisible(microExecutionGroup, true);
+                if (typeof this.populateMicroProtocolSelect === 'function') this.populateMicroProtocolSelect();
+            }
             if (['macros', 'micros'].includes(type)) {
                 if (woopGroup) {
                     woopGroup.classList.remove('hidden');
@@ -1133,7 +1139,28 @@ saveNewEntity: function() {
             obj.status = isEditing ? (oldItem.status || 'pending') : 'pending';
             obj.completed = obj.status === 'done';
             obj.progress = obj.completed ? 100 : 0;
-            
+            const microStepsRaw = String(document.getElementById('micro-steps')?.value || '');
+            obj.steps = microStepsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+            const microProtocolSel = document.getElementById('micro-protocol');
+            obj.protocolId = microProtocolSel && microProtocolSel.value ? microProtocolSel.value : '';
+            if (!obj.protocolId && typeof this.inferMicroProtocolIdFromSteps === 'function') {
+                obj.protocolId = this.inferMicroProtocolIdFromSteps(obj.steps || []);
+            }
+            obj.stepLogs = isEditing ? (oldItem.stepLogs || {}) : {};
+            obj.sourceHabitId = isEditing ? String(oldItem.sourceHabitId || '') : '';
+            obj.sourceProtocolId = isEditing ? String(oldItem.sourceProtocolId || '') : '';
+            if (!obj.steps.length) obj.stepLogs = {};
+            else {
+                Object.keys(obj.stepLogs || {}).forEach(dateKey => {
+                    const dayMap = obj.stepLogs[dateKey] || {};
+                    const cleaned = {};
+                    obj.steps.forEach((_, idx) => {
+                        if (dayMap[idx] || dayMap[String(idx)]) cleaned[idx] = true;
+                    });
+                    obj.stepLogs[dateKey] = cleaned;
+                });
+            }
+             
             if (parentId) {
                 const macro = window.sistemaVidaState.entities.macros.find(m => m.id === parentId);
                 if (macro) {
@@ -1202,6 +1229,9 @@ saveNewEntity: function() {
             obj.linkedMetaId = linkedSel && linkedSel.value ? linkedSel.value : null;
             const protocolSel = document.getElementById('habit-protocol');
             obj.protocolId = protocolSel && protocolSel.value ? protocolSel.value : '';
+            if (!obj.protocolId && typeof this.inferHabitProtocolIdFromSteps === 'function') {
+                obj.protocolId = this.inferHabitProtocolIdFromSteps(obj.steps || []);
+            }
             obj.sourceStrengthId = document.getElementById('habit-strength-source')?.value || '';
             obj.sourceShadowId = document.getElementById('habit-shadow-source')?.value || '';
             const shadowModeEl = document.getElementById('habit-shadow-mode');
@@ -1521,6 +1551,17 @@ editEntity: function(id, type) {
                 });
             }
             this.onHabitFreqChange(item.frequency || 'daily');
+        } else if (type === 'micros') {
+            const microStepsInput = document.getElementById('micro-steps');
+            if (microStepsInput) microStepsInput.value = Array.isArray(item.steps) ? item.steps.join('\n') : '';
+            const microProtocolSelect = document.getElementById('micro-protocol');
+            const inferredMicroProtocolId = item.protocolId || (typeof this.inferMicroProtocolIdFromSteps === 'function'
+                ? this.inferMicroProtocolIdFromSteps(item.steps || [])
+                : '');
+            if (typeof this.populateMicroProtocolSelect === 'function') this.populateMicroProtocolSelect(inferredMicroProtocolId || '');
+            if (microProtocolSelect && inferredMicroProtocolId && microProtocolSelect.querySelector(`option[value="${inferredMicroProtocolId}"]`)) {
+                microProtocolSelect.value = inferredMicroProtocolId;
+            }
         }
 
         this.onTypeChange(type);
@@ -1535,9 +1576,12 @@ editEntity: function(id, type) {
                 }
             }
             const protocolSel = document.getElementById('habit-protocol');
-            if (typeof this.populateHabitProtocolSelect === 'function') this.populateHabitProtocolSelect(item.protocolId || '');
-            if (protocolSel && item.protocolId && protocolSel.querySelector(`option[value="${item.protocolId}"]`)) {
-                protocolSel.value = item.protocolId;
+            const inferredProtocolId = item.protocolId || (typeof this.inferHabitProtocolIdFromSteps === 'function'
+                ? this.inferHabitProtocolIdFromSteps(item.steps || [])
+                : '');
+            if (typeof this.populateHabitProtocolSelect === 'function') this.populateHabitProtocolSelect(inferredProtocolId || '');
+            if (protocolSel && inferredProtocolId && protocolSel.querySelector(`option[value="${inferredProtocolId}"]`)) {
+                protocolSel.value = inferredProtocolId;
             }
             const strengthSel = document.getElementById('habit-strength-source');
             const shadowSel = document.getElementById('habit-shadow-source');
@@ -1551,6 +1595,17 @@ editEntity: function(id, type) {
             }
             if (shadowModeEl && item.shadowMode) shadowModeEl.value = item.shadowMode;
             else if (shadowModeEl && item.habitMode && item.sourceType === 'shadow') shadowModeEl.value = item.habitMode;
+        } else if (type === 'micros') {
+            const microProtocolSelect = document.getElementById('micro-protocol');
+            const inferredMicroProtocolId = item.protocolId || (typeof this.inferMicroProtocolIdFromSteps === 'function'
+                ? this.inferMicroProtocolIdFromSteps(item.steps || [])
+                : '');
+            if (typeof this.populateMicroProtocolSelect === 'function') this.populateMicroProtocolSelect(inferredMicroProtocolId || '');
+            if (microProtocolSelect && inferredMicroProtocolId && microProtocolSelect.querySelector(`option[value="${inferredMicroProtocolId}"]`)) {
+                microProtocolSelect.value = inferredMicroProtocolId;
+            }
+            const microStepsInput = document.getElementById('micro-steps');
+            if (microStepsInput) microStepsInput.value = Array.isArray(item.steps) ? item.steps.join('\n') : '';
         }
         
         // Seta o pai após popular a lista
@@ -1587,12 +1642,20 @@ editEntity: function(id, type) {
     },
 
 completeMicroAction: function(id) {
+        const todayKey = this.getLocalDateKey();
         const state = window.sistemaVidaState;
         const micro = state.entities.micros.find(m => m.id === id);
         if (!micro) {
             this.showToast('Micro ação não encontrada. Atualize a tela e tente novamente.', 'error');
             return;
         }
+
+        const steps = Array.isArray(micro.steps) ? micro.steps.filter(Boolean) : [];
+        const hasSteps = steps.length > 0;
+        const stepMap = (micro.stepLogs && typeof micro.stepLogs === 'object') ? (micro.stepLogs[todayKey] || {}) : {};
+        const doneSteps = hasSteps
+            ? steps.reduce((acc, _, idx) => acc + (stepMap[idx] || stepMap[String(idx)] ? 1 : 0), 0)
+            : 0;
 
         // Define se estamos marcando ou desmarcando a tarefa
         const isCompleting = micro.status !== 'done';
@@ -1608,6 +1671,18 @@ completeMicroAction: function(id) {
                 const confirmed = confirm('Esta micro não tem tempo de foco registrado. Concluir mesmo assim?');
                 if (!confirmed) return;
             }
+        }
+        if (isCompleting && hasSteps && doneSteps < steps.length) {
+            const missing = steps.length - doneSteps;
+            const confirmedChecklist = confirm(`Ainda faltam ${missing} passo(s) no checklist. Concluir mesmo assim e marcar os passos de hoje como concluidos?`);
+            if (!confirmedChecklist) return;
+        }
+        if (hasSteps) {
+            const markDone = isCompleting;
+            steps.forEach((_, idx) => {
+                if (typeof this._setMicroStepState === 'function') this._setMicroStepState(micro, todayKey, idx, markDone);
+                if (typeof this.syncMicroStepStateToLinkedHabit === 'function') this.syncMicroStepStateToLinkedHabit(micro, todayKey, idx, markDone);
+            });
         }
         micro.status = isCompleting ? 'done' : 'pending';
         // Sincroniza com a propriedade Legada 'completed' para manter UI funcionando

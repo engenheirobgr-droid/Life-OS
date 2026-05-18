@@ -1354,6 +1354,178 @@ renderDeepWorkClockVisual: function(options = {}) {
             </div>`;
     },
 
+renderDeepWorkExecutionChecklistHTML: function(micro, options = {}) {
+        const {
+            containerClass = 'rounded-xl border border-outline-variant/20 bg-surface-container-low p-4 space-y-3',
+            itemClassDone = 'bg-primary/8 text-primary',
+            itemClassPending = 'hover:bg-surface-container-high text-on-surface',
+            noteClass = 'text-[10px] text-outline'
+        } = options;
+        if (!micro || !Array.isArray(micro.steps) || !micro.steps.length) return '';
+        const state = window.sistemaVidaState || {};
+        const todayKey = this.getLocalDateKey();
+        const steps = micro.steps.map(step => String(step || '').trim()).filter(Boolean);
+        if (!steps.length) return '';
+        const stepMap = (micro.stepLogs || {})[todayKey] || {};
+        const doneCount = steps.reduce((acc, _, idx) => acc + (stepMap[idx] || stepMap[String(idx)] ? 1 : 0), 0);
+        const allDone = steps.length > 0 && doneCount === steps.length;
+        const linkedHabit = micro.sourceHabitId
+            ? (state.habits || []).find(h => h.id === micro.sourceHabitId)
+            : null;
+
+        return `
+            <div class="${containerClass}">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist de execucao</p>
+                        <p class="text-xs text-on-surface-variant mt-1">${linkedHabit ? `Sincronizado com o habito ${this.escapeHtml(linkedHabit.title || '')}.` : 'Use este roteiro durante a sessao de foco.'}</p>
+                    </div>
+                    <button type="button" onclick="window.app.toggleMicroExecutionAllSteps('${this.escapeHtml(micro.id)}','${todayKey}',${allDone ? 'true' : 'false'})" class="shrink-0 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high transition-colors">
+                        ${allDone ? 'Reabrir passos' : 'Concluir passos'}
+                    </button>
+                </div>
+                <div class="rounded-lg border border-outline-variant/15 bg-surface-container-lowest p-2.5 space-y-1.5">
+                    ${steps.map((step, idx) => {
+                        const done = !!(stepMap[idx] || stepMap[String(idx)]);
+                        return `
+                        <button type="button" onclick="window.app.toggleMicroExecutionStep('${this.escapeHtml(micro.id)}','${todayKey}',${idx})" class="w-full text-left flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors ${done ? itemClassDone : itemClassPending}">
+                            <span class="w-4 h-4 rounded-full border-2 ${done ? 'bg-primary border-primary' : 'border-outline-variant'} flex items-center justify-center shrink-0">
+                                ${done ? '<span class="material-symbols-outlined notranslate text-white text-[10px]">check</span>' : ''}
+                            </span>
+                            <span class="text-xs leading-relaxed ${done ? 'line-through text-outline' : 'text-on-surface-variant'}">${this.escapeHtml(step)}</span>
+                        </button>`;
+                    }).join('')}
+                </div>
+                <p class="${noteClass}">${doneCount}/${steps.length} passos concluidos hoje.</p>
+            </div>`;
+    },
+
+renderDeepWorkImmersiveOverlay: function() {
+        this.normalizeDeepWorkState();
+        const overlay = document.getElementById('deep-work-immersive-overlay');
+        const content = document.getElementById('deep-work-immersive-content');
+        if (!overlay || !content) return;
+
+        const state = window.sistemaVidaState || {};
+        const dw = state.deepWork || {};
+        if (!dw.isRunning) {
+            overlay.classList.add('hidden');
+            content.innerHTML = '';
+            document.body.style.overflow = '';
+            return;
+        }
+
+        const selectedMicro = dw.microId ? (state.entities?.micros || []).find(m => m.id === dw.microId) : null;
+        const linkedHabit = selectedMicro?.sourceHabitId
+            ? (state.habits || []).find(h => h.id === selectedMicro.sourceHabitId)
+            : null;
+        const clockStyle = ['classic', 'ring'].includes(state.settings?.deepWorkClockStyle)
+            ? state.settings.deepWorkClockStyle
+            : 'ring';
+        const progressTotal = Math.max(1, dw.mode === 'focus' ? Number(dw.targetSec || 5400) : Number(dw.breakSec || 1200));
+        const progress = Math.max(0, Math.min(1, 1 - (Number(dw.remainingSec || 0) / progressTotal)));
+        const statusTone = dw.mode === 'break'
+            ? 'bg-sky-500/12 text-sky-100 border border-sky-400/25'
+            : (dw.isPaused
+                ? 'bg-amber-500/12 text-amber-100 border border-amber-400/25'
+                : 'bg-primary/12 text-teal-50 border border-primary/30');
+        const statusText = dw.mode === 'break'
+            ? 'Pausa guiada em andamento'
+            : (dw.isPaused ? 'Sessao pausada' : 'Sessao de foco em andamento');
+        const helperText = dw.mode === 'break'
+            ? 'O app fica em espera ate o fim da pausa ou ate voce retomar o fluxo.'
+            : 'O app fica travado nesta sessao para manter sua execucao no mesmo contexto.';
+        const checklistHtml = dw.mode === 'focus' && selectedMicro
+            ? this.renderDeepWorkExecutionChecklistHTML(selectedMicro, {
+                containerClass: 'rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3 shadow-[0_18px_50px_rgba(0,0,0,0.22)]',
+                itemClassDone: 'bg-primary/12 text-teal-50',
+                itemClassPending: 'hover:bg-white/8 text-white',
+                noteClass: 'text-[10px] text-white/55'
+            })
+            : '';
+
+        overlay.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        content.innerHTML = `
+            <div class="min-h-screen px-4 py-6 md:px-8 md:py-8 text-white">
+                <div class="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col gap-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-white/55">${dw.mode === 'break' ? 'Modo pausa' : 'Modo foco'}</p>
+                            <h2 class="mt-2 text-3xl md:text-5xl font-headline italic font-bold text-white">${this.escapeHtml(selectedMicro?.title || dw.intention || 'Sessao ativa')}</h2>
+                            <p class="mt-3 max-w-2xl text-sm md:text-base text-white/68">${this.escapeHtml(helperText)}</p>
+                        </div>
+                        <span class="shrink-0 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest ${statusTone}">${this.escapeHtml(statusText)}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+                        <section class="rounded-[28px] border border-white/10 bg-[rgba(255,255,255,0.045)] p-5 md:p-7 shadow-[0_30px_80px_rgba(0,0,0,0.34)] backdrop-blur-sm">
+                            <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
+                                <div class="min-w-0">
+                                    ${this.renderDeepWorkClockVisual({
+                                        style: clockStyle,
+                                        timeText: this.formatClock(dw.remainingSec),
+                                        phaseText: dw.mode === 'break' ? (dw.isPaused ? 'Pausa em espera' : 'Pausa ativa') : (dw.isPaused ? 'Foco pausado' : 'Foco profundo'),
+                                        mode: dw.mode,
+                                        isRunning: dw.isRunning,
+                                        isPaused: dw.isPaused,
+                                        progress,
+                                        hasSelectedMicro: !!selectedMicro,
+                                        canCompleteSelectedMicro: !!(selectedMicro && selectedMicro.status !== 'done')
+                                    })}
+                                </div>
+                                <div class="min-w-0 space-y-4">
+                                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Micro ativa</p>
+                                            <p class="mt-1 text-sm font-semibold text-white">${this.escapeHtml(selectedMicro?.title || 'Sem micro ativa')}</p>
+                                        </div>
+                                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Habito origem</p>
+                                            <p class="mt-1 text-sm font-semibold text-white">${this.escapeHtml(linkedHabit?.title || 'Sessao livre')}</p>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Meta do bloco</p>
+                                            <p class="mt-1 text-sm font-semibold text-white">${Math.max(5, Math.round(Number(dw.targetSec || 5400) / 60))} min</p>
+                                        </div>
+                                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Modo atual</p>
+                                            <p class="mt-1 text-sm font-semibold text-white">${dw.mode === 'break' ? 'Pausa' : 'Foco'}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2 pt-1">
+                                        <button type="button" onclick="window.app.toggleDeepWorkPause()" class="rounded-xl border border-white/12 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white hover:bg-white/14 transition-colors">
+                                            ${dw.isPaused ? 'Retomar' : 'Pausar'}
+                                        </button>
+                                        <button type="button" onclick="window.app.resetDeepWorkSession()" class="rounded-xl border border-white/12 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white/88 hover:bg-white/10 transition-colors">
+                                            Reiniciar
+                                        </button>
+                                        <button type="button" onclick="window.app.${dw.mode === 'break' ? 'skipBreak' : 'finishDeepWorkNow'}()" class="rounded-xl bg-primary px-4 py-2 text-xs font-bold uppercase tracking-widest text-on-primary shadow-lg shadow-primary/25 hover:opacity-95 transition-all">
+                                            ${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <aside class="space-y-4">
+                            ${checklistHtml || `<div class="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/70 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">${dw.mode === 'break' ? 'A pausa fica em tela cheia ate o encerramento para manter a recuperacao no mesmo fluxo.' : 'Selecione uma micro com passos para acompanhar o roteiro completo aqui.'}</div>`}
+                            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-white/45">Estado atual</p>
+                                <p class="mt-2 text-sm leading-relaxed text-white/78">${this.escapeHtml(dw.mode === 'break'
+                                    ? 'A pausa esta protegida. Quando terminar, voce volta ao app com o bloco concluido e o proximo passo claro.'
+                                    : (dw.isPaused
+                                        ? 'O bloco foi pausado, mas o contexto continua travado para voce retomar sem dispersao.'
+                                        : 'A sessao esta priorizando uma unica micro ativa, com os passos visiveis e sincronizados.'))}</p>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </div>`;
+    },
+
 renderDeepWorkPanel: function() {
         this.normalizeDeepWorkState();
         this.ensureSettingsState();
@@ -1376,6 +1548,7 @@ renderDeepWorkPanel: function() {
         const resetBtn = document.getElementById('deep-work-reset-btn');
         const finishBtn = document.getElementById('deep-work-finish-btn');
         const contextActionsEl = document.getElementById('deep-work-context-actions');
+        const executionChecklistEl = document.getElementById('deep-work-execution-checklist');
 
         if (presetEl && !dw.isRunning) {
             const presetMin = Math.max(5, Math.round((dw.targetSec || 5400) / 60));
@@ -1532,6 +1705,17 @@ renderDeepWorkPanel: function() {
             }
         }
 
+        if (executionChecklistEl) {
+            const checklistMicro = selectedMicro && Array.isArray(selectedMicro.steps) && selectedMicro.steps.length ? selectedMicro : null;
+            if (!checklistMicro) {
+                executionChecklistEl.classList.add('hidden');
+                executionChecklistEl.innerHTML = '';
+            } else {
+                executionChecklistEl.classList.remove('hidden');
+                executionChecklistEl.innerHTML = this.renderDeepWorkExecutionChecklistHTML(checklistMicro);
+            }
+        }
+
         if (summaryEl) {
             const today = new Date();
             const weekStart = new Date(today);
@@ -1571,6 +1755,7 @@ renderDeepWorkPanel: function() {
         }
 
         this.ensureDeepWorkTicking();
+        this.renderDeepWorkImmersiveOverlay();
     },
 
 renderNextBestAction: function() {
@@ -2288,7 +2473,7 @@ render: {
                     let isDone = false;
                     if (mode === 'boolean') isDone = currentVal > 0;
                     else isDone = currentVal >= target;
-                    if (hasSteps) isDone = allStepsDone;
+                    if (hasSteps && mode === 'boolean') isDone = allStepsDone;
 
                     // UI for mode
                     let controlHtml = '';
@@ -2325,7 +2510,7 @@ render: {
                         const val = logs[ds] || 0;
                         const dayStepMap = stepLogs[ds] || {};
                         let dDone = false;
-                        if (hasSteps) {
+                        if (hasSteps && mode === 'boolean') {
                             const dCount = steps.reduce((acc, _, idx) => acc + (dayStepMap[idx] || dayStepMap[String(idx)] ? 1 : 0), 0);
                             dDone = dCount === steps.length;
                         } else if (mode === 'boolean') dDone = val > 0;
@@ -2389,11 +2574,19 @@ render: {
                                 Foco
                            </button>`
                         : '';
+                    const hasFocusSessionInProgress = (state.entities?.micros || []).some((m) =>
+                        m?.sourceHabitId === habit.id && m.status === 'in_progress'
+                    );
                     const scheduleChip = visibleToday
                         ? `<span class="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]">today</span>Hoje</span>`
                         : `<span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high text-outline px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]">event</span>Não é para hoje</span>`;
+                    const focusInProgressChip = hasFocusSessionInProgress
+                        ? `<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]">hourglass_top</span>Em foco</span>`
+                        : '';
                     const maturityClass = habit.isKey
                         ? 'border-amber-500/25 bg-amber-500/[0.04]'
+                        : hasFocusSessionInProgress
+                            ? 'border-sky-500/25 bg-sky-500/[0.06]'
                         : habit.maturity === 'graduated'
                             ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
                             : 'border-transparent bg-surface-container-low';
@@ -2407,6 +2600,7 @@ render: {
                                 ${continuousChip}
                                 ${keyChip}
                                 ${scheduleChip}
+                                ${focusInProgressChip}
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined notranslate text-[18px] opacity-0 group-hover:opacity-100 transition-all p-1 cursor-pointer ${habit.isKey ? 'text-amber-500' : 'text-outline hover:text-amber-500'}" onclick="event.stopPropagation(); window.app.toggleManualKeyHabit('${habit.id}')" title="${habit.isKey ? 'Remover Hábito-Chave' : 'Marcar como Hábito-Chave'}" style="font-variation-settings:'FILL' ${habit.isKey ? 1 : 0}">key</span>

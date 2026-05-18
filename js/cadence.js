@@ -321,7 +321,17 @@ getNextRitualSuggestion: function() {
         };
         // diary/shutdown só fazem sentido no fim do dia; weeklyReview/Plan/cycle em dias certos
         const hour = new Date().getHours();
-        const dow  = new Date().getDay(); // 0=dom, 1=seg, …, 5=sex, 6=sáb
+        const checkinStatus = this.getCadenceStatus('checkin');
+        const shutdownStatus = this.getCadenceStatus('shutdown');
+        const isMorning = hour >= 4 && hour < 14;
+        const isNight = hour >= 18 || hour < 4;
+        if (isMorning && checkinStatus?.state !== 'ok') {
+            return { key: 'checkin', route: routeMap.checkin, ...checkinStatus };
+        }
+        if (isNight && shutdownStatus?.state !== 'ok') {
+            return { key: 'shutdown', route: routeMap.shutdown, ...shutdownStatus };
+        }
+        const dow  = new Date().getDay(); // 0=dom, 1=seg, â€¦, 5=sex, 6=sÃ¡b
         const keys = Object.keys(routeMap).filter(k => {
             if (k === 'diary' || k === 'shutdown') return hour >= 14;
             if (k === 'weeklyReview') return [5, 6, 0].includes(dow);
