@@ -221,8 +221,6 @@ export function attachHabitFocusModule(app) {
             const microSteps = Array.isArray(micro.steps) ? micro.steps.filter(Boolean) : [];
             const microStepMap = (micro.stepLogs && typeof micro.stepLogs === 'object') ? (micro.stepLogs[todayKey] || {}) : {};
             const doneSteps = microSteps.reduce((acc, _, idx) => acc + (microStepMap[idx] || microStepMap[String(idx)] ? 1 : 0), 0);
-            const allStepsDone = microSteps.length > 0 && doneSteps === microSteps.length;
-            document.getElementById('habit-focus-closure-complete').checked = microSteps.length === 0 || allStepsDone;
             const closureContextEl = document.getElementById('habit-focus-closure-context');
             if (closureContextEl) {
                 closureContextEl.textContent = [
@@ -268,9 +266,7 @@ export function attachHabitFocusModule(app) {
             const evidence = String(document.getElementById('habit-focus-closure-evidence')?.value || '').trim();
             const gaps = String(document.getElementById('habit-focus-closure-gaps')?.value || '').trim();
             const nextStep = String(document.getElementById('habit-focus-closure-next-step')?.value || '').trim();
-            const shouldComplete = typeof options.forceComplete === 'boolean'
-                ? options.forceComplete
-                : !!document.getElementById('habit-focus-closure-complete')?.checked;
+            const shouldComplete = options.forceComplete === true;
 
             const noteBody = buildFocusClosureBody({
                 habit,
