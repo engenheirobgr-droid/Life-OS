@@ -23,7 +23,7 @@ import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v1';
 import { attachIdentity } from './js/identity.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabits } from './js/habits.js?v=20260518-exec-flow-v1';
 import { attachProtocolsModule } from './js/protocols.js?v=20260518-exec-flow-v1';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-focus-flow-v14';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-focus-flow-v15';
 import { attachStateModule } from './js/state.js?v=20260518-exec-flow-v1';
 import { attachRenderModule } from './js/render.js?v=20260518-focus-ui-v13';
 import { attachPlanningModule } from './js/planning.js?v=20260518-exec-flow-v1';
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260518-focus-flow-v14',
+    appBuildVersion: '20260518-focus-flow-v15',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -7026,14 +7026,13 @@ ensureNotesState: function() {
             dw.sessions = dw.sessions.slice(0, 50);
 
             if (finishedManually) {
-                dw.isRunning = false;
-                dw.isPaused = false;
-                dw.mode = 'focus';
-                dw.remainingSec = dw.targetSec || 5400;
-                dw.lastTickAt = 0;
-                dw.deadlineAtMs = 0;
-                this.stopDeepWorkTicking();
+                // Manual finish should still start the recovery break, while showing closure modal.
+                dw.mode = 'break';
+                dw.remainingSec = dw.breakSec;
+                dw.lastTickAt = Date.now();
+                dw.deadlineAtMs = dw.lastTickAt + (dw.breakSec * 1000);
                 this.saveState(true);
+                this.ensureDeepWorkTicking();
                 if (this.currentView === 'foco' && this.render.foco) this.render.foco();
                 else this.renderDeepWorkImmersiveOverlay?.();
                 if (dw.pendingClosure && typeof this.openHabitFocusClosureModal === 'function') {
