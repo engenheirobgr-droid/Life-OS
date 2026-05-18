@@ -1405,6 +1405,24 @@ renderDeepWorkImmersiveOverlay: function() {
         const overlay = document.getElementById('deep-work-immersive-overlay');
         const content = document.getElementById('deep-work-immersive-content');
         if (!overlay || !content) return;
+        if (!content.dataset.dwActionsBound) {
+            content.addEventListener('click', (event) => {
+                const btn = event.target?.closest?.('[data-deep-work-action]');
+                if (!btn) return;
+                const action = String(btn.getAttribute('data-deep-work-action') || '').trim();
+                if (!action) return;
+                event.preventDefault();
+                event.stopPropagation();
+                if (action === 'pause') return window.app.toggleDeepWorkPause();
+                if (action === 'reset') return window.app.resetDeepWorkSession();
+                if (action === 'finish') {
+                    const modeNow = String(window.sistemaVidaState?.deepWork?.mode || 'focus');
+                    if (modeNow === 'break') return window.app.skipBreak();
+                    return window.app.finishDeepWorkNow();
+                }
+            }, true);
+            content.dataset.dwActionsBound = '1';
+        }
 
         const state = window.sistemaVidaState || {};
         const dw = state.deepWork || {};
@@ -1487,13 +1505,13 @@ renderDeepWorkImmersiveOverlay: function() {
                                     </div>
                                     <div class="rounded-xl border border-white/10 bg-white/5 p-1">
                                         <div class="grid grid-cols-3 gap-1.5">
-                                        <button type="button" id="deep-work-immersive-pause-btn" class="rounded-lg border border-white/12 bg-white/10 px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-white/14 transition-colors">
+                                        <button type="button" data-deep-work-action="pause" class="rounded-lg border border-white/12 bg-white/10 px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-white/14 transition-colors">
                                             ${dw.isPaused ? 'Retomar' : 'Pausar'}
                                         </button>
-                                        <button type="button" id="deep-work-immersive-reset-btn" class="rounded-lg border border-white/12 bg-white/5 px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-white/88 hover:bg-white/10 transition-colors">
+                                        <button type="button" data-deep-work-action="reset" class="rounded-lg border border-white/12 bg-white/5 px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-white/88 hover:bg-white/10 transition-colors">
                                             Reiniciar
                                         </button>
-                                        <button type="button" id="deep-work-immersive-finish-btn" class="rounded-lg bg-primary px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-on-primary shadow-lg shadow-primary/25 hover:opacity-95 transition-all">
+                                        <button type="button" data-deep-work-action="finish" class="rounded-lg bg-primary px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-on-primary shadow-lg shadow-primary/25 hover:opacity-95 transition-all">
                                             ${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}
                                         </button>
                                         </div>
@@ -1509,15 +1527,6 @@ renderDeepWorkImmersiveOverlay: function() {
                 </div>
             </div>`;
 
-        const pauseBtn = document.getElementById('deep-work-immersive-pause-btn');
-        const resetBtn = document.getElementById('deep-work-immersive-reset-btn');
-        const finishBtn = document.getElementById('deep-work-immersive-finish-btn');
-        if (pauseBtn) pauseBtn.onclick = () => window.app.toggleDeepWorkPause();
-        if (resetBtn) resetBtn.onclick = () => window.app.resetDeepWorkSession();
-        if (finishBtn) finishBtn.onclick = () => {
-            if (dw.mode === 'break') window.app.skipBreak();
-            else window.app.finishDeepWorkNow();
-        };
     },
 
 renderDeepWorkPanel: function() {
