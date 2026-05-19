@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v226';
+const CACHE_NAME = 'sistema-vida-v227';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260518-day-capacity-v19',
+    './app.js?v=20260519-sync-align-v1',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
     './js/notifications.js?v=20260518-exec-flow-v1',
@@ -17,11 +17,11 @@ const ASSETS_TO_CACHE = [
     './js/planning.js?v=20260518-day-capacity-v19',
     './js/gamification.js?v=20260516-wellbeing-prompts-v205',
     './js/social.js?v=20260516-wellbeing-prompts-v205',
-    './views/hoje.html?v=20260518-day-capacity-v19',
+    './views/hoje.html?v=20260519-sync-align-v1',
     './views/planos.html?v=20260518-exec-flow-v3',
     './views/proposito.html?v=20260516-wellbeing-prompts-v205',
     './views/perfil.html?v=20260516-wellbeing-prompts-v205',
-    './views/painel.html?v=20260516-wellbeing-prompts-v205',
+    './views/painel.html?v=20260519-sync-align-v1',
     './views/foco.html?v=20260518-exec-flow-v3',
     './views/onboarding.html?v=20260516-wellbeing-prompts-v205',
     './views/social.html?v=20260516-wellbeing-prompts-v205'
