@@ -2728,19 +2728,21 @@ render: {
                     let currentVal = logs[todayStr] || 0;
                     const steps = Array.isArray(habit.steps) ? habit.steps.filter(Boolean) : [];
                     const hasSteps = steps.length > 0;
+                    const hasProtocolLinked = !!String(habit.protocolId || '').trim();
+                    const effectiveMode = (hasProtocolLinked && hasSteps) ? 'boolean' : mode;
                     const stepLogs = habit.stepLogs || {};
                     const todayStepMap = stepLogs[todayStr] || {};
                     const todayStepsDone = hasSteps ? steps.reduce((acc, _, idx) => acc + (todayStepMap[idx] || todayStepMap[String(idx)] ? 1 : 0), 0) : 0;
                     const allStepsDone = hasSteps && todayStepsDone === steps.length;
 
                     let isDone = false;
-                    if (mode === 'boolean') isDone = currentVal > 0;
+                    if (effectiveMode === 'boolean') isDone = currentVal > 0;
                     else isDone = currentVal >= target;
-                    if (hasSteps && mode === 'boolean') isDone = allStepsDone;
+                    if (hasSteps && effectiveMode === 'boolean') isDone = allStepsDone;
 
                     // UI for mode
                     let controlHtml = '';
-                    if (mode === 'boolean') {
+                    if (effectiveMode === 'boolean') {
                         const actionClick = hasSteps
                             ? `window.app.toggleHabitAllSteps('${habit.id}', '${todayStr}', ${allStepsDone ? 'true' : 'false'})`
                             : `window.app.updateHabitLog('${habit.id}', '${todayStr}', ${isDone ? 0 : 1})`;
@@ -2748,7 +2750,7 @@ render: {
                         <div class="w-7 h-7 rounded-full ${isDone ? 'bg-primary' : 'border-2 border-outline-variant hover:border-primary'} ${visibleToday ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'} flex items-center justify-center shrink-0 transition-colors" ${visibleToday ? `onclick="event.stopPropagation(); ${actionClick}"` : `title="Esse hábito não está previsto para hoje."`}>
                             ${isDone ? '<span class="material-symbols-outlined notranslate text-white text-[16px]" style="font-variation-settings: \\\'wght\\\' 700;">check</span>' : ''}
                         </div>`;
-                    } else if (mode === 'numeric' || mode === 'timer') {
+                    } else if (effectiveMode === 'numeric' || effectiveMode === 'timer') {
                         controlHtml = visibleToday ? `
                         <div class="flex items-center gap-1 bg-surface-container rounded-lg p-1 shrink-0" onclick="event.stopPropagation()">
                             <button class="w-6 h-6 flex justify-center items-center rounded-md hover:bg-outline-variant/20 text-on-surface" onclick="window.app.updateHabitLog('${habit.id}', '${todayStr}', Math.max(0, ${currentVal} - 1))">-</button>
@@ -2773,7 +2775,7 @@ render: {
                         const val = logs[ds] || 0;
                         const dayStepMap = stepLogs[ds] || {};
                         let dDone = false;
-                        if (hasSteps && mode === 'boolean') {
+                        if (hasSteps && effectiveMode === 'boolean') {
                             const dCount = steps.reduce((acc, _, idx) => acc + (dayStepMap[idx] || dayStepMap[String(idx)] ? 1 : 0), 0);
                             dDone = dCount === steps.length;
                         } else if (mode === 'boolean') dDone = val > 0;
@@ -2789,8 +2791,8 @@ render: {
 
                     // Track progress text
                     let progressText = '';
-                    if (mode === 'numeric') progressText = `${currentVal}/${target}`;
-                    if (mode === 'timer') progressText = `${currentVal}m/${target}m`;
+                    if (effectiveMode === 'numeric') progressText = `${currentVal}/${target}`;
+                    if (effectiveMode === 'timer') progressText = `${currentVal}m/${target}m`;
 
                     // Expandable steps
                     let stepsHtml = '';
@@ -2846,6 +2848,13 @@ render: {
                     const focusInProgressChip = hasFocusSessionInProgress
                         ? `<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]">hourglass_top</span>Em foco</span>`
                         : '';
+                    const linkedProtocol = habit.protocolId && typeof app.getProtocolById === 'function'
+                        ? app.getProtocolById(habit.protocolId)
+                        : null;
+                    const protocolMinutes = Math.max(0, Number(app.getHabitEstimatedMinutes?.(habit)) || 0);
+                    const protocolSummary = linkedProtocol
+                        ? `Protocolo: ${linkedProtocol.title || 'Vinculado'} · ${Math.round(protocolMinutes)} min`
+                        : '';
                     const maturityClass = habit.isKey
                         ? 'border-amber-500/25 bg-amber-500/[0.04]'
                         : hasFocusSessionInProgress
@@ -2880,6 +2889,7 @@ render: {
                                     ${app.renderHabitIdentityChip(habit)}
                                     ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight truncate">Gatilho: ${habit.trigger}</p>` : ''}
                                     ${habit.routine ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Rotina: ${habit.routine}</p>` : ''}
+                                    ${protocolSummary ? `<p class="mt-1 text-[10px] text-primary/90 leading-tight truncate">${app.escapeHtml(protocolSummary)}</p>` : ''}
                                     ${habit.startTime ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Horário: ${habit.startTime}${habit.reminderEnabled ? ' - Lembrete ativo' : ''}</p>` : ''}
                                     ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight truncate">Recompensa: ${habit.reward}</p>` : ''}
                                     ${focusCta}

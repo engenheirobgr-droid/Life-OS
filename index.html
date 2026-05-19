@@ -1829,7 +1829,7 @@
                             <p class="text-[10px] text-outline mt-0.5">Marque quando este hábito for alavanca central da sua evolução.</p>
                         </div>
                     </label>
-                    <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
+                    <div id="habit-mode-target-row" class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
                             <label for="habit-track-mode"
                                 class="text-xs font-label uppercase tracking-widest text-outline font-bold">Modo de
@@ -1851,6 +1851,7 @@
                                 value="1" min="1">
                         </div>
                     </div>
+                    <p id="habit-protocol-authority-note" class="hidden text-[10px] text-outline">Com protocolo vinculado, o modo de acompanhamento e a meta por execucao ficam sob governanca do protocolo.</p>
 
                     <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
@@ -2974,7 +2975,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260519-execution-capacity-v8"></script>
+    <script type="module" src="app.js?v=20260519-execution-capacity-v9"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>

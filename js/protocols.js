@@ -895,11 +895,8 @@ export function attachProtocolsModule(app) {
             }
             if (stepsInput) stepsInput.value = nextSteps;
             if (dimensionInput && !dimensionInput.value) dimensionInput.value = protocol.suggestedHabit.dimension || 'Carreira';
-            if (modeInput && (!modeInput.value || options.force)) {
-                modeInput.value = protocol.suggestedHabit.trackMode || 'boolean';
-                this.onHabitModeChange?.(modeInput.value);
-            }
-            if (targetInput && (!targetInput.value || Number(targetInput.value) === 1 || options.force)) targetInput.value = protocol.suggestedHabit.targetValue || 1;
+            if (modeInput) modeInput.value = 'boolean';
+            if (targetInput) targetInput.value = 1;
             const protocolMinutes = this.getProtocolEstimatedMinutes?.(protocol, { includeOptional: false }) || 0;
             if (estimatedInput && protocolMinutes > 0 && (!estimatedInput.value || Number(estimatedInput.value) <= 0 || options.force)) {
                 estimatedInput.value = String(protocolMinutes);
@@ -933,6 +930,7 @@ export function attachProtocolsModule(app) {
             }
             const select = document.getElementById('habit-protocol');
             if (select) select.value = protocol.id;
+            this.syncHabitProtocolAuthorityUI?.(protocol.id);
             this.refreshCrudEstimatedFieldState?.('habits');
             return true;
         },
@@ -962,6 +960,7 @@ export function attachProtocolsModule(app) {
         },
 
         onHabitProtocolChange: function(protocolId) {
+            this.syncHabitProtocolAuthorityUI?.(protocolId);
             if (!protocolId) {
                 this.refreshCrudEstimatedFieldState?.('habits');
                 return;

@@ -5,7 +5,8 @@ isHabitDoneOnDate: function(habit, dateStr) {
         const mode = habit.trackMode || 'boolean';
         const target = Number(habit.targetValue) || 1;
         const steps = Array.isArray(habit.steps) ? habit.steps.filter(Boolean) : [];
-        if (mode === 'boolean' && steps.length) {
+        const hasProtocol = !!String(habit.protocolId || '').trim();
+        if ((hasProtocol || mode === 'boolean') && steps.length) {
             const map = habit.stepLogs?.[dateStr] || {};
             return steps.every((_, idx) => !!(map[idx] || map[String(idx)]));
         }
@@ -52,7 +53,8 @@ getHabitTodayProgressSnapshot: function(habit, dateStr = this.getLocalDateKey())
         const logs = habit.logs || {};
         const steps = Array.isArray(habit.steps) ? habit.steps.filter(Boolean) : [];
         const stepMap = habit.stepLogs?.[dateStr] || {};
-        if (mode === 'boolean' && steps.length) {
+        const hasProtocol = !!String(habit.protocolId || '').trim();
+        if ((hasProtocol || mode === 'boolean') && steps.length) {
             const current = steps.reduce((acc, _, idx) => acc + (stepMap[idx] || stepMap[String(idx)] ? 1 : 0), 0);
             const done = current >= steps.length;
             const percent = Math.round((current / Math.max(1, steps.length)) * 100);
@@ -439,7 +441,15 @@ evaluateIdentityAchievements: function() {
 
 onHabitModeChange: function(mode) {
         const targetContainer = document.getElementById('habit-target-container');
+        const protocolId = String(document.getElementById('habit-protocol')?.value || '').trim();
         if (!targetContainer) return;
+        if (protocolId) {
+            targetContainer.classList.add('hidden');
+            targetContainer.classList.remove('flex');
+            targetContainer.style.display = 'none';
+            this.refreshCrudEstimatedFieldState?.('habits');
+            return;
+        }
         if (mode === 'numeric' || mode === 'timer') {
             targetContainer.classList.remove('hidden');
             targetContainer.classList.add('flex');
@@ -449,6 +459,39 @@ onHabitModeChange: function(mode) {
             targetContainer.classList.remove('flex');
             targetContainer.style.display = 'none';
         }
+        this.refreshCrudEstimatedFieldState?.('habits');
+    },
+
+syncHabitProtocolAuthorityUI: function(protocolId = '') {
+        const hasProtocol = !!String(protocolId || '').trim();
+        const modeRow = document.getElementById('habit-mode-target-row');
+        const modeInput = document.getElementById('habit-track-mode');
+        const targetContainer = document.getElementById('habit-target-container');
+        const targetInput = document.getElementById('habit-target');
+        const authorityNote = document.getElementById('habit-protocol-authority-note');
+
+        if (modeRow) {
+            modeRow.classList.toggle('opacity-60', hasProtocol);
+            modeRow.classList.toggle('pointer-events-none', hasProtocol);
+        }
+        if (modeInput) {
+            if (hasProtocol) modeInput.value = 'boolean';
+            modeInput.disabled = hasProtocol;
+        }
+        if (targetInput) {
+            if (hasProtocol) targetInput.value = '1';
+            targetInput.disabled = hasProtocol;
+        }
+        if (targetContainer) {
+            if (hasProtocol) {
+                targetContainer.classList.add('hidden');
+                targetContainer.classList.remove('flex');
+                targetContainer.style.display = 'none';
+            } else {
+                this.onHabitModeChange(modeInput?.value || 'boolean');
+            }
+        }
+        if (authorityNote) authorityNote.classList.toggle('hidden', !hasProtocol);
         this.refreshCrudEstimatedFieldState?.('habits');
     },
 

@@ -1,5 +1,23 @@
 export function attachPlanningModule(app) {
     Object.assign(app, {
+positionCrudEstimatedGroup: function(type = '') {
+        const estimatedGroup = document.getElementById('crud-estimated-group');
+        if (!estimatedGroup) return;
+        const normalized = String(type || '').toLowerCase();
+        if (normalized === 'habits') {
+            const anchor = document.getElementById('habit-steps-checklist') || document.getElementById('habit-steps-checklist-wrap') || document.getElementById('crud-habit-identity');
+            if (anchor?.parentElement && estimatedGroup.parentElement === anchor.parentElement) {
+                anchor.insertAdjacentElement('afterend', estimatedGroup);
+            }
+            return;
+        }
+        if (normalized === 'micros') {
+            const anchor = document.getElementById('crud-effort-group') || document.getElementById('crud-parent-group');
+            if (anchor?.parentElement && estimatedGroup.parentElement === anchor.parentElement) {
+                anchor.insertAdjacentElement('afterend', estimatedGroup);
+            }
+        }
+    },
 onTypeChange: function(type) {
         const parentGroup = document.getElementById('crud-parent-group');
         const triggerGroup = document.getElementById('crud-trigger-container');
@@ -56,6 +74,7 @@ onTypeChange: function(type) {
 
         // Configura baseado no tipo
         if (type === 'habits') {
+            this.positionCrudEstimatedGroup?.('habits');
             setGroupVisible(habitContinuousRow, true, 'block');
             setGroupVisible(triggerGroup, true);
             setGroupVisible(habitIdentityGroup, true);
@@ -75,6 +94,7 @@ onTypeChange: function(type) {
             }
             this.populateHabitLinkedMeta();
             if (typeof this.populateHabitProtocolSelect === 'function') this.populateHabitProtocolSelect();
+            this.syncHabitProtocolAuthorityUI?.(document.getElementById('habit-protocol')?.value || '');
             this.populateHabitIdentitySource();
             this.refreshCrudEstimatedFieldState?.('habits');
             if (contextGroup) contextGroup.classList.add('hidden');
@@ -105,6 +125,7 @@ onTypeChange: function(type) {
             this.updateParentList(type);
         } else {
             // Macros, Micros
+            if (type === 'micros') this.positionCrudEstimatedGroup?.('micros');
             if (parentGroup) parentGroup.classList.remove('hidden');
             if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério de Sucesso';
             if (contextLabel) contextLabel.textContent = 'Detalhes / Critério de Aceitação';
@@ -1896,6 +1917,10 @@ saveNewEntity: function() {
             obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
             const protocolSel = document.getElementById('habit-protocol');
             const selectedProtocolId = protocolSel && protocolSel.value ? protocolSel.value : '';
+            if (selectedProtocolId) {
+                obj.trackMode = 'boolean';
+                obj.targetValue = 1;
+            }
             const currentTrackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
             obj.estimatedMinutes = (selectedProtocolId || ['timer', 'tempo', 'time'].includes(String(currentTrackMode || '').toLowerCase()))
                 ? 0
@@ -2308,6 +2333,7 @@ editEntity: function(id, type) {
             if (protocolSel && inferredProtocolId && protocolSel.querySelector(`option[value="${inferredProtocolId}"]`)) {
                 protocolSel.value = inferredProtocolId;
             }
+            this.syncHabitProtocolAuthorityUI?.(protocolSel?.value || '');
             this.refreshCrudEstimatedFieldState?.('habits');
             const strengthSel = document.getElementById('habit-strength-source');
             const shadowSel = document.getElementById('habit-shadow-source');
