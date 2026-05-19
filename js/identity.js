@@ -680,7 +680,7 @@ manualGuideChapters: [
             how: [
                 'Crie 1-3 Metas por dimensão, não mais. Foco vence quantidade.',
                 'Para cada OKR, defina 2-4 Key Results numéricos (não tarefas, mas resultados mensuráveis).',
-                'Quebre Macros em Micros executáveis em até 90 minutos.',
+                'Quebre Macros em Micros executáveis em até 7 dias, para que elas possam ser distribuídas em sessões de foco ao longo do prazo.',
                 'No Planejamento Semanal, selecione Micros com base na energia prevista — não encha o calendário.',
                 'Pais (Meta/OKR/Macro) só ficam "concluídos" quando você decide; o sistema não fecha automaticamente.'
             ],
@@ -754,15 +754,16 @@ manualGuideChapters: [
         {
             id: 'foco',
             icon: 'timer',
-            title: 'Foco: Pomodoro 90/20 & Deep Work',
-            subtitle: 'Atenção profunda em ritmos ultradianos',
-            what: 'Timer de <strong>90 minutos de foco + 20 minutos de pausa</strong>, conectado a um Micro específico. Ao finalizar, o app registra Deep Work, abre o <strong>fechamento da sessão</strong> (entrega, evidências, lacunas e próximo passo) e conduz a pausa estruturada quando aplicável.',
-            why: 'O ciclo 90/20 segue os ritmos ultradianos (Kleitman) — o cérebro alterna entre alta e baixa ativação a cada ~90 minutos. Pomodoros de 25 minutos são bons para tarefas leves, mas trabalho profundo (Deep Work, Cal Newport) exige blocos longos sem interrupção. A pausa de 20 minutos permite consolidação e redução de fadiga atencional (depleção de glicose pré-frontal).',
+            title: 'Foco: Blocos adaptativos e Deep Work',
+            subtitle: 'Sessões curtas ou profundas conforme energia e esforço',
+            what: 'O timer de <strong>Foco</strong> agora trabalha com blocos de <strong>15/3, 25/5, 45/10, 50/10 e 90/20</strong>, sempre conectado a um Micro específico. O app sugere o bloco com base no tempo estimado da micro, no esforço e no check-in do dia. Ao finalizar, registra Deep Work, abre o <strong>fechamento da sessão</strong> (entrega, evidências, lacunas e próximo passo) e conduz a pausa estruturada quando aplicável.',
+            why: 'Blocos curtos reduzem atrito para iniciar quando a energia está baixa; blocos médios ajudam execução sustentada; e o 90/20 continua reservado para trabalho profundo real. Essa gradação combina pomodoro clássico com ritmos ultradianos, em vez de tratar toda micro como se precisasse da mesma janela.',
             refs: ['Nathan Kleitman — BRAC (Basic Rest-Activity Cycle)', 'Cal Newport — Deep Work', 'Csikszentmihalyi — Flow'],
             how: [
                 'Antes de iniciar, escolha UM Micro — multitarefa destrói deep work.',
+                'Use os blocos sugeridos como padrão; troque manualmente só quando souber que aquele caso pede outra janela.',
                 'Desligue notificações; o ambiente deve sinalizar "agora é foco".',
-                'Use a pausa de 20 min para movimento físico ou descanso real, não redes sociais.',
+                'Use a pausa correspondente ao bloco (3, 5, 10 ou 20 min) para movimento físico ou descanso real, não redes sociais.',
                 'Use "Salvar apenas nota" quando quiser registrar contexto sem concluir a micro.',
                 'Use "Salvar e concluir" quando a entrega realmente terminou.',
                 'Faça no máximo 3-4 sessões por dia; deep work é caro biologicamente.'
@@ -774,11 +775,12 @@ manualGuideChapters: [
             icon: 'rule_settings',
             title: 'Protocolos Base e Editáveis',
             subtitle: 'Roteiros práticos para executar sem travar',
-            what: 'A aba <strong>Protocolos</strong> (em Planos) reúne protocolos base e personalizados. Hoje o app inclui base para <strong>início do dia</strong>, <strong>noite</strong>, <strong>limpeza</strong> (diário, semanal e mensal), estudo, treino e finanças. Todo protocolo é editável e pode ser convertido em hábito pré-preenchido.',
+            what: 'A aba <strong>Protocolos</strong> (em Planos) reúne protocolos base e personalizados. Hoje o app inclui base para <strong>início do dia</strong>, <strong>noite</strong>, <strong>limpeza</strong> (diário, semanal e mensal), estudo, treino e finanças. Todo protocolo é editável, pode ser convertido em hábito pré-preenchido e agora aceita <strong>tempo estimado por passo</strong>.',
             why: 'Protocolos diminuem carga de decisão e aumentam consistência em tarefas recorrentes. Começar por um modelo sólido acelera adesão; manter edição livre evita rigidez e permite personalização real.',
             refs: ['Implementation intentions', 'Checklists operacionais', 'Behavior design - reducing decision load'],
             how: [
                 'Em Planos > Protocolos, abra um protocolo base e revise os passos.',
+                'Se quiser guardar tempo estimado, use o formato "Passo | minutos" em cada linha.',
                 'Use "Criar hábito" para transformar o protocolo em rotina executável.',
                 'Ajuste horário, frequência e meta antes de salvar.',
                 'Hábito com protocolo ou checklist aparece como rotina na experiência de Para hoje.'
@@ -958,13 +960,16 @@ manualGuideChapters: [
             icon: 'schedule',
             title: 'Para Hoje e Capacidade',
             subtitle: 'Planejar o dia sem estourar energia e tempo',
-            what: 'A seção <strong>Para hoje</strong> virou o centro operacional do dia. Ela agrega micros, hábitos previstos e rotinas (hábitos com protocolo ou checklist). O <strong>Mapa do Dia</strong> mostra capacidade planejável, tempo planejado e saldo em minutos. Hábitos de tempo usam meta em minutos; micros sem estimativa usam padrões por esforço; rotinas sem estimativa usam padrão por passos.',
-            why: 'Planejamento sem noção de capacidade cria sobrecarga silenciosa. Estimar tempo por padrão reduz barreira de entrada e permite ajuste rápido antes de travar o dia. Mostrar fricção sem bloquear decisão preserva autonomia do usuário.',
+            what: 'A seção <strong>Para hoje</strong> virou o centro operacional do dia. Ela agrega micros, hábitos previstos e rotinas (hábitos com protocolo ou checklist). O <strong>Mapa do Dia</strong> mostra capacidade planejável, tempo planejado e saldo em minutos por dia ou por turno. A base dessa capacidade pode ser ajustada no <strong>Perfil</strong> com sono, compromissos fixos, básicos do dia e buffer; depois o check-in do dia pode aumentar ou reduzir a capacidade final. Hábitos de tempo usam meta em minutos; protocolos podem somar tempos por passo; micros sem estimativa usam padrões por esforço.',
+            why: 'Planejamento sem noção de capacidade cria sobrecarga silenciosa. Combinar base configurável com ajuste do check-in torna o número do dia mais honesto. Estimar tempo por padrão reduz barreira de entrada e permite ajuste rápido antes de travar o dia.',
             refs: ['Timeboxing', 'Planning fallacy (Kahneman & Tversky)', 'Behavioral design — friction as signal'],
             how: [
                 'Na aba Hoje > Para hoje, leia primeiro o status de capacidade (executável, no limite ou sobrecarregado).',
+                'Se a base do seu dia estiver errada, ajuste em Perfil > Preferências > Base da Capacidade do Dia antes de mexer no planejamento.',
+                'Se houver check-in no dia, use o aviso do mapa para entender se a capacidade foi reduzida ou ampliada.',
                 'Se o dia ficar no limite, adie micros de menor impacto ou simplifique rotinas.',
                 'Defina estimativa manual quando souber melhor seu tempo real para aquela ação.',
+                'Use o modo Horário para ver manhã, tarde e noite com capacidade separada, sem duplicar a lista principal.',
                 'Hábito com protocolo ou passos aparece como rotina automaticamente na experiência de hoje.',
                 'A aba Hábitos continua sendo biblioteca completa; Para hoje mostra apenas o recorte do dia.'
             ],

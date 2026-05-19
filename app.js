@@ -20,13 +20,13 @@ import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
 import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
 import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v2';
-import { attachIdentity } from './js/identity.js?v=20260516-wellbeing-prompts-v205';
-import { attachHabits } from './js/habits.js?v=20260518-exec-flow-v2';
-import { attachProtocolsModule } from './js/protocols.js?v=20260518-protocols-v2';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260518-focus-flow-v16';
-import { attachStateModule } from './js/state.js?v=20260518-exec-flow-v1';
-import { attachRenderModule } from './js/render.js?v=20260518-day-capacity-v19';
-import { attachPlanningModule } from './js/planning.js?v=20260518-day-capacity-v19';
+import { attachIdentity } from './js/identity.js?v=20260519-execution-capacity-v5';
+import { attachHabits } from './js/habits.js?v=20260519-execution-capacity-v5';
+import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v5';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260519-execution-capacity-v5';
+import { attachStateModule } from './js/state.js?v=20260519-execution-capacity-v5';
+import { attachRenderModule } from './js/render.js?v=20260519-execution-capacity-v5';
+import { attachPlanningModule } from './js/planning.js?v=20260519-execution-capacity-v5';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -165,9 +165,9 @@ window.sistemaVidaState = {
         isRunning: false,
         isPaused: false,
         mode: 'focus',
-        remainingSec: 5400,
-        targetSec: 5400,
-        breakSec: 1200,
+        remainingSec: 1500,
+        targetSec: 1500,
+        breakSec: 300,
         microId: '',
         intention: '',
         lastTickAt: 0,
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260519-sync-align-v1',
+    appBuildVersion: '20260519-execution-capacity-v5',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -883,9 +883,9 @@ normalizeSwlsAnswer: function(rawValue) {
                 isRunning: false,
                 isPaused: false,
                 mode: 'focus',
-                remainingSec: 5400,
-                targetSec: 5400,
-                breakSec: 1200,
+                remainingSec: 1500,
+                targetSec: 1500,
+                breakSec: 300,
                 microId: '',
                 intention: '',
                 lastTickAt: 0,
@@ -898,8 +898,14 @@ normalizeSwlsAnswer: function(rawValue) {
         dw.isRunning = !!dw.isRunning;
         dw.isPaused = !!dw.isPaused;
         dw.mode = ['focus', 'break'].includes(dw.mode) ? dw.mode : 'focus';
-        dw.targetSec = Math.max(300, Math.round(Number(dw.targetSec) || 5400));
-        dw.breakSec = Math.max(60, Math.round(Number(dw.breakSec) || 1200));
+        if (!dw.isRunning) {
+            const presetConfig = this.getDeepWorkPresetConfig(Math.round((Number(dw.targetSec) || 1500) / 60));
+            dw.targetSec = presetConfig.targetSec;
+            dw.breakSec = presetConfig.breakSec;
+        } else {
+            dw.targetSec = Math.max(300, Math.round(Number(dw.targetSec) || 1500));
+            dw.breakSec = Math.max(60, Math.round(Number(dw.breakSec) || 300));
+        }
         dw.remainingSec = Math.max(0, Math.round(Number(dw.remainingSec) || dw.targetSec));
         dw.microId = String(dw.microId || '');
         dw.intention = String(dw.intention || '');
@@ -941,6 +947,58 @@ normalizeSwlsAnswer: function(rawValue) {
                 intention: String(session?.intention || '')
             };
         }).slice(0, 200);
+    },
+
+    getDeepWorkPresetConfig: function(minutes) {
+        const presets = [
+            { minutes: 15, breakMinutes: 3, label: '15/3' },
+            { minutes: 25, breakMinutes: 5, label: '25/5' },
+            { minutes: 45, breakMinutes: 10, label: '45/10' },
+            { minutes: 50, breakMinutes: 10, label: '50/10' },
+            { minutes: 90, breakMinutes: 20, label: '90/20' }
+        ];
+        const target = Math.max(5, Math.round(Number(minutes) || 25));
+        const chosen = presets.reduce((best, preset) => {
+            if (!best) return preset;
+            return Math.abs(preset.minutes - target) < Math.abs(best.minutes - target) ? preset : best;
+        }, null) || presets[1];
+        return {
+            minutes: chosen.minutes,
+            breakMinutes: chosen.breakMinutes,
+            label: chosen.label,
+            targetSec: chosen.minutes * 60,
+            breakSec: chosen.breakMinutes * 60
+        };
+    },
+
+    getSuggestedFocusPresetMinutes: function(micro) {
+        const estimatedMinutes = Math.max(1, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
+        const effort = String(this.getMicroEffort?.(micro) || '').trim().toLowerCase();
+        const adjustment = this.getCapacityAdjustmentFromCheckin?.(this.getLocalDateKey()) || { factor: 1 };
+        const lowEnergy = Number(adjustment.factor || 1) < 0.78;
+        if (lowEnergy) {
+            if (estimatedMinutes <= 18 || effort === 'leve') return 15;
+            if (estimatedMinutes <= 35) return 25;
+            return 45;
+        }
+        if (estimatedMinutes <= 15 || effort === 'leve') return 15;
+        if (estimatedMinutes <= 30) return 25;
+        if (estimatedMinutes <= 45) return 45;
+        if (estimatedMinutes <= 65 || effort === 'medio') return 50;
+        return 90;
+    },
+
+    applyDeepWorkPresetConfig: function(minutes, options = {}) {
+        this.normalizeDeepWorkState();
+        const dw = window.sistemaVidaState.deepWork;
+        const config = this.getDeepWorkPresetConfig(minutes);
+        const preserveProgress = options.preserveProgress === true && dw.isRunning;
+        const presetEl = document.getElementById('deep-work-preset');
+        if (presetEl) presetEl.value = String(config.minutes);
+        dw.targetSec = config.targetSec;
+        dw.breakSec = config.breakSec;
+        if (!preserveProgress) dw.remainingSec = config.targetSec;
+        return config;
     },
     isDeepWorkInteractionLocked: function() {
         this.normalizeDeepWorkState();
@@ -1497,6 +1555,56 @@ getDimensionIdentity: function(dimension, level) {
         this.saveState(true);
         this.showToast(`Tema aplicado: ${next === 'auto' ? 'Automático' : (next === 'dark' ? 'Escuro' : 'Claro')}.`, 'success');
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
+    },
+    getDayCapacityProfileSettings: function() {
+        this.ensureSettingsState();
+        const profile = window.sistemaVidaState.settings.dayCapacityProfile || {};
+        return {
+            sleepHours: Math.max(4, Math.min(12, Number(profile.sleepHours) || 8)),
+            fixedCommitmentsMinutes: Math.max(0, Math.min(16 * 60, Number(profile.fixedCommitmentsMinutes) || (8 * 60))),
+            dailyBasicsMinutes: Math.max(30, Math.min(8 * 60, Number(profile.dailyBasicsMinutes) || (2 * 60))),
+            bufferMinutes: Math.max(0, Math.min(4 * 60, Number(profile.bufferMinutes) || 60))
+        };
+    },
+    setDayCapacityProfileSetting: function(field, rawValue) {
+        this.ensureSettingsState();
+        const profile = window.sistemaVidaState.settings.dayCapacityProfile || (window.sistemaVidaState.settings.dayCapacityProfile = {});
+        const minutesFields = new Set(['fixedCommitmentsMinutes', 'dailyBasicsMinutes', 'bufferMinutes']);
+        if (field === 'sleepHours') {
+            const hours = Math.round((Math.max(4, Math.min(12, Number(rawValue) || 8))) * 2) / 2;
+            profile.sleepHours = hours;
+        } else if (minutesFields.has(field)) {
+            const value = Math.round(Math.max(0, Number(rawValue) || 0));
+            if (field === 'fixedCommitmentsMinutes') profile.fixedCommitmentsMinutes = Math.max(0, Math.min(16 * 60, value));
+            if (field === 'dailyBasicsMinutes') profile.dailyBasicsMinutes = Math.max(30, Math.min(8 * 60, value));
+            if (field === 'bufferMinutes') profile.bufferMinutes = Math.max(0, Math.min(4 * 60, value));
+        } else {
+            return;
+        }
+        this.saveState(true);
+        this.updateDayCapacityProfileControls();
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+        this.showToast('Base de capacidade atualizada.', 'success');
+    },
+    updateDayCapacityProfileControls: function() {
+        this.ensureSettingsState();
+        const profile = this.getDayCapacityProfileSettings();
+        const fields = {
+            'day-capacity-sleep-hours': profile.sleepHours,
+            'day-capacity-fixed-hours': Math.round((profile.fixedCommitmentsMinutes / 60) * 10) / 10,
+            'day-capacity-basics-minutes': profile.dailyBasicsMinutes,
+            'day-capacity-buffer-minutes': profile.bufferMinutes
+        };
+        Object.entries(fields).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.value = String(value);
+        });
+        const summaryEl = document.getElementById('day-capacity-summary');
+        if (summaryEl) {
+            const awakeHours = Math.max(8, 24 - Number(profile.sleepHours || 8));
+            const executableMinutes = Math.max(60, (awakeHours * 60) - profile.fixedCommitmentsMinutes - profile.dailyBasicsMinutes - profile.bufferMinutes);
+            summaryEl.textContent = `Base atual: ${awakeHours}h acordado · ${Math.round(executableMinutes)} min executaveis antes do ajuste dinamico.`;
+        }
     },
         // Extracted in Phase 9: notifications module
 _getAudioContext: function() {
@@ -3784,6 +3892,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         const prazoDateInput = document.getElementById('crud-prazo-date');
         const effortInput = document.getElementById('crud-effort');
         const estimatedInput = document.getElementById('crud-estimated-minutes');
+        const microStartTimeInput = document.getElementById('micro-start-time');
         const obstacleInput = document.getElementById('crud-obstacle');
         const ifThenInput = document.getElementById('crud-ifthen');
         if (successCriteriaInput) successCriteriaInput.value = '';
@@ -3795,6 +3904,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         if (prazoDateInput) prazoDateInput.value = '';
         if (effortInput) effortInput.value = 'medio';
         if (estimatedInput) estimatedInput.value = '';
+        if (microStartTimeInput) microStartTimeInput.value = '';
         if (obstacleInput) obstacleInput.value = '';
         if (ifThenInput) ifThenInput.value = '';
         ['habit-interval-days', 'habit-day-of-month', 'habit-schedule-start-date'].forEach((fieldId) => {
@@ -7051,7 +7161,7 @@ ensureNotesState: function() {
             if (this.showNotification) {
                 const payload = {
                     title: 'Life OS - Foco',
-                    body: 'Bloco de foco concluído. Iniciando pausa de 20 minutos. Use "Concluir micro" para fechar a ação.',
+                    body: `Bloco de foco concluído. Iniciando pausa de ${Math.max(1, Math.round((Number(dw.breakSec) || 0) / 60))} minutos. Use "Concluir micro" para fechar a ação.`,
                     tag: 'lifeos-focus-ended',
                     url: '/?view=foco'
                 };
@@ -7103,7 +7213,7 @@ ensureNotesState: function() {
         const presetEl = document.getElementById('deep-work-preset');
         const microEl = document.getElementById('deep-work-micro');
         const intentionEl = document.getElementById('deep-work-intention');
-        const minutes = Math.max(5, Math.round(Number(presetEl?.value || 90)));
+        const presetConfig = this.getDeepWorkPresetConfig(Number(presetEl?.value || 25));
         const chosenMicro = microEl?.value || '';
         const intention = (intentionEl?.value || '').trim();
         if (!chosenMicro) {
@@ -7112,8 +7222,9 @@ ensureNotesState: function() {
         }
 
         if (!dw.isRunning || dw.mode !== 'focus') {
-            dw.targetSec = minutes * 60;
+            dw.targetSec = presetConfig.targetSec;
             dw.remainingSec = dw.targetSec;
+            dw.breakSec = presetConfig.breakSec;
             dw.mode = 'focus';
         }
         dw.microId = chosenMicro;
@@ -7155,12 +7266,14 @@ ensureNotesState: function() {
             this.showToast('Já existe um bloco de foco em andamento.', 'error');
             return;
         }
+        const suggestedMinutes = this.getSuggestedFocusPresetMinutes(micro);
         dw.microId = micro.id;
         dw.intention = micro.title || '';
         const microEl = document.getElementById('deep-work-micro');
         const intentionEl = document.getElementById('deep-work-intention');
         if (microEl) microEl.value = micro.id;
         if (intentionEl) intentionEl.value = micro.title || '';
+        this.applyDeepWorkPresetConfig(suggestedMinutes);
         this.startDeepWorkSession();
         const panel = document.getElementById('deep-work-panel');
         if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -7187,6 +7300,7 @@ ensureNotesState: function() {
 
         dw.microId = micro.id;
         dw.intention = micro.title || '';
+        this.pendingFocusMinutes = this.getSuggestedFocusPresetMinutes(micro);
         if (autoStart && micro.status !== 'done') {
             const sourceMicro = (state.entities?.micros || []).find(m => m.id === micro.id);
             const targetMicro = sourceMicro || micro;
@@ -7224,11 +7338,7 @@ ensureNotesState: function() {
         this.normalizeDeepWorkState();
         const dw = window.sistemaVidaState.deepWork;
         if (dw.isRunning) return;
-        const safeMinutes = Math.max(5, Math.round(Number(minutes) || 90));
-        const presetEl = document.getElementById('deep-work-preset');
-        if (presetEl) presetEl.value = String(safeMinutes);
-        dw.targetSec = safeMinutes * 60;
-        dw.remainingSec = dw.targetSec;
+        this.applyDeepWorkPresetConfig(minutes);
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
         else this.renderDeepWorkImmersiveOverlay?.();
     },

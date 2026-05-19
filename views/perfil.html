@@ -208,6 +208,35 @@
 </select>
 </div>
 <!-- Splash Bússola -->
+<!-- Base de capacidade -->
+<div class="p-4 hover:bg-surface-container-high transition-colors border-t border-outline-variant/10 group">
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined notranslate text-primary">schedule</span>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-on-surface">Base da Capacidade do Dia</p>
+<p class="text-[11px] text-outline">Define a estimativa inicial antes dos ajustes por uso e contexto.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+<div>
+<label for="day-capacity-sleep-hours" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Sono (h)</label>
+<input id="day-capacity-sleep-hours" type="number" min="4" max="12" step="0.5" onchange="window.app.setDayCapacityProfileSetting('sleepHours', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
+</div>
+<div>
+<label for="day-capacity-fixed-hours" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Compromissos fixos (h)</label>
+<input id="day-capacity-fixed-hours" type="number" min="0" max="16" step="0.5" onchange="window.app.setDayCapacityProfileSetting('fixedCommitmentsMinutes', Number(this.value) * 60)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
+</div>
+<div>
+<label for="day-capacity-basics-minutes" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Basicos + descanso (min)</label>
+<input id="day-capacity-basics-minutes" type="number" min="30" max="480" step="15" onchange="window.app.setDayCapacityProfileSetting('dailyBasicsMinutes', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
+</div>
+<div>
+<label for="day-capacity-buffer-minutes" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Buffer (min)</label>
+<input id="day-capacity-buffer-minutes" type="number" min="0" max="240" step="15" onchange="window.app.setDayCapacityProfileSetting('bufferMinutes', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
+</div>
+</div>
+<p id="day-capacity-summary" class="text-[10px] text-outline mt-3 leading-snug"></p>
+</div>
+</div>
+</div>
 <div class="p-4 hover:bg-surface-container-high transition-colors border-t border-outline-variant/10 group">
 <div class="flex items-center justify-between gap-4">
 <div class="flex items-center gap-4">

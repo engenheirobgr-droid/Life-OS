@@ -1560,11 +1560,13 @@ renderDeepWorkPanel: function() {
         const executionChecklistEl = document.getElementById('deep-work-execution-checklist');
 
         if (presetEl && !dw.isRunning) {
-            const presetMin = Math.max(5, Math.round((dw.targetSec || 5400) / 60));
-            presetEl.value = String(presetMin);
+            const presetConfig = this.getDeepWorkPresetConfig
+                ? this.getDeepWorkPresetConfig(Math.round((dw.targetSec || 1500) / 60))
+                : { minutes: Math.max(5, Math.round((dw.targetSec || 1500) / 60)) };
+            presetEl.value = String(presetConfig.minutes);
         }
         if (presetEl) {
-            const activePreset = String(presetEl.value || '90');
+            const activePreset = String(presetEl.value || '25');
             document.querySelectorAll('.deep-work-preset-chip').forEach((chip) => {
                 const isActive = chip.getAttribute('data-deep-work-preset') === activePreset;
                 chip.classList.toggle('bg-primary', isActive);
@@ -1767,6 +1769,49 @@ renderDeepWorkPanel: function() {
         this.renderDeepWorkImmersiveOverlay();
     },
 
+getTodayChecklistMode: function() {
+        if (this.todayChecklistMode !== 'horario' && this.todayChecklistMode !== 'dimensao') this.todayChecklistMode = 'dimensao';
+        return this.todayChecklistMode;
+    },
+
+getTodayChecklistDayPart: function() {
+        const allowed = new Set(['all', 'manha', 'tarde', 'noite', 'sem_horario']);
+        if (!allowed.has(this.todayChecklistDayPart)) this.todayChecklistDayPart = 'all';
+        return this.todayChecklistDayPart;
+    },
+
+setTodayChecklistMode: function(mode = 'dimensao') {
+        const nextMode = mode === 'horario' ? 'horario' : 'dimensao';
+        this.todayChecklistMode = nextMode;
+        if (nextMode !== 'horario') this.todayChecklistDayPart = 'all';
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+    },
+
+setTodayChecklistDayPart: function(dayPart = 'all') {
+        const allowed = new Set(['all', 'manha', 'tarde', 'noite', 'sem_horario']);
+        this.todayChecklistMode = 'horario';
+        this.todayChecklistDayPart = allowed.has(dayPart) ? dayPart : 'all';
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+    },
+
+assignMicroPreferredDayPart: function(microId, dayPart = 'manha') {
+        const defaults = {
+            manha: '09:00',
+            tarde: '14:00',
+            noite: '19:00'
+        };
+        const nextTime = defaults[dayPart];
+        if (!nextTime) return;
+        const micros = window.sistemaVidaState?.entities?.micros || [];
+        const micro = micros.find((item) => String(item?.id || '') === String(microId || ''));
+        if (!micro) return;
+        micro.startTime = nextTime;
+        this.saveState(false);
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+        if (this.currentView === 'planos' && this.render?.planos) this.render.planos();
+        this.showToast(`Horario sugerido definido para ${nextTime}.`, 'success');
+    },
+
 renderNextBestAction: function() {
         const container = document.getElementById('next-best-action-container');
         if (!container) return;
@@ -1784,23 +1829,50 @@ renderTodayCapacityMap: function() {
         const statusMap = {
             ok: { label: 'Executável', tone: 'text-emerald-700 dark:text-emerald-300', badge: 'bg-emerald-500/10 border-emerald-500/25' },
             cheio: { label: 'No limite', tone: 'text-amber-700 dark:text-amber-300', badge: 'bg-amber-500/10 border-amber-500/25' },
-            sobrecarregado: { label: 'Sobrecarregado', tone: 'text-rose-700 dark:text-rose-300', badge: 'bg-rose-500/10 border-rose-500/25' }
+            sobrecarregado: { label: 'Sobrecarregado', tone: 'text-rose-700 dark:text-rose-300', badge: 'bg-rose-500/10 border-rose-500/25' },
+            a_definir: { label: 'A definir', tone: 'text-sky-700 dark:text-sky-300', badge: 'bg-sky-500/10 border-sky-500/25' }
         };
         const cfg = statusMap[state.status] || statusMap.ok;
         const usageWidth = Math.max(0, Math.min(100, Number(state.usagePct || 0)));
         const suggestions = (state.suggestions || []).slice(0, 2).map((item) =>
             `<li class="text-[11px] text-on-surface-variant">${this.escapeHtml(item)}</li>`
         ).join('');
+        const activeDayPart = state.activeDayPart || 'all';
+        const segmentButtons = ['all', 'manha', 'tarde', 'noite'].map((key) => {
+            const segment = state.segments?.[key];
+            if (!segment) return '';
+            const label = key === 'all' ? 'Dia' : segment.label;
+            const isActive = activeDayPart === key;
+            const clickHandler = key === 'all'
+                ? "window.app.setTodayChecklistMode('dimensao')"
+                : `window.app.setTodayChecklistDayPart('${key}')`;
+            return `<button type="button" onclick="${clickHandler}" class="rounded-xl border px-3 py-2 text-left transition-colors ${isActive ? 'border-primary bg-primary/10 text-primary' : 'border-outline-variant/15 bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'}">
+                <span class="block text-[10px] font-bold uppercase tracking-widest">${this.escapeHtml(label)}</span>
+                <span class="mt-1 block text-[11px] text-outline">${Math.round(Number(segment.plannedMinutes) || 0)} / ${Math.round(Number(segment.capacityMinutes) || 0)} min</span>
+            </button>`;
+        }).join('');
+        const capacityValue = Number.isFinite(state.capacityMinutes) ? `${Math.round(state.capacityMinutes)} min` : 'A definir';
+        const remainingValue = Number.isFinite(state.remainingMinutes) ? `${Math.round(state.remainingMinutes)} min` : '--';
+        const adjustmentLabel = state.checkinAdjustment?.factor !== 1
+            ? `Base ${Math.round(Number(state.baseCapacityMinutes) || 0)} min · ${this.escapeHtml(state.checkinAdjustment?.label || '')}`
+            : '';
         container.innerHTML = `
             <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
-                    <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Mapa do dia</p>
+                    <div>
+                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Mapa do dia</p>
+                        <p class="mt-1 text-xs text-on-surface-variant">${this.escapeHtml(state.activeLabel || 'Dia inteiro')}</p>
+                        ${adjustmentLabel ? `<p class="mt-1 text-[11px] text-outline">${adjustmentLabel}</p>` : ''}
+                    </div>
                     <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${cfg.badge} ${cfg.tone}">${cfg.label}</span>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+                    ${segmentButtons}
                 </div>
                 <div class="mt-3 grid grid-cols-3 gap-2">
                     <div class="rounded-lg bg-surface-container-low border border-outline-variant/10 px-2.5 py-2">
                         <p class="text-[10px] uppercase tracking-widest text-outline">Capacidade</p>
-                        <p class="text-sm font-bold text-on-surface">${Math.round(state.capacityMinutes)} min</p>
+                        <p class="text-sm font-bold text-on-surface">${capacityValue}</p>
                     </div>
                     <div class="rounded-lg bg-surface-container-low border border-outline-variant/10 px-2.5 py-2">
                         <p class="text-[10px] uppercase tracking-widest text-outline">Planejado</p>
@@ -1808,7 +1880,7 @@ renderTodayCapacityMap: function() {
                     </div>
                     <div class="rounded-lg bg-surface-container-low border border-outline-variant/10 px-2.5 py-2">
                         <p class="text-[10px] uppercase tracking-widest text-outline">Saldo</p>
-                        <p class="text-sm font-bold ${state.remainingMinutes < 0 ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}">${Math.round(state.remainingMinutes)} min</p>
+                        <p class="text-sm font-bold ${Number.isFinite(state.remainingMinutes) && state.remainingMinutes < 0 ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}">${remainingValue}</p>
                     </div>
                 </div>
                 <div class="mt-3">
@@ -1824,71 +1896,115 @@ renderTodayActionList: function() {
         const container = document.getElementById('today-action-list');
         if (!container) return;
         const items = this.getTodayActionItems ? this.getTodayActionItems(this.getLocalDateKey()) : [];
-        if (!items.length) {
-            container.innerHTML = '<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 text-xs text-outline italic">Sem ações previstas para hoje.</div>';
-            return;
-        }
-        const groups = { manha: [], tarde: [], noite: [], sem_horario: [] };
-        items.forEach((item) => {
-            const key = groups[item.dayPart] ? item.dayPart : 'sem_horario';
-            groups[key].push(item);
-        });
+        const mode = this.getTodayChecklistMode();
+        const activeDayPart = this.getTodayChecklistDayPart();
         const labels = {
             manha: 'Manha',
             tarde: 'Tarde',
             noite: 'Noite',
             sem_horario: 'Sem horário'
         };
-        const sectionHtml = ['manha', 'tarde', 'noite', 'sem_horario']
-            .filter((key) => groups[key].length > 0)
-            .map((key) => {
-                const cards = groups[key].map((item) => {
-                    const isHabit = item.sourceType === 'habit' || item.sourceType === 'routine';
-                    const isMicro = item.sourceType === 'micro';
-                    const typeLabel = item.sourceType === 'routine' ? 'Rotina' : (isHabit ? 'Hábito' : 'Micro');
-                    const tone = item.done
-                        ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
-                        : isMicro
-                            ? 'border-primary/20 bg-primary/[0.03]'
-                            : 'border-outline-variant/15 bg-surface-container-lowest';
-                    let ctas = '';
-                    if (isMicro) {
-                        ctas = `
-                            <button type="button" onclick="window.app.openMicroInFocus('${this.escapeHtml(item.sourceId)}', true)" class="px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Iniciar</button>
-                            <button type="button" onclick="window.app.postponeMicroOneDay('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-outline-variant/30 text-outline text-[10px] font-bold uppercase tracking-wider hover:bg-surface-container-high transition-colors">Adiar</button>`;
-                    } else if (isHabit) {
-                        const habitObj = (window.sistemaVidaState?.habits || []).find((habit) => habit.id === item.sourceId);
-                        const focusBtn = (habitObj && this.canStartFocusFromHabit?.(habitObj))
-                            ? `<button type="button" onclick="window.app.openHabitFocusModal('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Foco</button>`
-                            : '';
-                        ctas = `
-                            <button type="button" onclick="window.app.openHabitToday('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Registrar</button>
-                            ${focusBtn}`;
-                    }
-                    return `
-                        <div class="rounded-xl border ${tone} px-3 py-2.5">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <p class="text-[10px] uppercase tracking-widest text-outline">${typeLabel} ${item.startTime ? `· ${this.escapeHtml(item.startTime)}` : ''}</p>
-                                    <p class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(item.title)}</p>
-                                    <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(item.dimension || 'Geral')} · ${Math.round(Number(item.estimatedMinutes) || 0)} min ${item.progressLabel ? `· ${this.escapeHtml(item.progressLabel)}` : ''}</p>
-                                </div>
-                                ${item.done ? '<span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Feito</span>' : ''}
-                            </div>
-                            ${item.done ? '' : `<div class="mt-2 flex flex-wrap gap-1.5">${ctas}</div>`}
-                        </div>`;
-                }).join('');
-                return `
+        const pendingItems = items.filter((item) => !item.done);
+        const scheduledHabits = pendingItems.filter((item) => item.sourceType === 'habit' || item.sourceType === 'routine');
+        const groups = { manha: [], tarde: [], noite: [], sem_horario: [] };
+        pendingItems.forEach((item) => {
+            const key = groups[item.dayPart] ? item.dayPart : 'sem_horario';
+            groups[key].push(item);
+        });
+
+        const partButtons = ['all', 'manha', 'tarde', 'noite', 'sem_horario'].map((key) => {
+            const bucket = key === 'all' ? pendingItems : groups[key];
+            const minutes = bucket.reduce((sum, item) => sum + Math.max(0, Number(item.estimatedMinutes) || 0), 0);
+            const label = key === 'all' ? 'Tudo' : labels[key];
+            const isActive = activeDayPart === key;
+            return `<button type="button" onclick="window.app.setTodayChecklistDayPart('${key}')" class="rounded-xl border px-3 py-2 text-left transition-colors ${isActive ? 'border-primary bg-primary/10 text-primary' : 'border-outline-variant/15 bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'}">
+                <span class="block text-[10px] font-bold uppercase tracking-widest">${this.escapeHtml(label)}</span>
+                <span class="mt-1 block text-[11px] text-outline">${bucket.length} itens · ${Math.round(minutes)} min</span>
+            </button>`;
+        }).join('');
+
+        const organizerHtml = `
+            <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
+                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Organizar o dia</p>
+                        <p class="mt-1 text-xs text-on-surface-variant">A lista validada continua unica. Aqui a gente so muda a lente.</p>
+                    </div>
+                    <div class="inline-flex rounded-xl border border-outline-variant/15 bg-surface-container-low p-1">
+                        <button type="button" onclick="window.app.setTodayChecklistMode('dimensao')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'dimensao' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Dimensao</button>
+                        <button type="button" onclick="window.app.setTodayChecklistMode('horario')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'horario' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Horario</button>
+                    </div>
+                </div>
+                ${mode === 'horario' ? `<div class="grid grid-cols-2 gap-2 md:grid-cols-5">${partButtons}</div>` : ''}
+                ${mode === 'horario' && groups.sem_horario.length > 0 ? `<p class="text-[11px] text-outline">${groups.sem_horario.length} itens ainda sem horario definido continuam visiveis para ajuste.</p>` : ''}
+            </div>`;
+
+        const unscheduledMicros = groups.sem_horario.filter((item) => item.sourceType === 'micro');
+        const unscheduledHtml = mode === 'horario' && unscheduledMicros.length
+            ? `
+                <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
+                    <div>
+                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Micros sem horario</p>
+                        <p class="mt-1 text-xs text-on-surface-variant">Ajuste rapido para tirar itens do bucket sem perder o card principal.</p>
+                    </div>
                     <div class="space-y-2">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-outline">${labels[key]}</span>
-                            <span class="h-px flex-1 bg-outline-variant/20"></span>
-                            <span class="text-[10px] text-outline">${groups[key].length}</span>
+                        ${unscheduledMicros.map((item) => `
+                            <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low px-3 py-2.5">
+                                <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(item.title)}</p>
+                                        <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(item.dimension || 'Geral')} · ${Math.round(Number(item.estimatedMinutes) || 0)} min</p>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <button type="button" onclick="window.app.assignMicroPreferredDayPart('${this.escapeHtml(item.sourceId)}','manha')" class="px-2.5 py-1 rounded-lg border border-outline-variant/20 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">Manha</button>
+                                        <button type="button" onclick="window.app.assignMicroPreferredDayPart('${this.escapeHtml(item.sourceId)}','tarde')" class="px-2.5 py-1 rounded-lg border border-outline-variant/20 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">Tarde</button>
+                                        <button type="button" onclick="window.app.assignMicroPreferredDayPart('${this.escapeHtml(item.sourceId)}','noite')" class="px-2.5 py-1 rounded-lg border border-outline-variant/20 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">Noite</button>
+                                    </div>
+                                </div>
+                            </div>`).join('')}
+                    </div>
+                </div>`
+            : '';
+
+        const habitsHtml = scheduledHabits.length
+            ? `
+                <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Habitos de hoje</p>
+                            <p class="mt-1 text-xs text-on-surface-variant">${scheduledHabits.length} previstos para execucao no dia.</p>
                         </div>
-                        <div class="space-y-2">${cards}</div>
-                    </div>`;
-            }).join('');
-        container.innerHTML = sectionHtml;
+                        <button type="button" onclick="window.app.switchHojeScreen('habitos')" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-low transition-colors">Ver todos</button>
+                    </div>
+                    <div class="space-y-2">
+                        ${scheduledHabits.map((item) => {
+                            const habitObj = (window.sistemaVidaState?.habits || []).find((habit) => habit.id === item.sourceId);
+                            const focusBtn = (habitObj && this.canStartFocusFromHabit?.(habitObj))
+                                ? `<button type="button" onclick="window.app.openHabitFocusModal('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Foco</button>`
+                                : '';
+                            const typeLabel = item.sourceType === 'routine' ? 'Rotina' : 'Habito';
+                            return `
+                                <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low px-3 py-2.5">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="text-[10px] uppercase tracking-widest text-outline">${typeLabel}${item.startTime ? ` · ${this.escapeHtml(item.startTime)}` : ''}</p>
+                                            <p class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(item.title)}</p>
+                                            <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(item.dimension || 'Geral')} · ${Math.round(Number(item.estimatedMinutes) || 0)} min ${item.progressLabel ? `· ${this.escapeHtml(item.progressLabel)}` : ''}</p>
+                                        </div>
+                                        <div class="flex flex-wrap justify-end gap-1.5 shrink-0">
+                                            <button type="button" onclick="window.app.openHabitToday('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Registrar</button>
+                                            ${focusBtn}
+                                        </div>
+                                    </div>
+                                </div>`;
+                        }).join('')}
+                    </div>
+                </div>`
+            : (!items.length
+                ? '<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 text-xs text-outline italic">Sem acoes previstas para hoje.</div>'
+                : '');
+
+        container.innerHTML = `${organizerHtml}${unscheduledHtml}${habitsHtml}`;
     },
 
 render: {
@@ -2295,11 +2411,12 @@ render: {
                     const presetEl = document.getElementById('deep-work-preset');
                     if (microEl) microEl.value = micro.id;
                     if (intentionEl) intentionEl.value = micro.title || '';
-                    if (presetEl && pendingMinutes > 0) presetEl.value = String(pendingMinutes);
                     if (pendingMinutes > 0) {
-                        state.deepWork.targetSec = pendingMinutes * 60;
-                        state.deepWork.remainingSec = state.deepWork.targetSec;
+                        app.applyDeepWorkPresetConfig?.(pendingMinutes);
+                    } else if (app.getSuggestedFocusPresetMinutes) {
+                        app.applyDeepWorkPresetConfig?.(app.getSuggestedFocusPresetMinutes(micro));
                     }
+                    if (presetEl && state.deepWork?.targetSec) presetEl.value = String(Math.round(Number(state.deepWork.targetSec) / 60));
                     if (autoStart && !state.deepWork.isRunning) app.startDeepWorkSession();
                     else app.renderDeepWorkPanel();
                     const panel = document.getElementById('deep-work-panel');
@@ -2855,10 +2972,17 @@ render: {
             if (dayProgressBar) dayProgressBar.style.width = dayProgress + '%';
 
             // Filtro "Para Hoje": pendentes/in_progress dentro da janela, mantendo a recém-concluída por um pulso visual.
+            const todayMode = app.getTodayChecklistMode ? app.getTodayChecklistMode() : 'dimensao';
+            const todayDayPart = app.getTodayChecklistDayPart ? app.getTodayChecklistDayPart() : 'all';
             const todayMicros = allTodayMicros
                 .filter(m => {
                     const completedToday = (m.status === 'done' || m.completed) && (m.completedDate === todayStr || m.doneDate === todayStr);
                     return m.status !== 'done' || completedToday || m.id === app.recentCompletedMicroId;
+                })
+                .filter((micro) => {
+                    if (todayMode !== 'horario' || todayDayPart === 'all') return true;
+                    const schedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(micro) : { dayPart: 'sem_horario' };
+                    return (schedule.dayPart || 'sem_horario') === todayDayPart;
                 })
                 .sort((a, b) => {
                     const aDone = a.status === 'done' || a.completed ? 1 : 0;
@@ -2866,24 +2990,37 @@ render: {
                     if (aDone !== bDone) return aDone - bDone;
                     if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
                     if (b.status === 'in_progress' && a.status !== 'in_progress') return 1;
+                    const aSchedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(a) : { startMinutes: null, dayPart: 'sem_horario' };
+                    const bSchedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(b) : { startMinutes: null, dayPart: 'sem_horario' };
+                    if (todayMode === 'horario') {
+                        const order = { manha: 0, tarde: 1, noite: 2, sem_horario: 3 };
+                        const aPart = order[aSchedule.dayPart] ?? 9;
+                        const bPart = order[bSchedule.dayPart] ?? 9;
+                        if (aPart !== bPart) return aPart - bPart;
+                        if ((aSchedule.startMinutes ?? 9999) !== (bSchedule.startMinutes ?? 9999)) return (aSchedule.startMinutes ?? 9999) - (bSchedule.startMinutes ?? 9999);
+                    }
                     const dim = String(a.dimension || '').localeCompare(String(b.dimension || ''), 'pt-BR');
                     if (dim !== 0) return dim;
                     return String(a.prazo || '9999').localeCompare(String(b.prazo || '9999'));
                 });
 
-            let lastDimension = '';
+            let lastGroup = '';
             todayMicros.forEach((micro, idx) => {
-                const dimensionLabel = micro.dimension || 'Geral';
-                if (dimensionLabel !== lastDimension) {
-                    lastDimension = dimensionLabel;
+                const schedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(micro) : { startTime: '', dayPart: 'sem_horario' };
+                const groupLabel = todayMode === 'horario'
+                    ? ({ manha: 'Manha', tarde: 'Tarde', noite: 'Noite', sem_horario: 'Sem horario' })[schedule.dayPart || 'sem_horario']
+                    : (micro.dimension || 'Geral');
+                if (groupLabel !== lastGroup) {
+                    lastGroup = groupLabel;
                     html += `
                     <div class="pt-2 first:pt-0">
                         <div class="flex items-center gap-3">
-                            <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">${app.escapeHtml(dimensionLabel)}</span>
+                            <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">${app.escapeHtml(groupLabel)}</span>
                             <span class="h-px flex-1 bg-outline-variant/20"></span>
                         </div>
                     </div>`;
                 }
+                const dimensionLabel = micro.dimension || 'Geral';
                 if (micro.status === 'done' || micro.completed) {
                     const notesCount = app.getLinkedNotes('micros', micro.id).length;
                     const notesBadge = notesCount ? `<button type="button" data-type="micros" data-id="${micro.id}" data-title="${app.escapeHtml(micro.title)}" onclick="event.stopPropagation(); window.app.openEntityNotesModal(this.dataset.type, this.dataset.id, this.dataset.title)" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
@@ -3047,6 +3184,13 @@ render: {
                     </button>
                 </div>`;
                 html = migrationBtnHtml + html;
+            }
+
+            if (!html.trim()) {
+                const emptyLabel = todayMode === 'horario' && todayDayPart !== 'all'
+                    ? `Nenhuma micro neste filtro de ${todayDayPart.replace('_', ' ')}.`
+                    : 'Nenhuma micro prevista para hoje.';
+                html = `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 text-xs text-outline italic">${app.escapeHtml(emptyLabel)}</div>`;
             }
 
             container.innerHTML = html;
@@ -3587,6 +3731,7 @@ render: {
 
             const themeSelect = document.getElementById('theme-select');
             if (themeSelect) themeSelect.value = state.settings.theme || 'auto';
+            app.updateDayCapacityProfileControls();
             app.updateSplashSettingsControls();
             const soundTrack = document.getElementById('sound-toggle-track');
             const soundKnob = document.getElementById('sound-toggle-knob');

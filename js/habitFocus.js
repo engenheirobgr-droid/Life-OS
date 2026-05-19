@@ -99,7 +99,7 @@ export function attachHabitFocusModule(app) {
             modal.classList.remove('flex');
         },
 
-        createFocusMicroFromHabit: function({ habit, macroId, title }) {
+        createFocusMicroFromHabit: function({ habit, macroId, title, estimatedMinutes = 0 }) {
             const state = window.sistemaVidaState;
             const macro = (state.entities?.macros || []).find(item => item.id === macroId);
             if (!habit || !macro) return null;
@@ -120,12 +120,14 @@ export function attachHabitFocusModule(app) {
                 ifThen: '',
                 inicioDate: today,
                 prazo: today,
+                startTime: String(habit.startTime || habit.reminderTime || '').trim(),
                 macroId: macro.id,
                 okrId: macro.okrId || '',
                 metaId: macro.metaId || '',
                 status: 'in_progress',
                 completed: false,
                 progress: 0,
+                estimatedMinutes: Math.max(0, Math.round(Number(estimatedMinutes) || 0)),
                 focusSec: 0,
                 focusSessions: 0,
                 steps: inheritedSteps,
@@ -178,7 +180,7 @@ export function attachHabitFocusModule(app) {
                 this.showToast('Descreva o que você pretende entregar nesta sessão.', 'error');
                 return;
             }
-            const micro = this.createFocusMicroFromHabit({ habit, macroId, title: rawTitle });
+            const micro = this.createFocusMicroFromHabit({ habit, macroId, title: rawTitle, estimatedMinutes: minutes });
             if (!micro) {
                 this.showToast('Não foi possível criar a micro da sessão.', 'error');
                 return;

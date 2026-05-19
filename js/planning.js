@@ -936,6 +936,91 @@ getMicroEstimatedMinutes: function(micro) {
         return 30;
     },
 
+getCapacityAdjustmentFromCheckin: function(dateKey = this.getLocalDateKey()) {
+        const entries = window.sistemaVidaState?.profile?.dailyCheckins || [];
+        const entry = entries.find((item) => String(item?.date || '') === String(dateKey || this.getLocalDateKey())) || null;
+        if (!entry) {
+            return { factor: 1, extraBufferMinutes: 0, reasons: [], label: 'Sem ajuste do check-in' };
+        }
+        const sleepHours = Number(entry.sleepHours || 0);
+        const sleepQuality = Number(entry.sleepQuality || 3);
+        const energy = Number(entry.energy || 3);
+        const mood = Number(entry.mood || 3);
+        const stress = Number(entry.stress || 3);
+        let factor = 1;
+        let extraBufferMinutes = 0;
+        const reasons = [];
+        if (sleepHours < 5) { factor -= 0.28; extraBufferMinutes += 30; reasons.push('sono muito baixo'); }
+        else if (sleepHours < 6) { factor -= 0.18; extraBufferMinutes += 20; reasons.push('sono reduzido'); }
+        else if (sleepHours < 7) { factor -= 0.08; extraBufferMinutes += 10; reasons.push('sono abaixo da base'); }
+        if (sleepQuality <= 2) { factor -= 0.1; extraBufferMinutes += 15; reasons.push('qualidade de sono baixa'); }
+        else if (sleepQuality >= 4) factor += 0.04;
+        if (energy <= 1) { factor -= 0.22; extraBufferMinutes += 20; reasons.push('energia muito baixa'); }
+        else if (energy <= 2) { factor -= 0.12; extraBufferMinutes += 10; reasons.push('energia baixa'); }
+        else if (energy >= 4) factor += 0.05;
+        if (stress >= 5) { factor -= 0.2; extraBufferMinutes += 25; reasons.push('estresse crítico'); }
+        else if (stress >= 4) { factor -= 0.12; extraBufferMinutes += 15; reasons.push('estresse alto'); }
+        if (mood <= 2) { factor -= 0.05; reasons.push('humor baixo'); }
+        else if (mood >= 4) factor += 0.03;
+        const safeFactor = Math.max(0.45, Math.min(1.15, factor));
+        const roundedBuffer = Math.max(0, Math.round(extraBufferMinutes / 5) * 5);
+        return {
+            factor: safeFactor,
+            extraBufferMinutes: roundedBuffer,
+            reasons,
+            label: reasons.length ? `Ajustado pelo check-in: ${reasons.join(', ')}.` : 'Check-in estável, sem redução adicional.'
+        };
+    },
+
+getSuggestedExecutionSchedule: function(input = {}) {
+        const estimatedMinutes = Math.max(1, Math.round(Number(input.estimatedMinutes) || 0));
+        const effort = String(input.effort || '').trim().toLowerCase();
+        const dueDays = Number.isFinite(Number(input.dueDays)) ? Number(input.dueDays) : null;
+        const sourceType = String(input.sourceType || '').trim().toLowerCase();
+        const dimension = String(input.dimension || '').trim().toLowerCase();
+        const checkin = this.getCapacityAdjustmentFromCheckin?.(this.getLocalDateKey()) || { factor: 1 };
+        const lowEnergy = checkin.factor < 0.78;
+        let dayPart = 'tarde';
+        if (dueDays !== null && dueDays < 0) dayPart = 'manha';
+        else if (dueDays === 0 && effort === 'denso') dayPart = 'manha';
+        else if (sourceType === 'habit' || sourceType === 'routine') dayPart = dimension === 'saúde' || dimension === 'saude' ? 'manha' : 'tarde';
+        else if (dimension === 'saúde' || dimension === 'saude') dayPart = 'manha';
+        else if (effort === 'denso' || estimatedMinutes >= 50) dayPart = lowEnergy ? 'tarde' : 'manha';
+        else if (effort === 'leve' || estimatedMinutes <= 20) dayPart = dueDays !== null && dueDays <= 0 ? 'tarde' : 'noite';
+        const startTimeMap = {
+            manha: lowEnergy ? '10:00' : '09:00',
+            tarde: '14:00',
+            noite: estimatedMinutes >= 45 ? '19:00' : '20:00'
+        };
+        return {
+            dayPart,
+            startTime: startTimeMap[dayPart] || '14:00',
+            source: 'suggested'
+        };
+    },
+
+getHabitScheduleContext: function(habit) {
+        if (!habit) return { startTime: '', startMinutes: null, dayPart: 'sem_horario', source: '' };
+        const explicit = String(habit.startTime || habit.reminderTime || '').trim();
+        if (explicit) {
+            const startMinutes = this.toClockMinutes(explicit);
+            return { startTime: explicit, startMinutes, dayPart: this.getDayPartByClockMinutes(startMinutes), source: 'habit' };
+        }
+        const estimatedMinutes = Math.max(1, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
+        const suggested = this.getSuggestedExecutionSchedule?.({
+            sourceType: this.isHabitRoutine?.(habit) ? 'routine' : 'habit',
+            dimension: habit.dimension || 'Geral',
+            estimatedMinutes
+        }) || { dayPart: 'sem_horario', startTime: '' };
+        const startMinutes = this.toClockMinutes(suggested.startTime || '');
+        return {
+            startTime: suggested.startTime || '',
+            startMinutes,
+            dayPart: suggested.dayPart || this.getDayPartByClockMinutes(startMinutes),
+            source: suggested.source || ''
+        };
+    },
+
 toClockMinutes: function(hhmm = '') {
         const raw = String(hhmm || '').trim();
         const match = raw.match(/^(\d{1,2}):(\d{2})$/);
@@ -951,6 +1036,45 @@ getDayPartByClockMinutes: function(totalMinutes = null) {
         if (totalMinutes < 720) return 'manha';
         if (totalMinutes < 1080) return 'tarde';
         return 'noite';
+    },
+
+getMicroScheduleContext: function(micro) {
+        if (!micro) return { startTime: '', startMinutes: null, dayPart: 'sem_horario', source: '' };
+        const state = window.sistemaVidaState || {};
+        let startTime = String(micro.startTime || '').trim();
+        let source = startTime ? 'micro' : '';
+        if (!startTime && micro.sourceHabitId) {
+            const linkedHabit = (state.habits || []).find((habit) => String(habit?.id || '') === String(micro.sourceHabitId || ''));
+            const inheritedTime = String(linkedHabit?.startTime || linkedHabit?.reminderTime || '').trim();
+            if (inheritedTime) {
+                startTime = inheritedTime;
+                source = 'habit';
+            }
+        }
+        if (!startTime) {
+            const today = this.getLocalDateKey();
+            const dueDays = micro.prazo
+                ? Math.floor((new Date(`${micro.prazo}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000)
+                : null;
+            const suggested = this.getSuggestedExecutionSchedule?.({
+                sourceType: 'micro',
+                dimension: micro.dimension || 'Geral',
+                estimatedMinutes: this.getMicroEstimatedMinutes?.(micro) || 0,
+                effort: this.getMicroEffort?.(micro) || '',
+                dueDays
+            }) || null;
+            if (suggested?.startTime) {
+                startTime = suggested.startTime;
+                source = suggested.source || 'suggested';
+            }
+        }
+        const startMinutes = this.toClockMinutes(startTime);
+        return {
+            startTime,
+            startMinutes,
+            dayPart: this.getDayPartByClockMinutes(startMinutes),
+            source
+        };
     },
 
 getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
@@ -969,7 +1093,11 @@ getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
             if (!isScheduled) return;
             const isRoutine = typeof this.isHabitRoutine === 'function' ? this.isHabitRoutine(habit) : false;
             const progress = this.getHabitTodayProgressSnapshot?.(habit, today) || { done: false, label: '0/1' };
-            const startMinutes = this.toClockMinutes(habit.startTime || '');
+            const schedule = this.getHabitScheduleContext ? this.getHabitScheduleContext(habit) : {
+                startTime: String(habit.startTime || ''),
+                startMinutes: this.toClockMinutes(habit.startTime || ''),
+                dayPart: this.getDayPartByClockMinutes(this.toClockMinutes(habit.startTime || ''))
+            };
             const estimatedMinutes = Math.max(1, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
             items.push({
                 id: `habit:${habit.id}`,
@@ -978,9 +1106,9 @@ getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
                 title: habit.title || (isRoutine ? 'Rotina' : 'Hábito'),
                 dimension: habit.dimension || 'Geral',
                 estimatedMinutes,
-                startTime: String(habit.startTime || ''),
-                startMinutes,
-                dayPart: this.getDayPartByClockMinutes(startMinutes),
+                startTime: schedule.startTime || '',
+                startMinutes: schedule.startMinutes,
+                dayPart: schedule.dayPart || 'sem_horario',
                 done: !!progress.done,
                 progressLabel: progress.label || '',
                 urgency: progress.done ? 0 : 55
@@ -1004,6 +1132,11 @@ getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
             const dueDays = micro.prazo
                 ? Math.floor((new Date(`${micro.prazo}T00:00:00`) - now) / 86400000)
                 : null;
+            const schedule = this.getMicroScheduleContext ? this.getMicroScheduleContext(micro) : {
+                startTime: '',
+                startMinutes: null,
+                dayPart: 'sem_horario'
+            };
             let urgency = done ? 0 : 45;
             if (!done && dueDays !== null && dueDays < 0) urgency = 95;
             else if (!done && dueDays === 0) urgency = 85;
@@ -1015,9 +1148,9 @@ getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
                 title: micro.title || 'Micro ação',
                 dimension: micro.dimension || 'Geral',
                 estimatedMinutes,
-                startTime: '',
-                startMinutes: null,
-                dayPart: 'sem_horario',
+                startTime: schedule.startTime || '',
+                startMinutes: schedule.startMinutes,
+                dayPart: schedule.dayPart || 'sem_horario',
                 done,
                 progressLabel: done ? 'Concluida' : (micro.status === 'in_progress' ? 'Em andamento' : 'Pendente'),
                 urgency
@@ -1033,34 +1166,142 @@ getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
     },
 
 getTodayCapacityState: function(dateKey = this.getLocalDateKey()) {
+        const settings = window.sistemaVidaState?.settings || {};
+        const rawProfile = settings.dayCapacityProfile || {};
         const defaults = {
-            awakeMinutes: 16 * 60,
-            fixedCommitmentsMinutes: 8 * 60,
-            dailyBasicsMinutes: 2 * 60,
-            bufferMinutes: 60
+            sleepHours: Math.max(4, Math.min(12, Number(rawProfile.sleepHours) || 8)),
+            fixedCommitmentsMinutes: Math.max(0, Math.min(16 * 60, Number(rawProfile.fixedCommitmentsMinutes) || (8 * 60))),
+            dailyBasicsMinutes: Math.max(30, Math.min(8 * 60, Number(rawProfile.dailyBasicsMinutes) || (2 * 60))),
+            bufferMinutes: Math.max(0, Math.min(4 * 60, Number(rawProfile.bufferMinutes) || 60))
         };
-        const capacityMinutes = Math.max(60, defaults.awakeMinutes - defaults.fixedCommitmentsMinutes - defaults.dailyBasicsMinutes - defaults.bufferMinutes);
+        defaults.awakeMinutes = Math.max(8 * 60, (24 * 60) - Math.round(defaults.sleepHours * 60));
+        const labels = {
+            all: 'Dia inteiro',
+            manha: 'Manha',
+            tarde: 'Tarde',
+            noite: 'Noite'
+        };
+        const totalWindowMinutes = {
+            manha: 6 * 60,
+            tarde: 6 * 60,
+            noite: 4 * 60
+        };
+        const checkinAdjustment = this.getCapacityAdjustmentFromCheckin ? this.getCapacityAdjustmentFromCheckin(dateKey) : { factor: 1, extraBufferMinutes: 0, reasons: [], label: '' };
+        const baseCapacityMinutes = Math.max(60, defaults.awakeMinutes - defaults.fixedCommitmentsMinutes - defaults.dailyBasicsMinutes - defaults.bufferMinutes);
+        const capacityMinutes = Math.max(45, Math.round((baseCapacityMinutes * checkinAdjustment.factor) - checkinAdjustment.extraBufferMinutes));
         const items = this.getTodayActionItems(dateKey);
-        const plannedMinutes = items.reduce((sum, item) => sum + Math.max(0, Number(item.estimatedMinutes) || 0), 0);
+        const pendingItems = items.filter((item) => !item.done);
+        const activeDayPart = (this.getTodayChecklistMode?.() === 'horario')
+            ? this.getTodayChecklistDayPart?.() || 'all'
+            : 'all';
+
+        const morningCapacity = Math.round(capacityMinutes * (totalWindowMinutes.manha / defaults.awakeMinutes));
+        const afternoonCapacity = Math.round(capacityMinutes * (totalWindowMinutes.tarde / defaults.awakeMinutes));
+        const nightCapacity = Math.max(0, capacityMinutes - morningCapacity - afternoonCapacity);
+
+        const computeStatus = (planned, capacity) => {
+            const usage = capacity > 0 ? (planned / capacity) : 0;
+            let status = 'ok';
+            if (usage > 1.05) status = 'sobrecarregado';
+            else if (usage > 0.85) status = 'cheio';
+            return {
+                status,
+                usagePct: Math.round(Math.max(0, usage) * 100)
+            };
+        };
+
+        const segmentCapacities = {
+            manha: morningCapacity,
+            tarde: afternoonCapacity,
+            noite: nightCapacity
+        };
+        const segments = {
+            all: null,
+            manha: null,
+            tarde: null,
+            noite: null,
+            sem_horario: null
+        };
+
+        ['manha', 'tarde', 'noite'].forEach((dayPart) => {
+            const planned = pendingItems
+                .filter((item) => item.dayPart === dayPart)
+                .reduce((sum, item) => sum + Math.max(0, Number(item.estimatedMinutes) || 0), 0);
+            const capacity = segmentCapacities[dayPart];
+            const statusMeta = computeStatus(planned, capacity);
+            segments[dayPart] = {
+                key: dayPart,
+                label: labels[dayPart],
+                capacityMinutes: capacity,
+                plannedMinutes: planned,
+                remainingMinutes: capacity - planned,
+                status: statusMeta.status,
+                usagePct: statusMeta.usagePct,
+                items: pendingItems.filter((item) => item.dayPart === dayPart)
+            };
+        });
+
+        const unscheduledPlanned = pendingItems
+            .filter((item) => item.dayPart === 'sem_horario')
+            .reduce((sum, item) => sum + Math.max(0, Number(item.estimatedMinutes) || 0), 0);
+        segments.sem_horario = {
+            key: 'sem_horario',
+            label: 'Sem horario',
+            capacityMinutes: null,
+            plannedMinutes: unscheduledPlanned,
+            remainingMinutes: null,
+            status: unscheduledPlanned > 0 ? 'a_definir' : 'ok',
+            usagePct: 0,
+            items: pendingItems.filter((item) => item.dayPart === 'sem_horario')
+        };
+
+        const plannedMinutes = pendingItems.reduce((sum, item) => sum + Math.max(0, Number(item.estimatedMinutes) || 0), 0);
         const remainingMinutes = capacityMinutes - plannedMinutes;
-        const usage = capacityMinutes > 0 ? (plannedMinutes / capacityMinutes) : 0;
-        let status = 'ok';
-        if (usage > 1.05) status = 'sobrecarregado';
-        else if (usage > 0.85) status = 'cheio';
-        const suggestions = [];
-        if (status !== 'ok') {
-            suggestions.push('Reduza ou mova ações de baixa prioridade.');
-            suggestions.push('Proteja ao menos um bloco real de descanso.');
-        }
-        return {
-            dateKey: dateKey || this.getLocalDateKey(),
-            defaults,
+        const totalStatus = computeStatus(plannedMinutes, capacityMinutes);
+        segments.all = {
+            key: 'all',
+            label: labels.all,
             capacityMinutes,
             plannedMinutes,
             remainingMinutes,
-            status,
-            usagePct: Math.round(Math.max(0, usage) * 100),
-            items,
+            status: totalStatus.status,
+            usagePct: totalStatus.usagePct,
+            items: pendingItems
+        };
+
+        const focusKey = ['manha', 'tarde', 'noite'].includes(activeDayPart) ? activeDayPart : 'all';
+        const activeSegment = segments[focusKey] || segments.all;
+        const suggestions = [];
+        if ((activeSegment?.status || 'ok') !== 'ok') {
+            suggestions.push('Reduza ou mova ações de baixa prioridade.');
+            suggestions.push('Proteja ao menos um bloco real de descanso.');
+        }
+        if (segments.sem_horario.plannedMinutes > 0) {
+            suggestions.push('Itens sem horário ainda precisam ser distribuídos nos turnos.');
+        }
+        if (checkinAdjustment.label && checkinAdjustment.factor !== 1) {
+            suggestions.push(checkinAdjustment.label);
+        }
+
+        return {
+            dateKey: dateKey || this.getLocalDateKey(),
+            defaults,
+            baseCapacityMinutes,
+            capacityMinutes: activeSegment.capacityMinutes,
+            plannedMinutes: activeSegment.plannedMinutes,
+            remainingMinutes: activeSegment.remainingMinutes,
+            status: activeSegment.status,
+            usagePct: activeSegment.usagePct,
+            activeDayPart: focusKey,
+            activeLabel: activeSegment.label,
+            totalCapacityMinutes: capacityMinutes,
+            totalPlannedMinutes: plannedMinutes,
+            totalRemainingMinutes: remainingMinutes,
+            totalStatus: totalStatus.status,
+            totalUsagePct: totalStatus.usagePct,
+            checkinAdjustment,
+            items: pendingItems,
+            segments,
             suggestions
         };
     },
@@ -1418,6 +1659,7 @@ saveNewEntity: function() {
             obj.indicator = context || '';
             obj.effort = effort;
             obj.estimatedMinutes = estimatedMinutes > 0 ? estimatedMinutes : 0;
+            obj.startTime = String(document.getElementById('micro-start-time')?.value || '').trim();
             obj.obstacle = obstacle;
             obj.ifThen = ifThen;
             const oldItem = getOldItem(id, 'micros');
@@ -1801,6 +2043,8 @@ editEntity: function(id, type) {
         if (obstacleInput) obstacleInput.value = item.obstacle || '';
         const ifThenInput = document.getElementById('crud-ifthen');
         if (ifThenInput) ifThenInput.value = item.ifThen || '';
+        const microStartTimeInput = document.getElementById('micro-start-time');
+        if (microStartTimeInput) microStartTimeInput.value = item.startTime || '';
         this.populateKrRows(item.keyResults);
         
         // Compatibilidade retrô: agendamento antigo migra visualmente para datas reais

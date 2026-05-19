@@ -1619,6 +1619,13 @@
 
                 <div id="crud-micro-execution-group" class="hidden flex-col gap-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/50 p-3">
                     <div class="flex flex-col gap-1.5">
+                        <label for="micro-start-time"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Horario preferencial</label>
+                        <input id="micro-start-time" type="time"
+                            class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                        <p class="text-[10px] text-outline">Opcional. Ajuda o Pra hoje a organizar a micro por turno.</p>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
                         <div class="flex items-center justify-between gap-3">
                             <label for="micro-protocol"
                                 class="text-xs font-label uppercase tracking-widest text-outline font-bold">Protocolo (opcional)</label>
@@ -2961,7 +2968,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260519-sync-align-v1"></script>
+    <script type="module" src="app.js?v=20260519-execution-capacity-v5"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>

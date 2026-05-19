@@ -20,7 +20,7 @@ isHabitRoutine: function(habit) {
         return hasProtocol || hasSteps;
     },
 
-getHabitEstimatedMinutes: function(habit) {
+    getHabitEstimatedMinutes: function(habit) {
         if (!habit) return 0;
         const manual = Math.round(Number(habit.estimatedMinutes) || 0);
         if (manual > 0) return manual;
@@ -28,6 +28,12 @@ getHabitEstimatedMinutes: function(habit) {
         const mode = String(habit.trackMode || 'boolean').toLowerCase();
         if (mode === 'timer' || mode === 'tempo' || mode === 'time') {
             return Math.max(1, Math.round(Number(habit.targetValue) || 0));
+        }
+
+        if (habit.protocolId && typeof this.getProtocolById === 'function' && typeof this.getProtocolEstimatedMinutes === 'function') {
+            const protocol = this.getProtocolById(habit.protocolId);
+            const protocolMinutes = Math.max(0, Math.round(Number(this.getProtocolEstimatedMinutes(protocol, { includeOptional: false })) || 0));
+            if (protocolMinutes > 0) return protocolMinutes;
         }
 
         const steps = Array.isArray(habit.steps) ? habit.steps.filter(step => String(step || '').trim() !== '') : [];

@@ -369,6 +369,18 @@ function cloneProtocol(protocol) {
     return JSON.parse(JSON.stringify(protocol));
 }
 
+function getProtocolStepDefaultMinutes(step = {}) {
+    const kind = String(step?.kind || 'step').trim().toLowerCase();
+    const title = String(step?.title || '').trim().toLowerCase();
+    if (['learn', 'recall', 'synthesize', 'apply', 'perform', 'maintenance', 'structural'].includes(kind)) return 15;
+    if (['prepare', 'care', 'mind', 'plan', 'decide'].includes(kind)) return 10;
+    if (['reset', 'track', 'review', 'close'].includes(kind)) return 5;
+    if (title.includes('aquecer') || title.includes('along')) return 10;
+    if (title.includes('treino principal') || title.includes('estudar o material')) return 25;
+    if (title.includes('meditar') || title.includes('leitura')) return 15;
+    return 8;
+}
+
 function normalizeProtocol(protocol = {}) {
     const steps = Array.isArray(protocol.steps) ? protocol.steps : [];
     const evidence = protocol.evidenceCard && typeof protocol.evidenceCard === 'object' ? protocol.evidenceCard : {};
@@ -395,7 +407,8 @@ function normalizeProtocol(protocol = {}) {
             id: String(step?.id || `step_${idx + 1}`),
             title: String(step?.title || '').trim(),
             optional: !!step?.optional,
-            kind: String(step?.kind || 'step').trim()
+            kind: String(step?.kind || 'step').trim(),
+            estimatedMinutes: Math.max(1, Math.round(Number(step?.estimatedMinutes) || getProtocolStepDefaultMinutes(step)))
         })).filter(step => step.title),
         suggestedHabit: {
             dimension: String(suggestedHabit.dimension || '').trim(),
@@ -447,6 +460,32 @@ export function attachProtocolsModule(app) {
 
             if (suggested.startTime) pieces.push(suggested.startTime);
             return pieces.filter(Boolean).join(' · ');
+        },
+
+        getProtocolEstimatedMinutes: function(protocol, options = {}) {
+            const normalized = protocol ? normalizeProtocol(protocol) : null;
+            if (!normalized) return 0;
+            const includeOptional = options.includeOptional === true;
+            const steps = Array.isArray(normalized.steps) ? normalized.steps : [];
+            const relevant = includeOptional ? steps : steps.filter((step) => !step.optional);
+            const base = relevant.length ? relevant : steps;
+            return base.reduce((sum, step) => sum + Math.max(1, Math.round(Number(step?.estimatedMinutes) || getProtocolStepDefaultMinutes(step))), 0);
+        },
+
+        parseProtocolStepLine: function(line = '', idx = 0) {
+            const raw = String(line || '').trim();
+            if (!raw) return null;
+            const parts = raw.split('|').map((part) => String(part || '').trim()).filter(Boolean);
+            const title = parts[0] || '';
+            if (!title) return null;
+            const maybeMinutes = Number(parts[1] || 0);
+            return {
+                id: `step_${idx + 1}`,
+                title,
+                optional: false,
+                kind: 'step',
+                estimatedMinutes: Math.max(1, Math.round(Number.isFinite(maybeMinutes) && maybeMinutes > 0 ? maybeMinutes : getProtocolStepDefaultMinutes({ title })))
+            };
         },
 
         getBaseProtocolsCatalog: function() {
@@ -565,7 +604,7 @@ export function attachProtocolsModule(app) {
                                                     </div>
                                                     <div class="shrink-0 text-right">
                                                         <p class="text-[10px] font-bold uppercase tracking-widest text-outline">${this.escapeHtml(this.getProtocolCadenceLabel(protocol.cadence))}</p>
-                                                        <p class="mt-1 text-[10px] text-outline">${protocol.steps.length} passo${protocol.steps.length === 1 ? '' : 's'}</p>
+                                                        <p class="mt-1 text-[10px] text-outline">${protocol.steps.length} passo${protocol.steps.length === 1 ? '' : 's'} · ${this.getProtocolEstimatedMinutes(protocol, { includeOptional: false })} min</p>
                                                     </div>
                                                 </div>
                                                 <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4 space-y-2">
@@ -580,7 +619,10 @@ export function attachProtocolsModule(app) {
                                                         ${protocol.steps.map((step, idx) => `
                                                             <div class="flex items-start gap-3 rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-2.5">
                                                                 <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">${idx + 1}</span>
-                                                                <p class="text-sm text-on-surface leading-relaxed">${this.escapeHtml(step.title)}</p>
+                                                                <div class="min-w-0 flex-1">
+                                                                    <p class="text-sm text-on-surface leading-relaxed">${this.escapeHtml(step.title)}</p>
+                                                                    <p class="mt-1 text-[10px] text-outline">${Math.round(Number(step.estimatedMinutes) || 0)} min${step.optional ? ' · opcional' : ''}</p>
+                                                                </div>
                                                             </div>
                                                         `).join('')}
                                                     </div>
@@ -630,7 +672,9 @@ export function attachProtocolsModule(app) {
             document.getElementById('protocol-evidence-references').value = Array.isArray(protocol?.evidenceCard?.references)
                 ? protocol.evidenceCard.references.map(ref => `${ref.label || ''}${ref.url ? ` | ${ref.url}` : ''}`).join('\n')
                 : '';
-            document.getElementById('protocol-steps').value = Array.isArray(protocol?.steps) ? protocol.steps.map(step => step.title).join('\n') : '';
+            document.getElementById('protocol-steps').value = Array.isArray(protocol?.steps)
+                ? protocol.steps.map(step => `${step.title}${Number(step?.estimatedMinutes) > 0 ? ` | ${Math.round(Number(step.estimatedMinutes))}` : ''}`).join('\n')
+                : '';
             document.getElementById('protocol-suggested-dimension').value = protocol?.suggestedHabit?.dimension || 'Carreira';
             document.getElementById('protocol-suggested-track-mode').value = protocol?.suggestedHabit?.trackMode || 'boolean';
             document.getElementById('protocol-suggested-target').value = protocol?.suggestedHabit?.targetValue || 1;
@@ -687,9 +731,8 @@ export function attachProtocolsModule(app) {
             }).filter(item => item.label || item.url);
             const steps = String(document.getElementById('protocol-steps')?.value || '')
                 .split(/\r?\n/)
-                .map(line => String(line || '').trim())
-                .filter(Boolean)
-                .map((line, idx) => ({ id: `step_${idx + 1}`, title: line, optional: false, kind: 'step' }));
+                .map((line, idx) => this.parseProtocolStepLine?.(line, idx))
+                .filter(Boolean);
             if (!steps.length) {
                 this.showToast('Adicione pelo menos um passo ao protocolo.', 'error');
                 return;
@@ -839,6 +882,7 @@ export function attachProtocolsModule(app) {
             const routineInput = document.getElementById('habit-routine');
             const rewardInput = document.getElementById('habit-reward');
             const dimensionInput = document.getElementById('crud-dimension');
+            const estimatedInput = document.getElementById('crud-estimated-minutes');
             const supportsHabitFrequency = (value) => {
                 if (!value) return false;
                 return !!freqInput?.querySelector(`option[value="${value}"]`);
@@ -856,6 +900,10 @@ export function attachProtocolsModule(app) {
                 this.onHabitModeChange?.(modeInput.value);
             }
             if (targetInput && (!targetInput.value || Number(targetInput.value) === 1 || options.force)) targetInput.value = protocol.suggestedHabit.targetValue || 1;
+            const protocolMinutes = this.getProtocolEstimatedMinutes?.(protocol, { includeOptional: false }) || 0;
+            if (estimatedInput && protocolMinutes > 0 && (!estimatedInput.value || Number(estimatedInput.value) <= 0 || options.force)) {
+                estimatedInput.value = String(protocolMinutes);
+            }
             if (freqInput && supportsHabitFrequency(protocol.suggestedHabit.frequency) && (!freqInput.value || freqInput.value === 'daily' || options.force)) {
                 freqInput.value = protocol.suggestedHabit.frequency || 'daily';
                 this.onHabitFreqChange?.(freqInput.value);
@@ -890,6 +938,7 @@ export function attachProtocolsModule(app) {
             const protocol = this.getProtocolById(protocolId);
             if (!protocol) return false;
             const stepsInput = document.getElementById('micro-steps');
+            const estimatedInput = document.getElementById('crud-estimated-minutes');
             const existingSteps = String(stepsInput?.value || '').trim();
             const nextSteps = protocol.steps.map(step => step.title).join('\n');
             if (!options.force && existingSteps && existingSteps !== nextSteps) {
@@ -897,6 +946,10 @@ export function attachProtocolsModule(app) {
                 if (!confirmed) return false;
             }
             if (stepsInput) stepsInput.value = nextSteps;
+            const protocolMinutes = this.getProtocolEstimatedMinutes?.(protocol, { includeOptional: false }) || 0;
+            if (estimatedInput && protocolMinutes > 0 && (!estimatedInput.value || Number(estimatedInput.value) <= 0 || options.force)) {
+                estimatedInput.value = String(protocolMinutes);
+            }
             const select = document.getElementById('micro-protocol');
             if (select) select.value = protocol.id;
             return true;

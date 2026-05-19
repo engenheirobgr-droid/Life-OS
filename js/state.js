@@ -178,6 +178,26 @@ ensureSettingsState: function() {
         if (typeof window.sistemaVidaState.settings.soundEnabled !== 'boolean') {
             window.sistemaVidaState.settings.soundEnabled = false;
         }
+        if (!window.sistemaVidaState.settings.dayCapacityProfile || typeof window.sistemaVidaState.settings.dayCapacityProfile !== 'object') {
+            window.sistemaVidaState.settings.dayCapacityProfile = {};
+        }
+        const dayCapacityProfile = window.sistemaVidaState.settings.dayCapacityProfile;
+        const sanitizeHours = (value, fallback, min, max, step = 0.5) => {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return fallback;
+            const clamped = Math.max(min, Math.min(max, num));
+            return Math.round(clamped / step) * step;
+        };
+        const sanitizeMinutes = (value, fallback, min, max, step = 15) => {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return fallback;
+            const clamped = Math.max(min, Math.min(max, num));
+            return Math.round(clamped / step) * step;
+        };
+        dayCapacityProfile.sleepHours = sanitizeHours(dayCapacityProfile.sleepHours, 8, 4, 12, 0.5);
+        dayCapacityProfile.fixedCommitmentsMinutes = sanitizeMinutes(dayCapacityProfile.fixedCommitmentsMinutes, 8 * 60, 0, 16 * 60);
+        dayCapacityProfile.dailyBasicsMinutes = sanitizeMinutes(dayCapacityProfile.dailyBasicsMinutes, 2 * 60, 30, 8 * 60);
+        dayCapacityProfile.bufferMinutes = sanitizeMinutes(dayCapacityProfile.bufferMinutes, 60, 0, 4 * 60);
         if (!['classic', 'ring'].includes(window.sistemaVidaState.settings.deepWorkClockStyle)) {
             window.sistemaVidaState.settings.deepWorkClockStyle = 'classic';
         }
@@ -287,7 +307,7 @@ ensureSettingsState: function() {
         if (!window.sistemaVidaState.deepWork) {
             window.sistemaVidaState.deepWork = {
                 isRunning: false, isPaused: false, mode: 'focus',
-                remainingSec: 5400, targetSec: 5400, breakSec: 1200,
+                remainingSec: 1500, targetSec: 1500, breakSec: 300,
                 microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0, sessions: []
             };
         }
@@ -639,7 +659,7 @@ factoryReset: async function() {
         wellbeingHistory: { wheel: {}, perma: {}, odyssey: {} },
         deepWork: {
           isRunning: false, isPaused: false, mode: 'focus',
-          remainingSec: 5400, targetSec: 5400, breakSec: 1200,
+          remainingSec: 1500, targetSec: 1500, breakSec: 300,
           microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0, sessions: []
         },
         entities: { metas: [], okrs: [], macros: [], micros: [] },
@@ -658,6 +678,12 @@ factoryReset: async function() {
           notificationsEnabled: false,
           theme: 'auto',
           deepWorkClockStyle: 'classic',
+          dayCapacityProfile: {
+            sleepHours: 8,
+            fixedCommitmentsMinutes: 8 * 60,
+            dailyBasicsMinutes: 2 * 60,
+            bufferMinutes: 60
+          },
           features: { social: false }
         },
         onboardingComplete: false
@@ -747,7 +773,7 @@ factoryReset: async function() {
         },
         deepWork: {
           isRunning: false, isPaused: false, mode: 'focus',
-          remainingSec: 5400, targetSec: 5400, breakSec: 1200,
+          remainingSec: 1500, targetSec: 1500, breakSec: 300,
           microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0,
           sessions: [
             { endedAt: '2026-04-06', focusSec: 3600, mode: 'focus', microId: 'mic2', intention: 'Remover hardcodes do painel' },
