@@ -23,10 +23,10 @@ import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v2';
 import { attachIdentity } from './js/identity.js?v=20260519-execution-capacity-v7';
 import { attachHabits } from './js/habits.js?v=20260519-execution-capacity-v7';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v7';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260519-execution-capacity-v7';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260519-execution-capacity-v8';
 import { attachStateModule } from './js/state.js?v=20260519-execution-capacity-v7';
 import { attachRenderModule } from './js/render.js?v=20260519-execution-capacity-v7';
-import { attachPlanningModule } from './js/planning.js?v=20260519-execution-capacity-v7';
+import { attachPlanningModule } from './js/planning.js?v=20260519-execution-capacity-v8';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -7283,7 +7283,7 @@ ensureNotesState: function() {
         if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
 
-    openMicroInFocus: function(microId, autoStart = false) {
+    openMicroInFocus: function(microId, autoStart = false, options = {}) {
         this.normalizeDeepWorkState();
         const state = window.sistemaVidaState;
         const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
@@ -7304,7 +7304,10 @@ ensureNotesState: function() {
 
         dw.microId = micro.id;
         dw.intention = micro.title || '';
-        this.pendingFocusMinutes = this.getSuggestedFocusPresetMinutes(micro);
+        const explicitPreset = Math.max(0, Math.round(Number(options?.presetMinutes) || 0));
+        this.pendingFocusMinutes = explicitPreset > 0
+            ? this.getDeepWorkPresetConfig(explicitPreset).minutes
+            : this.getSuggestedFocusPresetMinutes(micro);
         if (autoStart && micro.status !== 'done') {
             const sourceMicro = (state.entities?.micros || []).find(m => m.id === micro.id);
             const targetMicro = sourceMicro || micro;

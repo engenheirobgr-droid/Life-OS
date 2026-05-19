@@ -1244,8 +1244,8 @@ refreshCrudEstimatedFieldState: function(type = '') {
                 setVisualState({
                     disabled: true,
                     source: 'target',
-                    note: 'Em habitos de tempo, a duracao usada no Hoje vem da meta diaria em minutos.',
-                    placeholder: 'Derivado da meta diÃ¡ria'
+                    note: 'Em habitos de tempo, a duracao usada no Hoje vem da meta por execucao em minutos.',
+                    placeholder: 'Derivado da meta por execucao'
                 });
                 return;
             }

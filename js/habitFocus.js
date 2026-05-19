@@ -70,7 +70,9 @@ export function attachHabitFocusModule(app) {
             document.getElementById('habit-focus-habit-id').value = habit.id;
             document.getElementById('habit-focus-title').textContent = habit.title || 'Sessão de foco';
             document.getElementById('habit-focus-delivery').value = '';
-            document.getElementById('habit-focus-minutes').value = String(Math.max(25, Math.round(Number(habit.targetValue) || 90)));
+            const suggestedMinutes = Number(this.getHabitEstimatedMinutes?.(habit)) || 25;
+            const presetConfig = this.getDeepWorkPresetConfig?.(suggestedMinutes) || { minutes: 25 };
+            document.getElementById('habit-focus-minutes').value = String(presetConfig.minutes);
             document.getElementById('habit-focus-helper').textContent = habit.protocolId
                 ? 'Defina a entrega desta sessao. O protocolo ja organiza os passos do habito.'
                 : 'Defina a entrega desta sessao e vincule-a a uma macro para o plano avancar.';
@@ -79,7 +81,7 @@ export function attachHabitFocusModule(app) {
                 contextEl.textContent = [
                     linkedMeta?.title ? `Meta: ${linkedMeta.title}` : '',
                     protocol?.title ? `Protocolo: ${protocol.title}` : '',
-                    habit.targetValue && String(habit.trackMode || '') === 'timer' ? `Meta diaria: ${Math.round(Number(habit.targetValue) || 0)} min` : ''
+                    habit.targetValue && String(habit.trackMode || '') === 'timer' ? `Meta por execucao: ${Math.round(Number(habit.targetValue) || 0)} min` : ''
                 ].filter(Boolean).join(' | ');
             }
 
@@ -166,7 +168,8 @@ export function attachHabitFocusModule(app) {
             const habitId = String(document.getElementById('habit-focus-habit-id')?.value || '').trim();
             const macroId = String(document.getElementById('habit-focus-macro')?.value || '').trim();
             const rawTitle = String(document.getElementById('habit-focus-delivery')?.value || '').trim();
-            const minutes = Math.max(25, Math.round(Number(document.getElementById('habit-focus-minutes')?.value || 90)));
+            const rawMinutes = Math.round(Number(document.getElementById('habit-focus-minutes')?.value || 25));
+            const minutes = this.getDeepWorkPresetConfig?.(rawMinutes)?.minutes || 25;
             const habit = (window.sistemaVidaState?.habits || []).find(item => item.id === habitId);
             if (!habit) {
                 this.showToast('Hábito não encontrado para iniciar o foco.', 'error');
@@ -196,7 +199,7 @@ export function attachHabitFocusModule(app) {
 
             this.closeHabitFocusModal();
             this.saveState(true);
-            this.openMicroInFocus(micro.id, true);
+            this.openMicroInFocus(micro.id, true, { presetMinutes: minutes });
         },
 
         openHabitFocusClosureModal: function() {

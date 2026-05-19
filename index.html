@@ -1839,12 +1839,12 @@
                                 onchange="window.app.onHabitModeChange(this.value)">
                                 <option value="boolean">Check (Feito / Não Feito)</option>
                                 <option value="numeric">Quantidade (Nº de páginas, copos)</option>
-                                <option value="timer">Tempo (Minutos por dia)</option>
+                                <option value="timer">Tempo (Minutos por execução)</option>
                             </select>
                         </div>
                         <div id="habit-target-container" class="flex-col gap-1.5" style="display: none;">
                             <label for="habit-target"
-                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Meta Diária
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Meta por execução
                                 (Alvo)</label>
                             <input type="number" id="habit-target" onchange="window.app.onHabitTargetChange()"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
@@ -2077,9 +2077,11 @@
                     <div class="flex flex-col gap-1.5">
                         <label for="habit-focus-minutes" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duracao</label>
                         <select id="habit-focus-minutes" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
-                            <option value="60">60 minutos</option>
-                            <option value="90" selected>90 minutos</option>
-                            <option value="120">120 minutos</option>
+                            <option value="15">15/3</option>
+                            <option value="25" selected>25/5</option>
+                            <option value="45">45/10</option>
+                            <option value="50">50/10</option>
+                            <option value="90">90/20</option>
                         </select>
                     </div>
                 </div>
@@ -2972,7 +2974,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260519-execution-capacity-v7"></script>
+    <script type="module" src="app.js?v=20260519-execution-capacity-v8"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
