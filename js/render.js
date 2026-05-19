@@ -1447,7 +1447,7 @@ renderDeepWorkImmersiveOverlay: function() {
         const progress = Math.max(0, Math.min(1, 1 - (Number(dw.remainingSec || 0) / progressTotal)));
         const helperText = dw.mode === 'break'
             ? 'Pausa ativa para recuperar energia antes do proximo bloco.'
-            : '';
+            : `Base ${Math.round(Number(state.baseCapacityMinutes) || 0)} min · Sem ajuste adicional do check-in.`;
         const checklistHtml = dw.mode === 'focus' && selectedMicro
             ? this.renderDeepWorkExecutionChecklistHTML(selectedMicro, {
                 containerClass: 'rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3 shadow-[0_18px_50px_rgba(0,0,0,0.22)]',
@@ -1794,6 +1794,19 @@ setTodayChecklistDayPart: function(dayPart = 'all') {
         if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
     },
 
+openDayCapacityProfileSettings: async function() {
+        await this.switchView('perfil', { preserveScroll: true });
+        const reveal = () => {
+            const section = document.getElementById('day-capacity-profile-section');
+            if (section) {
+                try { section.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+                section.classList.add('ring-2', 'ring-primary/20');
+                setTimeout(() => section.classList.remove('ring-2', 'ring-primary/20'), 1800);
+            }
+        };
+        setTimeout(reveal, 180);
+    },
+
 assignMicroPreferredDayPart: function(microId, dayPart = 'manha') {
         const defaults = {
             manha: '09:00',
@@ -1865,6 +1878,12 @@ renderTodayCapacityMap: function() {
                         ${adjustmentLabel ? `<p class="mt-1 text-[11px] text-outline">${adjustmentLabel}</p>` : ''}
                     </div>
                     <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${cfg.badge} ${cfg.tone}">${cfg.label}</span>
+                </div>
+                <div class="mt-3 flex items-center justify-between gap-3 rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-2">
+                    <p class="text-[11px] text-outline leading-snug">Nao esta batendo com seu dia real? Ajuste a base de capacidade no Perfil.</p>
+                    <button type="button" onclick="window.app.openDayCapacityProfileSettings()" class="shrink-0 rounded-lg border border-primary/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors">
+                        Ajustar base
+                    </button>
                 </div>
                 <div class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
                     ${segmentButtons}
