@@ -762,6 +762,7 @@ manualGuideChapters: [
             how: [
                 'Antes de iniciar, escolha UM Micro — multitarefa destrói deep work.',
                 'Use os blocos sugeridos como padrão; troque manualmente só quando souber que aquele caso pede outra janela.',
+                'O bloco sugerido não tenta engolir a micro inteira: ele cobre só a melhor sessão para agora, respeitando carga total restante e capacidade do turno.',
                 'Desligue notificações; o ambiente deve sinalizar "agora é foco".',
                 'Use a pausa correspondente ao bloco (3, 5, 10 ou 20 min) para movimento físico ou descanso real, não redes sociais.',
                 'Use "Salvar apenas nota" quando quiser registrar contexto sem concluir a micro.',
@@ -781,6 +782,7 @@ manualGuideChapters: [
             how: [
                 'Em Planos > Protocolos, abra um protocolo base e revise os passos.',
                 'Se quiser guardar tempo estimado, use o formato "Passo | minutos" em cada linha.',
+                'Quando um hábito usa protocolo, o tempo do hábito passa a vir do total do protocolo em vez de competir com um campo manual.',
                 'Use "Criar hábito" para transformar o protocolo em rotina executável.',
                 'Ajuste horário, frequência e meta antes de salvar.',
                 'Hábito com protocolo ou checklist aparece como rotina na experiência de Para hoje.'
@@ -969,6 +971,7 @@ manualGuideChapters: [
                 'Se houver check-in no dia, use o aviso do mapa para entender se a capacidade foi reduzida ou ampliada.',
                 'Se o dia ficar no limite, adie micros de menor impacto ou simplifique rotinas.',
                 'Defina estimativa manual quando souber melhor seu tempo real para aquela ação.',
+                'Pense em minutos totais para planejar e em sessões de foco para executar: o app separa essas duas camadas para não transformar toda micro em um único pomodoro.',
                 'Use o modo Horário para ver manhã, tarde e noite com capacidade separada, sem duplicar a lista principal.',
                 'Hábito com protocolo ou passos aparece como rotina automaticamente na experiência de hoje.',
                 'A aba Hábitos continua sendo biblioteca completa; Para hoje mostra apenas o recorte do dia.'

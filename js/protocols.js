@@ -903,6 +903,8 @@ export function attachProtocolsModule(app) {
             const protocolMinutes = this.getProtocolEstimatedMinutes?.(protocol, { includeOptional: false }) || 0;
             if (estimatedInput && protocolMinutes > 0 && (!estimatedInput.value || Number(estimatedInput.value) <= 0 || options.force)) {
                 estimatedInput.value = String(protocolMinutes);
+                estimatedInput.dataset.manualOverride = 'false';
+                estimatedInput.dataset.estimateSource = 'protocol';
             }
             if (freqInput && supportsHabitFrequency(protocol.suggestedHabit.frequency) && (!freqInput.value || freqInput.value === 'daily' || options.force)) {
                 freqInput.value = protocol.suggestedHabit.frequency || 'daily';
@@ -931,6 +933,7 @@ export function attachProtocolsModule(app) {
             }
             const select = document.getElementById('habit-protocol');
             if (select) select.value = protocol.id;
+            this.refreshCrudEstimatedFieldState?.('habits');
             return true;
         },
 
@@ -949,19 +952,28 @@ export function attachProtocolsModule(app) {
             const protocolMinutes = this.getProtocolEstimatedMinutes?.(protocol, { includeOptional: false }) || 0;
             if (estimatedInput && protocolMinutes > 0 && (!estimatedInput.value || Number(estimatedInput.value) <= 0 || options.force)) {
                 estimatedInput.value = String(protocolMinutes);
+                estimatedInput.dataset.manualOverride = 'false';
+                estimatedInput.dataset.estimateSource = 'protocol';
             }
             const select = document.getElementById('micro-protocol');
             if (select) select.value = protocol.id;
+            this.refreshCrudEstimatedFieldState?.('micros');
             return true;
         },
 
         onHabitProtocolChange: function(protocolId) {
-            if (!protocolId) return;
+            if (!protocolId) {
+                this.refreshCrudEstimatedFieldState?.('habits');
+                return;
+            }
             this.applyProtocolToHabitForm(protocolId);
         },
 
         onMicroProtocolChange: function(protocolId) {
-            if (!protocolId) return;
+            if (!protocolId) {
+                this.refreshCrudEstimatedFieldState?.('micros');
+                return;
+            }
             this.applyProtocolToMicroForm(protocolId);
         },
 

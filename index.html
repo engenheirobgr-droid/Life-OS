@@ -1599,7 +1599,7 @@
                 <div id="crud-effort-group" class="hidden flex-col gap-1.5">
                     <label for="crud-effort"
                         class="text-xs font-label uppercase tracking-widest text-outline font-bold">Esforço</label>
-                    <select id="crud-effort"
+                    <select id="crud-effort" onchange="window.app.onMicroEffortChange()"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                         <option value="leve">Leve — cabe em energia baixa</option>
                         <option value="medio" selected>Médio — exige presença normal</option>
@@ -1609,12 +1609,15 @@
                 </div>
 
                 <div id="crud-estimated-group" class="hidden flex-col gap-1.5">
-                    <label for="crud-estimated-minutes"
-                        class="text-xs font-label uppercase tracking-widest text-outline font-bold">Tempo estimado (min)</label>
-                    <input id="crud-estimated-minutes" type="number" min="1" step="1"
+                    <div class="flex items-center justify-between gap-3">
+                        <label for="crud-estimated-minutes" id="crud-estimated-label"
+                            class="text-xs font-label uppercase tracking-widest text-outline font-bold">Carga total estimada (min)</label>
+                        <span id="crud-estimated-source" class="hidden text-[10px] font-bold uppercase tracking-widest text-primary"></span>
+                    </div>
+                    <input id="crud-estimated-minutes" type="number" min="1" step="1" oninput="window.app.onCrudEstimatedMinutesInput()"
                         class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
-                        placeholder="Ex.: 30">
-                    <p class="text-[10px] text-outline">Opcional. Se vazio, o app usa uma estimativa padrao.</p>
+                        placeholder="Ex.: 50">
+                    <p id="crud-estimated-note" class="text-[10px] text-outline">Quando houver dados suficientes, o app sugere este total automaticamente.</p>
                 </div>
 
                 <div id="crud-micro-execution-group" class="hidden flex-col gap-3 rounded-xl border border-outline-variant/20 bg-surface-container-low/50 p-3">
@@ -1638,7 +1641,7 @@
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                             <option value="">- Sem protocolo -</option>
                         </select>
-                        <p class="text-[10px] text-outline">Aplicar protocolo copia os passos para o roteiro da micro.</p>
+                        <p class="text-[10px] text-outline">O protocolo copia os passos e sugere a carga total inicial da micro, sem travar ajuste manual.</p>
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label for="micro-steps"
@@ -1804,12 +1807,12 @@
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                             <option value="">- Sem protocolo -</option>
                         </select>
-                        <p class="text-[10px] text-outline">Usa um protocolo para preencher os passos do habito com uma estrutura pronta.</p>
+                        <p class="text-[10px] text-outline">O protocolo preenche a estrutura e passa a definir o tempo total do habito.</p>
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label for="habit-steps"
                             class="text-xs font-label uppercase tracking-widest text-outline font-bold">Passos da Rotina (Opcional)</label>
-                        <textarea id="habit-steps" rows="3"
+                        <textarea id="habit-steps" rows="3" oninput="window.app.refreshCrudEstimatedFieldState('habits')"
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface placeholder-outline-variant resize-none"
                             placeholder="Um passo por linha. Ex:&#10;1) Separar roupa&#10;2) Calçar tênis&#10;3) Caminhar 20 minutos"></textarea>
                     </div>
@@ -1843,7 +1846,7 @@
                             <label for="habit-target"
                                 class="text-xs font-label uppercase tracking-widest text-outline font-bold">Meta Diária
                                 (Alvo)</label>
-                            <input type="number" id="habit-target"
+                            <input type="number" id="habit-target" onchange="window.app.onHabitTargetChange()"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
                                 value="1" min="1">
                         </div>
@@ -1904,10 +1907,11 @@
                     <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
                         <div id="habit-single-time-wrap" class="flex flex-col gap-1.5">
                             <label for="habit-start-time"
-                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Horário único</label>
+                                class="text-xs font-label uppercase tracking-widest text-outline font-bold">Horario de execucao</label>
                             <input type="time" id="habit-start-time"
                                 onchange="window.app.updateHabitReminderPreview()"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                            <p class="text-[10px] text-outline">Este horario organiza o habito no Pra hoje. O lembrete usa esta base, mas nao define mais o turno por conta propria.</p>
                         </div>
                         <div class="flex items-end">
                             <label class="h-12 w-full px-4 rounded-lg border border-outline-variant/20 bg-surface-container-low flex items-center gap-3 cursor-pointer">
@@ -2968,7 +2972,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260519-execution-capacity-v5"></script>
+    <script type="module" src="app.js?v=20260519-execution-capacity-v6"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>

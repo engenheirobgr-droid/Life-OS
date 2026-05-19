@@ -22,19 +22,19 @@ isHabitRoutine: function(habit) {
 
     getHabitEstimatedMinutes: function(habit) {
         if (!habit) return 0;
-        const manual = Math.round(Number(habit.estimatedMinutes) || 0);
-        if (manual > 0) return manual;
+        if (habit.protocolId && typeof this.getProtocolById === 'function' && typeof this.getProtocolEstimatedMinutes === 'function') {
+            const protocol = this.getProtocolById(habit.protocolId);
+            const protocolMinutes = Math.max(0, Math.round(Number(this.getProtocolEstimatedMinutes(protocol, { includeOptional: false })) || 0));
+            if (protocolMinutes > 0) return protocolMinutes;
+        }
 
         const mode = String(habit.trackMode || 'boolean').toLowerCase();
         if (mode === 'timer' || mode === 'tempo' || mode === 'time') {
             return Math.max(1, Math.round(Number(habit.targetValue) || 0));
         }
 
-        if (habit.protocolId && typeof this.getProtocolById === 'function' && typeof this.getProtocolEstimatedMinutes === 'function') {
-            const protocol = this.getProtocolById(habit.protocolId);
-            const protocolMinutes = Math.max(0, Math.round(Number(this.getProtocolEstimatedMinutes(protocol, { includeOptional: false })) || 0));
-            if (protocolMinutes > 0) return protocolMinutes;
-        }
+        const manual = Math.round(Number(habit.estimatedMinutes) || 0);
+        if (manual > 0) return manual;
 
         const steps = Array.isArray(habit.steps) ? habit.steps.filter(step => String(step || '').trim() !== '') : [];
         if (steps.length > 0) return Math.max(8, steps.length * 8);
@@ -449,9 +449,14 @@ onHabitModeChange: function(mode) {
             targetContainer.classList.remove('flex');
             targetContainer.style.display = 'none';
         }
+        this.refreshCrudEstimatedFieldState?.('habits');
     },
 
-onHabitFreqChange: function(freq) {
+onHabitTargetChange: function() {
+        this.refreshCrudEstimatedFieldState?.('habits');
+    },
+
+    onHabitFreqChange: function(freq) {
         const daysContainer = document.getElementById('habit-days-container');
         const intervalContainer = document.getElementById('habit-interval-container');
         const monthlyContainer = document.getElementById('habit-monthly-container');
@@ -466,6 +471,7 @@ onHabitFreqChange: function(freq) {
         setVisible(intervalContainer, freq === 'every_x_days');
         setVisible(startContainer, freq === 'every_x_days');
         setVisible(monthlyContainer, freq === 'monthly');
+        this.refreshCrudEstimatedFieldState?.('habits');
      },
 
 onHabitReminderIntervalToggle: function(enabled) {

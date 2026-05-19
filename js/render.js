@@ -2985,23 +2985,43 @@ render: {
                     return (schedule.dayPart || 'sem_horario') === todayDayPart;
                 })
                 .sort((a, b) => {
-                    const aDone = a.status === 'done' || a.completed ? 1 : 0;
-                    const bDone = b.status === 'done' || b.completed ? 1 : 0;
-                    if (aDone !== bDone) return aDone - bDone;
-                    if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
-                    if (b.status === 'in_progress' && a.status !== 'in_progress') return 1;
                     const aSchedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(a) : { startMinutes: null, dayPart: 'sem_horario' };
                     const bSchedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(b) : { startMinutes: null, dayPart: 'sem_horario' };
+                    if (todayMode !== 'horario') {
+                        const aDone = a.status === 'done' || a.completed ? 1 : 0;
+                        const bDone = b.status === 'done' || b.completed ? 1 : 0;
+                        if (aDone !== bDone) return aDone - bDone;
+                        if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
+                        if (b.status === 'in_progress' && a.status !== 'in_progress') return 1;
+                        const dim = String(a.dimension || '').localeCompare(String(b.dimension || ''), 'pt-BR');
+                        if (dim !== 0) return dim;
+                        const due = String(a.prazo || '9999-12-31').localeCompare(String(b.prazo || '9999-12-31'));
+                        if (due !== 0) return due;
+                        return String(a.title || '').localeCompare(String(b.title || ''), 'pt-BR');
+                    }
                     if (todayMode === 'horario') {
                         const order = { manha: 0, tarde: 1, noite: 2, sem_horario: 3 };
                         const aPart = order[aSchedule.dayPart] ?? 9;
                         const bPart = order[bSchedule.dayPart] ?? 9;
                         if (aPart !== bPart) return aPart - bPart;
-                        if ((aSchedule.startMinutes ?? 9999) !== (bSchedule.startMinutes ?? 9999)) return (aSchedule.startMinutes ?? 9999) - (bSchedule.startMinutes ?? 9999);
                     }
+                    const getUrgencyRank = (micro) => {
+                        if (micro.status === 'in_progress') return 0;
+                        if (micro.status === 'done' || micro.completed) return 4;
+                        if (micro.prazo && micro.prazo < todayStr) return 1;
+                        const startDate = micro.inicioDate || micro.prazo || '';
+                        if (startDate && startDate <= todayStr && micro.status === 'pending') return 2;
+                        return 3;
+                    };
+                    const aRank = getUrgencyRank(a);
+                    const bRank = getUrgencyRank(b);
+                    if (aRank !== bRank) return aRank - bRank;
+                    if ((aSchedule.startMinutes ?? 9999) !== (bSchedule.startMinutes ?? 9999)) return (aSchedule.startMinutes ?? 9999) - (bSchedule.startMinutes ?? 9999);
                     const dim = String(a.dimension || '').localeCompare(String(b.dimension || ''), 'pt-BR');
                     if (dim !== 0) return dim;
-                    return String(a.prazo || '9999').localeCompare(String(b.prazo || '9999'));
+                    const due = String(a.prazo || '9999-12-31').localeCompare(String(b.prazo || '9999-12-31'));
+                    if (due !== 0) return due;
+                    return String(a.title || '').localeCompare(String(b.title || ''), 'pt-BR');
                 });
 
             let lastGroup = '';
@@ -3057,10 +3077,15 @@ render: {
                     const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
                     const isOverdue = micro.prazo && micro.prazo < todayStr;
                     const isPlanned = app._isPlannedThisWeek(micro.id);
+                    const estimatedMinutes = Math.max(1, Number(app.getMicroEstimatedMinutes?.(micro)) || 0);
+                    const estimateSource = app.getMicroEstimatedMinutesSource?.(micro) || 'suggested';
+                    const estimateSourceLabel = app.getEstimateSourceLabel?.(estimateSource) || '';
+                    const scheduleSourceLabel = app.getScheduleSourceLabel?.(schedule.source || '') || '';
                     const badge = (icon, label, color, bg) => `<span class="inline-flex items-center gap-0.5 ${color} ${bg} border border-outline-variant/20 rounded-md px-1 py-0.5 shrink-0 leading-none"><span class="material-symbols-outlined notranslate leading-none" style="font-size:11px">${icon}</span><span>${label}</span></span>`;
                     const dimensionBadge = badge(dimIcon, micro.dimension || 'Geral', 'text-primary', 'bg-primary/5');
                     const statusBadge = micro.status === 'in_progress' ? badge('radio_button_checked', 'Andamento', 'text-amber-600 dark:text-amber-400', 'bg-amber-500/10') : '';
                     const overdueBadge = isOverdue ? badge('alarm', 'Atrasada', 'text-red-600 dark:text-red-400', 'bg-red-500/10') : '';
+                    const timeBadge = badge('timer', `${Math.round(estimatedMinutes)} min`, 'text-on-surface-variant', 'bg-surface-container-high');
                     const planBadge = isPlanned ? badge('event', 'Semana', 'text-primary', 'bg-primary/5') : badge('inbox', 'Captura', 'text-on-surface-variant', 'bg-surface-container-high');
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
@@ -3090,6 +3115,7 @@ render: {
                                         ${dimensionBadge}
                                         ${statusBadge}
                                         ${overdueBadge}
+                                        ${timeBadge}
                                         ${planBadge}
                                     </div>
                                 </div>
@@ -3145,6 +3171,22 @@ render: {
                                 </div>
                             </div>
                             
+                            <div class="flex items-center gap-4 relative z-10 min-w-0">
+                                <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">timer</span>
+                                <div class="flex flex-col min-w-0">
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Carga total estimada</span>
+                                    <span class="text-xs truncate">${Math.round(estimatedMinutes)} min${estimateSourceLabel ? ` · ${estimateSourceLabel}` : ''}</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-4 relative z-10 min-w-0">
+                                <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">schedule</span>
+                                <div class="flex flex-col min-w-0">
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Execucao no dia</span>
+                                    <span class="text-xs truncate">${schedule.startTime ? `${schedule.startTime} · ${scheduleSourceLabel || 'Definido'}` : 'Sem horario definido'}</span>
+                                </div>
+                            </div>
+
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-primary text-xl bg-surface-container-lowest p-0.5 rounded-full" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
                                 <div class="flex flex-col min-w-0">

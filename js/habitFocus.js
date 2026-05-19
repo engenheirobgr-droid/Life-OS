@@ -120,7 +120,7 @@ export function attachHabitFocusModule(app) {
                 ifThen: '',
                 inicioDate: today,
                 prazo: today,
-                startTime: String(habit.startTime || habit.reminderTime || '').trim(),
+                startTime: String(habit.startTime || '').trim(),
                 macroId: macro.id,
                 okrId: macro.okrId || '',
                 metaId: macro.metaId || '',

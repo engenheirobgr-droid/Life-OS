@@ -76,6 +76,7 @@ onTypeChange: function(type) {
             this.populateHabitLinkedMeta();
             if (typeof this.populateHabitProtocolSelect === 'function') this.populateHabitProtocolSelect();
             this.populateHabitIdentitySource();
+            this.refreshCrudEstimatedFieldState?.('habits');
             if (contextGroup) contextGroup.classList.add('hidden');
             if (contextInput) contextInput.required = false;
             if (triggerInput) triggerInput.required = true;
@@ -121,6 +122,7 @@ onTypeChange: function(type) {
                 this.toggleCrudWoop(type === 'micros');
             }
             this.updateParentList(type);
+            if (type === 'micros') this.refreshCrudEstimatedFieldState?.('micros');
         }
 
         // Seletor de propósito: apenas para metas
@@ -926,14 +928,64 @@ _renderNextActionCard: function(next, variant = 'today') {
             </div>`;
     },
 
+getSuggestedMicroEstimatedMinutes: function(input = {}) {
+        const effort = this.getMicroEffort ? this.getMicroEffort(input) : String(input?.effort || 'medio').trim().toLowerCase();
+        if (effort === 'leve') return 25;
+        if (effort === 'denso') return 90;
+        return 50;
+    },
+
+getProtocolEstimatedMinutesById: function(protocolId = '', options = {}) {
+        const safeId = String(protocolId || '').trim();
+        if (!safeId || typeof this.getProtocolById !== 'function' || typeof this.getProtocolEstimatedMinutes !== 'function') return 0;
+        const protocol = this.getProtocolById(safeId);
+        if (!protocol) return 0;
+        return Math.max(0, Math.round(Number(this.getProtocolEstimatedMinutes(protocol, { includeOptional: false, ...options })) || 0));
+    },
+
+getProtocolSuggestedStartTime: function(protocolId = '') {
+        const safeId = String(protocolId || '').trim();
+        if (!safeId || typeof this.getProtocolById !== 'function') return '';
+        const protocol = this.getProtocolById(safeId);
+        return String(protocol?.suggestedHabit?.startTime || '').trim();
+    },
+
+getMicroEstimatedMinutesSource: function(micro) {
+        if (!micro) return 'suggested';
+        const manual = Math.round(Number(micro.estimatedMinutes) || 0);
+        if (manual > 0) return 'manual';
+        const protocolId = String(micro.protocolId || micro.sourceProtocolId || '').trim();
+        if ((this.getProtocolEstimatedMinutesById?.(protocolId) || 0) > 0) return 'protocol';
+        return 'suggested';
+    },
+
+getScheduleSourceLabel: function(source = '') {
+        const key = String(source || '').trim().toLowerCase();
+        if (key === 'micro' || key === 'habit') return 'Definido manualmente';
+        if (key === 'inherited_habit') return 'Herdado do habito';
+        if (key === 'protocol') return 'Sugerido pelo protocolo';
+        if (key === 'suggested') return 'Sugerido pelo app';
+        return '';
+    },
+
+getEstimateSourceLabel: function(source = '') {
+        const key = String(source || '').trim().toLowerCase();
+        if (key === 'manual') return 'Ajustado manualmente';
+        if (key === 'protocol') return 'Baseado no protocolo';
+        if (key === 'target') return 'Baseado na meta do habito';
+        if (key === 'steps') return 'Baseado nos passos';
+        if (key === 'suggested') return 'Sugerido automaticamente';
+        return '';
+    },
+
 getMicroEstimatedMinutes: function(micro) {
         if (!micro) return 0;
         const manual = Math.round(Number(micro.estimatedMinutes) || 0);
         if (manual > 0) return manual;
-        const effort = this.getMicroEffort(micro);
-        if (effort === 'leve') return 15;
-        if (effort === 'denso') return 60;
-        return 30;
+        const protocolId = String(micro.protocolId || micro.sourceProtocolId || '').trim();
+        const protocolMinutes = this.getProtocolEstimatedMinutesById?.(protocolId) || 0;
+        if (protocolMinutes > 0) return protocolMinutes;
+        return this.getSuggestedMicroEstimatedMinutes?.(micro) || 50;
     },
 
 getCapacityAdjustmentFromCheckin: function(dateKey = this.getLocalDateKey()) {
@@ -1001,10 +1053,15 @@ getSuggestedExecutionSchedule: function(input = {}) {
 
 getHabitScheduleContext: function(habit) {
         if (!habit) return { startTime: '', startMinutes: null, dayPart: 'sem_horario', source: '' };
-        const explicit = String(habit.startTime || habit.reminderTime || '').trim();
+        const explicit = String(habit.startTime || '').trim();
         if (explicit) {
             const startMinutes = this.toClockMinutes(explicit);
             return { startTime: explicit, startMinutes, dayPart: this.getDayPartByClockMinutes(startMinutes), source: 'habit' };
+        }
+        const protocolStartTime = this.getProtocolSuggestedStartTime?.(habit.protocolId || '') || '';
+        if (protocolStartTime) {
+            const startMinutes = this.toClockMinutes(protocolStartTime);
+            return { startTime: protocolStartTime, startMinutes, dayPart: this.getDayPartByClockMinutes(startMinutes), source: 'protocol' };
         }
         const estimatedMinutes = Math.max(1, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
         const suggested = this.getSuggestedExecutionSchedule?.({
@@ -1045,10 +1102,17 @@ getMicroScheduleContext: function(micro) {
         let source = startTime ? 'micro' : '';
         if (!startTime && micro.sourceHabitId) {
             const linkedHabit = (state.habits || []).find((habit) => String(habit?.id || '') === String(micro.sourceHabitId || ''));
-            const inheritedTime = String(linkedHabit?.startTime || linkedHabit?.reminderTime || '').trim();
+            const inheritedTime = String(linkedHabit?.startTime || '').trim();
             if (inheritedTime) {
                 startTime = inheritedTime;
-                source = 'habit';
+                source = 'inherited_habit';
+            }
+        }
+        if (!startTime) {
+            const protocolStartTime = this.getProtocolSuggestedStartTime?.(micro.protocolId || micro.sourceProtocolId || '') || '';
+            if (protocolStartTime) {
+                startTime = protocolStartTime;
+                source = 'protocol';
             }
         }
         if (!startTime) {
@@ -1075,6 +1139,127 @@ getMicroScheduleContext: function(micro) {
             dayPart: this.getDayPartByClockMinutes(startMinutes),
             source
         };
+    },
+
+onCrudEstimatedMinutesInput: function() {
+        const estimatedInput = document.getElementById('crud-estimated-minutes');
+        if (!estimatedInput || estimatedInput.disabled) return;
+        estimatedInput.dataset.manualOverride = 'true';
+        estimatedInput.dataset.estimateSource = Math.round(Number(estimatedInput.value) || 0) > 0 ? 'manual' : '';
+        this.refreshCrudEstimatedFieldState?.();
+    },
+
+onMicroEffortChange: function() {
+        this.refreshCrudEstimatedFieldState?.('micros');
+    },
+
+refreshCrudEstimatedFieldState: function(type = '') {
+        const currentType = String(type || document.getElementById('crud-type')?.value || '').trim();
+        const estimatedInput = document.getElementById('crud-estimated-minutes');
+        const noteEl = document.getElementById('crud-estimated-note');
+        const sourceEl = document.getElementById('crud-estimated-source');
+        const labelEl = document.getElementById('crud-estimated-label');
+        if (!estimatedInput || !noteEl) return;
+
+        const currentValue = Math.round(Number(estimatedInput.value) || 0);
+        const manualOverride = estimatedInput.dataset.manualOverride === 'true';
+        const setValueIfAuto = (minutes, source) => {
+            const safeMinutes = Math.max(0, Math.round(Number(minutes) || 0));
+            const previousSource = estimatedInput.dataset.estimateSource || '';
+            const canReplace = !manualOverride || currentValue <= 0 || ['protocol', 'suggested', 'target', 'steps'].includes(previousSource);
+            if (safeMinutes > 0 && canReplace) {
+                estimatedInput.value = String(safeMinutes);
+                estimatedInput.dataset.manualOverride = 'false';
+                estimatedInput.dataset.estimateSource = source;
+            } else if (safeMinutes <= 0 && currentValue <= 0) {
+                estimatedInput.value = '';
+                estimatedInput.dataset.estimateSource = '';
+            }
+        };
+        const setVisualState = ({ disabled = false, source = '', note = '', placeholder = '' }) => {
+            estimatedInput.disabled = disabled;
+            estimatedInput.classList.toggle('opacity-60', disabled);
+            estimatedInput.classList.toggle('cursor-not-allowed', disabled);
+            if (placeholder) estimatedInput.placeholder = placeholder;
+            if (sourceEl) {
+                const sourceLabel = this.getEstimateSourceLabel?.(source) || '';
+                sourceEl.textContent = sourceLabel;
+                sourceEl.classList.toggle('hidden', !sourceLabel);
+            }
+            noteEl.textContent = note;
+            if (labelEl) labelEl.textContent = currentType === 'micros' ? 'Carga total estimada (min)' : 'Tempo total estimado (min)';
+        };
+
+        if (currentType === 'micros') {
+            const protocolId = String(document.getElementById('micro-protocol')?.value || '').trim();
+            if (protocolId) {
+                const protocolMinutes = this.getProtocolEstimatedMinutesById?.(protocolId) || 0;
+                setValueIfAuto(protocolMinutes, 'protocol');
+                setVisualState({
+                    disabled: false,
+                    source: estimatedInput.dataset.estimateSource || 'protocol',
+                    note: 'O protocolo sugere a carga total inicial da micro. VocÃª pode ajustar se esta entrega pedir mais ou menos tempo.',
+                    placeholder: 'Ex.: 50'
+                });
+                return;
+            }
+            const effort = document.getElementById('crud-effort')?.value || 'medio';
+            const suggested = this.getSuggestedMicroEstimatedMinutes?.({ effort }) || 50;
+            setValueIfAuto(suggested, 'suggested');
+            setVisualState({
+                disabled: false,
+                source: estimatedInput.dataset.estimateSource || 'suggested',
+                note: 'O app sugere a carga total pela combinaÃ§Ã£o de esforÃ§o e janela curta da micro. Ajuste sÃ³ quando souber melhor o tamanho real.',
+                placeholder: 'Ex.: 50'
+            });
+            return;
+        }
+
+        if (currentType === 'habits') {
+            const protocolId = String(document.getElementById('habit-protocol')?.value || '').trim();
+            const mode = String(document.getElementById('habit-track-mode')?.value || 'boolean').toLowerCase();
+            const targetValue = Math.max(0, Math.round(Number(document.getElementById('habit-target')?.value || 0)));
+            const stepsCount = String(document.getElementById('habit-steps')?.value || '')
+                .split(/\r?\n/)
+                .map((step) => step.trim())
+                .filter(Boolean)
+                .length;
+            if (protocolId) {
+                const protocolMinutes = this.getProtocolEstimatedMinutesById?.(protocolId) || 0;
+                estimatedInput.value = protocolMinutes > 0 ? String(protocolMinutes) : '';
+                estimatedInput.dataset.manualOverride = 'false';
+                estimatedInput.dataset.estimateSource = 'protocol';
+                setVisualState({
+                    disabled: true,
+                    source: 'protocol',
+                    note: 'Com protocolo vinculado, o tempo do habito vem do total do protocolo e deixa de competir com um valor manual.',
+                    placeholder: 'Derivado do protocolo'
+                });
+                return;
+            }
+            if (mode === 'timer' || mode === 'tempo' || mode === 'time') {
+                estimatedInput.value = targetValue > 0 ? String(targetValue) : '';
+                estimatedInput.dataset.manualOverride = 'false';
+                estimatedInput.dataset.estimateSource = 'target';
+                setVisualState({
+                    disabled: true,
+                    source: 'target',
+                    note: 'Em habitos de tempo, a duracao usada no Hoje vem da meta diaria em minutos.',
+                    placeholder: 'Derivado da meta diÃ¡ria'
+                });
+                return;
+            }
+            const fallbackMinutes = stepsCount > 0 ? Math.max(8, stepsCount * 8) : (mode === 'numeric' ? 10 : 5);
+            setValueIfAuto(fallbackMinutes, stepsCount > 0 ? 'steps' : 'suggested');
+            setVisualState({
+                disabled: false,
+                source: estimatedInput.dataset.estimateSource || (stepsCount > 0 ? 'steps' : 'suggested'),
+                note: stepsCount > 0
+                    ? 'Sem protocolo, o app usa os passos da rotina como base e vocÃª pode refinar o tempo total.'
+                    : 'Sem protocolo nem meta de tempo, o app sugere um total simples para ajudar a encaixar o habito na capacidade do dia.',
+                placeholder: 'Ex.: 15'
+            });
+        }
     },
 
 getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
@@ -1709,7 +1894,12 @@ saveNewEntity: function() {
             obj.steps = stepsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
             obj.trackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
             obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
-            obj.estimatedMinutes = estimatedMinutes > 0 ? estimatedMinutes : 0;
+            const protocolSel = document.getElementById('habit-protocol');
+            const selectedProtocolId = protocolSel && protocolSel.value ? protocolSel.value : '';
+            const currentTrackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
+            obj.estimatedMinutes = (selectedProtocolId || ['timer', 'tempo', 'time'].includes(String(currentTrackMode || '').toLowerCase()))
+                ? 0
+                : (estimatedMinutes > 0 ? estimatedMinutes : 0);
             obj.frequency = document.getElementById('habit-frequency') ? document.getElementById('habit-frequency').value : 'daily';
             obj.intervalDays = Math.max(0, Math.round(Number(document.getElementById('habit-interval-days')?.value || 0)));
             obj.dayOfMonth = Math.max(0, Math.round(Number(document.getElementById('habit-day-of-month')?.value || 0)));
@@ -1755,8 +1945,7 @@ saveNewEntity: function() {
             if (oldDismissed) obj.keyDismissedAt = oldDismissed;
             const linkedSel = document.getElementById('habit-linked-meta');
             obj.linkedMetaId = linkedSel && linkedSel.value ? linkedSel.value : null;
-            const protocolSel = document.getElementById('habit-protocol');
-            obj.protocolId = protocolSel && protocolSel.value ? protocolSel.value : '';
+            obj.protocolId = selectedProtocolId;
             if (!obj.protocolId && typeof this.inferHabitProtocolIdFromSteps === 'function') {
                 obj.protocolId = this.inferHabitProtocolIdFromSteps(obj.steps || []);
             }
@@ -2038,7 +2227,11 @@ editEntity: function(id, type) {
         const effortInput = document.getElementById('crud-effort');
         const estimatedInput = document.getElementById('crud-estimated-minutes');
         if (effortInput) effortInput.value = this.getMicroEffort(item);
-        if (estimatedInput) estimatedInput.value = Number(item.estimatedMinutes || 0) > 0 ? String(Math.round(Number(item.estimatedMinutes))) : '';
+        if (estimatedInput) {
+            estimatedInput.value = Number(item.estimatedMinutes || 0) > 0 ? String(Math.round(Number(item.estimatedMinutes))) : '';
+            estimatedInput.dataset.manualOverride = Number(item.estimatedMinutes || 0) > 0 ? 'true' : 'false';
+            estimatedInput.dataset.estimateSource = Number(item.estimatedMinutes || 0) > 0 ? 'manual' : '';
+        }
         const obstacleInput = document.getElementById('crud-obstacle');
         if (obstacleInput) obstacleInput.value = item.obstacle || '';
         const ifThenInput = document.getElementById('crud-ifthen');
@@ -2070,7 +2263,7 @@ editEntity: function(id, type) {
             if (document.getElementById('habit-interval-days')) document.getElementById('habit-interval-days').value = Number(item.intervalDays || 0) || '';
             if (document.getElementById('habit-day-of-month')) document.getElementById('habit-day-of-month').value = Number(item.dayOfMonth || 0) || '';
             if (document.getElementById('habit-schedule-start-date')) document.getElementById('habit-schedule-start-date').value = item.scheduleStartDate || '';
-            if (document.getElementById('habit-start-time')) document.getElementById('habit-start-time').value = item.startTime || item.reminderTime || '';
+            if (document.getElementById('habit-start-time')) document.getElementById('habit-start-time').value = item.startTime || '';
             if (document.getElementById('habit-reminder-enabled')) document.getElementById('habit-reminder-enabled').checked = !!item.reminderEnabled;
             if (document.getElementById('habit-reminder-interval-enabled')) document.getElementById('habit-reminder-interval-enabled').checked = !!item.reminderIntervalEnabled;
             if (document.getElementById('habit-reminder-window-start')) document.getElementById('habit-reminder-window-start').value = item.reminderWindowStart || '';
@@ -2115,6 +2308,7 @@ editEntity: function(id, type) {
             if (protocolSel && inferredProtocolId && protocolSel.querySelector(`option[value="${inferredProtocolId}"]`)) {
                 protocolSel.value = inferredProtocolId;
             }
+            this.refreshCrudEstimatedFieldState?.('habits');
             const strengthSel = document.getElementById('habit-strength-source');
             const shadowSel = document.getElementById('habit-shadow-source');
             const shadowModeEl = document.getElementById('habit-shadow-mode');
@@ -2138,6 +2332,7 @@ editEntity: function(id, type) {
             }
             const microStepsInput = document.getElementById('micro-steps');
             if (microStepsInput) microStepsInput.value = Array.isArray(item.steps) ? item.steps.join('\n') : '';
+            this.refreshCrudEstimatedFieldState?.('micros');
         }
         
         // Seta o pai após popular a lista

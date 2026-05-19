@@ -20,13 +20,13 @@ import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
 import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
 import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v2';
-import { attachIdentity } from './js/identity.js?v=20260519-execution-capacity-v5';
-import { attachHabits } from './js/habits.js?v=20260519-execution-capacity-v5';
-import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v5';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260519-execution-capacity-v5';
-import { attachStateModule } from './js/state.js?v=20260519-execution-capacity-v5';
-import { attachRenderModule } from './js/render.js?v=20260519-execution-capacity-v5';
-import { attachPlanningModule } from './js/planning.js?v=20260519-execution-capacity-v5';
+import { attachIdentity } from './js/identity.js?v=20260519-execution-capacity-v6';
+import { attachHabits } from './js/habits.js?v=20260519-execution-capacity-v6';
+import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v6';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260519-execution-capacity-v6';
+import { attachStateModule } from './js/state.js?v=20260519-execution-capacity-v6';
+import { attachRenderModule } from './js/render.js?v=20260519-execution-capacity-v6';
+import { attachPlanningModule } from './js/planning.js?v=20260519-execution-capacity-v6';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260519-execution-capacity-v5',
+    appBuildVersion: '20260519-execution-capacity-v6',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -973,18 +973,18 @@ normalizeSwlsAnswer: function(rawValue) {
 
     getSuggestedFocusPresetMinutes: function(micro) {
         const estimatedMinutes = Math.max(1, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
-        const effort = String(this.getMicroEffort?.(micro) || '').trim().toLowerCase();
         const adjustment = this.getCapacityAdjustmentFromCheckin?.(this.getLocalDateKey()) || { factor: 1 };
         const lowEnergy = Number(adjustment.factor || 1) < 0.78;
         if (lowEnergy) {
-            if (estimatedMinutes <= 18 || effort === 'leve') return 15;
-            if (estimatedMinutes <= 35) return 25;
-            return 45;
+            if (estimatedMinutes <= 20) return 15;
+            if (estimatedMinutes <= 40) return 25;
+            if (estimatedMinutes <= 75) return 45;
+            return 50;
         }
-        if (estimatedMinutes <= 15 || effort === 'leve') return 15;
-        if (estimatedMinutes <= 30) return 25;
-        if (estimatedMinutes <= 45) return 45;
-        if (estimatedMinutes <= 65 || effort === 'medio') return 50;
+        if (estimatedMinutes <= 20) return 15;
+        if (estimatedMinutes <= 35) return 25;
+        if (estimatedMinutes <= 55) return 45;
+        if (estimatedMinutes <= 80) return 50;
         return 90;
     },
 
@@ -3903,7 +3903,11 @@ openCreateModal: function(type = 'metas', parentId = null) {
         if (inicioDateInput) inicioDateInput.value = '';
         if (prazoDateInput) prazoDateInput.value = '';
         if (effortInput) effortInput.value = 'medio';
-        if (estimatedInput) estimatedInput.value = '';
+        if (estimatedInput) {
+            estimatedInput.value = '';
+            estimatedInput.dataset.manualOverride = 'false';
+            estimatedInput.dataset.estimateSource = '';
+        }
         if (microStartTimeInput) microStartTimeInput.value = '';
         if (obstacleInput) obstacleInput.value = '';
         if (ifThenInput) ifThenInput.value = '';
