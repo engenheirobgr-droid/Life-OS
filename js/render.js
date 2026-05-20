@@ -2916,9 +2916,9 @@ render: {
                                 </div>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0">
-                                <span class="material-symbols-outlined notranslate text-[18px] opacity-0 group-hover:opacity-100 transition-all p-1 cursor-pointer ${habit.isKey ? 'text-amber-500' : 'text-outline hover:text-amber-500'}" onclick="event.stopPropagation(); window.app.toggleManualKeyHabit('${habit.id}')" title="${habit.isKey ? 'Remover Hábito-Chave' : 'Marcar como Hábito-Chave'}" style="font-variation-settings:'FILL' ${habit.isKey ? 1 : 0}">key</span>
-                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-primary transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
-                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-0 group-hover:opacity-100 hover:text-error transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')">delete</span>
+                                <span class="material-symbols-outlined notranslate text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-all p-1 cursor-pointer ${habit.isKey ? 'text-amber-500' : 'text-outline hover:text-amber-500'}" onclick="event.stopPropagation(); window.app.toggleManualKeyHabit('${habit.id}')" title="${habit.isKey ? 'Remover Hábito-Chave' : 'Marcar como Hábito-Chave'}" style="font-variation-settings:'FILL' ${habit.isKey ? 1 : 0}">key</span>
+                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-primary transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
+                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-error transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')">delete</span>
                                 ${controlHtml}
                             </div>
                         </div>

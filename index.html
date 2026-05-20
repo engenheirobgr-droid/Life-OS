@@ -1149,6 +1149,44 @@
         }
         .lo-theme-switcher .lo-ts-btn:hover { transform: scale(1.08); }
         .lo-theme-switcher .lo-ts-btn.active { box-shadow: 0 0 0 2px currentColor, 0 2px 8px rgba(2,8,23,0.2); }
+
+        /* Modal layout polish (UI only, no behavior changes) */
+        #crud-modal > div,
+        #habit-focus-modal > div,
+        #habit-focus-closure-modal > div,
+        #entity-notes-modal > div {
+            border: 1px solid rgba(148, 163, 184, 0.18);
+        }
+        @media (min-width: 900px) {
+            #crud-form {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 16px;
+            }
+            #crud-form > #crud-blocking-message,
+            #crud-form > #crud-purpose-selector-group,
+            #crud-form > #crud-purpose-panel,
+            #crud-form > #crud-context-group,
+            #crud-form > #crud-success-criteria-group,
+            #crud-form > #crud-woop-group,
+            #crud-form > #crud-goal-rigor-group,
+            #crud-form > #crud-key-results-group,
+            #crud-form > #crud-micro-execution-group,
+            #crud-form > #crud-habit-identity,
+            #crud-form > #crud-habit-controls,
+            #crud-form > #habit-continuous-row,
+            #crud-form > #habit-reminder-advanced {
+                grid-column: 1 / -1;
+            }
+            #crud-form > #crud-habit-identity {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 14px;
+            }
+            #crud-form > #crud-habit-identity > :last-child {
+                grid-column: 1 / -1;
+            }
+        }
     </style>
 
     <script>
@@ -1485,10 +1523,13 @@
 
     <!-- CRUD Modal Universal -->
     <div id="crud-modal"
-        class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-outline-variant/20 flex items-center justify-between gap-3">
-                <h3 id="modal-title" class="font-headline text-xl font-bold text-on-background">Novo Item</h3>
+        class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-3xl rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[94vh]">
+            <div class="p-6 border-b border-outline-variant/20 flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <h3 id="modal-title" class="font-headline text-xl font-bold text-on-background">Novo Item</h3>
+                    <p class="text-[11px] text-outline mt-1">Preencha o essencial. O restante pode ser refinado depois.</p>
+                </div>
                 <button id="crud-notes-btn" type="button" onclick="window.app.openEntityNotesModal()"
                     class="hidden items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant text-xs font-bold transition-colors">
                     <span class="material-symbols-outlined notranslate text-[16px]">sticky_note_2</span>
@@ -2022,8 +2063,8 @@
 
     <!-- Entity Notes Modal -->
     <div id="entity-notes-modal"
-        class="hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center">
-        <div class="bg-surface-container-lowest w-full max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh]">
+        class="hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="bg-surface-container-lowest w-full max-w-xl sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden flex flex-col max-h-[82vh]">
             <div class="p-5 border-b border-outline-variant/20 flex items-start justify-between gap-3">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="material-symbols-outlined notranslate text-primary text-xl shrink-0">sticky_note_2</span>
@@ -2076,11 +2117,7 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1.5">
-                        <label for="habit-focus-macro" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Macro vinculada</label>
-                        <select id="habit-focus-macro" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"></select>
-                    </div>
-                    <div class="flex flex-col gap-1.5">
-                        <label for="habit-focus-minutes" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duracao</label>
+                        <label for="habit-focus-minutes" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duracao da sessao</label>
                         <select id="habit-focus-minutes" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                             <option value="15">15/3</option>
                             <option value="25" selected>25/5</option>
@@ -2088,6 +2125,10 @@
                             <option value="50">50/10</option>
                             <option value="90">90/20</option>
                         </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="habit-focus-macro" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Macro vinculada</label>
+                        <select id="habit-focus-macro" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"></select>
                     </div>
                 </div>
             </div>
@@ -2126,7 +2167,7 @@
                         <textarea id="habit-focus-closure-gaps" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que ainda ficou confuso?"></textarea>
                     </div>
                 </div>
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1.5 rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3">
                     <label for="habit-focus-closure-next-step" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Proximo passo</label>
                     <textarea id="habit-focus-closure-next-step" rows="2" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que faz sentido estudar ou entregar depois?"></textarea>
                 </div>

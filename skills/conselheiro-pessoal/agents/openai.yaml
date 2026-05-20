@@ -1,0 +1,7 @@
+interface:
+  display_name: "Conselheiro Pessoal"
+  short_description: "Reflexao profunda de vida e proposito"
+  default_prompt: "Use $conselheiro-pessoal para me ajudar a refletir com profundidade sobre minha vida, valores e direcao."
+
+policy:
+  allow_implicit_invocation: true
