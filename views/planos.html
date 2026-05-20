@@ -25,7 +25,7 @@
 <span class="material-symbols-outlined notranslate text-[12px]">info</span>
 </button>
 <div class="hidden group-hover:block group-focus-within:block absolute top-7 left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 z-30 w-[min(19rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-4 text-xs text-on-surface-variant leading-relaxed shadow-xl">
-A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e planejamento semanal.
+A arquitetura da sua intenção: metas, OKRs, macros, micros, timeline e planejamento semanal.
 </div>
 </div>
 </div>
@@ -37,7 +37,7 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
 <nav class="flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0">
 <button class="tab-btn active text-primary hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="metas" onclick="window.app.switchPlanosTab('metas')">Metas</button>
 <div class="relative group inline-flex items-end shrink-0">
-  <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="okrs" onclick="window.app.switchPlanosTab('okrs')">Projetos</button>
+  <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="okrs" onclick="window.app.switchPlanosTab('okrs')">OKRs</button>
   <div class="pointer-events-none hidden group-hover:block absolute top-full left-0 mt-1 z-30 w-60 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs text-on-surface-variant leading-relaxed shadow-xl">
     <p class="font-bold text-on-surface mb-1">Objectives & Key Results</p>
     Define o que voce quer atingir (objetivo) e como vai medir o sucesso (resultados-chave), dentro de um ciclo de 12 semanas.
@@ -46,8 +46,8 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
 <div class="relative group inline-flex items-end shrink-0">
   <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="macro" onclick="window.app.switchPlanosTab('macro')">Macro</button>
   <div class="pointer-events-none hidden group-hover:block absolute top-full left-0 mt-1 z-30 w-60 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs text-on-surface-variant leading-relaxed shadow-xl">
-    <p class="font-bold text-on-surface mb-1">Entrega</p>
-    Um bloco concreto de 1-4 semanas ligado a um Projeto. Agrupa as ações que voce vai executar para avançar.
+    <p class="font-bold text-on-surface mb-1">Macro Acao</p>
+    Um projeto ou sprint de 1-4 semanas ligado a um OKR. Agrupa as micros (tarefas) que voce vai executar para avan&ccedil;ar.
   </div>
 </div>
 <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="micro" onclick="window.app.switchPlanosTab('micro')">Micro</button>
@@ -81,8 +81,8 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
             <select id="hier-type" onchange="window.app.planosHierarchyType = this.value; window.app.planosHierarchyId = ''; window.app.render.planos(); window.app.renderTimeline();" class="flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none">
                 <option value="">Mostrar Tudo</option>
                 <option value="metas">Por Meta</option>
-                <option value="okrs">Por Projeto</option>
-                <option value="macros">Por Entrega</option>
+                <option value="okrs">Por OKR</option>
+                <option value="macros">Por Macro Ação</option>
             </select>
             <select id="hier-id" onchange="window.app.planosHierarchyId = this.value; window.app.render.planos(); window.app.renderTimeline();" class="hidden flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none w-full sm:max-w-[250px] truncate">
                 <option value="">Selecione...</option>
@@ -115,7 +115,7 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
 <section class="mt-4 tab-content active space-y-12" id="tab-metas">
 <div id="metas-container" class="space-y-12"></div>
 </section>
-<!-- Tab: Projetos -->
+<!-- Tab: OKRs -->
 <section class="mt-4 tab-content" id="tab-okrs">
 <div id="okrs-container" class="space-y-12"></div>
 </section>
@@ -177,7 +177,7 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
     <div class="flex items-center justify-between mb-6">
         <div>
             <h3 class="font-headline text-2xl italic font-bold">Revisão de Ciclo</h3>
-            <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">Projetos, pendências e decisões do ciclo de 12 semanas.</p>
+            <p class="text-xs text-outline uppercase tracking-widest font-bold mt-1">OKRs, pendências e decisões do ciclo de 12 semanas.</p>
         </div>
     </div>
     <div id="cycle-review-panel" class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-6 md:p-8 space-y-6">
@@ -193,7 +193,7 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
     <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-md w-full p-6 shadow-xl flex flex-col max-h-[80vh]">
         <div class="flex justify-between items-center mb-6 shrink-0">
             <div>
-                <h3 class="font-headline text-2xl italic">Revisão de Projetos</h3>
+                <h3 class="font-headline text-2xl italic">Revisão de OKRs</h3>
                 <p class="text-xs text-outline mt-1">Decida o destino dos seus objetivos ativos.</p>
             </div>
             <button onclick="window.app.closeQuarterlyModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90">
