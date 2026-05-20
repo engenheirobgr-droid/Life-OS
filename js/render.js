@@ -2851,10 +2851,11 @@ render: {
                     const restyleHabitChip = (chip, variant = 'default') => {
                         if (!chip) return '';
                         const base = chip
+                            .replace('inline-flex items-center', 'inline-flex items-center whitespace-nowrap')
                             .replace('gap-0.5', 'gap-1')
-                            .replace('px-2 py-0.5', 'px-2.5 py-1')
-                            .replace('text-[9px] font-bold uppercase tracking-wider', 'text-[10px] font-medium tracking-normal')
-                            .replace('text-[11px]', 'text-[12px]');
+                            .replace('px-2 py-0.5', 'px-2 py-0.5')
+                            .replace('text-[9px] font-bold uppercase tracking-wider', 'text-[9px] font-semibold tracking-normal leading-none')
+                            .replace('text-[11px]', 'text-[11px]');
                         if (variant === 'focus') {
                             return base
                                 .replace('bg-sky-500/15', 'border border-sky-500/20 bg-sky-500/[0.12]')
@@ -2876,7 +2877,7 @@ render: {
                         return base.replace('bg-surface-container-high text-outline', 'border border-outline-variant/20 bg-surface-container-high text-on-surface-variant');
                     };
                     const continuousDisplayChip = habit.continuous
-                        ? `<span class="inline-flex items-center gap-1 rounded-full border border-primary/12 bg-primary/[0.08] px-2.5 py-1 text-[10px] font-medium tracking-normal text-primary"><span class="material-symbols-outlined notranslate text-[12px]">all_inclusive</span>Continuo</span>`
+                        ? `<span class="inline-flex items-center whitespace-nowrap gap-1 rounded-full border border-primary/12 bg-primary/[0.08] px-2 py-0.5 text-[9px] leading-none font-semibold tracking-normal text-primary"><span class="material-symbols-outlined notranslate text-[11px]">all_inclusive</span>Continuo</span>`
                         : '';
                     const linkedProtocol = habit.protocolId && typeof app.getProtocolById === 'function'
                         ? app.getProtocolById(habit.protocolId)
@@ -2885,12 +2886,13 @@ render: {
                     const protocolSummary = linkedProtocol
                         ? `Protocolo: ${linkedProtocol.title || 'Vinculado'} · ${Math.round(protocolMinutes)} min`
                         : '';
-                    const allChips = [
+                    const chipItems = [
                         hasFocusSessionInProgress ? restyleHabitChip(focusInProgressChip, 'focus') : maturityChip,
                         habit.isKey ? restyleHabitChip(keyChip, 'key') : '',
                         continuousDisplayChip,
                         visibleToday ? restyleHabitChip(scheduleChip, 'today') : ''
-                    ].filter(Boolean).join('');
+                    ].filter(Boolean);
+                    const chipsRow = chipItems.join('');
                     const scheduleHint = visibleToday
                         ? ''
                         : `<p class="mt-1 text-[10px] text-outline leading-tight">Nao esta previsto para hoje</p>`;
@@ -2903,25 +2905,25 @@ render: {
                             : 'border-outline-variant/12 bg-surface-container-low';
 
                     return `
-                    <div id="habit-card-${habit.id}" onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer scroll-mt-24 h-full">
-                        <div class="flex justify-between items-start gap-3">
-                            <div class="flex items-start gap-3 min-w-0">
+                    <div id="habit-card-${habit.id}" onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer scroll-mt-24">
+                        <div class="flex justify-between items-start gap-2 mb-1">
+                            <div class="flex items-start gap-2 min-w-0 flex-1">
                                 <span class="material-symbols-outlined notranslate text-primary text-[22px] shrink-0 mt-0.5">${icon}</span>
-                                <div class="min-w-0">
-                                    <p class="font-semibold text-on-surface text-[15px] leading-tight ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
-                                </div>
+                                <p class="font-semibold text-on-surface text-[14px] leading-tight ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
                             </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
+                            <div class="flex items-center gap-1 shrink-0">
                                 <span class="material-symbols-outlined notranslate text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-all p-1 cursor-pointer ${habit.isKey ? 'text-amber-500' : 'text-outline hover:text-amber-500'}" onclick="event.stopPropagation(); window.app.toggleManualKeyHabit('${habit.id}')" title="${habit.isKey ? 'Remover Hábito-Chave' : 'Marcar como Hábito-Chave'}" style="font-variation-settings:'FILL' ${habit.isKey ? 1 : 0}">key</span>
                                 <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-primary transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
                                 <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-error transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')">delete</span>
                                 ${controlHtml}
                             </div>
                         </div>
-                        
-                        ${allChips ? `<div class="mt-3 flex flex-wrap gap-1.5">${allChips}</div>` : ''}
-
-                        <div class="mt-3 min-w-0 overflow-hidden pr-2">
+                        <div class="mb-2 flex flex-wrap items-center gap-1">
+                            ${chipsRow}
+                        </div>
+                        <div class="mt-2">
+                            <div class="flex justify-between items-start gap-3">
+                                <div class="min-w-0 overflow-hidden pr-2">
                                     ${linkedMetaHtml}
                                     ${app.renderHabitIdentityChip(habit)}
                                     ${scheduleHint}
@@ -2932,13 +2934,10 @@ render: {
                                     ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight line-clamp-1">Recompensa: ${habit.reward}</p>` : ''}
                                     ${focusCta}
                                 </div>
+                                ${progressText ? `<span class="pt-0.5 text-[11px] font-semibold text-primary shrink-0">${progressText}</span>` : ''}
                             </div>
-
-                            <div class="mt-auto pt-4">
-                                ${progressText ? `<div class="flex justify-end mb-2"><span class="text-[11px] font-semibold text-primary">${progressText}</span></div>` : ''}
-                                ${weekHtml}
-                                ${stepsHtml}
-                            </div>
+                            ${weekHtml}
+                            ${stepsHtml}
                         </div>
                     </div>`;
                 };

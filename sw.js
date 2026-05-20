@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v252';
+const CACHE_NAME = 'sistema-vida-v256';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260520-habit-card-v1',
+    './app.js?v=20260520-ui-polish-v5',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
     './js/notifications.js?v=20260518-exec-flow-v1',
@@ -13,16 +13,16 @@ const ASSETS_TO_CACHE = [
     './js/protocols.js?v=20260519-execution-capacity-v9',
     './js/habitFocus.js?v=20260520-alignment-v1',
     './js/state.js?v=20260519-execution-capacity-v7',
-    './js/render.js?v=20260520-habit-card-v1',
+    './js/render.js?v=20260520-ui-polish-v5',
     './js/planning.js?v=20260520-alignment-v1',
     './js/gamification.js?v=20260516-wellbeing-prompts-v205',
     './js/social.js?v=20260516-wellbeing-prompts-v205',
-    './views/hoje.html?v=20260520-habit-card-v1',
-    './views/planos.html?v=20260520-habit-card-v1',
+    './views/hoje.html?v=20260520-ui-polish-v5',
+    './views/planos.html?v=20260520-ui-polish-v5',
     './views/proposito.html?v=20260516-wellbeing-prompts-v205',
-    './views/perfil.html?v=20260520-habit-card-v1',
+    './views/perfil.html?v=20260520-ui-polish-v5',
     './views/painel.html?v=20260519-sync-align-v1',
-    './views/foco.html?v=20260520-habit-card-v1',
+    './views/foco.html?v=20260520-ui-polish-v5',
     './views/onboarding.html?v=20260516-wellbeing-prompts-v205',
     './views/social.html?v=20260516-wellbeing-prompts-v205'
 ];

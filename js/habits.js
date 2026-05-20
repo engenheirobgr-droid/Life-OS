@@ -390,8 +390,8 @@ renderHabitMaturityChip: function(habit) {
         const cls = graduated
             ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
             : 'border border-outline-variant/20 bg-surface-container-high text-on-surface-variant';
-        return `<span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold ${cls}">
-            <span class="material-symbols-outlined notranslate text-[12px]">${icon}</span>${text}
+        return `<span class="inline-flex items-center whitespace-nowrap gap-1 rounded-full px-2 py-0.5 text-[9px] leading-none font-semibold ${cls}">
+            <span class="material-symbols-outlined notranslate text-[11px]">${icon}</span>${text}
         </span>`;
     },
 
