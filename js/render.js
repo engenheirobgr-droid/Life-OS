@@ -2855,6 +2855,7 @@ render: {
                     const protocolSummary = linkedProtocol
                         ? `Protocolo: ${linkedProtocol.title || 'Vinculado'} · ${Math.round(protocolMinutes)} min`
                         : '';
+                    const statusChipsCompact = [maturityChip, continuousChip, keyChip, scheduleChip, focusInProgressChip].filter(Boolean).join('');
                     const maturityClass = habit.isKey
                         ? 'border-amber-500/25 bg-amber-500/[0.04]'
                         : hasFocusSessionInProgress
@@ -2866,13 +2867,12 @@ render: {
                     return `
                     <div id="habit-card-${habit.id}" onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer scroll-mt-24">
                         <div class="flex justify-between items-start mb-2">
-                            <div class="flex items-center gap-2 min-w-0 flex-wrap">
-                                <span class="material-symbols-outlined notranslate text-primary text-2xl">${icon}</span>
-                                ${maturityChip}
-                                ${continuousChip}
-                                ${keyChip}
-                                ${scheduleChip}
-                                ${focusInProgressChip}
+                            <div class="flex items-start gap-2 min-w-0">
+                                <span class="material-symbols-outlined notranslate text-primary text-2xl shrink-0">${icon}</span>
+                                <div class="min-w-0">
+                                    <p class="font-medium text-on-surface text-sm ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
+                                    <div class="mt-1 flex flex-wrap gap-1">${statusChipsCompact}</div>
+                                </div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined notranslate text-[18px] opacity-0 group-hover:opacity-100 transition-all p-1 cursor-pointer ${habit.isKey ? 'text-amber-500' : 'text-outline hover:text-amber-500'}" onclick="event.stopPropagation(); window.app.toggleManualKeyHabit('${habit.id}')" title="${habit.isKey ? 'Remover Hábito-Chave' : 'Marcar como Hábito-Chave'}" style="font-variation-settings:'FILL' ${habit.isKey ? 1 : 0}">key</span>
@@ -2884,7 +2884,6 @@ render: {
                         <div class="mt-auto">
                             <div class="flex justify-between items-end">
                                 <div class="overflow-hidden pr-2">
-                                    <p class="font-medium text-on-surface text-sm ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
                                     ${linkedMetaHtml}
                                     ${app.renderHabitIdentityChip(habit)}
                                     ${habit.trigger ? `<p class="mt-1 text-[10px] text-outline italic leading-tight truncate">Gatilho: ${habit.trigger}</p>` : ''}

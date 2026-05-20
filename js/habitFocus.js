@@ -19,7 +19,9 @@ export function attachHabitFocusModule(app) {
             const hasProtocol = !!habit.protocolId;
             const hasChecklist = Array.isArray(habit.steps) && habit.steps.length > 0;
             const isTimed = String(habit.trackMode || '') === 'timer';
-            return hasMetaLink && (isTimed || hasProtocol || hasChecklist);
+            const estimatedMinutes = Math.max(0, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
+            const hasEstimatedLoad = estimatedMinutes > 0;
+            return hasMetaLink && (isTimed || hasProtocol || hasChecklist || hasEstimatedLoad);
         },
 
         getHabitFocusEligibleMacros: function(habit) {

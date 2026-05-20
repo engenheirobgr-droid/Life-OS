@@ -5,7 +5,7 @@ positionCrudEstimatedGroup: function(type = '') {
         if (!estimatedGroup) return;
         const normalized = String(type || '').toLowerCase();
         if (normalized === 'habits') {
-            const anchor = document.getElementById('habit-steps-checklist') || document.getElementById('habit-steps-checklist-wrap') || document.getElementById('crud-habit-identity');
+            const anchor = document.getElementById('crud-habit-identity');
             if (anchor?.parentElement && estimatedGroup.parentElement === anchor.parentElement) {
                 anchor.insertAdjacentElement('afterend', estimatedGroup);
             }
@@ -1176,6 +1176,7 @@ onMicroEffortChange: function() {
 
 refreshCrudEstimatedFieldState: function(type = '') {
         const currentType = String(type || document.getElementById('crud-type')?.value || '').trim();
+        const estimatedGroup = document.getElementById('crud-estimated-group');
         const estimatedInput = document.getElementById('crud-estimated-minutes');
         const noteEl = document.getElementById('crud-estimated-note');
         const sourceEl = document.getElementById('crud-estimated-source');
@@ -1245,6 +1246,12 @@ refreshCrudEstimatedFieldState: function(type = '') {
                 .map((step) => step.trim())
                 .filter(Boolean)
                 .length;
+            if (estimatedGroup) {
+                estimatedGroup.classList.remove('hidden');
+                estimatedGroup.classList.add('flex');
+                estimatedGroup.style.display = 'flex';
+            }
+
             if (protocolId) {
                 const protocolMinutes = this.getProtocolEstimatedMinutesById?.(protocolId) || 0;
                 estimatedInput.value = protocolMinutes > 0 ? String(protocolMinutes) : '';
