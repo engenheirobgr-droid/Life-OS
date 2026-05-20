@@ -2885,11 +2885,9 @@ render: {
                     const protocolSummary = linkedProtocol
                         ? `Protocolo: ${linkedProtocol.title || 'Vinculado'} · ${Math.round(protocolMinutes)} min`
                         : '';
-                    const headerChips = [
+                    const allChips = [
                         hasFocusSessionInProgress ? restyleHabitChip(focusInProgressChip, 'focus') : maturityChip,
-                        habit.isKey ? restyleHabitChip(keyChip, 'key') : ''
-                    ].filter(Boolean).join('');
-                    const supportChips = [
+                        habit.isKey ? restyleHabitChip(keyChip, 'key') : '',
                         continuousDisplayChip,
                         visibleToday ? restyleHabitChip(scheduleChip, 'today') : ''
                     ].filter(Boolean).join('');
@@ -2905,14 +2903,12 @@ render: {
                             : 'border-outline-variant/12 bg-surface-container-low';
 
                     return `
-                    <div id="habit-card-${habit.id}" onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col justify-between transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer scroll-mt-24">
-                        <div class="flex justify-between items-start gap-3 mb-3">
+                    <div id="habit-card-${habit.id}" onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer scroll-mt-24 h-full">
+                        <div class="flex justify-between items-start gap-3">
                             <div class="flex items-start gap-3 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-primary text-[22px] shrink-0 mt-0.5">${icon}</span>
                                 <div class="min-w-0">
                                     <p class="font-semibold text-on-surface text-[15px] leading-tight ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
-                                    <div class="mt-1.5 flex flex-wrap gap-1.5">${headerChips}</div>
-                                    ${supportChips ? `<div class="mt-1 flex flex-wrap gap-1.5">${supportChips}</div>` : ''}
                                 </div>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0">
@@ -2922,9 +2918,10 @@ render: {
                                 ${controlHtml}
                             </div>
                         </div>
-                        <div class="mt-auto">
-                            <div class="flex justify-between items-start gap-3">
-                                <div class="min-w-0 overflow-hidden pr-2">
+                        
+                        ${allChips ? `<div class="mt-3 flex flex-wrap gap-1.5">${allChips}</div>` : ''}
+
+                        <div class="mt-3 min-w-0 overflow-hidden pr-2">
                                     ${linkedMetaHtml}
                                     ${app.renderHabitIdentityChip(habit)}
                                     ${scheduleHint}
@@ -2935,10 +2932,13 @@ render: {
                                     ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight line-clamp-1">Recompensa: ${habit.reward}</p>` : ''}
                                     ${focusCta}
                                 </div>
-                                ${progressText ? `<span class="pt-0.5 text-[11px] font-semibold text-primary shrink-0">${progressText}</span>` : ''}
                             </div>
-                            ${weekHtml}
-                            ${stepsHtml}
+
+                            <div class="mt-auto pt-4">
+                                ${progressText ? `<div class="flex justify-end mb-2"><span class="text-[11px] font-semibold text-primary">${progressText}</span></div>` : ''}
+                                ${weekHtml}
+                                ${stepsHtml}
+                            </div>
                         </div>
                     </div>`;
                 };
