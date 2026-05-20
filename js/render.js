@@ -1839,6 +1839,26 @@ renderTodayCapacityMap: function() {
             container.innerHTML = '';
             return;
         }
+        const mode = this.getTodayChecklistMode ? this.getTodayChecklistMode() : 'dimensao';
+        const checklistDayPart = this.getTodayChecklistDayPart ? this.getTodayChecklistDayPart() : 'all';
+        const todayItems = this.getTodayActionItems ? this.getTodayActionItems(this.getLocalDateKey()) : [];
+        const pendingItems = todayItems.filter((item) => !item.done);
+        const dayPartLabels = { manha: 'Manha', tarde: 'Tarde', noite: 'Noite', sem_horario: 'Sem horario' };
+        const dayPartGroups = { manha: [], tarde: [], noite: [], sem_horario: [] };
+        pendingItems.forEach((item) => {
+            const key = dayPartGroups[item.dayPart] ? item.dayPart : 'sem_horario';
+            dayPartGroups[key].push(item);
+        });
+        const checklistDayPartButtons = ['all', 'manha', 'tarde', 'noite', 'sem_horario'].map((key) => {
+            const bucket = key === 'all' ? pendingItems : dayPartGroups[key];
+            const minutes = bucket.reduce((sum, item) => sum + Math.max(0, Number(item.estimatedMinutes) || 0), 0);
+            const label = key === 'all' ? 'Tudo' : dayPartLabels[key];
+            const isActive = checklistDayPart === key;
+            return `<button type="button" onclick="window.app.setTodayChecklistDayPart('${key}')" class="rounded-xl border px-3 py-2 text-left transition-colors ${isActive ? 'border-primary bg-primary/10 text-primary' : 'border-outline-variant/15 bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'}">
+                <span class="block text-[10px] font-bold uppercase tracking-widest">${this.escapeHtml(label)}</span>
+                <span class="mt-1 block text-[11px] text-outline">${bucket.length} itens · ${Math.round(minutes)} min</span>
+            </button>`;
+        }).join('');
         const statusMap = {
             ok: { label: 'Executável', tone: 'text-emerald-700 dark:text-emerald-300', badge: 'bg-emerald-500/10 border-emerald-500/25' },
             cheio: { label: 'No limite', tone: 'text-amber-700 dark:text-amber-300', badge: 'bg-amber-500/10 border-amber-500/25' },
@@ -1884,6 +1904,16 @@ renderTodayCapacityMap: function() {
                     <button type="button" onclick="window.app.openDayCapacityProfileSettings()" class="shrink-0 rounded-lg border border-primary/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors">
                         Ajustar base
                     </button>
+                </div>
+                <div class="mt-3 space-y-2">
+                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Organizacao da lista</p>
+                        <div class="inline-flex rounded-xl border border-outline-variant/15 bg-surface-container-low p-1">
+                            <button type="button" onclick="window.app.setTodayChecklistMode('dimensao')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'dimensao' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Dimensao</button>
+                            <button type="button" onclick="window.app.setTodayChecklistMode('horario')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'horario' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Horario</button>
+                        </div>
+                    </div>
+                    ${mode === 'horario' ? `<div class="grid grid-cols-2 gap-2 md:grid-cols-5">${checklistDayPartButtons}</div>` : ''}
                 </div>
                 <div class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
                     ${segmentButtons}
@@ -1942,21 +1972,7 @@ renderTodayActionList: function() {
             </button>`;
         }).join('');
 
-        const organizerHtml = `
-            <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
-                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Organizar o dia</p>
-                        <p class="mt-1 text-xs text-on-surface-variant">A lista validada continua unica. Aqui a gente so muda a lente.</p>
-                    </div>
-                    <div class="inline-flex rounded-xl border border-outline-variant/15 bg-surface-container-low p-1">
-                        <button type="button" onclick="window.app.setTodayChecklistMode('dimensao')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'dimensao' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Dimensao</button>
-                        <button type="button" onclick="window.app.setTodayChecklistMode('horario')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'horario' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Horario</button>
-                    </div>
-                </div>
-                ${mode === 'horario' ? `<div class="grid grid-cols-2 gap-2 md:grid-cols-5">${partButtons}</div>` : ''}
-                ${mode === 'horario' && groups.sem_horario.length > 0 ? `<p class="text-[11px] text-outline">${groups.sem_horario.length} itens ainda sem horario definido continuam visiveis para ajuste.</p>` : ''}
-            </div>`;
+        const organizerHtml = '';
 
         const unscheduledMicros = groups.sem_horario.filter((item) => item.sourceType === 'micro');
         const unscheduledHtml = mode === 'horario' && unscheduledMicros.length
