@@ -119,7 +119,7 @@ onTypeChange: function(type) {
             setGroupVisible(successCriteriaGroup, true);
             setGroupVisible(goalRigorGroup, true, 'grid');
             setGroupVisible(keyResultsGroup, true);
-            if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério / Meta do Projeto';
+            if (successCriteriaLabel) successCriteriaLabel.textContent = 'Critério / Meta do OKR';
             if (contextGroup) contextGroup.classList.add('hidden');
             if (contextInput) contextInput.required = false;
             this.updateParentList(type);
@@ -372,7 +372,7 @@ finishMetaTrailWizard: function() {
 
         this.closeMetaTrailWizard();
         this.saveState(false);
-        this.showToast(`Trilha criada: 1 meta, ${okrs.length} projeto(s), ${macros.length} entrega(s), ${micros.length} ação(ões).`, 'success');
+        this.showToast(`Trilha criada: 1 meta, ${okrs.length} OKR(s), ${macros.length} macro(s), ${micros.length} micro(s).`, 'success');
 
         if (this.currentView === 'planos' && this.render.planos) {
             this.render.planos();
@@ -423,11 +423,11 @@ _validateMetaTrailStep: function(step) {
         if (s === 2) {
             const okrs = this._readTrailOkrs();
             if (okrs.hasPartial) {
-                this.showToast('Complete os campos de cada Projeto preenchido (resultado, métrica e prazo).', 'error');
+                this.showToast('Complete os campos de cada OKR preenchido (resultado, métrica e prazo).', 'error');
                 return false;
             }
             if (okrs.items.length < 1 || okrs.items.length > 3) {
-                this.showToast('Defina de 1 a 3 Projetos para continuar.', 'error');
+                this.showToast('Defina de 1 a 3 OKRs para continuar.', 'error');
                 return false;
             }
             const invalidOkr = okrs.items.find((okr, idx) => {
@@ -436,7 +436,7 @@ _validateMetaTrailStep: function(step) {
                     prazo: okr.prazo
                 });
                 if (validation.ok) return false;
-                this.showToast(`Projeto ${idx + 1}: ${validation.message}`, 'error');
+                this.showToast(`OKR ${idx + 1}: ${validation.message}`, 'error');
                 return true;
             });
             if (invalidOkr) return false;
@@ -445,7 +445,7 @@ _validateMetaTrailStep: function(step) {
         if (s === 3) {
             const macros = this._readTrailMacros();
             if (macros.hasPartial) {
-                this.showToast('Cada Entrega precisa de título, Projeto vinculado, início e prazo.', 'error');
+                this.showToast('Cada Macro precisa de título, OKR vinculado, início e prazo.', 'error');
                 return false;
             }
             if (macros.items.length < 2 || macros.items.length > 5) {
@@ -467,7 +467,7 @@ _validateMetaTrailStep: function(step) {
         if (s === 4) {
             const micros = this._readTrailMicros();
             if (micros.hasPartial) {
-                this.showToast('Cada Ação precisa de título, Entrega vinculada, início e prazo.', 'error');
+                this.showToast('Cada Micro precisa de título, Macro vinculada, início e prazo.', 'error');
                 return false;
             }
             if (micros.items.length < 1) {
@@ -530,7 +530,7 @@ refreshTrailSummary: function() {
         const okrCards = okrs.length > 0
             ? okrs.map((okr, idx) => `
                 <div class="bg-surface-container rounded-lg border border-outline-variant/15 p-3">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Projeto ${idx + 1}</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">OKR ${idx + 1}</p>
                     <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(okr.title)}</p>
                     <p class="text-xs text-outline mt-1">${this.escapeHtml(okr.metric)}</p>
                     <p class="text-[11px] text-outline mt-1">Desafio ${okr.challengeLevel || 3}/5 • Comprometimento ${okr.commitmentLevel || 3}/5</p>
@@ -538,19 +538,19 @@ refreshTrailSummary: function() {
                     <p class="text-[11px] text-primary font-bold mt-2">${okr.inicioDate ? `${this._formatTrailDate(okr.inicioDate)} → ` : ''}${this._formatTrailDate(okr.prazo)}</p>
                 </div>
             `).join('')
-            : '<p class="text-xs text-outline italic">Sem Projetos completos.</p>';
+            : '<p class="text-xs text-outline italic">Sem OKRs completos.</p>';
 
         const macroCards = macros.length > 0
             ? macros.map((macro, idx) => `
                 <div class="bg-surface-container rounded-lg border border-outline-variant/15 p-3">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Macro ${idx + 1}</p>
                     <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(macro.title)}</p>
-                    <p class="text-xs text-outline mt-1">Vinculada a: ${this.escapeHtml(okrByRow[macro.okrRowId]?.title || 'Projeto não definido')}</p>
+                    <p class="text-xs text-outline mt-1">Vinculada a: ${this.escapeHtml(okrByRow[macro.okrRowId]?.title || 'OKR não definido')}</p>
                     <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(macro.inicioDate)} → ${this._formatTrailDate(macro.prazo)}</p>
                     ${macro.description ? `<p class="text-xs text-on-surface mt-2">${this.escapeHtml(macro.description)}</p>` : ''}
                 </div>
             `).join('')
-            : '<p class="text-xs text-outline italic">Sem Entregas completas.</p>';
+            : '<p class="text-xs text-outline italic">Sem Macros completas.</p>';
 
         const microCards = micros.length > 0
             ? micros.map((micro, idx) => `
@@ -681,7 +681,7 @@ openWeeklyPlanModal: function(options = {}) {
         if (microsContainer) {
             const activeMicros = (state.entities?.micros || []).filter(m => m.status !== 'done' && !m.completed);
             if (activeMicros.length === 0) {
-                microsContainer.innerHTML = '<p class="text-xs text-outline italic">Nenhuma ação ativa disponível.</p>';
+                microsContainer.innerHTML = '<p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>';
             } else {
                 const suggestionSet = new Set(suggestedMicros);
                 const suggestionNotice = carryover.length ? `
@@ -872,7 +872,7 @@ _renderNextActionCard: function(next, variant = 'today') {
         if (!next?.micro) {
             // Gap in hierarchy — guide user to complete the chain
             if (next?.gapType) {
-                const entityLabel = ({ okrs: 'Projeto', macros: 'entrega', micros: 'ação' })[next.entityType] || next.entityType;
+                const entityLabel = ({ okrs: 'OKR', macros: 'macro', micros: 'micro ação' })[next.entityType] || next.entityType;
                 const icon = ({ okrs: 'flag', macros: 'checklist', micros: 'bolt' })[next.entityType] || 'warning';
                 const parentIdSafe = this.escapeHtml(next.parentId || '');
                 const entityTypeSafe = this.escapeHtml(next.entityType || '');
@@ -897,8 +897,8 @@ _renderNextActionCard: function(next, variant = 'today') {
 
             const title = variant === 'panel' ? 'Nenhuma decisão urgente' : 'Nada urgente agora';
             const text = variant === 'panel'
-                ? 'O plano não mostra uma ação crítica neste momento. Continue executando o que já foi planejado.'
-                : 'Seu dia não tem uma ação crítica pendente. Execute o plano com calma ou capture uma próxima ação.';
+                ? 'O plano não mostra uma micro crítica neste momento. Continue executando o que já foi planejado.'
+                : 'Seu dia não tem uma micro crítica pendente. Execute o plano com calma ou capture uma próxima ação.';
             return `
                 <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm">
                     <div class="flex items-start gap-3">
@@ -1858,18 +1858,18 @@ saveNewEntity: function() {
                 if (parentId) {
                     const parentMeta = window.sistemaVidaState.entities.metas.find(m => m.id === parentId);
                     if (!parentMeta) {
-                        app.showBlockingMessage('Meta pai não encontrada. Atualize o vínculo antes de salvar este Projeto.');
+                        app.showBlockingMessage('Meta pai não encontrada. Atualize o vínculo antes de salvar este OKR.');
                         return;
                     }
                     if (parentMeta && parentMeta.dimension && obj.dimension && parentMeta.dimension !== 'Geral' && obj.dimension !== 'Geral' && parentMeta.dimension !== obj.dimension) {
-                        app.showBlockingMessage(`Área incompatível: A Meta pai pertence à área [${parentMeta.dimension}], mas este Projeto está configurado como [${obj.dimension}].`);
+                        app.showBlockingMessage(`Área incompatível: A Meta pai pertence à área [${parentMeta.dimension}], mas este OKR está configurado como [${obj.dimension}].`);
                         return;
                     }
                     obj.metaId = parentId || '';
                 }
                 const okrCriterion = successCriteria || context || '';
                 if (!okrCriterion.trim()) {
-                    app.showBlockingMessage('Defina o Critério / Meta do Projeto para salvar.');
+                    app.showBlockingMessage('Defina o Critério / Meta do OKR para salvar.');
                     return;
                 }
                 obj.successCriteria = okrCriterion;
@@ -1889,12 +1889,12 @@ saveNewEntity: function() {
             if (parentId) {
                 const okr = window.sistemaVidaState.entities.okrs.find(o => o.id === parentId);
                 if (!okr) {
-                    app.showBlockingMessage('Projeto pai não encontrado. Atualize o vínculo antes de salvar esta Entrega.');
+                    app.showBlockingMessage('OKR pai não encontrado. Atualize o vínculo antes de salvar esta Macro.');
                     return;
                 }
                 const okrDimension = getResolvedDimension(okr, 'okrs');
                 if (okrDimension && obj.dimension && okrDimension !== 'Geral' && obj.dimension !== 'Geral' && okrDimension !== obj.dimension) {
-                    app.showBlockingMessage(`Área incompatível: O Projeto pai pertence à área [${okrDimension}], mas esta Entrega está configurada como [${obj.dimension}].`);
+                    app.showBlockingMessage(`Área incompatível: O OKR pai pertence à área [${okrDimension}], mas esta Macro está configurada como [${obj.dimension}].`);
                     return;
                 }
                 obj.okrId = parentId;
@@ -1905,12 +1905,12 @@ saveNewEntity: function() {
                 const start = new Date(obj.inicioDate + 'T00:00:00');
                 const end = new Date(obj.prazo + 'T00:00:00');
                 if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
-                    app.showBlockingMessage('Datas inválidas para Ação. Verifique início e prazo.');
+                    app.showBlockingMessage('Datas inválidas para Micro Ação. Verifique início e prazo.');
                     return;
                 }
                 const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
                 if (diffDays > 7) {
-                    app.showBlockingMessage('Uma Ação não pode durar mais de 7 dias. Divida-a em partes menores ou classifique como Entrega.');
+                    app.showBlockingMessage('Uma Micro Ação não pode durar mais de 7 dias. Divida-a em partes menores ou classifique como Macro Ação.');
                     return;
                 }
             }
@@ -1949,12 +1949,12 @@ saveNewEntity: function() {
             if (parentId) {
                 const macro = window.sistemaVidaState.entities.macros.find(m => m.id === parentId);
                 if (!macro) {
-                    app.showBlockingMessage('Entrega pai não encontrada. Atualize o vínculo antes de salvar esta Ação.');
+                    app.showBlockingMessage('Macro pai não encontrada. Atualize o vínculo antes de salvar esta Micro Ação.');
                     return;
                 }
                 const macroDimension = getResolvedDimension(macro, 'macros');
                 if (macroDimension && obj.dimension && macroDimension !== 'Geral' && obj.dimension !== 'Geral' && macroDimension !== obj.dimension) {
-                    app.showBlockingMessage(`Área incompatível: A Entrega pai pertence à área [${macroDimension}], mas esta Ação está configurada como [${obj.dimension}].`);
+                    app.showBlockingMessage(`Área incompatível: A Macro pai pertence à área [${macroDimension}], mas esta Micro Ação está configurada como [${obj.dimension}].`);
                     return;
                 }
                 const linkedOkr = window.sistemaVidaState.entities.okrs.find(o => o.id === macro.okrId);
@@ -2127,7 +2127,7 @@ openEntityReview: function(id, type) {
         const parentLabel = document.getElementById('reassign-parent-label');
 
         // Configuração de Título
-        const typeLabels = { metas: 'Meta', okrs: 'Projeto', macros: 'Entrega', micros: 'Ação' };
+        const typeLabels = { metas: 'Meta', okrs: 'OKR', macros: 'Macro Ação', micros: 'Micro Ação' };
         title.textContent = `Gerir ${typeLabels[type] || 'Entidade'}: ${entity.title}`;
 
         // Configuração de Promoção
@@ -2135,7 +2135,7 @@ openEntityReview: function(id, type) {
             promoteSection.classList.add('hidden');
         } else {
             promoteSection.classList.remove('hidden');
-            const nextLevel = { okrs: 'Meta', macros: 'Projeto', micros: 'Entrega' };
+            const nextLevel = { okrs: 'Meta', macros: 'OKR', micros: 'Macro Ação' };
             promoteLabel.textContent = `Promover para ${nextLevel[type]}`;
         }
 
@@ -2155,7 +2155,7 @@ openEntityReview: function(id, type) {
             } else if (type === 'macros') {
                 potentialParents = state.entities.okrs;
                 currentParentId = entity.okrId;
-                parentTypeLabel = 'Selecionar Novo Projeto';
+                parentTypeLabel = 'Selecionar Novo OKR';
             } else if (type === 'micros') {
                 potentialParents = state.entities.macros;
                 currentParentId = entity.macroId;
@@ -2192,7 +2192,7 @@ processQuarterlyReview: async function() {
                 this.markCadence('cycleReview', state.cycleStartDate);
                 await this.saveState(true);
                 this.closeQuarterlyModal();
-                this.showToast('Novo ciclo iniciado. Nenhum Projeto ativo para revisar.', 'success');
+                this.showToast('Novo ciclo iniciado. Nenhum OKR ativo para revisar.', 'success');
                 if (this.currentView === 'painel') this.render.painel();
                 return;
             }
@@ -2257,7 +2257,7 @@ processQuarterlyReview: async function() {
             await this.saveState(true);
             this.closeQuarterlyModal();
 
-            const summary = `${processed} Projetos: ${concluded} concluídos, ${archived} arquivados, ${carried} continuados` + (migrated ? `, ${migrated} ações migradas` : '');
+            const summary = `${processed} OKRs: ${concluded} concluídos, ${archived} arquivados, ${carried} continuados` + (migrated ? `, ${migrated} micros migradas` : '');
             this.showToast(`Novo ciclo iniciado com sucesso. ${summary}.`, 'success');
             if (this.currentView === 'painel') this.render.painel();
             if (this.currentView === 'planos') this.render.planos();
@@ -2539,7 +2539,7 @@ completeMicroAction: function(id) {
                             if (state.perma) {
                                 state.perma.A = this.normalizePermaScore((state.perma.A || 0) + 0.5);
                             }
-                            if (this.showNotification) this.showNotification("🎯 Projeto atingiu 70% (Alvo Ideal). Bônus de realização aplicado!");
+                            if (this.showNotification) this.showNotification("🎯 OKR atingiu 70% (Alvo Ideal). Bônus de realização aplicado!");
                         }
                     } else {
                         // Ao desmarcar: reseta flag se progresso voltou abaixo de 70%
