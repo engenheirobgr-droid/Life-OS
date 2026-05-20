@@ -1795,6 +1795,7 @@ setTodayChecklistDayPart: function(dayPart = 'all') {
     },
 
 openDayCapacityProfileSettings: async function() {
+        this.hojeScreen = 'checklist';
         await this.switchView('perfil', { preserveScroll: true });
         const reveal = () => {
             const section = document.getElementById('day-capacity-profile-section');
@@ -1840,6 +1841,24 @@ renderTodayCapacityMap: function() {
             return;
         }
         const mode = this.getTodayChecklistMode ? this.getTodayChecklistMode() : 'dimensao';
+        const checklistDayPart = this.getTodayChecklistDayPart ? this.getTodayChecklistDayPart() : 'all';
+        const todayItems = this.getTodayActionItems ? this.getTodayActionItems(this.getLocalDateKey()) : [];
+        const pendingItems = todayItems.filter((item) => !item.done);
+        const checklistGroups = { manha: [], tarde: [], noite: [], sem_horario: [] };
+        pendingItems.forEach((item) => {
+            const key = checklistGroups[item.dayPart] ? item.dayPart : 'sem_horario';
+            checklistGroups[key].push(item);
+        });
+        const checklistLabels = { all: 'Tudo', manha: 'Manha', tarde: 'Tarde', noite: 'Noite', sem_horario: 'Sem horario' };
+        const checklistDayPartButtons = ['all', 'manha', 'tarde', 'noite', 'sem_horario'].map((key) => {
+            const bucket = key === 'all' ? pendingItems : checklistGroups[key];
+            const minutes = bucket.reduce((sum, item) => sum + Math.max(0, Number(item.estimatedMinutes) || 0), 0);
+            const isActive = checklistDayPart === key;
+            return `<button type="button" onclick="window.app.setTodayChecklistDayPart('${key}')" class="rounded-xl border px-3 py-2 text-left transition-colors ${isActive ? 'border-primary bg-primary/10 text-primary' : 'border-outline-variant/15 bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'}">
+                <span class="block text-[10px] font-bold uppercase tracking-widest">${this.escapeHtml(checklistLabels[key])}</span>
+                <span class="mt-1 block text-[11px] text-outline">${bucket.length} itens · ${Math.round(minutes)} min</span>
+            </button>`;
+        }).join('');
         const statusMap = {
             ok: { label: 'Executável', tone: 'text-emerald-700 dark:text-emerald-300', badge: 'bg-emerald-500/10 border-emerald-500/25' },
             cheio: { label: 'No limite', tone: 'text-amber-700 dark:text-amber-300', badge: 'bg-amber-500/10 border-amber-500/25' },
