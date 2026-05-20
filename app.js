@@ -24,7 +24,7 @@ import { attachIdentity } from './js/identity.js?v=20260520-alignment-v1';
 import { attachHabits } from './js/habits.js?v=20260520-habit-card-v1';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-alignment-v1';
-import { attachStateModule } from './js/state.js?v=20260519-execution-capacity-v7';
+import { attachStateModule } from './js/state.js?v=20260520-auth-stability-v1';
 import { attachRenderModule } from './js/render.js?v=20260520-ui-polish-v5';
 import { attachPlanningModule } from './js/planning.js?v=20260520-alignment-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
@@ -86,6 +86,7 @@ function getAuthGateCode(error) {
     const msg = String(error?.message || error || '');
     if (msg.includes('auth_signed_out')) return 'modo_local_sem_conta';
     if (msg.includes('auth_operation_pending')) return 'auth_em_andamento';
+    if (msg.includes('auth_no_user')) return 'auth_sem_usuario';
     return '';
 }
 
@@ -118,12 +119,14 @@ function waitInitialAuthState() {
 // getAuthReady() cria uma Promise fresca a cada chamada.
 // Isso evita que uma falha de auth transitória (ex: rede lenta na abertura do app)
 // deixe uma sessão antiga/rejeitada bloquear os saves futuros.
-function getAuthReady() {
+function getAuthReady(options = {}) {
+    const allowAnonymous = options.allowAnonymous !== false;
     if (auth.currentUser) return Promise.resolve(auth.currentUser);
     return waitInitialAuthState().then((user) => {
         if (user) return user;
         if (authInteractiveOperation) throw new Error('auth_operation_pending');
         if (isSignedOutIntentionally()) throw new Error('auth_signed_out');
+        if (!allowAnonymous) throw new Error('auth_no_user');
         return signInAnonymously(auth);
     });
 }
@@ -205,7 +208,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260520-ui-polish-v5',
+    appBuildVersion: '20260520-auth-stability-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -236,8 +239,8 @@ const app = {
         initialAuthStatePromise = Promise.resolve(user);
         return initialAuthStatePromise;
     },
-    getAuthReady: function() {
-        return getAuthReady();
+    getAuthReady: function(options = {}) {
+        return getAuthReady(options);
     },
     getAuthGateCode: function(error) {
         return getAuthGateCode(error);
@@ -734,7 +737,7 @@ const app = {
     },
 
     getCurrentIdToken: async function(forceRefresh = false) {
-        await this.withTimeout(this.getAuthReady(), 8000, 'auth_ready_token');
+        await this.withTimeout(this.getAuthReady({ allowAnonymous: false }), 8000, 'auth_ready_token');
         const user = auth.currentUser;
         if (!user || user.isAnonymous) throw new Error('auth_signed_out');
         return user.getIdToken(!!forceRefresh);
@@ -2423,7 +2426,7 @@ _getAudioContext: function() {
         if (this._realtimeSyncUnsub) return; // already active
         const self = this;
         const trySetup = function() {
-            self.withTimeout(getAuthReady(), 10000, 'auth_ready').then(() => {
+            self.withTimeout(getAuthReady({ allowAnonymous: false }), 10000, 'auth_ready').then(() => {
                 const stateRef = self.getStateDocRef();
                 self._realtimeSyncUnsub = onSnapshot(stateRef, (docSnap) => {
                     if (!docSnap.exists()) return;
@@ -2480,7 +2483,7 @@ _getAudioContext: function() {
                 if (!self._periodicSyncId) {
                     self._periodicSyncId = setInterval(function() {
                         if (self._isSaving || window.sistemaVidaState?._pendingLocalChanges) return;
-                        self.withTimeout(getAuthReady(), 5000, 'auth_periodic').then(() => {
+                        self.withTimeout(getAuthReady({ allowAnonymous: false }), 5000, 'auth_periodic').then(() => {
                             const ref = self.getStateDocRef();
                             return self.withTimeout(getDoc(ref), 8000, 'periodic_getDoc');
                         }).then((snap) => {
@@ -2879,7 +2882,7 @@ renderProfileChrome: function() {
             const odysseyImgs = window.sistemaVidaState.profile?.odysseyImages || {};
             const hasOdyssey = Object.values(odysseyImgs).some(v => v && typeof v === 'string' && v.length > 10);
             if (hasAvatar || hasOdyssey) {
-                getAuthReady().then(() => {
+                getAuthReady({ allowAnonymous: false }).then(() => {
                     this.syncImagesToFirestoreDoc().catch(e => console.warn('[Images] Falha ao sincronizar imagens na inicialização:', e));
                 }).catch(() => {});
             }

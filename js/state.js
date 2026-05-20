@@ -361,7 +361,7 @@ loadState: async function() {
         let forceCloudLoad = false;
         try {
             try {
-                await this.withTimeout(this.getAuthReady(), 8000, 'auth_ready');
+                await this.withTimeout(this.getAuthReady({ allowAnonymous: false }), 8000, 'auth_ready');
             } catch (authError) {
                 const authGateCode = this.getAuthGateCode ? this.getAuthGateCode(authError) : '';
                 if (authGateCode) {
@@ -546,7 +546,7 @@ saveState: function(silent = true) {
             this.updateSyncBadge('syncing');
             try {
                 try {
-                    await this.withTimeout(this.getAuthReady(), 8000, 'auth_ready');
+                    await this.withTimeout(this.getAuthReady({ allowAnonymous: false }), 8000, 'auth_ready');
                 } catch (authError) {
                     const authGateCode = this.getAuthGateCode ? this.getAuthGateCode(authError) : '';
                     if (authGateCode) {
@@ -865,7 +865,7 @@ factoryReset: async function() {
         try { if (this._realtimeSyncUnsub) { this._realtimeSyncUnsub(); this._realtimeSyncUnsub = null; } } catch (_) {}
         try { if (this._imagesSyncUnsub) { this._imagesSyncUnsub(); this._imagesSyncUnsub = null; } } catch (_) {}
         // ── Grava o novo estado SEM merge ──
-        await this.getAuthReady();
+        await this.getAuthReady({ allowAnonymous: false });
         const resetUserId = this.getActiveUserId();
         try {
           window.sistemaVidaState._pendingLocalChanges = !useMockup;
