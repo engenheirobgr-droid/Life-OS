@@ -1750,7 +1750,7 @@ renderDeepWorkPanel: function() {
                 historyEl.innerHTML = rows.map((s) => {
                     const mins = Math.max(1, Math.round((Number(s.focusSec) || 0) / 60));
                     const micro = (state.entities.micros || []).find(m => m.id === s.microId);
-                    const microLabel = micro?.title || 'Sem vínculo';
+                    const microLabel = micro?.title || s.microTitle || s.intention || 'Sem vínculo';
                     const ctx = micro ? this.getMicroPlanContext(micro) : null;
                     const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
                     return `<div class="flex items-center justify-between text-xs border border-outline-variant/10 rounded-lg px-3 py-2">
@@ -2346,6 +2346,9 @@ render: {
                     const focoPlannedBadge = isFocoPlanned
                         ? '<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
                         : '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-widest">Captura</span>';
+                    const orphanBadge = !m.macroId
+                        ? '<span title="Micro sem Macro associada (Não Alinhada)" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-widest border border-amber-500/20"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Não Alinhado</span>'
+                        : '';
                     const trailId = `foco-trail-${idx}`;
                     const toggleTrail = `const p=document.getElementById('${trailId}'); if(!p) return; p.classList.toggle('hidden');`;
                     return `
@@ -2362,7 +2365,7 @@ render: {
                             </div>
                         </div>
                         <h3 class="font-bold text-on-surface mb-1 line-clamp-2">${app.escapeHtml(m.title)}</h3>
-                        <div class="mb-2">${focoPlannedBadge}</div>
+                        <div class="flex flex-wrap gap-1.5 mb-2">${focoPlannedBadge}${orphanBadge}</div>
                         <p class="text-xs text-outline mb-3 line-clamp-1">${app.escapeHtml(ctx.parentLabel || 'Sem vínculo em Planos')}</p>
                         <div class="grid grid-cols-2 gap-2 mb-4 text-[10px]">
                             <div class="rounded-lg bg-surface-container-low px-3 py-2">
@@ -3112,6 +3115,7 @@ render: {
                     const overdueBadge = isOverdue ? badge('alarm', 'Atrasada', 'text-red-600 dark:text-red-400', 'bg-red-500/10') : '';
                     const timeBadge = badge('timer', `${Math.round(estimatedMinutes)} min`, 'text-on-surface-variant', 'bg-surface-container-high');
                     const planBadge = isPlanned ? badge('event', 'Semana', 'text-primary', 'bg-primary/5') : badge('inbox', 'Captura', 'text-on-surface-variant', 'bg-surface-container-high');
+                    const orphanBadge = !micro.macroId ? badge('warning', 'Não Alinhado', 'text-amber-600 dark:text-amber-400', 'bg-amber-500/10') : '';
                     const startBtn = shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
                         : (micro.status === 'in_progress'
@@ -3142,6 +3146,7 @@ render: {
                                         ${overdueBadge}
                                         ${timeBadge}
                                         ${planBadge}
+                                        ${orphanBadge}
                                     </div>
                                 </div>
                             </div>
@@ -3503,45 +3508,45 @@ render: {
                         if (entityType === 'micros') {
                             trailNodes.push({ label: 'Micro Ação', title: item.title });
                             const macro = state.entities.macros.find(x => x.id === item.macroId);
-                            trailNodes.push({ label: 'Macro Ação', title: macro ? macro.title : '-' });
+                            trailNodes.push({ label: 'Macro Ação', title: macro ? macro.title : '[Não Alinhado - Sem Macro]' });
                             const okr = macro ? state.entities.okrs.find(x => x.id === macro.okrId) : state.entities.okrs.find(x => x.id === item.okrId);
-                            trailNodes.push({ label: 'OKR', title: okr ? okr.title : '-' });
+                            trailNodes.push({ label: 'OKR', title: okr ? okr.title : '[Sem OKR]' });
                             const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : state.entities.metas.find(x => x.id === item.metaId);
-                            trailNodes.push({ label: 'Meta', title: meta ? meta.title : '-' });
-                            trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
-                            trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '-') : '-' });
+                            trailNodes.push({ label: 'Meta', title: meta ? meta.title : '[Sem Meta]' });
+                            trailNodes.push({ label: 'Área', title: resolveDim(item) || 'Geral' });
+                            trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '[Sem Propósito]') : '[Sem Propósito]' });
                         } else if (entityType === 'macros') {
                             trailNodes.push({ label: 'Macro Ação', title: item.title });
                             const okr = state.entities.okrs.find(x => x.id === item.okrId);
-                            trailNodes.push({ label: 'OKR', title: okr ? okr.title : '-' });
+                            trailNodes.push({ label: 'OKR', title: okr ? okr.title : '[Não Alinhado - Sem OKR]' });
                             const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : state.entities.metas.find(x => x.id === item.metaId);
-                            trailNodes.push({ label: 'Meta', title: meta ? meta.title : '-' });
-                            trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
-                            trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '-') : '-' });
+                            trailNodes.push({ label: 'Meta', title: meta ? meta.title : '[Sem Meta]' });
+                            trailNodes.push({ label: 'Área', title: resolveDim(item) || 'Geral' });
+                            trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '[Sem Propósito]') : '[Sem Propósito]' });
                         } else if (entityType === 'okrs') {
                             trailNodes.push({ label: 'OKR', title: item.title });
                             const meta = state.entities.metas.find(x => x.id === item.metaId);
-                            trailNodes.push({ label: 'Meta', title: meta ? meta.title : '-' });
-                            trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
+                            trailNodes.push({ label: 'Meta', title: meta ? meta.title : '[Não Alinhado - Sem Meta]' });
+                            trailNodes.push({ label: 'Área', title: resolveDim(item) || 'Geral' });
                             trailNodes.push({ label: 'Critério de Sucesso', title: item.successCriteria || '-' });
                             trailNodes.push({ label: 'Desafio', title: `${item.challengeLevel || 3}/5` });
                             trailNodes.push({ label: 'Comprometimento', title: `${item.commitmentLevel || 3}/5` });
                             if (Array.isArray(item.keyResults) && item.keyResults.length > 0) {
                                 trailNodes.push({ label: 'Key Results', title: `${item.keyResults.length} indicadores` });
                             }
-                            trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '-') : '-' });
+                            trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '[Sem Propósito]') : '[Sem Propósito]' });
                         } else if (entityType === 'metas') {
                             trailNodes.push({ label: 'Meta', title: item.title });
                             if (item.parentMetaId) {
                                 const parentMeta = state.entities.metas.find(x => x.id === item.parentMetaId);
-                                trailNodes.push({ label: 'Meta Pai', title: parentMeta ? parentMeta.title : '-' });
+                                trailNodes.push({ label: 'Meta Pai', title: parentMeta ? parentMeta.title : '[Sem Meta Pai]' });
                             }
                             trailNodes.push({ label: 'Horizonte', title: `${app.getMetaHorizonYears(item)} anos` });
-                            trailNodes.push({ label: 'Área', title: resolveDim(item) || '-' });
+                            trailNodes.push({ label: 'Área', title: resolveDim(item) || 'Geral' });
                             trailNodes.push({ label: 'Critério de Sucesso', title: item.successCriteria || '-' });
                             trailNodes.push({ label: 'Desafio', title: `${item.challengeLevel || 3}/5` });
                             trailNodes.push({ label: 'Comprometimento', title: `${item.commitmentLevel || 3}/5` });
-                            trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '-' });
+                            trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '[Sem Propósito]' });
                         }
 
                         let trailHtml = `<div class="bg-surface-container-low rounded-lg p-3 space-y-2 relative trail-line text-on-surface-variant mt-0 overflow-hidden">

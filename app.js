@@ -20,13 +20,13 @@ import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
 import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
 import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v2';
-import { attachIdentity } from './js/identity.js?v=20260519-execution-capacity-v7';
-import { attachHabits } from './js/habits.js?v=20260519-execution-capacity-v9';
+import { attachIdentity } from './js/identity.js?v=20260520-alignment-v1';
+import { attachHabits } from './js/habits.js?v=20260520-alignment-v1';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260519-execution-capacity-v12';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-alignment-v1';
 import { attachStateModule } from './js/state.js?v=20260519-execution-capacity-v7';
-import { attachRenderModule } from './js/render.js?v=20260519-execution-capacity-v18';
-import { attachPlanningModule } from './js/planning.js?v=20260519-execution-capacity-v12';
+import { attachRenderModule } from './js/render.js?v=20260520-alignment-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260520-alignment-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260519-execution-capacity-v7',
+    appBuildVersion: '20260520-alignment-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -944,6 +944,7 @@ normalizeSwlsAnswer: function(rawValue) {
                 focusSec,
                 mode: 'focus',
                 microId: String(session?.microId || ''),
+                microTitle: String(session?.microTitle || ''),
                 intention: String(session?.intention || '')
             };
         }).slice(0, 200);
@@ -1452,13 +1453,35 @@ getDimensionIdentity: function(dimension, level) {
         const meta = okr
             ? (entities.metas || []).find(m => m.id === okr.metaId)
             : (entities.metas || []).find(m => m.id === micro?.metaId);
-        const parts = [meta?.title, okr?.title, macro?.title].filter(Boolean);
+
+        let parentLabel = '[Não Alinhado - Sem Vínculo]';
+        if (macro) parentLabel = macro.title;
+        else if (okr) parentLabel = `${okr.title} [Sem Macro]`;
+        else if (meta) parentLabel = `${meta.title} [Sem OKR/Macro]`;
+
+        const parts = [];
+        if (meta) {
+            parts.push(meta.title);
+        } else if (okr || macro) {
+            parts.push('[Não Alinhado - Sem Meta]');
+        }
+
+        if (okr) {
+            parts.push(okr.title);
+        } else if (macro) {
+            parts.push('[Sem OKR]');
+        }
+
+        if (macro) {
+            parts.push(macro.title);
+        }
+
         return {
             meta,
             okr,
             macro,
-            path: parts.length ? parts.join(' > ') : 'Sem trilha em Planos',
-            parentLabel: macro?.title || okr?.title || meta?.title || 'Sem vínculo em Planos'
+            path: parts.length ? parts.join(' > ') : '[Não Alinhado - Sem Trilha]',
+            parentLabel: parentLabel
         };
     },
     getPlanMicros: function(options = {}) {
@@ -2075,7 +2098,37 @@ _getAudioContext: function() {
     },
 
         // Extracted in Phase 9: render module
-openAvatarPicker: function() {
+    openProfileAvatarPreview: function() {
+        const imgEl = document.getElementById('profile-avatar-image');
+        if (!imgEl) return;
+        const src = imgEl.src;
+        if (!src) return;
+
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 flex items-center justify-center bg-black/85 backdrop-blur-md p-4';
+        modal.style.zIndex = '100050';
+        modal.id = 'profile-avatar-preview-modal';
+        modal.onclick = (e) => {
+            if (e.target === modal) this.closeProfileAvatarPreview();
+        };
+        modal.innerHTML = `
+            <div class="relative max-w-2xl max-h-[85vh] flex flex-col items-center justify-center">
+                <button onclick="window.app.closeProfileAvatarPreview()" class="absolute -top-12 right-0 text-white hover:text-gray-300 transition text-3xl font-bold" aria-label="Fechar">✕</button>
+                <img src="${this.escapeHtml(src)}" alt="Foto de perfil" class="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl ring-4 ring-white/10">
+            </div>
+        `;
+        document.body.appendChild(modal);
+    },
+    closeProfileAvatarPreview: function() {
+        const modal = document.getElementById('profile-avatar-preview-modal');
+        if (modal) {
+            modal.style.animation = 'fadeOut 0.2s ease-out';
+            setTimeout(() => {
+                if (modal.parentNode) modal.parentNode.removeChild(modal);
+            }, 200);
+        }
+    },
+    openAvatarPicker: function() {
         const input = document.getElementById('profile-photo-input');
         if (input) input.click();
     },
@@ -2816,6 +2869,7 @@ renderProfileChrome: function() {
         try { this.checkAlerts(); } catch (_) {}
         try { this.startHabitReminderWatcher(); } catch (_) {}
         if (window.sistemaVidaState?.settings?.notificationsEnabled) recheckNotifications();
+        try { this.restoreDeepWorkTimerFromDeadline(); } catch (_) {}
         try { this.ensureDeepWorkTicking(); } catch (_) {}
         try { this.setupRealtimeSync(); } catch (_) {} // real-time cross-device sync
 
@@ -7091,7 +7145,7 @@ ensureNotesState: function() {
         }
     },
 
-    onDeepWorkCountdownEnd: function() {
+    onDeepWorkCountdownEnd: function(customTimeMs = null) {
         this.normalizeDeepWorkState();
         const state = window.sistemaVidaState;
         const dw = state.deepWork;
@@ -7100,7 +7154,11 @@ ensureNotesState: function() {
             const finishedManually = Number.isFinite(manualFocusSec) && manualFocusSec > 0;
             const focusSec = Number.isFinite(manualFocusSec) && manualFocusSec > 0 ? manualFocusSec : dw.targetSec;
             delete dw.completedFocusSec;
-            const dateKey = this.getLocalDateKey();
+
+            const referenceDate = customTimeMs ? new Date(customTimeMs) : new Date();
+            const dateKey = this.getLocalDateKey(referenceDate);
+            const endedAtTs = referenceDate.toISOString();
+
             const linkedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
             if (linkedMicro && linkedMicro.status !== 'done') {
                 const wasNotInProgress = linkedMicro.status !== 'in_progress';
@@ -7112,15 +7170,15 @@ ensureNotesState: function() {
                 if (wasNotInProgress) this.cascadeStartUp(linkedMicro.id);
             }
             if (linkedMicro?.sourceHabitId && typeof this.recordHabitFocusExecution === 'function') {
-                this.recordHabitFocusExecution(linkedMicro.sourceHabitId, focusSec);
+                this.recordHabitFocusExecution(linkedMicro.sourceHabitId, focusSec, dateKey);
             }
-            const endedAtTs = new Date().toISOString();
             dw.sessions.unshift({
                 endedAt: dateKey,
                 endedAtTs,
                 focusSec: focusSec,
                 mode: 'focus',
                 microId: dw.microId || '',
+                microTitle: linkedMicro?.title || dw.intention || '',
                 intention: dw.intention || ''
             });
             if (linkedMicro) {
@@ -7141,6 +7199,24 @@ ensureNotesState: function() {
             });
             this.showGamificationToast(award);
             dw.sessions = dw.sessions.slice(0, 50);
+
+            const isRetroactive = customTimeMs && (Date.now() - customTimeMs > dw.breakSec * 1000);
+            if (isRetroactive) {
+                dw.isRunning = false;
+                dw.isPaused = false;
+                dw.mode = 'focus';
+                dw.remainingSec = dw.targetSec;
+                dw.lastTickAt = 0;
+                dw.deadlineAtMs = 0;
+                this.stopDeepWorkTicking();
+                this.saveState(true);
+                if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+                else this.renderDeepWorkImmersiveOverlay?.();
+                if (dw.pendingClosure && typeof this.openHabitFocusClosureModal === 'function') {
+                    this.openHabitFocusClosureModal();
+                }
+                return;
+            }
 
             if (finishedManually) {
                 // Manual finish should still start the recovery break, while showing closure modal.
@@ -7201,6 +7277,62 @@ ensureNotesState: function() {
         }
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
         else this.renderDeepWorkImmersiveOverlay?.();
+    },
+
+    restoreDeepWorkTimerFromDeadline: function() {
+        this.normalizeDeepWorkState();
+        const state = window.sistemaVidaState;
+        const dw = state?.deepWork;
+        if (!dw || !dw.isRunning || dw.isPaused || dw.deadlineAtMs <= 0) return;
+
+        const now = Date.now();
+        const diffMs = dw.deadlineAtMs - now;
+
+        if (diffMs > 0) {
+            // F5 recovery during ongoing session: recalculate remainingSec and keep running
+            const newRemaining = Math.round(diffMs / 1000);
+            dw.remainingSec = newRemaining;
+            dw.lastTickAt = now;
+            console.log(`[DeepWork] Temporizador de foco restaurado: ${newRemaining}s restantes.`);
+        } else {
+            // Timer expired while application was closed/offline
+            const deadlineDate = new Date(dw.deadlineAtMs);
+            const todayStr = this.getLocalDateKey(new Date());
+            const deadlineStr = this.getLocalDateKey(deadlineDate);
+            const overdueSec = Math.max(0, Math.round(Math.abs(diffMs) / 1000));
+
+            if (todayStr === deadlineStr) {
+                // Completed on the same day: auto-complete session
+                console.log(`[DeepWork] Sessão expirou hoje. Concluindo automaticamente.`);
+                dw.remainingSec = 0;
+                this.onDeepWorkCountdownEnd(dw.deadlineAtMs);
+                if (window.sistemaVidaState.deepWork?.mode === 'break' && window.sistemaVidaState.deepWork?.isRunning && overdueSec > 0 && overdueSec < Number(window.sistemaVidaState.deepWork.breakSec || 0)) {
+                    const breakDw = window.sistemaVidaState.deepWork;
+                    breakDw.remainingSec = Math.max(0, Number(breakDw.breakSec || 0) - overdueSec);
+                    breakDw.lastTickAt = now;
+                    breakDw.deadlineAtMs = now + (breakDw.remainingSec * 1000);
+                    this.saveState(true);
+                }
+            } else {
+                // Completed on a previous day: prevention of ghost completion
+                const confirmMsg = `Uma sessão de foco iniciada em ${deadlineDate.toLocaleDateString('pt-BR')} às ${deadlineDate.toLocaleTimeString('pt-BR')} foi detectada. Deseja registrar esta sessão de foco retroativamente na data correspondente?`;
+                if (window.confirm(confirmMsg)) {
+                    console.log(`[DeepWork] Sessão registrada retroativamente para ${deadlineStr}.`);
+                    dw.remainingSec = 0;
+                    this.onDeepWorkCountdownEnd(dw.deadlineAtMs);
+                } else {
+                    console.log(`[DeepWork] Sessão de dia anterior descartada pelo usuário.`);
+                    dw.isRunning = false;
+                    dw.isPaused = false;
+                    dw.mode = 'focus';
+                    dw.remainingSec = dw.targetSec;
+                    dw.lastTickAt = 0;
+                    dw.deadlineAtMs = 0;
+                    this.stopDeepWorkTicking();
+                    this.saveState(true);
+                }
+            }
+        }
     },
 
     startDeepWorkSession: function() {

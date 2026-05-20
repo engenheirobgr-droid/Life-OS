@@ -1797,6 +1797,31 @@ saveNewEntity: function() {
             const list = etype === 'habits' ? state.habits : state.entities[etype];
             return (list || []).find(e => e.id === eid) || {};
         };
+        const getResolvedDimension = (entity, type) => {
+            if (!entity) return '';
+            if (entity.dimension) return String(entity.dimension);
+            const state = window.sistemaVidaState;
+            if (type === 'okrs') {
+                const meta = (state.entities?.metas || []).find(item => item.id === entity.metaId);
+                return String(meta?.dimension || '');
+            }
+            if (type === 'macros') {
+                const okr = (state.entities?.okrs || []).find(item => item.id === entity.okrId);
+                if (okr?.dimension) return String(okr.dimension);
+                const meta = (state.entities?.metas || []).find(item => item.id === (okr?.metaId || entity.metaId));
+                return String(meta?.dimension || '');
+            }
+            if (type === 'micros') {
+                const macro = (state.entities?.macros || []).find(item => item.id === entity.macroId);
+                const macroDimension = getResolvedDimension(macro, 'macros');
+                if (macroDimension) return macroDimension;
+                const okr = (state.entities?.okrs || []).find(item => item.id === entity.okrId);
+                if (okr?.dimension) return String(okr.dimension);
+                const meta = (state.entities?.metas || []).find(item => item.id === (okr?.metaId || entity.metaId));
+                return String(meta?.dimension || '');
+            }
+            return '';
+        };
         const oldEntity = isEditing ? getOldItem(id, type) : {};
         if (['metas', 'okrs', 'macros', 'micros'].includes(type)) {
             obj.createdAt = oldEntity.createdAt || this.getLocalDateKey();
@@ -1830,7 +1855,18 @@ saveNewEntity: function() {
                     obj.dimension = parentMeta.dimension || obj.dimension;
                 }
             } else if (type === 'okrs') {
-                if (parentId) obj.metaId = parentId || '';
+                if (parentId) {
+                    const parentMeta = window.sistemaVidaState.entities.metas.find(m => m.id === parentId);
+                    if (!parentMeta) {
+                        app.showBlockingMessage('Meta pai não encontrada. Atualize o vínculo antes de salvar este OKR.');
+                        return;
+                    }
+                    if (parentMeta && parentMeta.dimension && obj.dimension && parentMeta.dimension !== 'Geral' && obj.dimension !== 'Geral' && parentMeta.dimension !== obj.dimension) {
+                        app.showBlockingMessage(`Área incompatível: A Meta pai pertence à área [${parentMeta.dimension}], mas este OKR está configurado como [${obj.dimension}].`);
+                        return;
+                    }
+                    obj.metaId = parentId || '';
+                }
                 const okrCriterion = successCriteria || context || '';
                 if (!okrCriterion.trim()) {
                     app.showBlockingMessage('Defina o Critério / Meta do OKR para salvar.');
@@ -1851,9 +1887,18 @@ saveNewEntity: function() {
             obj.ifThen = ifThen;
             obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
             if (parentId) {
-                obj.okrId = parentId;
                 const okr = window.sistemaVidaState.entities.okrs.find(o => o.id === parentId);
-                if (okr) obj.metaId = okr.metaId || '';
+                if (!okr) {
+                    app.showBlockingMessage('OKR pai não encontrado. Atualize o vínculo antes de salvar esta Macro.');
+                    return;
+                }
+                const okrDimension = getResolvedDimension(okr, 'okrs');
+                if (okrDimension && obj.dimension && okrDimension !== 'Geral' && obj.dimension !== 'Geral' && okrDimension !== obj.dimension) {
+                    app.showBlockingMessage(`Área incompatível: O OKR pai pertence à área [${okrDimension}], mas esta Macro está configurada como [${obj.dimension}].`);
+                    return;
+                }
+                obj.okrId = parentId;
+                obj.metaId = okr.metaId || '';
             }
         } else if (type === 'micros') {
             if (obj.inicioDate && obj.prazo) {
@@ -1903,11 +1948,19 @@ saveNewEntity: function() {
              
             if (parentId) {
                 const macro = window.sistemaVidaState.entities.macros.find(m => m.id === parentId);
-                if (macro) {
-                    obj.macroId = macro.id || '';
-                    obj.okrId = macro.okrId || '';
-                    obj.metaId = macro.metaId || '';
+                if (!macro) {
+                    app.showBlockingMessage('Macro pai não encontrada. Atualize o vínculo antes de salvar esta Micro Ação.');
+                    return;
                 }
+                const macroDimension = getResolvedDimension(macro, 'macros');
+                if (macroDimension && obj.dimension && macroDimension !== 'Geral' && obj.dimension !== 'Geral' && macroDimension !== obj.dimension) {
+                    app.showBlockingMessage(`Área incompatível: A Macro pai pertence à área [${macroDimension}], mas esta Micro Ação está configurada como [${obj.dimension}].`);
+                    return;
+                }
+                const linkedOkr = window.sistemaVidaState.entities.okrs.find(o => o.id === macro.okrId);
+                obj.macroId = macro.id || '';
+                obj.okrId = macro.okrId || '';
+                obj.metaId = macro.metaId || linkedOkr?.metaId || '';
             }
         } else if (type === 'habits') {
             const isContinuous = !!(document.getElementById('habit-continuous')?.checked);
@@ -1938,7 +1991,7 @@ saveNewEntity: function() {
             obj.scheduleStartDate = String(document.getElementById('habit-schedule-start-date')?.value || '').trim();
             obj.startTime = document.getElementById('habit-start-time') ? document.getElementById('habit-start-time').value : '';
             obj.reminderEnabled = !!(document.getElementById('habit-reminder-enabled') && document.getElementById('habit-reminder-enabled').checked);
-            obj.reminderTime = obj.startTime || '';
+            obj.reminderTime = (document.getElementById('habit-reminder-time')?.value || '').trim();
             obj.reminderIntervalEnabled = !!document.getElementById('habit-reminder-interval-enabled')?.checked;
             obj.reminderWindowStart = String(document.getElementById('habit-reminder-window-start')?.value || '').trim();
             obj.reminderWindowEnd = String(document.getElementById('habit-reminder-window-end')?.value || '').trim();
@@ -2296,6 +2349,7 @@ editEntity: function(id, type) {
             if (document.getElementById('habit-day-of-month')) document.getElementById('habit-day-of-month').value = Number(item.dayOfMonth || 0) || '';
             if (document.getElementById('habit-schedule-start-date')) document.getElementById('habit-schedule-start-date').value = item.scheduleStartDate || '';
             if (document.getElementById('habit-start-time')) document.getElementById('habit-start-time').value = item.startTime || '';
+            if (document.getElementById('habit-reminder-time')) document.getElementById('habit-reminder-time').value = item.reminderTime || '';
             if (document.getElementById('habit-reminder-enabled')) document.getElementById('habit-reminder-enabled').checked = !!item.reminderEnabled;
             if (document.getElementById('habit-reminder-interval-enabled')) document.getElementById('habit-reminder-interval-enabled').checked = !!item.reminderIntervalEnabled;
             if (document.getElementById('habit-reminder-window-start')) document.getElementById('habit-reminder-window-start').value = item.reminderWindowStart || '';
@@ -2381,6 +2435,7 @@ editEntity: function(id, type) {
                 const ghost = document.createElement('option');
                 ghost.value = parentId;
                 ghost.textContent = 'Vínculo atual (fora do filtro de dimensão)';
+                ghost.dataset.ghostLineage = 'true';
                 parentSelect.appendChild(ghost);
             }
             parentSelect.value = parentId;

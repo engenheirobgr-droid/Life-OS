@@ -973,6 +973,7 @@ manualGuideChapters: [
                 'Defina estimativa manual quando souber melhor seu tempo real para aquela ação.',
                 'Pense em minutos totais para planejar e em sessões de foco para executar: o app separa essas duas camadas para não transformar toda micro em um único pomodoro.',
                 'Use o modo Horário para ver manhã, tarde e noite com capacidade separada, sem duplicar a lista principal.',
+                'Use horário de execução para organizar o dia; use horário de lembrete apenas quando quiser um aviso separado da agenda.',
                 'Hábito com protocolo ou passos aparece como rotina automaticamente na experiência de hoje.',
                 'A aba Hábitos continua sendo biblioteca completa; Para hoje mostra apenas o recorte do dia.'
             ],
@@ -989,6 +990,7 @@ manualGuideChapters: [
             how: [
                 'Ao criar uma Macro, associe-a a um OKR e Meta para fechar a hierarquia.',
                 'Ao criar um Micro, associe-o a uma Macro para que o esforço diário apareça no Painel.',
+                'Itens não alinhados ou fora da área correta aparecem com aviso para revisão, em vez de ficarem escondidos por fallbacks genéricos.',
                 'Metas órfãs (sem OKR ou Macro) aparecem com aviso no Painel de hierarquia.',
                 'Revise o alinhamento na Revisão Semanal: "meus micros desta semana servem algum OKR?"'
             ],

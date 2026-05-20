@@ -21,14 +21,46 @@ export function attachHabitFocusModule(app) {
             const isTimed = String(habit.trackMode || '') === 'timer';
             const estimatedMinutes = Math.max(0, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
             const hasEstimatedLoad = estimatedMinutes > 0;
-            return hasMetaLink && (isTimed || hasProtocol || hasChecklist || hasEstimatedLoad);
+            if (!hasMetaLink) return false;
+            if (!(isTimed || hasProtocol || hasChecklist || hasEstimatedLoad)) return false;
+            
+            const eligibleMacros = this.getHabitFocusEligibleMacros?.(habit) || [];
+            return eligibleMacros.length > 0;
         },
 
         getHabitFocusEligibleMacros: function(habit) {
             const macros = (window.sistemaVidaState?.entities?.macros || []).filter(item => item?.id && item.status !== 'abandoned');
-            if (!habit?.linkedMetaId) return macros;
-            const linked = macros.filter(item => item.metaId === habit.linkedMetaId);
-            return linked.length ? linked : macros;
+            if (!habit) return macros;
+            const state = window.sistemaVidaState || {};
+            const okrs = state.entities?.okrs || [];
+
+            const habitDim = String(habit.dimension || '').trim().toLowerCase();
+            const resolveMetaId = (macro) => {
+                if (!macro) return '';
+                if (macro.metaId) return String(macro.metaId);
+                const okr = okrs.find(item => item.id === macro.okrId);
+                return String(okr?.metaId || '');
+            };
+
+            if (habit.linkedMetaId) {
+                const linked = macros.filter(item => {
+                    const matchMeta = resolveMetaId(item) === String(habit.linkedMetaId);
+                    if (!matchMeta) return false;
+                    const macroDim = String(item.dimension || '').trim().toLowerCase();
+                    if (habitDim && habitDim !== 'geral' && macroDim && macroDim !== 'geral' && macroDim !== habitDim) {
+                        return false;
+                    }
+                    return true;
+                });
+                return linked;
+            }
+
+            if (habitDim) {
+                const byDimension = macros.filter(item => String(item.dimension || '').trim().toLowerCase() === habitDim);
+                return byDimension;
+            }
+
+            return [];
         },
 
         buildHabitFocusMacroLabel: function(macro) {
@@ -57,7 +89,7 @@ export function attachHabitFocusModule(app) {
             }
             const macros = this.getHabitFocusEligibleMacros(habit);
             if (!macros.length) {
-                this.showToast('Crie ao menos uma macro vinculada à meta desse hábito antes de iniciar foco.', 'error');
+                this.showToast('Não há macro compatível com a meta/dimensão deste hábito. Crie uma macro alinhada antes de iniciar foco.', 'error');
                 return;
             }
 
@@ -107,6 +139,7 @@ export function attachHabitFocusModule(app) {
             const state = window.sistemaVidaState;
             const macro = (state.entities?.macros || []).find(item => item.id === macroId);
             if (!habit || !macro) return null;
+            const okr = (state.entities?.okrs || []).find(item => item.id === macro.okrId);
             const now = new Date();
             const today = this.getLocalDateKey(now);
             const protocol = habit.protocolId ? this.getProtocolById?.(habit.protocolId) : null;
@@ -127,7 +160,7 @@ export function attachHabitFocusModule(app) {
                 startTime: String(habit.startTime || '').trim(),
                 macroId: macro.id,
                 okrId: macro.okrId || '',
-                metaId: macro.metaId || '',
+                metaId: macro.metaId || okr?.metaId || '',
                 status: 'in_progress',
                 completed: false,
                 progress: 0,
@@ -147,18 +180,18 @@ export function attachHabitFocusModule(app) {
             return micro;
         },
 
-        recordHabitFocusExecution: function(habitId, focusSec = 0) {
+        recordHabitFocusExecution: function(habitId, focusSec = 0, dateKey = null) {
             const habit = (window.sistemaVidaState?.habits || []).find(item => item.id === habitId);
             if (!habit) return;
-            const today = this.getLocalDateKey();
+            const targetDate = dateKey || this.getLocalDateKey();
             const mode = String(habit.trackMode || 'boolean');
             const normalizedMode = mode.toLowerCase();
             const isTimerMode = ['timer', 'time', 'tempo', 'minutes', 'minutos'].includes(normalizedMode);
             const minutes = Math.max(0, Math.round((Number(focusSec || 0) / 60) * 10) / 10);
-            const currentValue = Math.max(0, Number(habit.logs?.[today]) || 0);
+            const currentValue = Math.max(0, Number(habit.logs?.[targetDate]) || 0);
             if (isTimerMode) {
                 if (minutes <= 0) return;
-                this.updateHabitLog(habitId, today, currentValue + minutes);
+                this.updateHabitLog(habitId, targetDate, currentValue + minutes);
                 return;
             }
             // For non-timer habits, focus sessions do not auto-complete progress.
