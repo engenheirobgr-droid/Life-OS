@@ -103,7 +103,7 @@ renderFlowModal: function() {
                 row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'daily-checkin-panel', '', 'checkin') +
                 row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '+5 XP', s.intentionDone, 'hoje', 'daily-checkin-panel') +
                 sub('Ao longo do dia', 'light_mode') +
-                row('task_alt', 'Executar micros', 'Avançar ao menos uma micro ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
+                row('task_alt', 'Executar ações', 'Avançar ao menos uma ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
                 row('repeat', 'Registrar hábitos', 'Marcar os hábitos concluídos no dia', '+6–10 XP', s.habitsDoneToday, 'hoje', 'hoje-habits-section') +
                 row('timer', 'Sessão de foco', 'Bloco de deep work com Pomodoro (90/20)', '+10–40 XP', s.focusToday, 'foco', 'deep-work-panel') +
                 sub('Noite', 'nightlight') +
@@ -120,8 +120,8 @@ renderFlowModal: function() {
                 row('account_tree', 'Revisar Macros', 'Avaliar iniciativas mensais em andamento e criar novas', '', s.macrosThisMonth, 'planos', '', 'macro')
             ) +
             section('Ritmo Trimestral', 'event_repeat',
-                row('track_changes', 'OKRs', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos', '', 'okrs') +
-                row('fact_check', 'Revisão de ciclo', 'Fechar o ciclo de 12 semanas e decidir o destino dos OKRs ativos', '', s.cycleReviewDone, 'planos', 'tab-ciclo', 'ciclo', 'cycleReview') +
+                row('track_changes', 'Projetos', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos', '', 'okrs') +
+                row('fact_check', 'Revisão de ciclo', 'Fechar o ciclo de 12 semanas e decidir o destino dos Projetos ativos', '', s.cycleReviewDone, 'planos', 'tab-ciclo', 'ciclo', 'cycleReview') +
                 row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito', 'perma-section', '', 'perma')
             ) +
             section('Horizonte Vital', 'auto_awesome',
@@ -1094,7 +1094,7 @@ renderTimeline: function() {
             const oneDayMs = 1000 * 60 * 60 * 24;
             const widthPct = (((visualEnd - visualStart) + oneDayMs) / totalWindowTime) * 100;
 
-            const labelMap = { metas: 'Meta', okrs: 'OKR', macros: 'Macro', micros: 'Micro' };
+            const labelMap = { metas: 'Meta', okrs: 'Projeto', macros: 'Entrega', micros: 'Ação' };
 
             const progress = entity.progress || (entity.status === 'done' ? 100 : 0);
             const isOverdue = taskEnd < today && entity.status !== 'done';
@@ -1608,7 +1608,7 @@ renderDeepWorkPanel: function() {
         const canCompleteSelectedMicro = !!(selectedMicro && selectedMicro.status !== 'done');
         const hasPendingClosure = !!(dw.pendingClosure?.microId && selectedMicro && dw.pendingClosure.microId === selectedMicro.id);
         if (statusEl) {
-            if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Selecione uma micro acao';
+            if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Selecione uma ação';
             else if (hasPendingClosure) statusEl.textContent = 'Fechamento da sessao pendente';
             else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
             else if (dw.isPaused) statusEl.textContent = 'Sessao pausada';
@@ -2124,7 +2124,7 @@ render: {
             if (okrList) {
                 const activeOkrs = (state.entities.okrs || []).filter(o => o.status !== 'done' && o.status !== 'abandoned').slice(0, 3);
                 if (activeOkrs.length === 0) {
-                    okrList.innerHTML = '<p class="text-xs text-outline italic">Nenhum objetivo ativo. Defina um novo OKR para começar.</p>';
+                    okrList.innerHTML = '<p class="text-xs text-outline italic">Nenhum objetivo ativo. Defina um novo Projeto para começar.</p>';
                 } else {
                     okrList.innerHTML = activeOkrs.map(okr => `
                         <div class="flex items-start gap-3">
@@ -2236,7 +2236,7 @@ render: {
 
             const lists = [
                 { typeName: 'Metas', list: state.entities.metas, weight: 6 },
-                { typeName: 'OKRs', list: state.entities.okrs, weight: 4 },
+                { typeName: 'Projetos', list: state.entities.okrs, weight: 4 },
                 { typeName: 'Macros', list: state.entities.macros, weight: 2 },
                 { typeName: 'Micros', list: state.entities.micros, weight: 1 }
             ];
@@ -2397,7 +2397,7 @@ render: {
                             <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Trilha</p>
                             <div class="text-xs text-on-surface-variant space-y-1">
                                 <p><span class="font-semibold text-on-surface">Meta:</span> ${app.escapeHtml(ctx.meta?.title || '-')}</p>
-                                <p><span class="font-semibold text-on-surface">OKR:</span> ${app.escapeHtml(ctx.okr?.title || '-')}</p>
+                                <p><span class="font-semibold text-on-surface">Projeto:</span> ${app.escapeHtml(ctx.okr?.title || '-')}</p>
                                 <p><span class="font-semibold text-on-surface">Macro:</span> ${app.escapeHtml(ctx.macro?.title || '-')}</p>
                             </div>
                         </div>
@@ -2408,7 +2408,7 @@ render: {
                 if (filtered.length === 0) {
                     listContainer.innerHTML = `<div class="col-span-full rounded-2xl border border-dashed border-outline-variant/30 bg-surface-container-lowest p-8 text-center">
                         <span class="material-symbols-outlined notranslate text-3xl text-outline mb-2">checklist</span>
-                        <p class="font-bold text-on-surface">Nenhuma micro ação encontrada.</p>
+                        <p class="font-bold text-on-surface">Nenhuma ação encontrada.</p>
                         <p class="text-sm text-on-surface-variant mt-1">Crie uma micro em Planos ou ajuste os filtros para montar sua fila de execução.</p>
                     </div>`;
                 }
@@ -3205,7 +3205,7 @@ render: {
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-primary text-xl bg-surface-container-lowest p-0.5 rounded-full">check_circle</span>
                                 <div class="flex flex-col min-w-0">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Micro Ação</span>
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Ação</span>
                                     <span class="text-sm font-medium truncate">${micro.title}</span>
                                 </div>
                             </div>
@@ -3213,7 +3213,7 @@ render: {
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">account_tree</span>
                                 <div class="flex flex-col min-w-0">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Macro Ação</span>
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Entrega</span>
                                     <span class="text-xs truncate">${macro.title || '-'}</span>
                                 </div>
                             </div>
@@ -3221,7 +3221,7 @@ render: {
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">track_changes</span>
                                 <div class="flex flex-col min-w-0">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">OKR</span>
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Projeto</span>
                                     <span class="text-xs truncate">${okr.title || '-'}</span>
                                 </div>
                             </div>
@@ -3268,7 +3268,7 @@ render: {
 
                             <div class="pt-3 border-t border-outline-variant/10 flex justify-end">
                                 <button onclick="event.stopPropagation(); app.openEntityReview('${micro.id}', 'micros')" class="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-bold transition-all shadow-sm">
-                                    <span class="material-symbols-outlined notranslate text-[18px]">settings_accessibility</span> Gerir Micro Ação
+                                    <span class="material-symbols-outlined notranslate text-[18px]">settings_accessibility</span> Gerenciar Ação
                                 </button>
                             </div>
                         </div>
@@ -3480,7 +3480,7 @@ render: {
 
                 if (Object.keys(grouped).length === 0) {
                     const emptyIcon = (entityType === 'metas' || entityType === 'okrs') ? 'flag' : 'task_alt';
-                    const emptyTypeLabel = ({ metas: 'meta', okrs: 'OKR', macros: 'macro', micros: 'micro ação' })[entityType] || 'plano';
+                    const emptyTypeLabel = ({ metas: 'meta', okrs: 'Projeto', macros: 'entrega', micros: 'ação' })[entityType] || 'plano';
                     const filterCopy = filter === 'Todas' ? 'nesta categoria' : `em ${filter}`;
                     // Show guided trail CTA when viewing metas with no active filter
                     const showTrailCta = entityType === 'metas' && filter === 'Todas';
@@ -3490,7 +3490,7 @@ render: {
                             <span class="material-symbols-outlined notranslate text-outline text-3xl">${emptyIcon}</span>
                         </div>
                         <h4 class="font-headline text-lg font-bold text-on-background">Nenhum ${emptyTypeLabel} encontrado</h4>
-                        <p class="text-sm text-outline mt-2 max-w-sm">${showTrailCta ? 'Comece criando sua primeira meta. A trilha guiada cria meta, OKRs, macros e micros de uma vez.' : `Não há itens ${filterCopy} com os filtros atuais.`}</p>
+                        <p class="text-sm text-outline mt-2 max-w-sm">${showTrailCta ? 'Comece criando sua primeira meta. A trilha guiada cria meta, projetos, entregas e ações de uma vez.' : `Não há itens ${filterCopy} com os filtros atuais.`}</p>
                         <div class="mt-5 flex flex-wrap justify-center gap-2">
                             ${showTrailCta ? `
                             <button type="button" onclick="window.app.openMetaTrailWizard()"
@@ -3538,7 +3538,7 @@ render: {
                         if (entityType === 'metas' || entityType === 'okrs' || entityType === 'macros') {
                             const counts = app._getEntityCounts(entityType, item.id, state);
                             const parts = [];
-                            if (counts.okrs > 0) parts.push(`${counts.okrs} OKR${counts.okrs > 1 ? 's' : ''}`);
+                            if (counts.okrs > 0) parts.push(`${counts.okrs} Projeto${counts.okrs > 1 ? 's' : ''}`);
                             if (counts.macros > 0) parts.push(`${counts.macros} Macro${counts.macros > 1 ? 's' : ''}`);
                             if (counts.micros > 0) parts.push(`${counts.micros} Micro${counts.micros > 1 ? 's' : ''}`);
                             countLine = parts.join(' - ');
@@ -3547,25 +3547,25 @@ render: {
                         // Build Hierarchy Trail Nodes
                         let trailNodes = [];
                         if (entityType === 'micros') {
-                            trailNodes.push({ label: 'Micro Ação', title: item.title });
+                            trailNodes.push({ label: 'Ação', title: item.title });
                             const macro = state.entities.macros.find(x => x.id === item.macroId);
-                            trailNodes.push({ label: 'Macro Ação', title: macro ? macro.title : '[Não Alinhado - Sem Macro]' });
+                            trailNodes.push({ label: 'Entrega', title: macro ? macro.title : '[Não Alinhado - Sem Entrega]' });
                             const okr = macro ? state.entities.okrs.find(x => x.id === macro.okrId) : state.entities.okrs.find(x => x.id === item.okrId);
-                            trailNodes.push({ label: 'OKR', title: okr ? okr.title : '[Sem OKR]' });
+                            trailNodes.push({ label: 'Projeto', title: okr ? okr.title : '[Sem Projeto]' });
                             const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : state.entities.metas.find(x => x.id === item.metaId);
                             trailNodes.push({ label: 'Meta', title: meta ? meta.title : '[Sem Meta]' });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || 'Geral' });
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '[Sem Propósito]') : '[Sem Propósito]' });
                         } else if (entityType === 'macros') {
-                            trailNodes.push({ label: 'Macro Ação', title: item.title });
+                            trailNodes.push({ label: 'Entrega', title: item.title });
                             const okr = state.entities.okrs.find(x => x.id === item.okrId);
-                            trailNodes.push({ label: 'OKR', title: okr ? okr.title : '[Não Alinhado - Sem OKR]' });
+                            trailNodes.push({ label: 'Projeto', title: okr ? okr.title : '[Não Alinhado - Sem Projeto]' });
                             const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : state.entities.metas.find(x => x.id === item.metaId);
                             trailNodes.push({ label: 'Meta', title: meta ? meta.title : '[Sem Meta]' });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || 'Geral' });
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '[Sem Propósito]') : '[Sem Propósito]' });
                         } else if (entityType === 'okrs') {
-                            trailNodes.push({ label: 'OKR', title: item.title });
+                            trailNodes.push({ label: 'Projeto', title: item.title });
                             const meta = state.entities.metas.find(x => x.id === item.metaId);
                             trailNodes.push({ label: 'Meta', title: meta ? meta.title : '[Não Alinhado - Sem Meta]' });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || 'Geral' });
@@ -3601,9 +3601,9 @@ render: {
                             else if (node.label === 'Meta') { icon = 'flag'; colorClass = 'text-outline'; }
                             else if (node.label === 'Meta Pai') { icon = 'outbound'; colorClass = 'text-outline'; }
                             else if (node.label === 'Horizonte') { icon = 'schedule'; colorClass = 'text-primary'; }
-                            else if (node.label === 'OKR') { icon = 'track_changes'; colorClass = 'text-outline'; }
-                            else if (node.label === 'Macro Ação') { icon = 'account_tree'; colorClass = 'text-outline'; }
-                            else if (node.label === 'Micro Ação') { icon = 'check_circle'; colorClass = 'text-primary'; }
+                            else if (node.label === 'Projeto') { icon = 'track_changes'; colorClass = 'text-outline'; }
+                            else if (node.label === 'Entrega') { icon = 'account_tree'; colorClass = 'text-outline'; }
+                            else if (node.label === 'Ação') { icon = 'check_circle'; colorClass = 'text-primary'; }
                             else if (node.label === 'Critério de Sucesso') { icon = 'rule'; colorClass = 'text-primary'; }
                             else if (node.label === 'Desafio') { icon = 'military_tech'; colorClass = 'text-primary'; }
                             else if (node.label === 'Comprometimento') { icon = 'verified'; colorClass = 'text-primary'; }

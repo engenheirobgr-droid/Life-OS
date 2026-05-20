@@ -610,7 +610,7 @@ saveState: function(silent = true) {
 
 factoryReset: async function() {
       const firstConfirm = window.confirm(
-        'ATENÇÃO EXTREMA: apagar TODOS os seus dados salvos na nuvem — Metas, OKRs, Diários, Roda da Vida. Essa ação NÃO pode ser desfeita. Tem certeza absoluta?'
+        'ATENÇÃO EXTREMA: apagar TODOS os seus dados salvos na nuvem — Metas, Projetos, Diários, Roda da Vida. Essa ação NÃO pode ser desfeita. Tem certeza absoluta?'
       );
       if (!firstConfirm) return;
     
@@ -1216,9 +1216,9 @@ exportToExcel: function() {
             ["Versao do app", String(window.app?.appBuildVersion || "")],
             ["Perfil", String(state.profile?.name || "Sem nome")],
             ["Metas", Number((state.entities?.metas || []).length)],
-            ["OKRs", Number((state.entities?.okrs || []).length)],
-            ["Macros", Number((state.entities?.macros || []).length)],
-            ["Micros", Number((state.entities?.micros || []).length)],
+            ["Projetos", Number((state.entities?.okrs || []).length)],
+            ["Entregas", Number((state.entities?.macros || []).length)],
+            ["Ações", Number((state.entities?.micros || []).length)],
             ["Habitos", Number((state.habits || []).length)],
             ["Registros diarios", Number(Object.keys(state.dailyLogs || {}).length)],
             ["Revisoes", Number(Object.keys(state.reviews || {}).length)],

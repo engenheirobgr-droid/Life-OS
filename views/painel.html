@@ -22,7 +22,7 @@
             <button data-painel-screen="evolucao" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('evolucao')">Evolução</button>
             <button data-painel-screen="padroes" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('padroes')">Padrões</button>
             <button data-painel-screen="areas" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('areas')">Áreas</button>
-            <button data-painel-screen="okrs" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('okrs')">OKRs & Execução</button>
+            <button data-painel-screen="okrs" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('okrs')">Projetos & Execução</button>
             <button data-painel-screen="foco" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('foco')">Foco</button>
             <button data-painel-screen="timeline" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('timeline')">Timeline</button>
         </nav>
@@ -45,7 +45,7 @@
                     <span class="material-symbols-outlined notranslate text-[14px]">grid_view</span>Áreas
                 </button>
                 <button onclick="document.getElementById('painel-weekly-review-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
-                    <span class="material-symbols-outlined notranslate text-[14px]">flag</span>OKRs
+                    <span class="material-symbols-outlined notranslate text-[14px]">flag</span>Projetos
                 </button>
                 <button onclick="document.getElementById('painel-execucao-section').scrollIntoView({behavior:'smooth'})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant/30 bg-surface-container-lowest text-xs font-bold text-outline hover:text-primary hover:border-primary/40 hover:bg-surface-container-high transition-all whitespace-nowrap">
                     <span class="material-symbols-outlined notranslate text-[14px]">local_fire_department</span>Execução
@@ -338,10 +338,10 @@
             </div>
     </section>
 
-    <!-- OKR do Ciclo Atual -->
+    <!-- Projeto do Ciclo Atual -->
     <section id="painel-weekly-review-section" data-painel-screen-content="okrs" class="mt-8 space-y-4 hidden">
         <div class="mb-6">
-            <h3 class="font-headline text-2xl italic">OKR do Ciclo Atual</h3>
+            <h3 class="font-headline text-2xl italic">Projeto do Ciclo Atual</h3>
         </div>
         <div
             class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
@@ -411,7 +411,7 @@
                         <button data-focus-type="Metas" onclick="app.setFocusTypeFilter('Metas')"
                             class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all">Metas</button>
                         <button data-focus-type="OKRs" onclick="app.setFocusTypeFilter('OKRs')"
-                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all">OKRs</button>
+                            class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all">Projetos</button>
                         <button data-focus-type="Macros" onclick="app.setFocusTypeFilter('Macros')"
                             class="px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all">Macros</button>
                         <button data-focus-type="Micros" onclick="app.setFocusTypeFilter('Micros')"
@@ -456,7 +456,7 @@
             class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-md w-full p-6 shadow-xl flex flex-col max-h-[80vh]">
             <div class="flex justify-between items-center mb-6 shrink-0">
                 <div>
-                    <h3 class="font-headline text-2xl italic">Revisão de OKRs</h3>
+                    <h3 class="font-headline text-2xl italic">Revisão de Projetos</h3>
                     <p class="text-xs text-outline mt-1">Decida o destino dos seus objetivos ativos.</p>
                 </div>
                 <button onclick="window.app.closeQuarterlyModal()"

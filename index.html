@@ -1565,7 +1565,7 @@
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"
                             required onchange="window.app.onTypeChange(this.value)">
                             <option value="metas">Metas</option>
-                            <option value="okrs">OKRs</option>
+                            <option value="okrs">Projetos</option>
                             <option value="macros">Macro Ações</option>
                             <option value="micros">Micro Ações</option>
                             <option value="habits">Hábito Recorrente</option>
@@ -1808,7 +1808,7 @@
                         class="flex items-center gap-1.5 text-[11px] text-primary font-bold uppercase tracking-widest py-2 px-3 rounded-lg border border-primary/20 hover:bg-primary/5 transition-colors w-fit">
                         <span class="material-symbols-outlined notranslate text-[15px]">add</span> Adicionar KR
                     </button>
-                    <p class="text-[10px] text-outline">O progresso do OKR passa a ser calculado com base nesses indicadores.</p>
+                    <p class="text-[10px] text-outline">O progresso do Projeto passa a ser calculado com base nesses indicadores.</p>
                 </div>
 
                 <div id="crud-trigger-container" class="flex-col gap-1.5" style="display: none;">
@@ -2127,7 +2127,7 @@
                         </select>
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <label for="habit-focus-macro" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Macro vinculada</label>
+                        <label for="habit-focus-macro" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Entrega vinculada</label>
                         <select id="habit-focus-macro" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"></select>
                     </div>
                 </div>
@@ -2190,7 +2190,7 @@
                 <span class="material-symbols-outlined notranslate text-lg mt-0.5">alt_route</span>
                 <span class="leading-tight">
                     <span class="block">Nova Meta (trilha)</span>
-                    <span class="block text-[10px] font-medium opacity-90 mt-1">Fluxo guiado: Meta, OKRs, Macros e Micros iniciais</span>
+                    <span class="block text-[10px] font-medium opacity-90 mt-1">Fluxo guiado: Meta, Projetos, Entregas e Ações iniciais</span>
                 </span>
             </button>
             <button type="button" onclick="window.app.openQuickCaptureFromFab()"
@@ -2399,13 +2399,13 @@
 
                 <section id="meta-trail-step-2" class="meta-trail-step hidden space-y-4">
                     <div class="flex items-center justify-between gap-3">
-                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 2 — Resultados (OKRs)</h4>
+                        <h4 class="text-sm font-bold uppercase tracking-widest text-primary">Step 2 — Resultados (Projetos)</h4>
                         <button type="button" onclick="window.app.addTrailOkrRow()"
                             class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors">
-                            + Adicionar OKR
+                            + Adicionar Projeto
                         </button>
                     </div>
-                    <p class="text-xs text-outline">Defina de 1 a 3 OKRs com métrica e prazo (início opcional) em janela máxima de 92 dias.</p>
+                    <p class="text-xs text-outline">Defina de 1 a 3 Projetos com métrica e prazo (início opcional) em janela máxima de 92 dias.</p>
                     <div id="trail-okrs-list" class="space-y-3"></div>
                 </section>
 
@@ -2417,7 +2417,7 @@
                             + Adicionar Macro
                         </button>
                     </div>
-                    <p class="text-xs text-outline">Liste de 2 a 5 iniciativas, vincule ao OKR e defina início/prazo (máx. 31 dias).</p>
+                    <p class="text-xs text-outline">Liste de 2 a 5 iniciativas, vincule ao Projeto e defina início/prazo (máx. 31 dias).</p>
                     <div id="trail-macros-list" class="space-y-3"></div>
                 </section>
 
@@ -2647,10 +2647,10 @@
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs uppercase text-primary font-bold tracking-wider">Micros da Semana</label>
+                    <label class="text-xs uppercase text-primary font-bold tracking-wider">Ações da Semana</label>
                     <p class="text-[11px] text-outline -mt-1">Selecione os itens que planeja trabalhar esta semana.</p>
                     <div id="wp-micros-list" class="flex flex-col gap-2 max-h-52 overflow-y-auto no-scrollbar rounded-xl bg-surface-container p-3">
-                        <p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>
+                        <p class="text-xs text-outline italic">Nenhuma ação ativa disponível.</p>
                     </div>
                     <div id="wp-load-meter" class="flex items-center justify-between gap-3 rounded-lg bg-surface-container-low px-3 py-2 mt-1">
                         <div class="flex flex-col">
@@ -2667,16 +2667,16 @@
                         <button type="button" onclick="window.app.toggleInlineNewMicro()"
                             class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-outline-variant/40 text-outline text-xs font-bold uppercase tracking-wider hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all">
                             <span class="material-symbols-outlined notranslate text-[15px]">add</span>
-                            Criar micro novo
+                            Criar ação nova
                         </button>
                         <div id="wp-inline-new-micro" class="hidden mt-2 rounded-xl bg-surface-container p-3 flex flex-col gap-3">
                             <div class="flex flex-col gap-1.5">
-                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Macro pai *</label>
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Entrega pai *</label>
                                 <select id="wp-new-macro-id" onchange="window.app.updateInlineNewMicroDimension()"
                                     class="bg-surface-container-low border-none rounded-lg text-xs h-10 px-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/20">
-                                    <option value="">Selecione um macro...</option>
+                                    <option value="">Selecione uma entrega...</option>
                                 </select>
-                                <p id="wp-new-micro-dimension" class="text-[10px] text-outline">Dimensão herdada do macro selecionado.</p>
+                                <p id="wp-new-micro-dimension" class="text-[10px] text-outline">Dimensão herdada da entrega selecionada.</p>
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Título *</label>
@@ -3020,7 +3020,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260520-auth-stability-v1"></script>
+    <script type="module" src="app.js?v=20260520-taxonomy-v1"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3051,7 +3051,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260520-auth-stability-v1')
+                navigator.serviceWorker.register('sw.js?v=20260520-taxonomy-v1')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

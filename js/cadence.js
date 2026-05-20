@@ -139,7 +139,7 @@ getCadenceConfig: function() {
             shutdown: { label: 'Shutdown ritual', expectedDays: 1, icon: 'power_settings_new', why: 'Encerramento consciente do dia.' },
             weeklyPlan: { label: 'Planejamento semanal', expectedDays: 7, icon: 'edit_calendar', why: 'Escolher a carga da semana.' },
             weeklyReview: { label: 'Revisão semanal', expectedDays: 7, icon: 'rate_review', why: 'Transformar experiência em aprendizado.' },
-            cycleReview: { label: 'Revisão de ciclo', expectedDays: 84, icon: 'fact_check', why: 'Fechar o ciclo de 12 semanas e decidir destino dos OKRs.' },
+            cycleReview: { label: 'Revisão de ciclo', expectedDays: 84, icon: 'fact_check', why: 'Fechar o ciclo de 12 semanas e decidir destino dos Projetos.' },
             wheel: { label: 'Roda da Vida', expectedDays: 45, icon: 'pie_chart', why: 'Mapa de equilíbrio entre as áreas da vida.' },
             perma: { label: 'PERMA', expectedDays: 90, icon: 'psychology', why: 'Diagnóstico profundo de florescimento.' },
             swls: { label: 'SWLS', expectedDays: 30, icon: 'monitoring', why: 'Termômetro rápido de satisfação global.' },
