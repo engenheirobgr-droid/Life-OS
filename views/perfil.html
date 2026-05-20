@@ -214,7 +214,7 @@
 <span class="material-symbols-outlined notranslate text-primary">schedule</span>
 <div class="flex-1 min-w-0">
 <p class="text-sm font-medium text-on-surface">Base da Capacidade do Dia</p>
-<p class="text-[11px] text-outline">Define a base do dia antes do check-in: horas acordado, compromissos fixos, basicos e buffer.</p>
+<p class="text-[11px] text-outline">Define a base do dia antes do check-in: horas acordado, compromissos fixos, basicos e reserva de tempo.</p>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
 <div>
 <label for="day-capacity-sleep-hours" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Sono (h)</label>
@@ -229,7 +229,7 @@
 <input id="day-capacity-basics-minutes" type="number" min="30" max="480" step="15" onchange="window.app.setDayCapacityProfileSetting('dailyBasicsMinutes', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
 </div>
 <div>
-<label for="day-capacity-buffer-minutes" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Buffer (min)</label>
+<label for="day-capacity-buffer-minutes" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Reserva de tempo (min)</label>
 <input id="day-capacity-buffer-minutes" type="number" min="0" max="240" step="15" onchange="window.app.setDayCapacityProfileSetting('bufferMinutes', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
 </div>
 </div>

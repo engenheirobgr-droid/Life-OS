@@ -1841,24 +1841,6 @@ renderTodayCapacityMap: function() {
             return;
         }
         const mode = this.getTodayChecklistMode ? this.getTodayChecklistMode() : 'dimensao';
-        const checklistDayPart = this.getTodayChecklistDayPart ? this.getTodayChecklistDayPart() : 'all';
-        const todayItems = this.getTodayActionItems ? this.getTodayActionItems(this.getLocalDateKey()) : [];
-        const pendingItems = todayItems.filter((item) => !item.done);
-        const checklistGroups = { manha: [], tarde: [], noite: [], sem_horario: [] };
-        pendingItems.forEach((item) => {
-            const key = checklistGroups[item.dayPart] ? item.dayPart : 'sem_horario';
-            checklistGroups[key].push(item);
-        });
-        const checklistLabels = { all: 'Tudo', manha: 'Manha', tarde: 'Tarde', noite: 'Noite', sem_horario: 'Sem horario' };
-        const checklistDayPartButtons = ['all', 'manha', 'tarde', 'noite', 'sem_horario'].map((key) => {
-            const bucket = key === 'all' ? pendingItems : checklistGroups[key];
-            const minutes = bucket.reduce((sum, item) => sum + Math.max(0, Number(item.estimatedMinutes) || 0), 0);
-            const isActive = checklistDayPart === key;
-            return `<button type="button" onclick="window.app.setTodayChecklistDayPart('${key}')" class="rounded-xl border px-3 py-2 text-left transition-colors ${isActive ? 'border-primary bg-primary/10 text-primary' : 'border-outline-variant/15 bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'}">
-                <span class="block text-[10px] font-bold uppercase tracking-widest">${this.escapeHtml(checklistLabels[key])}</span>
-                <span class="mt-1 block text-[11px] text-outline">${bucket.length} itens · ${Math.round(minutes)} min</span>
-            </button>`;
-        }).join('');
         const statusMap = {
             ok: { label: 'Executável', tone: 'text-emerald-700 dark:text-emerald-300', badge: 'bg-emerald-500/10 border-emerald-500/25' },
             cheio: { label: 'No limite', tone: 'text-amber-700 dark:text-amber-300', badge: 'bg-amber-500/10 border-amber-500/25' },
@@ -1879,9 +1861,10 @@ renderTodayCapacityMap: function() {
             const clickHandler = key === 'all'
                 ? "window.app.setTodayChecklistMode('dimensao')"
                 : `window.app.setTodayChecklistDayPart('${key}')`;
+            const itemCount = Array.isArray(segment.items) ? segment.items.length : 0;
             return `<button type="button" onclick="${clickHandler}" class="rounded-xl border px-3 py-2 text-left transition-colors ${isActive ? 'border-primary bg-primary/10 text-primary' : 'border-outline-variant/15 bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'}">
                 <span class="block text-[10px] font-bold uppercase tracking-widest">${this.escapeHtml(label)}</span>
-                <span class="mt-1 block text-[11px] text-outline">${Math.round(Number(segment.plannedMinutes) || 0)} / ${Math.round(Number(segment.capacityMinutes) || 0)} min</span>
+                <span class="mt-1 block text-[11px] text-outline">${itemCount} itens · ${Math.round(Number(segment.plannedMinutes) || 0)} / ${Math.round(Number(segment.capacityMinutes) || 0)} min</span>
             </button>`;
         }).join('');
         const capacityValue = Number.isFinite(state.capacityMinutes) ? `${Math.round(state.capacityMinutes)} min` : 'A definir';
@@ -1899,21 +1882,19 @@ renderTodayCapacityMap: function() {
                     </div>
                     <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${cfg.badge} ${cfg.tone}">${cfg.label}</span>
                 </div>
-                <div class="mt-3 flex items-center justify-between gap-3 rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-2">
-                    <p class="text-[11px] text-outline leading-snug">Nao esta batendo com seu dia real? Ajuste a base de capacidade no Perfil.</p>
-                    <button type="button" onclick="window.app.openDayCapacityProfileSettings()" class="shrink-0 rounded-lg border border-primary/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors">
-                        Ajustar base
-                    </button>
-                </div>
                 <div class="mt-3 space-y-2">
                     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Organizacao da lista</p>
-                        <div class="inline-flex rounded-xl border border-outline-variant/15 bg-surface-container-low p-1">
-                            <button type="button" onclick="window.app.setTodayChecklistMode('dimensao')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'dimensao' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Dimensao</button>
-                            <button type="button" onclick="window.app.setTodayChecklistMode('horario')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'horario' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Horario</button>
+                        <div class="flex items-center gap-2">
+                            <div class="inline-flex rounded-xl border border-outline-variant/15 bg-surface-container-low p-1">
+                                <button type="button" onclick="window.app.setTodayChecklistMode('dimensao')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'dimensao' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Dimensao</button>
+                                <button type="button" onclick="window.app.setTodayChecklistMode('horario')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'horario' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Horario</button>
+                            </div>
+                            <button type="button" onclick="window.app.openDayCapacityProfileSettings()" class="rounded-lg border border-primary/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors">
+                                Ajustar base
+                            </button>
                         </div>
                     </div>
-                    ${mode === 'horario' ? `<div class="grid grid-cols-2 gap-2 md:grid-cols-5">${checklistDayPartButtons}</div>` : ''}
                 </div>
                 <div class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
                     ${segmentButtons}
