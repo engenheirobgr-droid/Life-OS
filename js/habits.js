@@ -387,9 +387,11 @@ renderHabitMaturityChip: function(habit) {
         const graduated = habit?.maturity === 'graduated';
         const text = graduated ? 'Automatico' : 'Em formacao';
         const icon = graduated ? 'verified' : 'construction';
-        const cls = graduated ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-surface-container-high text-outline';
-        return `<span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${cls}">
-            <span class="material-symbols-outlined notranslate text-[11px]">${icon}</span>${text}
+        const cls = graduated
+            ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+            : 'border border-outline-variant/20 bg-surface-container-high text-on-surface-variant';
+        return `<span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold ${cls}">
+            <span class="material-symbols-outlined notranslate text-[12px]">${icon}</span>${text}
         </span>`;
     },
 

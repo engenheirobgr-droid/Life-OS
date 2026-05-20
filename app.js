@@ -21,11 +21,11 @@ import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-
 import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
 import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v2';
 import { attachIdentity } from './js/identity.js?v=20260520-alignment-v1';
-import { attachHabits } from './js/habits.js?v=20260520-alignment-v1';
+import { attachHabits } from './js/habits.js?v=20260520-habit-card-v1';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-alignment-v1';
 import { attachStateModule } from './js/state.js?v=20260519-execution-capacity-v7';
-import { attachRenderModule } from './js/render.js?v=20260520-alignment-v1';
+import { attachRenderModule } from './js/render.js?v=20260520-habit-card-v1';
 import { attachPlanningModule } from './js/planning.js?v=20260520-alignment-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
@@ -205,7 +205,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260520-alignment-v1',
+    appBuildVersion: '20260520-habit-card-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
