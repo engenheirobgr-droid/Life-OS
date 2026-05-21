@@ -561,13 +561,13 @@ manualGuideChapters: [
             icon: 'menu_book',
             title: 'Visão Geral',
             subtitle: 'A arquitetura do Life OS em uma página',
-            what: 'O Life OS funciona em quatro camadas que se alimentam: <strong>Propósito</strong> (Quem eu sou → Como estou → O que quero deixar → O que posso viver → O que me move → Quem quero me tornar) → <strong>Planos</strong> (Meta→OKR→Macro→Micro) → <strong>Execução</strong> (Hoje + Foco) → <strong>Reflexão</strong> (Painel + Revisão Semanal). Identidade e hábitos atravessam todas as camadas.',
+            what: 'O Life OS funciona em quatro camadas que se alimentam: <strong>Propósito</strong> (Quem eu sou → Como estou → O que quero deixar → O que posso viver → O que me move → Quem quero me tornar) → <strong>Planos</strong> (Meta→Projeto→Entrega→Ação) → <strong>Execução</strong> (Hoje + Foco) → <strong>Reflexão</strong> (Painel + Revisão Semanal). Identidade e hábitos atravessam todas as camadas.',
             why: 'Sistemas de mudança duradoura precisam de coerência vertical: ações diárias devem servir objetivos de médio prazo, que servem propósito de longo prazo. Sem essa cadeia, o esforço diário não acumula em direção a algo significativo.',
             refs: ['Covey — 7 Habits (begin with the end in mind)', 'Locke & Latham — Goal-Setting Theory'],
             how: [
                 'Comece pelo Propósito: defina valores, forças/sombras, diagnóstico de bem-estar, Legado, Odyssey, Ikigai e Visão antes de criar Metas.',
-                'Quebre cada Meta em OKRs (90 dias) → Macros (semanais) → Micros (atômicos, executáveis em uma sessão).',
-                'Use o Hoje para executar Micros e o Foco para sessões de atenção profunda.',
+                'Quebre cada Meta em Projetos (90 dias) → Entregas (semanais) → Ações (atômicas, executáveis em uma sessão).',
+                'Use o Hoje para executar Ações e o Foco para sessões de atenção profunda.',
                 'Revise no Painel e na Revisão Semanal para fechar o ciclo.'
             ],
             cta: null
@@ -663,7 +663,7 @@ manualGuideChapters: [
             refs: ['Hal Hershfield — Future Self Continuity', 'Locke & Latham — Goal-Setting Theory', 'Mental simulation research'],
             how: [
                 'Escreva a visão em áreas concretas: saúde, carreira/finanças, intelecto/espiritualidade e uma frase guia.',
-                'Use a Visão para escolher Metas de vida e OKRs trimestrais.',
+                'Use a Visão para escolher Metas de vida e Projetos trimestrais.',
                 'Revise a cada 6-12 meses; ela é uma bússola viva, não contrato rígido.',
                 'Se a semana atual não conversa com a Visão, ajuste as metas ou aceite conscientemente a exceção.'
             ],
@@ -672,17 +672,17 @@ manualGuideChapters: [
         {
             id: 'planos',
             icon: 'account_tree',
-            title: 'Planos: Hierarquia Meta → OKR → Macro → Micro',
+            title: 'Planos: Hierarquia Meta → Projeto → Entrega → Ação',
             subtitle: 'Cascata de objetivos com weekly planning',
-            what: 'A hierarquia decompõe ambição em ação: <strong>Meta</strong> (1-5 anos) → <strong>OKR</strong> (trimestral, com Key Results mensuráveis) → <strong>Macro</strong> (mensal, 2-6 semanas) → <strong>Micro</strong> (atômico, ~1 sessão). O <strong>Planejamento Semanal</strong> seleciona quais Micros entram na semana com previsão de energia.',
-            why: 'OKRs (Andy Grove, popularizado por John Doerr) separam objetivo qualitativo (Objective) de medidas (Key Results), evitando metas vagas. Decomposição em Micros respeita a teoria da auto-eficácia (Bandura): vitórias pequenas alimentam crença de competência. Weekly planning aplica o "12 Week Year" — comprimir o foco em ciclos curtos aumenta execução.',
-            refs: ['John Doerr — Measure What Matters (OKRs)', 'Brian Moran — The 12 Week Year', 'Albert Bandura — Self-Efficacy Theory'],
+            what: 'A hierarquia decompõe ambição em ação: <strong>Meta</strong> (1-5 anos) → <strong>Projeto</strong> (trimestral, com indicadores mensuráveis) → <strong>Entrega</strong> (mensal, 2-6 semanas) → <strong>Ação</strong> (atômica, ~1 sessão). O <strong>Planejamento Semanal</strong> seleciona quais Ações entram na semana com previsão de energia.',
+            why: 'A camada de Projeto se inspira na lógica de objetivos com indicadores: separar objetivo qualitativo de medidas concretas evita metas vagas. Decomposição em Ações respeita a teoria da auto-eficácia (Bandura): vitórias pequenas alimentam crença de competência. Weekly planning aplica o "12 Week Year" — comprimir o foco em ciclos curtos aumenta execução.',
+            refs: ['John Doerr — Measure What Matters', 'Brian Moran — The 12 Week Year', 'Albert Bandura — Self-Efficacy Theory'],
             how: [
                 'Crie 1-3 Metas por dimensão, não mais. Foco vence quantidade.',
-                'Para cada OKR, defina 2-4 Key Results numéricos (não tarefas, mas resultados mensuráveis).',
-                'Quebre Macros em Micros executáveis em até 7 dias, para que elas possam ser distribuídas em sessões de foco ao longo do prazo.',
-                'No Planejamento Semanal, selecione Micros com base na energia prevista — não encha o calendário.',
-                'Pais (Meta/OKR/Macro) só ficam "concluídos" quando você decide; o sistema não fecha automaticamente.'
+                'Para cada Projeto, defina 2-4 indicadores numéricos (não tarefas, mas resultados mensuráveis).',
+                'Quebre Entregas em Ações executáveis em até 7 dias, para que elas possam ser distribuídas em sessões de foco ao longo do prazo.',
+                'No Planejamento Semanal, selecione Ações com base na energia prevista — não encha o calendário.',
+                'Pais (Meta/Projeto/Entrega) só ficam "concluídos" quando você decide; o sistema não fecha automaticamente.'
             ],
             cta: { label: 'Abrir Planos', view: 'planos' }
         },
@@ -691,11 +691,11 @@ manualGuideChapters: [
             icon: 'psychology_alt',
             title: 'WOOP e Se-então',
             subtitle: 'Antecipar obstáculos antes da execução',
-            what: 'Macros, Micros e Sombras podem guardar dois campos opcionais: <strong>obstáculo previsto</strong> e <strong>plano se-então</strong>. A ideia é transformar uma intenção vaga em uma resposta preparada para o atrito real. Nas sombras, o se-então responde à pergunta: "quando esse padrão aparecer, qual resposta eu quero treinar?".',
+            what: 'Entregas, Ações e Sombras podem guardar dois campos opcionais: <strong>obstáculo previsto</strong> e <strong>plano se-então</strong>. A ideia é transformar uma intenção vaga em uma resposta preparada para o atrito real. Nas sombras, o se-então responde à pergunta: "quando esse padrão aparecer, qual resposta eu quero treinar?".',
             why: 'WOOP (Wish, Outcome, Obstacle, Plan) combina contraste mental com implementation intentions. O ponto forte é nomear o obstáculo interno ou contextual antes que ele apareça, reduzindo improviso quando a energia já está baixa.',
             refs: ['Gabriele Oettingen — WOOP / Mental Contrasting', 'Peter Gollwitzer — Implementation Intentions'],
             how: [
-                'Ao criar uma Macro ou Micro, abra "Antecipar obstáculo" apenas quando houver risco claro.',
+                'Ao criar uma Entrega ou Ação, abra "Antecipar obstáculo" apenas quando houver risco claro.',
                 'Escreva o obstáculo em linguagem concreta: "chegar cansado depois do trabalho", não "falta de disciplina".',
                 'Use o formato se-então: "Se eu chegar cansado, então farei 5 minutos antes de decidir parar".',
                 'Em Sombras, use o se-então para treinar uma resposta alternativa ao gatilho.',
@@ -708,12 +708,12 @@ manualGuideChapters: [
             icon: 'note_stack',
             title: 'Notas e Memoria Externa',
             subtitle: 'Contexto vinculado ao sistema',
-            what: 'Notas ficam no Perfil e podem ser vinculadas a Metas, OKRs, Macros, Micros, Habitos, Forcas ou Sombras. Elas guardam contexto, links, aprendizados e referencias sem transformar o app em uma area separada de documentos.',
+            what: 'Notas ficam no Perfil e podem ser vinculadas a Metas, Projetos, Entregas, Ações, Habitos, Forcas ou Sombras. Elas guardam contexto, links, aprendizados e referencias sem transformar o app em uma area separada de documentos.',
             why: 'Memoria externa reduz carga cognitiva: voce nao precisa manter todo o contexto ativo na cabeca. Quando uma nota esta vinculada a uma entidade do sistema, ela vira suporte para decisao e revisao, nao apenas arquivo solto.',
             refs: ['David Allen — Getting Things Done', 'Tiago Forte — Building a Second Brain', 'Extended Mind / cognitive offloading'],
             how: [
                 'Crie notas curtas com titulo, corpo, tags e URL quando houver uma referencia importante.',
-                'Vincule a nota ao item que ela ajuda: uma Micro, uma Meta, um Habito ou uma Sombra.',
+                'Vincule a nota ao item que ela ajuda: uma Ação, uma Meta, um Habito ou uma Sombra.',
                 'Use a busca do Perfil para encontrar notas por texto, tag ou entidade vinculada.',
                 'Prefira notas que apoiem uma decisao futura, nao colecoes infinitas de informacao.'
             ],
@@ -724,14 +724,14 @@ manualGuideChapters: [
             icon: 'today',
             title: 'Hoje: Bússola, Diário, Gratidão & Shutdown',
             subtitle: 'A camada de execução e reflexão diária',
-            what: 'O <strong>Hoje</strong> reúne: a <strong>Bússola do Dia</strong> (frase + ação sugerida), a lista de <strong>Micros</strong> da semana, os <strong>hábitos</strong> ativos, o <strong>Diário</strong> (escrita livre + 3 gratidões) e o <strong>Shutdown Ritual</strong> (encerramento consciente do dia).',
+            what: 'O <strong>Hoje</strong> reúne: a <strong>Bússola do Dia</strong> (frase + ação sugerida), a lista de <strong>Ações</strong> da semana, os <strong>hábitos</strong> ativos, o <strong>Diário</strong> (escrita livre + 3 gratidões) e o <strong>Shutdown Ritual</strong> (encerramento consciente do dia).',
             why: 'A Bússola usa "implementation intentions" (Gollwitzer): declarar antecipadamente o que vai fazer aumenta execução em ~2-3x. Gratidão (3 Good Things, Seligman) por 1-2 semanas eleva afeto positivo por meses. O Shutdown Ritual fecha o "loop Zeigarnik" — tarefas inacabadas criam ruminação; declarar fechamento libera capacidade cognitiva para descansar.',
             refs: ['Gollwitzer — Implementation Intentions', 'Seligman — Three Good Things', 'Cal Newport — Deep Work (shutdown)', 'Zeigarnik Effect'],
             how: [
                 'Abra o Hoje pela manhã; deixe a Bússola do Dia ancorar a primeira ação.',
                 'Faça o Diário e 3 gratidões à noite — específicas, não genéricas ("o sorriso do meu filho ao voltar pra casa", não "minha família").',
                 'Execute o Shutdown ao terminar o trabalho: revise o que ficou, anote pendências para amanhã, declare fechamento.',
-                'Não tente esvaziar todos os Micros da semana num dia só — sobrecarga mata consistência.'
+                'Não tente esvaziar todas as Ações da semana num dia só — sobrecarga mata consistência.'
             ],
             cta: { label: 'Ir para Hoje', view: 'hoje' }
         },
@@ -741,7 +741,7 @@ manualGuideChapters: [
             title: 'Cadência e Ritmo',
             subtitle: 'Frequências saudáveis sem travar o sistema',
             what: 'A <strong>Cadência</strong> mostra se ferramentas essenciais estão em dia, próximas do vencimento ou atrasadas. O <strong>Check-in diário</strong> coleta sono, qualidade do sono, energia, humor e estresse em poucos segundos para criar uma linha de base do seu estado interno.',
-            why: 'Mudança pessoal melhora quando dados de estado são coletados perto do momento real, princípio usado em EMA (Ecological Momentary Assessment). Revisões semanais sustentam OKRs e execução; escalas como PERMA/SWLS pedem cadência mais espaçada para evitar ruído e fadiga de medição.',
+            why: 'Mudança pessoal melhora quando dados de estado são coletados perto do momento real, princípio usado em EMA (Ecological Momentary Assessment). Revisões semanais sustentam Projetos e execução; escalas como PERMA/SWLS pedem cadência mais espaçada para evitar ruído e fadiga de medição.',
             refs: ['Ecological Momentary Assessment (EMA)', 'Brian Moran — 12 Week Year', 'Diener — SWLS', 'Seligman — PERMA'],
             how: [
                 'Faça o check-in diário na aba Hoje (topo da página): sono, qualidade do sono, energia, humor e estresse.',
@@ -756,15 +756,15 @@ manualGuideChapters: [
             icon: 'timer',
             title: 'Foco: Blocos adaptativos e Deep Work',
             subtitle: 'Sessões curtas ou profundas conforme energia e esforço',
-            what: 'O timer de <strong>Foco</strong> agora trabalha com blocos de <strong>15/3, 25/5, 45/10, 50/10 e 90/20</strong>, sempre conectado a um Micro específico. O app sugere o bloco com base no tempo estimado da micro, no esforço e no check-in do dia. Ao finalizar, registra Deep Work, abre o <strong>fechamento da sessão</strong> (entrega, evidências, lacunas e próximo passo) e conduz a pausa estruturada quando aplicável.',
-            why: 'Blocos curtos reduzem atrito para iniciar quando a energia está baixa; blocos médios ajudam execução sustentada; e o 90/20 continua reservado para trabalho profundo real. Essa gradação combina pomodoro clássico com ritmos ultradianos, em vez de tratar toda micro como se precisasse da mesma janela.',
+            what: 'O timer de <strong>Foco</strong> agora trabalha com blocos de <strong>15/3, 25/5, 45/10, 50/10 e 90/20</strong>, sempre conectado a uma Ação específica. O app sugere o bloco com base no tempo estimado da ação, no esforço e no check-in do dia. Ao finalizar, registra Deep Work, abre o <strong>fechamento da sessão</strong> (entrega, evidências, lacunas e próximo passo) e conduz a pausa estruturada quando aplicável.',
+            why: 'Blocos curtos reduzem atrito para iniciar quando a energia está baixa; blocos médios ajudam execução sustentada; e o 90/20 continua reservado para trabalho profundo real. Essa gradação combina pomodoro clássico com ritmos ultradianos, em vez de tratar toda ação como se precisasse da mesma janela.',
             refs: ['Nathan Kleitman — BRAC (Basic Rest-Activity Cycle)', 'Cal Newport — Deep Work', 'Csikszentmihalyi — Flow'],
             how: [
-                'H?bitos podem abrir foco mesmo sem Meta expl?cita quando j? existe Macro compat?vel pela mesma ?rea; o app usa esse fallback para n?o travar a execu??o.',
-                'Antes de iniciar, escolha UM Micro — multitarefa destrói deep work.',
+                'Hábitos podem abrir foco mesmo sem Meta explícita quando já existe Entrega compatível pela mesma área; o app usa esse fallback para não travar a execução.',
+                'Antes de iniciar, escolha UMA Ação — multitarefa destrói deep work.',
                 'Use os blocos sugeridos como padrão; troque manualmente só quando souber que aquele caso pede outra janela.',
-                'O bloco sugerido não tenta engolir a micro inteira: ele cobre só a melhor sessão para agora, respeitando carga total restante e capacidade do turno.',
-                'Micros n?o alinhadas deixam de iniciar foco estruturado at? que o v?nculo com Macro, OKR e Meta seja corrigido.',
+                'O bloco sugerido não tenta engolir a ação inteira: ele cobre só a melhor sessão para agora, respeitando carga total restante e capacidade do turno.',
+                'Ações não alinhadas deixam de iniciar foco estruturado até que o vínculo com Entrega, Projeto e Meta seja corrigido.',
                 'Desligue notificações; o ambiente deve sinalizar "agora é foco".',
                 'Use a pausa correspondente ao bloco (3, 5, 10 ou 20 min) para movimento físico ou descanso real, não redes sociais.',
                 'Use "Salvar apenas nota" quando quiser registrar contexto sem concluir a micro.',
@@ -850,7 +850,7 @@ manualGuideChapters: [
             title: 'Painel & Revisão Semanal',
             subtitle: 'Fechamento de ciclo e aprendizado',
             what: 'O <strong>Painel</strong> mostra scores de Foco/Execução, ciclo de 12 semanas e heatmap. A <strong>Revisão Semanal</strong> faz 5 perguntas (planejei → executei → aprendi → ajustar → próxima intenção) + autoconhecimento aplicado (força usada, sombra observada).',
-            why: 'Reflexão estruturada transforma experiência em aprendizado — sem revisão, repetimos os mesmos erros. Brian Moran (12 Week Year) mostra que a frequência de revisão (semanal > mensal > trimestral) é o maior preditor de execução de OKRs. Escrever o que aprendeu ativa metacognição e consolida memória (Bjork — desirable difficulties).',
+            why: 'Reflexão estruturada transforma experiência em aprendizado — sem revisão, repetimos os mesmos erros. Brian Moran (12 Week Year) mostra que a frequência de revisão (semanal > mensal > trimestral) é o maior preditor de execução de Projetos. Escrever o que aprendeu ativa metacognição e consolida memória (Bjork — desirable difficulties).',
             refs: ['Brian Moran — 12 Week Year', 'Robert Bjork — Desirable Difficulties', 'Kolb — Experiential Learning Cycle'],
             how: [
                 'Faça a Revisão Semanal todo domingo ou segunda — não pule, mesmo na semana ruim (especialmente nela).',
@@ -918,7 +918,7 @@ manualGuideChapters: [
             title: 'Area Social',
             subtitle: 'Companheiros, convites e desafios leves',
             what: 'A <strong>Area Social</strong> fica no Perfil e e opcional. Ela permite ativar compartilhamento publico, escolher exatamente quais campos podem aparecer, gerar codigo de convite, conectar companheiros, enviar reacoes leves e criar desafios semanais.',
-            why: 'Apoio social aumenta continuidade porque cria contexto compartilhado sem transformar a rotina em competicao pesada. O Life OS publica apenas um perfil reduzido quando voce ativa o opt-in: diario, check-in emocional, valores, sombras, proposito, notas, OKRs, micros e respostas de bem-estar ficam privados.',
+            why: 'Apoio social aumenta continuidade porque cria contexto compartilhado sem transformar a rotina em competicao pesada. O Life OS publica apenas um perfil reduzido quando voce ativa o opt-in: diario, check-in emocional, valores, sombras, proposito, notas, projetos, a??es e respostas de bem-estar ficam privados.',
             refs: ['Social accountability', 'Self-Determination Theory - relatedness', 'LGPD - minimizacao de dados'],
             how: [
                 'No Perfil, ative Area Social e depois ligue Privacidade & Compartilhamento se quiser aparecer para companheiros.',
@@ -941,7 +941,7 @@ manualGuideChapters: [
                 'Leia os capítulos na ordem sugerida para construir o modelo mental correto antes de usar cada seção.',
                 'Você pode abrir capítulos em qualquer ordem — o marcador "Lido" só registra, não bloqueia.',
                 'Use os botões "Ir para X" ao final de cada capítulo para ir diretamente à seção referenciada.',
-                'Retorne ao guia quando adicionar uma função nova (hábito, OKR, Odyssey) para revisar o capítulo relevante.'
+                'Retorne ao guia quando adicionar uma função nova (hábito, Projeto, Odyssey) para revisar o capítulo relevante.'
             ],
             cta: null
         },
@@ -950,7 +950,7 @@ manualGuideChapters: [
             icon: 'compass_calibration',
             title: 'Ritmo e Sugestão de Ritual',
             subtitle: 'Como o app orienta o próximo passo certo',
-            what: 'A <strong>Bússola do Dia</strong> (aba Hoje) organiza o ritmo em duas camadas: cadência (check-in, shutdown, revisão e planejamento) e execução (micro, hábito, rotina ou foco). A <strong>Próxima Melhor Ação</strong> não é mais só uma micro recomendada: ela pode apontar para foco em andamento, micro urgente, hábito/rotina do horário, check-in pendente ou ajuste de ritmo.',
+            what: 'A <strong>Bússola do Dia</strong> (aba Hoje) organiza o ritmo em duas camadas: cadência (check-in, shutdown, revisão e planejamento) e execução (ação, hábito, rotina ou foco). A <strong>Próxima Melhor Ação</strong> não é mais só uma ação recomendada: ela pode apontar para foco em andamento, ação urgente, hábito/rotina do horário, check-in pendente ou ajuste de ritmo.',
             why: 'Decisão de "o que fazer agora" consome energia cognitiva (ego depletion). Separar cadência de execução reduz fricção sem confundir ritual semanal com tarefa de curto prazo. Recomendações contextuais (implementation intentions) têm taxa de adesão maior do que lembretes genéricos.',
             refs: ['Gollwitzer — Implementation Intentions', 'Roy Baumeister — Ego Depletion', 'Ecological Momentary Assessment'],
             how: [
@@ -975,7 +975,7 @@ manualGuideChapters: [
                 'Se houver check-in no dia, confira no cabeçalho do mapa quando a capacidade foi reduzida ou ampliada.',
                 'Se o dia ficar no limite, adie micros de menor impacto ou simplifique rotinas.',
                 'Defina estimativa manual quando souber melhor seu tempo real para aquela ação.',
-                'Pense em minutos totais para planejar e em sessões de foco para executar: o app separa essas duas camadas para não transformar toda micro em um único pomodoro.',
+                'Pense em minutos totais para planejar e em sessões de foco para executar: o app separa essas duas camadas para não transformar toda ação em um único pomodoro.',
                 'Use o modo Horário para ver manhã, tarde e noite com capacidade separada, sem duplicar a lista principal.',
                 'Use horário de execução para organizar o dia; use horário de lembrete apenas quando quiser um aviso separado da agenda.',
                 'Hábito com protocolo ou passos aparece como rotina automaticamente na experiência de hoje.',
@@ -987,16 +987,16 @@ manualGuideChapters: [
             id: 'hierarquia-diagnostico',
             icon: 'account_tree',
             title: 'Diagnóstico de Hierarquia',
-            subtitle: 'Verificar alinhamento da cascata Meta → Micro',
-            what: 'Em Planos, cada item mostra seu pai (ex: "Micro → Macro → OKR → Meta") e o número de filhos. O <strong>diagnóstico</strong> identifica: Metas sem OKRs, OKRs sem Macros ativas, Macros sem Micros — elos quebrados que impedem a cascata de funcionar.',
-            why: 'Objetivos desconexos criam esforço fragmentado: você executa tarefas que não servem metas maiores, ou tem metas que nunca viram ação. A cadeia de causalidade (Meta → KR → iniciativa → tarefa) é o mecanismo pelo qual OKRs transformam estratégia em execução real (Google, Intel).',
+            subtitle: 'Verificar alinhamento da cascata Meta → Ação',
+            what: 'Em Planos, cada item mostra seu pai (ex: "Ação → Entrega → Projeto → Meta") e o número de filhos. O <strong>diagnóstico</strong> identifica: Metas sem Projetos, Projetos sem Entregas ativas, Entregas sem Ações — elos quebrados que impedem a cascata de funcionar.',
+            why: 'Objetivos desconexos criam esforço fragmentado: você executa tarefas que não servem metas maiores, ou tem metas que nunca viram ação. A cadeia de causalidade (Meta → KR → iniciativa → tarefa) é o mecanismo pelo qual Projetos transformam estratégia em execução real.',
             refs: ['John Doerr — Measure What Matters', 'Locke & Latham — Goal-Setting Theory', 'Andy Grove — High Output Management'],
             how: [
-                'Ao criar uma Macro, associe-a a um OKR e Meta para fechar a hierarquia.',
-                'Ao criar um Micro, associe-o a uma Macro para que o esforço diário apareça no Painel.',
+                'Ao criar uma Entrega, associe-a a um Projeto e Meta para fechar a hierarquia.',
+                'Ao criar uma Ação, associe-a a uma Entrega para que o esforço diário apareça no Painel.',
                 'Itens não alinhados ou fora da área correta aparecem com aviso para revisão, em vez de ficarem escondidos por fallbacks genéricos.',
-                'Metas órfãs (sem OKR ou Macro) aparecem com aviso no Painel de hierarquia.',
-                'Revise o alinhamento na Revisão Semanal: "meus micros desta semana servem algum OKR?"'
+                'Metas órfãs (sem Projeto ou Entrega) aparecem com aviso no Painel de hierarquia.',
+                'Revise o alinhamento na Revisão Semanal: "minhas a??es desta semana servem algum Projeto?"'
             ],
             cta: { label: 'Abrir Planos', view: 'planos' }
         }

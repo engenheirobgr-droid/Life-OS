@@ -56,7 +56,7 @@ getStarterJourneyState: function() {
             push(hasMicroParent
                 ? {
                     id: 'create-micro',
-                    label: 'Criar micro acao',
+                    label: 'Criar a??o',
                     description: 'Transforme sua trilha em uma proxima acao executavel.',
                     icon: 'bolt',
                     action: 'create-micro'
@@ -64,7 +64,7 @@ getStarterJourneyState: function() {
                 : {
                     id: 'create-trail',
                     label: 'Criar trilha guiada',
-                    description: 'Monte a cadeia meta, OKR, macro e micro inicial.',
+                    description: 'Monte a cadeia meta, Projeto, Entrega e Ação inicial.',
                     icon: 'account_tree',
                     action: 'create-trail'
                 });
@@ -228,7 +228,7 @@ onboardingGoTo: function(step) {
             if (trailEl) {
                 const dim = starter.dimension || 'Carreira';
                 const goal = starter.goalTitle || 'Meta inicial';
-                trailEl.textContent = `${dim}: ${goal} (com OKR, Macro e Micro criadas automaticamente).`;
+                trailEl.textContent = `${dim}: ${goal} (com Projeto, Entrega e Ação criadas automaticamente).`;
             }
             if (habitEl) {
                 const habit = starter.habitTitle || 'Habito ancora';
@@ -279,14 +279,14 @@ onboardingSaveStarterDraft: function() {
 
 getOnboardingTrailTemplates: function() {
         const T = [
-            { id: 'carreira_execucao', dimension: 'Carreira', label: 'Execução de trabalho', goalTitle: 'Construir ritmo de execução semanal consistente', okrTitle: 'OKR inicial - Entregar prioridades da semana', macroTitle: 'Macro inicial - Organizar blocos de foco e entregas', microTitle: 'Micro inicial - Definir 3 entregas da semana', microIndicator: '3 entregas definidas e agendadas no plano semanal' },
-            { id: 'saude_base', dimension: 'Saúde', label: 'Base de energia', goalTitle: 'Estabilizar energia com rotina de saúde simples', okrTitle: 'OKR inicial - Melhorar energia diária nas próximas 12 semanas', macroTitle: 'Macro inicial - Rotina mínima de sono e movimento', microTitle: 'Micro inicial - Planejar 3 caminhadas desta semana', microIndicator: '3 caminhadas planejadas e com horário' },
-            { id: 'mente_clareza', dimension: 'Mente', label: 'Clareza mental', goalTitle: 'Reduzir sobrecarga mental e aumentar clareza', okrTitle: 'OKR inicial - Criar rotina curta de clareza diária', macroTitle: 'Macro inicial - Ritual diário de organização mental', microTitle: 'Micro inicial - Fazer check-in e priorizar 1 foco por dia', microIndicator: 'Check-in feito e foco diário definido' },
-            { id: 'financas_controle', dimension: 'Finanças', label: 'Controle financeiro', goalTitle: 'Organizar fluxo financeiro pessoal com previsibilidade', okrTitle: 'OKR inicial - Consolidar controle semanal de finanças', macroTitle: 'Macro inicial - Rotina de revisão de entradas e gastos', microTitle: 'Micro inicial - Registrar gastos dos últimos 7 dias', microIndicator: 'Gastos da semana registrados e categorizados' },
-            { id: 'relacoes_presenca', dimension: 'Relacionamentos', label: 'Presença relacional', goalTitle: 'Melhorar presença e constância com pessoas importantes', okrTitle: 'OKR inicial - Aumentar consistência de contato qualificado', macroTitle: 'Macro inicial - Ritual semanal de conexão', microTitle: 'Micro inicial - Definir 2 conversas relevantes da semana', microIndicator: '2 conversas agendadas com pessoas importantes' },
-            { id: 'familia_ritual', dimension: 'Família', label: 'Ritual familiar', goalTitle: 'Criar rituais familiares pequenos e consistentes', okrTitle: 'OKR inicial - Estabelecer rotina semanal com a família', macroTitle: 'Macro inicial - Planejar momentos familiares intencionais', microTitle: 'Micro inicial - Agendar 1 momento familiar nesta semana', microIndicator: 'Momento familiar planejado no calendário da semana' },
-            { id: 'lazer_recarga', dimension: 'Lazer', label: 'Recarga ativa', goalTitle: 'Recuperar energia com lazer intencional', okrTitle: 'OKR inicial - Garantir espaço semanal de recuperação', macroTitle: 'Macro inicial - Planejamento de pausas e experiências leves', microTitle: 'Micro inicial - Definir 1 atividade de recarga para a semana', microIndicator: 'Atividade de recarga escolhida e com horário' },
-            { id: 'proposito_direcao', dimension: 'Propósito', label: 'Direção de vida', goalTitle: 'Aumentar coerência entre rotina e propósito pessoal', okrTitle: 'OKR inicial - Traduzir propósito em escolhas semanais', macroTitle: 'Macro inicial - Ritual semanal de revisão de direção', microTitle: 'Micro inicial - Revisar visão e definir intenção da semana', microIndicator: 'Intenção semanal alinhada ao propósito registrada' }
+            { id: 'carreira_execucao', dimension: 'Carreira', label: 'Execução de trabalho', goalTitle: 'Construir ritmo de execução semanal consistente', okrTitle: 'Projeto inicial - Entregar prioridades da semana', macroTitle: 'Entrega inicial - Organizar blocos de foco e entregas', microTitle: 'Ação inicial - Definir 3 entregas da semana', microIndicator: '3 entregas definidas e agendadas no plano semanal' },
+            { id: 'saude_base', dimension: 'Saúde', label: 'Base de energia', goalTitle: 'Estabilizar energia com rotina de saúde simples', okrTitle: 'Projeto inicial - Melhorar energia diária nas próximas 12 semanas', macroTitle: 'Entrega inicial - Rotina mínima de sono e movimento', microTitle: 'Ação inicial - Planejar 3 caminhadas desta semana', microIndicator: '3 caminhadas planejadas e com horário' },
+            { id: 'mente_clareza', dimension: 'Mente', label: 'Clareza mental', goalTitle: 'Reduzir sobrecarga mental e aumentar clareza', okrTitle: 'Projeto inicial - Criar rotina curta de clareza diária', macroTitle: 'Entrega inicial - Ritual diário de organização mental', microTitle: 'Ação inicial - Fazer check-in e priorizar 1 foco por dia', microIndicator: 'Check-in feito e foco diário definido' },
+            { id: 'financas_controle', dimension: 'Finanças', label: 'Controle financeiro', goalTitle: 'Organizar fluxo financeiro pessoal com previsibilidade', okrTitle: 'Projeto inicial - Consolidar controle semanal de finanças', macroTitle: 'Entrega inicial - Rotina de revisão de entradas e gastos', microTitle: 'Ação inicial - Registrar gastos dos últimos 7 dias', microIndicator: 'Gastos da semana registrados e categorizados' },
+            { id: 'relacoes_presenca', dimension: 'Relacionamentos', label: 'Presença relacional', goalTitle: 'Melhorar presença e constância com pessoas importantes', okrTitle: 'Projeto inicial - Aumentar consistência de contato qualificado', macroTitle: 'Entrega inicial - Ritual semanal de conexão', microTitle: 'Ação inicial - Definir 2 conversas relevantes da semana', microIndicator: '2 conversas agendadas com pessoas importantes' },
+            { id: 'familia_ritual', dimension: 'Família', label: 'Ritual familiar', goalTitle: 'Criar rituais familiares pequenos e consistentes', okrTitle: 'Projeto inicial - Estabelecer rotina semanal com a família', macroTitle: 'Entrega inicial - Planejar momentos familiares intencionais', microTitle: 'Ação inicial - Agendar 1 momento familiar nesta semana', microIndicator: 'Momento familiar planejado no calendário da semana' },
+            { id: 'lazer_recarga', dimension: 'Lazer', label: 'Recarga ativa', goalTitle: 'Recuperar energia com lazer intencional', okrTitle: 'Projeto inicial - Garantir espaço semanal de recuperação', macroTitle: 'Entrega inicial - Planejamento de pausas e experiências leves', microTitle: 'Ação inicial - Definir 1 atividade de recarga para a semana', microIndicator: 'Atividade de recarga escolhida e com horário' },
+            { id: 'proposito_direcao', dimension: 'Propósito', label: 'Direção de vida', goalTitle: 'Aumentar coerência entre rotina e propósito pessoal', okrTitle: 'Projeto inicial - Traduzir propósito em escolhas semanais', macroTitle: 'Entrega inicial - Ritual semanal de revisão de direção', microTitle: 'Ação inicial - Revisar visão e definir intenção da semana', microIndicator: 'Intenção semanal alinhada ao propósito registrada' }
         ];
         return T.map((item) => ({ ...item }));
     },
@@ -715,7 +715,7 @@ ensureOnboardingStarterSetup: function() {
             state.entities.okrs.push({
                 id: okrId,
                 metaId,
-                title: selectedTemplate?.okrTitle || `OKR inicial - ${goalTitle}`,
+                title: selectedTemplate?.okrTitle || `Projeto inicial - ${goalTitle}`,
                 dimension: dim,
                 inicioDate: todayKey,
                 prazo: datePlus(84),
@@ -734,12 +734,12 @@ ensureOnboardingStarterSetup: function() {
                 id: macroId,
                 metaId,
                 okrId,
-                title: selectedTemplate?.macroTitle || `Macro inicial - ${goalTitle}`,
+                title: selectedTemplate?.macroTitle || `Entrega inicial - ${goalTitle}`,
                 dimension: dim,
                 inicioDate: todayKey,
                 prazo: datePlus(30),
                 createdAt: todayKey,
-                description: 'Macro criada automaticamente no onboarding',
+                description: 'Entrega criada automaticamente no onboarding',
                 purpose: goalTitle,
                 status: 'pending',
                 progress: 0,
@@ -751,7 +751,7 @@ ensureOnboardingStarterSetup: function() {
                 metaId,
                 okrId,
                 macroId,
-                title: selectedTemplate?.microTitle || `Micro inicial - primeiro passo de ${goalTitle}`,
+                title: selectedTemplate?.microTitle || `Ação inicial - primeiro passo de `,
                 dimension: dim,
                 inicioDate: todayKey,
                 prazo: datePlus(7),
