@@ -8,7 +8,7 @@
                     <span class="material-symbols-outlined notranslate text-[12px]">info</span>
                 </button>
                 <div class="hidden group-hover:block group-focus-within:block absolute top-7 left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 z-30 w-[min(19rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-4 text-xs text-on-surface-variant leading-relaxed shadow-xl">
-                    Escolha uma micro acao, inicie o bloco e finalize com registro de tempo.
+                    Escolha uma ação, inicie o bloco e finalize com registro de tempo.
                 </div>
             </div>
         </div>
@@ -67,7 +67,7 @@
                             <p class="text-[11px] text-outline">O app sugere o bloco com base no esforco, no tempo estimado e no check-in do dia.</p>
                         </div>
                         <div class="space-y-2">
-                            <label for="deep-work-micro" class="text-[10px] uppercase tracking-widest font-bold text-outline">Micro acao</label>
+                            <label for="deep-work-micro" class="text-[10px] uppercase tracking-widest font-bold text-outline">Ação</label>
                             <select id="deep-work-micro" onchange="window.app.selectDeepWorkMicro(this.value)" class="w-full h-11 bg-surface-container-lowest text-on-surface text-sm font-medium rounded-lg px-3 outline-none border border-outline-variant/25">
                                 <option value="">Selecione uma micro</option>
                             </select>
@@ -131,7 +131,7 @@
         </div>
     </section>
 
-    <!-- Micro Acoes Management -->
+    <!-- Ações Management -->
     <section class="order-4 space-y-6 min-w-0">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="space-y-1 min-w-0">
@@ -161,7 +161,7 @@
                     <option value="done">Concluidas</option>
                 </select>
                 <button onclick="window.app.openCreateModal('micros')" class="w-full min-w-0 bg-primary text-on-primary px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined notranslate text-sm">add</span> Nova Micro
+                    <span class="material-symbols-outlined notranslate text-sm">add</span> Nova Ação
                 </button>
             </div>
         </div>

@@ -103,7 +103,7 @@ renderFlowModal: function() {
                 row('monitor_heart', 'Check-in diário', 'Sono, energia, humor, estresse e emoção do dia', '+10 XP', s.checkinDone, 'hoje', 'daily-checkin-panel', '', 'checkin') +
                 row('my_location', 'Intenção do dia', 'Definir o foco e a bússola — o que norteia as escolhas', '+5 XP', s.intentionDone, 'hoje', 'daily-checkin-panel') +
                 sub('Ao longo do dia', 'light_mode') +
-                row('task_alt', 'Executar micros', 'Avançar ao menos uma micro ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
+                row('task_alt', 'Executar ações', 'Avançar ao menos uma ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
                 row('repeat', 'Registrar hábitos', 'Marcar os hábitos concluídos no dia', '+6–10 XP', s.habitsDoneToday, 'hoje', 'hoje-habits-section') +
                 row('timer', 'Sessão de foco', 'Bloco de deep work com Pomodoro (90/20)', '+10–40 XP', s.focusToday, 'foco', 'deep-work-panel') +
                 sub('Noite', 'nightlight') +
@@ -111,17 +111,17 @@ renderFlowModal: function() {
                 row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '+8 XP', s.shutdownDone, 'hoje', 'hoje-diario-section', '', 'shutdown')
             ) +
             section('Ritmo Semanal', 'date_range',
-                row('edit_calendar', 'Planejamento semanal', 'Selecionar micros e definir a intenção da semana', '+15 XP', s.weekPlanDone, 'planos', 'tab-semanal', 'semanal', 'weeklyPlan') +
+                row('edit_calendar', 'Planejamento semanal', 'Selecionar ações e definir a intenção da semana', '+15 XP', s.weekPlanDone, 'planos', 'tab-semanal', 'semanal', 'weeklyPlan') +
                 row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'planos', 'weekly-plan-primary-action', 'semanal', 'weeklyReview')
             ) +
             section('Ritmo Mensal', 'calendar_month',
                 row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section', '', 'wheel') +
                 row('sentiment_satisfied', 'SWLS', 'Escala de Satisfação com a Vida — avaliação de bem-estar profundo', '', s.swlsThisQuarter, 'proposito', 'swls-section', '', 'swls') +
-                row('account_tree', 'Revisar Macros', 'Avaliar iniciativas mensais em andamento e criar novas', '', s.macrosThisMonth, 'planos', '', 'macro')
+                row('account_tree', 'Revisar Entregas', 'Avaliar blocos mensais em andamento e criar novos', '', s.macrosThisMonth, 'planos', '', 'macro')
             ) +
             section('Ritmo Trimestral', 'event_repeat',
-                row('track_changes', 'OKRs', 'Definir ou revisar Objetivos e Resultados-Chave do trimestre', '', s.okrsExist, 'planos', '', 'okrs') +
-                row('fact_check', 'Revisão de ciclo', 'Fechar o ciclo de 12 semanas e decidir o destino dos OKRs ativos', '', s.cycleReviewDone, 'planos', 'tab-ciclo', 'ciclo', 'cycleReview') +
+                row('track_changes', 'Projetos', 'Definir ou revisar os projetos do trimestre', '', s.okrsExist, 'planos', '', 'okrs') +
+                row('fact_check', 'Revisão de ciclo', 'Fechar o ciclo de 12 semanas e decidir o destino dos Projetos ativos', '', s.cycleReviewDone, 'planos', 'tab-ciclo', 'ciclo', 'cycleReview') +
                 row('psychology', 'PERMA', 'Medir florescimento: emoções, engajamento, relações, sentido e realização', '', s.permaThisMonth, 'proposito', 'perma-section', '', 'perma')
             ) +
             section('Horizonte Vital', 'auto_awesome',
@@ -175,7 +175,7 @@ renderTimelineHistory: function() {
 
             // Resumo rápido para o card colapsado
             const stats = [];
-            if (d.microsDone.length) stats.push(`${d.microsDone.length} micro${d.microsDone.length > 1 ? 's' : ''}`);
+            if (d.microsDone.length) stats.push(`${d.microsDone.length} ${d.microsDone.length > 1 ? 'ações' : 'ação'}`);
             if (d.habitsDone.length) stats.push(`${d.habitsDone.length} hábito${d.habitsDone.length > 1 ? 's' : ''}`);
             if (d.dwMinutes) stats.push(`${d.dwMinutes}min foco`);
             if (d.notes.length) stats.push(`${d.notes.length} nota${d.notes.length > 1 ? 's' : ''}`);
@@ -219,7 +219,7 @@ renderTimelineHistory: function() {
 
             let microsHtml = '';
             if (d.microsDone.length) {
-                microsHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Micro-ações concluídas</p><ul class="space-y-1">${
+                microsHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Ações concluídas</p><ul class="space-y-1">${
                     d.microsDone.map(m => {
                         const macro = macros.find(mc => mc.id === m.macroId);
                         return `<li class="flex items-start gap-2 text-xs"><span class="material-symbols-outlined notranslate text-secondary text-[14px] mt-0.5 shrink-0">check_circle</span><span class="text-on-surface-variant">${this.escapeHtml(m.title)}${macro ? `<span class="ml-1 text-outline">· ${this.escapeHtml(macro.title)}</span>` : ''}</span></li>`;
@@ -373,7 +373,7 @@ renderWeeklyPlans: function() {
                     actionIcon: 'auto_awesome',
                     actionOptions: `weekKey: '${nextWeekKey}', nextWeek: true, suggestCarryover: true`,
                     isCurrent: false,
-                    emptyText: `<span class="font-bold text-primary">Há ${suggestions.length} micro${suggestions.length > 1 ? 's' : ''} pendente${suggestions.length > 1 ? 's' : ''} para considerar.</span> Priorizei o que ficou planejado e não concluído, está atrasado ou já estava em andamento.`
+                    emptyText: `<span class="font-bold text-primary">Há ${suggestions.length} ação${suggestions.length > 1 ? 'ões' : ''} pendente${suggestions.length > 1 ? 's' : ''} para considerar.</span> Priorizei o que ficou planejado e não concluído, está atrasado ou já estava em andamento.`
                 });
             } else {
                 nextCard.innerHTML = this._renderWeeklyPlanShell({
@@ -468,7 +468,7 @@ _renderWeekPlanCard: function(plan, state, isCurrent) {
 
             ${selectedMicros.length > 0 ? `
             <div class="flex flex-col gap-2">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Micros Planejados</p>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Ações Planejadas</p>
                 <div class="space-y-1.5">
                     ${selectedMicros.map(m => {
                         const done = m.status === 'done' || m.completed;
@@ -478,7 +478,7 @@ _renderWeekPlanCard: function(plan, state, isCurrent) {
                         </div>`;
                     }).join('')}
                 </div>
-            </div>` : '<p class="text-xs text-outline italic">Nenhum micro selecionado.</p>'}
+            </div>` : '<p class="text-xs text-outline italic">Nenhuma ação selecionada.</p>'}
 
             ${isCurrent && selectedMicros.length > 0 ? `
             <div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
@@ -703,7 +703,7 @@ renderPatternsPanel: function() {
                         <div>
                             <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Padroes desbloqueavel</p>
                             <h4 class="mt-1 font-headline text-xl font-bold text-on-surface">Correlacoes de bem-estar</h4>
-                            <p class="mt-1.5 text-sm text-on-surface-variant leading-relaxed max-w-2xl">Quando houver ${gate.minDays} check-ins, o Painel vai cruzar sono, humor, estresse, micros e habitos — mostrando o que realmente impacta seu desempenho.</p>
+                            <p class="mt-1.5 text-sm text-on-surface-variant leading-relaxed max-w-2xl">Quando houver ${gate.minDays} check-ins, o Painel vai cruzar sono, humor, estresse, ações e habitos — mostrando o que realmente impacta seu desempenho.</p>
                         </div>
                     </div>
                     <div class="space-y-2">
@@ -718,7 +718,7 @@ renderPatternsPanel: function() {
                     </div>
                     <div class="grid grid-cols-3 gap-3">
                         ${[
-                            { icon: 'bedtime', label: 'Sono vs Micros', desc: 'Noites bem dormidas aumentam execucao?' },
+                            { icon: 'bedtime', label: 'Sono vs Ações', desc: 'Noites bem dormidas aumentam execucao?' },
                             { icon: 'mood', label: 'Humor vs Habitos', desc: 'Dias mais alegres manteem habitos?' },
                             { icon: 'stress_management', label: 'Estresse vs Entregas', desc: 'Pressao alta reduz performance?' }
                         ].map(c => `
@@ -923,7 +923,7 @@ renderGamificationProfile: function() {
                 { icon: 'auto_stories', label: 'Diário / gratidão', xp: '+8 XP', note: 'conta uma vez por dia' },
                 { icon: 'power_settings_new', label: 'Shutdown', xp: '+8 XP', note: 'conta uma vez por dia' },
                 { icon: 'edit_calendar', label: 'Planejamento semanal', xp: '+15 XP', note: 'conta uma vez por semana' },
-                { icon: 'task_alt', label: 'Micro concluída', xp: '+12 XP', note: '+6 se está no plano da semana' },
+                { icon: 'task_alt', label: 'Ação concluída', xp: '+12 XP', note: '+6 se está no plano da semana' },
                 { icon: 'repeat', label: 'Hábito concluído', xp: '+2 a +8 XP', note: '2 base, 4 se for chave, com bônus por força, sombra e se-então; automáticos recebem 50%' },
                 { icon: 'timer', label: 'Foco profundo', xp: '+10 a +40 XP', note: 'varia pela duração do bloco' },
                 { icon: 'rate_review', label: 'Revisão semanal', xp: '+25 XP', note: 'conta uma vez por semana' }
@@ -1094,7 +1094,7 @@ renderTimeline: function() {
             const oneDayMs = 1000 * 60 * 60 * 24;
             const widthPct = (((visualEnd - visualStart) + oneDayMs) / totalWindowTime) * 100;
 
-            const labelMap = { metas: 'Meta', okrs: 'OKR', macros: 'Macro', micros: 'Micro' };
+            const labelMap = { metas: 'Meta', okrs: 'Projeto', macros: 'Entrega', micros: 'Ação' };
 
             const progress = entity.progress || (entity.status === 'done' ? 100 : 0);
             const isOverdue = taskEnd < today && entity.status !== 'done';
@@ -1152,7 +1152,7 @@ renderTimeline: function() {
             const micros = (state.entities.micros || []).filter(m => m.macroId === macroId && filterStatus(m));
             micros.forEach(micro => renderRow(micro, 'micros', 'ml-16 border-l-4 pl-2', dim));
         };
-        const processMacros = (okrId, dim) => {
+        const processEntregas = (okrId, dim) => {
             const macros = (state.entities.macros || []).filter(m => m.okrId === okrId && filterStatus(m));
             macros.forEach(macro => {
                 renderRow(macro, 'macros', 'ml-8 border-l-4 pl-2', dim);
@@ -1163,7 +1163,7 @@ renderTimeline: function() {
             const okrs = (state.entities.okrs || []).filter(o => o.metaId === metaId && filterStatus(o));
             okrs.forEach(okr => {
                 renderRow(okr, 'okrs', 'ml-4 border-l-4 pl-2', dim);
-                processMacros(okr.id, dim);
+                processEntregas(okr.id, dim);
             });
         };
 
@@ -1187,14 +1187,14 @@ renderTimeline: function() {
                 processMicros(macro.id, dim);
             });
 
-            const microsWithoutMacro = (state.entities.micros || []).filter(micro => {
+            const microsWithoutEntrega = (state.entities.micros || []).filter(micro => {
                 if (!filterStatus(micro)) return false;
                 if (renderedIds.micros.has(micro.id)) return false;
                 if (micro.metaId !== meta.id) return false;
                 if (!micro.macroId) return true;
                 return !(state.entities.macros || []).some(m => m.id === micro.macroId);
             });
-            microsWithoutMacro.forEach(micro => {
+            microsWithoutEntrega.forEach(micro => {
                 renderRow(micro, 'micros', 'ml-16 border-l-4 pl-2', dim);
             });
         };
@@ -1216,7 +1216,7 @@ renderTimeline: function() {
                     const dim = okr.dimension || meta?.dimension || meta?.dimensionName || 'Geral';
                     if (meta && filterStatus(meta)) renderRow(meta, 'metas', 'ml-0 border-l-4 pl-2', dim);
                     renderRow(okr, 'okrs', 'ml-4 border-l-4 pl-2', dim);
-                    processMacros(okr.id, dim);
+                    processEntregas(okr.id, dim);
                 }
             } else if (hType === 'macros') {
                 const macro = state.entities.macros.find(m => m.id === hId);
@@ -1491,8 +1491,8 @@ renderDeepWorkImmersiveOverlay: function() {
                                 <div class="min-w-0 h-full flex flex-col justify-between gap-4">
                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Micro ativa</p>
-                                            <p class="mt-1 text-base font-semibold text-white">${this.escapeHtml(selectedMicro?.title || 'Sem micro ativa')}</p>
+                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Ação ativa</p>
+                                            <p class="mt-1 text-base font-semibold text-white">${this.escapeHtml(selectedMicro?.title || 'Sem ação ativa')}</p>
                                         </div>
                                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                                             <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Habito origem</p>
@@ -1527,7 +1527,7 @@ renderDeepWorkImmersiveOverlay: function() {
                         </section>
 
                         <aside class="space-y-4">
-                            ${checklistHtml || `<div class="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/70 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">${dw.mode === 'break' ? 'A pausa fica em tela cheia ate o encerramento para manter a recuperacao no mesmo fluxo.' : 'Selecione uma micro com passos para acompanhar o roteiro completo aqui.'}</div>`}
+                            ${checklistHtml || `<div class="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/70 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">${dw.mode === 'break' ? 'A pausa fica em tela cheia ate o encerramento para manter a recuperacao no mesmo fluxo.' : 'Selecione uma ação com passos para acompanhar o roteiro completo aqui.'}</div>`}
                         </aside>
                     </div>
                 </div>
@@ -1608,18 +1608,18 @@ renderDeepWorkPanel: function() {
         const canCompleteSelectedMicro = !!(selectedMicro && selectedMicro.status !== 'done');
         const hasPendingClosure = !!(dw.pendingClosure?.microId && selectedMicro && dw.pendingClosure.microId === selectedMicro.id);
         if (statusEl) {
-            if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Selecione uma micro acao';
+            if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Selecione uma ação';
             else if (hasPendingClosure) statusEl.textContent = 'Fechamento da sessao pendente';
             else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
             else if (dw.isPaused) statusEl.textContent = 'Sessao pausada';
-            else statusEl.textContent = dw.mode === 'focus' ? 'Bloco em andamento' : (canCompleteSelectedMicro ? 'Sessao concluida: confirme a micro' : 'Pausa de recuperacao');
+            else statusEl.textContent = dw.mode === 'focus' ? 'Bloco em andamento' : (canCompleteSelectedMicro ? 'Sessao concluida: confirme a ação' : 'Pausa de recuperacao');
         }
         if (stepEl) {
-            if (!dw.isRunning && !hasSelectedMicro) stepEl.textContent = 'Passo 1: escolha a micro';
+            if (!dw.isRunning && !hasSelectedMicro) stepEl.textContent = 'Passo 1: escolha a ação';
             else if (hasPendingClosure) stepEl.textContent = 'Registre a entrega e as notas da sessao';
             else if (!dw.isRunning) stepEl.textContent = 'Passo 2: inicie o bloco';
             else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
-            else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3: foco em execucao' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a micro' : 'Pausa estruturada');
+            else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3: foco em execucao' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a ação' : 'Pausa estruturada');
         }
         const timeText = this.formatClock(dw.remainingSec);
         const phaseText = dw.mode === 'focus' ? 'Bloco' : 'Pausa';
@@ -1960,7 +1960,7 @@ renderTodayActionList: function() {
             ? `
                 <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
                     <div>
-                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Micros sem horario</p>
+                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Ações sem horario</p>
                         <p class="mt-1 text-xs text-on-surface-variant">Ajuste rapido para tirar itens do bucket sem perder o card principal.</p>
                     </div>
                     <div class="space-y-2">
@@ -2067,10 +2067,10 @@ render: {
             const doneMicros = micros.filter(m => m.status === 'done').length;
             const execScore = totalMicros === 0 ? 0 : Math.round((doneMicros / totalMicros) * 100);
             
-            // Foco: % de Macro Ações Concluídas (Visão Tática)
-            const totalMacros = macros.length;
-            const doneMacros = macros.filter(m => m.status === 'done').length;
-            const focoScore = totalMacros === 0 ? 0 : Math.round((doneMacros / totalMacros) * 100);
+            // Foco: % de Entrega Ações Concluídas (Visão Tática)
+            const totalEntregas = macros.length;
+            const doneEntregas = macros.filter(m => m.status === 'done').length;
+            const focoScore = totalEntregas === 0 ? 0 : Math.round((doneEntregas / totalEntregas) * 100);
 
             // Atualiza a UI do Painel
             const focoVal = document.getElementById('painel-foco-val');
@@ -2119,12 +2119,12 @@ render: {
             if (cycleVal) cycleVal.textContent = cyclePercent + '%';
             if (cycleWeekText) cycleWeekText.textContent = `Semana ${diffWeeks} de 12 - ${elapsedCycleDays}/84 dias`;
 
-            // Dynamic OKR Rendering
+            // Dynamic Projeto Rendering
             const okrList = document.getElementById('painel-okr-list');
             if (okrList) {
                 const activeOkrs = (state.entities.okrs || []).filter(o => o.status !== 'done' && o.status !== 'abandoned').slice(0, 3);
                 if (activeOkrs.length === 0) {
-                    okrList.innerHTML = '<p class="text-xs text-outline italic">Nenhum objetivo ativo. Defina um novo OKR para começar.</p>';
+                    okrList.innerHTML = '<p class="text-xs text-outline italic">Nenhum objetivo ativo. Defina um novo Projeto para começar.</p>';
                 } else {
                     okrList.innerHTML = activeOkrs.map(okr => `
                         <div class="flex items-start gap-3">
@@ -2181,7 +2181,13 @@ render: {
                 Lazer: 'Lazer',
                 Proposito: 'Proposito'
             };
-            const typeMap = { Macro: 'Macros', Micro: 'Micros' };
+            const typeMap = {
+                Macro: 'Macros',
+                Micro: 'Micros',
+                Projeto: 'OKRs',
+                Entrega: 'Macros',
+                Ação: 'Micros'
+            };
             const typeFilter = typeMap[app.focusTypeFilter] || app.focusTypeFilter || 'Tudo';
             app.focusStatusFilter = 'Tudo';
             const statusFilter = 'Tudo';
@@ -2352,7 +2358,7 @@ render: {
                         ? '<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
                         : '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-widest">Captura</span>';
                     const orphanBadge = !focusEligibility.ok
-                        ? '<span title="Micro sem Macro associada (Não Alinhada)" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-widest border border-amber-500/20"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Não Alinhado</span>'
+                        ? '<span title="Ação sem Entrega associada (Não Alinhada)" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-widest border border-amber-500/20"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Não Alinhado</span>'
                         : '';
                     const trailId = `foco-trail-${idx}`;
                     const toggleTrail = `const p=document.getElementById('${trailId}'); if(!p) return; p.classList.toggle('hidden');`;
@@ -2402,8 +2408,8 @@ render: {
                             <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Trilha</p>
                             <div class="text-xs text-on-surface-variant space-y-1">
                                 <p><span class="font-semibold text-on-surface">Meta:</span> ${app.escapeHtml(ctx.meta?.title || '-')}</p>
-                                <p><span class="font-semibold text-on-surface">OKR:</span> ${app.escapeHtml(ctx.okr?.title || '-')}</p>
-                                <p><span class="font-semibold text-on-surface">Macro:</span> ${app.escapeHtml(ctx.macro?.title || '-')}</p>
+                                <p><span class="font-semibold text-on-surface">Projeto:</span> ${app.escapeHtml(ctx.okr?.title || '-')}</p>
+                                <p><span class="font-semibold text-on-surface">Entrega:</span> ${app.escapeHtml(ctx.macro?.title || '-')}</p>
                             </div>
                         </div>
                     </div>
@@ -2413,8 +2419,8 @@ render: {
                 if (filtered.length === 0) {
                     listContainer.innerHTML = `<div class="col-span-full rounded-2xl border border-dashed border-outline-variant/30 bg-surface-container-lowest p-8 text-center">
                         <span class="material-symbols-outlined notranslate text-3xl text-outline mb-2">checklist</span>
-                        <p class="font-bold text-on-surface">Nenhuma micro ação encontrada.</p>
-                        <p class="text-sm text-on-surface-variant mt-1">Crie uma micro em Planos ou ajuste os filtros para montar sua fila de execução.</p>
+                        <p class="font-bold text-on-surface">Nenhuma ação encontrada.</p>
+                        <p class="text-sm text-on-surface-variant mt-1">Crie uma ação em Planos ou ajuste os filtros para montar sua fila de execução.</p>
                     </div>`;
                 }
             }
@@ -3213,7 +3219,7 @@ render: {
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-primary text-xl bg-surface-container-lowest p-0.5 rounded-full">check_circle</span>
                                 <div class="flex flex-col min-w-0">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Micro Ação</span>
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Ação</span>
                                     <span class="text-sm font-medium truncate">${micro.title}</span>
                                 </div>
                             </div>
@@ -3221,7 +3227,7 @@ render: {
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">account_tree</span>
                                 <div class="flex flex-col min-w-0">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Macro Ação</span>
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Entrega</span>
                                     <span class="text-xs truncate">${macro.title || '-'}</span>
                                 </div>
                             </div>
@@ -3229,7 +3235,7 @@ render: {
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">track_changes</span>
                                 <div class="flex flex-col min-w-0">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">OKR</span>
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Projeto</span>
                                     <span class="text-xs truncate">${okr.title || '-'}</span>
                                 </div>
                             </div>
@@ -3276,7 +3282,7 @@ render: {
 
                             <div class="pt-3 border-t border-outline-variant/10 flex justify-end">
                                 <button onclick="event.stopPropagation(); app.openEntityReview('${micro.id}', 'micros')" class="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-bold transition-all shadow-sm">
-                                    <span class="material-symbols-outlined notranslate text-[18px]">settings_accessibility</span> Gerir Micro Ação
+                                    <span class="material-symbols-outlined notranslate text-[18px]">settings_accessibility</span> Gerenciar Ação
                                 </button>
                             </div>
                         </div>
@@ -3309,8 +3315,8 @@ render: {
 
             if (!html.trim()) {
                 const emptyLabel = todayMode === 'horario' && todayDayPart !== 'all'
-                    ? `Nenhuma micro neste filtro de ${todayDayPart.replace('_', ' ')}.`
-                    : 'Nenhuma micro prevista para hoje.';
+                    ? `Nenhuma ação neste filtro de ${todayDayPart.replace('_', ' ')}.`
+                    : 'Nenhuma ação prevista para hoje.';
                 html = `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 text-xs text-outline italic">${app.escapeHtml(emptyLabel)}</div>`;
             }
 
@@ -3488,7 +3494,7 @@ render: {
 
                 if (Object.keys(grouped).length === 0) {
                     const emptyIcon = (entityType === 'metas' || entityType === 'okrs') ? 'flag' : 'task_alt';
-                    const emptyTypeLabel = ({ metas: 'meta', okrs: 'OKR', macros: 'macro', micros: 'micro ação' })[entityType] || 'plano';
+                    const emptyTypeLabel = ({ metas: 'meta', okrs: 'Projeto', macros: 'entrega', micros: 'ação' })[entityType] || 'plano';
                     const filterCopy = filter === 'Todas' ? 'nesta categoria' : `em ${filter}`;
                     // Show guided trail CTA when viewing metas with no active filter
                     const showTrailCta = entityType === 'metas' && filter === 'Todas';
@@ -3498,7 +3504,7 @@ render: {
                             <span class="material-symbols-outlined notranslate text-outline text-3xl">${emptyIcon}</span>
                         </div>
                         <h4 class="font-headline text-lg font-bold text-on-background">Nenhum ${emptyTypeLabel} encontrado</h4>
-                        <p class="text-sm text-outline mt-2 max-w-sm">${showTrailCta ? 'Comece criando sua primeira meta. A trilha guiada cria meta, OKRs, macros e micros de uma vez.' : `Não há itens ${filterCopy} com os filtros atuais.`}</p>
+                        <p class="text-sm text-outline mt-2 max-w-sm">${showTrailCta ? 'Comece criando sua primeira meta. A trilha guiada cria meta, projetos, entregas e ações de uma vez.' : `Não há itens ${filterCopy} com os filtros atuais.`}</p>
                         <div class="mt-5 flex flex-wrap justify-center gap-2">
                             ${showTrailCta ? `
                             <button type="button" onclick="window.app.openMetaTrailWizard()"
@@ -3546,34 +3552,34 @@ render: {
                         if (entityType === 'metas' || entityType === 'okrs' || entityType === 'macros') {
                             const counts = app._getEntityCounts(entityType, item.id, state);
                             const parts = [];
-                            if (counts.okrs > 0) parts.push(`${counts.okrs} OKR${counts.okrs > 1 ? 's' : ''}`);
-                            if (counts.macros > 0) parts.push(`${counts.macros} Macro${counts.macros > 1 ? 's' : ''}`);
-                            if (counts.micros > 0) parts.push(`${counts.micros} Micro${counts.micros > 1 ? 's' : ''}`);
+                            if (counts.okrs > 0) parts.push(`${counts.okrs} Projeto${counts.okrs > 1 ? 's' : ''}`);
+                            if (counts.macros > 0) parts.push(`${counts.macros} Entrega${counts.macros > 1 ? 's' : ''}`);
+                            if (counts.micros > 0) parts.push(`${counts.micros} ${counts.micros > 1 ? 'Ações' : 'Ação'}`);
                             countLine = parts.join(' - ');
                         }
 
                         // Build Hierarchy Trail Nodes
                         let trailNodes = [];
                         if (entityType === 'micros') {
-                            trailNodes.push({ label: 'Micro Ação', title: item.title });
+                            trailNodes.push({ label: 'Ação', title: item.title });
                             const macro = state.entities.macros.find(x => x.id === item.macroId);
-                            trailNodes.push({ label: 'Macro Ação', title: macro ? macro.title : '[Não Alinhado - Sem Macro]' });
+                            trailNodes.push({ label: 'Entrega', title: macro ? macro.title : '[Não Alinhado - Sem Entrega]' });
                             const okr = macro ? state.entities.okrs.find(x => x.id === macro.okrId) : state.entities.okrs.find(x => x.id === item.okrId);
-                            trailNodes.push({ label: 'OKR', title: okr ? okr.title : '[Sem OKR]' });
+                            trailNodes.push({ label: 'Projeto', title: okr ? okr.title : '[Sem Projeto]' });
                             const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : state.entities.metas.find(x => x.id === item.metaId);
                             trailNodes.push({ label: 'Meta', title: meta ? meta.title : '[Sem Meta]' });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || 'Geral' });
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '[Sem Propósito]') : '[Sem Propósito]' });
                         } else if (entityType === 'macros') {
-                            trailNodes.push({ label: 'Macro Ação', title: item.title });
+                            trailNodes.push({ label: 'Entrega', title: item.title });
                             const okr = state.entities.okrs.find(x => x.id === item.okrId);
-                            trailNodes.push({ label: 'OKR', title: okr ? okr.title : '[Não Alinhado - Sem OKR]' });
+                            trailNodes.push({ label: 'Projeto', title: okr ? okr.title : '[Não Alinhado - Sem Projeto]' });
                             const meta = okr ? state.entities.metas.find(x => x.id === okr.metaId) : state.entities.metas.find(x => x.id === item.metaId);
                             trailNodes.push({ label: 'Meta', title: meta ? meta.title : '[Sem Meta]' });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || 'Geral' });
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: meta ? (meta.purpose || '[Sem Propósito]') : '[Sem Propósito]' });
                         } else if (entityType === 'okrs') {
-                            trailNodes.push({ label: 'OKR', title: item.title });
+                            trailNodes.push({ label: 'Projeto', title: item.title });
                             const meta = state.entities.metas.find(x => x.id === item.metaId);
                             trailNodes.push({ label: 'Meta', title: meta ? meta.title : '[Não Alinhado - Sem Meta]' });
                             trailNodes.push({ label: 'Área', title: resolveDim(item) || 'Geral' });
@@ -3609,9 +3615,9 @@ render: {
                             else if (node.label === 'Meta') { icon = 'flag'; colorClass = 'text-outline'; }
                             else if (node.label === 'Meta Pai') { icon = 'outbound'; colorClass = 'text-outline'; }
                             else if (node.label === 'Horizonte') { icon = 'schedule'; colorClass = 'text-primary'; }
-                            else if (node.label === 'OKR') { icon = 'track_changes'; colorClass = 'text-outline'; }
-                            else if (node.label === 'Macro Ação') { icon = 'account_tree'; colorClass = 'text-outline'; }
-                            else if (node.label === 'Micro Ação') { icon = 'check_circle'; colorClass = 'text-primary'; }
+                            else if (node.label === 'Projeto') { icon = 'track_changes'; colorClass = 'text-outline'; }
+                            else if (node.label === 'Entrega') { icon = 'account_tree'; colorClass = 'text-outline'; }
+                            else if (node.label === 'Ação') { icon = 'check_circle'; colorClass = 'text-primary'; }
                             else if (node.label === 'Critério de Sucesso') { icon = 'rule'; colorClass = 'text-primary'; }
                             else if (node.label === 'Desafio') { icon = 'military_tech'; colorClass = 'text-primary'; }
                             else if (node.label === 'Comprometimento') { icon = 'verified'; colorClass = 'text-primary'; }
@@ -3633,8 +3639,8 @@ render: {
                         const isAligned = userValues.includes(item.dimension);
                         const microPlanChip = entityType === 'micros'
                             ? (app._isPlannedThisWeek(item.id)
-                                ? '<span title="Micro selecionada no planejamento semanal" class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase tracking-wider">Semana</span>'
-                                : '<span title="Micro capturada fora do plano semanal" class="shrink-0 bg-surface-container-high text-on-surface-variant text-[9px] px-2 py-0.5 rounded-full border border-outline-variant/20 font-bold uppercase tracking-wider">Captura</span>')
+                                ? '<span title="Ação selecionada no planejamento semanal" class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase tracking-wider">Semana</span>'
+                                : '<span title="Ação capturada fora do plano semanal" class="shrink-0 bg-surface-container-high text-on-surface-variant text-[9px] px-2 py-0.5 rounded-full border border-outline-variant/20 font-bold uppercase tracking-wider">Captura</span>')
                             : '';
                         const woopCardHtml = (item.obstacle || item.ifThen) ? `
                             <div class="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-on-surface-variant leading-relaxed">
@@ -3690,7 +3696,7 @@ render: {
                                 `
                                 : (isPending
                                     ? `
-                                <div class="p-2.5 border border-outline-variant/20 bg-surface-container-low rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline" title="Inicia automaticamente quando uma micro filha entra em execução">
+                                <div class="p-2.5 border border-outline-variant/20 bg-surface-container-low rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline" title="Inicia automaticamente quando uma ação filha entra em execução">
                                     <span class="material-symbols-outlined notranslate text-base">account_tree</span> Inicia via cascata
                                 </div>
                                 `

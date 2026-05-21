@@ -18,15 +18,15 @@ import {
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
-import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
-import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v2';
-import { attachIdentity } from './js/identity.js?v=20260520-focus-linkage-audit-v3';
+import { attachCadence } from './js/cadence.js?v=20260521-taxonomy-v1';
+import { attachOnboarding } from './js/onboarding.js?v=20260521-taxonomy-v1';
+import { attachIdentity } from './js/identity.js?v=20260521-taxonomy-v1';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-focus-linkage-audit-v3';
-import { attachStateModule } from './js/state.js?v=20260520-auth-stability-v1';
-import { attachRenderModule } from './js/render.js?v=20260520-focus-linkage-audit-v3';
-import { attachPlanningModule } from './js/planning.js?v=20260520-focus-linkage-audit-v3';
+import { attachStateModule } from './js/state.js?v=20260521-taxonomy-v1';
+import { attachRenderModule } from './js/render.js?v=20260521-taxonomy-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260521-taxonomy-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -207,8 +207,14 @@ const app = {
         viewsPath: 'views/',
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
+    publicTaxonomy: {
+        metas: { singular: 'Meta', plural: 'Metas' },
+        okrs: { singular: 'Projeto', plural: 'Projetos' },
+        macros: { singular: 'Entrega', plural: 'Entregas' },
+        micros: { singular: 'Ação', plural: 'Ações' }
+    },
     webPushPublicKey: null,
-    appBuildVersion: '20260520-focus-linkage-audit-v3',
+    appBuildVersion: '20260521-taxonomy-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -1300,7 +1306,7 @@ getDimensionIdentity: function(dimension, level) {
     },
     getAchievementCatalog: function() {
         return {
-            first_micro_done: { title: 'Primeira micro concluída', icon: 'task_alt' },
+            first_micro_done: { title: 'Primeira ação concluída', icon: 'task_alt' },
             first_planned_micro: { title: 'Plano executado', icon: 'event_available' },
             first_habit_done: { title: 'Ritual iniciado', icon: 'repeat' },
             first_focus_session: { title: 'Bloco de foco', icon: 'timer' },
@@ -1463,8 +1469,8 @@ getDimensionIdentity: function(dimension, level) {
 
         let parentLabel = '[Não Alinhado - Sem Vínculo]';
         if (macro) parentLabel = macro.title;
-        else if (okr) parentLabel = `${okr.title} [Sem Macro]`;
-        else if (meta) parentLabel = `${meta.title} [Sem OKR/Macro]`;
+        else if (okr) parentLabel = `${okr.title} [Sem Entrega]`;
+        else if (meta) parentLabel = `${meta.title} [Sem Projeto/Entrega]`;
 
         const parts = [];
         if (meta) {
@@ -1476,7 +1482,7 @@ getDimensionIdentity: function(dimension, level) {
         if (okr) {
             parts.push(okr.title);
         } else if (macro) {
-            parts.push('[Sem OKR]');
+            parts.push('[Sem Projeto]');
         }
 
         if (macro) {
@@ -1493,17 +1499,17 @@ getDimensionIdentity: function(dimension, level) {
     },
     getMicroFocusEligibility: function(micro) {
         if (!micro?.id) {
-            return { ok: false, reason: 'Micro aÃ§Ã£o invÃ¡lida.' };
+            return { ok: false, reason: 'Ação inválida.' };
         }
         const ctx = this.getMicroPlanContext(micro);
         if (!ctx.macro) {
-            return { ok: false, reason: 'Essa micro estÃ¡ sem Macro vÃ¡lida. Corrija o vÃ­nculo antes de iniciar foco.' };
+            return { ok: false, reason: 'Essa ação está sem Entrega válida. Corrija o vínculo antes de iniciar foco.' };
         }
         if (!ctx.okr) {
-            return { ok: false, reason: 'Essa micro estÃ¡ sem OKR vÃ¡lido. Corrija o vÃ­nculo antes de iniciar foco.' };
+            return { ok: false, reason: 'Essa ação está sem Projeto válido. Corrija o vínculo antes de iniciar foco.' };
         }
         if (!ctx.meta) {
-            return { ok: false, reason: 'Essa micro estÃ¡ sem Meta vÃ¡lida. Corrija o vÃ­nculo antes de iniciar foco.' };
+            return { ok: false, reason: 'Essa ação está sem Meta válida. Corrija o vínculo antes de iniciar foco.' };
         }
         const entityDimension = String(micro.dimension || '').trim();
         const lineageDimension = String(ctx.macro?.dimension || ctx.okr?.dimension || ctx.meta?.dimension || '').trim();
@@ -1512,7 +1518,7 @@ getDimensionIdentity: function(dimension, level) {
         const isGenericEntityDimension = !normalizedEntityDimension || normalizedEntityDimension === 'geral';
         const isGenericLineageDimension = !normalizedLineageDimension || normalizedLineageDimension === 'geral';
         if (!isGenericEntityDimension && !isGenericLineageDimension && normalizedEntityDimension !== normalizedLineageDimension) {
-            return { ok: false, reason: 'Essa micro esta em uma area diferente da trilha vinculada. Corrija a dimensao ou o vinculo antes de iniciar foco.' };
+            return { ok: false, reason: 'Essa ação está em uma área diferente da trilha vinculada. Corrija a dimensão ou o vínculo antes de iniciar foco.' };
         }
         return { ok: true, ctx };
     },
@@ -2765,14 +2771,14 @@ renderProfileChrome: function() {
                 return `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                            <p class="text-sm font-bold text-on-surface">${this.escapeHtml(okr.title || 'OKR sem título')}</p>
-                            <p class="text-xs text-outline mt-1">${macros.length} macro${macros.length === 1 ? '' : 's'} · ${pendingMicros} micro${pendingMicros === 1 ? '' : 's'} pendente${pendingMicros === 1 ? '' : 's'}</p>
+                            <p class="text-sm font-bold text-on-surface">${this.escapeHtml(okr.title || 'Projeto sem título')}</p>
+                            <p class="text-xs text-outline mt-1">${macros.length} entrega${macros.length === 1 ? '' : 's'} · ${pendingMicros} ação${pendingMicros === 1 ? '' : 'ões'} pendente${pendingMicros === 1 ? '' : 's'}</p>
                         </div>
                         <span class="text-xs font-bold text-primary shrink-0">${Math.round(Number(okr.progress) || 0)}%</span>
                     </div>
                 </div>`;
             }).join('')
-            : '<p class="text-sm text-outline italic">Nenhum OKR ativo para revisar agora.</p>';
+            : '<p class="text-sm text-outline italic">Nenhum Projeto ativo para revisar agora.</p>';
 
         panel.innerHTML = `
             <div class="space-y-2">
@@ -2787,7 +2793,7 @@ renderProfileChrome: function() {
             </div>
             <div class="space-y-3">
                 <div class="flex items-center justify-between gap-3">
-                    <h4 class="text-xs font-bold uppercase tracking-[0.18em] text-outline">OKRs ativos</h4>
+                    <h4 class="text-xs font-bold uppercase tracking-[0.18em] text-outline">Projetos ativos</h4>
                     <button onclick="window.app.openQuarterlyModal()"
                         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
                         <span class="material-symbols-outlined notranslate text-[16px]">rate_review</span>
@@ -3500,7 +3506,7 @@ renderProfileChrome: function() {
             title: template.macroTitle || '',
             inicioDate: toDate(today),
             prazo: toDate(macroDeadline),
-            description: 'Macro inicial baseada em trilha pronta'
+            description: 'Entrega inicial baseada em trilha pronta'
         });
         this.addTrailMicroRow({
             title: template.microTitle || '',
@@ -3667,7 +3673,7 @@ renderProfileChrome: function() {
         const list = document.getElementById('trail-okrs-list');
         if (!list) return;
         if (list.children.length >= 3) {
-            this.showToast('Máximo de 3 OKRs na trilha.', 'error');
+            this.showToast('Máximo de 3 Projetos na trilha.', 'error');
             return;
         }
         const rowId = this._trailRowId('okr');
@@ -3676,11 +3682,11 @@ renderProfileChrome: function() {
         row.className = 'bg-surface-container-low border border-outline-variant/20 rounded-xl p-4 space-y-3';
         row.innerHTML = `
             <div class="flex items-center justify-between gap-2">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">OKR</p>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Projeto</p>
                 <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
             </div>
             <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Objetivo do OKR</label>
+                <label class="text-[10px] font-bold uppercase tracking-widest text-outline">Objetivo do Projeto</label>
                 <input type="text" class="trail-okr-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Resultado-chave (ex.: Publicar 12 artigos)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMacroParentOptions(); window.app.refreshTrailSummary()">
             </div>
             <div class="flex flex-col gap-1">
@@ -3720,7 +3726,7 @@ renderProfileChrome: function() {
                     <span class="text-[10px] font-label uppercase tracking-widest text-outline text-center">Meta</span>
                     <span></span>
                 </div>
-                <p class="text-[10px] text-outline">KR (Key Result) é um indicador mensurável que mostra avanço real do OKR.</p>
+                <p class="text-[10px] text-outline">KR (Key Result) é um indicador mensurável que mostra avanço real do Projeto.</p>
                 <div class="trail-kr-rows flex flex-col gap-2"></div>
                 <button type="button" onclick="window.app.addTrailKrRow(this)"
                     class="flex items-center gap-1.5 text-[11px] text-primary font-bold uppercase tracking-widest py-2 px-3 rounded-lg border border-primary/20 hover:bg-primary/5 transition-colors w-fit">
@@ -3763,7 +3769,7 @@ renderProfileChrome: function() {
         const list = document.getElementById('trail-macros-list');
         if (!list) return;
         if (list.children.length >= 5) {
-            this.showToast('Máximo de 5 Macros na trilha.', 'error');
+            this.showToast('Máximo de 5 Entregas na trilha.', 'error');
             return;
         }
         const rowId = this._trailRowId('macro');
@@ -3772,7 +3778,7 @@ renderProfileChrome: function() {
         row.className = 'bg-surface-container-low border border-outline-variant/20 rounded-xl p-4 space-y-3';
         row.innerHTML = `
             <div class="flex items-center justify-between gap-2">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Macro</p>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Entrega</p>
                 <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
             </div>
             <input type="text" class="trail-macro-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Iniciativa principal (ex.: Sistema editorial semanal)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailMicroParentOptions(); window.app.refreshTrailSummary()">
@@ -3797,7 +3803,7 @@ renderProfileChrome: function() {
         row.className = 'bg-surface-container-low border border-outline-variant/20 rounded-xl p-4 space-y-3';
         row.innerHTML = `
             <div class="flex items-center justify-between gap-2">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Micro</p>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Ação</p>
                 <button type="button" onclick="window.app.removeTrailRow(this)" class="text-error text-xs font-bold uppercase">Remover</button>
             </div>
             <input type="text" class="trail-micro-title w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface" placeholder="Ação concreta (ex.: Escrever outline do artigo 1)" value="${this.escapeHtml(prefill.title || '')}" oninput="window.app.refreshTrailSummary()">
@@ -3830,12 +3836,12 @@ renderProfileChrome: function() {
         selects.forEach(select => {
             const selected = select.value;
             if (okrs.length === 0) {
-                select.innerHTML = '<option value="">Sem OKR disponível</option>';
+                select.innerHTML = '<option value="">Sem Projeto disponível</option>';
                 select.value = '';
                 return;
             }
             const options = okrs.map((okr, idx) => `<option value="${okr.rowId}">${idx + 1}. ${this.escapeHtml(okr.title)}</option>`).join('');
-            select.innerHTML = `<option value="">Selecione o OKR...</option>${options}`;
+            select.innerHTML = `<option value="">Selecione o Projeto...</option>${options}`;
             if (selected && okrs.some(okr => okr.rowId === selected)) select.value = selected;
             else select.value = '';
         });
@@ -3849,12 +3855,12 @@ renderProfileChrome: function() {
         selects.forEach(select => {
             const selected = select.value;
             if (macros.length === 0) {
-                select.innerHTML = '<option value="">Sem Macro disponível</option>';
+                select.innerHTML = '<option value="">Sem Entrega disponível</option>';
                 select.value = '';
                 return;
             }
             const options = macros.map((macro, idx) => `<option value="${macro.rowId}">${idx + 1}. ${this.escapeHtml(macro.title)}</option>`).join('');
-            select.innerHTML = `<option value="">Selecione a Macro...</option>${options}`;
+            select.innerHTML = `<option value="">Selecione a Entrega...</option>${options}`;
             if (selected && macros.some(macro => macro.rowId === selected)) select.value = selected;
             else select.value = '';
         });
@@ -3866,7 +3872,7 @@ renderProfileChrome: function() {
         return rows.map((row, idx) => {
             const rowId = row.getAttribute('data-trail-row');
             const title = (row.querySelector('.trail-macro-title')?.value || '').trim();
-            return { rowId, title: title || `Macro ${idx + 1}` };
+            return { rowId, title: title || `Entrega ${idx + 1}` };
         }).filter(item => item.rowId && item.title);
     },
 
@@ -4210,24 +4216,24 @@ openCreateModal: function(type = 'metas', parentId = null) {
         if (normalizedType === 'okrs') {
             const startRef = String(inicioDate || this.getLocalDateKey());
             const days = this.getDayDiffBetween(startRef, prazo);
-            if (days === null || days < 0) return { ok: false, message: 'OKR precisa de início e prazo válidos. O prazo não pode vir antes do início.' };
-            if (days > 92) return { ok: false, message: 'OKR deve ficar dentro de até 3 meses (máx. 92 dias). Se for maior, transforme em Meta ou divida em OKRs menores.' };
+            if (days === null || days < 0) return { ok: false, message: 'Projeto precisa de início e prazo válidos. O prazo não pode vir antes do início.' };
+            if (days > 92) return { ok: false, message: 'Projeto deve ficar dentro de até 3 meses (máx. 92 dias). Se for maior, transforme em Meta ou divida em Projetos menores.' };
             return { ok: true };
         }
 
         if (normalizedType === 'macros') {
             const startRef = String(inicioDate || this.getLocalDateKey());
             const days = this.getDayDiffBetween(startRef, prazo);
-            if (days === null || days < 0) return { ok: false, message: 'Macro Ação precisa de início e prazo válidos. O prazo não pode vir antes do início.' };
-            if (days > 31) return { ok: false, message: 'Macro Ação deve caber em até 1 mês (máx. 31 dias). Se passar disso, divida em macros menores ou promova para OKR.' };
+            if (days === null || days < 0) return { ok: false, message: 'Entrega precisa de início e prazo válidos. O prazo não pode vir antes do início.' };
+            if (days > 31) return { ok: false, message: 'Entrega deve caber em até 1 mês (máx. 31 dias). Se passar disso, divida em entregas menores ou promova para Projeto.' };
             return { ok: true };
         }
 
         if (normalizedType === 'micros') {
             const startRef = String(inicioDate || this.getLocalDateKey());
             const days = this.getDayDiffBetween(startRef, prazo);
-            if (days === null || days < 0) return { ok: false, message: 'Micro Ação precisa de início e prazo válidos. O prazo não pode vir antes do início.' };
-            if (days > 7) return { ok: false, message: 'Micro Ação deve caber em até 7 dias. Se passar disso, divida em micros menores ou classifique como Macro Ação.' };
+            if (days === null || days < 0) return { ok: false, message: 'Ação precisa de início e prazo válidos. O prazo não pode vir antes do início.' };
+            if (days > 7) return { ok: false, message: 'Ação deve caber em até 7 dias. Se passar disso, divida em ações menores ou classifique como Entrega.' };
             return { ok: true };
         }
 
@@ -4692,10 +4698,10 @@ ensureNotesState: function() {
         const options = [];
         const entities = state.entities || {};
         [
-            ['metas', 'Metas'],
-            ['okrs', 'OKRs'],
-            ['macros', 'Macros'],
-            ['micros', 'Micros']
+            ['metas', this.getEntityPublicTypeLabel('metas', { plural: true })],
+            ['okrs', this.getEntityPublicTypeLabel('okrs', { plural: true })],
+            ['macros', this.getEntityPublicTypeLabel('macros', { plural: true })],
+            ['micros', this.getEntityPublicTypeLabel('micros', { plural: true })]
         ].forEach(([type, group]) => {
             (entities[type] || []).forEach(item => {
                 if (item?.id && item?.title) options.push(makeOption(type, item.id, item.title, group));
@@ -5039,12 +5045,32 @@ ensureNotesState: function() {
         if (!entityType) return '';
         const raw = String(entityType).toLowerCase().trim();
         const map = {
-            meta: 'metas', metas: 'metas', okr: 'okrs', okrs: 'okrs',
-            macro: 'macros', macros: 'macros', micro: 'micros', micros: 'micros',
+            meta: 'metas', metas: 'metas', okr: 'okrs', okrs: 'okrs', projeto: 'okrs', projetos: 'okrs',
+            macro: 'macros', macros: 'macros', entrega: 'macros', entregas: 'macros',
+            micro: 'micros', micros: 'micros', acao: 'micros', acoes: 'micros', ação: 'micros', ações: 'micros',
             habit: 'habits', habits: 'habits', strength: 'strengths', strengths: 'strengths',
             shadow: 'shadows', shadows: 'shadows'
         };
         return map[raw] || raw;
+    },
+
+    getEntityPublicTypeLabel: function(entityType, options = {}) {
+        const normalized = this.normalizeEntityType(entityType);
+        const entry = this.publicTaxonomy[normalized];
+        if (!entry) return String(entityType || '');
+        const label = options.plural ? entry.plural : entry.singular;
+        return options.lowercase ? label.toLowerCase() : label;
+    },
+
+    getEntityLegacyFilterLabel: function(entityType) {
+        const normalized = this.normalizeEntityType(entityType);
+        const map = { metas: 'Metas', okrs: 'OKRs', macros: 'Macros', micros: 'Micros' };
+        return map[normalized] || String(entityType || '');
+    },
+
+    getFocusTypePublicLabel: function(filterType) {
+        if (!filterType || filterType === 'Tudo') return 'Tudo';
+        return this.getEntityPublicTypeLabel(filterType, { plural: true });
     },
 
     getLinkedNotes: function(entityType, entityId) {
@@ -5211,7 +5237,7 @@ ensureNotesState: function() {
             return 'Ansiedade e carga alta hoje. Vale uma pausa de respiração ou caminhada antes do próximo bloco.';
         }
         if (stress >= 4) {
-            return 'Carga emocional alta. Reduza o número de micros e preserve uma pausa de verdade hoje.';
+            return 'Carga emocional alta. Reduza o número de ações e preserve uma pausa de verdade hoje.';
         }
         if (energy <= 2) {
             return 'Energia baixa. Um bloco de foco curto e bem feito vale mais do que um longo arrastado.';
@@ -5532,7 +5558,7 @@ ensureNotesState: function() {
                 <div class="min-w-0">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">Sinais de sobrecarga</p>
                     <h4 class="mt-1 font-headline text-xl font-bold text-on-surface">Considere reduzir o ritmo desta semana</h4>
-                    <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Detectei ${this.escapeHtml(reasons || 'carga alta')} com ${signal.plannedCount} micros planejadas e ${signal.activeHabits} habitos ativos.</p>
+                    <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Detectei ${this.escapeHtml(reasons || 'carga alta')} com ${signal.plannedCount} ações planejadas e ${signal.activeHabits} habitos ativos.</p>
                 </div>
                 <button type="button" onclick="window.app.dismissLoadRecoveryAlert()" class="shrink-0 px-4 py-2 rounded-xl bg-surface-container-high text-xs font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container-highest">Dispensar</button>
             </div>`;
@@ -5622,7 +5648,7 @@ ensureNotesState: function() {
                 insights.push({
                     icon: 'trending_down',
                     tone: 'warn',
-                    text: `<b>${dim}</b> tem Meta ativa mas nenhuma micro concluída nas últimas 4 semanas.`
+                    text: `<b>${dim}</b> tem Meta ativa mas nenhuma ação concluída nas últimas 4 semanas.`
                 });
             }
         });
@@ -5662,7 +5688,7 @@ ensureNotesState: function() {
             insights.push({
                 icon: 'warning',
                 tone: 'warn',
-                text: `${overdueCount} micros atrasadas acumuladas. Considere migrar ou adiar em lote.`
+                text: `${overdueCount} ações atrasadas acumuladas. Considere migrar ou adiar em lote.`
             });
         }
 
@@ -5684,7 +5710,7 @@ ensureNotesState: function() {
                 insights.push({
                     icon: 'balance',
                     tone: 'info',
-                    text: `<b>${dominant[0]}</b> concentra ${Math.round((dominant[1] / weekMicros.length) * 100)}% das micros da semana. Veja se isso é intenção ou desequilíbrio.`
+                    text: `<b>${dominant[0]}</b> concentra ${Math.round((dominant[1] / weekMicros.length) * 100)}% das ações da semana. Veja se isso é intenção ou desequilíbrio.`
                 });
             }
 
@@ -5696,7 +5722,7 @@ ensureNotesState: function() {
                 insights.push({
                     icon: 'link_off',
                     tone: 'warn',
-                    text: `${unlinked} de ${weekMicros.length} micros da semana estão sem vínculo com Meta. Pode ser operação necessária, mas revise se o plano ainda aponta para algo maior.`
+                    text: `${unlinked} de ${weekMicros.length} ações da semana estão sem vínculo com Meta. Pode ser operação necessária, mas revise se o plano ainda aponta para algo maior.`
                 });
             }
         }
@@ -5737,7 +5763,7 @@ ensureNotesState: function() {
                     parentId: meta.id,
                     parentTitle: meta.title,
                     title: 'Meta sem resultado-chave',
-                    description: `"${meta.title}" ainda não tem um OKR. Defina um resultado mensurável para que o progresso desta meta possa ser rastreado.`
+                    description: `"${meta.title}" ainda não tem um Projeto. Defina um resultado mensurável para que o progresso desta meta possa ser rastreado.`
                 };
             }
         }
@@ -5750,8 +5776,8 @@ ensureNotesState: function() {
                     entityType: 'macros',
                     parentId: okr.id,
                     parentTitle: okr.title,
-                    title: 'OKR sem projeto vinculado',
-                    description: `"${okr.title}" ainda não tem uma macro. Crie um projeto para dar execução a este resultado esperado.`
+                    title: 'Projeto sem entrega vinculada',
+                    description: `"${okr.title}" ainda não tem uma entrega. Crie uma entrega para dar execução a este resultado esperado.`
                 };
             }
         }
@@ -5764,8 +5790,8 @@ ensureNotesState: function() {
                     entityType: 'micros',
                     parentId: macro.id,
                     parentTitle: macro.title,
-                    title: 'Macro sem próximo passo',
-                    description: `"${macro.title}" não tem ações ativas vinculadas. Crie uma micro ação para avançar neste projeto.`
+                    title: 'Entrega sem próximo passo',
+                    description: `"${macro.title}" não tem ações ativas vinculadas. Crie uma ação para avançar nesta entrega.`
                 };
             }
         }
@@ -5812,7 +5838,7 @@ ensureNotesState: function() {
         const suggestedTitle = next?.title || next?.micro?.title || '';
         const direction = suggestedTitle
             ? `Direção: avance "${suggestedTitle}" sem perder de vista ${valueText}.`
-            : `Direção: escolha uma micro ação que torne ${valueText} visível hoje.`;
+            : `Direção: escolha uma ação que torne ${valueText} visível hoje.`;
 
         return {
             theme,
@@ -5974,12 +6000,12 @@ ensureNotesState: function() {
             const copy = ratio > 1.5
                 ? 'Seu plano está muito acima do ritmo recente. Corte ou adie antes de criar novas ações.'
                 : (ratio > 1.1
-                    ? 'Seu plano está um pouco acima da média. Priorize as micros essenciais.'
+                    ? 'Seu plano está um pouco acima da média. Priorize as ações essenciais.'
                     : 'A carga planejada está dentro do seu ritmo recente.');
             loadHtml = `
                 <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-4 shadow-sm">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Execução realista</p>
-                    <p class="mt-2 text-sm text-on-surface"><span class="${tone} font-bold">${plannedCount}</span> micros planejadas para média recente de <span class="font-bold">${avg}</span>.</p>
+                    <p class="mt-2 text-sm text-on-surface"><span class="${tone} font-bold">${plannedCount}</span> ações planejadas para média recente de <span class="font-bold">${avg}</span>.</p>
                     <p class="mt-1 text-xs text-on-surface-variant leading-relaxed">${copy}</p>
                 </div>`;
         }
@@ -6003,20 +6029,20 @@ ensureNotesState: function() {
             : Math.max(0, Math.min(100, Math.round((execScore * 0.75) + 25 - loadPenalty - overduePenalty)));
 
         let label = 'Semana sem plano';
-        let copy = 'Planeje micros para medir se a semana está executável.';
+        let copy = 'Planeje ações para medir se a semana está executável.';
         let color = 'bg-primary';
         if (plannedCount > 0) {
             if (score >= 75) {
                 label = 'Saudável';
-                copy = `${doneCount}/${plannedCount} micros concluídas. Continue executando sem inflar o plano.`;
+                copy = `${doneCount}/${plannedCount} ações concluídas. Continue executando sem inflar o plano.`;
                 color = 'bg-emerald-500';
             } else if (score >= 45) {
                 label = 'Pede atenção';
-                copy = `${doneCount}/${plannedCount} micros concluídas. Priorize o essencial antes de adicionar novas ações.`;
+                copy = `${doneCount}/${plannedCount} ações concluídas. Priorize o essencial antes de adicionar novas ações.`;
                 color = 'bg-amber-500';
             } else {
                 label = 'Sob risco';
-                copy = `${doneCount}/${plannedCount} micros concluídas. Reduza escopo, adie o que for denso e resolva atrasos.`;
+                copy = `${doneCount}/${plannedCount} ações concluídas. Reduza escopo, adie o que for denso e resolva atrasos.`;
                 color = 'bg-error';
             }
         }
@@ -6185,13 +6211,13 @@ ensureNotesState: function() {
         const inicioDate = document.getElementById('wp-new-micro-start')?.value || this._getWeeklyPlanKey();
         const prazo = document.getElementById('wp-new-micro-deadline')?.value || '';
 
-        if (!macroId) { this.showToast('Selecione um macro pai.', 'error'); return; }
-        if (!title) { this.showToast('Informe o título da micro ação.', 'error'); return; }
-        if (!prazo) { this.showToast('Informe o prazo da micro ação.', 'error'); return; }
+        if (!macroId) { this.showToast('Selecione uma entrega pai.', 'error'); return; }
+        if (!title) { this.showToast('Informe o título da ação.', 'error'); return; }
+        if (!prazo) { this.showToast('Informe o prazo da ação.', 'error'); return; }
 
         const state = window.sistemaVidaState;
         const macro = (state.entities?.macros || []).find(m => m.id === macroId);
-        if (!macro) { this.showToast('Macro não encontrado.', 'error'); return; }
+        if (!macro) { this.showToast('Entrega não encontrada.', 'error'); return; }
         const windowValidation = this.validateEntityTimeWindow('micros', { inicioDate, prazo });
         if (!windowValidation.ok) { this.showToast(windowValidation.message, 'error'); return; }
 
@@ -6248,7 +6274,7 @@ ensureNotesState: function() {
         const container = document.getElementById('wp-micros-list');
         if (!container) return;
         if (activeMicros.length === 0) {
-            container.innerHTML = '<p class="text-xs text-outline italic">Nenhum micro ativo disponível.</p>';
+            container.innerHTML = '<p class="text-xs text-outline italic">Nenhuma ação ativa disponível.</p>';
             this._updateWeeklyPlanLoadMeter();
             return;
         }
@@ -6365,7 +6391,7 @@ ensureNotesState: function() {
                     const titles = plan.selectedMicros
                         .map(id => state.entities?.micros?.find(m => m.id === id)?.title)
                         .filter(Boolean);
-                    if (titles.length) lines.push('Micros: ' + titles.join(', '));
+                    if (titles.length) lines.push('Ações: ' + titles.join(', '));
                 }
                 q1El.value = lines.join('\n');
             }
@@ -6482,7 +6508,7 @@ ensureNotesState: function() {
         const activeOkrs = (state.entities.okrs || []).filter(o => o.status !== 'done' && o.status !== 'abandoned');
 
         if (activeOkrs.length === 0) {
-            listContainer.innerHTML = '<p class="text-sm text-outline italic text-center py-8">Nenhum OKR ativo no momento.</p>';
+            listContainer.innerHTML = '<p class="text-sm text-outline italic text-center py-8">Nenhum Projeto ativo no momento.</p>';
         } else {
             let html = '';
             activeOkrs.forEach(okr => {
@@ -6633,7 +6659,7 @@ ensureNotesState: function() {
         const state = window.sistemaVidaState;
         const micro = (state.entities.micros || []).find(m => m.id === id);
         if (!micro) {
-            this.showToast('Micro ação não encontrada para adiar.', 'error');
+            this.showToast('Ação não encontrada para adiar.', 'error');
             return;
         }
 
@@ -6647,13 +6673,21 @@ ensureNotesState: function() {
         }
 
         this.saveState(false);
-        this.showToast('Micro adiada para amanhã', 'success');
+        this.showToast('Ação adiada para amanhã', 'success');
         if (this.render.hoje) this.render.hoje();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
     },
 
     setFocusTypeFilter: function(type) {
-      const normalizedType = type === 'Macro' ? 'Macros' : (type === 'Micro' ? 'Micros' : type);
+      const normalizedType = type === 'Macro'
+        ? 'Macros'
+        : (type === 'Micro'
+            ? 'Micros'
+            : (type === 'Projeto'
+                ? 'OKRs'
+                : (type === 'Entrega'
+                    ? 'Macros'
+                    : (type === 'Ação' ? 'Micros' : type))));
       this.focusTypeFilter = normalizedType;
       if (this.currentView === 'foco') this.render.foco();
       if (this.currentView === 'painel') this.render.painel();
@@ -6923,7 +6957,7 @@ ensureNotesState: function() {
             return;
         }
         if (entity.status === 'done') {
-            this.showToast('Esta micro já está concluída. Reabra antes de iniciar novamente.', 'error');
+            this.showToast('Esta ação já está concluída. Reabra antes de iniciar novamente.', 'error');
             return;
         }
         entity.status = 'in_progress';
@@ -7276,7 +7310,7 @@ ensureNotesState: function() {
             if (this.showNotification) {
                 const payload = {
                     title: 'Life OS - Foco',
-                    body: `Bloco de foco concluído. Iniciando pausa de ${Math.max(1, Math.round((Number(dw.breakSec) || 0) / 60))} minutos. Use "Concluir micro" para fechar a ação.`,
+                    body: `Bloco de foco concluído. Iniciando pausa de ${Math.max(1, Math.round((Number(dw.breakSec) || 0) / 60))} minutos. Use "Concluir ação" para fechar a ação.`,
                     tag: 'lifeos-focus-ended',
                     url: '/?view=foco'
                 };
@@ -7388,7 +7422,7 @@ ensureNotesState: function() {
         const chosenMicro = microEl?.value || '';
         const intention = (intentionEl?.value || '').trim();
         if (!chosenMicro) {
-            this.showToast('Selecione uma micro ação de Planos para iniciar o foco.', 'error');
+            this.showToast('Selecione uma ação de Planos para iniciar o foco.', 'error');
             return;
         }
 
@@ -7431,11 +7465,11 @@ ensureNotesState: function() {
         const state = window.sistemaVidaState;
         const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
         if (!micro) {
-            this.showToast('Micro ação indisponível para foco. Verifique se ela ainda está ativa.', 'error');
+            this.showToast('Ação indisponível para foco. Verifique se ela ainda está ativa.', 'error');
             return;
         }
         if (micro.status === 'done') {
-            this.showToast('Esta micro já está concluída. Reabra antes de iniciar foco.', 'error');
+            this.showToast('Esta ação já está concluída. Reabra antes de iniciar foco.', 'error');
             return;
         }
         const focusEligibility = this.getMicroFocusEligibility(micro);
@@ -7466,11 +7500,11 @@ ensureNotesState: function() {
         const state = window.sistemaVidaState;
         const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
         if (!micro) {
-            this.showToast('Micro ação indisponível para foco. Verifique se ela ainda está ativa.', 'error');
+            this.showToast('Ação indisponível para foco. Verifique se ela ainda está ativa.', 'error');
             return;
         }
         if (micro.status === 'done') {
-            this.showToast('Esta micro já está concluída. Reabra antes de gerenciar no foco.', 'error');
+            this.showToast('Esta ação já está concluída. Reabra antes de gerenciar no foco.', 'error');
             return;
         }
         const focusEligibility = this.getMicroFocusEligibility(micro);
@@ -7480,7 +7514,7 @@ ensureNotesState: function() {
         }
         const dw = state.deepWork;
         if (dw.isRunning && dw.microId && dw.microId !== micro.id) {
-            this.showToast('Finalize ou pause o bloco atual antes de trocar de micro ação.', 'error');
+            this.showToast('Finalize ou pause o bloco atual antes de trocar de ação.', 'error');
             this.navigate('foco');
             return;
         }
@@ -7655,7 +7689,7 @@ ensureNotesState: function() {
             }
             if (canCompleteLinkedMicro) {
                 this.completeMicroAction(linkedMicro.id);
-                if (this.showNotification) this.showNotification('Micro ação concluída.');
+                if (this.showNotification) this.showNotification('Ação concluída.');
             }
             return;
         }
@@ -7690,7 +7724,7 @@ ensureNotesState: function() {
                 const doneAt = new Date().toISOString();
                 const payload = {
                     title: 'Life OS - Foco',
-                    body: 'Sessão encerrada e micro concluída.',
+                    body: 'Sessão encerrada e ação concluída.',
                     tag: 'lifeos-focus-session-complete',
                     url: '/?view=foco'
                 };
