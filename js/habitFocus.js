@@ -16,12 +16,15 @@ export function attachHabitFocusModule(app) {
         canStartFocusFromHabit: function(habit) {
             if (!habit?.id) return false;
             const hasMetaLink = !!habit.linkedMetaId;
+            const habitDim = String(habit.dimension || '').trim().toLowerCase();
+            const hasDimensionFallback = !!habitDim;
             const hasProtocol = !!habit.protocolId;
-            const hasChecklist = Array.isArray(habit.steps) && habit.steps.length > 0;
-            const isTimed = String(habit.trackMode || '') === 'timer';
+            const hasChecklist = (this.getHabitResolvedSteps?.(habit) || []).length > 0;
+            const normalizedMode = this.normalizeHabitTrackMode?.(habit.trackMode) || String(habit.trackMode || '').trim().toLowerCase();
+            const isTimed = normalizedMode === 'timer';
             const estimatedMinutes = Math.max(0, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
             const hasEstimatedLoad = estimatedMinutes > 0;
-            if (!hasMetaLink) return false;
+            if (!(hasMetaLink || hasDimensionFallback)) return false;
             if (!(isTimed || hasProtocol || hasChecklist || hasEstimatedLoad)) return false;
             
             const eligibleMacros = this.getHabitFocusEligibleMacros?.(habit) || [];
@@ -115,7 +118,7 @@ export function attachHabitFocusModule(app) {
                 contextEl.textContent = [
                     linkedMeta?.title ? `Meta: ${linkedMeta.title}` : '',
                     protocol?.title ? `Protocolo: ${protocol.title}` : '',
-                    habit.targetValue && String(habit.trackMode || '') === 'timer' ? `Meta por execucao: ${Math.round(Number(habit.targetValue) || 0)} min` : ''
+                    habit.targetValue && (this.normalizeHabitTrackMode?.(habit.trackMode) || String(habit.trackMode || '')) === 'timer' ? `Meta por execucao: ${Math.round(Number(habit.targetValue) || 0)} min` : ''
                 ].filter(Boolean).join(' | ');
             }
 
@@ -135,7 +138,7 @@ export function attachHabitFocusModule(app) {
             modal.classList.remove('flex');
         },
 
-        createFocusMicroFromHabit: function({ habit, macroId, title, estimatedMinutes = 0 }) {
+        createFocusMicroFromHabit: function({ habit, macroId, title, estimatedMinutes = 0, focusBlockMinutes = 0 }) {
             const state = window.sistemaVidaState;
             const macro = (state.entities?.macros || []).find(item => item.id === macroId);
             if (!habit || !macro) return null;
@@ -143,13 +146,13 @@ export function attachHabitFocusModule(app) {
             const now = new Date();
             const today = this.getLocalDateKey(now);
             const protocol = habit.protocolId ? this.getProtocolById?.(habit.protocolId) : null;
-            const habitSteps = Array.isArray(habit.steps) ? habit.steps.map(step => String(step || '').trim()).filter(Boolean) : [];
-            const protocolSteps = Array.isArray(protocol?.steps) ? protocol.steps.map(step => String(step?.title || '').trim()).filter(Boolean) : [];
-            const inheritedSteps = habitSteps.length ? habitSteps : protocolSteps;
+            const inheritedSteps = this.getHabitResolvedSteps?.(habit) || [];
+            const totalEstimatedMinutes = Math.max(0, Math.round(Number(estimatedMinutes) || 0));
+            const sessionPresetMinutes = Math.max(0, Math.round(Number(focusBlockMinutes) || 0));
             const micro = {
                 id: `micro_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
                 title: String(title || '').trim(),
-                dimension: habit.dimension || macro.dimension || 'Carreira',
+                dimension: macro.dimension || habit.dimension || 'Carreira',
                 context: `Entrega gerada a partir do hábito ${habit.title}.`,
                 indicator: `Sessão de foco vinculada ao hábito ${habit.title}.`,
                 effort: 'medio',
@@ -164,7 +167,8 @@ export function attachHabitFocusModule(app) {
                 status: 'in_progress',
                 completed: false,
                 progress: 0,
-                estimatedMinutes: Math.max(0, Math.round(Number(estimatedMinutes) || 0)),
+                estimatedMinutes: totalEstimatedMinutes,
+                focusBlockMinutes: sessionPresetMinutes,
                 focusSec: 0,
                 focusSessions: 0,
                 steps: inheritedSteps,
@@ -184,9 +188,9 @@ export function attachHabitFocusModule(app) {
             const habit = (window.sistemaVidaState?.habits || []).find(item => item.id === habitId);
             if (!habit) return;
             const targetDate = dateKey || this.getLocalDateKey();
-            const mode = String(habit.trackMode || 'boolean');
-            const normalizedMode = mode.toLowerCase();
-            const isTimerMode = ['timer', 'time', 'tempo', 'minutes', 'minutos'].includes(normalizedMode);
+            const normalizedMode = this.normalizeHabitTrackMode?.(habit.trackMode) || String(habit.trackMode || 'boolean').toLowerCase();
+            const isTimerMode = normalizedMode === 'timer';
+            const hasChecklist = (this.getHabitResolvedSteps?.(habit) || []).length > 0;
             const minutes = Math.max(0, Math.round((Number(focusSec || 0) / 60) * 10) / 10);
             const currentValue = Math.max(0, Number(habit.logs?.[targetDate]) || 0);
             if (isTimerMode) {
@@ -194,9 +198,12 @@ export function attachHabitFocusModule(app) {
                 this.updateHabitLog(habitId, targetDate, currentValue + minutes);
                 return;
             }
-            // For non-timer habits, focus sessions do not auto-complete progress.
-            // They still generate micro output and notes in the focus flow.
-            return;
+            if (hasChecklist) return;
+            if (normalizedMode === 'numeric') {
+                this.updateHabitLog(habitId, targetDate, currentValue + 1);
+                return;
+            }
+            this.updateHabitLog(habitId, targetDate, 1);
         },
 
         startHabitFocusSession: function() {
@@ -218,7 +225,14 @@ export function attachHabitFocusModule(app) {
                 this.showToast('Descreva o que você pretende entregar nesta sessão.', 'error');
                 return;
             }
-            const micro = this.createFocusMicroFromHabit({ habit, macroId, title: rawTitle, estimatedMinutes: minutes });
+            const totalEstimatedMinutes = Math.max(0, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
+            const micro = this.createFocusMicroFromHabit({
+                habit,
+                macroId,
+                title: rawTitle,
+                estimatedMinutes: totalEstimatedMinutes,
+                focusBlockMinutes: minutes
+            });
             if (!micro) {
                 this.showToast('Não foi possível criar a micro da sessão.', 'error');
                 return;
