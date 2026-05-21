@@ -973,6 +973,14 @@ getProtocolSuggestedStartTime: function(protocolId = '') {
 
 getMicroEstimatedMinutesSource: function(micro) {
         if (!micro) return 'suggested';
+        if (String(micro.sourceType || '') === 'habit_focus_session' && micro.sourceHabitId) {
+            const habit = (window.sistemaVidaState?.habits || []).find(item => String(item?.id || '') === String(micro.sourceHabitId || ''));
+            const mode = this.normalizeHabitTrackMode?.(habit?.trackMode) || String(habit?.trackMode || '').trim().toLowerCase();
+            if (habit?.protocolId && (this.getProtocolEstimatedMinutesById?.(habit.protocolId) || 0) > 0) return 'protocol';
+            if (mode === 'timer') return 'target';
+            if (Math.round(Number(habit?.estimatedMinutes) || 0) > 0) return 'manual';
+            if ((this.getHabitResolvedSteps?.(habit) || []).length > 0) return 'steps';
+        }
         const manual = Math.round(Number(micro.estimatedMinutes) || 0);
         if (manual > 0) return 'manual';
         const protocolId = String(micro.protocolId || micro.sourceProtocolId || '').trim();
@@ -1001,6 +1009,11 @@ getEstimateSourceLabel: function(source = '') {
 
 getMicroEstimatedMinutes: function(micro) {
         if (!micro) return 0;
+        if (String(micro.sourceType || '') === 'habit_focus_session' && micro.sourceHabitId) {
+            const habit = (window.sistemaVidaState?.habits || []).find(item => String(item?.id || '') === String(micro.sourceHabitId || ''));
+            const habitMinutes = Math.max(0, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
+            if (habitMinutes > 0) return habitMinutes;
+        }
         const manual = Math.round(Number(micro.estimatedMinutes) || 0);
         if (manual > 0) return manual;
         const protocolId = String(micro.protocolId || micro.sourceProtocolId || '').trim();
@@ -1239,7 +1252,7 @@ refreshCrudEstimatedFieldState: function(type = '') {
 
         if (currentType === 'habits') {
             const protocolId = String(document.getElementById('habit-protocol')?.value || '').trim();
-            const mode = String(document.getElementById('habit-track-mode')?.value || 'boolean').toLowerCase();
+            const mode = this.normalizeHabitTrackMode?.(document.getElementById('habit-track-mode')?.value || 'boolean') || 'boolean';
             const targetValue = Math.max(0, Math.round(Number(document.getElementById('habit-target')?.value || 0)));
             const stepsCount = String(document.getElementById('habit-steps')?.value || '')
                 .split(/\r?\n/)
@@ -1265,7 +1278,7 @@ refreshCrudEstimatedFieldState: function(type = '') {
                 });
                 return;
             }
-            if (mode === 'timer' || mode === 'tempo' || mode === 'time') {
+            if (mode === 'timer') {
                 estimatedInput.value = targetValue > 0 ? String(targetValue) : '';
                 estimatedInput.dataset.manualOverride = 'false';
                 estimatedInput.dataset.estimateSource = 'target';
@@ -1823,6 +1836,8 @@ saveNewEntity: function() {
             return '';
         };
         const oldEntity = isEditing ? getOldItem(id, type) : {};
+        const parentSelectEl = document.getElementById('create-parent');
+        const hasInvalidCurrentParent = !!(parentSelectEl?.dataset.invalidCurrentParentId) && !parentId;
         if (['metas', 'okrs', 'macros', 'micros'].includes(type)) {
             obj.createdAt = oldEntity.createdAt || this.getLocalDateKey();
         }
@@ -1855,6 +1870,10 @@ saveNewEntity: function() {
                     obj.dimension = parentMeta.dimension || obj.dimension;
                 }
             } else if (type === 'okrs') {
+                if (hasInvalidCurrentParent) {
+                    app.showBlockingMessage('Este OKR estÃ¡ com a Meta atual fora da Ã¡rea selecionada. Escolha uma Meta compatÃ­vel antes de salvar.');
+                    return;
+                }
                 if (parentId) {
                     const parentMeta = window.sistemaVidaState.entities.metas.find(m => m.id === parentId);
                     if (!parentMeta) {
@@ -1886,6 +1905,10 @@ saveNewEntity: function() {
             obj.obstacle = obstacle;
             obj.ifThen = ifThen;
             obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
+            if (hasInvalidCurrentParent) {
+                app.showBlockingMessage('Esta Macro estÃ¡ com o OKR atual fora da Ã¡rea selecionada. Escolha um OKR compatÃ­vel antes de salvar.');
+                return;
+            }
             if (parentId) {
                 const okr = window.sistemaVidaState.entities.okrs.find(o => o.id === parentId);
                 if (!okr) {
@@ -1934,6 +1957,8 @@ saveNewEntity: function() {
             obj.stepLogs = isEditing ? (oldItem.stepLogs || {}) : {};
             obj.sourceHabitId = isEditing ? String(oldItem.sourceHabitId || '') : '';
             obj.sourceProtocolId = isEditing ? String(oldItem.sourceProtocolId || '') : '';
+            obj.sourceType = isEditing ? String(oldItem.sourceType || '') : '';
+            obj.focusBlockMinutes = isEditing ? Math.max(0, Number(oldItem.focusBlockMinutes) || 0) : 0;
             if (!obj.steps.length) obj.stepLogs = {};
             else {
                 Object.keys(obj.stepLogs || {}).forEach(dateKey => {
@@ -1946,6 +1971,10 @@ saveNewEntity: function() {
                 });
             }
              
+            if (hasInvalidCurrentParent) {
+                app.showBlockingMessage('Esta Micro AÃ§Ã£o estÃ¡ com a Macro atual fora da Ã¡rea selecionada. Escolha uma Macro compatÃ­vel antes de salvar.');
+                return;
+            }
             if (parentId) {
                 const macro = window.sistemaVidaState.entities.macros.find(m => m.id === parentId);
                 if (!macro) {
@@ -1973,7 +2002,7 @@ saveNewEntity: function() {
             obj.reward = document.getElementById('habit-reward') ? document.getElementById('habit-reward').value.trim() : '';
             const stepsRaw = document.getElementById('habit-steps') ? document.getElementById('habit-steps').value : '';
             obj.steps = stepsRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-            obj.trackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
+            obj.trackMode = this.normalizeHabitTrackMode?.(document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean') || 'boolean';
             obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
             const protocolSel = document.getElementById('habit-protocol');
             const selectedProtocolId = protocolSel && protocolSel.value ? protocolSel.value : '';
@@ -1981,8 +2010,8 @@ saveNewEntity: function() {
                 obj.trackMode = 'boolean';
                 obj.targetValue = 1;
             }
-            const currentTrackMode = document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean';
-            obj.estimatedMinutes = (selectedProtocolId || ['timer', 'tempo', 'time'].includes(String(currentTrackMode || '').toLowerCase()))
+            const currentTrackMode = this.normalizeHabitTrackMode?.(document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean') || 'boolean';
+            obj.estimatedMinutes = (selectedProtocolId || currentTrackMode === 'timer')
                 ? 0
                 : (estimatedMinutes > 0 ? estimatedMinutes : 0);
             obj.frequency = document.getElementById('habit-frequency') ? document.getElementById('habit-frequency').value : 'daily';
@@ -2342,7 +2371,7 @@ editEntity: function(id, type) {
             if (rewardInput) rewardInput.value = item.reward || '';
             const stepsInput = document.getElementById('habit-steps');
             if (stepsInput) stepsInput.value = Array.isArray(item.steps) ? item.steps.join('\n') : '';
-            if (document.getElementById('habit-track-mode')) document.getElementById('habit-track-mode').value = item.trackMode || 'boolean';
+            if (document.getElementById('habit-track-mode')) document.getElementById('habit-track-mode').value = this.normalizeHabitTrackMode?.(item.trackMode || 'boolean') || 'boolean';
             if (document.getElementById('habit-target')) document.getElementById('habit-target').value = item.targetValue || 1;
             if (document.getElementById('habit-frequency')) document.getElementById('habit-frequency').value = item.frequency || 'daily';
             if (document.getElementById('habit-interval-days')) document.getElementById('habit-interval-days').value = Number(item.intervalDays || 0) || '';
@@ -2426,19 +2455,33 @@ editEntity: function(id, type) {
         const parentSelect = document.getElementById('create-parent');
         if (parentSelect) {
             let parentId = '';
+            let parentTypeLabel = '';
             if (type === 'metas') parentId = item.parentMetaId || '';
-            if (type === 'okrs') parentId = item.metaId || '';
-            if (type === 'macros') parentId = item.okrId || '';
-            if (type === 'micros') parentId = item.macroId || '';
+            if (type === 'okrs') {
+                parentId = item.metaId || '';
+                parentTypeLabel = 'Meta';
+            }
+            if (type === 'macros') {
+                parentId = item.okrId || '';
+                parentTypeLabel = 'OKR';
+            }
+            if (type === 'micros') {
+                parentId = item.macroId || '';
+                parentTypeLabel = 'Macro';
+            }
             const hasOption = Array.from(parentSelect.options || []).some(opt => opt.value === parentId);
-            if (parentId && !hasOption) {
-                const ghost = document.createElement('option');
-                ghost.value = parentId;
+            if (parentId && !hasOption && type !== 'metas') {
+                parentSelect.dataset.invalidCurrentParentId = parentId;
+                parentSelect.dataset.invalidCurrentParentType = parentTypeLabel;
+                parentSelect.dataset.invalidCurrentParentTitle = item.title || '';
+                const placeholder = document.createElement('option');
+                const ghost = placeholder;
+                placeholder.value = '';
                 ghost.textContent = 'Vínculo atual (fora do filtro de dimensão)';
                 ghost.dataset.ghostLineage = 'true';
-                parentSelect.appendChild(ghost);
+                parentSelect.insertBefore(ghost, parentSelect.firstChild);
             }
-            parentSelect.value = parentId;
+            parentSelect.value = parentSelect.dataset.invalidCurrentParentId ? '' : parentId;
         }
         if (type === 'micros') this.syncMicroWeekPlanToggle(id);
 

@@ -2338,15 +2338,20 @@ render: {
                             ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25'
                             : 'bg-surface-container-high text-on-surface-variant border border-outline-variant/20');
                     const isTimerMicro = state.deepWork?.isRunning && state.deepWork?.microId === m.id;
-                    const actionLabel = (m.status === 'in_progress' || isTimerMicro) ? 'Gerenciar' : 'Iniciar';
-                    const actionHandler = (m.status === 'in_progress' || isTimerMicro)
-                        ? `window.app.openMicroInFocus('${m.id}', false)`
-                        : `window.app.startDeepWorkForMicro('${m.id}')`;
+                    const focusEligibility = app.getMicroFocusEligibility?.(m) || { ok: true };
+                    const actionLabel = !focusEligibility.ok
+                        ? 'Corrigir'
+                        : ((m.status === 'in_progress' || isTimerMicro) ? 'Gerenciar' : 'Iniciar');
+                    const actionHandler = !focusEligibility.ok
+                        ? `window.app.editEntity('${m.id}', 'micros')`
+                        : ((m.status === 'in_progress' || isTimerMicro)
+                            ? `window.app.openMicroInFocus('${m.id}', false)`
+                            : `window.app.startDeepWorkForMicro('${m.id}')`);
                     const isFocoPlanned = app._isPlannedThisWeek(m.id);
                     const focoPlannedBadge = isFocoPlanned
                         ? '<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
                         : '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-widest">Captura</span>';
-                    const orphanBadge = !m.macroId
+                    const orphanBadge = !focusEligibility.ok
                         ? '<span title="Micro sem Macro associada (Não Alinhada)" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-widest border border-amber-500/20"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Não Alinhado</span>'
                         : '';
                     const trailId = `foco-trail-${idx}`;
@@ -2386,7 +2391,7 @@ render: {
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
                                 <button type="button" onclick="${toggleTrail}" class="px-3 py-1.5 rounded-lg border border-outline-variant/20 text-outline text-[10px] font-bold uppercase tracking-widest hover:text-on-surface hover:bg-surface-container-high transition-colors">Trilha</button>
-                                ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">${actionLabel}</button>` : ''}
+                                ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg ${focusEligibility.ok ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15'} text-[10px] font-bold uppercase tracking-widest">${actionLabel}</button>` : ''}
                                 ${m.status === 'done' ?
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">Reabrir</button>` :
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
@@ -3156,12 +3161,15 @@ render: {
                     const overdueBadge = isOverdue ? badge('alarm', 'Atrasada', 'text-red-600 dark:text-red-400', 'bg-red-500/10') : '';
                     const timeBadge = badge('timer', `${Math.round(estimatedMinutes)} min`, 'text-on-surface-variant', 'bg-surface-container-high');
                     const planBadge = isPlanned ? badge('event', 'Semana', 'text-primary', 'bg-primary/5') : badge('inbox', 'Captura', 'text-on-surface-variant', 'bg-surface-container-high');
-                    const orphanBadge = !micro.macroId ? badge('warning', 'Não Alinhado', 'text-amber-600 dark:text-amber-400', 'bg-amber-500/10') : '';
-                    const startBtn = shouldStart
+                    const focusEligibility = app.getMicroFocusEligibility?.(micro) || { ok: true };
+                    const orphanBadge = !focusEligibility.ok ? badge('warning', 'Não Alinhado', 'text-amber-600 dark:text-amber-400', 'bg-amber-500/10') : '';
+                    const startBtn = !focusEligibility.ok
+                        ? `<button onclick="event.stopPropagation(); app.editEntity('${micro.id}', 'micros');" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Corrigir</button>`
+                        : (shouldStart
                         ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
                         : (micro.status === 'in_progress'
                             ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', false);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors">Gerenciar</button>`
-                            : '');
+                            : ''));
 
                     html += `
                     <div class="space-y-2">
@@ -3657,11 +3665,14 @@ render: {
                                 : (isInProgress
                                     ? '<span class="shrink-0 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Andamento</span>'
                                     : '<span class="shrink-0 bg-surface-container-high text-on-surface-variant px-2.5 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">Pendente</span>'));
+                        const focusEligibility = entityType === 'micros'
+                            ? (app.getMicroFocusEligibility?.(item) || { ok: true })
+                            : { ok: true };
                         const actionButton = entityType === 'micros' && !isDone
                             ? `
-                                <button onclick="event.stopPropagation(); app.openMicroInFocus('${item.id}', ${isPending ? 'true' : 'false'})"
-                                    class="p-2.5 border ${isPending ? 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary'} rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold transition-colors">
-                                    <span class="material-symbols-outlined notranslate text-base">${isPending ? 'play_arrow' : 'timer'}</span> ${isPending ? 'Iniciar' : 'Gerenciar'}
+                                <button onclick="event.stopPropagation(); ${focusEligibility.ok ? `app.openMicroInFocus('${item.id}', ${isPending ? 'true' : 'false'})` : `app.editEntity('${item.id}', 'micros')`}"
+                                    class="p-2.5 border ${focusEligibility.ok ? (isPending ? 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary') : 'border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 text-amber-700 dark:text-amber-400'} rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-base">${focusEligibility.ok ? (isPending ? 'play_arrow' : 'timer') : 'warning'}</span> ${focusEligibility.ok ? (isPending ? 'Iniciar' : 'Gerenciar') : 'Corrigir'}
                                 </button>
                             `
                             : (isDone
