@@ -20,13 +20,13 @@ import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
 import { attachCadence } from './js/cadence.js?v=20260516-wellbeing-prompts-v205';
 import { attachOnboarding } from './js/onboarding.js?v=20260518-exec-flow-v2';
-import { attachIdentity } from './js/identity.js?v=20260520-alignment-v1';
-import { attachHabits } from './js/habits.js?v=20260520-habit-card-v1';
+import { attachIdentity } from './js/identity.js?v=20260520-focus-linkage-audit-v3';
+import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-alignment-v1';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-focus-linkage-audit-v3';
 import { attachStateModule } from './js/state.js?v=20260520-auth-stability-v1';
-import { attachRenderModule } from './js/render.js?v=20260520-ui-polish-v5';
-import { attachPlanningModule } from './js/planning.js?v=20260520-alignment-v1';
+import { attachRenderModule } from './js/render.js?v=20260520-focus-linkage-audit-v3';
+import { attachPlanningModule } from './js/planning.js?v=20260520-focus-linkage-audit-v3';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -208,7 +208,7 @@ const app = {
         repoFullName: 'engenheirobgr-droid/Life-OS'
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260520-auth-stability-v1',
+    appBuildVersion: '20260520-focus-linkage-audit-v3',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -976,6 +976,10 @@ normalizeSwlsAnswer: function(rawValue) {
     },
 
     getSuggestedFocusPresetMinutes: function(micro) {
+        const sessionPreset = Math.max(0, Number(micro?.focusBlockMinutes) || 0);
+        if (sessionPreset > 0) {
+            return this.getDeepWorkPresetConfig(sessionPreset).minutes;
+        }
         const estimatedMinutes = Math.max(1, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
         const adjustment = this.getCapacityAdjustmentFromCheckin?.(this.getLocalDateKey()) || { factor: 1 };
         const lowEnergy = Number(adjustment.factor || 1) < 0.78;
@@ -1486,6 +1490,31 @@ getDimensionIdentity: function(dimension, level) {
             path: parts.length ? parts.join(' > ') : '[Não Alinhado - Sem Trilha]',
             parentLabel: parentLabel
         };
+    },
+    getMicroFocusEligibility: function(micro) {
+        if (!micro?.id) {
+            return { ok: false, reason: 'Micro aÃ§Ã£o invÃ¡lida.' };
+        }
+        const ctx = this.getMicroPlanContext(micro);
+        if (!ctx.macro) {
+            return { ok: false, reason: 'Essa micro estÃ¡ sem Macro vÃ¡lida. Corrija o vÃ­nculo antes de iniciar foco.' };
+        }
+        if (!ctx.okr) {
+            return { ok: false, reason: 'Essa micro estÃ¡ sem OKR vÃ¡lido. Corrija o vÃ­nculo antes de iniciar foco.' };
+        }
+        if (!ctx.meta) {
+            return { ok: false, reason: 'Essa micro estÃ¡ sem Meta vÃ¡lida. Corrija o vÃ­nculo antes de iniciar foco.' };
+        }
+        const entityDimension = String(micro.dimension || '').trim();
+        const lineageDimension = String(ctx.macro?.dimension || ctx.okr?.dimension || ctx.meta?.dimension || '').trim();
+        const normalizedEntityDimension = entityDimension.toLowerCase();
+        const normalizedLineageDimension = lineageDimension.toLowerCase();
+        const isGenericEntityDimension = !normalizedEntityDimension || normalizedEntityDimension === 'geral';
+        const isGenericLineageDimension = !normalizedLineageDimension || normalizedLineageDimension === 'geral';
+        if (!isGenericEntityDimension && !isGenericLineageDimension && normalizedEntityDimension !== normalizedLineageDimension) {
+            return { ok: false, reason: 'Essa micro esta em uma area diferente da trilha vinculada. Corrija a dimensao ou o vinculo antes de iniciar foco.' };
+        }
+        return { ok: true, ctx };
     },
     getPlanMicros: function(options = {}) {
         const state = window.sistemaVidaState || {};
@@ -4313,6 +4342,9 @@ openCreateModal: function(type = 'metas', parentId = null) {
         const dimSelect = document.getElementById('crud-dimension');
         const horizonSelect = document.getElementById('crud-meta-horizon');
         if (!parentSelect) return;
+        delete parentSelect.dataset.invalidCurrentParentId;
+        delete parentSelect.dataset.invalidCurrentParentType;
+        delete parentSelect.dataset.invalidCurrentParentTitle;
         
         const currentDim = dimSelect ? dimSelect.value : null;
         parentSelect.innerHTML = `<option value="">${type === 'metas' ? 'Sem meta pai (Meta Raiz)' : 'Sem vínculo (Mestre)'}</option>`;
@@ -7360,6 +7392,12 @@ ensureNotesState: function() {
             return;
         }
 
+        const selectedMicro = (state.entities.micros || []).find(m => m.id === chosenMicro);
+        const focusEligibility = this.getMicroFocusEligibility(selectedMicro);
+        if (!focusEligibility.ok) {
+            this.showToast(focusEligibility.reason, 'error');
+            return;
+        }
         if (!dw.isRunning || dw.mode !== 'focus') {
             dw.targetSec = presetConfig.targetSec;
             dw.remainingSec = dw.targetSec;
@@ -7400,6 +7438,11 @@ ensureNotesState: function() {
             this.showToast('Esta micro já está concluída. Reabra antes de iniciar foco.', 'error');
             return;
         }
+        const focusEligibility = this.getMicroFocusEligibility(micro);
+        if (!focusEligibility.ok) {
+            this.showToast(focusEligibility.reason, 'error');
+            return;
+        }
         const dw = state.deepWork;
         if (dw.isRunning) {
             this.showToast('Já existe um bloco de foco em andamento.', 'error');
@@ -7428,6 +7471,11 @@ ensureNotesState: function() {
         }
         if (micro.status === 'done') {
             this.showToast('Esta micro já está concluída. Reabra antes de gerenciar no foco.', 'error');
+            return;
+        }
+        const focusEligibility = this.getMicroFocusEligibility(micro);
+        if (!focusEligibility.ok) {
+            this.showToast(focusEligibility.reason, 'error');
             return;
         }
         const dw = state.deepWork;

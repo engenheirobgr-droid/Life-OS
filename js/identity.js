@@ -760,9 +760,11 @@ manualGuideChapters: [
             why: 'Blocos curtos reduzem atrito para iniciar quando a energia está baixa; blocos médios ajudam execução sustentada; e o 90/20 continua reservado para trabalho profundo real. Essa gradação combina pomodoro clássico com ritmos ultradianos, em vez de tratar toda micro como se precisasse da mesma janela.',
             refs: ['Nathan Kleitman — BRAC (Basic Rest-Activity Cycle)', 'Cal Newport — Deep Work', 'Csikszentmihalyi — Flow'],
             how: [
+                'H?bitos podem abrir foco mesmo sem Meta expl?cita quando j? existe Macro compat?vel pela mesma ?rea; o app usa esse fallback para n?o travar a execu??o.',
                 'Antes de iniciar, escolha UM Micro — multitarefa destrói deep work.',
                 'Use os blocos sugeridos como padrão; troque manualmente só quando souber que aquele caso pede outra janela.',
                 'O bloco sugerido não tenta engolir a micro inteira: ele cobre só a melhor sessão para agora, respeitando carga total restante e capacidade do turno.',
+                'Micros n?o alinhadas deixam de iniciar foco estruturado at? que o v?nculo com Macro, OKR e Meta seja corrigido.',
                 'Desligue notificações; o ambiente deve sinalizar "agora é foco".',
                 'Use a pausa correspondente ao bloco (3, 5, 10 ou 20 min) para movimento físico ou descanso real, não redes sociais.',
                 'Use "Salvar apenas nota" quando quiser registrar contexto sem concluir a micro.',
@@ -801,9 +803,11 @@ manualGuideChapters: [
                 'Ancore o hábito em uma rotina existente: "depois de escovar os dentes, eu...".',
                 'Comece ridiculamente pequeno: 2 minutos, não 30. Consistência > intensidade.',
                 'Conecte à identidade: "sou alguém que..." em vez de "vou fazer X".',
+                'Sess?es de foco vindas de h?bito registram execu??o no pr?prio h?bito: timer soma minutos; modos sem timer contam execu??o quando n?o dependem de checklist.',
                 'Use hábito contínuo para rotinas sem data final; reserve o prazo para comportamentos que você quer consolidar e então revisar.',
                 'Marque como Hábito-Chave o comportamento que mais amplia capacidade agora — o app sugerirá com base em streak e vínculo de identidade.',
                 'Para forças, transforme a prática sugerida em rotina; para sombras, transforme o se-então em resposta substituta antes do gatilho aparecer.',
+                'Ao editar um h?bito, o v?nculo atual com Meta ? preservado mesmo que a Meta esteja fora do filtro da ?rea at? voc? trocar ou remover conscientemente.',
                 'Use o checklist de passos para hábitos complexos; quebra em micropassos previne paralisia.'
             ],
             cta: { label: 'Criar hábito', view: 'planos' }

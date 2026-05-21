@@ -1,10 +1,31 @@
 export function attachHabits(app) {
     Object.assign(app, {
+normalizeHabitTrackMode: function(mode) {
+        const normalized = String(mode || 'boolean').trim().toLowerCase();
+        if (['timer', 'time', 'tempo', 'minutes', 'minutos'].includes(normalized)) return 'timer';
+        if (normalized === 'numeric') return 'numeric';
+        return 'boolean';
+    },
+
+getHabitResolvedSteps: function(habit) {
+        if (!habit) return [];
+        const ownSteps = Array.isArray(habit.steps)
+            ? habit.steps.map(step => String(step || '').trim()).filter(Boolean)
+            : [];
+        if (ownSteps.length) return ownSteps;
+        const protocolId = String(habit.protocolId || '').trim();
+        if (!protocolId || typeof this.getProtocolById !== 'function') return [];
+        const protocol = this.getProtocolById(protocolId);
+        return Array.isArray(protocol?.steps)
+            ? protocol.steps.map(step => String(step?.title || step || '').trim()).filter(Boolean)
+            : [];
+    },
+
 isHabitDoneOnDate: function(habit, dateStr) {
         if (!habit || !dateStr) return false;
-        const mode = habit.trackMode || 'boolean';
+        const mode = this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
         const target = Number(habit.targetValue) || 1;
-        const steps = Array.isArray(habit.steps) ? habit.steps.filter(Boolean) : [];
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
         const hasProtocol = !!String(habit.protocolId || '').trim();
         if ((hasProtocol || mode === 'boolean') && steps.length) {
             const map = habit.stepLogs?.[dateStr] || {};
@@ -17,7 +38,7 @@ isHabitDoneOnDate: function(habit, dateStr) {
 isHabitRoutine: function(habit) {
         if (!habit) return false;
         const hasProtocol = !!String(habit.protocolId || '').trim();
-        const hasSteps = Array.isArray(habit.steps) && habit.steps.some(step => String(step || '').trim() !== '');
+        const hasSteps = (this.getHabitResolvedSteps?.(habit) || []).length > 0;
         return hasProtocol || hasSteps;
     },
 
@@ -29,15 +50,15 @@ isHabitRoutine: function(habit) {
             if (protocolMinutes > 0) return protocolMinutes;
         }
 
-        const mode = String(habit.trackMode || 'boolean').toLowerCase();
-        if (mode === 'timer' || mode === 'tempo' || mode === 'time') {
+        const mode = this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
+        if (mode === 'timer') {
             return Math.max(1, Math.round(Number(habit.targetValue) || 0));
         }
 
         const manual = Math.round(Number(habit.estimatedMinutes) || 0);
         if (manual > 0) return manual;
 
-        const steps = Array.isArray(habit.steps) ? habit.steps.filter(step => String(step || '').trim() !== '') : [];
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
         if (steps.length > 0) return Math.max(8, steps.length * 8);
 
         if (mode === 'numeric') return 10;
@@ -48,10 +69,10 @@ getHabitTodayProgressSnapshot: function(habit, dateStr = this.getLocalDateKey())
         if (!habit) {
             return { done: false, current: 0, target: 1, percent: 0, label: '0/1' };
         }
-        const mode = String(habit.trackMode || 'boolean');
+        const mode = this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
         const target = Math.max(1, Number(habit.targetValue) || 1);
         const logs = habit.logs || {};
-        const steps = Array.isArray(habit.steps) ? habit.steps.filter(Boolean) : [];
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
         const stepMap = habit.stepLogs?.[dateStr] || {};
         const hasProtocol = !!String(habit.protocolId || '').trim();
         if ((hasProtocol || mode === 'boolean') && steps.length) {
@@ -444,6 +465,7 @@ evaluateIdentityAchievements: function() {
 onHabitModeChange: function(mode) {
         const targetContainer = document.getElementById('habit-target-container');
         const protocolId = String(document.getElementById('habit-protocol')?.value || '').trim();
+        const normalizedMode = this.normalizeHabitTrackMode?.(mode) || mode;
         if (!targetContainer) return;
         if (protocolId) {
             targetContainer.classList.add('hidden');
@@ -452,7 +474,7 @@ onHabitModeChange: function(mode) {
             this.refreshCrudEstimatedFieldState?.('habits');
             return;
         }
-        if (mode === 'numeric' || mode === 'timer') {
+        if (normalizedMode === 'numeric' || normalizedMode === 'timer') {
             targetContainer.classList.remove('hidden');
             targetContainer.classList.add('flex');
             targetContainer.style.display = 'flex';
@@ -620,6 +642,11 @@ populateHabitLinkedMeta: function() {
         const state = window.sistemaVidaState;
         const prev = select.value;
         const selectedDim = String(document.getElementById('crud-dimension')?.value || '').trim();
+        const editingHabitId = this.editingEntity?.type === 'habits' ? this.editingEntity.id : '';
+        const editingHabit = editingHabitId
+            ? (state.habits || []).find(h => h.id === editingHabitId)
+            : null;
+        const hiddenLinkedMetaId = String(editingHabit?.linkedMetaId || '').trim();
 
         const metas = (state.entities?.metas || []).filter(m =>
             m.status !== 'done' && m.status !== 'abandoned'
@@ -645,10 +672,22 @@ populateHabitLinkedMeta: function() {
             html += '</optgroup>';
         });
         select.innerHTML = html;
+        if (hiddenLinkedMetaId && !select.querySelector(`option[value="${hiddenLinkedMetaId}"]`)) {
+            const currentMeta = (state.entities?.metas || []).find(m => m.id === hiddenLinkedMetaId);
+            const ghost = document.createElement('option');
+            ghost.value = hiddenLinkedMetaId;
+            ghost.textContent = currentMeta?.title
+                ? `${currentMeta.title} (vinculo atual fora da area selecionada)`
+                : 'Vinculo atual fora da area selecionada';
+            ghost.dataset.hiddenLinkedMeta = 'true';
+            select.appendChild(ghost);
+        }
 
         // Restaura seleção anterior se ainda existir
         if (prev && select.querySelector(`option[value="${prev}"]`)) {
             select.value = prev;
+        } else if (hiddenLinkedMetaId && select.querySelector(`option[value="${hiddenLinkedMetaId}"]`)) {
+            select.value = hiddenLinkedMetaId;
         }
     },
 
@@ -769,21 +808,23 @@ updateHabitLog: function(habitId, dateStr, value) {
             if (!habit.logs) habit.logs = {};
             const target = habit.targetValue || 1;
             const previousValue = Number(habit.logs[dateStr]) || 0;
-            const wasDone = (habit.trackMode || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
+            const mode = this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
+            const resolvedSteps = this.getHabitResolvedSteps?.(habit) || [];
+            const wasDone = mode === 'boolean' ? previousValue > 0 : previousValue >= target;
             habit.logs[dateStr] = value;
-            if ((habit.trackMode || 'boolean') === 'boolean' && Array.isArray(habit.steps) && habit.steps.length > 0) {
+            if (mode === 'boolean' && resolvedSteps.length > 0) {
                 if (!habit.stepLogs) habit.stepLogs = {};
                 const markAll = value > 0;
                 const map = {};
-                if (markAll) habit.steps.forEach((_, idx) => { map[idx] = true; });
+                if (markAll) resolvedSteps.forEach((_, idx) => { map[idx] = true; });
                 habit.stepLogs[dateStr] = map;
-                habit.steps.forEach((_, idx) => {
+                resolvedSteps.forEach((_, idx) => {
                     this.syncHabitStepStateToLinkedMicro(habit, dateStr, idx, markAll);
                 });
             }
 
             // Toast feedback based on new value
-            const isDone = (habit.trackMode || 'boolean') === 'boolean' ? value > 0 : value >= target;
+            const isDone = mode === 'boolean' ? value > 0 : value >= target;
             let award = null;
             if (isDone && !wasDone) {
                 award = this.awardGamification('habit_complete', {
@@ -875,9 +916,10 @@ getActiveLinkedMicroForHabit: function(habitId, dateStr = this.getLocalDateKey()
     },
 
 _setHabitStepState: function(habit, dateStr, stepIndex, isDone) {
-        if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return null;
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
+        if (!habit || !steps.length) return null;
         const idx = Math.max(0, Math.floor(Number(stepIndex) || 0));
-        if (idx >= habit.steps.length) return null;
+        if (idx >= steps.length) return null;
         if (!habit.stepLogs || typeof habit.stepLogs !== 'object') habit.stepLogs = {};
         if (!habit.stepLogs[dateStr] || typeof habit.stepLogs[dateStr] !== 'object') habit.stepLogs[dateStr] = {};
         const map = habit.stepLogs[dateStr];
@@ -886,13 +928,13 @@ _setHabitStepState: function(habit, dateStr, stepIndex, isDone) {
             delete map[idx];
             delete map[String(idx)];
         }
-        const doneCount = habit.steps.reduce((acc, _, i) => acc + (map[i] || map[String(i)] ? 1 : 0), 0);
-        const allDone = doneCount === habit.steps.length;
+        const doneCount = steps.reduce((acc, _, i) => acc + (map[i] || map[String(i)] ? 1 : 0), 0);
+        const allDone = doneCount === steps.length;
         if (!habit.logs || typeof habit.logs !== 'object') habit.logs = {};
-        if ((habit.trackMode || 'boolean') === 'boolean') {
+        if ((this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean') === 'boolean') {
             habit.logs[dateStr] = allDone ? 1 : 0;
         }
-        return { doneCount, total: habit.steps.length, allDone };
+        return { doneCount, total: steps.length, allDone };
     },
 
 _setMicroStepState: function(micro, dateStr, stepIndex, isDone) {
@@ -920,7 +962,8 @@ syncHabitStepStateToLinkedMicro: function(habitOrId, dateStr, stepIndex, isDone)
         const habit = typeof habitOrId === 'string'
             ? (state.habits || []).find(h => h.id === habitOrId)
             : habitOrId;
-        if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return null;
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
+        if (!habit || !steps.length) return null;
         const activeMicro = this.getActiveLinkedMicroForHabit(habit.id, dateStr);
         if (!activeMicro) return null;
         if (!Array.isArray(activeMicro.steps) || stepIndex >= activeMicro.steps.length) return null;
@@ -936,8 +979,9 @@ syncMicroStepStateToLinkedHabit: function(microOrId, dateStr, stepIndex, isDone)
         const habitId = String(micro.sourceHabitId || '').trim();
         if (!habitId) return null;
         const habit = (state.habits || []).find(h => h.id === habitId);
-        if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return null;
-        if (stepIndex >= habit.steps.length) return null;
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
+        if (!habit || !steps.length) return null;
+        if (stepIndex >= steps.length) return null;
         return this._setHabitStepState(habit, dateStr, stepIndex, !!isDone);
     },
 
@@ -990,7 +1034,7 @@ toggleMicroExecutionStep: function(microId, dateStr, stepIndex) {
         if (habit) {
             const target = habit.targetValue || 1;
             const previousValue = Number(habit.logs?.[day]) || 0;
-            wasDone = (habit.trackMode || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
+            wasDone = (this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
         }
         const syncRes = this.syncMicroStepStateToLinkedHabit(micro, day, stepIndex, next);
         if (habit && syncRes) {
@@ -1015,7 +1059,7 @@ toggleMicroExecutionAllSteps: function(microId, dateStr, currentlyDone) {
         if (habit) {
             const target = habit.targetValue || 1;
             const previousValue = Number(habit.logs?.[day]) || 0;
-            wasDone = (habit.trackMode || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
+            wasDone = (this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
         }
         let lastSyncRes = null;
         micro.steps.forEach((_, idx) => {
@@ -1035,19 +1079,21 @@ toggleMicroExecutionAllSteps: function(microId, dateStr, currentlyDone) {
 toggleHabitStepLog: function(habitId, dateStr, stepIndex) {
         const state = window.sistemaVidaState;
         const habit = (state.habits || []).find(h => h.id === habitId);
-        if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return;
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
+        if (!habit || !steps.length) return;
         if (!habit.stepLogs) habit.stepLogs = {};
         if (!habit.stepLogs[dateStr]) habit.stepLogs[dateStr] = {};
         const target = habit.targetValue || 1;
         const previousValue = Number(habit.logs?.[dateStr]) || 0;
-        const wasDone = (habit.trackMode || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
+        const mode = this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
+        const wasDone = mode === 'boolean' ? previousValue > 0 : previousValue >= target;
         const current = !!(habit.stepLogs[dateStr][stepIndex] || habit.stepLogs[dateStr][String(stepIndex)]);
         habit.stepLogs[dateStr][stepIndex] = !current;
         this.syncHabitStepStateToLinkedMicro(habit, dateStr, stepIndex, !current);
-        const doneCount = habit.steps.reduce((acc, _, idx) => acc + (habit.stepLogs[dateStr][idx] ? 1 : 0), 0);
-        const allDone = doneCount === habit.steps.length;
+        const doneCount = steps.reduce((acc, _, idx) => acc + (habit.stepLogs[dateStr][idx] ? 1 : 0), 0);
+        const allDone = doneCount === steps.length;
         if (!habit.logs) habit.logs = {};
-        if ((habit.trackMode || 'boolean') === 'boolean') {
+        if (mode === 'boolean') {
             habit.logs[dateStr] = allDone ? 1 : 0;
         }
         this.triggerHabitCompletionEffects(habit, dateStr, wasDone, allDone);
@@ -1061,25 +1107,27 @@ toggleHabitStepLog: function(habitId, dateStr, stepIndex) {
 toggleHabitAllSteps: function(habitId, dateStr, currentlyDone) {
         const state = window.sistemaVidaState;
         const habit = (state.habits || []).find(h => h.id === habitId);
-        if (!habit || !Array.isArray(habit.steps) || !habit.steps.length) return;
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
+        if (!habit || !steps.length) return;
         if (!habit.stepLogs) habit.stepLogs = {};
         if (!habit.logs) habit.logs = {};
         const target = habit.targetValue || 1;
         const previousValue = Number(habit.logs?.[dateStr]) || 0;
-        const wasDone = (habit.trackMode || 'boolean') === 'boolean' ? previousValue > 0 : previousValue >= target;
+        const mode = this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
+        const wasDone = mode === 'boolean' ? previousValue > 0 : previousValue >= target;
         if (currentlyDone) {
             habit.stepLogs[dateStr] = {};
-            if ((habit.trackMode || 'boolean') === 'boolean') habit.logs[dateStr] = 0;
-            habit.steps.forEach((_, idx) => {
+            if (mode === 'boolean') habit.logs[dateStr] = 0;
+            steps.forEach((_, idx) => {
                 this.syncHabitStepStateToLinkedMicro(habit, dateStr, idx, false);
             });
             this.triggerHabitCompletionEffects(habit, dateStr, wasDone, false);
         } else {
             const all = {};
-            habit.steps.forEach((_, idx) => { all[idx] = true; });
+            steps.forEach((_, idx) => { all[idx] = true; });
             habit.stepLogs[dateStr] = all;
-            if ((habit.trackMode || 'boolean') === 'boolean') habit.logs[dateStr] = 1;
-            habit.steps.forEach((_, idx) => {
+            if (mode === 'boolean') habit.logs[dateStr] = 1;
+            steps.forEach((_, idx) => {
                 this.syncHabitStepStateToLinkedMicro(habit, dateStr, idx, true);
             });
             this.triggerHabitCompletionEffects(habit, dateStr, wasDone, true);
@@ -1096,7 +1144,8 @@ renderHabitStepsChecklist: function(habitId) {
         const container = document.getElementById('habit-steps-checklist');
         if (!wrap || !container) return;
         const habit = (window.sistemaVidaState.habits || []).find(h => h.id === habitId);
-        if (!habit || !Array.isArray(habit.steps) || habit.steps.length === 0) {
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
+        if (!habit || steps.length === 0) {
             wrap.classList.add('hidden');
             container.innerHTML = '';
             return;
@@ -1106,7 +1155,7 @@ renderHabitStepsChecklist: function(habitId) {
         const today = this.getLocalDateKey();
         const map = (habit.stepLogs || {})[today] || {};
         const esc = (txt) => String(txt || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        container.innerHTML = habit.steps.map((step, idx) => {
+        container.innerHTML = steps.map((step, idx) => {
             const done = !!(map[idx] || map[String(idx)]);
             return `
             <button onclick="event.stopPropagation(); window.app.toggleHabitStepLog('${habit.id}', '${today}', ${idx})"
