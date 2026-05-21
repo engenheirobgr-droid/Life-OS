@@ -374,7 +374,7 @@ buildOpenNudges: function() {
                 title: 'Life OS — Planejamento semanal',
                 body: hasPlan
                     ? 'Sua semana já tem plano, mas está na hora de revisitar a carga e a intenção.'
-                    : 'Sua semana ainda não foi planejada. Defina a intenção e escolha os micros prioritários.',
+                    : 'Sua semana ainda não foi planejada. Defina a intenção e escolha as ações prioritárias.',
                 tag: 'lifeos-weekly-plan-open'
             });
         }
@@ -537,14 +537,14 @@ scheduleRiskNotifications: function() {
             if (sentLog[dedupeKey]) return;
 
             const bodyByType = {
-                overdue: `Micro em atraso: ${alert.title}. Hora de renegociar prazo ou executar agora.`,
-                hoje: `Micro vence hoje: ${alert.title}. Reserve um bloco para fechar isso hoje.`,
-                urgente: `Micro urgente sem inicio: ${alert.title}. Defina a primeira acao agora.`,
-                risco: `Micro em risco: ${alert.title}. Vale iniciar hoje para evitar atraso.`
+                overdue: `Ação em atraso: ${alert.title}. Hora de renegociar prazo ou executar agora.`,
+                hoje: `Ação vence hoje: ${alert.title}. Reserve um bloco para fechar isso hoje.`,
+                urgente: `Ação urgente sem início: ${alert.title}. Defina o primeiro passo agora.`,
+                risco: `Ação em risco: ${alert.title}. Vale iniciar hoje para evitar atraso.`
             };
             const payload = {
                 title: 'Life OS - Risco de execucao',
-                body: bodyByType[type] || `Micro em risco: ${alert.title}`,
+                body: bodyByType[type] || `Ação em risco: ${alert.title}`,
                 tag: `lifeos-risk-${type}`,
                 url: '/?view=planos'
             };
