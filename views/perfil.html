@@ -325,7 +325,7 @@
 <div onclick="document.getElementById('file-import').click()" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined notranslate text-primary" data-icon="upload_file">upload_file</span>
-<p class="text-sm font-medium text-on-surface">Import Planilha (.xlsx)</p>
+<p class="text-sm font-medium text-on-surface">Importar Planilha (.xlsx/.xls)</p>
 </div>
 <span class="material-symbols-outlined notranslate text-outline text-sm" data-icon="add">add</span>
 </div>
@@ -334,7 +334,14 @@
 <div onclick="window.app.exportToExcel()" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
 <div class="flex items-center gap-4">
 <span class="material-symbols-outlined notranslate text-primary" data-icon="download">download</span>
-<p class="text-sm font-medium text-on-surface">Exportar Planilha (.xls)</p>
+<p class="text-sm font-medium text-on-surface">Exportar Planilha para Editar (.xls)</p>
+</div>
+<span class="material-symbols-outlined notranslate text-outline text-sm" data-icon="open_in_new">open_in_new</span>
+</div>
+<div onclick="window.app.exportToExcelFull()" class="flex items-center justify-between p-4 hover:bg-surface-container-high transition-colors cursor-pointer border-t border-outline-variant/10">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined notranslate text-primary" data-icon="inventory_2">inventory_2</span>
+<p class="text-sm font-medium text-on-surface">Exportar Backup Completo (.xls)</p>
 </div>
 <span class="material-symbols-outlined notranslate text-outline text-sm" data-icon="open_in_new">open_in_new</span>
 </div>

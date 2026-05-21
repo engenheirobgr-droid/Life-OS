@@ -982,12 +982,63 @@ importFromExcel: async function(event) {
             if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) return raw.slice(0, 10);
             return raw;
         };
+        const normalizeLookupKey = (value) => String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
+        const buildNamedIndex = (items, idKey = 'id', titleKeys = ['title']) => {
+            const byId = new Map();
+            const byTitle = new Map();
+            (items || []).forEach((item) => {
+                const id = String(item?.[idKey] || '').trim();
+                if (id && !byId.has(id)) byId.set(id, item);
+                titleKeys.forEach((titleKey) => {
+                    const title = normalizeLookupKey(item?.[titleKey]);
+                    if (!title) return;
+                    if (!byTitle.has(title)) byTitle.set(title, item);
+                });
+            });
+            return { byId, byTitle };
+        };
+        const resolveItemId = (labelOrId, index, idKey = 'id') => {
+            const raw = String(labelOrId || '').trim();
+            if (!raw || !index) return '';
+            if (index.byId?.has(raw)) return raw;
+            const found = index.byTitle?.get(normalizeLookupKey(raw));
+            return String(found?.[idKey] || '');
+        };
+        const normalizeEntityStatusLabel = (value, fallback = 'pending') => {
+            const raw = normalizeLookupKey(value);
+            if (!raw) return fallback;
+            if (raw.includes('conclu') || raw === 'done') return 'done';
+            if (raw.includes('aband') || raw === 'abandoned') return 'abandoned';
+            if (raw.includes('andamento') || raw.includes('progress') || raw.includes('ativo') || raw === 'active' || raw === 'in_progress') return 'in_progress';
+            if (raw.includes('pend')) return 'pending';
+            return fallback;
+        };
+        const normalizeHabitStatusLabel = (value, fallback = 'active') => {
+            const raw = normalizeLookupKey(value);
+            if (!raw) return fallback;
+            if (raw.includes('arquiv')) return 'archived';
+            if (raw.includes('inativ') || raw === 'inactive') return 'inactive';
+            if (raw.includes('paus')) return 'paused';
+            if (raw.includes('ativo') || raw === 'active') return 'active';
+            return fallback;
+        };
 
         try {
             const data = await file.arrayBuffer();
             const workbook = XLSX.read(data, {type: 'array'});
             
             console.log("Iniciando processamento das abas do Excel...");
+            let metaIndex = buildNamedIndex([]);
+            let okrIndex = buildNamedIndex([]);
+            let macroIndex = buildNamedIndex([]);
+            let microIndex = buildNamedIndex([]);
+            let habitIndex = buildNamedIndex([]);
+            let strengthIndex = buildNamedIndex([]);
+            let shadowIndex = buildNamedIndex([]);
 
             // 1. Aba: Planos -> state.entities
             const wsPlanos = workbook.Sheets['Planos'] || workbook.Sheets['Main'] || workbook.Sheets['Tarefas'];
@@ -1015,23 +1066,24 @@ importFromExcel: async function(event) {
                     let status = (numericProgress >= 100) ? 'done' : 'active';
                     
                     let idFromSheet = getValue(row, ['ID', 'Id', 'id', 'Código', 'Codigo']);
-                    let parentId = getValue(row, ['Pai', 'Parent', 'Pai ID', 'ID_Pai', 'ID Pai', 'metaId', 'okrId', 'macroId']);
+                    let parentLabel = getValue(row, ['Plano Pai', 'Pai', 'Parent']);
+                    let parentId = getValue(row, ['ID_Pai', 'ID Pai', 'Pai ID', 'metaId', 'okrId', 'macroId']);
                     
                     let obj = {
                         id: idFromSheet ? String(idFromSheet) : ('ent_' + Date.now() + Math.random().toString(36).substr(2, 9)),
-                        title: getValue(row, ['Título', 'Nome', 'Tarefa', 'Title']),
+                        title: getValue(row, ['Título', 'Titulo', 'Nome', 'Tarefa', 'Title']),
                         dimension: getValue(row, ['Dimensão', 'Área', 'Dimension', 'Area']) || 'Geral',
-                        status: String(getValue(row, ['Status']) || status).trim() || status,
+                        status: normalizeEntityStatusLabel(getValue(row, ['Status', 'Situação', 'Situacao']), status),
                         progress: Math.min(100, Math.max(0, numericProgress)),
-                        completed: toBool(getValue(row, ['Concluida', 'Concluída', 'Completed']), status === 'done')
+                        completed: toBool(getValue(row, ['Concluída', 'Concluida', 'Completed']), status === 'done')
                     };
-                    const successCriteria = String(getValue(row, ['Critério_Sucesso', 'Critério de Sucesso', 'Success Criteria']) || '').trim();
+                    const successCriteria = String(getValue(row, ['Critério de Sucesso', 'Critério_Sucesso', 'Success Criteria']) || '').trim();
                     const challengeLevel = Number(getValue(row, ['Desafio', 'Challenge', 'Challenge Level']) || 0);
                     const commitmentLevel = Number(getValue(row, ['Comprometimento', 'Commitment', 'Commitment Level']) || 0);
-                    const keyResultsText = String(getValue(row, ['Key_Results', 'Key Results', 'KRs']) || '');
+                    const keyResultsText = String(getValue(row, ['Resultados-chave', 'Resultados-chave (texto)', 'Key_Results', 'Key Results', 'KRs']) || '');
 
-                    let context = getValue(row, ['Contexto / Indicador', 'Contexto', 'Notes', 'Descrição']);
-                    let prazo = getValue(row, ['Prazo / Ciclo', 'Prazo', 'Ciclo', 'Deadline', 'Data']);
+                    let context = getValue(row, ['Contexto', 'Contexto / Indicador', 'Contexto_Indicador', 'Notes', 'Descrição']);
+                    let prazo = getValue(row, ['Prazo', 'Prazo / Ciclo', 'Ciclo', 'Deadline', 'Data']);
                     
                     if (type === 'metas' || type === 'okrs') {
                         obj.purpose = context;
@@ -1053,18 +1105,19 @@ importFromExcel: async function(event) {
                     else if (type === 'macros') { obj.description = context; obj.prazo = prazo; }
                     else if (type === 'micros') {
                         obj.indicator = context;
-                        obj.completed = toBool(getValue(row, ['Concluida', 'Concluída', 'Completed']), status === 'done');
+                        obj.completed = toBool(getValue(row, ['Concluída', 'Concluida', 'Completed']), status === 'done');
                         obj.prazo = prazo;
                         obj.protocolId = String(getValue(row, ['Protocol_ID', 'Protocolo_ID']) || '').trim();
                         obj.sourceHabitId = String(getValue(row, ['Habito_Origem_ID', 'Hábito_Origem_ID']) || '').trim();
                         obj.sourceProtocolId = String(getValue(row, ['Protocolo_Origem_ID']) || '').trim();
                         obj.steps = parseJson(getValue(row, ['Steps_JSON']), parseList(getValue(row, ['Passos', 'Steps']), '||'));
                         obj.stepLogs = parseJson(getValue(row, ['Step_Logs_JSON']), {});
-                        obj.effort = String(getValue(row, ['Esforco', 'Esforço']) || '').trim();
-                        obj.estimatedMinutes = toInt(getValue(row, ['Minutos_Estimados', 'Estimated_Minutes']), 0);
-                        obj.startTime = String(getValue(row, ['Hora_Inicio', 'Start_Time']) || '').trim();
+                        obj.effort = String(getValue(row, ['Esforço', 'Esforco']) || '').trim();
+                        obj.estimatedMinutes = toInt(getValue(row, ['Minutos estimados', 'Minutos_Estimados', 'Estimated_Minutes']), 0);
+                        obj.startTime = String(getValue(row, ['Hora', 'Hora_Inicio', 'Start_Time']) || '').trim();
                     }
 
+                    if (parentLabel) obj._parentTitle = String(parentLabel).trim();
                     if (parentId) {
                         if (type === 'okrs') obj.metaId = String(parentId);
                         else if (type === 'macros') obj.okrId = String(parentId);
@@ -1075,6 +1128,25 @@ importFromExcel: async function(event) {
                         window.sistemaVidaState.entities[type].push(obj);
                     }
                 });
+                metaIndex = buildNamedIndex(window.sistemaVidaState.entities.metas);
+                okrIndex = buildNamedIndex(window.sistemaVidaState.entities.okrs);
+                macroIndex = buildNamedIndex(window.sistemaVidaState.entities.macros);
+                window.sistemaVidaState.entities.okrs.forEach((okr) => {
+                    const resolvedParentId = okr._parentTitle ? resolveItemId(okr._parentTitle, metaIndex) : '';
+                    if (resolvedParentId) okr.metaId = resolvedParentId;
+                    delete okr._parentTitle;
+                });
+                window.sistemaVidaState.entities.macros.forEach((macro) => {
+                    const resolvedParentId = macro._parentTitle ? resolveItemId(macro._parentTitle, okrIndex) : '';
+                    if (resolvedParentId) macro.okrId = resolvedParentId;
+                    delete macro._parentTitle;
+                });
+                window.sistemaVidaState.entities.micros.forEach((micro) => {
+                    const resolvedParentId = micro._parentTitle ? resolveItemId(micro._parentTitle, macroIndex) : '';
+                    if (resolvedParentId) micro.macroId = resolvedParentId;
+                    delete micro._parentTitle;
+                });
+                microIndex = buildNamedIndex(window.sistemaVidaState.entities.micros);
             }
 
             // 2. Aba: Propósito
@@ -1093,9 +1165,9 @@ importFromExcel: async function(event) {
                 const propArr = XLSX.utils.sheet_to_json(wsProp);
                 propArr.forEach(row => {
                     let cat = String(getValue(row, ['Categoria', 'Category']) || '').trim().toLowerCase();
-                    let subcat = String(getValue(row, ['Subcategoria', 'Tipo_Identidade', 'Tipo']) || '').trim().toLowerCase();
-                    let key = String(getValue(row, ['Chave', 'Dimensão', 'Item']) || '').trim();
-                    let val = getValue(row, ['Texto_Preenchido', 'Texto Preenchido', 'Valor', 'Score']);
+                    let subcat = String(getValue(row, ['Tipo', 'Subcategoria', 'Tipo_Identidade']) || '').trim().toLowerCase();
+                    let key = String(getValue(row, ['Título', 'Titulo', 'Chave', 'Dimensão', 'Item']) || '').trim();
+                    let val = getValue(row, ['Texto', 'Texto_Preenchido', 'Texto Preenchido', 'Valor', 'Score']);
                     
                     const isIdentityRow = cat.includes('ident') || cat.includes('for') || cat.includes('som');
                     if (!key || ((val === undefined || val === '') && !isIdentityRow)) return;
@@ -1144,7 +1216,7 @@ importFromExcel: async function(event) {
                                 ? val.split(/[,\n]/).map(s => s.trim()).filter(Boolean)
                                 : [String(val).trim()].filter(Boolean);
                         } else {
-                            const dimension = String(getValue(row, ['Dimensao', 'Dimensão', 'Dimension']) || '').trim();
+                            const dimension = String(getValue(row, ['Dimensão', 'Dimensao', 'Dimension']) || '').trim();
                             const baseItem = {
                                 id: String(getValue(row, ['ID_Item', 'Item_ID']) || `import_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
                                 title: key,
@@ -1157,20 +1229,20 @@ importFromExcel: async function(event) {
                             if (subcat.includes('for') || cat.includes('for')) {
                                 identity.strengths.push({
                                     ...baseItem,
-                                    description: String(getValue(row, ['Descricao', 'Descrição']) || '').trim(),
-                                    evidence: String(getValue(row, ['Evidencia', 'Evidência']) || val || '').trim(),
-                                    excessRisk: String(getValue(row, ['Risco_Excesso', 'Risco de Excesso']) || '').trim(),
-                                    practice: String(getValue(row, ['Pratica', 'Prática']) || '').trim()
+                                    description: String(getValue(row, ['Descrição', 'Descricao']) || '').trim(),
+                                    evidence: String(getValue(row, ['Evidência', 'Evidencia']) || val || '').trim(),
+                                    excessRisk: String(getValue(row, ['Risco de Excesso', 'Risco_Excesso']) || '').trim(),
+                                    practice: String(getValue(row, ['Prática', 'Pratica']) || '').trim()
                                 });
                             } else if (subcat.includes('som') || cat.includes('som')) {
                                 identity.shadows.push({
                                     ...baseItem,
-                                    description: String(getValue(row, ['Descricao', 'Descrição']) || '').trim(),
+                                    description: String(getValue(row, ['Descrição', 'Descricao']) || '').trim(),
                                     trigger: String(getValue(row, ['Gatilho', 'Trigger']) || '').trim(),
                                     impact: String(getValue(row, ['Impacto']) || val || '').trim(),
-                                    desiredResponse: String(getValue(row, ['Resposta_Desejada', 'Resposta Desejada']) || '').trim(),
-                                    obstacle: String(getValue(row, ['Obstaculo', 'Obstáculo']) || '').trim(),
-                                    ifThen: String(getValue(row, ['Se_Entao', 'Se Então', 'Se_Então']) || '').trim()
+                                    desiredResponse: String(getValue(row, ['Resposta Desejada', 'Resposta_Desejada']) || '').trim(),
+                                    obstacle: String(getValue(row, ['Obstáculo', 'Obstaculo']) || '').trim(),
+                                    ifThen: String(getValue(row, ['Se-Então', 'Se_Entao', 'Se Então', 'Se_Então']) || '').trim()
                                 });
                             }
                         }
@@ -1199,6 +1271,8 @@ importFromExcel: async function(event) {
                     if (!swlsState.history || typeof swlsState.history !== 'object') swlsState.history = {};
                     swlsState.history[swlsState.lastDate] = { score: swlsState.lastScore, answers: [...swlsState.answers] };
                 }
+                strengthIndex = buildNamedIndex(window.sistemaVidaState.profile.identity?.strengths || []);
+                shadowIndex = buildNamedIndex(window.sistemaVidaState.profile.identity?.shadows || []);
             }
 
             const wsOdy = workbook.Sheets['Odyssey'];
@@ -1241,31 +1315,31 @@ importFromExcel: async function(event) {
                             id: getValue(row, ['ID', 'Id']) || ('hab_' + Date.now() + Math.random().toString(36).substr(2, 9)),
                             title: title,
                             dimension: getValue(row, ['Dimensão', 'Dimensao', 'Área']) || 'Geral',
-                            description: String(getValue(row, ['Descricao', 'Descrição']) || '').trim(),
+                            description: String(getValue(row, ['Descrição', 'Descricao']) || '').trim(),
                             trigger: getValue(row, ['Gatilho', 'Contexto']) || '',
                             routine: getValue(row, ['Rotina', 'Rotina do Habito', 'Ação']) || '',
                             reward: getValue(row, ['Recompensa', 'Recompensa do Dia']) || '',
-                            status: String(getValue(row, ['Status', 'Situação']) || '').trim() || 'active',
-                            completed: toBool(getValue(row, ['Concluido', 'Concluída', 'Completed']), false),
+                            status: normalizeHabitStatusLabel(getValue(row, ['Status', 'Situação']), 'active'),
+                            completed: toBool(getValue(row, ['Concluído', 'Concluido', 'Concluída', 'Completed']), false),
                             trackMode: String(getValue(row, ['Track_Mode', 'Modo_Rastreio']) || 'boolean').trim(),
-                            targetValue: toNumber(getValue(row, ['Target_Value', 'Valor_Meta']), 1),
-                            frequency: String(getValue(row, ['Frequencia', 'Frequência', 'Frequency']) || 'daily').trim(),
-                            specificDays: parseList(getValue(row, ['Dias_Especificos', 'Dias_Específicos', 'Specific_Days']), ','),
-                            intervalDays: toInt(getValue(row, ['Intervalo_Dias', 'Interval_Days']), 0),
-                            dayOfMonth: toInt(getValue(row, ['Dia_Do_Mes', 'Day_Of_Month']), 0),
-                            scheduleStartDate: normalizeDateKey(getValue(row, ['Data_Inicio_Agenda', 'Schedule_Start_Date'])),
-                            startTime: String(getValue(row, ['Hora_Inicio', 'Start_Time']) || '').trim(),
-                            estimatedMinutes: toInt(getValue(row, ['Minutos_Estimados', 'Estimated_Minutes']), 0),
-                            continuous: toBool(getValue(row, ['Continuo', 'Contínuo', 'Continuous']), true),
+                            targetValue: toNumber(getValue(row, ['Meta', 'Target_Value', 'Valor_Meta']), 1),
+                            frequency: String(getValue(row, ['Frequência', 'Frequencia', 'Frequency']) || 'daily').trim(),
+                            specificDays: parseList(getValue(row, ['Dias específicos', 'Dias_Especificos', 'Dias_Específicos', 'Specific_Days']), ','),
+                            intervalDays: toInt(getValue(row, ['Intervalo em dias', 'Intervalo_Dias', 'Interval_Days']), 0),
+                            dayOfMonth: toInt(getValue(row, ['Dia do mês', 'Dia_Do_Mes', 'Day_Of_Month']), 0),
+                            scheduleStartDate: normalizeDateKey(getValue(row, ['Data de início', 'Data_Inicio_Agenda', 'Schedule_Start_Date'])),
+                            startTime: String(getValue(row, ['Hora', 'Hora_Inicio', 'Start_Time']) || '').trim(),
+                            estimatedMinutes: toInt(getValue(row, ['Minutos estimados', 'Minutos_Estimados', 'Estimated_Minutes']), 0),
+                            continuous: toBool(getValue(row, ['Contínuo', 'Continuo', 'Continuous']), true),
                             protocolId: String(getValue(row, ['Protocol_ID', 'Protocolo_ID']) || '').trim(),
-                            steps: parseList(getValue(row, ['Steps', 'Passos']), '||'),
+                            steps: parseList(getValue(row, ['Passos', 'Steps']), '||'),
                             logs: parseJson(getValue(row, ['Logs_JSON']), {}),
                             stepLogs: parseJson(getValue(row, ['Step_Logs_JSON']), {}),
                             sourceType: String(getValue(row, ['Source_Type', 'Tipo_Origem']) || '').trim(),
                             sourceId: String(getValue(row, ['Source_ID', 'Origem_ID']) || '').trim(),
                             sourceStrengthId: String(getValue(row, ['Source_Strength_ID', 'Forca_Origem_ID', 'Força_Origem_ID']) || '').trim(),
                             sourceShadowId: String(getValue(row, ['Source_Shadow_ID', 'Sombra_Origem_ID']) || '').trim(),
-                            isKey: toBool(getValue(row, ['Is_Key', 'Habito_Chave', 'Hábito_Chave']), false),
+                            isKey: toBool(getValue(row, ['Hábito-chave', 'Habito-chave', 'Hábito_Chave', 'Is_Key', 'Habito_Chave']), false),
                             maturity: String(getValue(row, ['Maturity', 'Maturidade']) || 'forming').trim(),
                             maturityMeta: parseJson(getValue(row, ['Maturity_Meta_JSON']), {}),
                             reminderEnabled: toBool(getValue(row, ['Reminder_Enabled', 'Lembrete_Enabled']), false),
@@ -1279,6 +1353,7 @@ importFromExcel: async function(event) {
                         });
                     }
                 });
+                habitIndex = buildNamedIndex(window.sistemaVidaState.habits);
             }
 
             const wsHabHistory = workbook.Sheets['Hábitos_Histórico'] || workbook.Sheets['Habitos_Historico'] || workbook.Sheets['Hábitos_Historico'];
@@ -1319,7 +1394,7 @@ importFromExcel: async function(event) {
                         const safeDate = dateStr.substring(0,10);
                         const dimensionNotes = {};
                         ['Saúde','Mente','Carreira','Finanças','Relacionamentos','Família','Lazer','Propósito'].forEach((dim) => {
-                            const value = String(getValue(row, [`Shutdown_${dim}`, `Nota_${dim}`]) || '').trim();
+                            const value = String(getValue(row, [`Shutdown_${dim}`, `Shutdown ${dim}`, `Nota_${dim}`]) || '').trim();
                             if (value) dimensionNotes[dim] = value;
                         });
                         const legacyShutdown = [
@@ -1331,22 +1406,22 @@ importFromExcel: async function(event) {
                         window.sistemaVidaState.dailyLogs[safeDate] = {
                             ...(logJson && typeof logJson === 'object' ? logJson : {}),
                             gratidao: getValue(row, ['Gratidão', 'Gratidao']),
-                            funcionou: getValue(row, ['O_Que_Funcionou', 'O Que Funcionou', 'Funcionou']),
-                            aprendi: getValue(row, ['O_Que_Aprendi', 'O Que Aprendi', 'Aprendi']),
+                            funcionou: getValue(row, ['O que funcionou', 'O_Que_Funcionou', 'O Que Funcionou', 'Funcionou']),
+                            aprendi: getValue(row, ['O que aprendi', 'O_Que_Aprendi', 'O Que Aprendi', 'Aprendi']),
                             shutdown: legacyShutdown,
                             focus: String(getValue(row, ['Intenção', 'Intencao', 'Focus']) || '').trim(),
                             dimensionNotes,
                             energy: toNumber(getValue(row, ['Energia', 'Energy']), 5)
                         };
-                        const hasCheckin = ['Sono_h', 'Qualidade_Sono', 'Humor', 'Estresse', 'Emoção', 'Emocao', 'Checkin_JSON']
+                        const hasCheckin = ['Sono_h', 'Sono (h)', 'Qualidade_Sono', 'Qualidade do Sono', 'Humor', 'Estresse', 'Emoção', 'Emocao', 'Checkin_JSON']
                             .some(key => String(getValue(row, [key]) || '').trim());
                         if (hasCheckin) {
                             const checkinJson = parseJson(getValue(row, ['Checkin_JSON']), {});
                             window.sistemaVidaState.profile.dailyCheckins.push({
                                 ...(checkinJson && typeof checkinJson === 'object' ? checkinJson : {}),
                                 date: safeDate,
-                                sleepHours: toNumber(getValue(row, ['Sono_h']), 0),
-                                sleepQuality: toNumber(getValue(row, ['Qualidade_Sono']), 0),
+                                sleepHours: toNumber(getValue(row, ['Sono (h)', 'Sono_h']), 0),
+                                sleepQuality: toNumber(getValue(row, ['Qualidade do Sono', 'Qualidade_Sono']), 0),
                                 energy: toNumber(getValue(row, ['Energia', 'Energy']), 0),
                                 mood: toNumber(getValue(row, ['Humor']), 0),
                                 stress: toNumber(getValue(row, ['Estresse']), 0),
@@ -1373,32 +1448,34 @@ importFromExcel: async function(event) {
                     
                     if (dateStr && dateStr.length >= 10) {
                         window.sistemaVidaState.reviews[dateStr.substring(0,10)] = {
-                            q1: getValue(row, ['O_Que_Planejei', 'O Que Planejei']),
-                            q2: getValue(row, ['O_Que_Executei', 'O Que Executei']),
+                            q1: getValue(row, ['O que planejei', 'O_Que_Planejei', 'O Que Planejei']),
+                            q2: getValue(row, ['O que executei', 'O_Que_Executei', 'O Que Executei']),
                             q3: getValue(row, ['Aprendizado', 'Aprendi']),
                             q4: getValue(row, ['Ajuste', 'Ajustes']),
-                            q5: getValue(row, ['Intencao_Proxima', 'Intencao Proxima', 'Intenção']),
-                            strengthId: String(getValue(row, ['Strength_ID', 'Forca_ID', 'Força_ID']) || '').trim(),
-                            shadowId: String(getValue(row, ['Shadow_ID', 'Sombra_ID']) || '').trim(),
-                            responsePracticed: String(getValue(row, ['Resposta_Praticada', 'Response_Practiced']) || '').trim(),
-                            habitAdjustment: String(getValue(row, ['Ajuste_Habito', 'Ajuste_Hábito', 'Habit_Adjustment']) || '').trim(),
+                            q5: getValue(row, ['Intenção', 'Intencao_Proxima', 'Intencao Proxima']),
+                            strengthId: resolveItemId(getValue(row, ['Força', 'Forca', 'Strength_ID', 'Forca_ID', 'Força_ID']), strengthIndex),
+                            shadowId: resolveItemId(getValue(row, ['Sombra', 'Shadow_ID', 'Sombra_ID']), shadowIndex),
+                            responsePracticed: String(getValue(row, ['Resposta praticada', 'Resposta_Praticada', 'Response_Practiced']) || '').trim(),
+                            habitAdjustment: String(getValue(row, ['Ajuste de hábito', 'Ajuste de habito', 'Ajuste_Habito', 'Ajuste_Hábito', 'Habit_Adjustment']) || '').trim(),
                             savedAt: String(getValue(row, ['Salvo_Em', 'Saved_At']) || '').trim()
                         };
                     }
                 });
             }
 
-            const wsWeekly = workbook.Sheets['Planos_Semanais'];
+            const wsWeekly = workbook.Sheets['Planos Semanais'] || workbook.Sheets['Planos_Semanais'];
             if (wsWeekly) {
                 const weeklyArr = XLSX.utils.sheet_to_json(wsWeekly);
                 window.sistemaVidaState.weekPlans = {};
                 weeklyArr.forEach(row => {
                     const weekKey = String(getValue(row, ['Semana', 'Week_Key']) || '').trim();
                     if (!weekKey) return;
+                    const selectedLabels = parseList(getValue(row, ['Micros da semana', 'Micros selecionadas', 'Micros_Selecionadas', 'Selected_Micros']), ',');
+                    const selectedMicros = selectedLabels.map((value) => resolveItemId(value, microIndex)).filter(Boolean);
                     window.sistemaVidaState.weekPlans[weekKey] = {
                         weekKey,
-                        intention: String(getValue(row, ['Intencao', 'Intenção', 'Intention']) || '').trim(),
-                        selectedMicros: parseList(getValue(row, ['Micros_Selecionadas', 'Selected_Micros']), ','),
+                        intention: String(getValue(row, ['Intenção', 'Intencao', 'Intention']) || '').trim(),
+                        selectedMicros: selectedMicros.length ? selectedMicros : selectedLabels,
                         updatedAt: String(getValue(row, ['Feito_Em', 'Updated_At']) || '').trim(),
                         createdAt: String(getValue(row, ['Criado_Em', 'Created_At']) || '').trim(),
                         origin: String(getValue(row, ['Origem', 'Origin']) || '').trim(),
@@ -1407,20 +1484,20 @@ importFromExcel: async function(event) {
                 });
             }
 
-            const wsFocus = workbook.Sheets['Foco_Profundo'];
+            const wsFocus = workbook.Sheets['Foco Profundo'] || workbook.Sheets['Foco_Profundo'];
             if (wsFocus) {
                 const focusArr = XLSX.utils.sheet_to_json(wsFocus);
                 if (!window.sistemaVidaState.deepWork) window.sistemaVidaState.deepWork = {};
                 window.sistemaVidaState.deepWork.sessions = focusArr.map(row => {
-                    const focusSec = Math.max(0, Math.round(toNumber(getValue(row, ['Focus_Sec']), toNumber(getValue(row, ['Minutos_Foco']), 0) * 60)));
+                    const focusSec = Math.max(0, Math.round(toNumber(getValue(row, ['Focus_Sec']), toNumber(getValue(row, ['Minutos de foco', 'Minutos_Foco']), 0) * 60)));
                     return {
-                        startedAt: String(getValue(row, ['Inicio', 'Started_At']) || '').trim(),
+                        startedAt: String(getValue(row, ['Início', 'Inicio', 'Started_At']) || '').trim(),
                         endedAt: String(getValue(row, ['Fim', 'Ended_At']) || '').trim(),
                         focusSec,
-                        breakSec: Math.max(0, Math.round(toNumber(getValue(row, ['Break_Sec']), toNumber(getValue(row, ['Minutos_Pausa']), 0) * 60))),
-                        microId: String(getValue(row, ['Micro_ID']) || '').trim(),
-                        intention: String(getValue(row, ['Intencao', 'Intenção', 'Intention']) || '').trim(),
-                        completed: toBool(getValue(row, ['Concluida', 'Concluída', 'Completed']), false),
+                        breakSec: Math.max(0, Math.round(toNumber(getValue(row, ['Break_Sec']), toNumber(getValue(row, ['Minutos de pausa', 'Minutos_Pausa']), 0) * 60))),
+                        microId: resolveItemId(getValue(row, ['Micro', 'Micro_ID']), microIndex),
+                        intention: String(getValue(row, ['Intenção', 'Intencao', 'Intention']) || '').trim(),
+                        completed: toBool(getValue(row, ['Concluída', 'Concluida', 'Completed']), false),
                         mode: String(getValue(row, ['Mode']) || 'focus').trim() || 'focus'
                     };
                 }).filter(session => session.endedAt || session.microId || session.intention);
@@ -1514,8 +1591,9 @@ importFromExcel: async function(event) {
                         const body = String(getValue(row, ['Conteudo', 'Conteúdo', 'Corpo', 'Body']) || '').trim();
                         if (!title && !body) return null;
 
-                        let entityType = String(getValue(row, ['Vinculo_Tipo', 'Vínculo_Tipo', 'Tipo_Vinculo', 'Tipo Vínculo']) || '').trim();
-                        let entityId = String(getValue(row, ['Vinculo_ID', 'Vínculo_ID', 'ID_Vinculo', 'ID Vínculo']) || '').trim();
+                        let entityType = String(getValue(row, ['Vínculo Tipo', 'Vinculo_Tipo', 'Vínculo_Tipo', 'Tipo_Vinculo', 'Tipo Vínculo']) || '').trim();
+                        let entityId = String(getValue(row, ['Vínculo ID', 'Vinculo_ID', 'Vínculo_ID', 'ID_Vinculo', 'ID Vínculo']) || '').trim();
+                        const entityTitle = String(getValue(row, ['Vinculado a', 'Vínculo', 'Item vinculado']) || '').trim();
                         const flatLinks = String(getValue(row, ['Vinculos', 'Vínculos']) || '').trim();
                         if ((!entityType || !entityId) && flatLinks) {
                             const [firstLink] = flatLinks.split(',').map(item => item.trim()).filter(Boolean);
@@ -1524,6 +1602,17 @@ importFromExcel: async function(event) {
                                 entityType = entityType || parsedType;
                                 entityId = entityId || parsedIdParts.join(':');
                             }
+                        }
+                        if (entityType && !entityId && entityTitle) {
+                            const normalizedType = this.normalizeEntityType ? this.normalizeEntityType(entityType) : entityType;
+                            const lookupMap = {
+                                metas: metaIndex,
+                                okrs: okrIndex,
+                                macros: macroIndex,
+                                micros: microIndex,
+                                habits: habitIndex
+                            };
+                            entityId = resolveItemId(entityTitle, lookupMap[normalizedType]);
                         }
 
                         return {
@@ -1555,7 +1644,7 @@ importFromExcel: async function(event) {
                 this.updateIdentityWeeklyLogs?.(weekKey, review);
             });
             await window.app.saveState(false);
-            alert('Sistema Vida Importado com Sucesso (Padrão Ouro)!');
+            alert('Planilha importada com sucesso.');
             window.app.switchView('painel');
             
         } catch (error) {
@@ -1566,7 +1655,7 @@ importFromExcel: async function(event) {
         event.target.value = '';
     },
 
-exportToExcel: function() {
+exportToExcelFull: function() {
         if (typeof XLSX === "undefined") {
             alert("SheetJS não carregado. Verifique a conexão com a internet.");
             return;
@@ -1971,8 +2060,389 @@ exportToExcel: function() {
         wsProtocols['!cols'] = [{wch:18},{wch:18},{wch:28},{wch:14},{wch:14},{wch:40},{wch:28},{wch:32},{wch:30},{wch:26},{wch:28},{wch:16},{wch:16},{wch:14},{wch:14},{wch:18},{wch:14},{wch:14},{wch:18},{wch:14},{wch:12},{wch:24},{wch:24},{wch:24},{wch:10},{wch:12},{wch:22},{wch:22}];
         XLSX.utils.book_append_sheet(wb, wsProtocols, "Protocolos");
 
-        XLSX.writeFile(wb, "SISTEMA_VIDA_PADRAO_OURO.xls", { bookType: "biff8" });
-        console.log("Exportação Excel (.xls) concluída.");
+        XLSX.writeFile(wb, "SISTEMA_VIDA_BACKUP_COMPLETO.xls", { bookType: "biff8" });
+        console.log("Exportação Excel completa (.xls) concluída.");
+    },
+exportToExcel: function() {
+        if (typeof XLSX === "undefined") {
+            alert("SheetJS não carregado. Verifique a conexão com a internet.");
+            return;
+        }
+
+        const wb = XLSX.utils.book_new();
+        const state = window.sistemaVidaState;
+        const exportedAt = new Date().toISOString();
+        const setCols = (ws, visibleWidths, hiddenWidths = []) => {
+            ws['!cols'] = [
+                ...visibleWidths.map((wch) => ({ wch })),
+                ...hiddenWidths.map((wch) => ({ wch, hidden: true }))
+            ];
+        };
+        const normalizeTypeLabel = (type) => ({
+            metas: 'Meta',
+            okrs: 'OKR',
+            macros: 'Macro',
+            micros: 'Micro'
+        }[type] || type);
+        const entityMaps = {
+            metas: new Map((state.entities?.metas || []).map((item) => [String(item.id || ''), item])),
+            okrs: new Map((state.entities?.okrs || []).map((item) => [String(item.id || ''), item])),
+            macros: new Map((state.entities?.macros || []).map((item) => [String(item.id || ''), item])),
+            micros: new Map((state.entities?.micros || []).map((item) => [String(item.id || ''), item])),
+            habits: new Map((state.habits || []).map((item) => [String(item.id || ''), item]))
+        };
+        const strengthMap = new Map((state.profile?.identity?.strengths || []).map((item) => [String(item.id || ''), item]));
+        const shadowMap = new Map((state.profile?.identity?.shadows || []).map((item) => [String(item.id || ''), item]));
+        const getEntityTitle = (entityType, entityId) => {
+            if (!entityType || !entityId) return '';
+            const normalizedType = this.normalizeEntityType ? this.normalizeEntityType(entityType) : entityType;
+            return String(entityMaps[normalizedType]?.get(String(entityId || ''))?.title || '');
+        };
+        const formatEntityStatus = (status) => ({
+            done: 'Concluída',
+            in_progress: 'Em andamento',
+            pending: 'Pendente',
+            abandoned: 'Abandonada'
+        }[String(status || '')] || String(status || ''));
+        const formatHabitStatus = (status) => ({
+            active: 'Ativo',
+            inactive: 'Inativo',
+            paused: 'Pausado',
+            archived: 'Arquivado'
+        }[String(status || '')] || String(status || ''));
+
+        const summaryData = [
+            ["Campo", "Valor"],
+            ["Tipo de planilha", "Amigável para editar/importar"],
+            ["Observação", "Os campos extras ocultos são auxiliares. O usuário pode editar apenas as colunas visíveis."],
+            ["Exportado em", exportedAt],
+            ["Versão do app", String(window.app?.appBuildVersion || "")],
+            ["Perfil", String(state.profile?.name || "Sem nome")],
+            ["Metas", Number((state.entities?.metas || []).length)],
+            ["OKRs", Number((state.entities?.okrs || []).length)],
+            ["Macros", Number((state.entities?.macros || []).length)],
+            ["Micros", Number((state.entities?.micros || []).length)],
+            ["Hábitos", Number((state.habits || []).length)],
+            ["Registros diários", Number(Object.keys(state.dailyLogs || {}).length)],
+            ["Revisões", Number(Object.keys(state.reviews || {}).length)],
+            ["Sessões de foco", Number((state.deepWork?.sessions || []).length)],
+            ["Planos semanais", Number(Object.keys(state.weekPlans || {}).length)],
+            ["Notas", Number((state.profile?.notes || []).length)]
+        ];
+        const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+        setCols(wsSummary, [28, 72]);
+        XLSX.utils.book_append_sheet(wb, wsSummary, "Resumo");
+
+        const planVisibleCols = ["Tipo", "Dimensão", "Título", "Status", "Concluída", "Plano Pai", "Contexto", "Prazo", "Progresso", "Critério de Sucesso", "Desafio", "Comprometimento", "Resultados-chave", "Passos", "Esforço", "Minutos estimados", "Hora", "Notas"];
+        const planHiddenCols = ["ID", "ID_Pai", "Protocol_ID", "Habito_Origem_ID", "Protocolo_Origem_ID", "Steps_JSON", "Step_Logs_JSON"];
+        const planRows = [planVisibleCols.concat(planHiddenCols)];
+        ['metas', 'okrs', 'macros', 'micros'].forEach((type) => {
+            (state.entities?.[type] || []).forEach((item) => {
+                const parentType = type === 'okrs' ? 'metas' : type === 'macros' ? 'okrs' : type === 'micros' ? 'macros' : '';
+                const parentId = type === 'okrs' ? item.metaId : type === 'macros' ? item.okrId : type === 'micros' ? item.macroId : '';
+                const parentTitle = parentType ? String(entityMaps[parentType]?.get(String(parentId || ''))?.title || '') : '';
+                const context = item.purpose || item.description || item.indicator || "";
+                const linkedNoteTitles = this.getLinkedNotes(type, item.id).map((note) => note.title || '').filter(Boolean).join('; ');
+                planRows.push([
+                    normalizeTypeLabel(type),
+                    item.dimension || "Geral",
+                    item.title || "",
+                    formatEntityStatus(item.status),
+                    item.completed ? "sim" : "nao",
+                    parentTitle,
+                    context,
+                    item.prazo || "",
+                    item.progress || 0,
+                    item.successCriteria || "",
+                    item.challengeLevel || "",
+                    item.commitmentLevel || "",
+                    this.serializeKeyResultsText(item.keyResults),
+                    Array.isArray(item.steps) ? item.steps.join(' || ') : "",
+                    item.effort || "",
+                    item.estimatedMinutes || "",
+                    item.startTime || "",
+                    linkedNoteTitles,
+                    item.id || "",
+                    parentId || "",
+                    item.protocolId || "",
+                    item.sourceHabitId || "",
+                    item.sourceProtocolId || "",
+                    JSON.stringify(Array.isArray(item.steps) ? item.steps : []),
+                    JSON.stringify(item.stepLogs || {})
+                ]);
+            });
+        });
+        const wsPlans = XLSX.utils.aoa_to_sheet(planRows);
+        setCols(wsPlans, [12, 14, 32, 14, 12, 28, 40, 14, 10, 28, 10, 16, 40, 30, 14, 16, 12, 32], [16, 16, 18, 18, 20, 26, 24]);
+        XLSX.utils.book_append_sheet(wb, wsPlans, "Planos");
+
+        const purposeVisibleCols = ["Categoria", "Tipo", "Título", "Texto", "Dimensão", "Descrição", "Evidência", "Risco de Excesso", "Prática", "Gatilho", "Impacto", "Resposta Desejada", "Obstáculo", "Se-Então"];
+        const purposeHiddenCols = ["ID_Item", "Habitos_Vinculados", "Logs_Semanais_JSON", "Criado_Em", "Atualizado_Em"];
+        const purposeRows = [purposeVisibleCols.concat(purposeHiddenCols)];
+        const addPurposeRow = (row) => purposeRows.push([...row.visible, ...row.hidden]);
+        addPurposeRow({
+            visible: ["Identidade", "Valores", "Valores Pessoais", (state.profile?.values || []).join(", "), "", "", "", "", "", "", "", "", "", ""],
+            hidden: ["", "", "", "", ""]
+        });
+        const ikigaiMap = {
+            love: "O que ama",
+            good: "No que é bom",
+            need: "O que o mundo precisa",
+            paid: "Pelo que pode ser pago",
+            paixao: "Paixão (Amo + Bom)",
+            profissao: "Profissão (Bom + Pago)",
+            vocacao: "Vocação (Pago + Mundo)",
+            missao: "Missão (Amo + Mundo)",
+            sintese: "Síntese Ikigai",
+            sinteseResumo: "Síntese Ikigai Resumo"
+        };
+        Object.entries(ikigaiMap).forEach(([key, label]) => addPurposeRow({
+            visible: ["Ikigai", "", label, state.profile?.ikigai?.[key] || "", "", "", "", "", "", "", "", "", "", ""],
+            hidden: ["", "", "", "", ""]
+        }));
+        const visionMap = {
+            saude: "Visão Saúde",
+            carreira: "Visão Carreira",
+            intelecto: "Visão Intelectual",
+            quote: "Citação Inspiradora",
+            saudeResumo: "Visão Saúde Resumo",
+            carreiraResumo: "Visão Carreira Resumo",
+            intelectoResumo: "Visão Intelectual Resumo"
+        };
+        Object.entries(visionMap).forEach(([key, label]) => addPurposeRow({
+            visible: ["Visão", "", label, state.profile?.vision?.[key] || "", "", "", "", "", "", "", "", "", "", ""],
+            hidden: ["", "", "", "", ""]
+        }));
+        const legacyMap = {
+            familia: "Legado Família",
+            profissao: "Legado Profissional",
+            mundo: "Legado Mundo",
+            familiaResumo: "Legado Família Resumo",
+            profissaoResumo: "Legado Profissional Resumo",
+            mundoResumo: "Legado Mundo Resumo"
+        };
+        Object.entries(legacyMap).forEach(([key, label]) => addPurposeRow({
+            visible: ["Legado", "", label, state.profile?.legacyObj?.[key] || "", "", "", "", "", "", "", "", "", "", ""],
+            hidden: ["", "", "", "", ""]
+        }));
+        (state.profile?.identity?.strengths || []).forEach((item) => addPurposeRow({
+            visible: ["Identidade", "Força", item.title || "", item.evidence || item.practice || item.excessRisk || "", item.dimension || "", item.description || "", item.evidence || "", item.excessRisk || "", item.practice || "", "", "", "", "", ""],
+            hidden: [String(item.id || ""), Array.isArray(item.linkedHabitIds) ? item.linkedHabitIds.join(', ') : "", JSON.stringify(item.weeklyLogs || {}), String(item.createdAt || ""), String(item.updatedAt || "")]
+        }));
+        (state.profile?.identity?.shadows || []).forEach((item) => addPurposeRow({
+            visible: ["Identidade", "Sombra", item.title || "", item.impact || item.desiredResponse || item.trigger || "", item.dimension || "", item.description || "", "", "", "", item.trigger || "", item.impact || "", item.desiredResponse || "", item.obstacle || "", item.ifThen || ""],
+            hidden: [String(item.id || ""), Array.isArray(item.linkedHabitIds) ? item.linkedHabitIds.join(', ') : "", JSON.stringify(item.weeklyLogs || {}), String(item.createdAt || ""), String(item.updatedAt || "")]
+        }));
+        Object.entries(state.dimensions || {}).forEach(([dimension, data]) => addPurposeRow({
+            visible: ["Roda da Vida", "", dimension, data.score || 0, "", "", "", "", "", "", "", "", "", ""],
+            hidden: ["", "", "", "", ""]
+        }));
+        const permaMap = { P: "Emoções Positivas (P)", E: "Engajamento (E)", R: "Relacionamentos (R)", M: "Significado (M)", A: "Realização (A)" };
+        Object.entries(permaMap).forEach(([key, label]) => addPurposeRow({
+            visible: ["PERMA", "", label, state.perma?.[key] || 0, "", "", "", "", "", "", "", "", "", ""],
+            hidden: ["", "", "", "", ""]
+        }));
+        const swls = state.swls || { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "" };
+        addPurposeRow({ visible: ["SWLS", "", "Score", swls.lastScore || 0, "", "", "", "", "", "", "", "", "", ""], hidden: ["", "", "", "", ""] });
+        addPurposeRow({ visible: ["SWLS", "", "Data", swls.lastDate || "", "", "", "", "", "", "", "", "", "", ""], hidden: ["", "", "", "", ""] });
+        (swls.answers || []).slice(0, 5).forEach((answer, index) => addPurposeRow({
+            visible: ["SWLS", "", `Q${index + 1}`, answer, "", "", "", "", "", "", "", "", "", ""],
+            hidden: ["", "", "", "", ""]
+        }));
+        const wsPurpose = XLSX.utils.aoa_to_sheet(purposeRows);
+        setCols(wsPurpose, [15, 14, 30, 60, 14, 24, 24, 22, 22, 22, 22, 24, 22, 22], [18, 22, 28, 22, 22]);
+        XLSX.utils.book_append_sheet(wb, wsPurpose, "Propósito");
+
+        const odysseyVisibleCols = ["Cenário", "Título", "Texto"];
+        const odysseyHiddenCols = ["Cenario_Key"];
+        const odysseyRows = [odysseyVisibleCols.concat(odysseyHiddenCols)];
+        const odysseyLabels = { cenarioA: "Cenário A — Caminho Principal", cenarioB: "Cenário B — Plano Alternativo", cenarioC: "Cenário C — E se tudo mudasse?" };
+        Object.entries(odysseyLabels).forEach(([key, label]) => {
+            odysseyRows.push([label, state.profile?.odysseyTitles?.[key] || "", state.profile?.odyssey?.[key] || "", key]);
+        });
+        const wsOdyssey = XLSX.utils.aoa_to_sheet(odysseyRows);
+        setCols(wsOdyssey, [36, 28, 90], [14]);
+        XLSX.utils.book_append_sheet(wb, wsOdyssey, "Odyssey");
+
+        const habitVisibleCols = ["Dimensão", "Título", "Descrição", "Gatilho", "Rotina", "Recompensa", "Status", "Concluído", "Meta", "Frequência", "Dias específicos", "Intervalo em dias", "Dia do mês", "Data de início", "Hora", "Minutos estimados", "Contínuo", "Passos", "Hábito-chave"];
+        const habitHiddenCols = ["ID", "Track_Mode", "Target_Value", "Protocol_ID", "Logs_JSON", "Step_Logs_JSON", "Source_Type", "Source_ID", "Source_Strength_ID", "Source_Shadow_ID", "Maturity", "Maturity_Meta_JSON", "Reminder_Enabled", "Reminder_Time", "Reminder_Interval_Enabled", "Reminder_Window_Start", "Reminder_Window_End", "Reminder_Interval_Min", "Criado_Em", "Atualizado_Em"];
+        const habitRows = [habitVisibleCols.concat(habitHiddenCols)];
+        (state.habits || []).forEach((habit) => {
+            habitRows.push([
+                habit.dimension || "Geral",
+                habit.title || "",
+                habit.description || "",
+                habit.trigger || "",
+                habit.routine || habit.context || "",
+                habit.reward || "",
+                formatHabitStatus(habit.status),
+                habit.completed ? "sim" : "nao",
+                habit.targetValue || 1,
+                habit.frequency || "daily",
+                Array.isArray(habit.specificDays) ? habit.specificDays.join(', ') : "",
+                habit.intervalDays || 0,
+                habit.dayOfMonth || 0,
+                habit.scheduleStartDate || "",
+                habit.startTime || "",
+                habit.estimatedMinutes || "",
+                habit.continuous === false ? "nao" : "sim",
+                Array.isArray(habit.steps) ? habit.steps.join(' || ') : "",
+                habit.isKey ? "sim" : "nao",
+                habit.id || "",
+                habit.trackMode || "boolean",
+                habit.targetValue || 1,
+                habit.protocolId || "",
+                JSON.stringify(habit.logs || {}),
+                JSON.stringify(habit.stepLogs || {}),
+                habit.sourceType || "",
+                habit.sourceId || "",
+                habit.sourceStrengthId || "",
+                habit.sourceShadowId || "",
+                habit.maturity || "forming",
+                JSON.stringify(habit.maturityMeta || {}),
+                habit.reminderEnabled ? "sim" : "nao",
+                habit.reminderTime || "",
+                habit.reminderIntervalEnabled ? "sim" : "nao",
+                habit.reminderWindowStart || "",
+                habit.reminderWindowEnd || "",
+                habit.reminderIntervalMin || 0,
+                habit.createdAt || "",
+                habit.updatedAt || ""
+            ]);
+        });
+        const wsHabits = XLSX.utils.aoa_to_sheet(habitRows);
+        setCols(wsHabits, [14, 28, 28, 24, 28, 24, 12, 10, 10, 14, 18, 14, 12, 16, 12, 16, 10, 30, 12], [18, 14, 12, 18, 24, 24, 14, 18, 18, 18, 12, 24, 10, 12, 14, 16, 16, 14, 22, 22]);
+        XLSX.utils.book_append_sheet(wb, wsHabits, "Hábitos");
+
+        const diaryVisibleCols = ["Data", "Sono (h)", "Qualidade do Sono", "Energia", "Humor", "Estresse", "Emoção", "Intenção", "Gratidão", "O que funcionou", "O que aprendi", "Shutdown 1", "Shutdown Saúde", "Shutdown Mente", "Shutdown Carreira", "Shutdown Finanças", "Shutdown Relacionamentos", "Shutdown Família", "Shutdown Lazer", "Shutdown Propósito"];
+        const diaryHiddenCols = ["Checkin_Saved_At", "Checkin_JSON", "Log_JSON"];
+        const diaryRows = [diaryVisibleCols.concat(diaryHiddenCols)];
+        const diaryDimensions = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
+        const diaryDates = new Set([
+            ...Object.keys(state.dailyLogs || {}),
+            ...(state.profile?.dailyCheckins || []).map((item) => item.date)
+        ]);
+        [...diaryDates].sort().forEach((date) => {
+            const log = (state.dailyLogs || {})[date] || {};
+            const checkin = (state.profile?.dailyCheckins || []).find((item) => item.date === date) || {};
+            const dimensionNotes = log.dimensionNotes || {};
+            diaryRows.push([
+                date,
+                checkin.sleepHours || "",
+                checkin.sleepQuality || "",
+                checkin.energy || log.energy || "",
+                checkin.mood || "",
+                checkin.stress || "",
+                checkin.emotion || "",
+                log.focus || "",
+                log.gratidao || "",
+                log.funcionou || "",
+                log.aprendi || "",
+                Array.isArray(log.shutdown) ? (log.shutdown[0] || "") : "",
+                ...diaryDimensions.map((dimension) => dimensionNotes[dimension] || ""),
+                checkin.savedAt || "",
+                JSON.stringify(checkin || {}),
+                JSON.stringify(log || {})
+            ]);
+        });
+        const wsDiary = XLSX.utils.aoa_to_sheet(diaryRows);
+        setCols(wsDiary, [12, 10, 16, 10, 10, 10, 14, 40, 40, 40, 40, 24, 24, 24, 24, 24, 28, 24, 24, 24], [24, 24, 24]);
+        XLSX.utils.book_append_sheet(wb, wsDiary, "Diário");
+
+        const reviewVisibleCols = ["Data", "O que planejei", "O que executei", "Aprendizado", "Ajuste", "Intenção", "Força", "Sombra", "Resposta praticada", "Ajuste de hábito"];
+        const reviewHiddenCols = ["Strength_ID", "Shadow_ID", "Salvo_Em"];
+        const reviewRows = [reviewVisibleCols.concat(reviewHiddenCols)];
+        Object.entries(state.reviews || {}).sort().forEach(([date, review]) => {
+            reviewRows.push([
+                date,
+                review.q1 || "",
+                review.q2 || "",
+                review.q3 || "",
+                review.q4 || "",
+                review.q5 || "",
+                String(strengthMap.get(String(review.strengthId || ''))?.title || ""),
+                String(shadowMap.get(String(review.shadowId || ''))?.title || ""),
+                review.responsePracticed || "",
+                review.habitAdjustment || "",
+                review.strengthId || "",
+                review.shadowId || "",
+                review.savedAt || ""
+            ]);
+        });
+        const wsReviews = XLSX.utils.aoa_to_sheet(reviewRows);
+        setCols(wsReviews, [12, 36, 36, 36, 36, 36, 24, 24, 30, 30], [18, 18, 24]);
+        XLSX.utils.book_append_sheet(wb, wsReviews, "Revisões");
+
+        const weeklyVisibleCols = ["Semana", "Intenção", "Micros da semana"];
+        const weeklyHiddenCols = ["Micros_Selecionadas", "Feito_Em", "Criado_Em", "Origem", "Saved_At_Epoch"];
+        const weeklyRows = [weeklyVisibleCols.concat(weeklyHiddenCols)];
+        Object.entries(state.weekPlans || {}).sort().forEach(([weekKey, plan]) => {
+            const selectedIds = Array.isArray(plan?.selectedMicros) ? plan.selectedMicros : [];
+            weeklyRows.push([
+                weekKey,
+                String(plan?.intention || plan?.focus || ""),
+                selectedIds.map((id) => String(entityMaps.micros.get(String(id || ''))?.title || id || '')).filter(Boolean).join(', '),
+                selectedIds.join(', '),
+                String(plan?.updatedAt || plan?.createdAt || ""),
+                String(plan?.createdAt || ""),
+                String(plan?.origin || ""),
+                Number(plan?.savedAt || 0)
+            ]);
+        });
+        const wsWeekly = XLSX.utils.aoa_to_sheet(weeklyRows);
+        setCols(wsWeekly, [14, 40, 52], [48, 24, 24, 16, 16]);
+        XLSX.utils.book_append_sheet(wb, wsWeekly, "Planos Semanais");
+
+        const focusVisibleCols = ["Início", "Fim", "Minutos de foco", "Minutos de pausa", "Modo", "Micro", "Intenção", "Concluída"];
+        const focusHiddenCols = ["Focus_Sec", "Break_Sec", "Micro_ID"];
+        const focusRows = [focusVisibleCols.concat(focusHiddenCols)];
+        (state.deepWork?.sessions || []).forEach((session) => {
+            focusRows.push([
+                String(session?.startedAt || ""),
+                String(session?.endedAt || ""),
+                Math.max(0, Math.round((Number(session?.focusSec) || 0) / 60)),
+                Math.max(0, Math.round((Number(session?.breakSec) || 0) / 60)),
+                String(session?.mode || 'focus'),
+                String(entityMaps.micros.get(String(session?.microId || ''))?.title || ""),
+                String(session?.intention || ""),
+                session?.completed ? "sim" : "nao",
+                Number(session?.focusSec || 0),
+                Number(session?.breakSec || 0),
+                String(session?.microId || "")
+            ]);
+        });
+        const wsFocus = XLSX.utils.aoa_to_sheet(focusRows);
+        setCols(wsFocus, [22, 22, 16, 16, 12, 28, 40, 10], [12, 12, 20]);
+        XLSX.utils.book_append_sheet(wb, wsFocus, "Foco Profundo");
+
+        const notesVisibleCols = ["Título", "Conteúdo", "URL", "Tags", "Vínculo Tipo", "Vinculado a"];
+        const notesHiddenCols = ["ID", "Vinculo_Tipo", "Vinculo_ID", "Vinculos", "Criada_Em", "Atualizada_Em"];
+        const notesRows = [notesVisibleCols.concat(notesHiddenCols)];
+        (state.profile?.notes || []).forEach((note) => {
+            const linkedType = String(note?.linkedTo?.entityType || "");
+            const linkedId = String(note?.linkedTo?.entityId || "");
+            const flatLink = linkedType && linkedId ? `${linkedType}:${linkedId}` : "";
+            notesRows.push([
+                String(note?.title || ""),
+                String(note?.body || note?.content || ""),
+                String(note?.url || ""),
+                Array.isArray(note?.tags) ? note.tags.join(", ") : String(note?.tags || ""),
+                linkedType,
+                getEntityTitle(linkedType, linkedId),
+                String(note?.id || ""),
+                linkedType,
+                linkedId,
+                flatLink,
+                String(note?.createdAt || ""),
+                String(note?.updatedAt || "")
+            ]);
+        });
+        const wsNotes = XLSX.utils.aoa_to_sheet(notesRows);
+        setCols(wsNotes, [30, 70, 28, 24, 18, 28], [20, 18, 22, 32, 24, 24]);
+        XLSX.utils.book_append_sheet(wb, wsNotes, "Notas");
+
+        XLSX.writeFile(wb, "SISTEMA_VIDA_PLANILHA_AMIGAVEL.xls", { bookType: "biff8" });
+        console.log("Exportação Excel amigável (.xls) concluída.");
     },
     });
 }
