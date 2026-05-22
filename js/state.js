@@ -982,6 +982,12 @@ importFromExcel: async function(event) {
             if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) return raw.slice(0, 10);
             return raw;
         };
+        const getSheetHeaderSet = (sheet) => new Set(
+            ((XLSX.utils.sheet_to_json(sheet, { header: 1, range: 0 })?.[0]) || [])
+                .map((header) => String(header || '').trim())
+                .filter(Boolean)
+        );
+        const hasAnyHeader = (headerSet, names = []) => names.some((name) => headerSet?.has?.(name));
         const normalizeLookupKey = (value) => String(value || '')
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
@@ -1039,10 +1045,12 @@ importFromExcel: async function(event) {
             let habitIndex = buildNamedIndex([]);
             let strengthIndex = buildNamedIndex([]);
             let shadowIndex = buildNamedIndex([]);
+            const importWarnings = [];
 
             // 1. Aba: Planos -> state.entities
             const wsPlanos = workbook.Sheets['Planos'] || workbook.Sheets['Main'] || workbook.Sheets['Tarefas'];
             if (wsPlanos) {
+                const planHeaders = getSheetHeaderSet(wsPlanos);
                 const planosArr = XLSX.utils.sheet_to_json(wsPlanos);
                 window.sistemaVidaState.entities = { metas: [], okrs: [], macros: [], micros: [] };
                 
@@ -1066,8 +1074,12 @@ importFromExcel: async function(event) {
                     let status = (numericProgress >= 100) ? 'done' : 'active';
                     
                     let idFromSheet = getValue(row, ['ID', 'Id', 'id', 'Código', 'Codigo']);
-                    let parentLabel = getValue(row, ['Plano Pai', 'Pai', 'Parent']);
+                    const usesVisibleParent = hasAnyHeader(planHeaders, ['Plano Pai', 'Pai', 'Parent']);
+                    const explicitParentLabel = usesVisibleParent
+                        ? String(getValue(row, ['Plano Pai', 'Pai', 'Parent']) || '').trim()
+                        : '';
                     let parentId = getValue(row, ['ID_Pai', 'ID Pai', 'Pai ID', 'metaId', 'okrId', 'macroId']);
+                    if (usesVisibleParent) parentId = '';
                     
                     let obj = {
                         id: idFromSheet ? String(idFromSheet) : ('ent_' + Date.now() + Math.random().toString(36).substr(2, 9)),
@@ -1117,7 +1129,7 @@ importFromExcel: async function(event) {
                         obj.startTime = String(getValue(row, ['Hora', 'Hora_Inicio', 'Start_Time']) || '').trim();
                     }
 
-                    if (parentLabel) obj._parentTitle = String(parentLabel).trim();
+                    if (explicitParentLabel) obj._parentTitle = explicitParentLabel;
                     if (parentId) {
                         if (type === 'okrs') obj.metaId = String(parentId);
                         else if (type === 'macros') obj.okrId = String(parentId);
@@ -1132,18 +1144,27 @@ importFromExcel: async function(event) {
                 okrIndex = buildNamedIndex(window.sistemaVidaState.entities.okrs);
                 macroIndex = buildNamedIndex(window.sistemaVidaState.entities.macros);
                 window.sistemaVidaState.entities.okrs.forEach((okr) => {
-                    const resolvedParentId = okr._parentTitle ? resolveItemId(okr._parentTitle, metaIndex) : '';
-                    if (resolvedParentId) okr.metaId = resolvedParentId;
+                    if (okr._parentTitle) {
+                        const resolvedParentId = resolveItemId(okr._parentTitle, metaIndex);
+                        okr.metaId = resolvedParentId || '';
+                        if (!resolvedParentId) importWarnings.push(`Planos: Meta pai não encontrada para OKR "${okr.title || ''}"`);
+                    }
                     delete okr._parentTitle;
                 });
                 window.sistemaVidaState.entities.macros.forEach((macro) => {
-                    const resolvedParentId = macro._parentTitle ? resolveItemId(macro._parentTitle, okrIndex) : '';
-                    if (resolvedParentId) macro.okrId = resolvedParentId;
+                    if (macro._parentTitle) {
+                        const resolvedParentId = resolveItemId(macro._parentTitle, okrIndex);
+                        macro.okrId = resolvedParentId || '';
+                        if (!resolvedParentId) importWarnings.push(`Planos: OKR pai não encontrado para Macro "${macro.title || ''}"`);
+                    }
                     delete macro._parentTitle;
                 });
                 window.sistemaVidaState.entities.micros.forEach((micro) => {
-                    const resolvedParentId = micro._parentTitle ? resolveItemId(micro._parentTitle, macroIndex) : '';
-                    if (resolvedParentId) micro.macroId = resolvedParentId;
+                    if (micro._parentTitle) {
+                        const resolvedParentId = resolveItemId(micro._parentTitle, macroIndex);
+                        micro.macroId = resolvedParentId || '';
+                        if (!resolvedParentId) importWarnings.push(`Planos: Macro pai não encontrada para Micro "${micro.title || ''}"`);
+                    }
                     delete micro._parentTitle;
                 });
                 microIndex = buildNamedIndex(window.sistemaVidaState.entities.micros);
@@ -1357,13 +1378,21 @@ importFromExcel: async function(event) {
             }
 
             const wsHabHistory = workbook.Sheets['Hábitos_Histórico'] || workbook.Sheets['Habitos_Historico'] || workbook.Sheets['Hábitos_Historico'];
-            if (wsHabHistory && Array.isArray(window.sistemaVidaState.habits)) {
+            if (wsHabHistory && wsHabits && Array.isArray(window.sistemaVidaState.habits)) {
                 const historyArr = XLSX.utils.sheet_to_json(wsHabHistory);
                 const byId = new Map(window.sistemaVidaState.habits.map(h => [String(h.id || ''), h]));
                 historyArr.forEach(row => {
                     const id = String(getValue(row, ['ID', 'Id']) || '').trim();
-                    if (!id || !byId.has(id)) return;
-                    const habit = byId.get(id);
+                    let habit = id ? byId.get(id) : null;
+                    if (!habit) {
+                        const title = String(getValue(row, ['Título', 'Titulo', 'Hábito']) || '').trim();
+                        const resolvedId = resolveItemId(title, habitIndex);
+                        habit = resolvedId ? byId.get(resolvedId) : null;
+                    }
+                    if (!habit) {
+                        importWarnings.push(`Hábitos histórico: hábito não encontrado para a linha "${String(getValue(row, ['Título', 'Titulo', 'Hábito']) || id || '').trim()}"`);
+                        return;
+                    }
                     habit.logs = parseJson(getValue(row, ['Logs_JSON']), habit.logs || {});
                     habit.stepLogs = parseJson(getValue(row, ['Step_Logs_JSON']), habit.stepLogs || {});
                     Object.keys(row).forEach((key) => {
@@ -1436,6 +1465,7 @@ importFromExcel: async function(event) {
             // 5. Aba: Revisões
             const wsRev = workbook.Sheets['Revisões'] || workbook.Sheets['Revisoes'];
             if (wsRev) {
+                const reviewHeaders = getSheetHeaderSet(wsRev);
                 const revArr = XLSX.utils.sheet_to_json(wsRev);
                 window.sistemaVidaState.reviews = {};
                 revArr.forEach(row => {
@@ -1447,35 +1477,61 @@ importFromExcel: async function(event) {
                     } else if (dateRaw) dateStr = String(dateRaw).trim();
                     
                     if (dateStr && dateStr.length >= 10) {
+                        const usesVisibleStrength = hasAnyHeader(reviewHeaders, ['Força', 'Forca']);
+                        const usesVisibleShadow = hasAnyHeader(reviewHeaders, ['Sombra']);
+                        const strengthLabel = usesVisibleStrength ? String(getValue(row, ['Força', 'Forca']) || '').trim() : '';
+                        const shadowLabel = usesVisibleShadow ? String(getValue(row, ['Sombra']) || '').trim() : '';
                         window.sistemaVidaState.reviews[dateStr.substring(0,10)] = {
                             q1: getValue(row, ['O que planejei', 'O_Que_Planejei', 'O Que Planejei']),
                             q2: getValue(row, ['O que executei', 'O_Que_Executei', 'O Que Executei']),
                             q3: getValue(row, ['Aprendizado', 'Aprendi']),
                             q4: getValue(row, ['Ajuste', 'Ajustes']),
                             q5: getValue(row, ['Intenção', 'Intencao_Proxima', 'Intencao Proxima']),
-                            strengthId: resolveItemId(getValue(row, ['Força', 'Forca', 'Strength_ID', 'Forca_ID', 'Força_ID']), strengthIndex),
-                            shadowId: resolveItemId(getValue(row, ['Sombra', 'Shadow_ID', 'Sombra_ID']), shadowIndex),
+                            strengthId: usesVisibleStrength
+                                ? (strengthLabel ? resolveItemId(strengthLabel, strengthIndex) : '')
+                                : resolveItemId(getValue(row, ['Strength_ID', 'Forca_ID', 'Força_ID']), strengthIndex),
+                            shadowId: usesVisibleShadow
+                                ? (shadowLabel ? resolveItemId(shadowLabel, shadowIndex) : '')
+                                : resolveItemId(getValue(row, ['Shadow_ID', 'Sombra_ID']), shadowIndex),
                             responsePracticed: String(getValue(row, ['Resposta praticada', 'Resposta_Praticada', 'Response_Practiced']) || '').trim(),
                             habitAdjustment: String(getValue(row, ['Ajuste de hábito', 'Ajuste de habito', 'Ajuste_Habito', 'Ajuste_Hábito', 'Habit_Adjustment']) || '').trim(),
                             savedAt: String(getValue(row, ['Salvo_Em', 'Saved_At']) || '').trim()
                         };
+                        if (usesVisibleStrength && strengthLabel && !window.sistemaVidaState.reviews[dateStr.substring(0,10)].strengthId) {
+                            importWarnings.push(`Revisões: força não encontrada "${strengthLabel}" em ${dateStr.substring(0,10)}`);
+                        }
+                        if (usesVisibleShadow && shadowLabel && !window.sistemaVidaState.reviews[dateStr.substring(0,10)].shadowId) {
+                            importWarnings.push(`Revisões: sombra não encontrada "${shadowLabel}" em ${dateStr.substring(0,10)}`);
+                        }
                     }
                 });
             }
 
             const wsWeekly = workbook.Sheets['Planos Semanais'] || workbook.Sheets['Planos_Semanais'];
             if (wsWeekly) {
+                const weeklyHeaders = getSheetHeaderSet(wsWeekly);
                 const weeklyArr = XLSX.utils.sheet_to_json(wsWeekly);
                 window.sistemaVidaState.weekPlans = {};
                 weeklyArr.forEach(row => {
                     const weekKey = String(getValue(row, ['Semana', 'Week_Key']) || '').trim();
                     if (!weekKey) return;
-                    const selectedLabels = parseList(getValue(row, ['Micros da semana', 'Micros selecionadas', 'Micros_Selecionadas', 'Selected_Micros']), ',');
-                    const selectedMicros = selectedLabels.map((value) => resolveItemId(value, microIndex)).filter(Boolean);
+                    const usesVisibleMicros = hasAnyHeader(weeklyHeaders, ['Micros da semana', 'Micros selecionadas']);
+                    const visibleSelectedLabels = usesVisibleMicros
+                        ? parseList(getValue(row, ['Micros da semana', 'Micros selecionadas']), ',')
+                        : [];
+                    const hiddenSelectedIds = parseList(getValue(row, ['Micros_Selecionadas', 'Selected_Micros']), ',');
+                    const selectedMicros = (usesVisibleMicros ? visibleSelectedLabels : hiddenSelectedIds)
+                        .map((value) => usesVisibleMicros ? resolveItemId(value, microIndex) : resolveItemId(value, microIndex))
+                        .filter(Boolean);
+                    if (usesVisibleMicros) {
+                        visibleSelectedLabels.forEach((label) => {
+                            if (!resolveItemId(label, microIndex)) importWarnings.push(`Planos semanais: micro não encontrado "${label}" na semana ${weekKey}`);
+                        });
+                    }
                     window.sistemaVidaState.weekPlans[weekKey] = {
                         weekKey,
                         intention: String(getValue(row, ['Intenção', 'Intencao', 'Intention']) || '').trim(),
-                        selectedMicros: selectedMicros.length ? selectedMicros : selectedLabels,
+                        selectedMicros,
                         updatedAt: String(getValue(row, ['Feito_Em', 'Updated_At']) || '').trim(),
                         createdAt: String(getValue(row, ['Criado_Em', 'Created_At']) || '').trim(),
                         origin: String(getValue(row, ['Origem', 'Origin']) || '').trim(),
@@ -1486,16 +1542,39 @@ importFromExcel: async function(event) {
 
             const wsFocus = workbook.Sheets['Foco Profundo'] || workbook.Sheets['Foco_Profundo'];
             if (wsFocus) {
+                const focusHeaders = getSheetHeaderSet(wsFocus);
                 const focusArr = XLSX.utils.sheet_to_json(wsFocus);
-                if (!window.sistemaVidaState.deepWork) window.sistemaVidaState.deepWork = {};
+                window.sistemaVidaState.deepWork = {
+                    isRunning: false,
+                    isPaused: false,
+                    mode: 'focus',
+                    remainingSec: 1500,
+                    targetSec: 1500,
+                    breakSec: 300,
+                    microId: '',
+                    intention: '',
+                    lastTickAt: 0,
+                    deadlineAtMs: 0,
+                    sessions: [],
+                    pendingClosure: null
+                };
                 window.sistemaVidaState.deepWork.sessions = focusArr.map(row => {
                     const focusSec = Math.max(0, Math.round(toNumber(getValue(row, ['Focus_Sec']), toNumber(getValue(row, ['Minutos de foco', 'Minutos_Foco']), 0) * 60)));
+                    const usesVisibleMicro = hasAnyHeader(focusHeaders, ['Micro']);
+                    const visibleMicroLabel = usesVisibleMicro ? String(getValue(row, ['Micro']) || '').trim() : '';
+                    const hiddenMicroId = String(getValue(row, ['Micro_ID']) || '').trim();
+                    const resolvedMicroId = usesVisibleMicro
+                        ? (visibleMicroLabel ? resolveItemId(visibleMicroLabel, microIndex) : '')
+                        : (hiddenMicroId ? resolveItemId(hiddenMicroId, microIndex) : '');
+                    if (usesVisibleMicro && visibleMicroLabel && !resolvedMicroId) {
+                        importWarnings.push(`Foco profundo: micro não encontrado "${visibleMicroLabel}"`);
+                    }
                     return {
                         startedAt: String(getValue(row, ['Início', 'Inicio', 'Started_At']) || '').trim(),
                         endedAt: String(getValue(row, ['Fim', 'Ended_At']) || '').trim(),
                         focusSec,
                         breakSec: Math.max(0, Math.round(toNumber(getValue(row, ['Break_Sec']), toNumber(getValue(row, ['Minutos de pausa', 'Minutos_Pausa']), 0) * 60))),
-                        microId: resolveItemId(getValue(row, ['Micro', 'Micro_ID']), microIndex),
+                        microId: resolvedMicroId,
                         intention: String(getValue(row, ['Intenção', 'Intencao', 'Intention']) || '').trim(),
                         completed: toBool(getValue(row, ['Concluída', 'Concluida', 'Completed']), false),
                         mode: String(getValue(row, ['Mode']) || 'focus').trim() || 'focus'
@@ -1583,6 +1662,7 @@ importFromExcel: async function(event) {
 
             const wsNotes = workbook.Sheets['Notas'];
             if (wsNotes) {
+                const notesHeaders = getSheetHeaderSet(wsNotes);
                 const notesArr = XLSX.utils.sheet_to_json(wsNotes);
                 if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
                 window.sistemaVidaState.profile.notes = notesArr
@@ -1591,11 +1671,17 @@ importFromExcel: async function(event) {
                         const body = String(getValue(row, ['Conteudo', 'Conteúdo', 'Corpo', 'Body']) || '').trim();
                         if (!title && !body) return null;
 
-                        let entityType = String(getValue(row, ['Vínculo Tipo', 'Vinculo_Tipo', 'Vínculo_Tipo', 'Tipo_Vinculo', 'Tipo Vínculo']) || '').trim();
-                        let entityId = String(getValue(row, ['Vínculo ID', 'Vinculo_ID', 'Vínculo_ID', 'ID_Vinculo', 'ID Vínculo']) || '').trim();
-                        const entityTitle = String(getValue(row, ['Vinculado a', 'Vínculo', 'Item vinculado']) || '').trim();
+                        const usesVisibleLinkType = hasAnyHeader(notesHeaders, ['Vínculo Tipo']);
+                        const usesVisibleLinkedTo = hasAnyHeader(notesHeaders, ['Vinculado a', 'Vínculo', 'Item vinculado']);
+                        let entityType = usesVisibleLinkType
+                            ? String(getValue(row, ['Vínculo Tipo']) || '').trim()
+                            : String(getValue(row, ['Vinculo_Tipo', 'Vínculo_Tipo', 'Tipo_Vinculo', 'Tipo Vínculo']) || '').trim();
+                        let entityId = usesVisibleLinkType
+                            ? ''
+                            : String(getValue(row, ['Vínculo ID', 'Vinculo_ID', 'Vínculo_ID', 'ID_Vinculo', 'ID Vínculo']) || '').trim();
+                        const entityTitle = usesVisibleLinkedTo ? String(getValue(row, ['Vinculado a', 'Vínculo', 'Item vinculado']) || '').trim() : '';
                         const flatLinks = String(getValue(row, ['Vinculos', 'Vínculos']) || '').trim();
-                        if ((!entityType || !entityId) && flatLinks) {
+                        if (!usesVisibleLinkType && (!entityType || !entityId) && flatLinks) {
                             const [firstLink] = flatLinks.split(',').map(item => item.trim()).filter(Boolean);
                             if (firstLink && firstLink.includes(':')) {
                                 const [parsedType, ...parsedIdParts] = firstLink.split(':');
@@ -1603,7 +1689,7 @@ importFromExcel: async function(event) {
                                 entityId = entityId || parsedIdParts.join(':');
                             }
                         }
-                        if (entityType && !entityId && entityTitle) {
+                        if (entityType && usesVisibleLinkedTo) {
                             const normalizedType = this.normalizeEntityType ? this.normalizeEntityType(entityType) : entityType;
                             const lookupMap = {
                                 metas: metaIndex,
@@ -1613,6 +1699,7 @@ importFromExcel: async function(event) {
                                 habits: habitIndex
                             };
                             entityId = resolveItemId(entityTitle, lookupMap[normalizedType]);
+                            if (entityTitle && !entityId) importWarnings.push(`Notas: vínculo não encontrado "${entityTitle}" (${entityType})`);
                         }
 
                         return {
@@ -1644,7 +1731,10 @@ importFromExcel: async function(event) {
                 this.updateIdentityWeeklyLogs?.(weekKey, review);
             });
             await window.app.saveState(false);
-            alert('Planilha importada com sucesso.');
+            if (importWarnings.length) console.warn('[Import warnings]', importWarnings);
+            alert(importWarnings.length
+                ? `Planilha importada com sucesso, com ${importWarnings.length} aviso(s) de vínculo ou dado incompleto.`
+                : 'Planilha importada com sucesso.');
             window.app.switchView('painel');
             
         } catch (error) {

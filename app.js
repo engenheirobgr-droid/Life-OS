@@ -24,7 +24,7 @@ import { attachIdentity } from './js/identity.js?v=20260521-taxonomy-v2';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-focus-linkage-audit-v3';
-import { attachStateModule } from './js/state.js?v=20260521-friendly-sheet-v1';
+import { attachStateModule } from './js/state.js?v=20260522-import-contract-v1';
 import { attachRenderModule } from './js/render.js?v=20260521-taxonomy-v2';
 import { attachPlanningModule } from './js/planning.js?v=20260521-taxonomy-v2';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260521-friendly-sheet-v1',
+    appBuildVersion: '20260522-import-contract-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
