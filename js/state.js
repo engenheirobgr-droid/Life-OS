@@ -961,11 +961,77 @@ importFromExcel: async function(event) {
                 return fallback;
             }
         };
+        const pad2 = (value) => String(value).padStart(2, '0');
+        const formatIsoDate = (year, month, day) => {
+            if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return '';
+            if (month < 1 || month > 12 || day < 1 || day > 31) return '';
+            return `${year}-${pad2(month)}-${pad2(day)}`;
+        };
+        const excelSerialToDateKey = (value) => {
+            const serial = Number(value);
+            if (!Number.isFinite(serial)) return '';
+            const wholeDays = Math.floor(serial);
+            if (wholeDays <= 0) return '';
+            const utcMs = Math.round((wholeDays - 25569) * 86400 * 1000);
+            const date = new Date(utcMs);
+            if (Number.isNaN(date.getTime())) return '';
+            return formatIsoDate(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate());
+        };
+        const excelSerialToTime = (value) => {
+            const serial = Number(value);
+            if (!Number.isFinite(serial) || serial < 0) return '';
+            const fraction = ((serial % 1) + 1) % 1;
+            const totalMinutes = Math.round(fraction * 24 * 60) % (24 * 60);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            return `${pad2(hours)}:${pad2(minutes)}`;
+        };
         const normalizeDateKey = (value) => {
+            if (value === null || value === undefined || value === '') return '';
+            if (typeof value === 'number') return excelSerialToDateKey(value);
             const raw = String(value || '').trim();
             if (!raw) return '';
             if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
             if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) return raw.slice(0, 10);
+            if (/^\d+(?:\.\d+)?$/.test(raw)) {
+                const fromSerial = excelSerialToDateKey(Number(raw));
+                if (fromSerial) return fromSerial;
+            }
+            const brDateMatch = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+.*)?$/);
+            if (brDateMatch) {
+                const [, day, month, year] = brDateMatch;
+                return formatIsoDate(Number(year), Number(month), Number(day));
+            }
+            const isoSlashMatch = raw.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:\s+.*)?$/);
+            if (isoSlashMatch) {
+                const [, year, month, day] = isoSlashMatch;
+                return formatIsoDate(Number(year), Number(month), Number(day));
+            }
+            return raw;
+        };
+        const normalizeTimeValue = (value) => {
+            if (value === null || value === undefined || value === '') return '';
+            if (typeof value === 'number') return excelSerialToTime(value);
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            if (/^\d+(?:\.\d+)?$/.test(raw)) {
+                const fromSerial = excelSerialToTime(Number(raw));
+                if (fromSerial) return fromSerial;
+            }
+            const hourMinuteMatch = raw.match(/^(\d{1,2}):(\d{1,2})(?::\d{1,2})?$/);
+            if (hourMinuteMatch) {
+                const [, hours, minutes] = hourMinuteMatch;
+                return `${pad2(Number(hours))}:${pad2(Number(minutes))}`;
+            }
+            const amPmMatch = raw.match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/i);
+            if (amPmMatch) {
+                let hours = Number(amPmMatch[1]);
+                const minutes = Number(amPmMatch[2]);
+                const suffix = amPmMatch[3].toUpperCase();
+                if (suffix === 'PM' && hours < 12) hours += 12;
+                if (suffix === 'AM' && hours === 12) hours = 0;
+                return `${pad2(hours)}:${pad2(minutes)}`;
+            }
             return raw;
         };
         const getSheetHeaderSet = (sheet) => new Set(
@@ -1081,7 +1147,7 @@ importFromExcel: async function(event) {
                     const keyResultsText = String(getValue(row, ['Resultados-chave', 'Resultados-chave (texto)', 'Key_Results', 'Key Results', 'KRs']) || '');
 
                     let context = getValue(row, ['Contexto', 'Contexto / Indicador', 'Contexto_Indicador', 'Notes', 'Descrição']);
-                    let prazo = getValue(row, ['Prazo', 'Prazo / Ciclo', 'Ciclo', 'Deadline', 'Data']);
+                    let prazo = normalizeDateKey(getValue(row, ['Prazo', 'Prazo / Ciclo', 'Ciclo', 'Deadline', 'Data']));
                     
                     if (type === 'metas' || type === 'okrs') {
                         obj.purpose = context;
@@ -1112,7 +1178,7 @@ importFromExcel: async function(event) {
                         obj.stepLogs = parseJson(getValue(row, ['Step_Logs_JSON']), {});
                         obj.effort = String(getValue(row, ['Esforço', 'Esforco']) || '').trim();
                         obj.estimatedMinutes = toInt(getValue(row, ['Minutos estimados', 'Minutos_Estimados', 'Estimated_Minutes']), 0);
-                        obj.startTime = String(getValue(row, ['Hora', 'Hora_Inicio', 'Start_Time']) || '').trim();
+                        obj.startTime = normalizeTimeValue(getValue(row, ['Hora', 'Hora_Inicio', 'Start_Time']));
                     }
 
                     if (explicitParentLabel) obj._parentTitle = explicitParentLabel;
@@ -1337,7 +1403,7 @@ importFromExcel: async function(event) {
                             intervalDays: toInt(getValue(row, ['Intervalo em dias', 'Intervalo_Dias', 'Interval_Days']), 0),
                             dayOfMonth: toInt(getValue(row, ['Dia do mês', 'Dia_Do_Mes', 'Day_Of_Month']), 0),
                             scheduleStartDate: normalizeDateKey(getValue(row, ['Data de início', 'Data_Inicio_Agenda', 'Schedule_Start_Date'])),
-                            startTime: String(getValue(row, ['Hora', 'Hora_Inicio', 'Start_Time']) || '').trim(),
+                            startTime: normalizeTimeValue(getValue(row, ['Hora', 'Hora_Inicio', 'Start_Time'])),
                             estimatedMinutes: toInt(getValue(row, ['Minutos estimados', 'Minutos_Estimados', 'Estimated_Minutes']), 0),
                             continuous: toBool(getValue(row, ['Contínuo', 'Continuo', 'Continuous']), true),
                             protocolId: String(getValue(row, ['Protocol_ID', 'Protocolo_ID']) || '').trim(),
@@ -1352,10 +1418,10 @@ importFromExcel: async function(event) {
                             maturity: String(getValue(row, ['Maturity', 'Maturidade']) || 'forming').trim(),
                             maturityMeta: parseJson(getValue(row, ['Maturity_Meta_JSON']), {}),
                             reminderEnabled: toBool(getValue(row, ['Reminder_Enabled', 'Lembrete_Enabled']), false),
-                            reminderTime: String(getValue(row, ['Reminder_Time', 'Horario_Lembrete', 'Horário_Lembrete']) || '').trim(),
+                            reminderTime: normalizeTimeValue(getValue(row, ['Reminder_Time', 'Horario_Lembrete', 'Horário_Lembrete'])),
                             reminderIntervalEnabled: toBool(getValue(row, ['Reminder_Interval_Enabled', 'Intervalo_Lembrete_Enabled']), false),
-                            reminderWindowStart: String(getValue(row, ['Reminder_Window_Start', 'Janela_Lembrete_Inicio']) || '').trim(),
-                            reminderWindowEnd: String(getValue(row, ['Reminder_Window_End', 'Janela_Lembrete_Fim']) || '').trim(),
+                            reminderWindowStart: normalizeTimeValue(getValue(row, ['Reminder_Window_Start', 'Janela_Lembrete_Inicio'])),
+                            reminderWindowEnd: normalizeTimeValue(getValue(row, ['Reminder_Window_End', 'Janela_Lembrete_Fim'])),
                             reminderIntervalMin: toInt(getValue(row, ['Reminder_Interval_Min', 'Intervalo_Lembrete_Min']), 0),
                             createdAt: String(getValue(row, ['Criado_Em', 'Created_At']) || '').trim(),
                             updatedAt: String(getValue(row, ['Atualizado_Em', 'Updated_At']) || '').trim()
@@ -1401,11 +1467,7 @@ importFromExcel: async function(event) {
                 window.sistemaVidaState.dailyLogs = {};
                 logArr.forEach(row => {
                     let dateRaw = getValue(row, ['Data', 'Date', 'Dia']);
-                    let dateStr = "";
-                    if (typeof dateRaw === 'number') {
-                        const d = new Date(Math.round((dateRaw - 25569) * 86400 * 1000));
-                        dateStr = d.toISOString().split('T')[0];
-                    } else if (dateRaw) dateStr = String(dateRaw).trim();
+                    let dateStr = normalizeDateKey(dateRaw);
                     
                     if (dateStr && dateStr.length >= 10) {
                         const safeDate = dateStr.substring(0,10);
@@ -1458,11 +1520,7 @@ importFromExcel: async function(event) {
                 window.sistemaVidaState.reviews = {};
                 revArr.forEach(row => {
                     let dateRaw = getValue(row, ['Data', 'Date']);
-                    let dateStr = "";
-                    if (typeof dateRaw === 'number') {
-                        const d = new Date(Math.round((dateRaw - 25569) * 86400 * 1000));
-                        dateStr = d.toISOString().split('T')[0];
-                    } else if (dateRaw) dateStr = String(dateRaw).trim();
+                    let dateStr = normalizeDateKey(dateRaw);
                     
                     if (dateStr && dateStr.length >= 10) {
                         const usesVisibleStrength = hasAnyHeader(reviewHeaders, ['Força', 'Forca']);
@@ -1558,8 +1616,8 @@ importFromExcel: async function(event) {
                         importWarnings.push(`Foco profundo: micro não encontrado "${visibleMicroLabel}"`);
                     }
                     return {
-                        startedAt: String(getValue(row, ['Início', 'Inicio', 'Started_At']) || '').trim(),
-                        endedAt: String(getValue(row, ['Fim', 'Ended_At']) || '').trim(),
+                        startedAt: normalizeDateKey(getValue(row, ['Início', 'Inicio', 'Started_At'])),
+                        endedAt: normalizeDateKey(getValue(row, ['Fim', 'Ended_At'])),
                         focusSec,
                         breakSec: Math.max(0, Math.round(toNumber(getValue(row, ['Break_Sec']), toNumber(getValue(row, ['Minutos de pausa', 'Minutos_Pausa']), 0) * 60))),
                         microId: resolvedMicroId,
@@ -1596,7 +1654,7 @@ importFromExcel: async function(event) {
                         intervalDays: toInt(getValue(row, ['Habit_Interval_Days']), 0),
                         dayOfMonth: toInt(getValue(row, ['Habit_Day_Of_Month']), 0),
                         scheduleStartDate: normalizeDateKey(getValue(row, ['Habit_Schedule_Start_Date'])),
-                        startTime: String(getValue(row, ['Habit_Start_Time']) || '').trim(),
+                        startTime: normalizeTimeValue(getValue(row, ['Habit_Start_Time'])),
                         continuous: toBool(getValue(row, ['Habit_Continuous']), true),
                         trigger: String(getValue(row, ['Habit_Trigger']) || '').trim(),
                         routine: String(getValue(row, ['Habit_Routine']) || '').trim(),

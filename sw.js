@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v265';
+const CACHE_NAME = 'sistema-vida-v266';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260523-purpose-legacy-cleanup-v1',
+    './app.js?v=20260523-excel-datetime-import-v1',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
     './js/notifications.js?v=20260518-exec-flow-v1',
@@ -12,7 +12,7 @@ const ASSETS_TO_CACHE = [
     './js/habits.js?v=20260520-habit-card-v1',
     './js/protocols.js?v=20260519-execution-capacity-v9',
     './js/habitFocus.js?v=20260520-alignment-v1',
-    './js/state.js?v=20260523-purpose-legacy-cleanup-v1',
+    './js/state.js?v=20260523-excel-datetime-import-v1',
     './js/render.js?v=20260521-taxonomy-v2',
     './js/planning.js?v=20260521-taxonomy-v2',
     './js/gamification.js?v=20260516-wellbeing-prompts-v205',
