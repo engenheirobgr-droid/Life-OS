@@ -150,18 +150,6 @@
         <input id="notes-search" type="search" oninput="window.app.renderNotesPanel()" class="h-10 rounded-lg border-none bg-surface-container-low px-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 flex-1" placeholder="Buscar em notas">
         <button type="button" onclick="var s=document.getElementById('notes-search'); if(s){s.value='';} window.app.renderNotesPanel();" class="h-10 px-4 rounded-xl bg-surface-container-high text-xs font-bold uppercase tracking-wider text-outline hover:text-on-surface">Limpar</button>
     </div>
-    <div class="flex flex-wrap gap-2">
-        <button type="button" data-notes-filter="all" onclick="window.app.setNotesFilter('all')" class="notes-filter-chip h-9 px-3 rounded-full border border-outline-variant/20 bg-surface-container-low text-[11px] font-bold uppercase tracking-wider text-outline transition-colors">
-            Todas
-        </button>
-        <button type="button" data-notes-filter="linked" onclick="window.app.setNotesFilter('linked')" class="notes-filter-chip h-9 px-3 rounded-full border border-outline-variant/20 bg-surface-container-low text-[11px] font-bold uppercase tracking-wider text-outline transition-colors">
-            Vinculadas
-        </button>
-        <button type="button" data-notes-filter="loose" onclick="window.app.setNotesFilter('loose')" class="notes-filter-chip h-9 px-3 rounded-full border border-outline-variant/20 bg-surface-container-low text-[11px] font-bold uppercase tracking-wider text-outline transition-colors">
-            Avulsas
-        </button>
-    </div>
-    <p class="text-[11px] text-outline">Notas avulsas podem virar acao do plano sem sair desta area.</p>
     <div id="notes-list" class="space-y-2"></div>
 </section>
 <!-- Manual de Uso (Trilha Interativa) -->
