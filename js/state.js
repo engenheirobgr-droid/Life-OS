@@ -679,31 +679,31 @@ factoryReset: async function() {
       const mockupOverrides = {
         onboardingComplete: true,
         profile: {
-          name: 'Bruno',
+          name: 'Usuário Demo',
           level: 3,
           xp: 420,
-          values: ['Liberdade', 'Integridade', 'Curiosidade', 'Impacto Social', 'Família'],
+          values: ['Saúde', 'Equilíbrio', 'Consistência', 'Aprendizado', 'Família'],
           ikigai: {
-            love: 'Criar sistemas que ajudam pessoas a viverem com mais intenção.',
-            good: 'Desenvolvimento de software, pensamento sistêmico e design de produto.',
-            need: 'Ferramentas práticas de autogestão e produtividade com propósito.',
-            paid: 'Desenvolvimento de apps, consultoria de produto e software sob medida.',
-            paixao: 'Criar e ensinar com profundidade, transformando ideias em algo vivo.',
-            profissao: 'Construir produtos digitais e liderar decisões de produto orientadas por dados.',
-            vocacao: 'Usar tecnologia para ampliar autonomia e clareza na vida das pessoas.',
-            missao: 'Conectar propósito humano e execução prática para gerar transformação real.',
-            sintese: 'Construir tecnologia que transforma rotinas em jornadas com sentido.'
+            love: 'Construir uma rotina com saúde, clareza e presença nas relações.',
+            good: 'Organização, resolução de problemas e aprendizado constante.',
+            need: 'Mais pessoas vivendo com intenção e disciplina sustentável.',
+            paid: 'Projetos profissionais com qualidade e confiança no longo prazo.',
+            paixao: 'Aprender, aplicar e evoluir de forma consistente.',
+            profissao: 'Entregar trabalho de valor com responsabilidade e autonomia.',
+            vocacao: 'Usar habilidades práticas para melhorar a vida real.',
+            missao: 'Transformar intenção em execução diária com equilíbrio.',
+            sintese: 'Viver com propósito prático: progresso constante sem perder saúde e relações.'
           },
           legacyObj: {
-            familia: 'Ser presença constante e inspiração de integridade para minha família.',
-            profissao: 'Criar produtos que simplificam a vida de milhares de pessoas.',
-            mundo: 'Contribuir para uma cultura de autoconhecimento e intencionalidade.'
+            familia: 'Ser presença confiável e construir memórias que importam.',
+            profissao: 'Deixar entregas sólidas, úteis e éticas por onde passar.',
+            mundo: 'Contribuir para uma cultura de clareza, respeito e responsabilidade.'
           },
           vision: {
-            saude: 'Energia alta e consistente. Treinar 4x por semana e dormir bem.',
-            carreira: 'Liderar meu próprio produto com autonomia e impacto real.',
-            intelecto: 'Aprender continuamente. Ler 1 livro por mês e criar com frequência.',
-            quote: 'A disciplina é a ponte entre metas e realizações. — Jim Rohn'
+            saude: 'Energia estável, sono regulado e movimento frequente na semana.',
+            carreira: 'Evoluir com consistência em projetos relevantes e sustentáveis.',
+            intelecto: 'Aprender continuamente e transformar estudo em prática.',
+            quote: 'Constância vence intensidade sem direção.'
           },
           identity: {
             strengths: [
@@ -762,34 +762,34 @@ factoryReset: async function() {
           remainingSec: 1500, targetSec: 1500, breakSec: 300,
           microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0,
           sessions: [
-            { endedAt: '2026-04-06', focusSec: 3600, mode: 'focus', microId: 'mic2', intention: 'Remover hardcodes do painel' },
-            { endedAt: '2026-04-08', focusSec: 5400, mode: 'focus', microId: 'mic3', intention: 'Refinar render do perfil' }
+            { endedAt: '2026-04-06', focusSec: 3600, mode: 'focus', microId: 'mic2', intention: 'Planejar semana com clareza' },
+            { endedAt: '2026-04-08', focusSec: 5400, mode: 'focus', microId: 'mic3', intention: 'Executar ação prioritária do ciclo' }
           ]
         },
         habits: [
-          { id: 'h1', title: 'Meditação matinal', dimension: 'Mente', trigger: 'Após acordar e antes do café', completed: false, context: 'Clareza mental para o dia' },
-          { id: 'h2', title: 'Treino físico', dimension: 'Saúde', trigger: 'Segunda, quarta e sexta às 7h', completed: false, context: 'Energia e disposição' },
-          { id: 'h3', title: 'Leitura (30 min)', dimension: 'Mente', trigger: 'Antes de dormir', completed: false, context: 'Aprendizado contínuo' }
+          { id: 'h1', title: 'Rotina de manhã (15 min)', dimension: 'Mente', trigger: 'Após acordar', completed: false, context: 'Começar o dia com presença' },
+          { id: 'h2', title: 'Movimento físico', dimension: 'Saúde', trigger: 'Segunda, quarta e sexta', completed: false, context: 'Energia e disposição' },
+          { id: 'h3', title: 'Leitura (20 min)', dimension: 'Mente', trigger: 'Noite', completed: false, context: 'Aprendizado contínuo' }
         ],
         entities: {
           metas: [
-            { id: 'm1', title: 'Lançar o Sistema Vida para usuários reais', dimension: 'Carreira', purpose: 'Criar impacto real e validar o produto que estou construindo.', progress: 35, status: 'active', prazo: '2026-12-31' },
-            { id: 'm2', title: 'Construir reserva de emergência de 6 meses', dimension: 'Finanças', purpose: 'Segurança financeira para tomar decisões com liberdade.', progress: 50, status: 'active', prazo: '2026-12-31' }
+            { id: 'm1', title: 'Melhorar consistência da rotina em 12 semanas', dimension: 'Carreira', purpose: 'Transformar prioridades em execução semanal previsível.', progress: 35, status: 'active', prazo: '2026-12-31' },
+            { id: 'm2', title: 'Fortalecer base financeira pessoal', dimension: 'Finanças', purpose: 'Aumentar segurança e reduzir decisões por pressão.', progress: 50, status: 'active', prazo: '2026-12-31' }
           ],
           okrs: [
-            { id: 'o1', title: 'Ter o app funcional e testável até junho', dimension: 'Carreira', metaId: 'm1', progress: 40, status: 'active', prazo: '2026-06-30' },
-            { id: 'o2', title: 'Aumentar renda mensal em 30%', dimension: 'Finanças', metaId: 'm2', progress: 20, status: 'active', prazo: '2026-06-30' }
+            { id: 'o1', title: 'Fechar semanal com execução mínima confiável', dimension: 'Carreira', metaId: 'm1', progress: 40, status: 'active', prazo: '2026-06-30' },
+            { id: 'o2', title: 'Organizar fluxo financeiro mensal', dimension: 'Finanças', metaId: 'm2', progress: 20, status: 'active', prazo: '2026-06-30' }
           ],
           macros: [
-            { id: 'mac1', title: 'Corrigir todos os bugs críticos do app', dimension: 'Carreira', okrId: 'o1', metaId: 'm1', description: 'App funcional sem erros bloqueantes', progress: 50, status: 'active', prazo: '2026-04-30' },
-            { id: 'mac2', title: 'Implementar autenticação de usuários', dimension: 'Carreira', okrId: 'o1', metaId: 'm1', description: 'Login real com múltiplos perfis', progress: 0, status: 'active', prazo: '2026-05-31' },
-            { id: 'mac3', title: 'Reduzir gastos fixos mensais', dimension: 'Finanças', okrId: 'o2', metaId: 'm2', description: 'Identificar e cortar despesas desnecessárias', progress: 30, status: 'active', prazo: '2026-04-30' }
+            { id: 'mac1', title: 'Planejamento semanal estruturado', dimension: 'Carreira', okrId: 'o1', metaId: 'm1', description: 'Definir prioridades claras para os próximos 7 dias', progress: 50, status: 'active', prazo: '2026-04-30' },
+            { id: 'mac2', title: 'Ritual diário de execução', dimension: 'Carreira', okrId: 'o1', metaId: 'm1', description: 'Criar rotina de foco com blocos curtos', progress: 0, status: 'active', prazo: '2026-05-31' },
+            { id: 'mac3', title: 'Revisão de gastos essenciais', dimension: 'Finanças', okrId: 'o2', metaId: 'm2', description: 'Classificar despesas e definir cortes viáveis', progress: 30, status: 'active', prazo: '2026-04-30' }
           ],
           micros: [
-            { id: 'mic1', title: 'Corrigir bug das tabs na tela Planos', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'done', completed: true, progress: 100, prazo: '2026-04-07' },
-            { id: 'mic2', title: 'Remover hardcodes do painel.html', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'pending', completed: false, progress: 0, prazo: '2026-04-10' },
-            { id: 'mic3', title: 'Implementar render.perfil com edição de nome', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'pending', completed: false, progress: 0, prazo: '2026-04-14' },
-            { id: 'mic4', title: 'Levantar todos os gastos fixos do mês', dimension: 'Finanças', macroId: 'mac3', okrId: 'o2', metaId: 'm2', status: 'pending', completed: false, progress: 0, prazo: '2026-04-15' }
+            { id: 'mic1', title: 'Definir 3 prioridades da semana', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'done', completed: true, progress: 100, prazo: '2026-04-07' },
+            { id: 'mic2', title: 'Reservar dois blocos de foco no calendário', dimension: 'Carreira', macroId: 'mac1', okrId: 'o1', metaId: 'm1', status: 'pending', completed: false, progress: 0, prazo: '2026-04-10' },
+            { id: 'mic3', title: 'Executar a tarefa mais crítica do dia', dimension: 'Carreira', macroId: 'mac2', okrId: 'o1', metaId: 'm1', status: 'pending', completed: false, progress: 0, prazo: '2026-04-14' },
+            { id: 'mic4', title: 'Mapear custos fixos e variáveis', dimension: 'Finanças', macroId: 'mac3', okrId: 'o2', metaId: 'm2', status: 'pending', completed: false, progress: 0, prazo: '2026-04-15' }
           ]
         }
       };
@@ -1761,6 +1761,53 @@ importFromExcel: async function(event) {
                 });
             }
 
+            const wsGamification = workbook.Sheets['Gamificação'] || workbook.Sheets['Gamificacao'] || workbook.Sheets['Gamification'];
+            if (wsGamification) {
+                const gamArr = XLSX.utils.sheet_to_json(wsGamification);
+                const nextGamification = {
+                    totalXp: 0,
+                    currentStreak: 0,
+                    longestStreak: 0,
+                    lastCheckInDate: '',
+                    dimensionXp: {},
+                    achievements: [],
+                    recentEvents: [],
+                    events: {}
+                };
+                gamArr.forEach((row) => {
+                    const category = normalizeLookupKey(getValue(row, ['Categoria', 'Category', 'Tipo']));
+                    const keyRaw = String(getValue(row, ['Chave', 'Key', 'Item']) || '').trim();
+                    const key = normalizeLookupKey(keyRaw);
+                    const value = getValue(row, ['Valor', 'Value']);
+                    const payload = parseJson(getValue(row, ['Payload_JSON']), null);
+
+                    if (category.includes('snapshot') && payload && typeof payload === 'object' && !Array.isArray(payload)) {
+                        Object.assign(nextGamification, payload);
+                    }
+
+                    if ((category.includes('resumo') || category.includes('meta')) && key) {
+                        if (key.includes('xp total')) nextGamification.totalXp = Math.max(0, toNumber(value, nextGamification.totalXp));
+                        if (key.includes('sequencia atual')) nextGamification.currentStreak = Math.max(0, toInt(value, nextGamification.currentStreak));
+                        if (key.includes('maior sequencia')) nextGamification.longestStreak = Math.max(0, toInt(value, nextGamification.longestStreak));
+                        if (key.includes('ultimo check')) nextGamification.lastCheckInDate = String(value || nextGamification.lastCheckInDate || '').trim();
+                    }
+
+                    if (category.includes('dimens')) {
+                        const canonicalDimension = this.normalizeDimensionKey ? this.normalizeDimensionKey(keyRaw) : keyRaw;
+                        if (canonicalDimension) {
+                            nextGamification.dimensionXp[canonicalDimension] = Math.max(0, toNumber(value, 0));
+                        }
+                    }
+
+                    if (category.includes('colec') && payload !== null) {
+                        if (key.includes('conquista') && Array.isArray(payload)) nextGamification.achievements = payload;
+                        if (key.includes('evento') && key.includes('recente') && Array.isArray(payload)) nextGamification.recentEvents = payload;
+                        if (key.includes('evento') && key.includes('xp') && payload && typeof payload === 'object' && !Array.isArray(payload)) nextGamification.events = payload;
+                    }
+                });
+                window.sistemaVidaState.gamification = nextGamification;
+            }
+
             const wsHist = workbook.Sheets['Historico_BemEstar'] || workbook.Sheets['Histórico_BemEstar'];
             if (wsHist) {
                 const histArr = XLSX.utils.sheet_to_json(wsHist);
@@ -1852,6 +1899,7 @@ importFromExcel: async function(event) {
             this.ensureNotesState?.();
             this.ensureIdentityState?.();
             this.ensureHabitMaturityState?.();
+            this.ensureGamificationState?.();
             Object.entries(window.sistemaVidaState.reviews || {}).forEach(([weekKey, review]) => {
                 this.updateIdentityWeeklyLogs?.(weekKey, review);
             });
@@ -1881,6 +1929,7 @@ exportToExcelFull: function() {
 
         const wb = XLSX.utils.book_new();
         const state = window.sistemaVidaState;
+        const gamification = this.ensureGamificationState ? this.ensureGamificationState() : (state.gamification || {});
         const now = new Date();
         const exportedAt = now.toISOString();
 
@@ -1901,7 +1950,10 @@ exportToExcelFull: function() {
             ["Planos semanais", Number(Object.keys(state.weekPlans || {}).length)],
             ["Notas", Number((state.profile?.notes || []).length)],
             ["Protocolos", Number((state.protocols || []).length)],
-            ["Cadencias", Number(Object.keys(state.profile?.cadence || {}).length)]
+            ["Cadencias", Number(Object.keys(state.profile?.cadence || {}).length)],
+            ["XP total", Number(gamification.totalXp || 0)],
+            ["Conquistas", Number((gamification.achievements || []).length)],
+            ["Eventos de XP", Number(Object.keys(gamification.events || {}).length)]
         ];
         const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
         wsSummary['!cols'] = [{ wch: 26 }, { wch: 64 }];
@@ -2278,6 +2330,24 @@ exportToExcelFull: function() {
         wsProtocols['!cols'] = [{wch:18},{wch:18},{wch:28},{wch:14},{wch:14},{wch:40},{wch:28},{wch:32},{wch:30},{wch:26},{wch:28},{wch:16},{wch:16},{wch:14},{wch:14},{wch:18},{wch:14},{wch:14},{wch:18},{wch:14},{wch:12},{wch:24},{wch:24},{wch:24},{wch:10},{wch:12},{wch:22},{wch:22}];
         XLSX.utils.book_append_sheet(wb, wsProtocols, "Protocolos");
 
+        // 12. Aba: Gamificacao
+        const gamificationCol = ["Categoria", "Chave", "Valor", "Payload_JSON"];
+        const gamificationData = [gamificationCol];
+        gamificationData.push(["Resumo", "XP Total", Number(gamification.totalXp || 0), ""]);
+        gamificationData.push(["Resumo", "Sequencia Atual", Number(gamification.currentStreak || 0), ""]);
+        gamificationData.push(["Resumo", "Maior Sequencia", Number(gamification.longestStreak || 0), ""]);
+        gamificationData.push(["Resumo", "Ultimo Check-in", String(gamification.lastCheckInDate || ""), ""]);
+        (this.getGamificationDimensionKeys ? this.getGamificationDimensionKeys() : Object.keys(gamification.dimensionXp || {})).forEach((dimension) => {
+            gamificationData.push(["Dimensao XP", String(dimension || ""), Number(gamification.dimensionXp?.[dimension] || 0), ""]);
+        });
+        gamificationData.push(["Colecoes", "Conquistas", Number((gamification.achievements || []).length), JSON.stringify(gamification.achievements || [])]);
+        gamificationData.push(["Colecoes", "Eventos Recentes", Number((gamification.recentEvents || []).length), JSON.stringify(gamification.recentEvents || [])]);
+        gamificationData.push(["Colecoes", "Eventos XP", Number(Object.keys(gamification.events || {}).length), JSON.stringify(gamification.events || {})]);
+        gamificationData.push(["Snapshot", "Gamification_State", "", JSON.stringify(gamification || {})]);
+        const wsGamification = XLSX.utils.aoa_to_sheet(gamificationData);
+        wsGamification['!cols'] = [{ wch: 16 }, { wch: 28 }, { wch: 14 }, { wch: 80 }];
+        XLSX.utils.book_append_sheet(wb, wsGamification, "Gamificacao");
+
         XLSX.writeFile(wb, "SISTEMA_VIDA_BACKUP_COMPLETO.xls", { bookType: "biff8" });
         console.log("Exportação Excel completa (.xls) concluída.");
     },
@@ -2289,6 +2359,7 @@ exportToExcel: function() {
 
         const wb = XLSX.utils.book_new();
         const state = window.sistemaVidaState;
+        const gamification = this.ensureGamificationState ? this.ensureGamificationState() : (state.gamification || {});
         const exportedAt = new Date().toISOString();
         const setCols = (ws, visibleWidths, hiddenWidths = []) => {
             ws['!cols'] = [
@@ -2345,7 +2416,10 @@ exportToExcel: function() {
             ["Revisões", Number(Object.keys(state.reviews || {}).length)],
             ["Sessões de foco", Number((state.deepWork?.sessions || []).length)],
             ["Planos semanais", Number(Object.keys(state.weekPlans || {}).length)],
-            ["Notas", Number((state.profile?.notes || []).length)]
+            ["Notas", Number((state.profile?.notes || []).length)],
+            ["XP total", Number(gamification.totalXp || 0)],
+            ["Conquistas", Number((gamification.achievements || []).length)],
+            ["Eventos de XP", Number(Object.keys(gamification.events || {}).length)]
         ];
         const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
         setCols(wsSummary, [28, 72]);
@@ -2658,6 +2732,24 @@ exportToExcel: function() {
         const wsNotes = XLSX.utils.aoa_to_sheet(notesRows);
         setCols(wsNotes, [30, 70, 28, 24, 18, 28], [20, 18, 22, 32, 24, 24]);
         XLSX.utils.book_append_sheet(wb, wsNotes, "Notas");
+
+        const gamificationVisibleCols = ["Categoria", "Chave", "Valor"];
+        const gamificationHiddenCols = ["Payload_JSON"];
+        const gamificationRows = [gamificationVisibleCols.concat(gamificationHiddenCols)];
+        gamificationRows.push(["Resumo", "XP Total", Number(gamification.totalXp || 0), ""]);
+        gamificationRows.push(["Resumo", "Sequencia Atual", Number(gamification.currentStreak || 0), ""]);
+        gamificationRows.push(["Resumo", "Maior Sequencia", Number(gamification.longestStreak || 0), ""]);
+        gamificationRows.push(["Resumo", "Ultimo Check-in", String(gamification.lastCheckInDate || ""), ""]);
+        (this.getGamificationDimensionKeys ? this.getGamificationDimensionKeys() : Object.keys(gamification.dimensionXp || {})).forEach((dimension) => {
+            gamificationRows.push(["Dimensao XP", String(dimension || ""), Number(gamification.dimensionXp?.[dimension] || 0), ""]);
+        });
+        gamificationRows.push(["Colecoes", "Conquistas", Number((gamification.achievements || []).length), JSON.stringify(gamification.achievements || [])]);
+        gamificationRows.push(["Colecoes", "Eventos Recentes", Number((gamification.recentEvents || []).length), JSON.stringify(gamification.recentEvents || [])]);
+        gamificationRows.push(["Colecoes", "Eventos XP", Number(Object.keys(gamification.events || {}).length), JSON.stringify(gamification.events || {})]);
+        gamificationRows.push(["Snapshot", "Gamification_State", "", JSON.stringify(gamification || {})]);
+        const wsGamification = XLSX.utils.aoa_to_sheet(gamificationRows);
+        setCols(wsGamification, [16, 28, 14], [80]);
+        XLSX.utils.book_append_sheet(wb, wsGamification, "Gamificacao");
 
         XLSX.writeFile(wb, "SISTEMA_VIDA_PLANILHA_AMIGAVEL.xls", { bookType: "biff8" });
         console.log("Exportação Excel amigável (.xls) concluída.");

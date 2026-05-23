@@ -24,7 +24,7 @@ import { attachIdentity } from './js/identity.js?v=20260521-taxonomy-v2';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-focus-linkage-audit-v3';
-import { attachStateModule } from './js/state.js?v=20260523-sprint2-onboarding-v1';
+import { attachStateModule } from './js/state.js?v=20260523-sprint3-gamification-v1';
 import { attachRenderModule } from './js/render.js?v=20260521-taxonomy-v2';
 import { attachPlanningModule } from './js/planning.js?v=20260523-sprint1-contracts-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
@@ -213,7 +213,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260523-sprint2-onboarding-v1',
+    appBuildVersion: '20260523-sprint3-gamification-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -6014,18 +6014,17 @@ ensureNotesState: function() {
             : this.escapeHtml(compass.quote.author);
         container.innerHTML = `
             <div class="relative overflow-hidden rounded-2xl border border-primary/15 bg-primary/5 p-5 md:p-6 shadow-sm">
-                <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
-                <div class="flex items-start justify-between gap-4">
-                    <div class="min-w-0">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined notranslate text-primary text-2xl shrink-0 mt-0.5">explore</span>
+                    <div class="min-w-0 flex-1">
                         <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">Bússola do Dia · ${this.escapeHtml(compass.theme)}</p>
                         <p class="text-sm text-on-surface leading-relaxed">${compass.personal}</p>
-                        <blockquote class="mt-4 border-l border-primary/30 pl-4">
+                        <blockquote class="mt-4 pl-0">
                             <p class="font-headline text-xl md:text-2xl italic text-on-background leading-snug">${quoteText}</p>
                             <p class="mt-2 text-[11px] font-bold uppercase tracking-widest text-outline">${quoteSource}</p>
                         </blockquote>
                         <p class="mt-4 text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(compass.quote.reflection)} ${this.escapeHtml(compass.direction)}</p>
                     </div>
-                    <span class="material-symbols-outlined notranslate text-primary text-2xl shrink-0">explore</span>
                 </div>
             </div>`;
     },
