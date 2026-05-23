@@ -2112,7 +2112,7 @@
             <div class="p-6 space-y-4">
                 <input type="hidden" id="habit-focus-habit-id">
                 <div class="flex flex-col gap-1.5">
-                    <label for="habit-focus-delivery" class="text-xs font-label uppercase tracking-widest text-outline font-bold">O que vou entregar</label>
+                    <label for="habit-focus-delivery" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Entrega planejada (opcional)</label>
                     <input id="habit-focus-delivery" type="text" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" placeholder="Ex.: Ler o capitulo 3 e fazer resumo">
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2127,14 +2127,14 @@
                         </select>
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <label for="habit-focus-macro" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Entrega vinculada</label>
+                        <label for="habit-focus-macro" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Macro do plano (opcional)</label>
                         <select id="habit-focus-macro" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface"></select>
                     </div>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-outline-variant/10 bg-surface-container-low/30 flex items-center justify-end gap-3">
                 <button type="button" onclick="window.app.closeHabitFocusModal()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">Cancelar</button>
-                <button type="button" onclick="window.app.startHabitFocusSession()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Criar sessao</button>
+                <button type="button" onclick="window.app.startHabitFocusSession()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Iniciar sessao</button>
             </div>
         </div>
     </div>
@@ -2157,6 +2157,13 @@
                     <label for="habit-focus-closure-delivery" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Entrega da sessao</label>
                     <textarea id="habit-focus-closure-delivery" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que voce realmente entregou nesta sessao?"></textarea>
                 </div>
+                <div id="habit-focus-closure-macro-group" class="hidden flex flex-col gap-1.5">
+                    <label for="habit-focus-closure-macro" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Transformar em acao do plano</label>
+                    <select id="habit-focus-closure-macro" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
+                        <option value="">Escolha a Macro</option>
+                    </select>
+                    <p class="text-[11px] text-outline">Use esta opcao apenas quando a sessao gerou uma entrega concreta que precisa entrar na trilha.</p>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1.5">
                         <label for="habit-focus-closure-evidence" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Evidencia</label>
@@ -2174,8 +2181,8 @@
             </div>
             <div class="px-6 py-4 border-t border-outline-variant/10 bg-surface-container-low/30 flex flex-wrap items-center justify-end gap-3">
                 <button type="button" onclick="window.app.remindHabitFocusClosureLater()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">Depois</button>
-                <button type="button" onclick="window.app.saveHabitFocusClosure({ forceComplete: false })" class="px-5 py-2.5 bg-surface-container-high border border-outline-variant/20 text-on-surface text-sm font-bold rounded-lg hover:bg-surface-container-highest transition-colors">Salvar apenas nota</button>
-                <button type="button" onclick="window.app.saveHabitFocusClosure({ forceComplete: true })" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Salvar e concluir</button>
+                <button id="habit-focus-closure-secondary-btn" type="button" onclick="window.app.saveHabitFocusClosure({ mode: 'session' })" class="px-5 py-2.5 bg-surface-container-high border border-outline-variant/20 text-on-surface text-sm font-bold rounded-lg hover:bg-surface-container-highest transition-colors">Salvar sessao</button>
+                <button id="habit-focus-closure-primary-btn" type="button" onclick="window.app.saveHabitFocusClosure({ mode: 'complete_existing' })" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Salvar e concluir</button>
             </div>
         </div>
     </div>

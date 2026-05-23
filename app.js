@@ -171,6 +171,7 @@ window.sistemaVidaState = {
         targetSec: 1500,
         breakSec: 300,
         microId: '',
+        habitId: '',
         intention: '',
         lastTickAt: 0,
         deadlineAtMs: 0,
@@ -910,6 +911,7 @@ normalizeSwlsAnswer: function(rawValue) {
                 targetSec: 1500,
                 breakSec: 300,
                 microId: '',
+                habitId: '',
                 intention: '',
                 lastTickAt: 0,
                 deadlineAtMs: 0,
@@ -931,6 +933,9 @@ normalizeSwlsAnswer: function(rawValue) {
         }
         dw.remainingSec = Math.max(0, Math.round(Number(dw.remainingSec) || dw.targetSec));
         dw.microId = String(dw.microId || '');
+        dw.habitId = String(dw.habitId || '');
+        dw.habitFocusMacroId = String(dw.habitFocusMacroId || '');
+        dw.habitFocusDelivery = String(dw.habitFocusDelivery || '');
         dw.intention = String(dw.intention || '');
         dw.lastTickAt = Math.max(0, Math.round(Number(dw.lastTickAt) || 0));
         dw.deadlineAtMs = Math.max(0, Math.round(Number(dw.deadlineAtMs) || 0));
@@ -941,10 +946,12 @@ normalizeSwlsAnswer: function(rawValue) {
                 microId: String(dw.pendingClosure.microId || ''),
                 habitId: String(dw.pendingClosure.habitId || ''),
                 protocolId: String(dw.pendingClosure.protocolId || ''),
+                macroId: String(dw.pendingClosure.macroId || ''),
+                deliveryTitle: String(dw.pendingClosure.deliveryTitle || ''),
                 focusSec: Math.max(0, Math.round(Number(dw.pendingClosure.focusSec) || 0)),
                 sessionEndedAtTs: String(dw.pendingClosure.sessionEndedAtTs || '')
             };
-            if (!dw.pendingClosure.microId) dw.pendingClosure = null;
+            if (!dw.pendingClosure.microId && !dw.pendingClosure.habitId) dw.pendingClosure = null;
         }
         if (dw.isRunning && !dw.isPaused && dw.remainingSec > 0 && dw.deadlineAtMs <= 0) {
             dw.deadlineAtMs = Date.now() + (dw.remainingSec * 1000);
@@ -988,6 +995,8 @@ normalizeSwlsAnswer: function(rawValue) {
                 completed: !!session?.completed,
                 mode: ['focus', 'break'].includes(String(session?.mode || '').trim()) ? String(session.mode).trim() : 'focus',
                 microId: String(session?.microId || ''),
+                habitId: String(session?.habitId || ''),
+                habitTitle: String(session?.habitTitle || ''),
                 microTitle: String(session?.microTitle || ''),
                 intention: String(session?.intention || '')
             };
@@ -7397,6 +7406,9 @@ ensureNotesState: function() {
             const startedAtTs = new Date(referenceDate.getTime() - (focusSec * 1000)).toISOString();
 
             const linkedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
+            const linkedHabit = dw.habitId
+                ? (state.habits || []).find(h => h.id === dw.habitId)
+                : (linkedMicro?.sourceHabitId ? (state.habits || []).find(h => h.id === linkedMicro.sourceHabitId) : null);
             if (linkedMicro && linkedMicro.status !== 'done') {
                 const wasNotInProgress = linkedMicro.status !== 'in_progress';
                 linkedMicro.status = 'in_progress';
@@ -7406,8 +7418,8 @@ ensureNotesState: function() {
                 linkedMicro.lastFocusDate = dateKey;
                 if (wasNotInProgress) this.cascadeStartUp(linkedMicro.id);
             }
-            if (linkedMicro?.sourceHabitId && typeof this.recordHabitFocusExecution === 'function') {
-                this.recordHabitFocusExecution(linkedMicro.sourceHabitId, focusSec, dateKey);
+            if (linkedHabit?.id && typeof this.recordHabitFocusExecution === 'function') {
+                this.recordHabitFocusExecution(linkedHabit.id, focusSec, dateKey);
             }
             dw.sessions.unshift({
                 startedAt: this.getLocalDateKey(new Date(startedAtTs)),
@@ -7419,6 +7431,8 @@ ensureNotesState: function() {
                 completed: true,
                 mode: 'focus',
                 microId: dw.microId || '',
+                habitId: linkedHabit?.id || '',
+                habitTitle: linkedHabit?.title || '',
                 microTitle: linkedMicro?.title || dw.intention || '',
                 intention: dw.intention || ''
             });
@@ -7427,6 +7441,18 @@ ensureNotesState: function() {
                     microId: linkedMicro.id,
                     habitId: String(linkedMicro.sourceHabitId || ''),
                     protocolId: String(linkedMicro.sourceProtocolId || ''),
+                    macroId: '',
+                    deliveryTitle: '',
+                    focusSec,
+                    sessionEndedAtTs: endedAtTs
+                };
+            } else if (linkedHabit) {
+                dw.pendingClosure = {
+                    microId: '',
+                    habitId: linkedHabit.id,
+                    protocolId: String(linkedHabit.protocolId || ''),
+                    macroId: String(dw.habitFocusMacroId || ''),
+                    deliveryTitle: String(dw.habitFocusDelivery || dw.intention || ''),
                     focusSec,
                     sessionEndedAtTs: endedAtTs
                 };
@@ -7434,12 +7460,14 @@ ensureNotesState: function() {
             const award = this.awardGamification('deep_work', {
                 key: `deep:${endedAtTs}`,
                 id: endedAtTs,
-                title: linkedMicro?.title || dw.intention || 'Foco profundo',
-                dimension: linkedMicro?.dimension || '',
+                title: linkedMicro?.title || linkedHabit?.title || dw.intention || 'Foco profundo',
+                dimension: linkedMicro?.dimension || linkedHabit?.dimension || '',
                 focusSec
             });
             this.showGamificationToast(award);
             dw.sessions = dw.sessions.slice(0, 50);
+            dw.habitFocusMacroId = '';
+            dw.habitFocusDelivery = '';
 
             const isRetroactive = customTimeMs && (Date.now() - customTimeMs > dw.breakSec * 1000);
             if (isRetroactive) {
@@ -7581,7 +7609,7 @@ ensureNotesState: function() {
         const state = window.sistemaVidaState;
         const dw = state.deepWork;
         if (dw.isRunning && !dw.isPaused) return;
-        if (dw.pendingClosure?.microId) {
+        if (dw.pendingClosure?.microId || dw.pendingClosure?.habitId) {
             this.showToast('Feche a sessao anterior antes de iniciar um novo bloco de foco.', 'error');
             if (typeof this.openHabitFocusClosureModal === 'function') this.openHabitFocusClosureModal();
             return;
@@ -7611,6 +7639,9 @@ ensureNotesState: function() {
             dw.mode = 'focus';
         }
         dw.microId = chosenMicro;
+        dw.habitId = '';
+        dw.habitFocusMacroId = '';
+        dw.habitFocusDelivery = '';
         dw.intention = intention;
         dw.isRunning = true;
         dw.isPaused = false;
@@ -7656,6 +7687,9 @@ ensureNotesState: function() {
         }
         const suggestedMinutes = this.getSuggestedFocusPresetMinutes(micro);
         dw.microId = micro.id;
+        dw.habitId = '';
+        dw.habitFocusMacroId = '';
+        dw.habitFocusDelivery = '';
         dw.intention = micro.title || '';
         const microEl = document.getElementById('deep-work-micro');
         const intentionEl = document.getElementById('deep-work-intention');
@@ -7692,6 +7726,9 @@ ensureNotesState: function() {
         }
 
         dw.microId = micro.id;
+        dw.habitId = '';
+        dw.habitFocusMacroId = '';
+        dw.habitFocusDelivery = '';
         dw.intention = micro.title || '';
         const explicitPreset = Math.max(0, Math.round(Number(options?.presetMinutes) || 0));
         this.pendingFocusMinutes = explicitPreset > 0
@@ -7717,6 +7754,9 @@ ensureNotesState: function() {
         if (dw.isRunning) return;
         const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
         dw.microId = micro ? micro.id : '';
+        dw.habitId = '';
+        dw.habitFocusMacroId = '';
+        dw.habitFocusDelivery = '';
         if (micro) {
             dw.intention = micro.title || '';
             const intentionEl = document.getElementById('deep-work-intention');
@@ -7840,6 +7880,11 @@ ensureNotesState: function() {
         dw.isPaused = false;
         dw.mode = 'focus';
         dw.remainingSec = dw.targetSec || 5400;
+        dw.microId = '';
+        dw.habitId = '';
+        dw.habitFocusMacroId = '';
+        dw.habitFocusDelivery = '';
+        dw.intention = '';
         dw.lastTickAt = 0;
         dw.deadlineAtMs = 0;
         this.stopDeepWorkTicking();
@@ -7855,7 +7900,7 @@ ensureNotesState: function() {
         const canCompleteLinkedMicro = !!(linkedMicro && linkedMicro.status !== 'done');
         const dw = window.sistemaVidaState.deepWork;
         if (!dw.isRunning) {
-            if (dw.pendingClosure?.microId && typeof this.openHabitFocusClosureModal === 'function') {
+            if ((dw.pendingClosure?.microId || dw.pendingClosure?.habitId) && typeof this.openHabitFocusClosureModal === 'function') {
                 this.openHabitFocusClosureModal();
                 return;
             }
@@ -7885,7 +7930,7 @@ ensureNotesState: function() {
         this.stopDeepWorkTicking();
         this.saveState(true);
 
-        if (dw.pendingClosure?.microId && typeof this.openHabitFocusClosureModal === 'function') {
+        if ((dw.pendingClosure?.microId || dw.pendingClosure?.habitId) && typeof this.openHabitFocusClosureModal === 'function') {
             this.openHabitFocusClosureModal();
             return;
         }

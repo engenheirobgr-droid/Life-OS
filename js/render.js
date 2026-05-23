@@ -1437,9 +1437,11 @@ renderDeepWorkImmersiveOverlay: function() {
         }
 
         const selectedMicro = dw.microId ? (state.entities?.micros || []).find(m => m.id === dw.microId) : null;
-        const linkedHabit = selectedMicro?.sourceHabitId
-            ? (state.habits || []).find(h => h.id === selectedMicro.sourceHabitId)
-            : null;
+        const linkedHabit = dw.habitId
+            ? (state.habits || []).find(h => h.id === dw.habitId)
+            : (selectedMicro?.sourceHabitId
+                ? (state.habits || []).find(h => h.id === selectedMicro.sourceHabitId)
+                : null);
         const clockStyle = ['classic', 'ring'].includes(state.settings?.deepWorkClockStyle)
             ? state.settings.deepWorkClockStyle
             : 'ring';
@@ -1484,7 +1486,7 @@ renderDeepWorkImmersiveOverlay: function() {
                                         isRunning: dw.isRunning,
                                         isPaused: dw.isPaused,
                                         progress,
-                                        hasSelectedMicro: !!selectedMicro,
+                                        hasSelectedMicro: !!(selectedMicro || linkedHabit),
                                         canCompleteSelectedMicro: !!(selectedMicro && selectedMicro.status !== 'done')
                                     })}
                                 </div>
@@ -1492,7 +1494,7 @@ renderDeepWorkImmersiveOverlay: function() {
                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                                             <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Ação ativa</p>
-                                            <p class="mt-1 text-base font-semibold text-white">${this.escapeHtml(selectedMicro?.title || 'Sem ação ativa')}</p>
+                                            <p class="mt-1 text-base font-semibold text-white">${this.escapeHtml(selectedMicro?.title || dw.intention || 'Sessão simples de hábito')}</p>
                                         </div>
                                         <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                                             <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Habito origem</p>
@@ -1603,20 +1605,26 @@ renderDeepWorkPanel: function() {
         }
         if (intentionEl && !intentionEl.value && dw.intention) intentionEl.value = dw.intention;
 
-        const hasSelectedMicro = !!(dw.microId || microEl?.value);
         const selectedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
+        const selectedHabit = dw.habitId
+            ? (state.habits || []).find(h => h.id === dw.habitId)
+            : (selectedMicro?.sourceHabitId ? (state.habits || []).find(h => h.id === selectedMicro.sourceHabitId) : null);
+        const hasSelectedMicro = !!(dw.microId || microEl?.value);
+        const hasSelectedContext = !!(hasSelectedMicro || selectedHabit);
         const canCompleteSelectedMicro = !!(selectedMicro && selectedMicro.status !== 'done');
-        const hasPendingClosure = !!(dw.pendingClosure?.microId && selectedMicro && dw.pendingClosure.microId === selectedMicro.id);
+        const hasPendingClosure = !!(dw.pendingClosure?.microId || dw.pendingClosure?.habitId);
         if (statusEl) {
-            if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Selecione uma ação';
+            if (!dw.isRunning && !hasSelectedContext) statusEl.textContent = 'Selecione uma ação ou abra foco por hábito';
             else if (hasPendingClosure) statusEl.textContent = 'Fechamento da sessao pendente';
+            else if (!dw.isRunning && selectedHabit && !selectedMicro) statusEl.textContent = 'Sessao de habito pronta para iniciar';
             else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
             else if (dw.isPaused) statusEl.textContent = 'Sessao pausada';
-            else statusEl.textContent = dw.mode === 'focus' ? 'Bloco em andamento' : (canCompleteSelectedMicro ? 'Sessao concluida: confirme a ação' : 'Pausa de recuperacao');
+            else statusEl.textContent = dw.mode === 'focus' ? 'Bloco em andamento' : (hasPendingClosure ? 'Sessao concluida: registre o fechamento' : (canCompleteSelectedMicro ? 'Sessao concluida: confirme a ação' : 'Pausa de recuperacao'));
         }
         if (stepEl) {
-            if (!dw.isRunning && !hasSelectedMicro) stepEl.textContent = 'Passo 1: escolha a ação';
+            if (!dw.isRunning && !hasSelectedContext) stepEl.textContent = 'Passo 1: escolha a ação ou inicie pelo hábito';
             else if (hasPendingClosure) stepEl.textContent = 'Registre a entrega e as notas da sessao';
+            else if (!dw.isRunning && selectedHabit && !selectedMicro) stepEl.textContent = 'Passo 2: iniciar sessao simples ou transformar a entrega no fechamento';
             else if (!dw.isRunning) stepEl.textContent = 'Passo 2: inicie o bloco';
             else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
             else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3: foco em execucao' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a ação' : 'Pausa estruturada');
@@ -1637,7 +1645,7 @@ renderDeepWorkPanel: function() {
                 isRunning: dw.isRunning,
                 isPaused: dw.isPaused,
                 progress,
-                hasSelectedMicro,
+                hasSelectedMicro: hasSelectedContext,
                 canCompleteSelectedMicro
             })}</div>`;
         } else {
@@ -1670,7 +1678,7 @@ renderDeepWorkPanel: function() {
         }
         if (resetBtn) {
             resetBtn.className = neutralBtn;
-            resetBtn.disabled = !dw.isRunning && !hasSelectedMicro;
+            resetBtn.disabled = !dw.isRunning && !hasSelectedContext;
         }
         if (finishBtn) {
             if (dw.isRunning && dw.mode === 'focus') {
@@ -1695,10 +1703,11 @@ renderDeepWorkPanel: function() {
             const shouldShowQuickComplete = !!(hasSelectedMicro && canCompleteSelectedMicro && (dw.mode === 'break' || !dw.isRunning));
             const shouldShowClosure = !!(hasPendingClosure && typeof window.app.openHabitFocusClosureModal === 'function');
             contextActionsEl.classList.toggle('hidden', !(shouldShowQuickComplete || shouldShowClosure));
-            if (shouldShowClosure && selectedMicro) {
+            if (shouldShowClosure) {
+                const closureTitle = selectedMicro?.title || selectedHabit?.title || dw.intention || 'sessão';
                 contextActionsEl.innerHTML = `
                     <div class="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center justify-between gap-3">
-                        <p class="text-[11px] text-on-surface-variant leading-snug">A sessao de <span class="font-bold text-on-surface">${this.escapeHtml(selectedMicro.title)}</span> terminou. Registre a entrega antes de seguir.</p>
+                        <p class="text-[11px] text-on-surface-variant leading-snug">A sessao de <span class="font-bold text-on-surface">${this.escapeHtml(closureTitle)}</span> terminou. Registre o fechamento antes de seguir.</p>
                         <button onclick="window.app.openHabitFocusClosureModal()" class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-widest hover:opacity-90">
                             Fechar sessao
                         </button>
@@ -1750,7 +1759,8 @@ renderDeepWorkPanel: function() {
                 historyEl.innerHTML = rows.map((s) => {
                     const mins = Math.max(1, Math.round((Number(s.focusSec) || 0) / 60));
                     const micro = (state.entities.micros || []).find(m => m.id === s.microId);
-                    const microLabel = micro?.title || s.microTitle || s.intention || 'Sem vínculo';
+                    const habit = s.habitId ? (state.habits || []).find(h => h.id === s.habitId) : null;
+                    const microLabel = micro?.title || habit?.title || s.microTitle || s.habitTitle || s.intention || 'Sem vínculo';
                     const ctx = micro ? this.getMicroPlanContext(micro) : null;
                     const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
                     return `<div class="flex items-center justify-between text-xs border border-outline-variant/10 rounded-lg px-3 py-2">
@@ -2850,8 +2860,9 @@ render: {
                                 Foco
                            </button>`
                         : '';
-                    const hasFocusSessionInProgress = (state.entities?.micros || []).some((m) =>
-                        m?.sourceHabitId === habit.id && m.status === 'in_progress'
+                    const hasFocusSessionInProgress = !!(
+                        ((state.entities?.micros || []).some((m) => m?.sourceHabitId === habit.id && m.status === 'in_progress'))
+                        || (state.deepWork?.isRunning && String(state.deepWork?.habitId || '') === String(habit.id))
                     );
                     const scheduleChip = visibleToday
                         ? `<span class="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]">today</span>Hoje</span>`
