@@ -1306,6 +1306,16 @@ renderDeepWorkClockVisual: function(options = {}) {
         const activeMotion = isRunning && !isPaused;
         const timerHtml = `<p id="deep-work-timer" class="mt-2 text-5xl md:text-6xl lg:text-7xl leading-none font-headline italic text-primary tabular-nums">${escapedTime}</p>`;
         const phaseHtml = `<p id="deep-work-phase" class="mt-2 text-xs uppercase tracking-[0.12em] text-on-surface-variant">${escapedPhase}</p>`;
+        const progressMetaHtml = `
+            <div class="mt-4 mx-auto w-full max-w-[15rem]">
+                <div class="h-2 rounded-full bg-surface-container-highest/80 overflow-hidden">
+                    <div class="h-full rounded-full bg-primary transition-all duration-300" style="width:${pctLabel}"></div>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-[0.14em] text-outline">
+                    <span>${pctLabel}</span>
+                    <span>${hasSelectedMicro ? (canCompleteSelectedMicro ? 'Acao vinculada' : 'Em pausa') : 'Sem acao'}</span>
+                </div>
+            </div>`;
 
         if (style === 'ring') {
             const dash = 339;
@@ -1327,7 +1337,7 @@ renderDeepWorkClockVisual: function(options = {}) {
                                     <stop offset="0%" stop-color="currentColor" stop-opacity="0.14"></stop>
                                     <stop offset="72%" stop-color="currentColor" stop-opacity="0.035"></stop>
                                     <stop offset="100%" stop-color="currentColor" stop-opacity="0"></stop>
-                                </linearGradient>
+                                </radialGradient>
                             </defs>
                             <circle cx="60" cy="60" r="57" fill="url(#deep-work-ring-core)"></circle>
                             <circle cx="60" cy="60" r="54" fill="none" stroke="var(--md-sys-color-surface-container-highest)" stroke-width="5" opacity="0.82"></circle>
@@ -1342,6 +1352,7 @@ renderDeepWorkClockVisual: function(options = {}) {
                             ${phaseHtml}
                         </div>
                     </div>
+                    ${progressMetaHtml}
                 </div>`;
         }
 
@@ -1351,6 +1362,7 @@ renderDeepWorkClockVisual: function(options = {}) {
                 <p class="text-xs uppercase tracking-[0.14em] font-bold text-outline">Tempo restante</p>
                 ${timerHtml}
                 ${phaseHtml}
+                ${progressMetaHtml}
             </div>`;
     },
 
@@ -1552,6 +1564,7 @@ renderDeepWorkPanel: function() {
         const presetEl = document.getElementById('deep-work-preset');
         const microEl = document.getElementById('deep-work-micro');
         const intentionEl = document.getElementById('deep-work-intention');
+        const selectedContextEl = document.getElementById('deep-work-selected-context');
         const startBtn = document.getElementById('deep-work-start-btn');
         const pauseBtn = document.getElementById('deep-work-pause-btn');
         const resetBtn = document.getElementById('deep-work-reset-btn');
@@ -1649,9 +1662,51 @@ renderDeepWorkPanel: function() {
             chip.classList.toggle('bg-primary', isActive);
             chip.classList.toggle('text-on-primary', isActive);
             chip.classList.toggle('shadow-sm', isActive);
+            chip.classList.toggle('border', true);
+            chip.classList.toggle('border-primary/25', isActive);
             chip.classList.toggle('text-outline', !isActive);
             chip.classList.toggle('bg-surface-container-high', !isActive);
+            chip.classList.toggle('border-outline-variant/20', !isActive);
         });
+
+        if (selectedContextEl) {
+            if (!selectedMicro) {
+                selectedContextEl.innerHTML = `
+                    <p class="text-[10px] uppercase tracking-widest font-bold text-outline mb-2">Acao selecionada</p>
+                    <p class="text-sm text-on-surface-variant leading-relaxed">Escolha uma acao para ver contexto, prazo e trilha antes de iniciar.</p>
+                `;
+            } else {
+                const ctx = this.getMicroPlanContext(selectedMicro);
+                const estimatedMinutes = Math.max(0, Math.round(Number(selectedMicro.estimatedMinutes) || Math.round((Number(selectedMicro.focusSec) || 0) / 60)));
+                const dueLabel = selectedMicro.prazo ? selectedMicro.prazo.split('-').reverse().join('/') : 'Sem prazo';
+                const plannedBadge = this._isPlannedThisWeek(selectedMicro.id)
+                    ? '<span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary"><span class="material-symbols-outlined notranslate text-[12px]">event</span>Semana</span>'
+                    : '<span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-outline">Captura</span>';
+                const eligibility = this.getMicroFocusEligibility?.(selectedMicro) || { ok: true };
+                const alignmentBadge = eligibility.ok
+                    ? '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Alinhada</span>'
+                    : '<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">Revisar vinculo</span>';
+                selectedContextEl.innerHTML = `
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Acao selecionada</p>
+                            <p class="mt-1 text-base font-bold text-on-surface">${this.escapeHtml(selectedMicro.title || 'Acao')}</p>
+                            <p class="mt-1 text-xs text-on-surface-variant break-words">${this.escapeHtml(ctx.path || ctx.parentLabel || 'Sem trilha')}</p>
+                        </div>
+                        <span class="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <span class="material-symbols-outlined notranslate text-[18px]">track_changes</span>
+                        </span>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-outline">${this.escapeHtml(selectedMicro.dimension || 'Geral')}</span>
+                        <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-outline">${estimatedMinutes > 0 ? `${estimatedMinutes} min` : 'Duracao livre'}</span>
+                        <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-outline">${this.escapeHtml(dueLabel)}</span>
+                        ${plannedBadge}
+                        ${alignmentBadge}
+                    </div>
+                `;
+            }
+        }
 
         const baseBtn = 'px-3 md:px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50';
         const primaryBtn = `${baseBtn} bg-primary text-on-primary shadow-sm`;
@@ -3604,14 +3659,29 @@ render: {
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '[Sem Propósito]' });
                         }
 
-                        let trailHtml = `<div class="bg-surface-container-low rounded-lg p-3 space-y-2 relative trail-line text-on-surface-variant mt-0 overflow-hidden">
-                            <div class="absolute left-[20px] top-4 bottom-4 w-px bg-primary/15"></div>`;
+                        const purposeNode = trailNodes.find((node) => node.label === 'PropÃ³sito (NÃ­vel 0)');
+                        const hierarchyNodes = trailNodes.filter((node) => node.label !== 'PropÃ³sito (NÃ­vel 0)');
+                        let trailHtml = `<div class="space-y-3 text-on-surface-variant mt-0">`;
 
-                        trailNodes.forEach((node) => {
+                        if (purposeNode) {
+                            trailHtml += `
+                                <div class="rounded-xl border border-primary/15 bg-primary/5 p-3.5">
+                                    <div class="flex items-start gap-3 min-w-0">
+                                        <span class="material-symbols-outlined notranslate text-primary text-base bg-surface-container-lowest p-1 rounded-full shrink-0 mt-0.5 ring-1 ring-primary/10" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                                        <div class="min-w-0 flex-1">
+                                            <span class="text-[9px] uppercase tracking-wider font-bold text-primary/80">${purposeNode.label}</span>
+                                            <p class="mt-1 text-sm font-headline italic text-on-surface break-words">${purposeNode.title}</p>
+                                        </div>
+                                    </div>
+                                </div>`;
+                        }
+
+                        trailHtml += `<div class="relative rounded-xl bg-surface-container-low p-3 overflow-hidden">
+                            <div class="absolute left-[17px] top-5 bottom-5 w-px bg-primary/15"></div>`;
+
+                        hierarchyNodes.forEach((node) => {
                             let icon = 'trip_origin'; let colorClass = 'text-outline'; let titleClass = 'text-xs text-on-surface-variant font-medium';
-                            let nodeShell = '';
-                            if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; titleClass = 'text-sm font-headline italic text-on-surface'; nodeShell = 'mt-1 rounded-xl bg-primary/5 border border-primary/10 p-3'; }
-                            else if (node.label === 'Área') { icon = 'stars'; colorClass = 'text-primary'; }
+                            if (node.label === 'Área') { icon = 'stars'; colorClass = 'text-primary'; }
                             else if (node.label === 'Meta') { icon = 'flag'; colorClass = 'text-outline'; }
                             else if (node.label === 'Meta Pai') { icon = 'outbound'; colorClass = 'text-outline'; }
                             else if (node.label === 'Horizonte') { icon = 'schedule'; colorClass = 'text-primary'; }
@@ -3624,15 +3694,15 @@ render: {
                             else if (node.label === 'Key Results') { icon = 'query_stats'; colorClass = 'text-primary'; }
 
                             trailHtml += `
-                            <div class="${nodeShell} flex items-start gap-3 relative z-10 min-w-0">
+                            <div class="flex items-start gap-3 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate ${colorClass} text-base bg-surface-container-lowest p-1 rounded-full shrink-0 mt-0.5 ring-1 ring-outline-variant/10" style="font-variation-settings: 'FILL' 1;">${icon}</span>
                                 <div class="flex flex-col min-w-0 flex-1">
                                     <span class="text-[9px] uppercase tracking-wider opacity-60 font-bold ${colorClass}">${node.label}</span>
-                                    <span class="${titleClass} ${node.label === 'Propósito (Nível 0)' ? 'line-clamp-2' : 'break-words'}">${node.title}</span>
+                                    <span class="${titleClass} break-words">${node.title}</span>
                                 </div>
                             </div>`;
                         });
-                        trailHtml += `</div>`;
+                        trailHtml += `</div></div>`;
                         
 
                         const userValues = state.profile.values || [];

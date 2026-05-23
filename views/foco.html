@@ -1,4 +1,4 @@
-<div class="animate-fade-in flex flex-col gap-8 md:gap-10 pb-20 px-6 pt-6 lg:px-10 lg:pt-10 max-w-7xl mx-auto overflow-x-hidden">
+<div class="animate-fade-in flex flex-col gap-8 md:gap-10 pb-20 px-6 pt-6 lg:px-10 lg:pt-10 max-w-[96rem] mx-auto overflow-x-hidden">
     <!-- Header: Visao de Foco -->
     <header class="order-1 mb-2 min-w-0">
         <div class="flex items-center gap-3 mb-4">
@@ -16,6 +16,20 @@
             Bloco de foco
         </h1>
         <div class="mt-6 h-px w-24 bg-primary"></div>
+        <div class="mt-5 flex flex-wrap gap-2">
+            <span class="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                <span class="material-symbols-outlined notranslate text-[14px]">looks_one</span>
+                Escolha a acao
+            </span>
+            <span class="inline-flex items-center gap-2 rounded-full border border-outline-variant/20 bg-surface-container-low px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-outline">
+                <span class="material-symbols-outlined notranslate text-[14px]">looks_two</span>
+                Inicie o bloco
+            </span>
+            <span class="inline-flex items-center gap-2 rounded-full border border-outline-variant/20 bg-surface-container-low px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-outline">
+                <span class="material-symbols-outlined notranslate text-[14px]">looks_3</span>
+                Feche a sessao
+            </span>
+        </div>
         <div class="mt-6 flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div id="top-values-banner" class="flex flex-wrap gap-2"></div>
         </div>
@@ -47,7 +61,7 @@
                                 <option value="50">50 minutos</option>
                                 <option value="90">90 minutos</option>
                             </select>
-                            <div class="grid grid-cols-5 gap-2 rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-1">
+                            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-1.5">
                                 <button type="button" data-deep-work-preset="15" onclick="window.app.setDeepWorkPreset(15)" class="deep-work-preset-chip rounded-lg border border-transparent px-2 py-2 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-high">
                                     15/3
                                 </button>
@@ -84,6 +98,10 @@
                         </div>
                     </div>
                 </div>
+                <div id="deep-work-selected-context" class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-4 min-w-0">
+                    <p class="text-[10px] uppercase tracking-widest font-bold text-outline mb-2">Acao selecionada</p>
+                    <p class="text-sm text-on-surface-variant">Escolha uma acao para ver contexto, prazo e trilha antes de iniciar.</p>
+                </div>
             </div>
             <div class="rounded-xl border border-primary/20 bg-surface-container-low p-4 min-w-0">
                 <div class="flex items-center justify-between gap-3 mb-3">
@@ -93,11 +111,23 @@
                             Preview
                         </button>
                         <div class="grid grid-cols-2 gap-1 rounded-lg border border-outline-variant/15 bg-surface-container-lowest p-1" aria-label="Estilo do relogio de foco">
-                            <button type="button" data-deep-work-clock-style="classic" onclick="window.app.setDeepWorkClockStyle('classic')" class="deep-work-clock-style-chip h-8 w-8 rounded-md text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Classico">
-                                <span class="material-symbols-outlined notranslate text-[16px]">timer</span>
+                            <button type="button" data-deep-work-clock-style="classic" onclick="window.app.setDeepWorkClockStyle('classic')" class="deep-work-clock-style-chip min-w-[92px] rounded-md px-2 py-2 text-left text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Classico">
+                                <span class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined notranslate text-[16px]">timer</span>
+                                    <span>
+                                        <span class="block text-[10px] font-bold uppercase tracking-wider">Digital</span>
+                                        <span class="block text-[9px] text-outline/80 normal-case tracking-normal">limpo e direto</span>
+                                    </span>
+                                </span>
                             </button>
-                            <button type="button" data-deep-work-clock-style="ring" onclick="window.app.setDeepWorkClockStyle('ring')" class="deep-work-clock-style-chip h-8 w-8 rounded-md text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Anel organico">
-                                <span class="material-symbols-outlined notranslate text-[16px]">donut_large</span>
+                            <button type="button" data-deep-work-clock-style="ring" onclick="window.app.setDeepWorkClockStyle('ring')" class="deep-work-clock-style-chip min-w-[92px] rounded-md px-2 py-2 text-left text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Anel organico">
+                                <span class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined notranslate text-[16px]">donut_large</span>
+                                    <span>
+                                        <span class="block text-[10px] font-bold uppercase tracking-wider">Anel</span>
+                                        <span class="block text-[9px] text-outline/80 normal-case tracking-normal">mais imersivo</span>
+                                    </span>
+                                </span>
                             </button>
                         </div>
                     </div>
