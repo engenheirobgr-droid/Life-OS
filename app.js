@@ -24,9 +24,9 @@ import { attachIdentity } from './js/identity.js?v=20260521-taxonomy-v2';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-focus-linkage-audit-v3';
-import { attachStateModule } from './js/state.js?v=20260523-excel-datetime-import-v1';
+import { attachStateModule } from './js/state.js?v=20260523-sprint1-contracts-v1';
 import { attachRenderModule } from './js/render.js?v=20260521-taxonomy-v2';
-import { attachPlanningModule } from './js/planning.js?v=20260521-taxonomy-v2';
+import { attachPlanningModule } from './js/planning.js?v=20260523-sprint1-contracts-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -1470,6 +1470,155 @@ getDimensionIdentity: function(dimension, level) {
             minute: '2-digit'
         });
     },
+    getPlanParentConfig: function(type) {
+        const normalized = String(type || '').trim().toLowerCase();
+        const configMap = {
+            okrs: {
+                parentType: 'metas',
+                childLabel: 'Projeto',
+                parentLabel: 'Meta',
+                missingParentMessage: 'Projeto precisa estar vinculado a uma Meta.'
+            },
+            macros: {
+                parentType: 'okrs',
+                childLabel: 'Entrega',
+                parentLabel: 'Projeto',
+                missingParentMessage: 'Entrega precisa estar vinculada a um Projeto.'
+            },
+            micros: {
+                parentType: 'macros',
+                childLabel: 'Ação',
+                parentLabel: 'Entrega',
+                missingParentMessage: 'Ação precisa estar vinculada a uma Entrega.'
+            }
+        };
+        return configMap[normalized] || null;
+    },
+    getResolvedPlanDimension: function(entity, type) {
+        if (!entity) return '';
+        const normalizedType = String(type || '').trim().toLowerCase();
+        if (entity.dimension) return String(entity.dimension).trim();
+        const entities = window.sistemaVidaState?.entities || {};
+        if (normalizedType === 'okrs') {
+            const meta = (entities.metas || []).find((item) => item.id === entity.metaId);
+            return String(meta?.dimension || '').trim();
+        }
+        if (normalizedType === 'macros') {
+            const okr = (entities.okrs || []).find((item) => item.id === entity.okrId);
+            if (okr?.dimension) return String(okr.dimension).trim();
+            const meta = (entities.metas || []).find((item) => item.id === (okr?.metaId || entity.metaId));
+            return String(meta?.dimension || '').trim();
+        }
+        if (normalizedType === 'micros') {
+            const macro = (entities.macros || []).find((item) => item.id === entity.macroId);
+            const macroDimension = this.getResolvedPlanDimension(macro, 'macros');
+            if (macroDimension) return macroDimension;
+            const okr = (entities.okrs || []).find((item) => item.id === entity.okrId);
+            if (okr?.dimension) return String(okr.dimension).trim();
+            const meta = (entities.metas || []).find((item) => item.id === (okr?.metaId || entity.metaId));
+            return String(meta?.dimension || '').trim();
+        }
+        return '';
+    },
+    arePlanDimensionsCompatible: function(childDimension, parentDimension) {
+        const child = String(childDimension || '').trim().toLowerCase();
+        const parent = String(parentDimension || '').trim().toLowerCase();
+        if (!child || child === 'geral') return true;
+        if (!parent || parent === 'geral') return true;
+        return child === parent;
+    },
+    validatePlanParentAssignment: function(type, parentId, options = {}) {
+        const config = this.getPlanParentConfig(type);
+        if (!config) return { ok: true, parent: null, resolvedChildDimension: String(options.childDimension || '').trim() };
+        const resolvedParentId = String(parentId || '').trim();
+        if (!resolvedParentId) {
+            return { ok: false, reason: 'missing_parent', message: config.missingParentMessage };
+        }
+        const parentList = window.sistemaVidaState?.entities?.[config.parentType] || [];
+        const parent = parentList.find((item) => String(item?.id || '') === resolvedParentId);
+        if (!parent) {
+            return {
+                ok: false,
+                reason: 'missing_parent_entity',
+                message: `${config.parentLabel} pai não encontrad${config.parentLabel === 'Meta' ? 'a' : 'o'}. Atualize o vínculo antes de salvar ${config.childLabel.toLowerCase()}.`
+            };
+        }
+        const entities = window.sistemaVidaState?.entities || {};
+        if (config.parentType === 'okrs') {
+            const linkedMeta = (entities.metas || []).find((item) => item.id === parent.metaId);
+            if (!linkedMeta) {
+                return {
+                    ok: false,
+                    reason: 'broken_parent_lineage',
+                    message: 'Projeto pai está sem Meta válida. Corrija o Projeto antes de vincular esta Entrega.'
+                };
+            }
+        }
+        if (config.parentType === 'macros') {
+            const linkedOkr = (entities.okrs || []).find((item) => item.id === parent.okrId);
+            const linkedMeta = linkedOkr
+                ? (entities.metas || []).find((item) => item.id === (parent.metaId || linkedOkr.metaId))
+                : null;
+            if (!linkedOkr) {
+                return {
+                    ok: false,
+                    reason: 'broken_parent_lineage',
+                    message: 'Entrega pai está sem Projeto válido. Corrija a Entrega antes de vincular esta Ação.'
+                };
+            }
+            if (!linkedMeta) {
+                return {
+                    ok: false,
+                    reason: 'broken_parent_lineage',
+                    message: 'Entrega pai está sem Meta válida na trilha. Corrija a Entrega antes de vincular esta Ação.'
+                };
+            }
+        }
+        const childDimension = String(options.childDimension || options.entity?.dimension || '').trim();
+        const parentDimension = this.getResolvedPlanDimension(parent, config.parentType);
+        if (!this.arePlanDimensionsCompatible(childDimension, parentDimension)) {
+            return {
+                ok: false,
+                reason: 'dimension_mismatch',
+                parent,
+                parentType: config.parentType,
+                parentDimension,
+                message: `Área incompatível: ${config.parentLabel} pai pertence à área [${parentDimension}], mas ${config.childLabel.toLowerCase()} está configurad${config.childLabel === 'Entrega' ? 'a' : 'o'} como [${childDimension}].`
+            };
+        }
+        return {
+            ok: true,
+            parent,
+            parentType: config.parentType,
+            parentDimension,
+            resolvedChildDimension: childDimension || parentDimension || ''
+        };
+    },
+    syncPlanEntityLineage: function(entity, type, parent) {
+        if (!entity || !parent) return entity;
+        const normalizedType = String(type || '').trim().toLowerCase();
+        const resolvedParentDimension = this.getResolvedPlanDimension(parent, normalizedType === 'okrs' ? 'metas' : normalizedType === 'macros' ? 'okrs' : 'macros');
+        if (normalizedType === 'okrs') {
+            entity.metaId = parent.id || '';
+            if (resolvedParentDimension) entity.dimension = resolvedParentDimension;
+            return entity;
+        }
+        if (normalizedType === 'macros') {
+            entity.okrId = parent.id || '';
+            entity.metaId = parent.metaId || '';
+            if (resolvedParentDimension) entity.dimension = resolvedParentDimension;
+            return entity;
+        }
+        if (normalizedType === 'micros') {
+            const linkedOkr = (window.sistemaVidaState?.entities?.okrs || []).find((item) => item.id === parent.okrId);
+            entity.macroId = parent.id || '';
+            entity.okrId = parent.okrId || '';
+            entity.metaId = parent.metaId || linkedOkr?.metaId || '';
+            if (resolvedParentDimension) entity.dimension = resolvedParentDimension;
+            return entity;
+        }
+        return entity;
+    },
     getMicroPlanContext: function(micro) {
         const state = window.sistemaVidaState || {};
         const entities = state.entities || { metas: [], okrs: [], macros: [], micros: [] };
@@ -1537,15 +1686,9 @@ getDimensionIdentity: function(dimension, level) {
         return { ok: true, ctx };
     },
     getPlanMicros: function(options = {}) {
-        const state = window.sistemaVidaState || {};
-        const sources = [
-            state.entities?.micros,
-            state.entities?.micro,
-            state.micros,
-            state.microActions,
-            state.microacoes,
-            state.todos
-        ];
+        const source = Array.isArray(window.sistemaVidaState?.entities?.micros)
+            ? window.sistemaVidaState.entities.micros
+            : [];
         const normalizeStatus = (item) => {
             const raw = String(item?.status || '').toLowerCase();
             const progress = Number(item?.progress || 0);
@@ -1553,35 +1696,20 @@ getDimensionIdentity: function(dimension, level) {
             if (raw.includes('progress') || raw.includes('andamento') || raw.includes('active')) return 'in_progress';
             return 'pending';
         };
-        const byId = new Map();
-        sources.forEach((source) => {
-            if (!Array.isArray(source)) return;
-            source.forEach((item) => {
-                if (!item) return;
-                const title = String(item.title || item.nome || item.name || item.tarefa || '').trim();
-                if (!title) return;
-                const id = String(item.id || item.uid || item.key || item._id || `${title}-${item.prazo || item.inicioDate || ''}`).trim();
-                if (!id || byId.has(id)) return;
-                const status = normalizeStatus(item);
-                if (!item.id && state.entities && Array.isArray(state.entities.micros)) item.id = id;
-                byId.set(id, {
-                    ...item,
-                    id,
-                    title,
-                    dimension: String(item.dimension || item.dimensao || item.area || 'Geral'),
-                    status,
-                    completed: status === 'done',
-                    progress: status === 'done' ? 100 : Math.max(0, Math.min(100, Number(item.progress || 0)))
-                });
-            });
-        });
-        const micros = Array.from(byId.values());
-        if (state.entities && Array.isArray(state.entities.micros)) {
-            const existingIds = new Set(state.entities.micros.map(m => String(m.id || '')));
-            micros.forEach((micro) => {
-                if (!existingIds.has(micro.id)) state.entities.micros.push(micro);
-            });
-        }
+        const micros = source.map((item) => {
+            const title = String(item?.title || item?.nome || item?.name || item?.tarefa || '').trim();
+            const id = String(item?.id || '').trim();
+            const status = normalizeStatus(item);
+            return {
+                ...item,
+                id,
+                title,
+                dimension: String(item?.dimension || item?.dimensao || item?.area || '').trim(),
+                status,
+                completed: status === 'done',
+                progress: status === 'done' ? 100 : Math.max(0, Math.min(100, Number(item?.progress || 0)))
+            };
+        }).filter((item) => item.id && item.title);
         return options.includeDone ? micros : micros.filter(m => m.status !== 'done');
     },
     applyThemePreference: function() {
@@ -4335,7 +4463,6 @@ openCreateModal: function(type = 'metas', parentId = null) {
         }, 0);
         return Math.round(sumPct / valid.length);
     },
-
     onParentChange: function(parentId) {
         const typeSelect = document.getElementById('crud-type');
         const dimSelect = document.getElementById('crud-dimension');
@@ -4365,10 +4492,15 @@ openCreateModal: function(type = 'metas', parentId = null) {
         delete parentSelect.dataset.invalidCurrentParentId;
         delete parentSelect.dataset.invalidCurrentParentType;
         delete parentSelect.dataset.invalidCurrentParentTitle;
-        
         const currentDim = dimSelect ? dimSelect.value : null;
-        parentSelect.innerHTML = `<option value="">${type === 'metas' ? 'Sem meta pai (Meta Raiz)' : 'Sem vínculo (Mestre)'}</option>`;
-        
+        const config = this.getPlanParentConfig(type);
+        parentSelect.required = !!config;
+        if (type === 'metas') {
+            parentSelect.innerHTML = '<option value="">Sem meta pai (Meta Raiz)</option>';
+        } else {
+            parentSelect.innerHTML = `<option value="">${config ? `Selecione ${config.parentLabel === 'Meta' ? 'a' : 'o'} ${config.parentLabel}...` : 'Sem vínculo'}</option>`;
+        }
+
         let parentType = '';
         if (type === 'metas') parentType = 'metas';
         if (type === 'okrs') parentType = 'metas';
@@ -4380,6 +4512,10 @@ openCreateModal: function(type = 'metas', parentId = null) {
             const editingId = this.editingEntity?.id || '';
             const parents = window.sistemaVidaState.entities[parentType].filter(p => {
                 if (editingId && p.id === editingId) return false;
+                const parentAssignment = this.validatePlanParentAssignment(type, p.id, { childDimension: currentDim || '' });
+                if (!parentAssignment.ok) return false;
+                const parentDimension = this.getResolvedPlanDimension(p, parentType);
+                if (currentDim && currentDim !== 'Geral' && parentDimension && parentDimension !== currentDim && parentDimension !== 'Geral') return false;
                 return !currentDim || currentDim === 'Geral' || p.dimension === currentDim || p.dimension === 'Geral';
             }).filter(p => {
                 if (type !== 'metas') return true;
@@ -4393,14 +4529,18 @@ openCreateModal: function(type = 'metas', parentId = null) {
             parents.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
+                const resolvedParentDimension = this.getResolvedPlanDimension(p, parentType) || 'Sem dimensão';
                 if (type === 'metas') {
                     const h = this.getMetaHorizonYears(p);
-                    opt.textContent = `[${h}a][${p.dimension}] ${p.title}`;
+                    opt.textContent = `[${h}a][${resolvedParentDimension}] ${p.title}`;
                 } else {
-                    opt.textContent = `[${p.dimension}] ${p.title}`;
+                    opt.textContent = `[${resolvedParentDimension}] ${p.title}`;
                 }
                 parentSelect.appendChild(opt);
             });
+            if (!parents.length && config) {
+                parentSelect.innerHTML = `<option value="">Nenhum ${config.parentLabel.toLowerCase()} compatível disponível</option>`;
+            }
         }
     },
 
@@ -6802,24 +6942,17 @@ ensureNotesState: function() {
         const entity = this.currentReviewEntity;
         const type = this.currentReviewType;
         const newParentId = document.getElementById('reassign-parent-select').value;
-        if (!entity || !newParentId) return;
+        if (!entity) return;
 
-        const state = window.sistemaVidaState;
-        
-        if (type === 'okrs') {
-            entity.metaId = newParentId;
-        } else if (type === 'macros') {
-            entity.okrId = newParentId;
-            const okr = state.entities.okrs.find(o => o.id === newParentId);
-            if (okr) entity.metaId = okr.metaId;
-        } else if (type === 'micros') {
-            entity.macroId = newParentId;
-            const macro = state.entities.macros.find(m => m.id === newParentId);
-            if (macro) {
-                entity.okrId = macro.okrId;
-                entity.metaId = macro.metaId;
-            }
+        const parentValidation = this.validatePlanParentAssignment(type, newParentId, {
+            entity,
+            childDimension: this.getResolvedPlanDimension(entity, type) || entity.dimension || ''
+        });
+        if (!parentValidation.ok) {
+            this.showBlockingMessage(parentValidation.message || 'Não foi possível atualizar a hierarquia.');
+            return;
         }
+        this.syncPlanEntityLineage(entity, type, parentValidation.parent);
 
         this.saveState(true);
         document.getElementById('review-entity-modal').classList.add('hidden');

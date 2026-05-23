@@ -1802,7 +1802,7 @@ saveNewEntity: function() {
             return;
         }
 
-        const obj = { id: id || '', title: title || '', dimension: dimension || 'Geral', prazo: prazo || '' };
+        const obj = { id: id || '', title: title || '', dimension: dimension || '', prazo: prazo || '' };
         if (usaAgendamento && inicioDate) obj.inicioDate = inicioDate;
 
         const getOldItem = (eid, etype) => {
@@ -1840,7 +1840,14 @@ saveNewEntity: function() {
         const hasInvalidCurrentParent = !!(parentSelectEl?.dataset.invalidCurrentParentId) && !parentId;
         if (['metas', 'okrs', 'macros', 'micros'].includes(type)) {
             obj.createdAt = oldEntity.createdAt || this.getLocalDateKey();
+            if (!obj.dimension) {
+                app.showBlockingMessage('Selecione uma dimensão antes de salvar.');
+                return;
+            }
         }
+        const planParentValidation = ['okrs', 'macros', 'micros'].includes(type)
+            ? this.validatePlanParentAssignment(type, parentId, { childDimension: obj.dimension, entity: oldEntity })
+            : null;
 
         if (type === 'metas' || type === 'okrs') {
             obj.purpose = context || '';
@@ -1874,6 +1881,11 @@ saveNewEntity: function() {
                     app.showBlockingMessage('Este Projeto estÃ¡ com a Meta atual fora da Ã¡rea selecionada. Escolha uma Meta compatÃ­vel antes de salvar.');
                     return;
                 }
+                if (!planParentValidation?.ok) {
+                    app.showBlockingMessage(planParentValidation?.message || 'Projeto precisa estar vinculado a uma Meta.');
+                    return;
+                }
+                this.syncPlanEntityLineage(obj, type, planParentValidation.parent);
                 if (parentId) {
                     const parentMeta = window.sistemaVidaState.entities.metas.find(m => m.id === parentId);
                     if (!parentMeta) {
@@ -1909,6 +1921,11 @@ saveNewEntity: function() {
                 app.showBlockingMessage('Esta Entrega estÃ¡ com o Projeto atual fora da Ã¡rea selecionada. Escolha um Projeto compatÃ­vel antes de salvar.');
                 return;
             }
+            if (!planParentValidation?.ok) {
+                app.showBlockingMessage(planParentValidation?.message || 'Entrega precisa estar vinculada a um Projeto.');
+                return;
+            }
+            this.syncPlanEntityLineage(obj, type, planParentValidation.parent);
             if (parentId) {
                 const okr = window.sistemaVidaState.entities.okrs.find(o => o.id === parentId);
                 if (!okr) {
@@ -1975,6 +1992,11 @@ saveNewEntity: function() {
                 app.showBlockingMessage('Esta Ação está com a Entrega atual fora da área selecionada. Escolha uma Entrega compatível antes de salvar.');
                 return;
             }
+            if (!planParentValidation?.ok) {
+                app.showBlockingMessage(planParentValidation?.message || 'Ação precisa estar vinculada a uma Entrega.');
+                return;
+            }
+            this.syncPlanEntityLineage(obj, type, planParentValidation.parent);
             if (parentId) {
                 const macro = window.sistemaVidaState.entities.macros.find(m => m.id === parentId);
                 if (!macro) {
@@ -2192,8 +2214,15 @@ openEntityReview: function(id, type) {
             }
 
             parentLabel.textContent = parentTypeLabel;
-            parentSelect.innerHTML = potentialParents.map(p => 
-                `<option value="${p.id}" ${p.id === currentParentId ? 'selected' : ''}>${p.title}</option>`
+            const entityDimension = this.getResolvedPlanDimension(entity, type) || String(entity.dimension || '').trim();
+            potentialParents = potentialParents.filter((parent) => {
+                const parentValidation = this.validatePlanParentAssignment(type, parent.id, { childDimension: entityDimension, entity });
+                if (!parentValidation.ok) return false;
+                const parentDimension = this.getResolvedPlanDimension(parent, type === 'okrs' ? 'metas' : type === 'macros' ? 'okrs' : 'macros');
+                return this.arePlanDimensionsCompatible(entityDimension, parentDimension);
+            });
+            parentSelect.innerHTML = potentialParents.map(p =>
+                `<option value="${p.id}" ${p.id === currentParentId ? 'selected' : ''}>[${this.escapeHtml(this.getResolvedPlanDimension(p, type === 'okrs' ? 'metas' : type === 'macros' ? 'okrs' : 'macros') || 'Sem dimensão')}] ${this.escapeHtml(p.title)}</option>`
             ).join('');
             
             if (potentialParents.length === 0) {

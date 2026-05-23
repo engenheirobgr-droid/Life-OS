@@ -1098,6 +1098,76 @@ importFromExcel: async function(event) {
             let strengthIndex = buildNamedIndex([]);
             let shadowIndex = buildNamedIndex([]);
             const importWarnings = [];
+            const getImportedPlanLabel = (type) => ({ metas: 'Meta', okrs: 'Projeto', macros: 'Entrega', micros: 'Ação' }[type] || type);
+            const pushPlanImportWarning = (type, title, message) => {
+                const itemLabel = getImportedPlanLabel(type);
+                const safeTitle = String(title || '').trim() || '(sem título)';
+                importWarnings.push(`Planos: ${itemLabel} "${safeTitle}" - ${message}`);
+            };
+            const finalizeImportedMetas = (metaItems, metaLookup) => {
+                return (metaItems || []).filter((meta) => {
+                    if (String(meta.dimension || '').trim().toLowerCase() === 'geral') meta.dimension = '';
+                    const explicitParentTitle = String(meta._parentTitle || '').trim();
+                    const explicitParentId = String(meta.parentMetaId || '').trim();
+                    let parentMeta = null;
+                    if (explicitParentTitle) {
+                        const resolvedParentId = resolveItemId(explicitParentTitle, metaLookup);
+                        if (!resolvedParentId) {
+                            pushPlanImportWarning('metas', meta.title, `Meta pai "${explicitParentTitle}" não encontrada. Linha ignorada.`);
+                            delete meta._parentTitle;
+                            return false;
+                        }
+                        parentMeta = (metaItems || []).find((item) => item.id === resolvedParentId) || null;
+                        meta.parentMetaId = resolvedParentId;
+                    } else if (explicitParentId) {
+                        parentMeta = (metaItems || []).find((item) => item.id === explicitParentId) || null;
+                        if (!parentMeta) {
+                            pushPlanImportWarning('metas', meta.title, 'Meta pai informada não foi encontrada. Linha ignorada.');
+                            return false;
+                        }
+                    }
+                    if (parentMeta && !meta.dimension) {
+                        meta.dimension = String(parentMeta.dimension || '').trim();
+                    }
+                    delete meta._parentTitle;
+                    if (!String(meta.dimension || '').trim()) {
+                        pushPlanImportWarning('metas', meta.title, 'Dimensão ausente e não foi possível inferir pela meta pai. Linha ignorada.');
+                        return false;
+                    }
+                    return true;
+                });
+            };
+            const finalizeImportedChildren = (type, items, index) => {
+                return (items || []).filter((item) => {
+                    if (String(item.dimension || '').trim().toLowerCase() === 'geral') item.dimension = '';
+                    const explicitParentTitle = String(item._parentTitle || '').trim();
+                    let resolvedParentId = type === 'okrs'
+                        ? String(item.metaId || '').trim()
+                        : type === 'macros'
+                            ? String(item.okrId || '').trim()
+                            : String(item.macroId || '').trim();
+                    if (explicitParentTitle) {
+                        resolvedParentId = resolveItemId(explicitParentTitle, index);
+                        if (!resolvedParentId) {
+                            pushPlanImportWarning(type, item.title, `${this.getPlanParentConfig(type)?.parentLabel || 'Pai'} pai "${explicitParentTitle}" não encontrado. Linha ignorada.`);
+                            delete item._parentTitle;
+                            return false;
+                        }
+                    }
+                    const validation = this.validatePlanParentAssignment(type, resolvedParentId, { childDimension: item.dimension, entity: item });
+                    delete item._parentTitle;
+                    if (!validation.ok) {
+                        pushPlanImportWarning(type, item.title, `${validation.message} Linha ignorada.`);
+                        return false;
+                    }
+                    this.syncPlanEntityLineage(item, type, validation.parent);
+                    if (!String(item.dimension || '').trim()) {
+                        pushPlanImportWarning(type, item.title, 'Dimensão ausente e não foi possível inferir pelo vínculo. Linha ignorada.');
+                        return false;
+                    }
+                    return true;
+                });
+            };
 
             // 1. Aba: Planos -> state.entities
             const wsPlanos = workbook.Sheets['Planos'] || workbook.Sheets['Main'] || workbook.Sheets['Tarefas'];
@@ -1219,6 +1289,13 @@ importFromExcel: async function(event) {
                     }
                     delete micro._parentTitle;
                 });
+                window.sistemaVidaState.entities.metas = finalizeImportedMetas(window.sistemaVidaState.entities.metas, metaIndex);
+                metaIndex = buildNamedIndex(window.sistemaVidaState.entities.metas);
+                window.sistemaVidaState.entities.okrs = finalizeImportedChildren('okrs', window.sistemaVidaState.entities.okrs, metaIndex);
+                okrIndex = buildNamedIndex(window.sistemaVidaState.entities.okrs);
+                window.sistemaVidaState.entities.macros = finalizeImportedChildren('macros', window.sistemaVidaState.entities.macros, okrIndex);
+                macroIndex = buildNamedIndex(window.sistemaVidaState.entities.macros);
+                window.sistemaVidaState.entities.micros = finalizeImportedChildren('micros', window.sistemaVidaState.entities.micros, macroIndex);
                 microIndex = buildNamedIndex(window.sistemaVidaState.entities.micros);
             }
 
