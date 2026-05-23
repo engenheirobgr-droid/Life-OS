@@ -955,17 +955,38 @@ normalizeSwlsAnswer: function(rawValue) {
         dw.sessions = dw.sessions.map((session) => {
             const focusSecRaw = Number(session?.focusSec);
             const focusSec = Number.isFinite(focusSecRaw) ? Math.max(60, Math.round(focusSecRaw)) : 3600;
+            const breakSecRaw = Number(session?.breakSec);
+            const breakSec = Number.isFinite(breakSecRaw) ? Math.max(0, Math.round(breakSecRaw)) : 0;
+            const startedAtTsRaw = String(session?.startedAtTs || '');
+            const startedAtDate = startedAtTsRaw ? new Date(startedAtTsRaw) : null;
+            const startedAtValueRaw = String(session?.startedAt || '');
+            const startedAtValueDate = startedAtValueRaw && startedAtValueRaw.includes('T') ? new Date(startedAtValueRaw) : null;
             const endedAtTsRaw = String(session?.endedAtTs || '');
             const endedAtDate = endedAtTsRaw ? new Date(endedAtTsRaw) : null;
+            const fallbackEndDate = endedAtDate && !Number.isNaN(endedAtDate.getTime())
+                ? endedAtDate
+                : (startedAtDate && !Number.isNaN(startedAtDate.getTime())
+                    ? new Date(startedAtDate.getTime() + (focusSec * 1000))
+                    : new Date());
+            const startedAtTs = startedAtDate && !Number.isNaN(startedAtDate.getTime())
+                ? startedAtDate.toISOString()
+                : (startedAtValueDate && !Number.isNaN(startedAtValueDate.getTime())
+                    ? startedAtValueDate.toISOString()
+                    : new Date(fallbackEndDate.getTime() - (focusSec * 1000)).toISOString());
             const endedAtTs = endedAtDate && !Number.isNaN(endedAtDate.getTime())
                 ? endedAtDate.toISOString()
-                : new Date().toISOString();
+                : fallbackEndDate.toISOString();
+            const startedAt = String(session?.startedAt || this.getLocalDateKey(new Date(startedAtTs)));
             const endedAt = String(session?.endedAt || this.getLocalDateKey(new Date(endedAtTs)));
             return {
+                startedAt: startedAt.split('T')[0],
+                startedAtTs,
                 endedAt: endedAt.split('T')[0],
                 endedAtTs,
                 focusSec,
-                mode: 'focus',
+                breakSec,
+                completed: !!session?.completed,
+                mode: ['focus', 'break'].includes(String(session?.mode || '').trim()) ? String(session.mode).trim() : 'focus',
                 microId: String(session?.microId || ''),
                 microTitle: String(session?.microTitle || ''),
                 intention: String(session?.intention || '')
@@ -7373,6 +7394,7 @@ ensureNotesState: function() {
             const referenceDate = customTimeMs ? new Date(customTimeMs) : new Date();
             const dateKey = this.getLocalDateKey(referenceDate);
             const endedAtTs = referenceDate.toISOString();
+            const startedAtTs = new Date(referenceDate.getTime() - (focusSec * 1000)).toISOString();
 
             const linkedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
             if (linkedMicro && linkedMicro.status !== 'done') {
@@ -7388,9 +7410,13 @@ ensureNotesState: function() {
                 this.recordHabitFocusExecution(linkedMicro.sourceHabitId, focusSec, dateKey);
             }
             dw.sessions.unshift({
+                startedAt: this.getLocalDateKey(new Date(startedAtTs)),
+                startedAtTs,
                 endedAt: dateKey,
                 endedAtTs,
                 focusSec: focusSec,
+                breakSec: Math.max(0, Number(dw.breakSec) || 0),
+                completed: true,
                 mode: 'focus',
                 microId: dw.microId || '',
                 microTitle: linkedMicro?.title || dw.intention || '',

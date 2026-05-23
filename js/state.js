@@ -1036,6 +1036,55 @@ importFromExcel: async function(event) {
             }
             return raw;
         };
+        const buildLocalIsoDateTime = (year, month, day, hours = 0, minutes = 0) => {
+            const dt = new Date(Number(year), Number(month) - 1, Number(day), Number(hours) || 0, Number(minutes) || 0, 0, 0);
+            if (Number.isNaN(dt.getTime())) return '';
+            if (
+                dt.getFullYear() !== Number(year) ||
+                dt.getMonth() !== (Number(month) - 1) ||
+                dt.getDate() !== Number(day)
+            ) return '';
+            return dt.toISOString();
+        };
+        const excelSerialToDateTimeIso = (value) => {
+            const dateKey = excelSerialToDateKey(value);
+            if (!dateKey) return '';
+            const timeValue = excelSerialToTime(value);
+            const [year, month, day] = dateKey.split('-').map(Number);
+            if (timeValue) {
+                const [hours, minutes] = timeValue.split(':').map(Number);
+                return buildLocalIsoDateTime(year, month, day, hours, minutes);
+            }
+            return buildLocalIsoDateTime(year, month, day, 0, 0);
+        };
+        const normalizeDateTimeValue = (value) => {
+            if (value === null || value === undefined || value === '') return '';
+            if (typeof value === 'number') return excelSerialToDateTimeIso(value);
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            if (/^\d+(?:\.\d+)?$/.test(raw)) {
+                const fromSerial = excelSerialToDateTimeIso(Number(raw));
+                if (fromSerial) return fromSerial;
+            }
+            const isoDateTime = /^\d{4}-\d{2}-\d{2}T/.test(raw) ? new Date(raw) : null;
+            if (isoDateTime && !Number.isNaN(isoDateTime.getTime())) return isoDateTime.toISOString();
+            const brDateTimeMatch = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+|T)(\d{1,2}):(\d{2})(?::\d{2})?$/);
+            if (brDateTimeMatch) {
+                const [, day, month, year, hours, minutes] = brDateTimeMatch;
+                return buildLocalIsoDateTime(year, month, day, hours, minutes);
+            }
+            const isoSpaceMatch = raw.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:\s+|T)(\d{1,2}):(\d{2})(?::\d{2})?$/);
+            if (isoSpaceMatch) {
+                const [, year, month, day, hours, minutes] = isoSpaceMatch;
+                return buildLocalIsoDateTime(year, month, day, hours, minutes);
+            }
+            return '';
+        };
+        const formatDateTimeForSheet = (dateTimeValue, fallbackDate = '') => {
+            const formatted = dateTimeValue && this.formatDateTimeLocal ? this.formatDateTimeLocal(dateTimeValue) : '';
+            if (formatted) return formatted;
+            return String(fallbackDate || '').trim();
+        };
         const getSheetHeaderSet = (sheet) => new Set(
             ((XLSX.utils.sheet_to_json(sheet, { header: 1, range: 0 })?.[0]) || [])
                 .map((header) => String(header || '').trim())
@@ -1474,7 +1523,8 @@ importFromExcel: async function(event) {
                         const linkedMeta = resolvedLinkedMetaId
                             ? (window.sistemaVidaState.entities?.metas || []).find(item => item.id === resolvedLinkedMetaId)
                             : null;
-                        const explicitDimension = normalizeImportedDimension(getValue(row, ['DimensÃ£o', 'Dimensao', 'Ãrea']));
+                        const explicitDimension = normalizeImportedDimension(getValue(row, ['DimensÃ£o', 'Dimensao', 'Ãrea']))
+                            || normalizeImportedDimension(getValue(row, ['Dimensão', 'Area', 'Dimension']));
                         const inferredDimension = normalizeImportedDimension(linkedMeta?.dimension || '');
                         const habitDimension = explicitDimension || inferredDimension;
                         const habitTitle = String(title || '').trim();
@@ -1724,17 +1774,32 @@ importFromExcel: async function(event) {
                     if (usesVisibleMicro && visibleMicroLabel && !resolvedMicroId) {
                         importWarnings.push(`Foco profundo: micro não encontrado "${visibleMicroLabel}"`);
                     }
+                    const startedAtTs = normalizeDateTimeValue(getValue(row, ['Started_At_TS', 'Started_At_Ts']))
+                        || normalizeDateTimeValue(getValue(row, ['InÃ­cio', 'Inicio', 'Started_At']));
+                    const endedAtTs = normalizeDateTimeValue(getValue(row, ['Ended_At_TS', 'Ended_At_Ts']))
+                        || normalizeDateTimeValue(getValue(row, ['Fim', 'Ended_At']));
+                    const startedAt = startedAtTs
+                        ? normalizeDateKey(startedAtTs)
+                        : normalizeDateKey(getValue(row, ['InÃ­cio', 'Inicio', 'Started_At']));
+                    const endedAt = endedAtTs
+                        ? normalizeDateKey(endedAtTs)
+                        : normalizeDateKey(getValue(row, ['Fim', 'Ended_At']));
                     return {
                         startedAt: normalizeDateKey(getValue(row, ['Início', 'Inicio', 'Started_At'])),
                         endedAt: normalizeDateKey(getValue(row, ['Fim', 'Ended_At'])),
+                        startedAt,
+                        startedAtTs,
+                        endedAt,
+                        endedAtTs,
                         focusSec,
                         breakSec: Math.max(0, Math.round(toNumber(getValue(row, ['Break_Sec']), toNumber(getValue(row, ['Minutos de pausa', 'Minutos_Pausa']), 0) * 60))),
                         microId: resolvedMicroId,
+                        microTitle: visibleMicroLabel || '',
                         intention: String(getValue(row, ['Intenção', 'Intencao', 'Intention']) || '').trim(),
                         completed: toBool(getValue(row, ['Concluída', 'Concluida', 'Completed']), false),
                         mode: String(getValue(row, ['Mode']) || 'focus').trim() || 'focus'
                     };
-                }).filter(session => session.endedAt || session.microId || session.intention);
+                }).filter(session => session.endedAtTs || session.endedAt || session.microId || session.intention);
             }
 
             const wsProtocols = workbook.Sheets['Protocolos'];
@@ -2253,6 +2318,7 @@ exportToExcelFull: function() {
         // 7. Aba: Foco Profundo
         const focusCol = ["Inicio", "Fim", "Minutos_Foco", "Minutos_Pausa", "Focus_Sec", "Break_Sec", "Mode", "Micro_ID", "Intencao", "Concluida"];
         const focusData = [focusCol];
+        focusCol.splice(2, 0, "Started_At_TS", "Ended_At_TS");
         (state.deepWork?.sessions || []).forEach((session) => {
             const focusMin = Math.max(0, Math.round((Number(session?.focusSec) || 0) / 60));
             const breakMin = Math.max(0, Math.round((Number(session?.breakSec) || 0) / 60));
@@ -2268,9 +2334,15 @@ exportToExcelFull: function() {
                 String(session?.intention || ""),
                 session?.completed ? "sim" : "nao"
             ]);
+            const lastFocusRow = focusData[focusData.length - 1];
+            if (lastFocusRow) {
+                lastFocusRow[0] = formatDateTimeForSheet(session?.startedAtTs, session?.startedAt || "");
+                lastFocusRow[1] = formatDateTimeForSheet(session?.endedAtTs, session?.endedAt || "");
+                lastFocusRow.splice(2, 0, String(session?.startedAtTs || ""), String(session?.endedAtTs || ""));
+            }
         });
         const wsFocus = XLSX.utils.aoa_to_sheet(focusData);
-        wsFocus['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 40 }, { wch: 10 }];
+        wsFocus['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 40 }, { wch: 10 }];
         XLSX.utils.book_append_sheet(wb, wsFocus, "Foco_Profundo");
 
         // 8. Aba: Notas
@@ -2723,6 +2795,7 @@ exportToExcel: function() {
 
         const focusVisibleCols = ["Início", "Fim", "Minutos de foco", "Minutos de pausa", "Modo", "Micro", "Intenção", "Concluída"];
         const focusHiddenCols = ["Focus_Sec", "Break_Sec", "Micro_ID"];
+        focusHiddenCols.splice(2, 0, "Started_At_TS", "Ended_At_TS");
         const focusRows = [focusVisibleCols.concat(focusHiddenCols)];
         (state.deepWork?.sessions || []).forEach((session) => {
             focusRows.push([
@@ -2738,9 +2811,15 @@ exportToExcel: function() {
                 Number(session?.breakSec || 0),
                 String(session?.microId || "")
             ]);
+            const lastFriendlyFocusRow = focusRows[focusRows.length - 1];
+            if (lastFriendlyFocusRow) {
+                lastFriendlyFocusRow[0] = formatDateTimeForSheet(session?.startedAtTs, session?.startedAt || "");
+                lastFriendlyFocusRow[1] = formatDateTimeForSheet(session?.endedAtTs, session?.endedAt || "");
+                lastFriendlyFocusRow.splice(focusVisibleCols.length + 2, 0, String(session?.startedAtTs || ""), String(session?.endedAtTs || ""));
+            }
         });
         const wsFocus = XLSX.utils.aoa_to_sheet(focusRows);
-        setCols(wsFocus, [22, 22, 16, 16, 12, 28, 40, 10], [12, 12, 20]);
+        setCols(wsFocus, [22, 22, 16, 16, 12, 28, 40, 10], [12, 12, 24, 24, 20]);
         XLSX.utils.book_append_sheet(wb, wsFocus, "Foco Profundo");
 
         const notesVisibleCols = ["Título", "Conteúdo", "URL", "Tags", "Vínculo Tipo", "Vinculado a"];
