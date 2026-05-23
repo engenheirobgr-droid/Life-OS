@@ -916,12 +916,14 @@ factoryReset: async function() {
 
 importFromExcel: async function(event) {
         const file = event.target.files[0];
-        if (!file) return;
+        if (!file) return false;
 
         if (typeof XLSX === "undefined") {
             alert("SheetJS não carregado. Verifique a conexão com a internet.");
-            return;
+            return false;
         }
+
+        let importSucceeded = false;
 
         // Helper para busca flexível de colunas
         const getValue = (row, possibleKeys) => {
@@ -1853,19 +1855,22 @@ importFromExcel: async function(event) {
             Object.entries(window.sistemaVidaState.reviews || {}).forEach(([weekKey, review]) => {
                 this.updateIdentityWeeklyLogs?.(weekKey, review);
             });
+            this.reconcileOnboardingCompletion?.();
             await window.app.saveState(false);
             if (importWarnings.length) console.warn('[Import warnings]', importWarnings);
             alert(importWarnings.length
                 ? `Planilha importada com sucesso, com ${importWarnings.length} aviso(s) de vínculo ou dado incompleto.`
                 : 'Planilha importada com sucesso.');
             window.app.switchView('painel');
+            importSucceeded = true;
             
         } catch (error) {
             console.error("Erro Padrão Ouro na importação:", error);
             alert(`Erro na importação: ${error.message}`);
         }
         
-        event.target.value = '';
+        if (event?.target) event.target.value = '';
+        return importSucceeded;
     },
 
 exportToExcelFull: function() {

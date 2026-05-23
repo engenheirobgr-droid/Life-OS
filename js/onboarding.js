@@ -223,7 +223,7 @@ onboardingGoTo: function(step) {
             const trailEl = document.getElementById('onboarding-summary-trail');
             const habitEl = document.getElementById('onboarding-summary-habit');
             const starter = this.onboardingGetStarterDraft();
-            if (nameEl) nameEl.textContent = state.profile.name || 'Viajante';
+            if (nameEl) nameEl.textContent = state.profile.name || 'Voce';
             if (valuesEl) valuesEl.textContent = (state.profile.values || []).join(', ') || 'seus valores';
             if (trailEl) {
                 const dim = starter.dimension || 'Carreira';
@@ -244,6 +244,10 @@ onboardingGetFieldValue: function(id) {
         const el = document.getElementById(id);
         if (!el) return '';
         return String(el.value || '').trim();
+    },
+
+normalizeProfileNameInput: function(rawValue) {
+        return String(rawValue || '').trim();
     },
 
 onboardingGetStarterDraft: function() {
@@ -573,7 +577,10 @@ onboardingSaveCurrentStep: function(persist = true) {
         this.ensureSettingsState();
         if (this.onboardingStep === 1) {
             const nameInput = document.getElementById('onboarding-nome');
-            if (nameInput) state.profile.name = nameInput.value.trim() || "Viajante";
+            if (nameInput) {
+                const normalizedName = this.normalizeProfileNameInput(nameInput.value);
+                if (normalizedName) state.profile.name = normalizedName;
+            }
         } else if (this.onboardingStep === 2) {
             // Valores da Roda já são atualizados em tempo real via onboardingUpdateSlider
         } else if (this.onboardingStep === 3) {
@@ -852,8 +859,8 @@ onboardingStep1GoB: function() {
         // Salva o nome antes de ir para o sub-painel B
         const nameInput = document.getElementById('onboarding-nome');
         if (nameInput) {
-            const raw = nameInput.value.trim();
-            window.sistemaVidaState.profile.name = raw || 'Viajante';
+            const normalizedName = this.normalizeProfileNameInput(nameInput.value);
+            if (normalizedName) window.sistemaVidaState.profile.name = normalizedName;
         }
         const panelA = document.getElementById('step-1-panel-a');
         const panelB = document.getElementById('step-1-panel-b');
@@ -877,6 +884,28 @@ onboardingStep1GoA: function() {
             panelA.classList.add('flex');
         }
         this.scrollOnboardingToTop();
+    },
+
+openOnboardingImportDialog: function() {
+        const input = document.getElementById('onboarding-file-import');
+        if (!input) return;
+        input.value = '';
+        input.click();
+    },
+
+onboardingImportSpreadsheet: async function(event) {
+        const file = event?.target?.files?.[0];
+        if (!file) return;
+        const imported = await this.importFromExcel(event);
+        if (!imported) return;
+        this.reconcileOnboardingCompletion?.();
+        if (window.sistemaVidaState?.onboardingComplete) {
+            this.showToast('Planilha importada e onboarding concluído com os dados importados.', 'success');
+            return;
+        }
+        this.switchView('onboarding');
+        this.onboardingGoTo(1);
+        this.showToast('Planilha importada, mas sem dados mínimos para concluir o onboarding.', 'warning');
     },
 
 onboardingNext: function() {

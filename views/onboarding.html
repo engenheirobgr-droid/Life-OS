@@ -115,6 +115,13 @@
                 </button>
             </div>
 
+            <button type="button" onclick="app.openOnboardingImportDialog()"
+                class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/20 text-sm font-bold text-on-surface hover:bg-surface-container-high transition-colors">
+                <span class="material-symbols-outlined notranslate text-outline text-lg">upload_file</span>
+                <span>Importar planilha (.xls/.xlsx)</span>
+            </button>
+            <input id="onboarding-file-import" type="file" accept=".xls,.xlsx" class="hidden" onchange="app.onboardingImportSpreadsheet(event)">
+
             <button onclick="app.onboardingStep1GoA()" class="text-xs font-bold text-outline hover:text-on-surface transition-colors self-start flex items-center gap-1 mt-1">
                 <span class="material-symbols-outlined notranslate text-[14px]">arrow_back</span> Voltar ao nome
             </button>
@@ -428,7 +435,7 @@
                 <span class="material-symbols-outlined text-5xl">task_alt</span>
             </div>
         </div>
-        <h2 class="text-3xl font-headline font-bold italic text-on-background">Tudo pronto, <span id="conclusao-nome">Viajante</span>!</h2>
+        <h2 class="text-3xl font-headline font-bold italic text-on-background">Tudo pronto, <span id="conclusao-nome">Voce</span>!</h2>
         <p class="text-outline max-w-sm mx-auto">Seu cockpit esta calibrado. Com seus valores (<span id="conclusao-valores" class="text-primary font-medium"></span>), o app ja consegue orientar sua rotina.</p>
 
         <div class="bg-surface-container-low p-6 rounded-2xl text-left mt-6 space-y-4">
