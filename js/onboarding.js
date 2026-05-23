@@ -452,7 +452,7 @@ onboardingHydrateFields: function() {
         setValue('onboarding-legacy-profissao', legacyObj.profissao || '');
         setValue('onboarding-legacy-mundo', legacyObj.mundo || '');
 
-        const fallbackPurpose = ikigai.sintese || legacyObj.mundo || profile.legacy || profile.purpose || '';
+        const fallbackPurpose = ikigai.sintese || legacyObj.mundo || '';
         setValue('onboarding-proposito', fallbackPurpose);
         const starter = this.onboardingGetStarterDraft();
         setValue('onboarding-starter-goal', starter.goalTitle || '');
@@ -599,9 +599,8 @@ onboardingSaveCurrentStep: function(persist = true) {
 
             state.profile.ikigai = ikigai;
             state.profile.legacyObj = legacyObj;
-            state.profile.legacy = ikigai.sintese || legacyObj.mundo || state.profile.legacy || '';
-            // Campo legado mantido por compatibilidade, agora espelhando a sintese.
-            state.profile.purpose = ikigai.sintese || state.profile.legacy || '';
+            if ('legacy' in state.profile) state.profile.legacy = '';
+            if ('purpose' in state.profile) delete state.profile.purpose;
         } else if (this.onboardingStep === 5) {
             this.onboardingSaveStarterDraft();
         }
@@ -702,7 +701,7 @@ ensureOnboardingStarterSetup: function() {
                 dimension: dim,
                 prazo: datePlus(365),
                 createdAt: todayKey,
-                purpose: (state.profile.ikigai?.sintese || state.profile.legacy || '').trim(),
+                purpose: (state.profile.ikigai?.sintese || state.profile.legacyObj?.mundo || '').trim(),
                 horizonYears: 1,
                 successCriteria: 'Meta inicial definida no onboarding',
                 challengeLevel: 3,

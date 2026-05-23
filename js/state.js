@@ -214,9 +214,6 @@ ensureSettingsState: function() {
         if (typeof this.ensureProtocolsState === 'function') this.ensureProtocolsState();
         this.ensureHabitMaturityState();
         if (this.ensureSocialState) this.ensureSocialState();
-        if (typeof window.sistemaVidaState.profile.legacy !== 'string') {
-            window.sistemaVidaState.profile.legacy = '';
-        }
         if (!window.sistemaVidaState.profile.ikigai || typeof window.sistemaVidaState.profile.ikigai !== 'object') {
             window.sistemaVidaState.profile.ikigai = {};
         }
@@ -253,17 +250,6 @@ ensureSettingsState: function() {
                 window.sistemaVidaState.profile.legacyObj[key] = legacyDefaults[key];
             }
         });
-        // Compatibilidade retroativa: onboarding antigo salvava em profile.purpose.
-        const legacyPurpose = typeof window.sistemaVidaState.profile.purpose === 'string'
-            ? window.sistemaVidaState.profile.purpose.trim()
-            : '';
-        if (legacyPurpose) {
-            if (!window.sistemaVidaState.profile.ikigai.sintese) window.sistemaVidaState.profile.ikigai.sintese = legacyPurpose;
-            if (!window.sistemaVidaState.profile.legacyObj.mundo) window.sistemaVidaState.profile.legacyObj.mundo = legacyPurpose;
-            if (!window.sistemaVidaState.profile.legacy) window.sistemaVidaState.profile.legacy = legacyPurpose;
-        } else if (window.sistemaVidaState.profile.legacy && !window.sistemaVidaState.profile.ikigai.sintese) {
-            window.sistemaVidaState.profile.ikigai.sintese = window.sistemaVidaState.profile.legacy;
-        }
         if (!window.sistemaVidaState.profile.odysseyImages) {
             window.sistemaVidaState.profile.odysseyImages = { cenarioA: "", cenarioB: "", cenarioC: "" };
         }
@@ -633,7 +619,7 @@ factoryReset: async function() {
       const baseState = {
         stateSchemaVersion: this.getCurrentStateSchemaVersion ? this.getCurrentStateSchemaVersion() : 2,
         profile: {
-          name: '', level: 1, xp: 0, values: [], legacy: '',
+          name: '', level: 1, xp: 0, values: [],
           ikigai: { missao: '', vocacao: '', paixao: '', profissao: '', love: '', good: '', need: '', paid: '', sintese: '', sinteseResumo: '' },
           legacyObj: { familia: '', profissao: '', mundo: '', familiaResumo: '', profissaoResumo: '', mundoResumo: '' },
           vision: { saude: '', carreira: '', intelecto: '', quote: '', saudeResumo: '', carreiraResumo: '', intelectoResumo: '' },
@@ -1178,6 +1164,8 @@ importFromExcel: async function(event) {
                 window.sistemaVidaState.profile.ikigai = {};
                 window.sistemaVidaState.profile.legacyObj = {};
                 window.sistemaVidaState.profile.vision = {};
+                if ('legacy' in window.sistemaVidaState.profile) window.sistemaVidaState.profile.legacy = '';
+                if ('purpose' in window.sistemaVidaState.profile) delete window.sistemaVidaState.profile.purpose;
                 window.sistemaVidaState.profile.identity = { strengths: [], shadows: [] };
                 window.sistemaVidaState.dimensions = { 'Saúde':{score:1}, 'Mente':{score:1}, 'Carreira':{score:1}, 'Finanças':{score:1}, 'Relacionamentos':{score:1}, 'Família':{score:1}, 'Lazer':{score:1}, 'Propósito':{score:1} };
                 window.sistemaVidaState.perma = {P:0, E:0, R:0, M:0, A:0};

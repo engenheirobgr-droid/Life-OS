@@ -71,8 +71,6 @@ hasPurposeContent: function() {
         const legacyObj = profile.legacyObj || {};
         const vision = profile.vision || {};
         const fields = [
-            profile.legacy,
-            profile.purpose,
             ikigai.missao,
             ikigai.vocacao,
             ikigai.paixao,

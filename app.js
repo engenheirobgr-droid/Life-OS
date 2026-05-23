@@ -18,13 +18,13 @@ import {
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
-import { attachCadence } from './js/cadence.js?v=20260521-taxonomy-v2';
-import { attachOnboarding } from './js/onboarding.js?v=20260521-taxonomy-v2';
+import { attachCadence } from './js/cadence.js?v=20260523-purpose-legacy-cleanup-v1';
+import { attachOnboarding } from './js/onboarding.js?v=20260523-purpose-legacy-cleanup-v1';
 import { attachIdentity } from './js/identity.js?v=20260521-taxonomy-v2';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-focus-linkage-audit-v3';
-import { attachStateModule } from './js/state.js?v=20260522-import-contract-v1';
+import { attachStateModule } from './js/state.js?v=20260523-purpose-legacy-cleanup-v1';
 import { attachRenderModule } from './js/render.js?v=20260521-taxonomy-v2';
 import { attachPlanningModule } from './js/planning.js?v=20260521-taxonomy-v2';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
@@ -32,7 +32,7 @@ import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
-const CURRENT_STATE_SCHEMA_VERSION = 3;
+const CURRENT_STATE_SCHEMA_VERSION = 4;
 let initialAuthStatePromise = null;
 let authInteractiveOperation = false;
 
@@ -137,7 +137,6 @@ window.sistemaVidaState = {
         level: 1,
         xp: 0,
         values: [],
-        legacy: "",
         ikigai: { missao: "", vocacao: "", paixao: "", profissao: "", love: "", good: "", need: "", paid: "", sintese: "", sinteseResumo: "" },
         legacyObj: { familia: "", profissao: "", mundo: "", familiaResumo: "", profissaoResumo: "", mundoResumo: "" },
         vision: { saude: "", carreira: "", intelecto: "", quote: "", saudeResumo: "", carreiraResumo: "", intelectoResumo: "" },
@@ -214,7 +213,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260522-import-contract-v1',
+    appBuildVersion: '20260523-purpose-legacy-cleanup-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -315,6 +314,24 @@ const app = {
             this._stateSchemaNeedsSave = true;
         }
 
+        if (version < 4) {
+            if (!profile.ikigai || typeof profile.ikigai !== 'object') profile.ikigai = {};
+            if (!profile.legacyObj || typeof profile.legacyObj !== 'object') profile.legacyObj = {};
+            const legacyPurpose = typeof profile.purpose === 'string' ? profile.purpose.trim() : '';
+            const legacySummary = typeof profile.legacy === 'string' ? profile.legacy.trim() : '';
+            const legacySource = legacyPurpose || legacySummary;
+            if (legacySource && !String(profile.ikigai.sintese || '').trim()) {
+                profile.ikigai.sintese = legacySource;
+            }
+            if (legacySource && !String(profile.legacyObj.mundo || '').trim()) {
+                profile.legacyObj.mundo = legacySource;
+            }
+            if ('legacy' in profile) profile.legacy = '';
+            if ('purpose' in profile) delete profile.purpose;
+            state.stateSchemaVersion = 4;
+            this._stateSchemaNeedsSave = true;
+        }
+
         if (Number(state.stateSchemaVersion || 0) !== CURRENT_STATE_SCHEMA_VERSION) {
             state.stateSchemaVersion = CURRENT_STATE_SCHEMA_VERSION;
             this._stateSchemaNeedsSave = true;
@@ -374,8 +391,7 @@ const app = {
         const purposeOk =
             countTextFields(profile.ikigai) >= 2 ||
             countTextFields(profile.legacyObj) >= 1 ||
-            countTextFields(profile.vision) >= 1 ||
-            hasText(profile.legacy);
+            countTextFields(profile.vision) >= 1;
 
         const isOnboardingCreated = (item) => {
             if (!item || typeof item !== 'object') return false;
@@ -420,9 +436,7 @@ const app = {
         const hasPurpose =
             countTextFields(profile.ikigai) > 0 ||
             countTextFields(profile.legacyObj) > 0 ||
-            countTextFields(profile.vision) > 0 ||
-            hasText(profile.legacy) ||
-            hasText(profile.purpose);
+            countTextFields(profile.vision) > 0;
         const hasWheelScores = Object.values(state?.dimensions || {}).some((dimension) => {
             const score = Number(dimension?.score);
             return Number.isFinite(score) && score > 0;
