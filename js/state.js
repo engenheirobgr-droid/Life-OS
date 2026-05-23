@@ -1768,14 +1768,9 @@ importFromExcel: async function(event) {
                     const usesVisibleMicro = hasAnyHeader(focusHeaders, ['Micro']);
                     const visibleMicroLabel = usesVisibleMicro ? String(getValue(row, ['Micro']) || '').trim() : '';
                     const hiddenMicroId = String(getValue(row, ['Micro_ID']) || '').trim();
-                    const hiddenHabitId = String(getValue(row, ['Habit_ID']) || '').trim();
                     const resolvedMicroId = usesVisibleMicro
                         ? (visibleMicroLabel ? resolveItemId(visibleMicroLabel, microIndex) : '')
                         : (hiddenMicroId ? resolveItemId(hiddenMicroId, microIndex) : '');
-                    const resolvedHabitId = hiddenHabitId ? resolveItemId(hiddenHabitId, habitIndex) : '';
-                    if (hiddenHabitId && !resolvedHabitId) {
-                        importWarnings.push(`Foco profundo: habito nao encontrado "${hiddenHabitId}"`);
-                    }
                     if (usesVisibleMicro && visibleMicroLabel && !resolvedMicroId) {
                         importWarnings.push(`Foco profundo: micro não encontrado "${visibleMicroLabel}"`);
                     }
@@ -1799,8 +1794,6 @@ importFromExcel: async function(event) {
                         focusSec,
                         breakSec: Math.max(0, Math.round(toNumber(getValue(row, ['Break_Sec']), toNumber(getValue(row, ['Minutos de pausa', 'Minutos_Pausa']), 0) * 60))),
                         microId: resolvedMicroId,
-                        habitId: resolvedHabitId,
-                        habitTitle: resolvedHabitId ? String((window.sistemaVidaState.habits || []).find((item) => item.id === resolvedHabitId)?.title || '') : '',
                         microTitle: visibleMicroLabel || '',
                         intention: String(getValue(row, ['Intenção', 'Intencao', 'Intention']) || '').trim(),
                         completed: toBool(getValue(row, ['Concluída', 'Concluida', 'Completed']), false),
@@ -2326,7 +2319,6 @@ exportToExcelFull: function() {
         const focusCol = ["Inicio", "Fim", "Minutos_Foco", "Minutos_Pausa", "Focus_Sec", "Break_Sec", "Mode", "Micro_ID", "Intencao", "Concluida"];
         const focusData = [focusCol];
         focusCol.splice(2, 0, "Started_At_TS", "Ended_At_TS");
-        focusCol.splice(10, 0, "Habit_ID");
         (state.deepWork?.sessions || []).forEach((session) => {
             const focusMin = Math.max(0, Math.round((Number(session?.focusSec) || 0) / 60));
             const breakMin = Math.max(0, Math.round((Number(session?.breakSec) || 0) / 60));
@@ -2347,11 +2339,10 @@ exportToExcelFull: function() {
                 lastFocusRow[0] = formatDateTimeForSheet(session?.startedAtTs, session?.startedAt || "");
                 lastFocusRow[1] = formatDateTimeForSheet(session?.endedAtTs, session?.endedAt || "");
                 lastFocusRow.splice(2, 0, String(session?.startedAtTs || ""), String(session?.endedAtTs || ""));
-                lastFocusRow.splice(10, 0, String(session?.habitId || ""));
             }
         });
         const wsFocus = XLSX.utils.aoa_to_sheet(focusData);
-        wsFocus['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 20 }, { wch: 40 }, { wch: 10 }];
+        wsFocus['!cols'] = [{ wch: 22 }, { wch: 22 }, { wch: 24 }, { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 40 }, { wch: 10 }];
         XLSX.utils.book_append_sheet(wb, wsFocus, "Foco_Profundo");
 
         // 8. Aba: Notas
@@ -2805,7 +2796,6 @@ exportToExcel: function() {
         const focusVisibleCols = ["Início", "Fim", "Minutos de foco", "Minutos de pausa", "Modo", "Micro", "Intenção", "Concluída"];
         const focusHiddenCols = ["Focus_Sec", "Break_Sec", "Micro_ID"];
         focusHiddenCols.splice(2, 0, "Started_At_TS", "Ended_At_TS");
-        focusHiddenCols.push("Habit_ID");
         const focusRows = [focusVisibleCols.concat(focusHiddenCols)];
         (state.deepWork?.sessions || []).forEach((session) => {
             focusRows.push([
@@ -2826,11 +2816,10 @@ exportToExcel: function() {
                 lastFriendlyFocusRow[0] = formatDateTimeForSheet(session?.startedAtTs, session?.startedAt || "");
                 lastFriendlyFocusRow[1] = formatDateTimeForSheet(session?.endedAtTs, session?.endedAt || "");
                 lastFriendlyFocusRow.splice(focusVisibleCols.length + 2, 0, String(session?.startedAtTs || ""), String(session?.endedAtTs || ""));
-                lastFriendlyFocusRow.push(String(session?.habitId || ""));
             }
         });
         const wsFocus = XLSX.utils.aoa_to_sheet(focusRows);
-        setCols(wsFocus, [22, 22, 16, 16, 12, 28, 40, 10], [12, 12, 24, 24, 20, 20]);
+        setCols(wsFocus, [22, 22, 16, 16, 12, 28, 40, 10], [12, 12, 24, 24, 20]);
         XLSX.utils.book_append_sheet(wb, wsFocus, "Foco Profundo");
 
         const notesVisibleCols = ["Título", "Conteúdo", "URL", "Tags", "Vínculo Tipo", "Vinculado a"];
