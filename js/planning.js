@@ -2152,6 +2152,9 @@ saveNewEntity: function() {
                     plan.selectedMicros = plan.selectedMicros.filter(mid => mid !== obj.id);
                 }
             }
+            if (!isEditing && typeof this.attachPendingNoteTransformToMicro === 'function') {
+                this.attachPendingNoteTransformToMicro(obj.id);
+            }
         }
 
         this.editingEntity = null;

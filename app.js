@@ -25,8 +25,8 @@ import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-focus-linkage-audit-v3';
 import { attachStateModule } from './js/state.js?v=20260523-sprint3-gamification-v1';
-import { attachRenderModule } from './js/render.js?v=20260521-taxonomy-v2';
-import { attachPlanningModule } from './js/planning.js?v=20260523-sprint1-contracts-v1';
+import { attachRenderModule } from './js/render.js?v=20260523-package5-focus-notes-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260523-package5-focus-notes-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -214,9 +214,12 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260523-sprint3-gamification-v1',
+    appBuildVersion: '20260523-package5-focus-notes-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
+    notesFilterMode: 'all',
+    expandedNoteId: '',
+    pendingNoteTransformId: '',
     getActiveUserId: function(user = auth.currentUser) {
         return user?.uid || LOCAL_USER_SCOPE;
     },
@@ -4579,6 +4582,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         const form = document.getElementById('crud-form');
         if (modal) modal.classList.add('hidden');
         this.clearBlockingMessage();
+        this.pendingNoteTransformId = '';
         if (form) {
             form.reset();
             // Reset de campos extras não limpos pelo reset() standard
@@ -4940,6 +4944,70 @@ ensureNotesState: function() {
         });
         const linked = document.getElementById('note-linked');
         if (linked) linked.value = '';
+    },
+
+    setNotesFilter: function(mode = 'all') {
+        const allowed = new Set(['all', 'linked', 'loose']);
+        this.notesFilterMode = allowed.has(mode) ? mode : 'all';
+        this.renderNotesPanel();
+    },
+
+    toggleProfileNoteCard: function(noteId) {
+        const safeId = String(noteId || '').trim();
+        this.expandedNoteId = this.expandedNoteId === safeId ? '' : safeId;
+        this.renderNotesPanel();
+    },
+
+    focusLooseNoteLinking: function(noteId) {
+        this.editProfileNote(noteId);
+        const linked = document.getElementById('note-linked');
+        if (linked) {
+            linked.focus();
+            linked.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        this.showToast('Escolha o vinculo oficial e salve a nota.', 'success');
+    },
+
+    startLooseNoteAction: function(noteId) {
+        this.ensureNotesState();
+        const note = (window.sistemaVidaState.profile.notes || []).find((item) => item.id === noteId);
+        if (!note) {
+            this.showToast('Nota nao encontrada.', 'error');
+            return;
+        }
+        if (note.linkedTo?.entityType === 'micros' && note.linkedTo?.entityId) {
+            this.showToast('Essa nota ja esta vinculada a uma acao.', 'error');
+            return;
+        }
+        this.pendingNoteTransformId = note.id;
+        this.openCreateModal('micros');
+        const titleInput = document.getElementById('crud-title');
+        const contextInput = document.getElementById('crud-context');
+        const obstacleInput = document.getElementById('crud-obstacle');
+        const effortInput = document.getElementById('crud-effort');
+        const addToWeekPlan = document.getElementById('add-to-week-plan');
+        if (titleInput) titleInput.value = String(note.title || '').trim() || 'Nova acao';
+        if (contextInput) {
+            contextInput.value = [note.body, note.url].filter(Boolean).join('\n\n').trim();
+        }
+        if (obstacleInput) obstacleInput.value = '';
+        if (effortInput && !effortInput.value) effortInput.value = 'medio';
+        if (addToWeekPlan) addToWeekPlan.checked = false;
+        this.showToast('Escolha a Entrega pai para transformar a nota em acao do plano.', 'success');
+    },
+
+    attachPendingNoteTransformToMicro: function(microId) {
+        const pendingId = String(this.pendingNoteTransformId || '').trim();
+        if (!pendingId || !microId) return;
+        const notes = window.sistemaVidaState.profile.notes || [];
+        const note = notes.find((item) => item.id === pendingId);
+        this.pendingNoteTransformId = '';
+        if (!note) return;
+        note.linkedTo = { entityType: 'micros', entityId: microId };
+        note.updatedAt = new Date().toISOString();
+        if (!Array.isArray(note.tags)) note.tags = [];
+        if (!note.tags.includes('acao')) note.tags.push('acao');
+        this.renderNotesPanel();
     },
 
     saveProfileNote: function() {
