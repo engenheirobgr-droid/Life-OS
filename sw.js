@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v270';
+const CACHE_NAME = 'sistema-vida-v269';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260523-sprint4-focus-v1',
+    './app.js?v=20260523-sprint3-gamification-v1',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
     './js/notifications.js?v=20260518-exec-flow-v1',
@@ -13,7 +13,7 @@ const ASSETS_TO_CACHE = [
     './js/protocols.js?v=20260519-execution-capacity-v9',
     './js/habitFocus.js?v=20260520-alignment-v1',
     './js/state.js?v=20260523-sprint3-gamification-v1',
-    './js/render.js?v=20260523-sprint4-focus-v1',
+    './js/render.js?v=20260521-taxonomy-v2',
     './js/planning.js?v=20260523-sprint1-contracts-v1',
     './js/gamification.js?v=20260516-wellbeing-prompts-v205',
     './js/social.js?v=20260516-wellbeing-prompts-v205',
@@ -22,7 +22,7 @@ const ASSETS_TO_CACHE = [
     './views/proposito.html?v=20260521-friendly-sheet-v1',
     './views/perfil.html?v=20260521-friendly-sheet-v1',
     './views/painel.html?v=20260521-friendly-sheet-v1',
-    './views/foco.html?v=20260523-sprint4-focus-v1',
+    './views/foco.html?v=20260521-friendly-sheet-v1',
     './views/onboarding.html?v=20260523-sprint2-onboarding-v1',
     './views/social.html?v=20260521-friendly-sheet-v1'
 ];
