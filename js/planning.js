@@ -1838,7 +1838,7 @@ saveNewEntity: function() {
         const oldEntity = isEditing ? getOldItem(id, type) : {};
         const parentSelectEl = document.getElementById('create-parent');
         const hasInvalidCurrentParent = !!(parentSelectEl?.dataset.invalidCurrentParentId) && !parentId;
-        if (['metas', 'okrs', 'macros', 'micros'].includes(type)) {
+        if (['metas', 'okrs', 'macros', 'micros', 'habits'].includes(type)) {
             obj.createdAt = oldEntity.createdAt || this.getLocalDateKey();
             if (!obj.dimension) {
                 app.showBlockingMessage('Selecione uma dimensão antes de salvar.');
@@ -2081,6 +2081,19 @@ saveNewEntity: function() {
             if (oldDismissed) obj.keyDismissedAt = oldDismissed;
             const linkedSel = document.getElementById('habit-linked-meta');
             obj.linkedMetaId = linkedSel && linkedSel.value ? linkedSel.value : null;
+            if (obj.linkedMetaId) {
+                const linkedMeta = (window.sistemaVidaState?.entities?.metas || []).find(item => item.id === obj.linkedMetaId);
+                if (!linkedMeta) {
+                    app.showBlockingMessage('A Meta vinculada ao habito nao foi encontrada. Atualize o vinculo antes de salvar.');
+                    return;
+                }
+                const habitDimension = String(obj.dimension || '').trim();
+                const metaDimension = String(linkedMeta.dimension || '').trim();
+                if (habitDimension && metaDimension && habitDimension !== metaDimension) {
+                    app.showBlockingMessage(`Area incompativel: a Meta vinculada pertence a area [${metaDimension}], mas este habito esta configurado como [${habitDimension}].`);
+                    return;
+                }
+            }
             obj.protocolId = selectedProtocolId;
             if (!obj.protocolId && typeof this.inferHabitProtocolIdFromSteps === 'function') {
                 obj.protocolId = this.inferHabitProtocolIdFromSteps(obj.steps || []);

@@ -1077,6 +1077,10 @@ importFromExcel: async function(event) {
             if (raw.includes('pend')) return 'pending';
             return fallback;
         };
+        const normalizeImportedDimension = (value) => {
+            const canonical = this.normalizeDimensionKey ? this.normalizeDimensionKey(value) : String(value || '').trim();
+            return String(canonical || '').trim();
+        };
         const normalizeHabitStatusLabel = (value, fallback = 'active') => {
             const raw = normalizeLookupKey(value);
             if (!raw) return fallback;
@@ -1465,6 +1469,27 @@ importFromExcel: async function(event) {
                 habArr.forEach(row => {
                     const title = getValue(row, ['Título', 'Titulo', 'Hábito']);
                     if (title) {
+                        const rawLinkedMetaId = String(getValue(row, ['Linked_Meta_ID', 'Meta_Vinculada_ID']) || '').trim();
+                        const resolvedLinkedMetaId = rawLinkedMetaId ? resolveItemId(rawLinkedMetaId, metaIndex) : '';
+                        const linkedMeta = resolvedLinkedMetaId
+                            ? (window.sistemaVidaState.entities?.metas || []).find(item => item.id === resolvedLinkedMetaId)
+                            : null;
+                        const explicitDimension = normalizeImportedDimension(getValue(row, ['DimensÃ£o', 'Dimensao', 'Ãrea']));
+                        const inferredDimension = normalizeImportedDimension(linkedMeta?.dimension || '');
+                        const habitDimension = explicitDimension || inferredDimension;
+                        const habitTitle = String(title || '').trim();
+                        if (rawLinkedMetaId && !resolvedLinkedMetaId) {
+                            importWarnings.push(`HÃ¡bitos: Meta vinculada nÃ£o encontrada para "${habitTitle}". Linha ignorada.`);
+                            return;
+                        }
+                        if (!habitDimension) {
+                            importWarnings.push(`HÃ¡bitos: dimensÃ£o ausente para "${habitTitle}" e sem Meta vinculada vÃ¡lida para inferÃªncia. Linha ignorada.`);
+                            return;
+                        }
+                        if (linkedMeta && explicitDimension && inferredDimension && explicitDimension !== inferredDimension) {
+                            importWarnings.push(`HÃ¡bitos: dimensÃ£o incompatÃ­vel para "${habitTitle}". A planilha trouxe [${explicitDimension}], mas a Meta vinculada pertence a [${inferredDimension}]. Linha ignorada.`);
+                            return;
+                        }
                         window.sistemaVidaState.habits.push({
                             id: getValue(row, ['ID', 'Id']) || ('hab_' + Date.now() + Math.random().toString(36).substr(2, 9)),
                             title: title,
@@ -1505,6 +1530,11 @@ importFromExcel: async function(event) {
                             createdAt: String(getValue(row, ['Criado_Em', 'Created_At']) || '').trim(),
                             updatedAt: String(getValue(row, ['Atualizado_Em', 'Updated_At']) || '').trim()
                         });
+                        const importedHabit = window.sistemaVidaState.habits[window.sistemaVidaState.habits.length - 1];
+                        if (importedHabit) {
+                            importedHabit.dimension = habitDimension;
+                            importedHabit.linkedMetaId = resolvedLinkedMetaId || null;
+                        }
                     }
                 });
                 habitIndex = buildNamedIndex(window.sistemaVidaState.habits);
@@ -2075,6 +2105,7 @@ exportToExcelFull: function() {
         // 3. Aba: Hábitos
         const habCol = ["ID", "Dimensão", "Título", "Descricao", "Gatilho", "Rotina", "Recompensa", "Status", "Concluido", "Track_Mode", "Target_Value", "Frequencia", "Dias_Especificos", "Intervalo_Dias", "Dia_Do_Mes", "Data_Inicio_Agenda", "Hora_Inicio", "Minutos_Estimados", "Continuo", "Protocol_ID", "Steps", "Logs_JSON", "Step_Logs_JSON", "Source_Type", "Source_ID", "Source_Strength_ID", "Source_Shadow_ID", "Is_Key", "Maturity", "Maturity_Meta_JSON", "Reminder_Enabled", "Reminder_Time", "Reminder_Interval_Enabled", "Reminder_Window_Start", "Reminder_Window_End", "Reminder_Interval_Min", "Criado_Em", "Atualizado_Em"];
         const habData = [habCol];
+        habCol.splice(20, 0, "Linked_Meta_ID");
         (state.habits || []).forEach(h => {
             habData.push([
                 h.id,
@@ -2116,6 +2147,8 @@ exportToExcelFull: function() {
                 h.createdAt || "",
                 h.updatedAt || ""
             ]);
+            const lastHabitRow = habData[habData.length - 1];
+            if (lastHabitRow) lastHabitRow.splice(20, 0, h.linkedMetaId || "");
         });
         const wsHabits = XLSX.utils.aoa_to_sheet(habData);
         wsHabits['!cols'] = [{wch:15}, {wch:15}, {wch:32}, {wch:28}, {wch:26}, {wch:32}, {wch:24}, {wch:12}, {wch:10}, {wch:12}, {wch:12}, {wch:12}, {wch:18}, {wch:12}, {wch:12}, {wch:16}, {wch:12}, {wch:16}, {wch:10}, {wch:18}, {wch:32}, {wch:22}, {wch:22}, {wch:12}, {wch:18}, {wch:18}, {wch:18}, {wch:10}, {wch:12}, {wch:24}, {wch:10}, {wch:12}, {wch:14}, {wch:16}, {wch:16}, {wch:14}, {wch:22}, {wch:22}];
@@ -2558,6 +2591,7 @@ exportToExcel: function() {
 
         const habitVisibleCols = ["Dimensão", "Título", "Descrição", "Gatilho", "Rotina", "Recompensa", "Status", "Concluído", "Meta", "Frequência", "Dias específicos", "Intervalo em dias", "Dia do mês", "Data de início", "Hora", "Minutos estimados", "Contínuo", "Passos", "Hábito-chave"];
         const habitHiddenCols = ["ID", "Track_Mode", "Target_Value", "Protocol_ID", "Logs_JSON", "Step_Logs_JSON", "Source_Type", "Source_ID", "Source_Strength_ID", "Source_Shadow_ID", "Maturity", "Maturity_Meta_JSON", "Reminder_Enabled", "Reminder_Time", "Reminder_Interval_Enabled", "Reminder_Window_Start", "Reminder_Window_End", "Reminder_Interval_Min", "Criado_Em", "Atualizado_Em"];
+        habitHiddenCols.splice(4, 0, "Linked_Meta_ID");
         const habitRows = [habitVisibleCols.concat(habitHiddenCols)];
         (state.habits || []).forEach((habit) => {
             habitRows.push([
@@ -2601,6 +2635,8 @@ exportToExcel: function() {
                 habit.createdAt || "",
                 habit.updatedAt || ""
             ]);
+            const lastFriendlyHabitRow = habitRows[habitRows.length - 1];
+            if (lastFriendlyHabitRow) lastFriendlyHabitRow.splice(habitVisibleCols.length + 4, 0, habit.linkedMetaId || "");
         });
         const wsHabits = XLSX.utils.aoa_to_sheet(habitRows);
         setCols(wsHabits, [14, 28, 28, 24, 28, 24, 12, 10, 10, 14, 18, 14, 12, 16, 12, 16, 10, 30, 12], [18, 14, 12, 18, 24, 24, 14, 18, 18, 18, 12, 24, 10, 12, 14, 16, 16, 14, 22, 22]);
