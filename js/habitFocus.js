@@ -127,12 +127,18 @@ export function attachHabitFocusModule(app) {
             const macro = (state.entities?.macros || []).find(item => item.id === macroId);
             if (!habit || !macro) return null;
             const okr = (state.entities?.okrs || []).find(item => item.id === macro.okrId);
+            const resolvedDimension = String(
+                this.getResolvedPlanDimension?.(macro, 'macros')
+                || macro.dimension
+                || ''
+            ).trim();
+            if (!resolvedDimension) return null;
             const now = new Date();
             const safeDate = dateKey || this.getLocalDateKey(now);
             const micro = {
                 id: `micro_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
                 title: String(title || '').trim(),
-                dimension: macro.dimension || habit.dimension || 'Carreira',
+                dimension: resolvedDimension,
                 context: `Acao derivada do habito ${habit.title}.`,
                 indicator: `Gerada a partir de sessao de foco do habito ${habit.title}.`,
                 effort: 'medio',
@@ -444,7 +450,7 @@ export function attachHabitFocusModule(app) {
                     markDone: false
                 });
                 if (!createdMicro) {
-                    this.showToast('Nao foi possivel criar a acao derivada desta sessao.', 'error');
+                    this.showToast('Nao foi possivel criar a acao: a entrega selecionada esta sem area valida.', 'error');
                     return;
                 }
                 habit.preferredFocusMacroId = planMacroId;

@@ -1209,7 +1209,11 @@ importFromExcel: async function(event) {
                             return false;
                         }
                     }
-                    const validation = this.validatePlanParentAssignment(type, resolvedParentId, { childDimension: item.dimension, entity: item });
+                    const validation = this.validatePlanParentAssignment(type, resolvedParentId, {
+                        childDimension: item.dimension,
+                        entity: item,
+                        requireStrictDimension: true
+                    });
                     delete item._parentTitle;
                     if (!validation.ok) {
                         pushPlanImportWarning(type, item.title, `${validation.message} Linha ignorada.`);
@@ -1774,13 +1778,16 @@ importFromExcel: async function(event) {
                     const resolvedMicroId = usesVisibleMicro
                         ? (visibleMicroLabel ? resolveItemId(visibleMicroLabel, microIndex) : '')
                         : (hiddenMicroId ? resolveItemId(hiddenMicroId, microIndex) : '');
-                    const resolvedHabitId = hiddenHabitId
-                        ? hiddenHabitId
-                        : (visibleHabitLabel
-                            ? String((window.sistemaVidaState?.habits || []).find(item => String(item?.title || '').trim().toLowerCase() === visibleHabitLabel.toLowerCase())?.id || '')
-                            : '');
+                    const resolvedHabitIdFromHidden = hiddenHabitId ? resolveItemId(hiddenHabitId, habitIndex) : '';
+                    const resolvedHabitIdFromVisible = visibleHabitLabel
+                        ? String((window.sistemaVidaState?.habits || []).find(item => String(item?.title || '').trim().toLowerCase() === visibleHabitLabel.toLowerCase())?.id || '')
+                        : '';
+                    const resolvedHabitId = resolvedHabitIdFromHidden || resolvedHabitIdFromVisible;
                     if (usesVisibleMicro && visibleMicroLabel && !resolvedMicroId) {
                         importWarnings.push(`Foco profundo: micro não encontrado "${visibleMicroLabel}"`);
+                    }
+                    if (hiddenHabitId && !resolvedHabitIdFromHidden) {
+                        importWarnings.push(`Foco profundo: hábito não encontrado para Habit_ID "${hiddenHabitId}". Sessão mantida sem vínculo de hábito.`);
                     }
                     const startedAtTs = normalizeDateTimeValue(getValue(row, ['Started_At_TS', 'Started_At_Ts']))
                         || normalizeDateTimeValue(getValue(row, ['InÃ­cio', 'Inicio', 'Started_At']));

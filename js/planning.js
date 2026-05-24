@@ -1840,13 +1840,15 @@ saveNewEntity: function() {
         const hasInvalidCurrentParent = !!(parentSelectEl?.dataset.invalidCurrentParentId) && !parentId;
         if (['metas', 'okrs', 'macros', 'micros', 'habits'].includes(type)) {
             obj.createdAt = oldEntity.createdAt || this.getLocalDateKey();
-            if (!obj.dimension) {
-                app.showBlockingMessage('Selecione uma dimensão antes de salvar.');
+            const normalizedDimension = this.normalizeDimensionKey(obj.dimension);
+            if (!normalizedDimension) {
+                app.showBlockingMessage('Selecione uma área válida antes de salvar.');
                 return;
             }
+            obj.dimension = normalizedDimension;
         }
         const planParentValidation = ['okrs', 'macros', 'micros'].includes(type)
-            ? this.validatePlanParentAssignment(type, parentId, { childDimension: obj.dimension, entity: oldEntity })
+            ? this.validatePlanParentAssignment(type, parentId, { childDimension: obj.dimension, entity: oldEntity, requireStrictDimension: true })
             : null;
 
         if (type === 'metas' || type === 'okrs') {
@@ -2087,8 +2089,8 @@ saveNewEntity: function() {
                     app.showBlockingMessage('A Meta vinculada ao habito nao foi encontrada. Atualize o vinculo antes de salvar.');
                     return;
                 }
-                const habitDimension = String(obj.dimension || '').trim();
-                const metaDimension = String(linkedMeta.dimension || '').trim();
+                const habitDimension = this.normalizeDimensionKey(obj.dimension);
+                const metaDimension = this.normalizeDimensionKey(linkedMeta.dimension);
                 if (habitDimension && metaDimension && habitDimension !== metaDimension) {
                     app.showBlockingMessage(`Area incompativel: a Meta vinculada pertence a area [${metaDimension}], mas este habito esta configurado como [${habitDimension}].`);
                     return;

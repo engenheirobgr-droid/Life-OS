@@ -1600,8 +1600,50 @@ getDimensionIdentity: function(dimension, level) {
                 };
             }
         }
+        const strictDimension = options.requireStrictDimension === true;
         const childDimension = String(options.childDimension || options.entity?.dimension || '').trim();
         const parentDimension = this.getResolvedPlanDimension(parent, config.parentType);
+        if (strictDimension) {
+            const normalizedChildDimension = this.normalizeDimensionKey(childDimension);
+            const normalizedParentDimension = this.normalizeDimensionKey(parentDimension);
+            if (!normalizedChildDimension) {
+                return {
+                    ok: false,
+                    reason: 'missing_child_dimension',
+                    parent,
+                    parentType: config.parentType,
+                    parentDimension,
+                    message: `${config.childLabel} precisa ter area valida antes de salvar o vinculo.`
+                };
+            }
+            if (!normalizedParentDimension) {
+                return {
+                    ok: false,
+                    reason: 'missing_parent_dimension',
+                    parent,
+                    parentType: config.parentType,
+                    parentDimension,
+                    message: `${config.parentLabel} pai esta sem area valida. Corrija o ${config.parentLabel.toLowerCase()} antes de vincular ${config.childLabel.toLowerCase()}.`
+                };
+            }
+            if (normalizedChildDimension !== normalizedParentDimension) {
+                return {
+                    ok: false,
+                    reason: 'dimension_mismatch',
+                    parent,
+                    parentType: config.parentType,
+                    parentDimension,
+                    message: `Area incompativel: ${config.parentLabel} pai pertence a area [${parentDimension}], mas ${config.childLabel.toLowerCase()} esta configurad${config.childLabel === 'Entrega' ? 'a' : 'o'} como [${childDimension}].`
+                };
+            }
+            return {
+                ok: true,
+                parent,
+                parentType: config.parentType,
+                parentDimension,
+                resolvedChildDimension: normalizedChildDimension
+            };
+        }
         if (!this.arePlanDimensionsCompatible(childDimension, parentDimension)) {
             return {
                 ok: false,
@@ -7030,7 +7072,8 @@ ensureNotesState: function() {
 
         const parentValidation = this.validatePlanParentAssignment(type, newParentId, {
             entity,
-            childDimension: this.getResolvedPlanDimension(entity, type) || entity.dimension || ''
+            childDimension: this.getResolvedPlanDimension(entity, type) || entity.dimension || '',
+            requireStrictDimension: true
         });
         if (!parentValidation.ok) {
             this.showBlockingMessage(parentValidation.message || 'Não foi possível atualizar a hierarquia.');
@@ -7666,7 +7709,7 @@ ensureNotesState: function() {
         const chosenHabit = habitEl?.value || dw.habitId || '';
         const intention = (intentionEl?.value || '').trim();
         if (!chosenMicro && !chosenHabit) {
-            this.showToast('Selecione uma ação de Planos para iniciar o foco.', 'error');
+            this.showToast('Selecione uma ação de Planos ou um hábito para iniciar o foco.', 'error');
             return;
         }
 

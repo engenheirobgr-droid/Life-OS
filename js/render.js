@@ -1714,22 +1714,6 @@ renderDeepWorkPanel: function() {
         );
         if (statusEl) {
             if (!dw.isRunning && !hasSelectedMicro && !hasSelectedHabit) statusEl.textContent = 'Selecione uma acao ou um habito';
-            if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Selecione uma ação';
-            else if (hasPendingClosure) statusEl.textContent = 'Fechamento da sessao pendente';
-            else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
-            else if (dw.isPaused) statusEl.textContent = 'Sessao pausada';
-            else statusEl.textContent = dw.mode === 'focus' ? 'Bloco em andamento' : (canCompleteSelectedMicro ? 'Sessao concluida: confirme a ação' : 'Pausa de recuperacao');
-        }
-        if (stepEl) {
-            if (!dw.isRunning && !hasSelectedMicro && !hasSelectedHabit) stepEl.textContent = 'Passo 1: escolha uma acao ou um habito';
-            if (!dw.isRunning && !hasSelectedMicro) stepEl.textContent = 'Passo 1: escolha a ação';
-            else if (hasPendingClosure) stepEl.textContent = 'Registre a entrega e as notas da sessao';
-            else if (!dw.isRunning) stepEl.textContent = 'Passo 2: inicie o bloco';
-            else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
-            else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3: foco em execucao' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a ação' : 'Pausa estruturada');
-        }
-        if (statusEl) {
-            if (!dw.isRunning && !hasSelectedMicro && !hasSelectedHabit) statusEl.textContent = 'Selecione uma acao ou um habito';
             else if (hasPendingClosure) statusEl.textContent = 'Fechamento da sessao pendente';
             else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
             else if (dw.isPaused) statusEl.textContent = 'Sessao pausada';
