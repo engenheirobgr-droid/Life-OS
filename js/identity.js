@@ -715,7 +715,7 @@ manualGuideChapters: [
                 'Crie notas curtas com titulo, corpo, tags e URL quando houver uma referencia importante.',
                 'Vincule a nota ao item que ela ajuda: uma Ação, uma Meta, um Habito ou uma Sombra.',
                 'Use busca + filtros (Todas, Vinculadas, Avulsas) e o X da busca para limpar em um toque.',
-                'A lista de notas e compacta (titulo, chips e meta curta); abra a nota para ver corpo completo, URL e acoes.',
+                'A lista de notas e compacta e agrupada por mes; na linha ficam titulo, data e status de vinculo, e o corpo completo aparece apenas ao expandir.',
                 'Prefira notas que apoiem uma decisao futura, nao colecoes infinitas de informacao.'
             ],
             cta: { label: 'Abrir Perfil', view: 'perfil' }
@@ -725,7 +725,7 @@ manualGuideChapters: [
             icon: 'today',
             title: 'Hoje: Bússola, Diário, Gratidão & Shutdown',
             subtitle: 'A camada de execução e reflexão diária',
-            what: 'O <strong>Hoje</strong> reúne: a <strong>Bússola do Dia</strong> (frase + ação sugerida), a lista de <strong>Ações</strong> da semana, os <strong>hábitos</strong> ativos, o <strong>Diário</strong> (escrita livre + 3 gratidões) e o <strong>Shutdown Ritual</strong> (encerramento consciente do dia).',
+            what: 'O <strong>Hoje</strong> reúne: a <strong>Bússola do Dia</strong> (frase + ação sugerida), a execução de <strong>Ações</strong> e <strong>hábitos</strong> do dia, o <strong>Diário</strong> (escrita livre + 3 gratidões) e o <strong>Shutdown Ritual</strong> (encerramento consciente do dia).',
             why: 'A Bússola usa "implementation intentions" (Gollwitzer): declarar antecipadamente o que vai fazer aumenta execução em ~2-3x. Gratidão (3 Good Things, Seligman) por 1-2 semanas eleva afeto positivo por meses. O Shutdown Ritual fecha o "loop Zeigarnik" — tarefas inacabadas criam ruminação; declarar fechamento libera capacidade cognitiva para descansar.',
             refs: ['Gollwitzer — Implementation Intentions', 'Seligman — Three Good Things', 'Cal Newport — Deep Work (shutdown)', 'Zeigarnik Effect'],
             how: [
@@ -757,14 +757,14 @@ manualGuideChapters: [
             icon: 'timer',
             title: 'Foco: Blocos adaptativos e Deep Work',
             subtitle: 'Sessões curtas ou profundas conforme energia e esforço',
-            what: 'O timer de <strong>Foco</strong> agora trabalha com blocos de <strong>15/3, 25/5, 45/10, 50/10 e 90/20</strong>, sempre conectado a uma Ação específica. O app sugere o bloco com base no tempo estimado da ação, no esforço e no check-in do dia. Ao finalizar, registra Deep Work, abre o <strong>fechamento da sessão</strong> (entrega, evidências, lacunas e próximo passo) e conduz a pausa estruturada quando aplicável.',
+            what: 'O timer de <strong>Foco</strong> agora trabalha com blocos de <strong>15/3, 25/5, 45/10, 50/10 e 90/20</strong>, conectado a uma <strong>Ação</strong> ou a um <strong>Hábito</strong>. O app sugere o bloco com base no tempo estimado, no esforço e no check-in do dia. Ao finalizar, registra Deep Work, abre o <strong>fechamento da sessão</strong> (checklist, entrega, evidências, lacunas e próximo passo) e conduz a pausa estruturada quando aplicável.',
             why: 'Blocos curtos reduzem atrito para iniciar quando a energia está baixa; blocos médios ajudam execução sustentada; e o 90/20 continua reservado para trabalho profundo real. Essa gradação combina pomodoro clássico com ritmos ultradianos, em vez de tratar toda ação como se precisasse da mesma janela.',
             refs: ['Nathan Kleitman — BRAC (Basic Rest-Activity Cycle)', 'Cal Newport — Deep Work', 'Csikszentmihalyi — Flow'],
             how: [
                 'Escolha o contexto em um unico seletor (Acoes e Habitos) antes de iniciar.',
                 'Durante a sessao, Play/Pause e o controle principal; Reset e Finalizar ficam como acoes secundarias.',
                 'Hábitos podem abrir foco mesmo sem Meta explícita quando já existe Entrega compatível pela mesma área; o app usa esse fallback para não travar a execução.',
-                'Antes de iniciar, escolha UMA Ação — multitarefa destrói deep work.',
+                'Antes de iniciar, escolha um unico contexto no seletor (acao ou habito) para evitar fragmentacao.',
                 'Use os blocos sugeridos como padrão; troque manualmente só quando souber que aquele caso pede outra janela.',
                 'O bloco sugerido não tenta engolir a ação inteira: ele cobre só a melhor sessão para agora, respeitando carga total restante e capacidade do turno.',
                 'Ações não alinhadas deixam de iniciar foco estruturado até que o vínculo com Entrega, Projeto e Meta seja corrigido.',
@@ -973,14 +973,14 @@ manualGuideChapters: [
             why: 'Planejamento sem noção de capacidade cria sobrecarga silenciosa. Combinar base configurável com ajuste do check-in torna o número do dia mais honesto. Estimar tempo por padrão reduz barreira de entrada e permite ajuste rápido antes de travar o dia.',
             refs: ['Timeboxing', 'Planning fallacy (Kahneman & Tversky)', 'Behavioral design — friction as signal'],
             how: [
-                'Os cards Dia/Manha/Tarde/Noite usam a mesma base da lista visivel para manter contagem coerente.',
+                'Mapa do Dia, progresso, pendentes e lista auxiliar usam a mesma carga total do dia: acoes, habitos e rotinas.',
                 'Na aba Hoje > Para hoje, leia primeiro o status de capacidade (executável, no limite ou sobrecarregado).',
                 'Se a base do seu dia estiver errada, use o botão "Ajustar base" no próprio mapa (ou Perfil > Preferências > Base da Capacidade do Dia) antes de mexer no planejamento.',
                 'Se houver check-in no dia, confira no cabeçalho do mapa quando a capacidade foi reduzida ou ampliada.',
                 'Se o dia ficar no limite, adie micros de menor impacto ou simplifique rotinas.',
                 'Defina estimativa manual quando souber melhor seu tempo real para aquela ação.',
                 'Pense em minutos totais para planejar e em sessões de foco para executar: o app separa essas duas camadas para não transformar toda ação em um único pomodoro.',
-                'Use o modo Horário para ver manhã, tarde e noite com capacidade separada, sem duplicar a lista principal.',
+                'Use o modo Horário para ver manhã, tarde e noite com capacidade separada; o checklist principal continua focado nas ações.',
                 'Use horário de execução para organizar o dia; use horário de lembrete apenas quando quiser um aviso separado da agenda.',
                 'Hábito com protocolo ou passos aparece como rotina automaticamente na experiência de hoje.',
                 'A aba Hábitos continua sendo biblioteca completa; Para hoje mostra apenas o recorte do dia.'

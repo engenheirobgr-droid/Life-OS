@@ -1437,7 +1437,9 @@ getTodayCapacityState: function(dateKey = this.getLocalDateKey()) {
         const checkinAdjustment = this.getCapacityAdjustmentFromCheckin ? this.getCapacityAdjustmentFromCheckin(dateKey) : { factor: 1, extraBufferMinutes: 0, reasons: [], label: '' };
         const baseCapacityMinutes = Math.max(60, defaults.awakeMinutes - defaults.fixedCommitmentsMinutes - defaults.dailyBasicsMinutes - defaults.bufferMinutes);
         const capacityMinutes = Math.max(45, Math.round((baseCapacityMinutes * checkinAdjustment.factor) - checkinAdjustment.extraBufferMinutes));
-        const items = this.getTodayChecklistItems ? this.getTodayChecklistItems(dateKey) : [];
+        const items = this.getTodayActionItems
+            ? this.getTodayActionItems(dateKey)
+            : (this.getTodayChecklistItems ? this.getTodayChecklistItems(dateKey) : []);
         const pendingItems = items.filter((item) => !item.done);
         const activeDayPart = (this.getTodayChecklistMode?.() === 'horario')
             ? this.getTodayChecklistDayPart?.() || 'all'

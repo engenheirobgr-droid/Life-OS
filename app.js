@@ -20,13 +20,13 @@ import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
 import { attachCadence } from './js/cadence.js?v=20260523-purpose-legacy-cleanup-v1';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260524-package5-ui-v2';
+import { attachIdentity } from './js/identity.js?v=20260524-alignment-v1';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260524-notes-focus-v1';
-import { attachStateModule } from './js/state.js?v=20260523-sprint3-gamification-v1';
-import { attachRenderModule } from './js/render.js?v=20260524-notes-focus-v1';
-import { attachPlanningModule } from './js/planning.js?v=20260523-package5-ui-v1';
+import { attachStateModule } from './js/state.js?v=20260524-alignment-v1';
+import { attachRenderModule } from './js/render.js?v=20260524-alignment-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260524-alignment-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260524-package-close-v3',
+    appBuildVersion: '20260524-alignment-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -1340,7 +1340,7 @@ getDimensionIdentity: function(dimension, level) {
             streak++;
             const d = new Date(cursor + 'T12:00:00');
             d.setDate(d.getDate() - 1);
-            cursor = d.toISOString().slice(0, 10);
+            cursor = this.getLocalDateKey ? this.getLocalDateKey(d) : d.toISOString().slice(0, 10);
         }
         return streak;
     },
@@ -2004,7 +2004,7 @@ _getAudioContext: function() {
         if (settings.splashEnabled === false) return false;
         if (settings.splashMode === 'always') return true;
 
-        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
+        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
         let log = {};
         try { log = JSON.parse(this.localGet('lifeos_splash_log') || '{}') || {}; } catch (_) { log = {}; }
         const todayCount = Number(log.date === todayKey ? log.count : 0) || 0;
@@ -2012,7 +2012,7 @@ _getAudioContext: function() {
         return todayCount < maxCount;
     },
     registerSplashShown: function() {
-        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
+        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
         try {
             const raw = JSON.parse(this.localGet('lifeos_splash_log') || '{}') || {};
             const count = raw.date === todayKey ? Number(raw.count || 0) + 1 : 1;
@@ -2105,7 +2105,7 @@ _getAudioContext: function() {
         if (settings.odysseySplashMode === 'always') return true;
         const slides = this.getOdysseySplashSlides();
         if (slides.length === 0) return false;
-        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
+        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
         let log = {};
         try { log = JSON.parse(this.localGet('lifeos_odyssey_splash_log') || '{}') || {}; } catch (_) { log = {}; }
         const todayCount = Number(log.date === todayKey ? log.count : 0) || 0;
@@ -2113,7 +2113,7 @@ _getAudioContext: function() {
         return todayCount < maxCount;
     },
     registerOdysseySplashShown: function() {
-        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date().toISOString().slice(0, 10);
+        const todayKey = this.getLocalDateKey ? this.getLocalDateKey() : new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
         try {
             const raw = JSON.parse(this.localGet('lifeos_odyssey_splash_log') || '{}') || {};
             const count = raw.date === todayKey ? Number(raw.count || 0) + 1 : 1;
@@ -3558,6 +3558,15 @@ renderProfileChrome: function() {
         return start <= endOfWeek && end >= startOfWeek;
     },
 
+    getCurrentMonthBounds: function(referenceDate = new Date()) {
+        const now = new Date(referenceDate);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        endOfMonth.setHours(23, 59, 59, 999);
+        return { startOfMonth, endOfMonth };
+    },
+
     hasDayActivity: function(dateKey) {
         const state = window.sistemaVidaState || {};
         if (!dateKey) return false;
@@ -3579,6 +3588,15 @@ renderProfileChrome: function() {
         const date = new Date(dateStr + "T00:00:00");
         const now = new Date();
         return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    },
+
+    isDateWindowInCurrentMonth: function(startDateStr, endDateStr) {
+        const end = endDateStr ? new Date(`${endDateStr}T00:00:00`) : null;
+        if (!end || Number.isNaN(end.getTime())) return false;
+        const start = startDateStr ? new Date(`${startDateStr}T00:00:00`) : end;
+        if (Number.isNaN(start.getTime())) return false;
+        const { startOfMonth, endOfMonth } = this.getCurrentMonthBounds();
+        return start <= endOfMonth && end >= startOfMonth;
     },
 
     saveValues: function(essentialValues, importantValues) {
@@ -5236,7 +5254,11 @@ ensureNotesState: function() {
 
         let notes = this.getLinkedNotes(type, id);
         if (!notes.length) {
-            notes = (window.sistemaVidaState.profile.notes || []).filter(n => n.linkedTo?.entityId === id);
+            const normalizedType = this.normalizeEntityType(type);
+            notes = (window.sistemaVidaState.profile.notes || []).filter((note) => {
+                const context = this.getNoteLinkContext(note);
+                return context.entityType === normalizedType && context.entityId === String(id || '').trim();
+            });
         }
 
         const modal = document.getElementById('entity-notes-modal');
@@ -7492,7 +7514,7 @@ ensureNotesState: function() {
 
     exportStateJson: function() {
         const state = this.getPersistableState('full');
-        const ts = new Date().toISOString().slice(0, 10);
+        const ts = this.getLocalDateKey ? this.getLocalDateKey() : new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
         const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

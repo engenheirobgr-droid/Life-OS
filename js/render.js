@@ -236,7 +236,7 @@ renderTimelineHistory: function() {
             if (d.notes.length) {
                 notesHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Anotações</p><ul class="space-y-1.5">${
                     d.notes.map(n => {
-                        const linkLabel = this.getNoteLinkLabel(n.linkedTo);
+                        const linkLabel = this.getNoteLinkContext(n).label;
                         return `<li class="text-xs flex flex-wrap items-baseline gap-1.5"><span class="font-medium text-on-surface">${this.escapeHtml(n.title)}</span>${linkLabel ? `<span class="inline-flex rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-secondary">${this.escapeHtml(linkLabel)}</span>` : ''}${n.body ? `<span class="text-on-surface-variant"> — ${this.escapeHtml(n.body.slice(0, 100))}${n.body.length > 100 ? '…' : ''}</span>` : ''}</li>`;
                     }).join('')
                 }</ul></div>`;
@@ -1660,7 +1660,6 @@ renderDeepWorkPanel: function() {
         const intentionEl = document.getElementById('deep-work-intention');
         const startBtn = document.getElementById('deep-work-start-btn');
         const startIconEl = document.getElementById('deep-work-start-icon');
-        const startLabelEl = document.getElementById('deep-work-start-label');
         const resetBtn = document.getElementById('deep-work-reset-btn');
         const finishBtn = document.getElementById('deep-work-finish-btn');
         const finishIconEl = document.getElementById('deep-work-finish-icon');
@@ -1818,8 +1817,8 @@ renderDeepWorkPanel: function() {
             chip.classList.toggle('bg-surface-container-high', !isActive);
         });
 
-        const baseBtn = 'inline-flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50';
-        const primaryBtn = `${baseBtn} bg-primary text-on-primary shadow-sm`;
+        const baseBtn = 'inline-flex items-center justify-center w-9 h-9 rounded-lg transition-all disabled:opacity-50';
+        const primaryBtn = `${baseBtn} bg-primary text-on-primary border border-primary/30 shadow-sm`;
         const activeBtn = `${baseBtn} bg-primary/10 border border-primary/30 text-primary ring-2 ring-primary/20`;
         const iconBtn = 'inline-flex items-center justify-center w-9 h-9 rounded-lg border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors disabled:opacity-50';
         const finishIconBtn = 'inline-flex items-center justify-center w-9 h-9 rounded-lg border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 transition-colors disabled:opacity-50';
@@ -1828,8 +1827,9 @@ renderDeepWorkPanel: function() {
             startBtn.className = shouldTogglePause ? activeBtn : primaryBtn;
             startBtn.disabled = !shouldTogglePause && !hasSelectedMicro && !hasSelectedHabit;
             startBtn.onclick = () => shouldTogglePause ? window.app.toggleDeepWorkPause() : window.app.startDeepWorkSession();
-            if (startLabelEl) startLabelEl.textContent = shouldTogglePause ? (dw.isPaused ? 'Retomar' : 'Pausar') : 'Iniciar foco';
             if (startIconEl) startIconEl.textContent = shouldTogglePause ? (dw.isPaused ? 'play_arrow' : 'pause') : 'play_arrow';
+            startBtn.title = shouldTogglePause ? (dw.isPaused ? 'Retomar foco' : 'Pausar foco') : 'Iniciar foco';
+            startBtn.setAttribute('aria-label', shouldTogglePause ? (dw.isPaused ? 'Retomar foco' : 'Pausar foco') : 'Iniciar foco');
         }
         if (resetBtn) {
             resetBtn.className = iconBtn;
@@ -1901,7 +1901,7 @@ renderDeepWorkPanel: function() {
                     ? 'O fechamento do hábito decide conclusão e eventual entrega para o plano.'
                     : selectedMicro
                         ? 'A sessão registra trabalho. A conclusão da ação continua sendo uma decisão separada.'
-                        : 'No desktop, contexto, cronometro e historico ficam visiveis ao mesmo tempo.';
+                        : '';
             contextCardEl.innerHTML = `
                 <div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 space-y-3">
                     <div>
@@ -1919,7 +1919,7 @@ renderDeepWorkPanel: function() {
                             <p class="mt-1 text-sm font-semibold text-on-surface">${this.escapeHtml(contextStatus)}</p>
                         </div>
                     </div>
-                    <p class="text-[11px] text-outline leading-relaxed">${this.escapeHtml(helperText)}</p>
+                    ${helperText ? `<p class="text-[11px] text-outline leading-relaxed">${this.escapeHtml(helperText)}</p>` : ''}
                 </div>`;
         }
 
@@ -2201,13 +2201,17 @@ renderTodayActionList: function() {
             sem_horario: 'Sem horário'
         };
         const pendingItems = items.filter((item) => !item.done);
-        const scheduledHabits = pendingItems.filter((item) => item.sourceType === 'habit' || item.sourceType === 'routine');
-        const scheduledMicros = pendingItems.filter((item) => item.sourceType === 'micro' && item.dayPart !== 'sem_horario');
         const groups = { manha: [], tarde: [], noite: [], sem_horario: [] };
         pendingItems.forEach((item) => {
             const key = groups[item.dayPart] ? item.dayPart : 'sem_horario';
             groups[key].push(item);
         });
+        const visibleItems = mode === 'horario' && activeDayPart !== 'all'
+            ? (groups[activeDayPart] || [])
+            : pendingItems;
+        const visibleScheduledMicros = visibleItems.filter((item) => item.sourceType === 'micro' && item.dayPart !== 'sem_horario');
+        const visibleUnscheduledMicros = visibleItems.filter((item) => item.sourceType === 'micro' && item.dayPart === 'sem_horario');
+        const visibleHabits = visibleItems.filter((item) => item.sourceType === 'habit' || item.sourceType === 'routine');
 
         const partButtons = ['all', 'manha', 'tarde', 'noite', 'sem_horario'].map((key) => {
             const bucket = key === 'all' ? pendingItems : groups[key];
@@ -2230,9 +2234,6 @@ renderTodayActionList: function() {
                 </div>`
             : '';
 
-        const visibleScheduledMicros = mode === 'horario' && activeDayPart !== 'all'
-            ? scheduledMicros.filter((item) => item.dayPart === activeDayPart)
-            : scheduledMicros;
         const scheduledMicrosHtml = mode === 'horario' && visibleScheduledMicros.length
             ? `
                 <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
@@ -2261,8 +2262,7 @@ renderTodayActionList: function() {
                 </div>`
             : '';
 
-        const unscheduledMicros = groups.sem_horario.filter((item) => item.sourceType === 'micro');
-        const unscheduledHtml = mode === 'horario' && unscheduledMicros.length
+        const unscheduledHtml = mode === 'horario' && visibleUnscheduledMicros.length
             ? `
                 <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
                     <div>
@@ -2270,7 +2270,7 @@ renderTodayActionList: function() {
                         <p class="mt-1 text-xs text-on-surface-variant">Ajuste rapido para tirar itens do bucket sem perder o card principal.</p>
                     </div>
                     <div class="space-y-2">
-                        ${unscheduledMicros.map((item) => `
+                        ${visibleUnscheduledMicros.map((item) => `
                             <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low px-3 py-2.5">
                                 <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                     <div class="min-w-0">
@@ -2288,18 +2288,18 @@ renderTodayActionList: function() {
                 </div>`
             : '';
 
-        const habitsHtml = scheduledHabits.length
+        const habitsHtml = visibleHabits.length
             ? `
                 <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Habitos de hoje</p>
-                            <p class="mt-1 text-xs text-on-surface-variant">${scheduledHabits.length} previstos para execucao no dia.</p>
+                            <p class="mt-1 text-xs text-on-surface-variant">${visibleHabits.length} previstos neste recorte do dia.</p>
                         </div>
                         <button type="button" onclick="window.app.switchHojeScreen('habitos')" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-low transition-colors">Ver todos</button>
                     </div>
                     <div class="space-y-2">
-                        ${scheduledHabits.map((item) => {
+                        ${visibleHabits.map((item) => {
                             const habitObj = (window.sistemaVidaState?.habits || []).find((habit) => habit.id === item.sourceId);
                             const focusBtn = (habitObj && this.canStartFocusFromHabit?.(habitObj))
                                 ? `<div class="inline-flex items-center gap-1">
@@ -2328,7 +2328,7 @@ renderTodayActionList: function() {
                     </div>
                 </div>`
             : (!pendingItems.length
-                ? '<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 text-xs text-outline italic">Sem acoes previstas para hoje.</div>'
+                ? '<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 text-xs text-outline italic">Sem carga prevista para hoje.</div>'
                 : '');
 
         container.innerHTML = `${organizerHtml}${scheduledMicrosHtml}${unscheduledHtml}${habitsHtml}`;
@@ -2369,8 +2369,8 @@ render: {
                     macros = macros.filter((m) => app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
                 }
             } else if (filter === 'mes') {
-                micros = micros.filter(m => app.isDateInCurrentMonth(m.prazo));
-                macros = macros.filter(m => app.isDateInCurrentMonth(m.prazo));
+                micros = micros.filter((m) => app.isDateWindowInCurrentMonth(m.inicioDate, m.prazo));
+                macros = macros.filter((m) => app.isDateWindowInCurrentMonth(m.inicioDate, m.prazo));
             }
             
             // Execução: % de Micro Ações Concluídas
@@ -3341,7 +3341,6 @@ render: {
             };
 
             let html = '';
-            let pendentes = 0;
             const todayStr = app.getLocalDateKey();
             
             const isInTodayWindow = (m) => {
@@ -3355,8 +3354,8 @@ render: {
                 const end = new Date(prazoStr + 'T00:00:00');
                 return start <= today && end >= today;
             };
-            const allTodayEntries = app.getTodayChecklistItems
-                ? app.getTodayChecklistItems(todayStr)
+            const allTodayEntries = app.getTodayActionItems
+                ? app.getTodayActionItems(todayStr)
                 : (state.entities.micros || [])
                     .filter(isInTodayWindow)
                     .map((micro) => {
@@ -3388,7 +3387,9 @@ render: {
             // Filtro "Para Hoje": pendentes/in_progress dentro da janela, mantendo a recém-concluída por um pulso visual.
             const todayMode = app.getTodayChecklistMode ? app.getTodayChecklistMode() : 'dimensao';
             const todayDayPart = app.getTodayChecklistDayPart ? app.getTodayChecklistDayPart() : 'all';
-            const todayMicros = allTodayEntries
+            const todayMicros = (app.getTodayChecklistItems
+                ? app.getTodayChecklistItems(todayStr)
+                : [])
                 .filter((entry) => {
                     const micro = entry.micro;
                     const completedToday = (micro.status === 'done' || micro.completed) && (micro.completedDate === todayStr || micro.doneDate === todayStr);
@@ -3483,7 +3484,6 @@ render: {
                         </div>
                     </div>`;
                 } else {
-                    pendentes++;
                     const macro = state.entities.macros.find(m => m.id === micro.macroId) || {};
                     const okr = state.entities.okrs.find(o => o.id === macro.okrId) || {};
                     const meta = state.entities.metas.find(m => m.id === okr.metaId) || {};
@@ -3670,7 +3670,8 @@ render: {
 
             const pendingBadge = document.getElementById('macros-pendentes-badge');
             if (pendingBadge) {
-                pendingBadge.textContent = `${pendentes} Pendentes`;
+                const totalPending = allTodayEntries.filter((entry) => !entry.done).length;
+                pendingBadge.textContent = `${totalPending} Pendentes`;
             }
 
             // Distribuição de Foco na aba Hoje

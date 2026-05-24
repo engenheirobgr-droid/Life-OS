@@ -2027,6 +2027,9 @@ importFromExcel: async function(event) {
                             linkedTo: entityType && entityId
                                 ? { entityType: this.normalizeEntityType ? this.normalizeEntityType(entityType) : entityType, entityId }
                                 : null,
+                            sourceType: String(getValue(row, ['Source_Type', 'Tipo_Origem']) || '').trim(),
+                            sourceHabitId: String(getValue(row, ['Habito_Origem_ID', 'Hábito_Origem_ID']) || '').trim(),
+                            sourceMicroId: String(getValue(row, ['Acao_Origem_ID', 'Ação_Origem_ID', 'Micro_Origem_ID']) || '').trim(),
                             createdAt: String(getValue(row, ['Criada_Em', 'Criada Em', 'Created_At']) || new Date().toISOString()),
                             updatedAt: String(getValue(row, ['Atualizada_Em', 'Atualizada Em', 'Updated_At']) || getValue(row, ['Criada_Em', 'Criada Em', 'Created_At']) || new Date().toISOString())
                         };
@@ -2407,7 +2410,7 @@ exportToExcelFull: function() {
         XLSX.utils.book_append_sheet(wb, wsFocus, "Foco_Profundo");
 
         // 8. Aba: Notas
-        const notesCol = ["ID", "Titulo", "Conteudo", "URL", "Tags", "Criada_Em", "Atualizada_Em", "Vinculo_Tipo", "Vinculo_ID", "Vinculos"];
+        const notesCol = ["ID", "Titulo", "Conteudo", "URL", "Tags", "Criada_Em", "Atualizada_Em", "Vinculo_Tipo", "Vinculo_ID", "Vinculos", "Source_Type", "Habito_Origem_ID", "Acao_Origem_ID"];
         const notesData = [notesCol];
         (state.profile?.notes || []).forEach((note) => {
             const linkedType = String(note?.linkedTo?.entityType || "");
@@ -2423,11 +2426,14 @@ exportToExcelFull: function() {
                 String(note?.updatedAt || ""),
                 linkedType,
                 linkedId,
-                flatLink
+                flatLink,
+                String(note?.sourceType || ""),
+                String(note?.sourceHabitId || ""),
+                String(note?.sourceMicroId || "")
             ]);
         });
         const wsNotes = XLSX.utils.aoa_to_sheet(notesData);
-        wsNotes['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 70 }, { wch: 28 }, { wch: 24 }, { wch: 24 }, { wch: 24 }, { wch: 18 }, { wch: 22 }, { wch: 32 }];
+        wsNotes['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 70 }, { wch: 28 }, { wch: 24 }, { wch: 24 }, { wch: 24 }, { wch: 18 }, { wch: 22 }, { wch: 32 }, { wch: 18 }, { wch: 22 }, { wch: 22 }];
         XLSX.utils.book_append_sheet(wb, wsNotes, "Notas");
 
         // 9. Aba: Cadencia
@@ -2885,7 +2891,7 @@ exportToExcel: function() {
         XLSX.utils.book_append_sheet(wb, wsFocus, "Foco Profundo");
 
         const notesVisibleCols = ["Título", "Conteúdo", "URL", "Tags", "Vínculo Tipo", "Vinculado a"];
-        const notesHiddenCols = ["ID", "Vinculo_Tipo", "Vinculo_ID", "Vinculos", "Criada_Em", "Atualizada_Em"];
+        const notesHiddenCols = ["ID", "Vinculo_Tipo", "Vinculo_ID", "Vinculos", "Criada_Em", "Atualizada_Em", "Source_Type", "Habito_Origem_ID", "Acao_Origem_ID"];
         const notesRows = [notesVisibleCols.concat(notesHiddenCols)];
         (state.profile?.notes || []).forEach((note) => {
             const linkedType = String(note?.linkedTo?.entityType || "");
@@ -2903,11 +2909,14 @@ exportToExcel: function() {
                 linkedId,
                 flatLink,
                 String(note?.createdAt || ""),
-                String(note?.updatedAt || "")
+                String(note?.updatedAt || ""),
+                String(note?.sourceType || ""),
+                String(note?.sourceHabitId || ""),
+                String(note?.sourceMicroId || "")
             ]);
         });
         const wsNotes = XLSX.utils.aoa_to_sheet(notesRows);
-        setCols(wsNotes, [30, 70, 28, 24, 18, 28], [20, 18, 22, 32, 24, 24]);
+        setCols(wsNotes, [30, 70, 28, 24, 18, 28], [20, 18, 22, 32, 24, 24, 18, 22, 22]);
         XLSX.utils.book_append_sheet(wb, wsNotes, "Notas");
 
         const gamificationVisibleCols = ["Categoria", "Chave", "Valor"];

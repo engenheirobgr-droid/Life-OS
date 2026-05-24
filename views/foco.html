@@ -28,7 +28,7 @@
                     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                         <div class="min-w-0">
                             <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Relogio da sessao</p>
-                            <p class="text-[12px] text-on-surface-variant mt-1">No desktop, o cronometro e o estado do bloco ficam em destaque para preencher melhor a tela.</p>
+
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             <button type="button" id="deep-work-clock-preview-btn" onclick="window.app.previewDeepWorkClock()" class="h-8 rounded-md border border-outline-variant/15 bg-surface-container-lowest px-2 text-[10px] font-bold uppercase tracking-wider text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Prever animacao visual">Preview</button>
@@ -50,29 +50,20 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 items-start">
-                    <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-primary"></span>
-                            <div class="min-w-0">
-                                <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Estado</p>
-                                <p id="deep-work-status" class="text-sm font-bold text-primary mt-1">Pronto para iniciar</p>
-                                <p id="deep-work-step" class="text-xs text-on-surface-variant mt-1">Selecione uma acao ou um habito para comecar</p>
-                            </div>
-                        </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="sr-only" aria-live="polite">
+                        <p id="deep-work-status">Pronto para iniciar</p>
+                        <p id="deep-work-step">Selecione uma acao ou um habito para comecar</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 shrink-0">
-                        <button id="deep-work-start-btn" type="button" onclick="window.app.startDeepWorkSession()" class="inline-flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-widest">
-                            <span id="deep-work-start-icon" class="material-symbols-outlined notranslate text-[16px]">play_arrow</span>
-                            <span id="deep-work-start-label">Iniciar foco</span>
-                        </button>
-                        <button id="deep-work-reset-btn" type="button" onclick="window.app.resetDeepWorkSession()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface hover:bg-surface-container-highest transition-colors" title="Resetar sessão" aria-label="Resetar sessão">
+                    <button id="deep-work-start-btn" type="button" onclick="window.app.startDeepWorkSession()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-on-primary border border-primary/30 shadow-sm transition-colors" title="Iniciar foco" aria-label="Iniciar foco">
+                        <span id="deep-work-start-icon" class="material-symbols-outlined notranslate text-[16px]">play_arrow</span>
+                    </button>
+                        <button id="deep-work-reset-btn" type="button" onclick="window.app.resetDeepWorkSession()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface hover:bg-surface-container-highest transition-colors" title="Resetar sessao" aria-label="Resetar sessao">
                             <span class="material-symbols-outlined notranslate text-[16px]">restart_alt</span>
                         </button>
-                        <button id="deep-work-finish-btn" type="button" onclick="window.app.finishDeepWorkNow()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 transition-colors" title="Finalizar sessão" aria-label="Finalizar sessão">
+                        <button id="deep-work-finish-btn" type="button" onclick="window.app.finishDeepWorkNow()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 transition-colors" title="Finalizar sessao" aria-label="Finalizar sessao">
                             <span id="deep-work-finish-icon" class="material-symbols-outlined notranslate text-[16px]">flag</span>
                         </button>
-                    </div>
                 </div>
 
                 <div id="deep-work-context-actions" class="hidden"></div>
@@ -84,7 +75,7 @@
                     <div class="flex items-center justify-between gap-3 mb-3">
                         <div>
                             <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Configuracao do bloco</p>
-                            <p class="text-[11px] text-on-surface-variant mt-1">Escolha uma acao do plano ou um habito e deixe o fechamento da sessao para o fim.</p>
+                            <p class="text-[11px] text-on-surface-variant mt-1">Escolha um contexto e inicie quando estiver pronto.</p>
                         </div>
                         <span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-outline">
                             <span class="material-symbols-outlined notranslate text-[12px]">tune</span>
@@ -104,14 +95,15 @@
                                 <option value="50">50 minutos</option>
                                 <option value="90">90 minutos</option>
                             </select>
-                            <div class="grid grid-cols-5 gap-2 rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-1">
-                                <button type="button" data-deep-work-preset="15" onclick="window.app.setDeepWorkPreset(15)" class="deep-work-preset-chip rounded-lg border border-transparent px-2 py-2 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-high">15/3</button>
-                                <button type="button" data-deep-work-preset="25" onclick="window.app.setDeepWorkPreset(25)" class="deep-work-preset-chip rounded-lg border border-transparent px-2 py-2 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-high">25/5</button>
-                                <button type="button" data-deep-work-preset="45" onclick="window.app.setDeepWorkPreset(45)" class="deep-work-preset-chip rounded-lg border border-transparent px-2 py-2 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-high">45/10</button>
-                                <button type="button" data-deep-work-preset="50" onclick="window.app.setDeepWorkPreset(50)" class="deep-work-preset-chip rounded-lg border border-transparent px-2 py-2 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-high">50/10</button>
-                                <button type="button" data-deep-work-preset="90" onclick="window.app.setDeepWorkPreset(90)" class="deep-work-preset-chip rounded-lg border border-transparent px-2 py-2 text-xs font-bold text-on-surface transition-colors hover:bg-surface-container-high">90/20</button>
+                            <div class="rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-1.5">
+                                <div class="grid grid-cols-5 gap-1.5">
+                                    <button type="button" data-deep-work-preset="15" onclick="window.app.setDeepWorkPreset(15)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">15/3</button>
+                                    <button type="button" data-deep-work-preset="25" onclick="window.app.setDeepWorkPreset(25)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">25/5</button>
+                                    <button type="button" data-deep-work-preset="45" onclick="window.app.setDeepWorkPreset(45)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">45/10</button>
+                                    <button type="button" data-deep-work-preset="50" onclick="window.app.setDeepWorkPreset(50)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">50/10</button>
+                                    <button type="button" data-deep-work-preset="90" onclick="window.app.setDeepWorkPreset(90)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">90/20</button>
+                                </div>
                             </div>
-                            <p class="text-[11px] text-outline">O app sugere o bloco com base no esforco, no tempo estimado e no check-in do dia.</p>
                         </div>
                         <div class="space-y-2">
                             <div class="flex items-center justify-between gap-3">
@@ -122,7 +114,6 @@
                                 <option value="">Selecione um contexto</option>
                             </select>
                         </div>
-                        <p class="text-[11px] text-outline">Plano da Semana, outras acoes e habitos ficam no mesmo seletor para iniciar o bloco sem friccao.</p>
                     </div>
                 </div>
 
@@ -130,7 +121,6 @@
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Sessao ativa</p>
-                            <p class="text-xs text-on-surface-variant mt-1">O contexto abaixo muda conforme acao, habito e fechamento pendente.</p>
                         </div>
                         <span class="material-symbols-outlined notranslate text-primary text-lg">dashboard</span>
                     </div>
