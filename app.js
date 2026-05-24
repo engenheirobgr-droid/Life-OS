@@ -23,9 +23,9 @@ import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboardi
 import { attachIdentity } from './js/identity.js?v=20260524-package5-ui-v2';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-focus-linkage-audit-v3';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260524-notes-focus-v1';
 import { attachStateModule } from './js/state.js?v=20260523-sprint3-gamification-v1';
-import { attachRenderModule } from './js/render.js?v=20260524-package5-ui-v2';
+import { attachRenderModule } from './js/render.js?v=20260524-notes-focus-v1';
 import { attachPlanningModule } from './js/planning.js?v=20260523-package5-ui-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
@@ -4930,6 +4930,9 @@ ensureNotesState: function() {
                 const rawLinked = note?.linkedTo && typeof note.linkedTo === 'object' ? note.linkedTo : {};
                 const entityType = this.normalizeEntityType(String(rawLinked.entityType || '').trim());
                 const entityId = String(rawLinked.entityId || '').trim();
+                const sourceType = String(note?.sourceType || '').trim();
+                const sourceHabitId = String(note?.sourceHabitId || note?.habitId || '').trim();
+                const sourceMicroId = String(note?.sourceMicroId || note?.microId || '').trim();
                 return {
                     id: String(note?.id || `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`),
                     title: title || 'Nota sem titulo',
@@ -4939,6 +4942,9 @@ ensureNotesState: function() {
                         ? note.tags.map(tag => String(tag || '').trim()).filter(Boolean)
                         : String(note?.tags || '').split(',').map(tag => tag.trim()).filter(Boolean),
                     linkedTo: entityType && entityId ? { entityType, entityId } : null,
+                    sourceType,
+                    sourceHabitId,
+                    sourceMicroId,
                     createdAt: String(note?.createdAt || new Date().toISOString()),
                     updatedAt: String(note?.updatedAt || note?.createdAt || new Date().toISOString())
                 };
@@ -4988,6 +4994,75 @@ ensureNotesState: function() {
             opt.entityType === linkedTo.entityType && opt.entityId === linkedTo.entityId
         );
         return found ? `${found.group}: ${found.label}` : `${linkedTo.entityType}: ${linkedTo.entityId}`;
+    },
+
+    getNoteLinkContext: function(note) {
+        if (!note || typeof note !== 'object') {
+            return { linked: false, entityType: '', entityId: '', label: '' };
+        }
+        const linkedType = this.normalizeEntityType(note.linkedTo?.entityType || '');
+        const linkedId = String(note.linkedTo?.entityId || '').trim();
+        if (linkedType && linkedId) {
+            return {
+                linked: true,
+                entityType: linkedType,
+                entityId: linkedId,
+                label: this.getNoteLinkLabel({ entityType: linkedType, entityId: linkedId })
+            };
+        }
+
+        const sourceMicroId = String(note.sourceMicroId || note.microId || '').trim();
+        if (sourceMicroId) {
+            const micro = (window.sistemaVidaState.entities?.micros || []).find(item => item.id === sourceMicroId);
+            return {
+                linked: true,
+                entityType: 'micros',
+                entityId: sourceMicroId,
+                label: micro?.title ? `Acoes: ${micro.title}` : 'Acoes: sessao registrada'
+            };
+        }
+
+        const sourceHabitId = String(note.sourceHabitId || note.habitId || '').trim();
+        if (sourceHabitId) {
+            const habit = (window.sistemaVidaState.habits || []).find(item => item.id === sourceHabitId);
+            return {
+                linked: true,
+                entityType: 'habits',
+                entityId: sourceHabitId,
+                label: habit?.title ? `Habitos: ${habit.title}` : 'Habitos: sessao registrada'
+            };
+        }
+
+        const sourceType = String(note.sourceType || '').toLowerCase();
+        if (sourceType.includes('focus') || sourceType.includes('habit')) {
+            return {
+                linked: true,
+                entityType: '',
+                entityId: '',
+                label: sourceType.includes('habit') ? 'Habitos: origem de sessao' : 'Foco: origem de sessao'
+            };
+        }
+
+        const titleLower = String(note.title || '').toLowerCase();
+        const bodyLower = String(note.body || '').toLowerCase();
+        if (
+            titleLower.includes('sessao de foco') ||
+            bodyLower.includes('tempo de foco:') ||
+            bodyLower.includes('origem: habito')
+        ) {
+            return {
+                linked: true,
+                entityType: '',
+                entityId: '',
+                label: 'Foco: sessao registrada'
+            };
+        }
+
+        return { linked: false, entityType: '', entityId: '', label: '' };
+    },
+
+    isNoteLinked: function(note) {
+        return !!this.getNoteLinkContext(note).linked;
     },
 
     getProfileNotesFilter: function() {
@@ -5050,7 +5125,7 @@ ensureNotesState: function() {
             if (this.showToast) this.showToast('Nota nao encontrada. Atualize a tela e tente novamente.', 'error');
             return;
         }
-        if (note.linkedTo?.entityType && note.linkedTo?.entityId) {
+        if (this.isNoteLinked(note)) {
             if (this.showToast) this.showToast('Esta nota ja esta vinculada. Use o fluxo normal de edicao se quiser reaproveitar o conteudo.', 'error');
             return;
         }
@@ -5085,6 +5160,9 @@ ensureNotesState: function() {
             url: String(document.getElementById('note-url')?.value || '').trim(),
             tags: String(document.getElementById('note-tags')?.value || '').split(',').map(tag => tag.trim()).filter(Boolean),
             linkedTo: entityType && entityId ? { entityType, entityId } : null,
+            sourceType: '',
+            sourceHabitId: '',
+            sourceMicroId: '',
             createdAt: now,
             updatedAt: now
         };
@@ -5092,6 +5170,9 @@ ensureNotesState: function() {
         const idx = editId ? list.findIndex(item => item.id === editId) : -1;
         if (idx >= 0) {
             note.createdAt = list[idx].createdAt || now;
+            note.sourceType = String(list[idx].sourceType || '').trim();
+            note.sourceHabitId = String(list[idx].sourceHabitId || list[idx].habitId || '').trim();
+            note.sourceMicroId = String(list[idx].sourceMicroId || list[idx].microId || '').trim();
             list[idx] = note;
         } else {
             list.unshift(note);
@@ -5293,12 +5374,21 @@ ensureNotesState: function() {
             url: String(document.getElementById('quick-note-url')?.value || '').trim(),
             tags: String(document.getElementById('quick-note-tags')?.value || '').split(',').map(t => t.trim()).filter(Boolean),
             linkedTo: entityType && entityId ? { entityType, entityId } : null,
+            sourceType: '',
+            sourceHabitId: '',
+            sourceMicroId: '',
             createdAt: now,
             updatedAt: now
         };
         const list = window.sistemaVidaState.profile.notes || (window.sistemaVidaState.profile.notes = []);
         const idx = editId ? list.findIndex(item => item.id === editId) : -1;
-        if (idx >= 0) { note.createdAt = list[idx].createdAt || now; list[idx] = note; }
+        if (idx >= 0) {
+            note.createdAt = list[idx].createdAt || now;
+            note.sourceType = String(list[idx].sourceType || '').trim();
+            note.sourceHabitId = String(list[idx].sourceHabitId || list[idx].habitId || '').trim();
+            note.sourceMicroId = String(list[idx].sourceMicroId || list[idx].microId || '').trim();
+            list[idx] = note;
+        }
         else list.unshift(note);
         this.ensureNotesState();
         this.saveState(true);
@@ -5387,7 +5477,14 @@ ensureNotesState: function() {
         this.ensureNotesState();
         const normalizedType = this.normalizeEntityType(entityType);
         return (window.sistemaVidaState.profile.notes || []).filter(note =>
-            this.normalizeEntityType(note.linkedTo?.entityType) === normalizedType && note.linkedTo?.entityId === entityId
+            (
+                this.normalizeEntityType(note.linkedTo?.entityType) === normalizedType &&
+                note.linkedTo?.entityId === entityId
+            ) || (
+                normalizedType === 'habits' && String(note.sourceHabitId || '').trim() === entityId
+            ) || (
+                normalizedType === 'micros' && String(note.sourceMicroId || '').trim() === entityId
+            )
         );
     },
 

@@ -538,11 +538,12 @@ renderNotesPanel: function(showAll) {
             chip.classList.toggle('hover:bg-surface-container-high', !isActive);
         });
         const allNotes = (window.sistemaVidaState.profile.notes || []).filter(note => {
-            const isLinked = !!(note.linkedTo?.entityType && note.linkedTo?.entityId);
+            const linkContext = this.getNoteLinkContext(note);
+            const isLinked = !!linkContext.linked;
             if (activeFilter === 'linked' && !isLinked) return false;
             if (activeFilter === 'loose' && isLinked) return false;
             if (!query) return true;
-            const haystack = [note.title, note.body, note.url, ...(note.tags || []), this.getNoteLinkLabel(note.linkedTo)]
+            const haystack = [note.title, note.body, note.url, ...(note.tags || []), linkContext.label]
                 .join(' ').toLowerCase();
             return haystack.includes(query);
         });
@@ -551,43 +552,57 @@ renderNotesPanel: function(showAll) {
             return;
         }
 
+        const parseNoteDate = (note) => {
+            const raw = String(note.updatedAt || note.createdAt || '').trim();
+            if (!raw) return null;
+            const dt = new Date(raw);
+            return Number.isNaN(dt.getTime()) ? null : dt;
+        };
+        const getMonthKey = (dt) => {
+            if (!dt) return 'sem-data';
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, '0');
+            return `${y}-${m}`;
+        };
+        const getMonthLabel = (monthKey, dtRef) => {
+            if (monthKey === 'sem-data') return 'Sem data';
+            const base = dtRef || new Date(`${monthKey}-01T12:00:00`);
+            const formatted = base.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            return formatted ? formatted.charAt(0).toUpperCase() + formatted.slice(1) : monthKey;
+        };
+
         const renderCard = (note) => {
-            const linkLabel = this.getNoteLinkLabel(note.linkedTo);
-            const isLoose = !(note.linkedTo?.entityType && note.linkedTo?.entityId);
-            const dateStr = note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
-            const updatedStr = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
-            const tags = (note.tags || []).slice(0, 2).map(tag =>
-                `<span class="inline-flex rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`
-            ).join('');
-            const extraTagsCount = Math.max(0, (note.tags || []).length - 2);
+            const linkContext = this.getNoteLinkContext(note);
+            const isLinked = !!linkContext.linked;
+            const linkLabel = linkContext.label;
+            const isLoose = !isLinked;
+            const createdDt = note.createdAt ? new Date(note.createdAt) : null;
+            const updatedDt = note.updatedAt ? new Date(note.updatedAt) : null;
+            const createdOk = createdDt && !Number.isNaN(createdDt.getTime());
+            const updatedOk = updatedDt && !Number.isNaN(updatedDt.getTime());
+            const dateRef = updatedOk ? updatedDt : createdOk ? createdDt : null;
+            const dateStr = dateRef ? dateRef.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
             const url = note.url
                 ? `<a href="${this.escapeHtml(note.url)}" target="_blank" rel="noopener" class="text-[10px] text-primary hover:underline truncate">${this.escapeHtml(note.url)}</a>`
                 : '';
             const isExpanded = this.expandedProfileNoteId === note.id;
-            const summary = note.body
-                ? this.escapeHtml(note.body.length > 96 ? `${note.body.slice(0, 96)}...` : note.body)
-                : (url ? 'Link salvo para consultar depois.' : 'Sem resumo adicionado.');
             return `<article class="rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden transition-colors ${isExpanded ? 'shadow-sm' : ''}">
                 <button type="button" onclick="window.app.toggleProfileNoteExpanded('${this.escapeHtml(note.id)}')" class="w-full text-left px-3 py-2.5 hover:bg-surface-container-high transition-colors">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-1.5">
                                 <h4 class="text-sm font-bold text-on-surface leading-snug truncate">${this.escapeHtml(note.title)}</h4>
-                                ${linkLabel ? `<span class="inline-flex rounded-full bg-secondary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-secondary">${this.escapeHtml(linkLabel)}</span>` : '<span class="inline-flex rounded-full bg-surface-container-high px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-outline">Avulsa</span>'}
-                                ${isLoose ? `<span class="inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">Transformavel</span>` : ''}
-                                ${tags}
-                                ${extraTagsCount > 0 ? `<span class="inline-flex rounded-full bg-surface-container-high px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-outline">+${extraTagsCount}</span>` : ''}
+                                <span class="inline-flex rounded-full ${isLinked ? 'bg-secondary/10 text-secondary' : 'bg-surface-container-high text-outline'} px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">${isLinked ? 'Vinculada' : 'Avulsa'}</span>
                             </div>
-                            <p class="mt-1 text-[11px] text-on-surface-variant leading-relaxed break-words">${summary}</p>
                             <div class="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] text-outline">
-                                ${dateStr ? `<span>Criada em ${dateStr}</span>` : ''}
-                                ${updatedStr && updatedStr !== dateStr ? `<span>Atualizada em ${updatedStr}</span>` : ''}
+                                ${dateStr ? `<span>${dateStr}</span>` : ''}
                             </div>
                         </div>
                         <span class="material-symbols-outlined notranslate text-outline text-[18px] transition-transform ${isExpanded ? 'rotate-180' : ''}">expand_more</span>
                     </div>
                 </button>
                 <div class="${isExpanded ? '' : 'hidden'} border-t border-outline-variant/10 px-3 py-3 space-y-3">
+                    ${linkLabel ? `<p class="text-[10px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(linkLabel)}</p>` : ''}
                     ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line break-words">${this.escapeHtml(note.body)}</p>` : ''}
                     ${url}
                     ${(note.tags || []).length ? `<div class="flex flex-wrap gap-1">${(note.tags || []).map(tag => `<span class="inline-flex rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`).join('')}</div>` : ''}
@@ -602,11 +617,39 @@ renderNotesPanel: function(showAll) {
         };
 
         const sorted = [...allNotes].sort((a, b) => {
-            const aKey = String(a.updatedAt || a.createdAt || '');
-            const bKey = String(b.updatedAt || b.createdAt || '');
-            return bKey.localeCompare(aKey);
+            const aTime = parseNoteDate(a)?.getTime() || 0;
+            const bTime = parseNoteDate(b)?.getTime() || 0;
+            if (aTime !== bTime) return bTime - aTime;
+            return String(b.id || '').localeCompare(String(a.id || ''));
         });
-        container.innerHTML = sorted.map(renderCard).join('');
+        const monthGroups = sorted.reduce((acc, note) => {
+            const dt = parseNoteDate(note);
+            const monthKey = getMonthKey(dt);
+            if (!acc[monthKey]) {
+                acc[monthKey] = {
+                    monthKey,
+                    monthLabel: getMonthLabel(monthKey, dt),
+                    notes: []
+                };
+            }
+            acc[monthKey].notes.push(note);
+            return acc;
+        }, {});
+        const groupKeys = Object.keys(monthGroups).sort((a, b) => b.localeCompare(a));
+        container.innerHTML = groupKeys.map((monthKey, idx) => {
+            const group = monthGroups[monthKey];
+            const safeYm = monthKey.replace(/[^a-zA-Z0-9_-]/g, '-');
+            const openByDefault = idx === 0;
+            return `<section class="rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden">
+                <button type="button" onclick="window.app.toggleNotesMonth('${safeYm}')" class="w-full px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-surface-container-high transition-colors">
+                    <span class="text-xs font-bold uppercase tracking-wider text-outline">${this.escapeHtml(group.monthLabel)}</span>
+                    <span class="material-symbols-outlined notranslate text-outline text-[18px] notes-month-chev-${safeYm} ${openByDefault ? 'rotate-180' : ''}">expand_more</span>
+                </button>
+                <div id="notes-month-${safeYm}" class="${openByDefault ? '' : 'hidden'} border-t border-outline-variant/10 p-2.5 space-y-2">
+                    ${group.notes.map(renderCard).join('')}
+                </div>
+            </section>`;
+        }).join('');
     },
 
 renderDailyCheckinPanel: function() {

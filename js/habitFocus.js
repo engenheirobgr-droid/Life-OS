@@ -448,7 +448,7 @@ export function attachHabitFocusModule(app) {
                     planToggle.focus();
                     return;
                 }
-                document.getElementById('habit-focus-closure-evidence')?.focus();
+                document.getElementById('habit-focus-closure-details-toggle')?.focus();
             }, 30);
         },
 
@@ -559,6 +559,9 @@ export function attachHabitFocusModule(app) {
                 url: '',
                 tags: ['foco', habit ? 'habito' : 'micro', protocol?.title ? protocol.title.toLowerCase() : ''].filter(Boolean),
                 linkedTo: linkedEntity,
+                sourceType: 'habit_focus_session',
+                sourceHabitId: habit?.id || '',
+                sourceMicroId: (createdMicro?.id || micro?.id || ''),
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });

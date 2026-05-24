@@ -2189,19 +2189,19 @@
                     </div>
                     <textarea id="habit-focus-closure-delivery" class="hidden"></textarea>
                 </div>
-                <div class="flex flex-col gap-1.5">
-                    <label for="habit-focus-closure-evidence" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Evidencia</label>
-                    <textarea id="habit-focus-closure-evidence" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="Resumo criado, exercicios resolvidos, arquivo salvo..."></textarea>
-                </div>
                 <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3">
-                    <button type="button" onclick="window.app.toggleHabitFocusClosureDetails()" class="w-full flex items-center justify-between gap-3 text-left">
+                    <button id="habit-focus-closure-details-toggle" type="button" onclick="window.app.toggleHabitFocusClosureDetails()" class="w-full flex items-center justify-between gap-3 text-left">
                         <div>
                             <p class="text-xs font-label uppercase tracking-widest text-outline font-bold">Adicionar detalhes</p>
-                            <p class="mt-1 text-xs text-on-surface-variant">Duvidas e lacunas, proximo passo e contexto complementar.</p>
+                            <p class="mt-1 text-xs text-on-surface-variant">Evidencias, duvidas, lacunas, proximo passo e contexto complementar.</p>
                         </div>
                         <span id="habit-focus-closure-details-icon" class="material-symbols-outlined notranslate text-outline">expand_more</span>
                     </button>
                     <div id="habit-focus-closure-details-panel" class="hidden mt-3 space-y-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-focus-closure-evidence" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Evidencia</label>
+                            <textarea id="habit-focus-closure-evidence" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="Resumo criado, exercicios resolvidos, arquivo salvo..."></textarea>
+                        </div>
                         <div class="flex flex-col gap-1.5">
                             <label for="habit-focus-closure-gaps" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duvidas e lacunas</label>
                             <textarea id="habit-focus-closure-gaps" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que ainda ficou confuso?"></textarea>
@@ -2215,7 +2215,7 @@
             </div>
             <div class="px-6 py-4 border-t border-outline-variant/10 bg-surface-container-low/30 flex flex-wrap items-center justify-end gap-3">
                 <button type="button" onclick="window.app.remindHabitFocusClosureLater()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">Depois</button>
-                <button type="button" onclick="window.app.saveHabitFocusClosure()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Salvar fechamento</button>
+                <button type="button" onclick="window.app.saveHabitFocusClosure()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Concluir sessao</button>
             </div>
         </div>
     </div>
@@ -3060,7 +3060,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260524-package-close-v3"></script>
+    <script type="module" src="app.js?v=20260524-notes-focus-v1"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3091,7 +3091,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260524-package-close-v3')
+                navigator.serviceWorker.register('sw.js?v=20260524-notes-focus-v1')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});
