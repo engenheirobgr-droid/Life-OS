@@ -72,6 +72,18 @@
                                 <option value="">Selecione uma micro</option>
                             </select>
                         </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="deep-work-habit" class="text-[10px] uppercase tracking-widest font-bold text-outline">Habito</label>
+                                <button type="button" onclick="window.app.clearDeepWorkHabitSelection()" class="text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors">
+                                    Limpar
+                                </button>
+                            </div>
+                            <select id="deep-work-habit" onchange="window.app.selectDeepWorkHabit(this.value,{ navigate: false })" class="w-full h-11 bg-surface-container-lowest text-on-surface text-sm font-medium rounded-lg px-3 outline-none border border-outline-variant/25">
+                                <option value="">Selecione um habito</option>
+                            </select>
+                            <p class="text-[11px] text-outline">Use para sessao de rotina sem precisar criar uma acao do plano antes.</p>
+                        </div>
                     </div>
                 </div>
                 <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-3">

@@ -294,7 +294,7 @@ ensureSettingsState: function() {
             window.sistemaVidaState.deepWork = {
                 isRunning: false, isPaused: false, mode: 'focus',
                 remainingSec: 1500, targetSec: 1500, breakSec: 300,
-                microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0, sessions: []
+                habitId: '', microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0, sessions: []
             };
         }
         if (typeof window.sistemaVidaState.onboardingComplete !== 'boolean') {
@@ -646,7 +646,7 @@ factoryReset: async function() {
         deepWork: {
           isRunning: false, isPaused: false, mode: 'focus',
           remainingSec: 1500, targetSec: 1500, breakSec: 300,
-          microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0, sessions: []
+          habitId: '', microId: '', intention: '', lastTickAt: 0, deadlineAtMs: 0, sessions: []
         },
         entities: { metas: [], okrs: [], macros: [], micros: [] },
         dailyLogs: {},
@@ -1756,6 +1756,7 @@ importFromExcel: async function(event) {
                     remainingSec: 1500,
                     targetSec: 1500,
                     breakSec: 300,
+                    habitId: '',
                     microId: '',
                     intention: '',
                     lastTickAt: 0,
@@ -1767,10 +1768,17 @@ importFromExcel: async function(event) {
                     const focusSec = Math.max(0, Math.round(toNumber(getValue(row, ['Focus_Sec']), toNumber(getValue(row, ['Minutos de foco', 'Minutos_Foco']), 0) * 60)));
                     const usesVisibleMicro = hasAnyHeader(focusHeaders, ['Micro']);
                     const visibleMicroLabel = usesVisibleMicro ? String(getValue(row, ['Micro']) || '').trim() : '';
+                    const visibleHabitLabel = String(getValue(row, ['Habito', 'Hábito']) || '').trim();
                     const hiddenMicroId = String(getValue(row, ['Micro_ID']) || '').trim();
+                    const hiddenHabitId = String(getValue(row, ['Habit_ID']) || '').trim();
                     const resolvedMicroId = usesVisibleMicro
                         ? (visibleMicroLabel ? resolveItemId(visibleMicroLabel, microIndex) : '')
                         : (hiddenMicroId ? resolveItemId(hiddenMicroId, microIndex) : '');
+                    const resolvedHabitId = hiddenHabitId
+                        ? hiddenHabitId
+                        : (visibleHabitLabel
+                            ? String((window.sistemaVidaState?.habits || []).find(item => String(item?.title || '').trim().toLowerCase() === visibleHabitLabel.toLowerCase())?.id || '')
+                            : '');
                     if (usesVisibleMicro && visibleMicroLabel && !resolvedMicroId) {
                         importWarnings.push(`Foco profundo: micro não encontrado "${visibleMicroLabel}"`);
                     }
@@ -1793,13 +1801,15 @@ importFromExcel: async function(event) {
                         endedAtTs,
                         focusSec,
                         breakSec: Math.max(0, Math.round(toNumber(getValue(row, ['Break_Sec']), toNumber(getValue(row, ['Minutos de pausa', 'Minutos_Pausa']), 0) * 60))),
+                        habitId: resolvedHabitId,
+                        habitTitle: visibleHabitLabel || '',
                         microId: resolvedMicroId,
                         microTitle: visibleMicroLabel || '',
                         intention: String(getValue(row, ['Intenção', 'Intencao', 'Intention']) || '').trim(),
                         completed: toBool(getValue(row, ['Concluída', 'Concluida', 'Completed']), false),
                         mode: String(getValue(row, ['Mode']) || 'focus').trim() || 'focus'
                     };
-                }).filter(session => session.endedAtTs || session.endedAt || session.microId || session.intention);
+                }).filter(session => session.endedAtTs || session.endedAt || session.microId || session.habitId || session.intention);
             }
 
             const wsProtocols = workbook.Sheets['Protocolos'];
@@ -2316,7 +2326,7 @@ exportToExcelFull: function() {
         XLSX.utils.book_append_sheet(wb, wsWeekly, "Planos_Semanais");
 
         // 7. Aba: Foco Profundo
-        const focusCol = ["Inicio", "Fim", "Minutos_Foco", "Minutos_Pausa", "Focus_Sec", "Break_Sec", "Mode", "Micro_ID", "Intencao", "Concluida"];
+        const focusCol = ["Inicio", "Fim", "Minutos_Foco", "Minutos_Pausa", "Focus_Sec", "Break_Sec", "Mode", "Habit_ID", "Micro_ID", "Intencao", "Concluida"];
         const focusData = [focusCol];
         focusCol.splice(2, 0, "Started_At_TS", "Ended_At_TS");
         (state.deepWork?.sessions || []).forEach((session) => {
@@ -2330,6 +2340,7 @@ exportToExcelFull: function() {
                 Number(session?.focusSec || 0),
                 Number(session?.breakSec || 0),
                 String(session?.mode || 'focus'),
+                String(session?.habitId || ""),
                 String(session?.microId || ""),
                 String(session?.intention || ""),
                 session?.completed ? "sim" : "nao"
@@ -2794,7 +2805,7 @@ exportToExcel: function() {
         XLSX.utils.book_append_sheet(wb, wsWeekly, "Planos Semanais");
 
         const focusVisibleCols = ["Início", "Fim", "Minutos de foco", "Minutos de pausa", "Modo", "Micro", "Intenção", "Concluída"];
-        const focusHiddenCols = ["Focus_Sec", "Break_Sec", "Micro_ID"];
+        const focusHiddenCols = ["Focus_Sec", "Break_Sec", "Habit_ID", "Micro_ID"];
         focusHiddenCols.splice(2, 0, "Started_At_TS", "Ended_At_TS");
         const focusRows = [focusVisibleCols.concat(focusHiddenCols)];
         (state.deepWork?.sessions || []).forEach((session) => {
@@ -2809,6 +2820,7 @@ exportToExcel: function() {
                 session?.completed ? "sim" : "nao",
                 Number(session?.focusSec || 0),
                 Number(session?.breakSec || 0),
+                String(session?.habitId || ""),
                 String(session?.microId || "")
             ]);
             const lastFriendlyFocusRow = focusRows[focusRows.length - 1];

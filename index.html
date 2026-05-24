@@ -2144,7 +2144,7 @@
             <div class="px-6 py-5 border-b border-outline-variant/10 flex items-start justify-between gap-4">
                 <div class="min-w-0">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Fechamento da sessao</p>
-                    <h3 id="habit-focus-closure-title" class="mt-1 font-headline text-2xl italic font-bold text-on-background">Registrar entrega</h3>
+                    <h3 id="habit-focus-closure-title" class="mt-1 font-headline text-2xl italic font-bold text-on-background">Registrar sessao</h3>
                     <p id="habit-focus-closure-subtitle" class="mt-2 text-sm text-on-surface-variant"></p>
                     <p id="habit-focus-closure-context" class="mt-2 text-[11px] text-outline"></p>
                 </div>
@@ -2153,29 +2153,69 @@
                 </button>
             </div>
             <div class="p-6 space-y-4 overflow-y-auto flex-1">
+                <div id="habit-focus-closure-habit-summary" class="hidden rounded-xl border border-outline-variant/15 bg-surface-container-low/40 px-4 py-3 text-xs text-on-surface-variant"></div>
+                <div id="habit-focus-closure-habit-checklist" class="hidden"></div>
+                <div id="habit-focus-closure-habit-complete-wrap" class="hidden rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3">
+                    <label class="inline-flex items-center gap-3 text-sm text-on-surface">
+                        <input id="habit-focus-closure-habit-complete" type="checkbox" class="w-4 h-4 rounded border-outline-variant/40 text-primary focus:ring-primary/20">
+                        <span id="habit-focus-closure-habit-complete-label">Concluir habito hoje</span>
+                    </label>
+                </div>
                 <div class="flex flex-col gap-1.5">
-                    <label for="habit-focus-closure-delivery" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Entrega da sessao</label>
-                    <textarea id="habit-focus-closure-delivery" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que voce realmente entregou nesta sessao?"></textarea>
+                    <label for="habit-focus-closure-evidence" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Evidencia</label>
+                    <textarea id="habit-focus-closure-evidence" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="Resumo criado, exercicios resolvidos, arquivo salvo..."></textarea>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="flex flex-col gap-1.5">
-                        <label for="habit-focus-closure-evidence" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Evidencia</label>
-                        <textarea id="habit-focus-closure-evidence" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="Resumo criado, exercicios resolvidos, arquivo salvo..."></textarea>
-                    </div>
-                    <div class="flex flex-col gap-1.5">
-                        <label for="habit-focus-closure-gaps" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duvidas e lacunas</label>
-                        <textarea id="habit-focus-closure-gaps" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que ainda ficou confuso?"></textarea>
+                <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3">
+                    <button type="button" onclick="window.app.toggleHabitFocusClosureDetails()" class="w-full flex items-center justify-between gap-3 text-left">
+                        <div>
+                            <p class="text-xs font-label uppercase tracking-widest text-outline font-bold">Adicionar detalhes</p>
+                            <p class="mt-1 text-xs text-on-surface-variant">Duvidas e lacunas, proximo passo e contexto complementar.</p>
+                        </div>
+                        <span id="habit-focus-closure-details-icon" class="material-symbols-outlined notranslate text-outline">expand_more</span>
+                    </button>
+                    <div id="habit-focus-closure-details-panel" class="hidden mt-3 space-y-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-focus-closure-gaps" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duvidas e lacunas</label>
+                            <textarea id="habit-focus-closure-gaps" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que ainda ficou confuso?"></textarea>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-focus-closure-next-step" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Proximo passo</label>
+                            <textarea id="habit-focus-closure-next-step" rows="2" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que faz sentido estudar ou entregar depois?"></textarea>
+                        </div>
                     </div>
                 </div>
-                <div class="flex flex-col gap-1.5 rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3">
-                    <label for="habit-focus-closure-next-step" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Proximo passo</label>
-                    <textarea id="habit-focus-closure-next-step" rows="2" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que faz sentido estudar ou entregar depois?"></textarea>
+                <div id="habit-focus-closure-existing-complete-wrap" class="hidden rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3">
+                    <label class="inline-flex items-center gap-3 text-sm text-on-surface">
+                        <input id="habit-focus-closure-existing-complete" type="checkbox" class="w-4 h-4 rounded border-outline-variant/40 text-primary focus:ring-primary/20">
+                        <span>Concluir acao atual agora</span>
+                    </label>
+                </div>
+                <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3 space-y-3">
+                    <label class="inline-flex items-center gap-3 text-sm text-on-surface">
+                        <input id="habit-focus-closure-plan-toggle" type="checkbox" onchange="window.app.toggleHabitFocusClosurePlan()" class="w-4 h-4 rounded border-outline-variant/40 text-primary focus:ring-primary/20">
+                        <span>Gerou uma entrega para o plano</span>
+                    </label>
+                    <p id="habit-focus-closure-plan-helper" class="text-xs text-on-surface-variant"></p>
+                    <div id="habit-focus-closure-plan-panel" class="hidden space-y-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-focus-closure-plan-macro" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Entrega vinculada</label>
+                            <select id="habit-focus-closure-plan-macro" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface"></select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-focus-closure-plan-title" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Acao gerada</label>
+                            <input id="habit-focus-closure-plan-title" type="text" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface" placeholder="Ex.: Consolidar resumo da sessao">
+                        </div>
+                        <label class="inline-flex items-center gap-3 text-sm text-on-surface">
+                            <input id="habit-focus-closure-plan-complete" type="checkbox" class="w-4 h-4 rounded border-outline-variant/40 text-primary focus:ring-primary/20">
+                            <span>Essa acao ja foi concluida</span>
+                        </label>
+                    </div>
+                    <textarea id="habit-focus-closure-delivery" class="hidden"></textarea>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-outline-variant/10 bg-surface-container-low/30 flex flex-wrap items-center justify-end gap-3">
                 <button type="button" onclick="window.app.remindHabitFocusClosureLater()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">Depois</button>
-                <button type="button" onclick="window.app.saveHabitFocusClosure({ forceComplete: false })" class="px-5 py-2.5 bg-surface-container-high border border-outline-variant/20 text-on-surface text-sm font-bold rounded-lg hover:bg-surface-container-highest transition-colors">Salvar apenas nota</button>
-                <button type="button" onclick="window.app.saveHabitFocusClosure({ forceComplete: true })" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Salvar e concluir</button>
+                <button type="button" onclick="window.app.saveHabitFocusClosure()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Salvar fechamento</button>
             </div>
         </div>
     </div>

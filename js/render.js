@@ -1403,6 +1403,50 @@ renderDeepWorkExecutionChecklistHTML: function(micro, options = {}) {
             </div>`;
     },
 
+renderDeepWorkHabitChecklistHTML: function(habit, options = {}) {
+        const {
+            containerClass = 'rounded-xl border border-outline-variant/20 bg-surface-container-low p-4 space-y-3',
+            itemClassDone = 'bg-primary/8 text-primary',
+            itemClassPending = 'hover:bg-surface-container-high text-on-surface',
+            noteClass = 'text-[10px] text-outline',
+            listClass = 'rounded-lg border border-outline-variant/15 bg-surface-container-lowest p-2.5 space-y-1.5',
+            pendingTextClass = 'text-on-surface-variant',
+            doneTextClass = 'line-through text-outline'
+        } = options;
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
+        if (!habit || !steps.length) return '';
+        const todayKey = this.getLocalDateKey();
+        const stepMap = (habit.stepLogs || {})[todayKey] || {};
+        const doneCount = steps.reduce((acc, _, idx) => acc + (stepMap[idx] || stepMap[String(idx)] ? 1 : 0), 0);
+        const allDone = steps.length > 0 && doneCount === steps.length;
+
+        return `
+            <div class="${containerClass}">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist do habito</p>
+                        <p class="text-xs text-on-surface-variant mt-1">Os passos definem a conclusao do habito. O foco registra o tempo.</p>
+                    </div>
+                    <button type="button" onclick="window.app.toggleHabitAllSteps('${this.escapeHtml(habit.id)}','${todayKey}',${allDone ? 'true' : 'false'})" class="shrink-0 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high transition-colors">
+                        ${allDone ? 'Reabrir passos' : 'Concluir passos'}
+                    </button>
+                </div>
+                <div class="${listClass}">
+                    ${steps.map((step, idx) => {
+                        const done = !!(stepMap[idx] || stepMap[String(idx)]);
+                        return `
+                        <button type="button" onclick="window.app.toggleHabitStepLog('${this.escapeHtml(habit.id)}','${todayKey}',${idx})" class="w-full text-left flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors ${done ? itemClassDone : itemClassPending}">
+                            <span class="w-4 h-4 rounded-full border-2 ${done ? 'bg-primary border-primary' : 'border-outline-variant'} flex items-center justify-center shrink-0">
+                                ${done ? '<span class="material-symbols-outlined notranslate text-white text-[10px]">check</span>' : ''}
+                            </span>
+                            <span class="text-xs leading-relaxed ${done ? doneTextClass : pendingTextClass}">${this.escapeHtml(step)}</span>
+                        </button>`;
+                    }).join('')}
+                </div>
+                <p class="${noteClass}">${doneCount}/${steps.length} passos concluidos hoje.</p>
+            </div>`;
+    },
+
 renderDeepWorkImmersiveOverlay: function() {
         this.normalizeDeepWorkState();
         const overlay = document.getElementById('deep-work-immersive-overlay');
@@ -1437,9 +1481,10 @@ renderDeepWorkImmersiveOverlay: function() {
         }
 
         const selectedMicro = dw.microId ? (state.entities?.micros || []).find(m => m.id === dw.microId) : null;
+        const selectedHabit = dw.habitId ? (state.habits || []).find(h => h.id === dw.habitId) : null;
         const linkedHabit = selectedMicro?.sourceHabitId
             ? (state.habits || []).find(h => h.id === selectedMicro.sourceHabitId)
-            : null;
+            : selectedHabit;
         const clockStyle = ['classic', 'ring'].includes(state.settings?.deepWorkClockStyle)
             ? state.settings.deepWorkClockStyle
             : 'ring';
@@ -1448,16 +1493,26 @@ renderDeepWorkImmersiveOverlay: function() {
         const helperText = dw.mode === 'break'
             ? 'Pausa ativa para recuperar energia antes do proximo bloco.'
             : `Base ${Math.round(Number(state.baseCapacityMinutes) || 0)} min · Sem ajuste adicional do check-in.`;
-        const checklistHtml = dw.mode === 'focus' && selectedMicro
-            ? this.renderDeepWorkExecutionChecklistHTML(selectedMicro, {
-                containerClass: 'rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3 shadow-[0_18px_50px_rgba(0,0,0,0.22)]',
-                itemClassDone: 'bg-primary/12 text-teal-50',
-                itemClassPending: 'hover:bg-white/8 text-white',
-                noteClass: 'text-[10px] text-white/55',
-                listClass: 'rounded-lg border border-white/10 bg-black/20 p-2.5 space-y-1.5',
-                pendingTextClass: 'text-white/80',
-                doneTextClass: 'line-through text-white/45'
-            })
+        const checklistHtml = dw.mode === 'focus' && (selectedMicro || linkedHabit)
+            ? (selectedMicro
+                ? this.renderDeepWorkExecutionChecklistHTML(selectedMicro, {
+                    containerClass: 'rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3 shadow-[0_18px_50px_rgba(0,0,0,0.22)]',
+                    itemClassDone: 'bg-primary/12 text-teal-50',
+                    itemClassPending: 'hover:bg-white/8 text-white',
+                    noteClass: 'text-[10px] text-white/55',
+                    listClass: 'rounded-lg border border-white/10 bg-black/20 p-2.5 space-y-1.5',
+                    pendingTextClass: 'text-white/80',
+                    doneTextClass: 'line-through text-white/45'
+                })
+                : this.renderDeepWorkHabitChecklistHTML(linkedHabit, {
+                    containerClass: 'rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3 shadow-[0_18px_50px_rgba(0,0,0,0.22)]',
+                    itemClassDone: 'bg-primary/12 text-teal-50',
+                    itemClassPending: 'hover:bg-white/8 text-white',
+                    noteClass: 'text-[10px] text-white/55',
+                    listClass: 'rounded-lg border border-white/10 bg-black/20 p-2.5 space-y-1.5',
+                    pendingTextClass: 'text-white/80',
+                    doneTextClass: 'line-through text-white/45'
+                }))
             : '';
 
         overlay.classList.remove('hidden');
@@ -1551,6 +1606,7 @@ renderDeepWorkPanel: function() {
         const historyEl = document.getElementById('deep-work-history');
         const presetEl = document.getElementById('deep-work-preset');
         const microEl = document.getElementById('deep-work-micro');
+        const habitEl = document.getElementById('deep-work-habit');
         const intentionEl = document.getElementById('deep-work-intention');
         const startBtn = document.getElementById('deep-work-start-btn');
         const pauseBtn = document.getElementById('deep-work-pause-btn');
@@ -1601,13 +1657,33 @@ renderDeepWorkPanel: function() {
             }
             microEl.innerHTML = dwOptionsHtml;
         }
+        if (habitEl) {
+            const habits = (state.habits || []).filter(h => this.canStartFocusFromHabit?.(h));
+            let selectedHabitId = String(dw.habitId || '');
+            if (selectedHabitId && !habits.some(h => h.id === selectedHabitId)) {
+                dw.habitId = '';
+                selectedHabitId = '';
+            }
+            habitEl.innerHTML = ['<option value="">Selecione um habito</option>'].concat(
+                habits.map((habit) => {
+                    const progress = this.getHabitTodayProgressSnapshot?.(habit) || { label: '0/1' };
+                    return `<option value="${this.escapeHtml(habit.id)}" ${habit.id === selectedHabitId ? 'selected' : ''}>${this.escapeHtml(habit.title)} - ${this.escapeHtml(progress.label)}</option>`;
+                })
+            ).join('');
+        }
         if (intentionEl && !intentionEl.value && dw.intention) intentionEl.value = dw.intention;
 
-        const hasSelectedMicro = !!(dw.microId || microEl?.value);
+        const hasSelectedMicro = !!(dw.microId || microEl?.value || dw.habitId || habitEl?.value);
+        const hasSelectedHabit = !!(dw.habitId || habitEl?.value);
         const selectedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
+        const selectedHabit = dw.habitId ? (state.habits || []).find(h => h.id === dw.habitId) : null;
         const canCompleteSelectedMicro = !!(selectedMicro && selectedMicro.status !== 'done');
-        const hasPendingClosure = !!(dw.pendingClosure?.microId && selectedMicro && dw.pendingClosure.microId === selectedMicro.id);
+        const hasPendingClosure = !!(
+            (dw.pendingClosure?.microId && selectedMicro && dw.pendingClosure.microId === selectedMicro.id)
+            || (dw.pendingClosure?.habitId && selectedHabit && dw.pendingClosure.habitId === selectedHabit.id)
+        );
         if (statusEl) {
+            if (!dw.isRunning && !hasSelectedMicro && !hasSelectedHabit) statusEl.textContent = 'Selecione uma acao ou um habito';
             if (!dw.isRunning && !hasSelectedMicro) statusEl.textContent = 'Selecione uma ação';
             else if (hasPendingClosure) statusEl.textContent = 'Fechamento da sessao pendente';
             else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
@@ -1615,6 +1691,7 @@ renderDeepWorkPanel: function() {
             else statusEl.textContent = dw.mode === 'focus' ? 'Bloco em andamento' : (canCompleteSelectedMicro ? 'Sessao concluida: confirme a ação' : 'Pausa de recuperacao');
         }
         if (stepEl) {
+            if (!dw.isRunning && !hasSelectedMicro && !hasSelectedHabit) stepEl.textContent = 'Passo 1: escolha uma acao ou um habito';
             if (!dw.isRunning && !hasSelectedMicro) stepEl.textContent = 'Passo 1: escolha a ação';
             else if (hasPendingClosure) stepEl.textContent = 'Registre a entrega e as notas da sessao';
             else if (!dw.isRunning) stepEl.textContent = 'Passo 2: inicie o bloco';
@@ -1671,6 +1748,7 @@ renderDeepWorkPanel: function() {
         if (resetBtn) {
             resetBtn.className = neutralBtn;
             resetBtn.disabled = !dw.isRunning && !hasSelectedMicro;
+            if (!dw.isRunning && !hasSelectedMicro && hasSelectedHabit) resetBtn.disabled = false;
         }
         if (finishBtn) {
             if (dw.isRunning && dw.mode === 'focus') {
@@ -1695,6 +1773,15 @@ renderDeepWorkPanel: function() {
             const shouldShowQuickComplete = !!(hasSelectedMicro && canCompleteSelectedMicro && (dw.mode === 'break' || !dw.isRunning));
             const shouldShowClosure = !!(hasPendingClosure && typeof window.app.openHabitFocusClosureModal === 'function');
             contextActionsEl.classList.toggle('hidden', !(shouldShowQuickComplete || shouldShowClosure));
+            if (shouldShowClosure && !selectedMicro && selectedHabit) {
+                contextActionsEl.innerHTML = `
+                    <div class="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center justify-between gap-3">
+                        <p class="text-[11px] text-on-surface-variant leading-snug">A sessao de <span class="font-bold text-on-surface">${this.escapeHtml(selectedHabit.title)}</span> terminou. Registre o fechamento antes de seguir.</p>
+                        <button onclick="window.app.openHabitFocusClosureModal()" class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-widest hover:opacity-90">
+                            Fechar sessao
+                        </button>
+                    </div>`;
+            } else
             if (shouldShowClosure && selectedMicro) {
                 contextActionsEl.innerHTML = `
                     <div class="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center justify-between gap-3">
@@ -1718,12 +1805,15 @@ renderDeepWorkPanel: function() {
 
         if (executionChecklistEl) {
             const checklistMicro = selectedMicro && Array.isArray(selectedMicro.steps) && selectedMicro.steps.length ? selectedMicro : null;
-            if (!checklistMicro) {
+            const checklistHabit = !checklistMicro && selectedHabit && (this.getHabitResolvedSteps?.(selectedHabit) || []).length ? selectedHabit : null;
+            if (!checklistMicro && !checklistHabit) {
                 executionChecklistEl.classList.add('hidden');
                 executionChecklistEl.innerHTML = '';
             } else {
                 executionChecklistEl.classList.remove('hidden');
-                executionChecklistEl.innerHTML = this.renderDeepWorkExecutionChecklistHTML(checklistMicro);
+                executionChecklistEl.innerHTML = checklistMicro
+                    ? this.renderDeepWorkExecutionChecklistHTML(checklistMicro)
+                    : this.renderDeepWorkHabitChecklistHTML(checklistHabit);
             }
         }
 

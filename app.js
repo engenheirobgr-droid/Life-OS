@@ -170,6 +170,7 @@ window.sistemaVidaState = {
         remainingSec: 1500,
         targetSec: 1500,
         breakSec: 300,
+        habitId: '',
         microId: '',
         intention: '',
         lastTickAt: 0,
@@ -909,6 +910,7 @@ normalizeSwlsAnswer: function(rawValue) {
                 remainingSec: 1500,
                 targetSec: 1500,
                 breakSec: 300,
+                habitId: '',
                 microId: '',
                 intention: '',
                 lastTickAt: 0,
@@ -930,6 +932,7 @@ normalizeSwlsAnswer: function(rawValue) {
             dw.breakSec = Math.max(60, Math.round(Number(dw.breakSec) || 300));
         }
         dw.remainingSec = Math.max(0, Math.round(Number(dw.remainingSec) || dw.targetSec));
+        dw.habitId = String(dw.habitId || '');
         dw.microId = String(dw.microId || '');
         dw.intention = String(dw.intention || '');
         dw.lastTickAt = Math.max(0, Math.round(Number(dw.lastTickAt) || 0));
@@ -944,7 +947,7 @@ normalizeSwlsAnswer: function(rawValue) {
                 focusSec: Math.max(0, Math.round(Number(dw.pendingClosure.focusSec) || 0)),
                 sessionEndedAtTs: String(dw.pendingClosure.sessionEndedAtTs || '')
             };
-            if (!dw.pendingClosure.microId) dw.pendingClosure = null;
+            if (!dw.pendingClosure.microId && !dw.pendingClosure.habitId) dw.pendingClosure = null;
         }
         if (dw.isRunning && !dw.isPaused && dw.remainingSec > 0 && dw.deadlineAtMs <= 0) {
             dw.deadlineAtMs = Date.now() + (dw.remainingSec * 1000);
@@ -987,6 +990,8 @@ normalizeSwlsAnswer: function(rawValue) {
                 breakSec,
                 completed: !!session?.completed,
                 mode: ['focus', 'break'].includes(String(session?.mode || '').trim()) ? String(session.mode).trim() : 'focus',
+                habitId: String(session?.habitId || ''),
+                habitTitle: String(session?.habitTitle || ''),
                 microId: String(session?.microId || ''),
                 microTitle: String(session?.microTitle || ''),
                 intention: String(session?.intention || '')
@@ -7397,6 +7402,10 @@ ensureNotesState: function() {
             const startedAtTs = new Date(referenceDate.getTime() - (focusSec * 1000)).toISOString();
 
             const linkedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
+            const selectedHabit = dw.habitId ? (state.habits || []).find(h => h.id === dw.habitId) : null;
+            const sessionHabit = linkedMicro?.sourceHabitId
+                ? (state.habits || []).find(h => h.id === linkedMicro.sourceHabitId)
+                : selectedHabit;
             if (linkedMicro && linkedMicro.status !== 'done') {
                 const wasNotInProgress = linkedMicro.status !== 'in_progress';
                 linkedMicro.status = 'in_progress';
@@ -7406,8 +7415,8 @@ ensureNotesState: function() {
                 linkedMicro.lastFocusDate = dateKey;
                 if (wasNotInProgress) this.cascadeStartUp(linkedMicro.id);
             }
-            if (linkedMicro?.sourceHabitId && typeof this.recordHabitFocusExecution === 'function') {
-                this.recordHabitFocusExecution(linkedMicro.sourceHabitId, focusSec, dateKey);
+            if (sessionHabit?.id && typeof this.recordHabitFocusExecution === 'function') {
+                this.recordHabitFocusExecution(sessionHabit.id, focusSec, dateKey);
             }
             dw.sessions.unshift({
                 startedAt: this.getLocalDateKey(new Date(startedAtTs)),
@@ -7418,15 +7427,17 @@ ensureNotesState: function() {
                 breakSec: Math.max(0, Number(dw.breakSec) || 0),
                 completed: true,
                 mode: 'focus',
+                habitId: String(sessionHabit?.id || ''),
+                habitTitle: String(sessionHabit?.title || ''),
                 microId: dw.microId || '',
                 microTitle: linkedMicro?.title || dw.intention || '',
                 intention: dw.intention || ''
             });
-            if (linkedMicro) {
+            if (linkedMicro || sessionHabit) {
                 dw.pendingClosure = {
-                    microId: linkedMicro.id,
-                    habitId: String(linkedMicro.sourceHabitId || ''),
-                    protocolId: String(linkedMicro.sourceProtocolId || ''),
+                    microId: String(linkedMicro?.id || ''),
+                    habitId: String(sessionHabit?.id || ''),
+                    protocolId: String(linkedMicro?.sourceProtocolId || sessionHabit?.protocolId || ''),
                     focusSec,
                     sessionEndedAtTs: endedAtTs
                 };
@@ -7434,8 +7445,8 @@ ensureNotesState: function() {
             const award = this.awardGamification('deep_work', {
                 key: `deep:${endedAtTs}`,
                 id: endedAtTs,
-                title: linkedMicro?.title || dw.intention || 'Foco profundo',
-                dimension: linkedMicro?.dimension || '',
+                title: linkedMicro?.title || sessionHabit?.title || dw.intention || 'Foco profundo',
+                dimension: linkedMicro?.dimension || sessionHabit?.dimension || '',
                 focusSec
             });
             this.showGamificationToast(award);
@@ -7581,7 +7592,7 @@ ensureNotesState: function() {
         const state = window.sistemaVidaState;
         const dw = state.deepWork;
         if (dw.isRunning && !dw.isPaused) return;
-        if (dw.pendingClosure?.microId) {
+        if (dw.pendingClosure?.microId || dw.pendingClosure?.habitId) {
             this.showToast('Feche a sessao anterior antes de iniciar um novo bloco de foco.', 'error');
             if (typeof this.openHabitFocusClosureModal === 'function') this.openHabitFocusClosureModal();
             return;
@@ -7589,20 +7600,32 @@ ensureNotesState: function() {
 
         const presetEl = document.getElementById('deep-work-preset');
         const microEl = document.getElementById('deep-work-micro');
+        const habitEl = document.getElementById('deep-work-habit');
         const intentionEl = document.getElementById('deep-work-intention');
         const presetConfig = this.getDeepWorkPresetConfig(Number(presetEl?.value || 25));
         const chosenMicro = microEl?.value || '';
+        const chosenHabit = habitEl?.value || dw.habitId || '';
         const intention = (intentionEl?.value || '').trim();
-        if (!chosenMicro) {
+        if (!chosenMicro && !chosenHabit) {
             this.showToast('Selecione uma ação de Planos para iniciar o foco.', 'error');
             return;
         }
 
-        const selectedMicro = (state.entities.micros || []).find(m => m.id === chosenMicro);
-        const focusEligibility = this.getMicroFocusEligibility(selectedMicro);
-        if (!focusEligibility.ok) {
-            this.showToast(focusEligibility.reason, 'error');
-            return;
+        let selectedMicro = null;
+        let selectedHabit = null;
+        if (chosenMicro) {
+            selectedMicro = (state.entities.micros || []).find(m => m.id === chosenMicro);
+            const focusEligibility = this.getMicroFocusEligibility(selectedMicro);
+            if (!focusEligibility.ok) {
+                this.showToast(focusEligibility.reason, 'error');
+                return;
+            }
+        } else {
+            selectedHabit = (state.habits || []).find(h => h.id === chosenHabit);
+            if (!selectedHabit || !this.canStartFocusFromHabit?.(selectedHabit)) {
+                this.showToast('Escolha um habito disponivel para iniciar o foco.', 'error');
+                return;
+            }
         }
         if (!dw.isRunning || dw.mode !== 'focus') {
             dw.targetSec = presetConfig.targetSec;
@@ -7611,7 +7634,8 @@ ensureNotesState: function() {
             dw.mode = 'focus';
         }
         dw.microId = chosenMicro;
-        dw.intention = intention;
+        dw.habitId = chosenMicro ? '' : String(selectedHabit?.id || chosenHabit || '');
+        dw.intention = intention || selectedMicro?.title || selectedHabit?.title || '';
         dw.isRunning = true;
         dw.isPaused = false;
         dw.lastTickAt = Date.now();
@@ -7655,6 +7679,7 @@ ensureNotesState: function() {
             return;
         }
         const suggestedMinutes = this.getSuggestedFocusPresetMinutes(micro);
+        dw.habitId = '';
         dw.microId = micro.id;
         dw.intention = micro.title || '';
         const microEl = document.getElementById('deep-work-micro');
@@ -7691,6 +7716,7 @@ ensureNotesState: function() {
             return;
         }
 
+        dw.habitId = '';
         dw.microId = micro.id;
         dw.intention = micro.title || '';
         const explicitPreset = Math.max(0, Math.round(Number(options?.presetMinutes) || 0));
@@ -7716,6 +7742,7 @@ ensureNotesState: function() {
         const dw = state.deepWork;
         if (dw.isRunning) return;
         const micro = this.getPlanMicros({ includeDone: false }).find(m => m.id === microId);
+        if (micro) dw.habitId = '';
         dw.microId = micro ? micro.id : '';
         if (micro) {
             dw.intention = micro.title || '';
@@ -7855,7 +7882,7 @@ ensureNotesState: function() {
         const canCompleteLinkedMicro = !!(linkedMicro && linkedMicro.status !== 'done');
         const dw = window.sistemaVidaState.deepWork;
         if (!dw.isRunning) {
-            if (dw.pendingClosure?.microId && typeof this.openHabitFocusClosureModal === 'function') {
+            if ((dw.pendingClosure?.microId || dw.pendingClosure?.habitId) && typeof this.openHabitFocusClosureModal === 'function') {
                 this.openHabitFocusClosureModal();
                 return;
             }
@@ -7885,7 +7912,7 @@ ensureNotesState: function() {
         this.stopDeepWorkTicking();
         this.saveState(true);
 
-        if (dw.pendingClosure?.microId && typeof this.openHabitFocusClosureModal === 'function') {
+        if ((dw.pendingClosure?.microId || dw.pendingClosure?.habitId) && typeof this.openHabitFocusClosureModal === 'function') {
             this.openHabitFocusClosureModal();
             return;
         }
