@@ -25,8 +25,8 @@ import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-focus-linkage-audit-v3';
 import { attachStateModule } from './js/state.js?v=20260523-sprint3-gamification-v1';
-import { attachRenderModule } from './js/render.js?v=20260521-taxonomy-v2';
-import { attachPlanningModule } from './js/planning.js?v=20260523-sprint1-contracts-v1';
+import { attachRenderModule } from './js/render.js?v=20260523-package5-ui-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260523-package5-ui-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260523-sprint3-gamification-v1',
+    appBuildVersion: '20260523-package5-ui-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -2556,6 +2556,8 @@ _getAudioContext: function() {
     focusTypeFilter: 'Tudo',
     focusStatusFilter: 'Tudo',
     focusDistributionViewMode: 'one_line',
+    profileNotesFilter: 'all',
+    expandedProfileNoteId: '',
     currentTextGroup: null,
     currentTextKey: null,
     onboardingStep: 0,
@@ -4188,6 +4190,22 @@ openCreateModal: function(type = 'metas', parentId = null) {
             if (parentSelect) parentSelect.value = parentId;
         }
         document.getElementById('crud-modal').classList.remove('hidden');
+        if (type === 'micros' && this._pendingMicroNotePrefill) {
+            const prefill = this._pendingMicroNotePrefill;
+            const titleInput = document.getElementById('crud-title');
+            const contextInput = document.getElementById('crud-context');
+            const obstacleInput = document.getElementById('crud-obstacle');
+            const ifThenInput = document.getElementById('crud-ifthen');
+            if (titleInput && !String(titleInput.value || '').trim()) titleInput.value = prefill.title || 'Nova ação';
+            if (contextInput && !String(contextInput.value || '').trim()) {
+                const segments = [prefill.body, prefill.url ? `Referencia: ${prefill.url}` : ''].filter(Boolean);
+                contextInput.value = segments.join('\n\n');
+            }
+            if (obstacleInput && prefill.tags?.length) obstacleInput.value = `Tags da nota: ${prefill.tags.join(', ')}`;
+            if (ifThenInput && prefill.body) ifThenInput.value = 'Revisar o conteudo capturado e definir o proximo passo executavel.';
+        } else {
+            this._pendingMicroNotePrefill = null;
+        }
         document.getElementById('crud-title').focus();
     },
 
@@ -4600,6 +4618,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
                 habitControls.style.display = 'none';
             }
         }
+        this._pendingMicroNotePrefill = null;
         this.editingEntity = null;
     },
 
@@ -4908,6 +4927,20 @@ ensureNotesState: function() {
         return found ? `${found.group}: ${found.label}` : `${linkedTo.entityType}: ${linkedTo.entityId}`;
     },
 
+    getProfileNotesFilter: function() {
+        return ['all', 'linked', 'loose'].includes(this.profileNotesFilter) ? this.profileNotesFilter : 'all';
+    },
+
+    setProfileNotesFilter: function(filter = 'all') {
+        this.profileNotesFilter = ['all', 'linked', 'loose'].includes(filter) ? filter : 'all';
+        this.renderNotesPanel();
+    },
+
+    toggleProfileNoteExpanded: function(noteId) {
+        this.expandedProfileNoteId = this.expandedProfileNoteId === noteId ? '' : noteId;
+        this.renderNotesPanel();
+    },
+
     populateNoteLinkedSelect: function() {
         const select = document.getElementById('note-linked');
         if (!select) return;
@@ -4936,6 +4969,29 @@ ensureNotesState: function() {
         });
         const linked = document.getElementById('note-linked');
         if (linked) linked.value = '';
+    },
+
+    transformProfileNoteToMicro: function(noteId) {
+        if (this.enforceDeepWorkInteractionLock('A sessao de foco esta ativa. Transforme a nota em acao depois de encerrar o bloco.')) return;
+        this.ensureNotesState();
+        const note = (window.sistemaVidaState.profile.notes || []).find((item) => item.id === noteId);
+        if (!note) {
+            if (this.showToast) this.showToast('Nota nao encontrada. Atualize a tela e tente novamente.', 'error');
+            return;
+        }
+        if (note.linkedTo?.entityType && note.linkedTo?.entityId) {
+            if (this.showToast) this.showToast('Esta nota ja esta vinculada. Use o fluxo normal de edicao se quiser reaproveitar o conteudo.', 'error');
+            return;
+        }
+        this._pendingMicroNotePrefill = {
+            noteId: note.id,
+            title: String(note.title || '').trim(),
+            body: String(note.body || '').trim(),
+            url: String(note.url || '').trim(),
+            tags: Array.isArray(note.tags) ? [...note.tags] : []
+        };
+        this.openCreateModal('micros');
+        if (this.showToast) this.showToast('A nota foi levada para o cadastro oficial de acao. Escolha a Entrega pai e revise antes de salvar.', 'success');
     },
 
     saveProfileNote: function() {
@@ -4973,6 +5029,7 @@ ensureNotesState: function() {
         this.ensureNotesState();
         this.saveState(true);
         try { this.localSet('lifeos_notes_backup', JSON.stringify(window.sistemaVidaState.profile.notes || [])); } catch (_) {}
+        this.expandedProfileNoteId = note.id;
         this.clearNoteForm();
         this.renderNotesPanel();
         if (this.showToast) this.showToast('Nota salva.', 'success');
@@ -5174,6 +5231,7 @@ ensureNotesState: function() {
         else list.unshift(note);
         this.ensureNotesState();
         this.saveState(true);
+        this.expandedProfileNoteId = note.id;
         this.closeQuickNoteModal();
         this.renderNotesPanel();
         if (this.showToast) this.showToast('Nota salva em Perfil → Notas.', 'success');
@@ -5207,6 +5265,7 @@ ensureNotesState: function() {
         const note = (window.sistemaVidaState.profile.notes || []).find(item => item.id === noteId);
         if (!note || !confirm(`Excluir a nota "${note.title}"?`)) return;
         window.sistemaVidaState.profile.notes = window.sistemaVidaState.profile.notes.filter(item => item.id !== noteId);
+        if (this.expandedProfileNoteId === noteId) this.expandedProfileNoteId = '';
         this.saveState(true);
         this.renderNotesPanel();
         if (this.showToast) this.showToast('Nota removida.', 'success');

@@ -2152,9 +2152,19 @@ saveNewEntity: function() {
                     plan.selectedMicros = plan.selectedMicros.filter(mid => mid !== obj.id);
                 }
             }
+            const pendingNotePrefill = this._pendingMicroNotePrefill;
+            if (pendingNotePrefill?.noteId) {
+                const notes = window.sistemaVidaState.profile?.notes || [];
+                const note = notes.find((item) => item.id === pendingNotePrefill.noteId);
+                if (note) {
+                    note.linkedTo = { entityType: 'micros', entityId: obj.id };
+                    note.updatedAt = new Date().toISOString();
+                }
+            }
         }
 
         this.editingEntity = null;
+        if (type === 'micros' || this._pendingMicroNotePrefill) this._pendingMicroNotePrefill = null;
         if (type === 'habits') {
             this.syncIdentityLinkedHabits();
             this.evaluateIdentityAchievements();

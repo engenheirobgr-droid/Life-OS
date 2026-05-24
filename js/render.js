@@ -525,7 +525,19 @@ renderNotesPanel: function(showAll) {
         this.ensureNotesState();
         this.populateNoteLinkedSelect();
         const query = String(document.getElementById('notes-search')?.value || '').trim().toLowerCase();
+        const activeFilter = this.getProfileNotesFilter?.() || 'all';
+        document.querySelectorAll('.notes-filter-chip').forEach((chip) => {
+            const isActive = chip.getAttribute('data-notes-filter') === activeFilter;
+            chip.classList.toggle('bg-primary', isActive);
+            chip.classList.toggle('text-on-primary', isActive);
+            chip.classList.toggle('shadow-sm', isActive);
+            chip.classList.toggle('text-outline', !isActive);
+            chip.classList.toggle('hover:bg-surface-container-high', !isActive);
+        });
         const allNotes = (window.sistemaVidaState.profile.notes || []).filter(note => {
+            const isLinked = !!(note.linkedTo?.entityType && note.linkedTo?.entityId);
+            if (activeFilter === 'linked' && !isLinked) return false;
+            if (activeFilter === 'loose' && isLinked) return false;
             if (!query) return true;
             const haystack = [note.title, note.body, note.url, ...(note.tags || []), this.getNoteLinkLabel(note.linkedTo)]
                 .join(' ').toLowerCase();
@@ -538,40 +550,55 @@ renderNotesPanel: function(showAll) {
 
         const renderCard = (note) => {
             const linkLabel = this.getNoteLinkLabel(note.linkedTo);
+            const isLoose = !(note.linkedTo?.entityType && note.linkedTo?.entityId);
             const dateStr = note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
+            const updatedStr = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
             const tags = (note.tags || []).map(tag =>
                 `<span class="inline-flex rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`
             ).join('');
             const url = note.url
                 ? `<a href="${this.escapeHtml(note.url)}" target="_blank" rel="noopener" class="text-[10px] text-primary hover:underline truncate">${this.escapeHtml(note.url)}</a>`
                 : '';
-            return `<article class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-3 flex flex-col gap-2">
-                <div class="flex items-start justify-between gap-2">
-                    <div class="min-w-0 flex-1">
-                        <div class="flex flex-wrap items-baseline gap-1.5">
-                            <h4 class="text-xs font-bold text-on-surface leading-snug">${this.escapeHtml(note.title)}</h4>
-                            ${linkLabel ? `<span class="inline-flex rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-secondary">${this.escapeHtml(linkLabel)}</span>` : ''}
+            const isExpanded = this.expandedProfileNoteId === note.id;
+            const summary = note.body
+                ? this.escapeHtml(note.body.length > 110 ? `${note.body.slice(0, 110)}...` : note.body)
+                : (url ? 'Link salvo para consultar depois.' : 'Sem resumo adicionado.');
+            return `<article class="rounded-2xl border border-outline-variant/10 bg-surface-container-low overflow-hidden transition-colors ${isExpanded ? 'shadow-sm' : ''}">
+                <button type="button" onclick="window.app.toggleProfileNoteExpanded('${this.escapeHtml(note.id)}')" class="w-full text-left p-4 hover:bg-surface-container-high transition-colors">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <h4 class="text-sm font-bold text-on-surface leading-snug">${this.escapeHtml(note.title)}</h4>
+                                ${linkLabel ? `<span class="inline-flex rounded-full bg-secondary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-secondary">${this.escapeHtml(linkLabel)}</span>` : '<span class="inline-flex rounded-full bg-surface-container-high px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-outline">Avulsa</span>'}
+                                ${isLoose ? `<span class="inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">Transformavel</span>` : ''}
+                            </div>
+                            <p class="mt-2 text-xs text-on-surface-variant leading-relaxed break-words">${summary}</p>
+                            <div class="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-outline">
+                                ${dateStr ? `<span>Criada em ${dateStr}</span>` : ''}
+                                ${updatedStr && updatedStr !== dateStr ? `<span>Atualizada em ${updatedStr}</span>` : ''}
+                            </div>
                         </div>
-                        ${dateStr ? `<p class="mt-0.5 text-[10px] text-outline">${dateStr}</p>` : ''}
+                        <span class="material-symbols-outlined notranslate text-outline text-[18px] transition-transform ${isExpanded ? 'rotate-180' : ''}">expand_more</span>
                     </div>
-                    <div class="flex items-center gap-0.5 shrink-0">
-                        <button type="button" onclick="window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[15px] hover:text-primary p-0.5" title="Editar">edit</button>
-                        <button type="button" onclick="window.app.deleteProfileNote('${this.escapeHtml(note.id)}')" class="material-symbols-outlined notranslate text-outline text-[15px] hover:text-error p-0.5" title="Excluir">delete</button>
+                </button>
+                <div class="${isExpanded ? '' : 'hidden'} border-t border-outline-variant/10 px-4 py-4 space-y-3">
+                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line break-words">${this.escapeHtml(note.body)}</p>` : ''}
+                    ${url}
+                    ${tags ? `<div class="flex flex-wrap gap-1">${tags}</div>` : ''}
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                        ${isLoose ? `<button type="button" onclick="event.stopPropagation(); window.app.transformProfileNoteToMicro('${this.escapeHtml(note.id)}')" class="h-9 px-3 rounded-xl bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Transformar em ação</button>` : ''}
+                        <button type="button" onclick="event.stopPropagation(); window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="h-9 px-3 rounded-xl bg-surface-container-high text-[10px] font-bold uppercase tracking-wider text-outline hover:text-primary transition-colors">Editar</button>
+                        <button type="button" onclick="event.stopPropagation(); window.app.deleteProfileNote('${this.escapeHtml(note.id)}')" class="h-9 px-3 rounded-xl bg-error/10 text-[10px] font-bold uppercase tracking-wider text-error hover:bg-error hover:text-white transition-colors">Excluir</button>
                     </div>
                 </div>
-                ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line line-clamp-2">${this.escapeHtml(note.body)}</p>` : ''}
-                ${url}
-                ${tags ? `<div class="flex flex-wrap gap-1">${tags}</div>` : ''}
             </article>`;
         };
 
-        // When searching: flat grid. Otherwise: month groups.
         if (query) {
-            container.innerHTML = `<div class="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">${allNotes.map(renderCard).join('')}</div>`;
+            container.innerHTML = `<div class="col-span-full grid grid-cols-1 xl:grid-cols-2 gap-2">${allNotes.map(renderCard).join('')}</div>`;
             return;
         }
 
-        // Group by YYYY-MM (sorted descending by createdAt)
         const sorted = [...allNotes].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
         const byMonth = {};
         sorted.forEach(note => {
@@ -585,7 +612,7 @@ renderNotesPanel: function(showAll) {
         const monthSections = monthKeys.map(ym => {
             const isCurrentMonth = ym === currentYm;
             const safeYm = ym.replace('-', '');
-            const label = ym === 'sem-data' ? 'Sem data' : new Date(ym + '-15').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            const label = ym === 'sem-data' ? 'Sem data' : new Date(`${ym}-15`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
             const cards = byMonth[ym].map(renderCard).join('');
             return `<div class="col-span-full rounded-2xl border border-outline-variant/10 bg-surface-container-low overflow-hidden">
                 <button type="button" onclick="window.app.toggleNotesMonth('${safeYm}')"
@@ -596,7 +623,7 @@ renderNotesPanel: function(showAll) {
                         <span class="material-symbols-outlined notranslate text-outline text-[18px] notes-month-chev-${safeYm} transition-transform ${isCurrentMonth ? 'rotate-180' : ''}">expand_more</span>
                     </div>
                 </button>
-                <div id="notes-month-${safeYm}" class="${isCurrentMonth ? '' : 'hidden'} px-3 pb-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">${cards}</div>
+                <div id="notes-month-${safeYm}" class="${isCurrentMonth ? '' : 'hidden'} px-3 pb-3 space-y-2">${cards}</div>
             </div>`;
         }).join('');
 
@@ -1613,6 +1640,7 @@ renderDeepWorkPanel: function() {
         const resetBtn = document.getElementById('deep-work-reset-btn');
         const finishBtn = document.getElementById('deep-work-finish-btn');
         const contextActionsEl = document.getElementById('deep-work-context-actions');
+        const contextCardEl = document.getElementById('deep-work-context-card');
         const executionChecklistEl = document.getElementById('deep-work-execution-checklist');
 
         if (presetEl && !dw.isRunning) {
@@ -1673,10 +1701,12 @@ renderDeepWorkPanel: function() {
         }
         if (intentionEl && !intentionEl.value && dw.intention) intentionEl.value = dw.intention;
 
-        const hasSelectedMicro = !!(dw.microId || microEl?.value || dw.habitId || habitEl?.value);
-        const hasSelectedHabit = !!(dw.habitId || habitEl?.value);
-        const selectedMicro = dw.microId ? (state.entities.micros || []).find(m => m.id === dw.microId) : null;
-        const selectedHabit = dw.habitId ? (state.habits || []).find(h => h.id === dw.habitId) : null;
+        const selectedMicroId = String(dw.microId || microEl?.value || '').trim();
+        const selectedHabitId = String(dw.habitId || habitEl?.value || '').trim();
+        const hasSelectedMicro = !!selectedMicroId;
+        const hasSelectedHabit = !!selectedHabitId;
+        const selectedMicro = selectedMicroId ? (state.entities.micros || []).find(m => m.id === selectedMicroId) : null;
+        const selectedHabit = selectedHabitId ? (state.habits || []).find(h => h.id === selectedHabitId) : null;
         const canCompleteSelectedMicro = !!(selectedMicro && selectedMicro.status !== 'done');
         const hasPendingClosure = !!(
             (dw.pendingClosure?.microId && selectedMicro && dw.pendingClosure.microId === selectedMicro.id)
@@ -1697,6 +1727,20 @@ renderDeepWorkPanel: function() {
             else if (!dw.isRunning) stepEl.textContent = 'Passo 2: inicie o bloco';
             else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
             else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3: foco em execucao' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a ação' : 'Pausa estruturada');
+        }
+        if (statusEl) {
+            if (!dw.isRunning && !hasSelectedMicro && !hasSelectedHabit) statusEl.textContent = 'Selecione uma acao ou um habito';
+            else if (hasPendingClosure) statusEl.textContent = 'Fechamento da sessao pendente';
+            else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
+            else if (dw.isPaused) statusEl.textContent = 'Sessao pausada';
+            else statusEl.textContent = dw.mode === 'focus' ? 'Bloco em andamento' : (canCompleteSelectedMicro ? 'Sessao concluida: confirme a acao' : 'Pausa de recuperacao');
+        }
+        if (stepEl) {
+            if (!dw.isRunning && !hasSelectedMicro && !hasSelectedHabit) stepEl.textContent = 'Passo 1: escolha uma acao ou um habito';
+            else if (hasPendingClosure) stepEl.textContent = 'Registre a entrega e as notas da sessao';
+            else if (!dw.isRunning) stepEl.textContent = 'Passo 2: inicie o bloco';
+            else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
+            else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3: foco em execucao' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a acao' : 'Pausa estruturada');
         }
         const timeText = this.formatClock(dw.remainingSec);
         const phaseText = dw.mode === 'focus' ? 'Bloco' : 'Pausa';
@@ -1767,6 +1811,57 @@ renderDeepWorkPanel: function() {
                 finishBtn.disabled = true;
                 finishBtn.onclick = () => window.app.finishDeepWorkNow();
             }
+        }
+
+        if (contextCardEl) {
+            const microContext = selectedMicro ? this.getMicroPlanContext(selectedMicro) : null;
+            const habitMeta = selectedHabit?.linkedMetaId
+                ? (state.entities?.metas || []).find((meta) => meta.id === selectedHabit.linkedMetaId)
+                : null;
+            const contextTitle = selectedMicro ? selectedMicro.title : selectedHabit?.title || 'Nenhum contexto selecionado';
+            const contextKind = selectedMicro ? 'Acao do plano' : selectedHabit ? 'Habito' : 'Sessao livre';
+            const contextPath = selectedMicro
+                ? (microContext?.path || 'Sem trilha definida')
+                : habitMeta
+                    ? `Meta: ${habitMeta.title}`
+                    : selectedHabit
+                        ? 'Sem meta vinculada'
+                        : 'Escolha uma ação ou um hábito para montar o bloco.';
+            const contextStatus = selectedMicro
+                ? (selectedMicro.status === 'done'
+                    ? 'Concluida'
+                    : selectedMicro.status === 'in_progress'
+                        ? 'Em andamento'
+                        : 'Pendente')
+                : selectedHabit
+                    ? ((this.getHabitTodayProgressSnapshot?.(selectedHabit)?.label) || 'Sem progresso hoje')
+                    : 'Aguardando selecao';
+            const helperText = hasPendingClosure
+                ? 'Feche a sessao pendente antes de iniciar outro bloco.'
+                : selectedHabit
+                    ? 'O fechamento do hábito decide conclusão e eventual entrega para o plano.'
+                    : selectedMicro
+                        ? 'A sessão registra trabalho. A conclusão da ação continua sendo uma decisão separada.'
+                        : 'No desktop, contexto, cronometro e historico ficam visiveis ao mesmo tempo.';
+            contextCardEl.innerHTML = `
+                <div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 space-y-3">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-widest font-bold text-outline">${this.escapeHtml(contextKind)}</p>
+                        <p class="mt-1 text-sm font-semibold text-on-surface break-words">${this.escapeHtml(contextTitle)}</p>
+                        <p class="mt-1 text-xs text-on-surface-variant break-words">${this.escapeHtml(contextPath)}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="rounded-lg border border-outline-variant/10 bg-surface-container-low px-3 py-2">
+                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Meta do bloco</p>
+                            <p class="mt-1 text-sm font-semibold text-primary">${Math.max(5, Math.round(Number(dw.targetSec || 1500) / 60))} min</p>
+                        </div>
+                        <div class="rounded-lg border border-outline-variant/10 bg-surface-container-low px-3 py-2">
+                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Estado</p>
+                            <p class="mt-1 text-sm font-semibold text-on-surface">${this.escapeHtml(contextStatus)}</p>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-outline leading-relaxed">${this.escapeHtml(helperText)}</p>
+                </div>`;
         }
 
         if (contextActionsEl) {
@@ -1840,13 +1935,22 @@ renderDeepWorkPanel: function() {
                 historyEl.innerHTML = rows.map((s) => {
                     const mins = Math.max(1, Math.round((Number(s.focusSec) || 0) / 60));
                     const micro = (state.entities.micros || []).find(m => m.id === s.microId);
+                    const habit = s.habitId ? (state.habits || []).find(h => h.id === s.habitId) : null;
                     const microLabel = micro?.title || s.microTitle || s.intention || 'Sem vínculo';
                     const ctx = micro ? this.getMicroPlanContext(micro) : null;
+                    const primaryLabel = micro?.title || habit?.title || s.microTitle || s.habitTitle || s.intention || 'Sem vinculo';
+                    const secondaryLabel = micro
+                        ? (this.getMicroPlanContext(micro)?.path || 'Acao do plano')
+                        : habit
+                            ? (habit.linkedMetaId
+                                ? `Habito vinculado a ${(state.entities?.metas || []).find((meta) => meta.id === habit.linkedMetaId)?.title || 'meta'}`
+                                : 'Sessao de habito')
+                            : '';
                     const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
                     return `<div class="flex items-center justify-between text-xs border border-outline-variant/10 rounded-lg px-3 py-2">
                         <div class="min-w-0">
-                            <p class="font-medium text-on-surface truncate">${this.escapeHtml(microLabel)}</p>
-                            <p class="text-outline truncate">${this.escapeHtml(ctx ? ctx.path : dateLabel)}</p>
+                            <p class="font-medium text-on-surface truncate">${this.escapeHtml(primaryLabel)}</p>
+                            <p class="text-outline truncate">${this.escapeHtml(secondaryLabel || dateLabel)}</p>
                             <p class="text-outline/80 truncate">${this.escapeHtml(dateLabel)}</p>
                         </div>
                         <span class="font-bold text-primary shrink-0">${mins} min</span>
@@ -3694,10 +3798,12 @@ render: {
                             trailNodes.push({ label: 'Propósito (Nível 0)', title: item.purpose || '[Sem Propósito]' });
                         }
 
+                        const purposeNode = trailNodes.find((node) => node.label === 'Propósito (Nível 0)');
+                        const structuredTrailNodes = trailNodes.filter((node) => node.label !== 'Propósito (Nível 0)');
                         let trailHtml = `<div class="bg-surface-container-low rounded-lg p-3 space-y-2 relative trail-line text-on-surface-variant mt-0 overflow-hidden">
                             <div class="absolute left-[20px] top-4 bottom-4 w-px bg-primary/15"></div>`;
 
-                        trailNodes.forEach((node) => {
+                        structuredTrailNodes.forEach((node) => {
                             let icon = 'trip_origin'; let colorClass = 'text-outline'; let titleClass = 'text-xs text-on-surface-variant font-medium';
                             let nodeShell = '';
                             if (node.label === 'Propósito (Nível 0)') { icon = 'auto_awesome'; colorClass = 'text-primary'; titleClass = 'text-sm font-headline italic text-on-surface'; nodeShell = 'mt-1 rounded-xl bg-primary/5 border border-primary/10 p-3'; }
@@ -3723,7 +3829,16 @@ render: {
                             </div>`;
                         });
                         trailHtml += `</div>`;
-                        
+                        if (purposeNode) {
+                            trailHtml += `
+                                <div class="mt-3 rounded-xl border border-primary/10 bg-primary/5 p-3 flex items-start gap-3">
+                                    <span class="material-symbols-outlined notranslate text-primary text-base bg-surface-container-lowest p-1 rounded-full shrink-0 mt-0.5 ring-1 ring-outline-variant/10" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                                    <div class="flex flex-col min-w-0 flex-1">
+                                        <span class="text-[9px] uppercase tracking-wider opacity-70 font-bold text-primary">${purposeNode.label}</span>
+                                        <span class="text-sm font-headline italic text-on-surface line-clamp-2">${purposeNode.title}</span>
+                                    </div>
+                                </div>`;
+                        }
 
                         const userValues = state.profile.values || [];
                         const isAligned = userValues.includes(item.dimension);
@@ -4206,3 +4321,4 @@ render: {
     },
     });
 }
+
