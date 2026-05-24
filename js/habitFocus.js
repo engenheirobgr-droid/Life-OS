@@ -71,9 +71,10 @@ export function attachHabitFocusModule(app) {
                 const suggestedMinutes = Math.max(5, Number(this.getHabitEstimatedMinutes?.(habit)) || 25);
                 this.applyDeepWorkPresetConfig(suggestedMinutes);
             }
+            this.syncDeepWorkContextSelectorFromState?.();
             if (options.autoStart && !dw.isRunning) {
-                const habitSelect = document.getElementById('deep-work-habit');
-                if (habitSelect) habitSelect.value = habit.id;
+                const contextSelect = document.getElementById('deep-work-context');
+                if (contextSelect) contextSelect.value = `habit:${habit.id}`;
                 this.startDeepWorkSession();
                 return;
             }
@@ -88,8 +89,7 @@ export function attachHabitFocusModule(app) {
             if (dw.isRunning) return;
             dw.habitId = '';
             if (!dw.microId) dw.intention = '';
-            const habitEl = document.getElementById('deep-work-habit');
-            if (habitEl) habitEl.value = '';
+            this.syncDeepWorkContextSelectorFromState?.();
             if (this.currentView === 'foco' && this.render?.foco) this.render.foco();
             this.saveState(false);
         },
@@ -108,7 +108,24 @@ export function attachHabitFocusModule(app) {
                 return;
             }
             this.selectDeepWorkHabit(habit.id, { navigate: true });
-            this.showToast(`Habito "${habit.title}" pronto para foco.`, 'success');
+            this.showToast(`Habito "${habit.title}" selecionado no Foco para configuracao.`, 'success');
+        },
+
+        startFocusFromHabitDirect: function(habitId) {
+            this.normalizeDeepWorkState();
+            const dw = window.sistemaVidaState?.deepWork || {};
+            if (dw.pendingClosure?.microId || dw.pendingClosure?.habitId) {
+                this.showToast('Existe uma sessao anterior esperando fechamento.', 'error');
+                this.openHabitFocusClosureModal?.();
+                return;
+            }
+            if (this.enforceDeepWorkInteractionLock?.('A sessao de foco esta ativa. Finalize, pause ou reinicie antes de iniciar outro bloco.')) return;
+            const habit = (window.sistemaVidaState?.habits || []).find(item => item.id === habitId);
+            if (!habit) {
+                this.showToast('Habito nao encontrado.', 'error');
+                return;
+            }
+            this.selectDeepWorkHabit(habit.id, { navigate: true, autoStart: true });
         },
 
         closeHabitFocusModal: function() {
@@ -120,6 +137,57 @@ export function attachHabitFocusModule(app) {
 
         startHabitFocusSession: function() {
             this.startDeepWorkSession();
+        },
+
+        refreshHabitFocusClosureHabitState: function(habitId = '', dateKey = '') {
+            const modal = document.getElementById('habit-focus-closure-modal');
+            if (!modal || modal.classList.contains('hidden')) return;
+            this.normalizeDeepWorkState();
+            const state = window.sistemaVidaState || {};
+            const closure = state.deepWork?.pendingClosure;
+            if (!closure?.microId && !closure?.habitId) return;
+            const micro = closure.microId ? (state.entities?.micros || []).find(item => item.id === closure.microId) : null;
+            const resolvedHabitId = String(habitId || closure.habitId || micro?.sourceHabitId || '').trim();
+            const habit = resolvedHabitId ? (state.habits || []).find(item => item.id === resolvedHabitId) : null;
+            const resolvedDateKey = String(dateKey || '').trim()
+                || (closure.sessionEndedAtTs ? this.getLocalDateKey(new Date(closure.sessionEndedAtTs)) : this.getLocalDateKey());
+            const habitSteps = this.getHabitResolvedSteps?.(habit) || [];
+            const habitProgress = habit ? this.getHabitTodayProgressSnapshot?.(habit, resolvedDateKey) : null;
+            const mode = this.normalizeHabitTrackMode?.(habit?.trackMode) || 'boolean';
+            const isTimerHabit = habit && mode === 'timer';
+            const isBooleanHabit = habit && mode === 'boolean' && !habitSteps.length;
+            const habitSummaryEl = document.getElementById('habit-focus-closure-habit-summary');
+            const checklistEl = document.getElementById('habit-focus-closure-habit-checklist');
+            const habitCompleteWrapEl = document.getElementById('habit-focus-closure-habit-complete-wrap');
+            const habitCompleteEl = document.getElementById('habit-focus-closure-habit-complete');
+            if (habitSummaryEl) {
+                if (habit && habitProgress) {
+                    const summaryBits = [`Progresso hoje: ${habitProgress.label}`];
+                    if (isTimerHabit) summaryBits.push(`Meta diaria: ${Math.max(1, Math.round(Number(habit.targetValue) || 0))} min`);
+                    if (habitProgress.done) summaryBits.push('Concluido hoje');
+                    habitSummaryEl.textContent = summaryBits.join(' | ');
+                    habitSummaryEl.classList.remove('hidden');
+                } else {
+                    habitSummaryEl.textContent = '';
+                    habitSummaryEl.classList.add('hidden');
+                }
+            }
+            if (checklistEl) {
+                const checklistHtml = habitSteps.length ? this.renderHabitFocusClosureChecklistHTML(habit, resolvedDateKey) : '';
+                checklistEl.innerHTML = checklistHtml;
+                checklistEl.classList.toggle('hidden', !checklistHtml);
+            }
+            if (habitCompleteWrapEl && habitCompleteEl) {
+                if (isBooleanHabit) {
+                    habitCompleteWrapEl.classList.remove('hidden');
+                    habitCompleteEl.checked = !!habitProgress?.done;
+                    const label = document.getElementById('habit-focus-closure-habit-complete-label');
+                    if (label) label.textContent = 'Concluir habito hoje';
+                } else {
+                    habitCompleteWrapEl.classList.add('hidden');
+                    habitCompleteEl.checked = false;
+                }
+            }
         },
 
         createFocusMicroFromHabit: function({ habit, macroId, title, focusSec = 0, sessionPresetMinutes = 0, dateKey = '', markDone = false }) {
@@ -374,7 +442,14 @@ export function attachHabitFocusModule(app) {
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            setTimeout(() => document.getElementById('habit-focus-closure-evidence')?.focus(), 30);
+            setTimeout(() => {
+                const planToggle = document.getElementById('habit-focus-closure-plan-toggle');
+                if (planToggle && !planToggle.disabled) {
+                    planToggle.focus();
+                    return;
+                }
+                document.getElementById('habit-focus-closure-evidence')?.focus();
+            }, 30);
         },
 
         closeHabitFocusClosureModal: function() {

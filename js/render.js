@@ -524,7 +524,10 @@ renderNotesPanel: function(showAll) {
         if (!container) return;
         this.ensureNotesState();
         this.populateNoteLinkedSelect();
-        const query = String(document.getElementById('notes-search')?.value || '').trim().toLowerCase();
+        const searchEl = document.getElementById('notes-search');
+        const query = String(searchEl?.value || '').trim().toLowerCase();
+        const clearSearchBtn = document.getElementById('notes-search-clear');
+        if (clearSearchBtn) clearSearchBtn.classList.toggle('hidden', !query);
         const activeFilter = this.getProfileNotesFilter?.() || 'all';
         document.querySelectorAll('.notes-filter-chip').forEach((chip) => {
             const isActive = chip.getAttribute('data-notes-filter') === activeFilter;
@@ -553,27 +556,30 @@ renderNotesPanel: function(showAll) {
             const isLoose = !(note.linkedTo?.entityType && note.linkedTo?.entityId);
             const dateStr = note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
             const updatedStr = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
-            const tags = (note.tags || []).map(tag =>
+            const tags = (note.tags || []).slice(0, 2).map(tag =>
                 `<span class="inline-flex rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`
             ).join('');
+            const extraTagsCount = Math.max(0, (note.tags || []).length - 2);
             const url = note.url
                 ? `<a href="${this.escapeHtml(note.url)}" target="_blank" rel="noopener" class="text-[10px] text-primary hover:underline truncate">${this.escapeHtml(note.url)}</a>`
                 : '';
             const isExpanded = this.expandedProfileNoteId === note.id;
             const summary = note.body
-                ? this.escapeHtml(note.body.length > 110 ? `${note.body.slice(0, 110)}...` : note.body)
+                ? this.escapeHtml(note.body.length > 96 ? `${note.body.slice(0, 96)}...` : note.body)
                 : (url ? 'Link salvo para consultar depois.' : 'Sem resumo adicionado.');
-            return `<article class="rounded-2xl border border-outline-variant/10 bg-surface-container-low overflow-hidden transition-colors ${isExpanded ? 'shadow-sm' : ''}">
-                <button type="button" onclick="window.app.toggleProfileNoteExpanded('${this.escapeHtml(note.id)}')" class="w-full text-left p-4 hover:bg-surface-container-high transition-colors">
+            return `<article class="rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden transition-colors ${isExpanded ? 'shadow-sm' : ''}">
+                <button type="button" onclick="window.app.toggleProfileNoteExpanded('${this.escapeHtml(note.id)}')" class="w-full text-left px-3 py-2.5 hover:bg-surface-container-high transition-colors">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-1.5">
-                                <h4 class="text-sm font-bold text-on-surface leading-snug">${this.escapeHtml(note.title)}</h4>
+                                <h4 class="text-sm font-bold text-on-surface leading-snug truncate">${this.escapeHtml(note.title)}</h4>
                                 ${linkLabel ? `<span class="inline-flex rounded-full bg-secondary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-secondary">${this.escapeHtml(linkLabel)}</span>` : '<span class="inline-flex rounded-full bg-surface-container-high px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-outline">Avulsa</span>'}
                                 ${isLoose ? `<span class="inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">Transformavel</span>` : ''}
+                                ${tags}
+                                ${extraTagsCount > 0 ? `<span class="inline-flex rounded-full bg-surface-container-high px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-outline">+${extraTagsCount}</span>` : ''}
                             </div>
-                            <p class="mt-2 text-xs text-on-surface-variant leading-relaxed break-words">${summary}</p>
-                            <div class="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-outline">
+                            <p class="mt-1 text-[11px] text-on-surface-variant leading-relaxed break-words">${summary}</p>
+                            <div class="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] text-outline">
                                 ${dateStr ? `<span>Criada em ${dateStr}</span>` : ''}
                                 ${updatedStr && updatedStr !== dateStr ? `<span>Atualizada em ${updatedStr}</span>` : ''}
                             </div>
@@ -581,12 +587,13 @@ renderNotesPanel: function(showAll) {
                         <span class="material-symbols-outlined notranslate text-outline text-[18px] transition-transform ${isExpanded ? 'rotate-180' : ''}">expand_more</span>
                     </div>
                 </button>
-                <div class="${isExpanded ? '' : 'hidden'} border-t border-outline-variant/10 px-4 py-4 space-y-3">
+                <div class="${isExpanded ? '' : 'hidden'} border-t border-outline-variant/10 px-3 py-3 space-y-3">
                     ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line break-words">${this.escapeHtml(note.body)}</p>` : ''}
                     ${url}
-                    ${tags ? `<div class="flex flex-wrap gap-1">${tags}</div>` : ''}
+                    ${(note.tags || []).length ? `<div class="flex flex-wrap gap-1">${(note.tags || []).map(tag => `<span class="inline-flex rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`).join('')}</div>` : ''}
                     <div class="flex flex-wrap items-center gap-2 pt-1">
                         ${isLoose ? `<button type="button" onclick="event.stopPropagation(); window.app.transformProfileNoteToMicro('${this.escapeHtml(note.id)}')" class="h-9 px-3 rounded-xl bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Transformar em ação</button>` : ''}
+                        <button type="button" onclick="event.stopPropagation(); window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="h-9 px-3 rounded-xl bg-surface-container-high text-[10px] font-bold uppercase tracking-wider text-outline hover:text-primary transition-colors">Vincular</button>
                         <button type="button" onclick="event.stopPropagation(); window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="h-9 px-3 rounded-xl bg-surface-container-high text-[10px] font-bold uppercase tracking-wider text-outline hover:text-primary transition-colors">Editar</button>
                         <button type="button" onclick="event.stopPropagation(); window.app.deleteProfileNote('${this.escapeHtml(note.id)}')" class="h-9 px-3 rounded-xl bg-error/10 text-[10px] font-bold uppercase tracking-wider text-error hover:bg-error hover:text-white transition-colors">Excluir</button>
                     </div>
@@ -594,40 +601,12 @@ renderNotesPanel: function(showAll) {
             </article>`;
         };
 
-        if (query) {
-            container.innerHTML = `<div class="col-span-full grid grid-cols-1 xl:grid-cols-2 gap-2">${allNotes.map(renderCard).join('')}</div>`;
-            return;
-        }
-
-        const sorted = [...allNotes].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-        const byMonth = {};
-        sorted.forEach(note => {
-            const ym = note.createdAt ? note.createdAt.slice(0, 7) : 'sem-data';
-            if (!byMonth[ym]) byMonth[ym] = [];
-            byMonth[ym].push(note);
+        const sorted = [...allNotes].sort((a, b) => {
+            const aKey = String(a.updatedAt || a.createdAt || '');
+            const bKey = String(b.updatedAt || b.createdAt || '');
+            return bKey.localeCompare(aKey);
         });
-        const currentYm = new Date().toISOString().slice(0, 7);
-        const monthKeys = Object.keys(byMonth).sort((a, b) => b.localeCompare(a));
-
-        const monthSections = monthKeys.map(ym => {
-            const isCurrentMonth = ym === currentYm;
-            const safeYm = ym.replace('-', '');
-            const label = ym === 'sem-data' ? 'Sem data' : new Date(`${ym}-15`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-            const cards = byMonth[ym].map(renderCard).join('');
-            return `<div class="col-span-full rounded-2xl border border-outline-variant/10 bg-surface-container-low overflow-hidden">
-                <button type="button" onclick="window.app.toggleNotesMonth('${safeYm}')"
-                    class="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-container-high transition-colors text-left">
-                    <span class="text-sm font-bold text-on-surface capitalize">${label}</span>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-bold text-outline">${byMonth[ym].length} nota${byMonth[ym].length > 1 ? 's' : ''}</span>
-                        <span class="material-symbols-outlined notranslate text-outline text-[18px] notes-month-chev-${safeYm} transition-transform ${isCurrentMonth ? 'rotate-180' : ''}">expand_more</span>
-                    </div>
-                </button>
-                <div id="notes-month-${safeYm}" class="${isCurrentMonth ? '' : 'hidden'} px-3 pb-3 space-y-2">${cards}</div>
-            </div>`;
-        }).join('');
-
-        container.innerHTML = monthSections;
+        container.innerHTML = sorted.map(renderCard).join('');
     },
 
 renderDailyCheckinPanel: function() {
@@ -1634,11 +1613,14 @@ renderDeepWorkPanel: function() {
         const presetEl = document.getElementById('deep-work-preset');
         const microEl = document.getElementById('deep-work-micro');
         const habitEl = document.getElementById('deep-work-habit');
+        const contextEl = document.getElementById('deep-work-context');
         const intentionEl = document.getElementById('deep-work-intention');
         const startBtn = document.getElementById('deep-work-start-btn');
-        const pauseBtn = document.getElementById('deep-work-pause-btn');
+        const startIconEl = document.getElementById('deep-work-start-icon');
+        const startLabelEl = document.getElementById('deep-work-start-label');
         const resetBtn = document.getElementById('deep-work-reset-btn');
         const finishBtn = document.getElementById('deep-work-finish-btn');
+        const finishIconEl = document.getElementById('deep-work-finish-icon');
         const contextActionsEl = document.getElementById('deep-work-context-actions');
         const contextCardEl = document.getElementById('deep-work-context-card');
         const executionChecklistEl = document.getElementById('deep-work-execution-checklist');
@@ -1699,6 +1681,34 @@ renderDeepWorkPanel: function() {
                 })
             ).join('');
         }
+        if (contextEl) {
+            const micros = this.getPlanMicros({ includeDone: false });
+            const habits = (state.habits || []).filter((habit) => this.canStartFocusFromHabit?.(habit));
+            if (dw.microId && !micros.some((micro) => micro.id === dw.microId)) dw.microId = '';
+            if (dw.habitId && !habits.some((habit) => habit.id === dw.habitId)) dw.habitId = '';
+            const selectedContextValue = dw.microId
+                ? `micro:${dw.microId}`
+                : (dw.habitId ? `habit:${dw.habitId}` : '');
+            const plannedMicros = micros.filter((micro) => this._isPlannedThisWeek(micro.id));
+            const otherMicros = micros.filter((micro) => !this._isPlannedThisWeek(micro.id));
+            const makeMicroOption = (micro) => {
+                const ctx = this.getMicroPlanContext(micro);
+                const label = `${micro.title} - ${ctx.parentLabel}`;
+                const value = `micro:${micro.id}`;
+                return `<option value="${this.escapeHtml(value)}" ${value === selectedContextValue ? 'selected' : ''}>${this.escapeHtml(label)}</option>`;
+            };
+            const makeHabitOption = (habit) => {
+                const progress = this.getHabitTodayProgressSnapshot?.(habit) || { label: '0/1' };
+                const value = `habit:${habit.id}`;
+                return `<option value="${this.escapeHtml(value)}" ${value === selectedContextValue ? 'selected' : ''}>${this.escapeHtml(habit.title)} - ${this.escapeHtml(progress.label)}</option>`;
+            };
+            let contextOptionsHtml = '<option value="">Selecione um contexto</option>';
+            if (plannedMicros.length > 0) contextOptionsHtml += `<optgroup label="Plano da Semana">${plannedMicros.map(makeMicroOption).join('')}</optgroup>`;
+            if (otherMicros.length > 0) contextOptionsHtml += `<optgroup label="Outras Ações">${otherMicros.map(makeMicroOption).join('')}</optgroup>`;
+            if (habits.length > 0) contextOptionsHtml += `<optgroup label="Hábitos">${habits.map(makeHabitOption).join('')}</optgroup>`;
+            contextEl.innerHTML = contextOptionsHtml;
+            if (contextEl.value !== selectedContextValue) contextEl.value = selectedContextValue;
+        }
         if (intentionEl && !intentionEl.value && dw.intention) intentionEl.value = dw.intention;
 
         const selectedMicroId = String(dw.microId || microEl?.value || '').trim();
@@ -1712,19 +1722,26 @@ renderDeepWorkPanel: function() {
             (dw.pendingClosure?.microId && selectedMicro && dw.pendingClosure.microId === selectedMicro.id)
             || (dw.pendingClosure?.habitId && selectedHabit && dw.pendingClosure.habitId === selectedHabit.id)
         );
-        if (statusEl) {
-            if (!dw.isRunning && !hasSelectedMicro && !hasSelectedHabit) statusEl.textContent = 'Selecione uma acao ou um habito';
-            else if (hasPendingClosure) statusEl.textContent = 'Fechamento da sessao pendente';
-            else if (!dw.isRunning) statusEl.textContent = 'Pronto para iniciar';
-            else if (dw.isPaused) statusEl.textContent = 'Sessao pausada';
-            else statusEl.textContent = dw.mode === 'focus' ? 'Bloco em andamento' : (canCompleteSelectedMicro ? 'Sessao concluida: confirme a acao' : 'Pausa de recuperacao');
+        let statusText = 'Pronto para iniciar';
+        let stepText = '';
+        if (!dw.isRunning && !hasSelectedMicro && !hasSelectedHabit) {
+            statusText = 'Selecione um contexto';
+            stepText = 'Escolha uma ação do plano ou um hábito para iniciar o bloco.';
+        } else if (hasPendingClosure) {
+            statusText = 'Fechamento pendente';
+            stepText = 'Registre a entrega e as notas da sessão anterior antes de abrir outra.';
+        } else if (dw.isPaused) {
+            statusText = 'Sessão pausada';
+            stepText = 'Retome quando estiver pronto ou finalize o bloco.';
+        } else if (dw.isRunning) {
+            statusText = dw.mode === 'focus'
+                ? 'Bloco em andamento'
+                : (canCompleteSelectedMicro ? 'Sessão concluída' : 'Pausa de recuperação');
         }
+        if (statusEl) statusEl.textContent = statusText;
         if (stepEl) {
-            if (!dw.isRunning && !hasSelectedMicro && !hasSelectedHabit) stepEl.textContent = 'Passo 1: escolha uma acao ou um habito';
-            else if (hasPendingClosure) stepEl.textContent = 'Registre a entrega e as notas da sessao';
-            else if (!dw.isRunning) stepEl.textContent = 'Passo 2: inicie o bloco';
-            else if (dw.isPaused) stepEl.textContent = 'Pausado: retome ou finalize';
-            else stepEl.textContent = dw.mode === 'focus' ? 'Passo 3: foco em execucao' : (canCompleteSelectedMicro ? 'Passo final: conclua ou reabra a acao' : 'Pausa estruturada');
+            stepEl.textContent = stepText;
+            stepEl.classList.toggle('hidden', !stepText);
         }
         const timeText = this.formatClock(dw.remainingSec);
         const phaseText = dw.mode === 'focus' ? 'Bloco' : 'Pausa';
@@ -1758,42 +1775,57 @@ renderDeepWorkPanel: function() {
             chip.classList.toggle('bg-surface-container-high', !isActive);
         });
 
-        const baseBtn = 'px-3 md:px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50';
+        const baseBtn = 'inline-flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50';
         const primaryBtn = `${baseBtn} bg-primary text-on-primary shadow-sm`;
-        const neutralBtn = `${baseBtn} bg-surface-container-high border border-outline-variant/20 text-on-surface`;
         const activeBtn = `${baseBtn} bg-primary/10 border border-primary/30 text-primary ring-2 ring-primary/20`;
-        const finishBtnClass = `${baseBtn} bg-secondary-container text-on-secondary-container`;
+        const iconBtn = 'inline-flex items-center justify-center w-9 h-9 rounded-lg border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors disabled:opacity-50';
+        const finishIconBtn = 'inline-flex items-center justify-center w-9 h-9 rounded-lg border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 transition-colors disabled:opacity-50';
         if (startBtn) {
-            startBtn.textContent = dw.isRunning ? (dw.isPaused ? 'Em pausa' : 'Em foco') : 'Iniciar';
-            startBtn.className = dw.isRunning && dw.mode === 'focus' ? activeBtn : primaryBtn;
-            startBtn.disabled = dw.isRunning;
-        }
-        if (pauseBtn) {
-            pauseBtn.textContent = dw.isPaused ? 'Retomar' : 'Pausar';
-            pauseBtn.className = dw.isPaused ? activeBtn : neutralBtn;
-            pauseBtn.disabled = !dw.isRunning;
+            const shouldTogglePause = !!dw.isRunning;
+            startBtn.className = shouldTogglePause ? activeBtn : primaryBtn;
+            startBtn.disabled = !shouldTogglePause && !hasSelectedMicro && !hasSelectedHabit;
+            startBtn.onclick = () => shouldTogglePause ? window.app.toggleDeepWorkPause() : window.app.startDeepWorkSession();
+            if (startLabelEl) startLabelEl.textContent = shouldTogglePause ? (dw.isPaused ? 'Retomar' : 'Pausar') : 'Iniciar foco';
+            if (startIconEl) startIconEl.textContent = shouldTogglePause ? (dw.isPaused ? 'play_arrow' : 'pause') : 'play_arrow';
         }
         if (resetBtn) {
-            resetBtn.className = neutralBtn;
-            resetBtn.disabled = !dw.isRunning && !hasSelectedMicro;
-            if (!dw.isRunning && !hasSelectedMicro && hasSelectedHabit) resetBtn.disabled = false;
+            resetBtn.className = iconBtn;
+            resetBtn.disabled = !dw.isRunning && !hasSelectedMicro && !hasSelectedHabit;
+            resetBtn.title = 'Resetar sessão';
+            resetBtn.setAttribute('aria-label', 'Resetar sessão');
         }
         if (finishBtn) {
             if (dw.isRunning && dw.mode === 'focus') {
                 finishBtn.textContent = 'Finalizar sessão';
-                finishBtn.className = activeBtn;
+                finishBtn.className = finishIconBtn;
                 finishBtn.disabled = false;
                 finishBtn.onclick = () => window.app.finishDeepWorkNow();
             } else if (dw.isRunning && dw.mode === 'break') {
                 finishBtn.textContent = 'Pular descanso';
-                finishBtn.className = neutralBtn;
+                finishBtn.className = iconBtn;
                 finishBtn.disabled = false;
                 finishBtn.onclick = () => window.app.skipBreak();
             } else {
                 finishBtn.textContent = 'Finalizar';
-                finishBtn.className = finishBtnClass;
+                finishBtn.className = finishIconBtn;
                 finishBtn.disabled = true;
                 finishBtn.onclick = () => window.app.finishDeepWorkNow();
+            }
+        }
+
+        if (finishBtn) {
+            if (dw.isRunning && dw.mode === 'focus') {
+                finishBtn.title = 'Finalizar sessão';
+                finishBtn.setAttribute('aria-label', 'Finalizar sessão');
+                finishBtn.innerHTML = '<span class="material-symbols-outlined notranslate text-[16px]">flag</span>';
+            } else if (dw.isRunning && dw.mode === 'break') {
+                finishBtn.title = 'Pular descanso';
+                finishBtn.setAttribute('aria-label', 'Pular descanso');
+                finishBtn.innerHTML = '<span class="material-symbols-outlined notranslate text-[16px]">skip_next</span>';
+            } else {
+                finishBtn.title = 'Finalizar sessão';
+                finishBtn.setAttribute('aria-label', 'Finalizar sessão');
+                finishBtn.innerHTML = '<span class="material-symbols-outlined notranslate text-[16px]">flag</span>';
             }
         }
 
@@ -1931,10 +1963,23 @@ renderDeepWorkPanel: function() {
                                 : 'Sessao de habito')
                             : '';
                     const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
+                    const hasHabitAndMicro = !!(habit?.title || s.habitTitle) && !!(micro?.title || s.microTitle);
+                    const resolvedHabitLabel = habit?.title || s.habitTitle || '';
+                    const resolvedMicroLabel = micro?.title || s.microTitle || '';
+                    const displayPrimaryLabel = hasHabitAndMicro
+                        ? `Hábito: ${resolvedHabitLabel}`
+                        : primaryLabel;
+                    const displaySecondaryLabel = hasHabitAndMicro
+                        ? `Ação gerada: ${resolvedMicroLabel}`
+                        : (secondaryLabel || dateLabel);
+                    const displayTertiaryLabel = hasHabitAndMicro
+                        ? (this.getMicroPlanContext(micro)?.path || '')
+                        : '';
                     return `<div class="flex items-center justify-between text-xs border border-outline-variant/10 rounded-lg px-3 py-2">
                         <div class="min-w-0">
-                            <p class="font-medium text-on-surface truncate">${this.escapeHtml(primaryLabel)}</p>
-                            <p class="text-outline truncate">${this.escapeHtml(secondaryLabel || dateLabel)}</p>
+                            <p class="font-medium text-on-surface truncate">${this.escapeHtml(displayPrimaryLabel)}</p>
+                            <p class="text-outline truncate">${this.escapeHtml(displaySecondaryLabel)}</p>
+                            ${displayTertiaryLabel ? `<p class="text-outline/80 truncate">${this.escapeHtml(displayTertiaryLabel)}</p>` : ''}
                             <p class="text-outline/80 truncate">${this.escapeHtml(dateLabel)}</p>
                         </div>
                         <span class="font-bold text-primary shrink-0">${mins} min</span>
@@ -2114,6 +2159,7 @@ renderTodayActionList: function() {
         };
         const pendingItems = items.filter((item) => !item.done);
         const scheduledHabits = pendingItems.filter((item) => item.sourceType === 'habit' || item.sourceType === 'routine');
+        const scheduledMicros = pendingItems.filter((item) => item.sourceType === 'micro' && item.dayPart !== 'sem_horario');
         const groups = { manha: [], tarde: [], noite: [], sem_horario: [] };
         pendingItems.forEach((item) => {
             const key = groups[item.dayPart] ? item.dayPart : 'sem_horario';
@@ -2131,7 +2177,46 @@ renderTodayActionList: function() {
             </button>`;
         }).join('');
 
-        const organizerHtml = '';
+        const organizerHtml = mode === 'horario'
+            ? `
+                <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-3 shadow-sm">
+                    <p class="mb-2 text-[10px] font-label uppercase tracking-widest text-outline font-bold">Filtrar turno</p>
+                    <div class="grid grid-cols-2 gap-2 md:grid-cols-5">
+                        ${partButtons}
+                    </div>
+                </div>`
+            : '';
+
+        const visibleScheduledMicros = mode === 'horario' && activeDayPart !== 'all'
+            ? scheduledMicros.filter((item) => item.dayPart === activeDayPart)
+            : scheduledMicros;
+        const scheduledMicrosHtml = mode === 'horario' && visibleScheduledMicros.length
+            ? `
+                <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
+                    <div>
+                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Acoes agendadas</p>
+                        <p class="mt-1 text-xs text-on-surface-variant">Micros com horario definido para hoje.</p>
+                    </div>
+                    <div class="space-y-2">
+                        ${visibleScheduledMicros.map((item) => {
+                            const partLabel = labels[item.dayPart] || 'Sem horario';
+                            return `
+                            <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low px-3 py-2.5">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="text-[10px] uppercase tracking-widest text-outline">${this.escapeHtml(partLabel)}${item.startTime ? ` · ${this.escapeHtml(item.startTime)}` : ''}</p>
+                                        <p class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(item.title)}</p>
+                                        <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(item.dimension || 'Geral')} · ${Math.round(Number(item.estimatedMinutes) || 0)} min</p>
+                                    </div>
+                                    <button type="button" onclick="window.app.openMicroInFocus('${this.escapeHtml(item.sourceId)}', true)" class="shrink-0 px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">
+                                        Iniciar
+                                    </button>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>`
+            : '';
 
         const unscheduledMicros = groups.sem_horario.filter((item) => item.sourceType === 'micro');
         const unscheduledHtml = mode === 'horario' && unscheduledMicros.length
@@ -2174,7 +2259,12 @@ renderTodayActionList: function() {
                         ${scheduledHabits.map((item) => {
                             const habitObj = (window.sistemaVidaState?.habits || []).find((habit) => habit.id === item.sourceId);
                             const focusBtn = (habitObj && this.canStartFocusFromHabit?.(habitObj))
-                                ? `<button type="button" onclick="window.app.openHabitFocusModal('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Foco</button>`
+                                ? `<div class="inline-flex items-center gap-1">
+                                    <button type="button" onclick="window.app.startFocusFromHabitDirect('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-primary/20 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/15 transition-colors">Iniciar foco</button>
+                                    <button type="button" onclick="window.app.openHabitFocusModal('${this.escapeHtml(item.sourceId)}')" title="Configurar no Foco" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-outline-variant/20 text-outline hover:text-primary hover:bg-surface-container-high transition-colors">
+                                        <span class="material-symbols-outlined notranslate text-[14px]">tune</span>
+                                    </button>
+                                </div>`
                                 : '';
                             const typeLabel = item.sourceType === 'routine' ? 'Rotina' : 'Habito';
                             return `
@@ -2194,11 +2284,11 @@ renderTodayActionList: function() {
                         }).join('')}
                     </div>
                 </div>`
-            : (!items.length
+            : (!pendingItems.length
                 ? '<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 text-xs text-outline italic">Sem acoes previstas para hoje.</div>'
                 : '');
 
-        container.innerHTML = `${organizerHtml}${unscheduledHtml}${habitsHtml}`;
+        container.innerHTML = `${organizerHtml}${scheduledMicrosHtml}${unscheduledHtml}${habitsHtml}`;
     },
 
 render: {
@@ -2232,8 +2322,8 @@ render: {
                     const macroIds = new Set(micros.map(m => m.macroId).filter(Boolean));
                     macros = macros.filter(m => macroIds.has(m.id));
                 } else {
-                    micros = micros.filter(m => app.isDateInCurrentWeek(m.prazo));
-                    macros = macros.filter(m => app.isDateInCurrentWeek(m.prazo));
+                    micros = micros.filter((m) => app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
+                    macros = macros.filter((m) => app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
                 }
             } else if (filter === 'mes') {
                 micros = micros.filter(m => app.isDateInCurrentMonth(m.prazo));
@@ -2265,7 +2355,7 @@ render: {
             if (concluidasVal) concluidasVal.textContent = doneMicros;
             
             if (atrasadasVal) {
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = app.getLocalDateKey();
                 const delayedMicros = micros.filter(m => m.status !== 'done' && m.prazo && m.prazo < todayStr).length;
                 atrasadasVal.textContent = delayedMicros;
             }
@@ -2615,9 +2705,11 @@ render: {
                     state.deepWork.microId = micro.id;
                     state.deepWork.intention = micro.title || '';
                     const microEl = document.getElementById('deep-work-micro');
+                    const contextEl = document.getElementById('deep-work-context');
                     const intentionEl = document.getElementById('deep-work-intention');
                     const presetEl = document.getElementById('deep-work-preset');
                     if (microEl) microEl.value = micro.id;
+                    if (contextEl) contextEl.value = `micro:${micro.id}`;
                     if (intentionEl) intentionEl.value = micro.title || '';
                     if (pendingMinutes > 0) {
                         app.applyDeepWorkPresetConfig?.(pendingMinutes);
@@ -2781,9 +2873,7 @@ render: {
             const _selectedIds = (_weekPlan && _weekPlan.selectedMicros) || [];
             const weekMicros = _selectedIds.length > 0
               ? state.entities.micros.filter(m => _selectedIds.includes(m.id))
-              : state.entities.micros.filter(m =>
-                  app.isDateInCurrentWeek(m.inicioDate || m.prazo) || app.isDateInCurrentWeek(m.prazo)
-                );
+              : state.entities.micros.filter((m) => app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
             const weekDone = weekMicros.filter(m => m.status === 'done').length;
             const weekProgress = weekMicros.length > 0
               ? Math.round((weekDone / weekMicros.length) * 100)
@@ -3023,10 +3113,15 @@ render: {
                         ? `<span class="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 text-amber-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"><span class="material-symbols-outlined notranslate text-[11px]" style="font-variation-settings:'FILL' 1">key</span>Chave</span>`
                         : '';
                     const focusCta = app.canStartFocusFromHabit?.(habit)
-                        ? `<button type="button" onclick="event.stopPropagation(); window.app.openHabitFocusModal('${habit.id}')" class="mt-3 inline-flex items-center gap-1 rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/15 transition-colors">
-                                <span class="material-symbols-outlined notranslate text-[12px]">timer</span>
-                                Foco
-                           </button>`
+                        ? `<div class="mt-3 inline-flex items-center gap-1.5">
+                                <button type="button" onclick="event.stopPropagation(); window.app.startFocusFromHabitDirect('${habit.id}')" class="inline-flex items-center gap-1 rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/15 transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-[12px]">timer</span>
+                                    Iniciar foco
+                                </button>
+                                <button type="button" onclick="event.stopPropagation(); window.app.openHabitFocusModal('${habit.id}')" title="Configurar no Foco" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-outline-variant/20 text-outline hover:text-primary hover:bg-surface-container-high transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-[14px]">tune</span>
+                                </button>
+                           </div>`
                         : '';
                     const hasFocusSessionInProgress = (state.entities?.micros || []).some((m) =>
                         m?.sourceHabitId === habit.id && m.status === 'in_progress'
@@ -3204,8 +3299,7 @@ render: {
 
             let html = '';
             let pendentes = 0;
-            const now = new Date();
-            const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            const todayStr = app.getLocalDateKey();
             
             const isInTodayWindow = (m) => {
                 // Normalização para meia-noite local para comparação precisa
@@ -3218,9 +3312,28 @@ render: {
                 const end = new Date(prazoStr + 'T00:00:00');
                 return start <= today && end >= today;
             };
-            const allTodayMicros = (state.entities.micros || []).filter(isInTodayWindow);
-            const dayDone = allTodayMicros.filter(m => m.status === 'done' || m.completed).length;
-            const dayTotal = allTodayMicros.length;
+            const allTodayEntries = app.getTodayChecklistItems
+                ? app.getTodayChecklistItems(todayStr)
+                : (state.entities.micros || [])
+                    .filter(isInTodayWindow)
+                    .map((micro) => {
+                        const schedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(micro) : { startTime: '', startMinutes: null, dayPart: 'sem_horario' };
+                        return {
+                            id: `micro:${micro.id}`,
+                            sourceType: 'micro',
+                            sourceId: micro.id,
+                            title: micro.title || 'Acao',
+                            dimension: micro.dimension || 'Geral',
+                            estimatedMinutes: Math.max(1, Number(app.getMicroEstimatedMinutes?.(micro)) || 0),
+                            startTime: schedule.startTime || '',
+                            startMinutes: schedule.startMinutes,
+                            dayPart: schedule.dayPart || 'sem_horario',
+                            done: micro.status === 'done' || !!micro.completed,
+                            micro
+                        };
+                    });
+            const dayDone = allTodayEntries.filter((entry) => entry.done).length;
+            const dayTotal = allTodayEntries.length;
             const dayProgress = dayTotal ? Math.round((dayDone / dayTotal) * 100) : 0;
             const dayProgressCard = document.getElementById('day-progress-card');
             const dayProgressLabel = document.getElementById('day-progress-label');
@@ -3232,30 +3345,32 @@ render: {
             // Filtro "Para Hoje": pendentes/in_progress dentro da janela, mantendo a recém-concluída por um pulso visual.
             const todayMode = app.getTodayChecklistMode ? app.getTodayChecklistMode() : 'dimensao';
             const todayDayPart = app.getTodayChecklistDayPart ? app.getTodayChecklistDayPart() : 'all';
-            const todayMicros = allTodayMicros
-                .filter(m => {
-                    const completedToday = (m.status === 'done' || m.completed) && (m.completedDate === todayStr || m.doneDate === todayStr);
-                    return m.status !== 'done' || completedToday || m.id === app.recentCompletedMicroId;
+            const todayMicros = allTodayEntries
+                .filter((entry) => {
+                    const micro = entry.micro;
+                    const completedToday = (micro.status === 'done' || micro.completed) && (micro.completedDate === todayStr || micro.doneDate === todayStr);
+                    return micro.status !== 'done' || completedToday || micro.id === app.recentCompletedMicroId;
                 })
-                .filter((micro) => {
+                .filter((entry) => {
                     if (todayMode !== 'horario' || todayDayPart === 'all') return true;
-                    const schedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(micro) : { dayPart: 'sem_horario' };
-                    return (schedule.dayPart || 'sem_horario') === todayDayPart;
+                    return (entry.dayPart || 'sem_horario') === todayDayPart;
                 })
                 .sort((a, b) => {
-                    const aSchedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(a) : { startMinutes: null, dayPart: 'sem_horario' };
-                    const bSchedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(b) : { startMinutes: null, dayPart: 'sem_horario' };
+                    const aMicro = a.micro;
+                    const bMicro = b.micro;
+                    const aSchedule = { startMinutes: a.startMinutes, dayPart: a.dayPart };
+                    const bSchedule = { startMinutes: b.startMinutes, dayPart: b.dayPart };
                     if (todayMode !== 'horario') {
-                        const aDone = a.status === 'done' || a.completed ? 1 : 0;
-                        const bDone = b.status === 'done' || b.completed ? 1 : 0;
+                        const aDone = aMicro.status === 'done' || aMicro.completed ? 1 : 0;
+                        const bDone = bMicro.status === 'done' || bMicro.completed ? 1 : 0;
                         if (aDone !== bDone) return aDone - bDone;
-                        if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
-                        if (b.status === 'in_progress' && a.status !== 'in_progress') return 1;
-                        const dim = String(a.dimension || '').localeCompare(String(b.dimension || ''), 'pt-BR');
+                        if (aMicro.status === 'in_progress' && bMicro.status !== 'in_progress') return -1;
+                        if (bMicro.status === 'in_progress' && aMicro.status !== 'in_progress') return 1;
+                        const dim = String(aMicro.dimension || '').localeCompare(String(bMicro.dimension || ''), 'pt-BR');
                         if (dim !== 0) return dim;
-                        const due = String(a.prazo || '9999-12-31').localeCompare(String(b.prazo || '9999-12-31'));
+                        const due = String(aMicro.prazo || '9999-12-31').localeCompare(String(bMicro.prazo || '9999-12-31'));
                         if (due !== 0) return due;
-                        return String(a.title || '').localeCompare(String(b.title || ''), 'pt-BR');
+                        return String(aMicro.title || '').localeCompare(String(bMicro.title || ''), 'pt-BR');
                     }
                     if (todayMode === 'horario') {
                         const order = { manha: 0, tarde: 1, noite: 2, sem_horario: 3 };
@@ -3271,20 +3386,23 @@ render: {
                         if (startDate && startDate <= todayStr && micro.status === 'pending') return 2;
                         return 3;
                     };
-                    const aRank = getUrgencyRank(a);
-                    const bRank = getUrgencyRank(b);
+                    const aRank = getUrgencyRank(aMicro);
+                    const bRank = getUrgencyRank(bMicro);
                     if (aRank !== bRank) return aRank - bRank;
                     if ((aSchedule.startMinutes ?? 9999) !== (bSchedule.startMinutes ?? 9999)) return (aSchedule.startMinutes ?? 9999) - (bSchedule.startMinutes ?? 9999);
-                    const dim = String(a.dimension || '').localeCompare(String(b.dimension || ''), 'pt-BR');
+                    const dim = String(aMicro.dimension || '').localeCompare(String(bMicro.dimension || ''), 'pt-BR');
                     if (dim !== 0) return dim;
-                    const due = String(a.prazo || '9999-12-31').localeCompare(String(b.prazo || '9999-12-31'));
+                    const due = String(aMicro.prazo || '9999-12-31').localeCompare(String(bMicro.prazo || '9999-12-31'));
                     if (due !== 0) return due;
-                    return String(a.title || '').localeCompare(String(b.title || ''), 'pt-BR');
+                    return String(aMicro.title || '').localeCompare(String(bMicro.title || ''), 'pt-BR');
                 });
 
             let lastGroup = '';
-            todayMicros.forEach((micro, idx) => {
-                const schedule = app.getMicroScheduleContext ? app.getMicroScheduleContext(micro) : { startTime: '', dayPart: 'sem_horario' };
+            todayMicros.forEach((entry, idx) => {
+                const micro = entry.micro;
+                const schedule = app.getMicroScheduleContext
+                    ? app.getMicroScheduleContext(micro)
+                    : { startTime: entry.startTime || '', dayPart: entry.dayPart || 'sem_horario' };
                 const groupLabel = todayMode === 'horario'
                     ? ({ manha: 'Manha', tarde: 'Tarde', noite: 'Noite', sem_horario: 'Sem horario' })[schedule.dayPart || 'sem_horario']
                     : (micro.dimension || 'Geral');
@@ -3469,8 +3587,7 @@ render: {
             });
 
             // Se houver tarefas atrasadas, adiciona um banner/botão de resolução rápida
-            const nowOverdue = new Date();
-            const localTodayStr = new Date(nowOverdue.getTime() - (nowOverdue.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            const localTodayStr = app.getLocalDateKey();
             const overdueList = (state.entities.micros || []).filter(m => m.status !== 'done' && m.prazo && m.prazo < localTodayStr);
             const atrasadasCount = overdueList.length;
 

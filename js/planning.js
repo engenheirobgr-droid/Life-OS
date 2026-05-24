@@ -175,7 +175,7 @@ onTypeChange: function(type) {
 
         // Defaults para datas reais no modal (Projeto/macro/micro)
         if (usaAgendamento) {
-            const hoje = new Date().toISOString().split('T')[0];
+            const hoje = this.getLocalDateKey();
             const inicioInput = document.getElementById('crud-inicio-date');
             const prazoInput = document.getElementById('crud-prazo-date');
             if (inicioInput && !inicioInput.value) inicioInput.value = hoje;
@@ -1391,6 +1391,28 @@ getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
         });
     },
 
+getTodayChecklistItems: function(dateKey = this.getLocalDateKey()) {
+        const state = window.sistemaVidaState || {};
+        const sourceItems = this.getTodayActionItems ? this.getTodayActionItems(dateKey) : [];
+        const microById = new Map(
+            (state.entities?.micros || [])
+                .filter((micro) => micro && micro.id)
+                .map((micro) => [String(micro.id), micro])
+        );
+        return sourceItems
+            .filter((item) => item.sourceType === 'micro' && microById.has(String(item.sourceId || '')))
+            .map((item) => ({
+                ...item,
+                micro: microById.get(String(item.sourceId || ''))
+            }));
+    },
+
+getTodayChecklistMicros: function(dateKey = this.getLocalDateKey()) {
+        return (this.getTodayChecklistItems ? this.getTodayChecklistItems(dateKey) : [])
+            .map((item) => item.micro)
+            .filter(Boolean);
+    },
+
 getTodayCapacityState: function(dateKey = this.getLocalDateKey()) {
         const settings = window.sistemaVidaState?.settings || {};
         const rawProfile = settings.dayCapacityProfile || {};
@@ -1415,7 +1437,7 @@ getTodayCapacityState: function(dateKey = this.getLocalDateKey()) {
         const checkinAdjustment = this.getCapacityAdjustmentFromCheckin ? this.getCapacityAdjustmentFromCheckin(dateKey) : { factor: 1, extraBufferMinutes: 0, reasons: [], label: '' };
         const baseCapacityMinutes = Math.max(60, defaults.awakeMinutes - defaults.fixedCommitmentsMinutes - defaults.dailyBasicsMinutes - defaults.bufferMinutes);
         const capacityMinutes = Math.max(45, Math.round((baseCapacityMinutes * checkinAdjustment.factor) - checkinAdjustment.extraBufferMinutes));
-        const items = this.getTodayActionItems(dateKey);
+        const items = this.getTodayChecklistItems ? this.getTodayChecklistItems(dateKey) : [];
         const pendingItems = items.filter((item) => !item.done);
         const activeDayPart = (this.getTodayChecklistMode?.() === 'horario')
             ? this.getTodayChecklistDayPart?.() || 'all'

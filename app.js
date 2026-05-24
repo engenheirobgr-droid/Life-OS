@@ -20,12 +20,12 @@ import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
 import { attachCadence } from './js/cadence.js?v=20260523-purpose-legacy-cleanup-v1';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260521-taxonomy-v2';
+import { attachIdentity } from './js/identity.js?v=20260524-package5-ui-v2';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260520-focus-linkage-audit-v3';
 import { attachStateModule } from './js/state.js?v=20260523-sprint3-gamification-v1';
-import { attachRenderModule } from './js/render.js?v=20260523-package5-ui-v1';
+import { attachRenderModule } from './js/render.js?v=20260524-package5-ui-v2';
 import { attachPlanningModule } from './js/planning.js?v=20260523-package5-ui-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260523-package5-ui-v1',
+    appBuildVersion: '20260524-package-close-v3',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -2772,8 +2772,7 @@ _getAudioContext: function() {
         if (valuesBanner) valuesBanner.innerHTML = '';
         
         this.renderSidebarValues();
-        const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = this.getLocalDateKey();
         
         if (!state.purposeStartDate) state.purposeStartDate = todayStr;
         if (!state.cycleStartDate) state.cycleStartDate = todayStr;
@@ -2785,7 +2784,7 @@ _getAudioContext: function() {
             Notification.requestPermission().catch(() => {});
         }
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = this.getLocalDateKey(today);
         
         if (!state.purposeStartDate) state.purposeStartDate = todayStr;
         if (!state.cycleStartDate) state.cycleStartDate = todayStr;
@@ -3531,23 +3530,45 @@ renderProfileChrome: function() {
         });
     },
 
-    isDateInCurrentWeek: function(dateStr) {
-        if (!dateStr) return false;
-        const date = new Date(dateStr + "T00:00:00");
-        const now = new Date();
+    getCurrentWeekBounds: function(referenceDate = new Date()) {
+        const now = new Date(referenceDate);
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - now.getDay());
-        startOfWeek.setHours(0,0,0,0);
+        startOfWeek.setHours(0, 0, 0, 0);
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
-        endOfWeek.setHours(23,59,59,999);
+        endOfWeek.setHours(23, 59, 59, 999);
+        return { startOfWeek, endOfWeek };
+    },
+
+    isDateInCurrentWeek: function(dateStr) {
+        if (!dateStr) return false;
+        const date = new Date(`${dateStr}T00:00:00`);
+        if (Number.isNaN(date.getTime())) return false;
+        const { startOfWeek, endOfWeek } = this.getCurrentWeekBounds();
         return date >= startOfWeek && date <= endOfWeek;
+    },
+
+    isDateWindowInCurrentWeek: function(startDateStr, endDateStr) {
+        const end = endDateStr ? new Date(`${endDateStr}T00:00:00`) : null;
+        if (!end || Number.isNaN(end.getTime())) return false;
+        const start = startDateStr ? new Date(`${startDateStr}T00:00:00`) : end;
+        if (Number.isNaN(start.getTime())) return false;
+        const { startOfWeek, endOfWeek } = this.getCurrentWeekBounds();
+        return start <= endOfWeek && end >= startOfWeek;
     },
 
     hasDayActivity: function(dateKey) {
         const state = window.sistemaVidaState || {};
         if (!dateKey) return false;
         if ((state.dailyLogs || {})[dateKey]) return true;
+        if ((state.habits || []).some((habit) => {
+            const rawValue = Number(habit?.logs?.[dateKey]) || 0;
+            if (rawValue > 0) return true;
+            const stepMap = habit?.stepLogs?.[dateKey];
+            if (!stepMap || typeof stepMap !== 'object') return false;
+            return Object.values(stepMap).some(Boolean);
+        })) return true;
         if ((state.entities?.micros || []).some(m => m.completedDate === dateKey || m.doneDate === dateKey)) return true;
         if ((state.deepWork?.sessions || []).some(s => (s.endedAt || '').slice(0, 10) === dateKey)) return true;
         return false;
@@ -4739,7 +4760,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         const day = d.getDay(); // 0=dom, 1=seg...
         const diff = (day === 0) ? -6 : 1 - day; // ajusta para segunda
         d.setDate(d.getDate() + diff);
-        return d.toISOString().split('T')[0];
+        return this.getLocalDateKey(d);
     },
 
     _getNextWeekKey: function(date = new Date()) {
@@ -4976,6 +4997,14 @@ ensureNotesState: function() {
     setProfileNotesFilter: function(filter = 'all') {
         this.profileNotesFilter = ['all', 'linked', 'loose'].includes(filter) ? filter : 'all';
         this.renderNotesPanel();
+    },
+
+    clearProfileNotesSearch: function() {
+        const searchEl = document.getElementById('notes-search');
+        if (!searchEl) return;
+        searchEl.value = '';
+        this.renderNotesPanel();
+        searchEl.focus();
     },
 
     toggleProfileNoteExpanded: function(noteId) {
@@ -5978,7 +6007,11 @@ ensureNotesState: function() {
         const selectedIds = Array.isArray(weekPlan?.selectedMicros) ? weekPlan.selectedMicros : [];
         const weekMicros = selectedIds.length > 0
             ? (state.entities?.micros || []).filter(m => selectedIds.includes(m.id) && m.status !== 'done' && m.status !== 'abandoned')
-            : (state.entities?.micros || []).filter(m => m.status !== 'done' && m.status !== 'abandoned' && this.isDateInCurrentWeek(m.prazo));
+            : (state.entities?.micros || []).filter((m) =>
+                m.status !== 'done'
+                && m.status !== 'abandoned'
+                && this.isDateWindowInCurrentWeek(m.inicioDate, m.prazo)
+            );
 
         if (weekMicros.length >= 4) {
             const byDim = {};
@@ -7114,8 +7147,7 @@ ensureNotesState: function() {
         const s1 = document.getElementById('diario-shutdown-1') ? document.getElementById('diario-shutdown-1').value : '';
 
         // Ajuste de Fuso Horário para a data local real
-        const d = new Date();
-        const today = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        const today = this.getLocalDateKey();
         
         if (!window.sistemaVidaState.dailyLogs) window.sistemaVidaState.dailyLogs = {};
         
@@ -7703,10 +7735,20 @@ ensureNotesState: function() {
         const presetEl = document.getElementById('deep-work-preset');
         const microEl = document.getElementById('deep-work-micro');
         const habitEl = document.getElementById('deep-work-habit');
+        const contextEl = document.getElementById('deep-work-context');
         const intentionEl = document.getElementById('deep-work-intention');
         const presetConfig = this.getDeepWorkPresetConfig(Number(presetEl?.value || 25));
-        const chosenMicro = microEl?.value || '';
-        const chosenHabit = habitEl?.value || dw.habitId || '';
+        const contextValue = String(contextEl?.value || '').trim();
+        let chosenMicro = '';
+        let chosenHabit = '';
+        if (contextValue.startsWith('micro:')) chosenMicro = contextValue.slice(6);
+        if (contextValue.startsWith('habit:')) chosenHabit = contextValue.slice(6);
+        if (!chosenMicro && microEl?.value) chosenMicro = microEl.value;
+        if (!chosenHabit && habitEl?.value) chosenHabit = habitEl.value;
+        if (!chosenMicro && !chosenHabit) {
+            chosenMicro = String(dw.microId || '').trim();
+            chosenHabit = String(dw.habitId || '').trim();
+        }
         const intention = (intentionEl?.value || '').trim();
         if (!chosenMicro && !chosenHabit) {
             this.showToast('Selecione uma ação de Planos ou um hábito para iniciar o foco.', 'error');
@@ -7785,8 +7827,10 @@ ensureNotesState: function() {
         dw.microId = micro.id;
         dw.intention = micro.title || '';
         const microEl = document.getElementById('deep-work-micro');
+        const contextEl = document.getElementById('deep-work-context');
         const intentionEl = document.getElementById('deep-work-intention');
         if (microEl) microEl.value = micro.id;
+        if (contextEl) contextEl.value = `micro:${micro.id}`;
         if (intentionEl) intentionEl.value = micro.title || '';
         this.applyDeepWorkPresetConfig(suggestedMinutes);
         this.startDeepWorkSession();
@@ -7821,6 +7865,8 @@ ensureNotesState: function() {
         dw.habitId = '';
         dw.microId = micro.id;
         dw.intention = micro.title || '';
+        const contextEl = document.getElementById('deep-work-context');
+        if (contextEl) contextEl.value = `micro:${micro.id}`;
         const explicitPreset = Math.max(0, Math.round(Number(options?.presetMinutes) || 0));
         this.pendingFocusMinutes = explicitPreset > 0
             ? this.getDeepWorkPresetConfig(explicitPreset).minutes
@@ -7855,8 +7901,45 @@ ensureNotesState: function() {
             const intentionEl = document.getElementById('deep-work-intention');
             if (intentionEl) intentionEl.value = '';
         }
+        this.syncDeepWorkContextSelectorFromState?.();
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
         else this.renderDeepWorkImmersiveOverlay?.();
+    },
+
+    selectDeepWorkContext: function(rawValue = '') {
+        this.normalizeDeepWorkState();
+        const value = String(rawValue || '').trim();
+        if (!value) {
+            const dw = window.sistemaVidaState.deepWork;
+            if (dw.isRunning) return;
+            dw.microId = '';
+            dw.habitId = '';
+            dw.intention = '';
+            const intentionEl = document.getElementById('deep-work-intention');
+            if (intentionEl) intentionEl.value = '';
+            this.syncDeepWorkContextSelectorFromState?.();
+            if (this.currentView === 'foco') this.renderDeepWorkPanel();
+            else this.renderDeepWorkImmersiveOverlay?.();
+            return;
+        }
+        if (value.startsWith('micro:')) {
+            this.selectDeepWorkMicro(value.slice(6));
+            return;
+        }
+        if (value.startsWith('habit:')) {
+            this.selectDeepWorkHabit?.(value.slice(6), { navigate: false });
+        }
+    },
+
+    syncDeepWorkContextSelectorFromState: function() {
+        this.normalizeDeepWorkState();
+        const dw = window.sistemaVidaState?.deepWork || {};
+        const contextEl = document.getElementById('deep-work-context');
+        if (!contextEl) return;
+        const nextValue = dw.microId
+            ? `micro:${dw.microId}`
+            : (dw.habitId ? `habit:${dw.habitId}` : '');
+        if (contextEl.value !== nextValue) contextEl.value = nextValue;
     },
 
     setDeepWorkPreset: function(minutes) {

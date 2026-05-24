@@ -1152,12 +1152,44 @@ importFromExcel: async function(event) {
             let habitIndex = buildNamedIndex([]);
             let strengthIndex = buildNamedIndex([]);
             let shadowIndex = buildNamedIndex([]);
-            const importWarnings = [];
+            const warningLabels = {
+                root: {
+                    plan_parent: 'Planos rejeitados por vinculo pai ausente/invalido',
+                    plan_validation: 'Planos rejeitados por contrato de validacao',
+                    plan_dimension: 'Planos rejeitados por dimensao ausente/inconsistente',
+                    habit_meta_link: 'Habitos rejeitados por meta vinculada inexistente',
+                    habit_dimension: 'Habitos rejeitados por dimensao ausente/incompativel',
+                    review_lookup: 'Revisoes com referencia de identidade nao encontrada'
+                },
+                consequence: {
+                    habit_history_link: 'Historico de habitos sem item correspondente',
+                    weekly_micro_link: 'Planos semanais com micros nao encontradas',
+                    focus_micro_link: 'Foco profundo com micro nao encontrada',
+                    focus_habit_link: 'Foco profundo com habito nao encontrado',
+                    notes_entity_link: 'Notas com vinculo para entidade inexistente'
+                }
+            };
+            const importWarningState = {
+                root: new Map(),
+                consequence: new Map(),
+                details: []
+            };
+            const registerImportWarning = (kind, code, message) => {
+                const target = kind === 'consequence' ? importWarningState.consequence : importWarningState.root;
+                const label = warningLabels[kind]?.[code] || code;
+                const bucket = target.get(code) || { code, label, count: 0, samples: [] };
+                bucket.count += 1;
+                if (bucket.samples.length < 3) bucket.samples.push(message);
+                target.set(code, bucket);
+                importWarningState.details.push({ kind, code, label, message });
+            };
+            const pushRootImportWarning = (code, message) => registerImportWarning('root', code, message);
+            const pushConsequenceImportWarning = (code, message) => registerImportWarning('consequence', code, message);
             const getImportedPlanLabel = (type) => ({ metas: 'Meta', okrs: 'Projeto', macros: 'Entrega', micros: 'Ação' }[type] || type);
-            const pushPlanImportWarning = (type, title, message) => {
+            const pushPlanImportWarning = (type, title, message, code = 'plan_validation') => {
                 const itemLabel = getImportedPlanLabel(type);
                 const safeTitle = String(title || '').trim() || '(sem título)';
-                importWarnings.push(`Planos: ${itemLabel} "${safeTitle}" - ${message}`);
+                pushRootImportWarning(code, `Planos: ${itemLabel} "${safeTitle}" - ${message}`);
             };
             const finalizeImportedMetas = (metaItems, metaLookup) => {
                 return (metaItems || []).filter((meta) => {
@@ -1168,7 +1200,7 @@ importFromExcel: async function(event) {
                     if (explicitParentTitle) {
                         const resolvedParentId = resolveItemId(explicitParentTitle, metaLookup);
                         if (!resolvedParentId) {
-                            pushPlanImportWarning('metas', meta.title, `Meta pai "${explicitParentTitle}" não encontrada. Linha ignorada.`);
+                            pushPlanImportWarning('metas', meta.title, `Meta pai "${explicitParentTitle}" não encontrada. Linha ignorada.`, 'plan_parent');
                             delete meta._parentTitle;
                             return false;
                         }
@@ -1177,7 +1209,7 @@ importFromExcel: async function(event) {
                     } else if (explicitParentId) {
                         parentMeta = (metaItems || []).find((item) => item.id === explicitParentId) || null;
                         if (!parentMeta) {
-                            pushPlanImportWarning('metas', meta.title, 'Meta pai informada não foi encontrada. Linha ignorada.');
+                            pushPlanImportWarning('metas', meta.title, 'Meta pai informada não foi encontrada. Linha ignorada.', 'plan_parent');
                             return false;
                         }
                     }
@@ -1186,7 +1218,7 @@ importFromExcel: async function(event) {
                     }
                     delete meta._parentTitle;
                     if (!String(meta.dimension || '').trim()) {
-                        pushPlanImportWarning('metas', meta.title, 'Dimensão ausente e não foi possível inferir pela meta pai. Linha ignorada.');
+                        pushPlanImportWarning('metas', meta.title, 'Dimensão ausente e não foi possível inferir pela meta pai. Linha ignorada.', 'plan_dimension');
                         return false;
                     }
                     return true;
@@ -1204,7 +1236,7 @@ importFromExcel: async function(event) {
                     if (explicitParentTitle) {
                         resolvedParentId = resolveItemId(explicitParentTitle, index);
                         if (!resolvedParentId) {
-                            pushPlanImportWarning(type, item.title, `${this.getPlanParentConfig(type)?.parentLabel || 'Pai'} pai "${explicitParentTitle}" não encontrado. Linha ignorada.`);
+                            pushPlanImportWarning(type, item.title, `${this.getPlanParentConfig(type)?.parentLabel || 'Pai'} pai "${explicitParentTitle}" não encontrado. Linha ignorada.`, 'plan_parent');
                             delete item._parentTitle;
                             return false;
                         }
@@ -1216,12 +1248,12 @@ importFromExcel: async function(event) {
                     });
                     delete item._parentTitle;
                     if (!validation.ok) {
-                        pushPlanImportWarning(type, item.title, `${validation.message} Linha ignorada.`);
+                        pushPlanImportWarning(type, item.title, `${validation.message} Linha ignorada.`, 'plan_validation');
                         return false;
                     }
                     this.syncPlanEntityLineage(item, type, validation.parent);
                     if (!String(item.dimension || '').trim()) {
-                        pushPlanImportWarning(type, item.title, 'Dimensão ausente e não foi possível inferir pelo vínculo. Linha ignorada.');
+                        pushPlanImportWarning(type, item.title, 'Dimensão ausente e não foi possível inferir pelo vínculo. Linha ignorada.', 'plan_dimension');
                         return false;
                     }
                     return true;
@@ -1328,7 +1360,7 @@ importFromExcel: async function(event) {
                     if (okr._parentTitle) {
                         const resolvedParentId = resolveItemId(okr._parentTitle, metaIndex);
                         okr.metaId = resolvedParentId || '';
-                        if (!resolvedParentId) importWarnings.push(`Planos: Meta pai não encontrada para OKR "${okr.title || ''}"`);
+                        if (!resolvedParentId) pushRootImportWarning('plan_parent', `Planos: Meta pai não encontrada para OKR "${okr.title || ''}"`);
                     }
                     delete okr._parentTitle;
                 });
@@ -1336,7 +1368,7 @@ importFromExcel: async function(event) {
                     if (macro._parentTitle) {
                         const resolvedParentId = resolveItemId(macro._parentTitle, okrIndex);
                         macro.okrId = resolvedParentId || '';
-                        if (!resolvedParentId) importWarnings.push(`Planos: OKR pai não encontrado para Macro "${macro.title || ''}"`);
+                        if (!resolvedParentId) pushRootImportWarning('plan_parent', `Planos: OKR pai não encontrado para Macro "${macro.title || ''}"`);
                     }
                     delete macro._parentTitle;
                 });
@@ -1344,7 +1376,7 @@ importFromExcel: async function(event) {
                     if (micro._parentTitle) {
                         const resolvedParentId = resolveItemId(micro._parentTitle, macroIndex);
                         micro.macroId = resolvedParentId || '';
-                        if (!resolvedParentId) importWarnings.push(`Planos: Macro pai não encontrada para Micro "${micro.title || ''}"`);
+                        if (!resolvedParentId) pushRootImportWarning('plan_parent', `Planos: Macro pai não encontrada para Micro "${micro.title || ''}"`);
                     }
                     delete micro._parentTitle;
                 });
@@ -1533,15 +1565,15 @@ importFromExcel: async function(event) {
                         const habitDimension = explicitDimension || inferredDimension;
                         const habitTitle = String(title || '').trim();
                         if (rawLinkedMetaId && !resolvedLinkedMetaId) {
-                            importWarnings.push(`HÃ¡bitos: Meta vinculada nÃ£o encontrada para "${habitTitle}". Linha ignorada.`);
+                            pushRootImportWarning('habit_meta_link', `HÃ¡bitos: Meta vinculada nÃ£o encontrada para "${habitTitle}". Linha ignorada.`);
                             return;
                         }
                         if (!habitDimension) {
-                            importWarnings.push(`HÃ¡bitos: dimensÃ£o ausente para "${habitTitle}" e sem Meta vinculada vÃ¡lida para inferÃªncia. Linha ignorada.`);
+                            pushRootImportWarning('habit_dimension', `HÃ¡bitos: dimensÃ£o ausente para "${habitTitle}" e sem Meta vinculada vÃ¡lida para inferÃªncia. Linha ignorada.`);
                             return;
                         }
                         if (linkedMeta && explicitDimension && inferredDimension && explicitDimension !== inferredDimension) {
-                            importWarnings.push(`HÃ¡bitos: dimensÃ£o incompatÃ­vel para "${habitTitle}". A planilha trouxe [${explicitDimension}], mas a Meta vinculada pertence a [${inferredDimension}]. Linha ignorada.`);
+                            pushRootImportWarning('habit_dimension', `HÃ¡bitos: dimensÃ£o incompatÃ­vel para "${habitTitle}". A planilha trouxe [${explicitDimension}], mas a Meta vinculada pertence a [${inferredDimension}]. Linha ignorada.`);
                             return;
                         }
                         window.sistemaVidaState.habits.push({
@@ -1607,7 +1639,7 @@ importFromExcel: async function(event) {
                         habit = resolvedId ? byId.get(resolvedId) : null;
                     }
                     if (!habit) {
-                        importWarnings.push(`Hábitos histórico: hábito não encontrado para a linha "${String(getValue(row, ['Título', 'Titulo', 'Hábito']) || id || '').trim()}"`);
+                        pushConsequenceImportWarning('habit_history_link', `Hábitos histórico: hábito não encontrado para a linha "${String(getValue(row, ['Título', 'Titulo', 'Hábito']) || id || '').trim()}"`);
                         return;
                     }
                     habit.logs = parseJson(getValue(row, ['Logs_JSON']), habit.logs || {});
@@ -1707,10 +1739,10 @@ importFromExcel: async function(event) {
                             savedAt: String(getValue(row, ['Salvo_Em', 'Saved_At']) || '').trim()
                         };
                         if (usesVisibleStrength && strengthLabel && !window.sistemaVidaState.reviews[dateStr.substring(0,10)].strengthId) {
-                            importWarnings.push(`Revisões: força não encontrada "${strengthLabel}" em ${dateStr.substring(0,10)}`);
+                            pushRootImportWarning('review_lookup', `Revisões: força não encontrada "${strengthLabel}" em ${dateStr.substring(0,10)}`);
                         }
                         if (usesVisibleShadow && shadowLabel && !window.sistemaVidaState.reviews[dateStr.substring(0,10)].shadowId) {
-                            importWarnings.push(`Revisões: sombra não encontrada "${shadowLabel}" em ${dateStr.substring(0,10)}`);
+                            pushRootImportWarning('review_lookup', `Revisões: sombra não encontrada "${shadowLabel}" em ${dateStr.substring(0,10)}`);
                         }
                     }
                 });
@@ -1734,7 +1766,7 @@ importFromExcel: async function(event) {
                         .filter(Boolean);
                     if (usesVisibleMicros) {
                         visibleSelectedLabels.forEach((label) => {
-                            if (!resolveItemId(label, microIndex)) importWarnings.push(`Planos semanais: micro não encontrado "${label}" na semana ${weekKey}`);
+                            if (!resolveItemId(label, microIndex)) pushConsequenceImportWarning('weekly_micro_link', `Planos semanais: micro não encontrado "${label}" na semana ${weekKey}`);
                         });
                     }
                     window.sistemaVidaState.weekPlans[weekKey] = {
@@ -1784,10 +1816,10 @@ importFromExcel: async function(event) {
                         : '';
                     const resolvedHabitId = resolvedHabitIdFromHidden || resolvedHabitIdFromVisible;
                     if (usesVisibleMicro && visibleMicroLabel && !resolvedMicroId) {
-                        importWarnings.push(`Foco profundo: micro não encontrado "${visibleMicroLabel}"`);
+                        pushConsequenceImportWarning('focus_micro_link', `Foco profundo: micro não encontrado "${visibleMicroLabel}"`);
                     }
                     if (hiddenHabitId && !resolvedHabitIdFromHidden) {
-                        importWarnings.push(`Foco profundo: hábito não encontrado para Habit_ID "${hiddenHabitId}". Sessão mantida sem vínculo de hábito.`);
+                        pushConsequenceImportWarning('focus_habit_link', `Foco profundo: hábito não encontrado para Habit_ID "${hiddenHabitId}". Sessão mantida sem vínculo de hábito.`);
                     }
                     const startedAtTs = normalizeDateTimeValue(getValue(row, ['Started_At_TS', 'Started_At_Ts']))
                         || normalizeDateTimeValue(getValue(row, ['InÃ­cio', 'Inicio', 'Started_At']));
@@ -1983,7 +2015,7 @@ importFromExcel: async function(event) {
                                 habits: habitIndex
                             };
                             entityId = resolveItemId(entityTitle, lookupMap[normalizedType]);
-                            if (entityTitle && !entityId) importWarnings.push(`Notas: vínculo não encontrado "${entityTitle}" (${entityType})`);
+                            if (entityTitle && !entityId) pushConsequenceImportWarning('notes_entity_link', `Notas: vínculo não encontrado "${entityTitle}" (${entityType})`);
                         }
 
                         return {
@@ -2017,9 +2049,20 @@ importFromExcel: async function(event) {
             });
             this.reconcileOnboardingCompletion?.();
             await window.app.saveState(false);
-            if (importWarnings.length) console.warn('[Import warnings]', importWarnings);
-            alert(importWarnings.length
-                ? `Planilha importada com sucesso, com ${importWarnings.length} aviso(s) de vínculo ou dado incompleto.`
+            const rootWarnings = Array.from(importWarningState.root.values());
+            const consequenceWarnings = Array.from(importWarningState.consequence.values());
+            const rootWarningCount = rootWarnings.reduce((sum, bucket) => sum + bucket.count, 0);
+            const consequenceWarningCount = consequenceWarnings.reduce((sum, bucket) => sum + bucket.count, 0);
+            const totalWarningCount = rootWarningCount + consequenceWarningCount;
+            const summarizeWarningBuckets = (buckets) => buckets
+                .map((bucket) => `${bucket.label} (${bucket.count})`)
+                .join('; ');
+            if (totalWarningCount) {
+                console.warn('[Import warnings][causas-raiz]', rootWarnings);
+                console.warn('[Import warnings][consequencias]', consequenceWarnings);
+            }
+            alert(totalWarningCount
+                ? `Planilha importada com sucesso, com ${totalWarningCount} aviso(s).\nCausas raiz (${rootWarningCount}): ${summarizeWarningBuckets(rootWarnings) || 'nenhuma'}\nConsequencias (${consequenceWarningCount}): ${summarizeWarningBuckets(consequenceWarnings) || 'nenhuma'}`
                 : 'Planilha importada com sucesso.');
             window.app.switchView('painel');
             importSucceeded = true;

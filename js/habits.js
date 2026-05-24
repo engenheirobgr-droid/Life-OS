@@ -1099,6 +1099,7 @@ toggleHabitStepLog: function(habitId, dateStr, stepIndex) {
         this.triggerHabitCompletionEffects(habit, dateStr, wasDone, allDone);
         this.saveState(true);
         this.renderHabitStepsChecklist(habitId);
+        this.refreshHabitFocusClosureHabitState?.(habitId, dateStr);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'foco' && this.render.foco) this.render.foco();
         if (this.currentView === 'habitos' && this.render.habitos) this.render.habitos();
@@ -1134,6 +1135,7 @@ toggleHabitAllSteps: function(habitId, dateStr, currentlyDone) {
         }
         this.saveState(true);
         this.renderHabitStepsChecklist(habitId);
+        this.refreshHabitFocusClosureHabitState?.(habitId, dateStr);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'foco' && this.render.foco) this.render.foco();
         if (this.currentView === 'habitos' && this.render.habitos) this.render.habitos();

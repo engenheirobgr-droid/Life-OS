@@ -714,7 +714,8 @@ manualGuideChapters: [
             how: [
                 'Crie notas curtas com titulo, corpo, tags e URL quando houver uma referencia importante.',
                 'Vincule a nota ao item que ela ajuda: uma Ação, uma Meta, um Habito ou uma Sombra.',
-                'Use a busca do Perfil para encontrar notas por texto, tag ou entidade vinculada.',
+                'Use busca + filtros (Todas, Vinculadas, Avulsas) e o X da busca para limpar em um toque.',
+                'A lista de notas e compacta (titulo, chips e meta curta); abra a nota para ver corpo completo, URL e acoes.',
                 'Prefira notas que apoiem uma decisao futura, nao colecoes infinitas de informacao.'
             ],
             cta: { label: 'Abrir Perfil', view: 'perfil' }
@@ -760,6 +761,8 @@ manualGuideChapters: [
             why: 'Blocos curtos reduzem atrito para iniciar quando a energia está baixa; blocos médios ajudam execução sustentada; e o 90/20 continua reservado para trabalho profundo real. Essa gradação combina pomodoro clássico com ritmos ultradianos, em vez de tratar toda ação como se precisasse da mesma janela.',
             refs: ['Nathan Kleitman — BRAC (Basic Rest-Activity Cycle)', 'Cal Newport — Deep Work', 'Csikszentmihalyi — Flow'],
             how: [
+                'Escolha o contexto em um unico seletor (Acoes e Habitos) antes de iniciar.',
+                'Durante a sessao, Play/Pause e o controle principal; Reset e Finalizar ficam como acoes secundarias.',
                 'Hábitos podem abrir foco mesmo sem Meta explícita quando já existe Entrega compatível pela mesma área; o app usa esse fallback para não travar a execução.',
                 'Antes de iniciar, escolha UMA Ação — multitarefa destrói deep work.',
                 'Use os blocos sugeridos como padrão; troque manualmente só quando souber que aquele caso pede outra janela.',
@@ -970,6 +973,7 @@ manualGuideChapters: [
             why: 'Planejamento sem noção de capacidade cria sobrecarga silenciosa. Combinar base configurável com ajuste do check-in torna o número do dia mais honesto. Estimar tempo por padrão reduz barreira de entrada e permite ajuste rápido antes de travar o dia.',
             refs: ['Timeboxing', 'Planning fallacy (Kahneman & Tversky)', 'Behavioral design — friction as signal'],
             how: [
+                'Os cards Dia/Manha/Tarde/Noite usam a mesma base da lista visivel para manter contagem coerente.',
                 'Na aba Hoje > Para hoje, leia primeiro o status de capacidade (executável, no limite ou sobrecarregado).',
                 'Se a base do seu dia estiver errada, use o botão "Ajustar base" no próprio mapa (ou Perfil > Preferências > Base da Capacidade do Dia) antes de mexer no planejamento.',
                 'Se houver check-in no dia, confira no cabeçalho do mapa quando a capacidade foi reduzida ou ampliada.',
