@@ -360,6 +360,7 @@ export function attachHabitFocusModule(app) {
             const planMacroEl = document.getElementById('habit-focus-closure-plan-macro');
             const planTitleEl = document.getElementById('habit-focus-closure-plan-title');
             const planCompleteEl = document.getElementById('habit-focus-closure-plan-complete');
+            const planWrapEl = document.getElementById('habit-focus-closure-plan-wrap');
             const existingCompleteWrapEl = document.getElementById('habit-focus-closure-existing-complete-wrap');
             const existingCompleteEl = document.getElementById('habit-focus-closure-existing-complete');
             const habitCompleteWrapEl = document.getElementById('habit-focus-closure-habit-complete-wrap');
@@ -417,13 +418,19 @@ export function attachHabitFocusModule(app) {
                 existingCompleteEl.checked = false;
             }
 
+            if (planWrapEl) {
+                planWrapEl.classList.toggle('hidden', !!micro);
+            }
+
             if (planToggleEl && planPanelEl && planMacroEl && planHelperEl) {
                 const canCreatePlanAction = !micro && !!habit?.linkedMetaId && eligibleMacros.length > 0;
                 planToggleEl.disabled = !canCreatePlanAction;
                 planToggleEl.checked = false;
                 planPanelEl.classList.add('hidden');
                 if (!canCreatePlanAction) {
-                    if (!habit?.linkedMetaId) {
+                    if (micro) {
+                        planHelperEl.textContent = 'Esta sessao ja esta vinculada a uma acao do plano. Use "Concluir acao atual agora" se quiser fechar a acao existente.';
+                    } else if (!habit?.linkedMetaId) {
                         planHelperEl.textContent = 'Este habito nao esta vinculado a uma meta. A sessao sera salva como historico e nota.';
                     } else if (!eligibleMacros.length) {
                         planHelperEl.textContent = 'Nao ha entregas compativeis nessa meta para criar uma acao agora.';
