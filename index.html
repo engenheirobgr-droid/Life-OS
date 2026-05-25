@@ -117,12 +117,72 @@
         }
 
         @keyframes deepWorkRingPulse {
-            0%, 100% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
-            50% { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--md-sys-color-primary) 38%, transparent)); }
+            0%, 100% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); opacity: 0.92; }
+            50% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--md-sys-color-primary) 28%, transparent)); opacity: 1; }
+        }
+
+        @keyframes deepWorkShellBreath {
+            0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 rgba(0,0,0,0); }
+            50% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 18px color-mix(in srgb, var(--md-sys-color-primary) 10%, transparent); }
         }
 
         .deep-work-ring-pulse {
-            animation: deepWorkRingPulse 2.4s ease-in-out infinite;
+            animation: deepWorkRingPulse 2.8s ease-in-out infinite;
+        }
+
+        .deep-work-clock-shell {
+            position: relative;
+            isolation: isolate;
+            background-image: linear-gradient(
+                180deg,
+                color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 92%, transparent) 0%,
+                color-mix(in srgb, var(--md-sys-color-surface-container-low) 42%, transparent) 100%
+            );
+        }
+
+        .deep-work-clock-shell[data-running="true"] {
+            animation: deepWorkShellBreath 3.2s ease-in-out infinite;
+        }
+
+        .deep-work-clock-shell[data-mode="break"] .deep-work-timer-readout {
+            color: var(--md-sys-color-secondary);
+        }
+
+        .deep-work-ring-grid {
+            opacity: 0.42;
+        }
+
+        .deep-work-ring-tick-major {
+            stroke: var(--md-sys-color-outline);
+            stroke-width: 1.05;
+            stroke-linecap: round;
+        }
+
+        .deep-work-ring-tick-minor {
+            stroke: var(--md-sys-color-outline-variant);
+            stroke-width: 0.9;
+            stroke-linecap: round;
+            opacity: 0.76;
+        }
+
+        .deep-work-timer-readout {
+            letter-spacing: 0.01em;
+            text-shadow: 0 1px 0 rgba(0,0,0,0.03);
+        }
+
+        .deep-work-phase-readout {
+            letter-spacing: 0.08em;
+        }
+
+        .deep-work-progress-dot {
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .deep-work-ring-pulse,
+            .deep-work-clock-shell[data-running="true"] {
+                animation: none !important;
+            }
         }
 
         .glass-card {
@@ -803,6 +863,130 @@
             --lo-dark-border:      rgba(255,255,255,0.07);
         }
 
+        /* Reusable UI composition helpers (pilot: Foco) */
+        .lo-work-section {
+            padding: 0;
+            min-width: 0;
+        }
+
+        .lo-work-panel {
+            background: var(--lo-surface);
+            border: 1px solid var(--lo-p-border);
+            border-radius: 16px;
+            box-shadow: var(--lo-shadow-sm);
+            padding: 16px;
+            min-width: 0;
+        }
+
+        .lo-inline-group {
+            background: var(--lo-bg-subtle);
+            border: 1px solid var(--lo-p-border);
+            border-radius: 14px;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .lo-inline-group__block {
+            padding: 16px;
+            min-width: 0;
+        }
+
+        .lo-inline-group__block + .lo-inline-group__block {
+            border-top: 1px solid var(--lo-p-border);
+        }
+
+        .lo-inline-group__label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.75;
+        }
+
+        .lo-dense-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .lo-dense-item {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid var(--lo-p-border);
+            border-radius: 12px;
+            background: var(--lo-surface);
+            box-shadow: var(--lo-shadow-sm);
+            min-width: 0;
+        }
+
+        .lo-dense-item--done {
+            background: color-mix(in srgb, #10b981 4%, var(--lo-surface));
+            border-color: color-mix(in srgb, #10b981 28%, var(--lo-p-border));
+        }
+
+        .lo-dense-item--progress {
+            background: color-mix(in srgb, #f59e0b 4%, var(--lo-surface));
+            border-color: color-mix(in srgb, #f59e0b 28%, var(--lo-p-border));
+        }
+
+        .lo-dense-item__meta {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .lo-dense-metric {
+            border: 1px solid var(--lo-p-border);
+            border-radius: 8px;
+            background: var(--lo-bg-subtle);
+            padding: 8px 10px;
+        }
+
+        .lo-dense-metric__label {
+            display: block;
+            margin-bottom: 2px;
+            font-size: 10px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            opacity: 0.72;
+        }
+
+        .lo-dense-item__actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .lo-dense-trail {
+            border: 1px solid var(--lo-p-border);
+            border-radius: 10px;
+            background: var(--lo-bg-subtle);
+            padding: 10px;
+        }
+
+        @media (min-width: 1024px) {
+            .lo-dense-item {
+                display: grid;
+                grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.25fr) auto;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .lo-dense-item__actions {
+                justify-content: flex-end;
+            }
+
+            .lo-dense-trail {
+                grid-column: 1 / -1;
+            }
+        }
+
         /* ══════════════════════════════════════════════
            LIGHT MODE
         ══════════════════════════════════════════════ */
@@ -985,6 +1169,25 @@
         html.dark [class*="text-outline"],
         html.dark [class*="text-on-surface-variant"] { color: var(--lo-dark-muted) !important; }
         html.dark [class*="border-outline-variant"] { border-color: var(--lo-dark-border) !important; }
+
+        html.dark .lo-work-panel,
+        html.dark .lo-inline-group,
+        html.dark .lo-dense-item,
+        html.dark .lo-dense-metric,
+        html.dark .lo-dense-trail {
+            border-color: var(--lo-dark-border) !important;
+        }
+
+        html.dark .lo-work-panel,
+        html.dark .lo-dense-item {
+            background: var(--lo-dark-card, #111e1d) !important;
+        }
+
+        html.dark .lo-inline-group,
+        html.dark .lo-dense-metric,
+        html.dark .lo-dense-trail {
+            background: var(--lo-dark-card2, #162120) !important;
+        }
 
         html.dark .text-primary { color: var(--lo-p-dark, #2dd4bf) !important; }
         html.dark .bg-primary { background-color: var(--lo-p) !important; box-shadow: 0 4px 20px var(--lo-p-shadow) !important; }
@@ -3060,7 +3263,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260525-focus-ui-v2"></script>
+    <script type="module" src="app.js?v=20260525-focus-ui-v3"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3091,7 +3294,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260525-focus-ui-v2')
+                navigator.serviceWorker.register('sw.js?v=20260525-focus-ui-v3')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

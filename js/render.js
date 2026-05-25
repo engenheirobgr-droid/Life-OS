@@ -1348,13 +1348,15 @@ renderDeepWorkClockVisual: function(options = {}) {
             canCompleteSelectedMicro = false
         } = options;
         const pct = Math.max(0, Math.min(1, Number(progress) || 0));
+        const pctValue = Math.round(pct * 100);
         const pctLabel = `${Math.round(pct * 100)}%`;
         const phaseLabel = mode === 'focus' ? 'Bloco' : 'Pausa';
+        const modeLabel = mode === 'break' ? 'Pausa' : 'Foco';
         const escapedTime = this.escapeHtml(timeText);
         const escapedPhase = this.escapeHtml(phaseText || phaseLabel);
         const activeMotion = isRunning && !isPaused;
-        const timerHtml = `<p id="deep-work-timer" class="mt-2 text-5xl md:text-6xl lg:text-7xl leading-none font-headline italic text-primary tabular-nums">${escapedTime}</p>`;
-        const phaseHtml = `<p id="deep-work-phase" class="mt-2 text-xs uppercase tracking-[0.12em] text-on-surface-variant">${escapedPhase}</p>`;
+        const timerHtml = `<p id="deep-work-timer" class="deep-work-timer-readout mt-2 text-5xl md:text-6xl lg:text-7xl leading-none font-headline text-primary tabular-nums">${escapedTime}</p>`;
+        const phaseHtml = `<p id="deep-work-phase" class="deep-work-phase-readout mt-2 text-[11px] uppercase text-on-surface-variant">${escapedPhase}</p>`;
 
         if (style === 'ring') {
             const dash = 339;
@@ -1363,32 +1365,53 @@ renderDeepWorkClockVisual: function(options = {}) {
             const dotX = 60 + (54 * Math.cos(dotAngle * Math.PI / 180));
             const dotY = 60 + (54 * Math.sin(dotAngle * Math.PI / 180));
             const pulseClass = activeMotion ? 'deep-work-ring-pulse' : '';
+            const majorTicks = Array.from({ length: 12 }, (_, i) => {
+                const angle = ((i * 30) - 90) * Math.PI / 180;
+                const x1 = 60 + (47.5 * Math.cos(angle));
+                const y1 = 60 + (47.5 * Math.sin(angle));
+                const x2 = 60 + (53.6 * Math.cos(angle));
+                const y2 = 60 + (53.6 * Math.sin(angle));
+                return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="deep-work-ring-tick-major"></line>`;
+            }).join('');
+            const minorTicks = Array.from({ length: 60 }, (_, i) => {
+                if (i % 5 === 0) return '';
+                const angle = ((i * 6) - 90) * Math.PI / 180;
+                const x1 = 60 + (50.3 * Math.cos(angle));
+                const y1 = 60 + (50.3 * Math.sin(angle));
+                const x2 = 60 + (53.2 * Math.cos(angle));
+                const y2 = 60 + (53.2 * Math.sin(angle));
+                return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="deep-work-ring-tick-minor"></line>`;
+            }).join('');
             return `
-                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-surface-container-lowest px-4 py-6 md:py-7 text-center shadow-inner overflow-hidden h-full flex items-center justify-center">
+                <div class="deep-work-clock-shell rounded-xl border border-primary/20 px-4 py-6 md:py-7 text-center shadow-inner overflow-hidden h-full flex items-center justify-center" data-running="${activeMotion ? 'true' : 'false'}" data-mode="${mode}">
                     <div class="relative mx-auto h-60 w-60 md:h-64 md:w-64 max-w-full">
                         <svg viewBox="0 0 120 120" class="h-full w-full text-primary" role="img" aria-label="Progresso do bloco ${pctLabel}">
                             <defs>
                                 <linearGradient id="deep-work-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="currentColor" stop-opacity="1"></stop>
-                                    <stop offset="100%" stop-color="currentColor" stop-opacity="0.62"></stop>
+                                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.96"></stop>
+                                    <stop offset="100%" stop-color="currentColor" stop-opacity="0.54"></stop>
                                 </linearGradient>
-                                <radialGradient id="deep-work-ring-core" cx="50%" cy="38%" r="62%">
-                                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.14"></stop>
-                                    <stop offset="72%" stop-color="currentColor" stop-opacity="0.035"></stop>
+                                <radialGradient id="deep-work-ring-core" cx="50%" cy="40%" r="62%">
+                                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.1"></stop>
+                                    <stop offset="70%" stop-color="currentColor" stop-opacity="0.03"></stop>
                                     <stop offset="100%" stop-color="currentColor" stop-opacity="0"></stop>
-                                </linearGradient>
+                                </radialGradient>
                             </defs>
                             <circle cx="60" cy="60" r="57" fill="url(#deep-work-ring-core)"></circle>
-                            <circle cx="60" cy="60" r="54" fill="none" stroke="var(--md-sys-color-surface-container-highest)" stroke-width="5" opacity="0.82"></circle>
-                            <circle cx="60" cy="60" r="43" fill="none" stroke="var(--md-sys-color-outline-variant)" stroke-width="1" opacity="0.18"></circle>
-                            <circle cx="60" cy="60" r="54" fill="none" stroke="url(#deep-work-ring-gradient)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${dash}" stroke-dashoffset="${offset}" transform="rotate(-90 60 60)" class="${pulseClass}"></circle>
-                            <circle cx="${dotX.toFixed(2)}" cy="${dotY.toFixed(2)}" r="3.3" fill="currentColor" stroke="var(--md-sys-color-surface-container-lowest)" stroke-width="2"></circle>
-                            <path d="M60 22 C75 38 94 46 94 66 C94 84 79 98 60 98 C41 98 26 84 26 66 C26 46 45 38 60 22Z" fill="currentColor" opacity="0.045"></path>
+                            <g class="deep-work-ring-grid">
+                                ${minorTicks}
+                                ${majorTicks}
+                            </g>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="var(--md-sys-color-surface-container-highest)" stroke-width="5" opacity="0.78"></circle>
+                            <circle cx="60" cy="60" r="46.5" fill="none" stroke="var(--md-sys-color-outline-variant)" stroke-width="1" opacity="0.18"></circle>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="url(#deep-work-ring-gradient)" stroke-width="6.2" stroke-linecap="round" stroke-dasharray="${dash}" stroke-dashoffset="${offset}" transform="rotate(-90 60 60)" class="${pulseClass}"></circle>
+                            <circle cx="${dotX.toFixed(2)}" cy="${dotY.toFixed(2)}" r="3.1" fill="currentColor" stroke="var(--md-sys-color-surface-container-lowest)" stroke-width="1.8"></circle>
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <p class="text-xs uppercase tracking-[0.14em] font-bold text-outline">${mode === 'break' ? 'Pausa' : 'Tempo restante'}</p>
+                            <p class="text-[11px] uppercase tracking-[0.08em] font-semibold text-outline">${modeLabel}</p>
                             ${timerHtml}
                             ${phaseHtml}
+                            <span class="mt-2 inline-flex items-center rounded-full border border-outline-variant/20 bg-surface-container-lowest/85 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-on-surface-variant">${pctLabel}</span>
                         </div>
                     </div>
                 </div>`;
@@ -1396,8 +1419,18 @@ renderDeepWorkClockVisual: function(options = {}) {
 
 
         return `
-            <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-6 md:py-7 text-center shadow-inner h-full flex flex-col justify-center">
-                <p class="text-xs uppercase tracking-[0.14em] font-bold text-outline">Tempo restante</p>
+            <div class="deep-work-clock-shell rounded-xl border border-primary/20 px-4 py-6 md:py-7 text-center shadow-inner h-full flex flex-col justify-center" data-running="${activeMotion ? 'true' : 'false'}" data-mode="${mode}">
+                <div class="mx-auto w-full max-w-[20rem]">
+                    <div class="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.08em] font-semibold text-outline mb-3">
+                        <span>${modeLabel}</span>
+                        <span>${pctLabel}</span>
+                    </div>
+                    <div class="relative h-2 rounded-full bg-surface-container-highest overflow-hidden mb-5">
+                        <div class="h-full bg-primary transition-all duration-700 ease-out" style="width:${Math.max(3, pctValue)}%"></div>
+                        <span class="deep-work-progress-dot absolute top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full bg-primary border border-surface-container-lowest transition-all duration-700 ease-out" style="left:calc(${Math.max(3, pctValue)}% - 5px)"></span>
+                    </div>
+                </div>
+                <p class="text-[11px] uppercase tracking-[0.08em] font-semibold text-outline">${modeLabel}</p>
                 ${timerHtml}
                 ${phaseHtml}
             </div>`;
@@ -1909,16 +1942,14 @@ renderDeepWorkPanel: function() {
                         <p class="mt-1 text-sm font-semibold text-on-surface break-words">${this.escapeHtml(contextTitle)}</p>
                         <p class="mt-1 text-xs text-on-surface-variant break-words">${this.escapeHtml(contextPath)}</p>
                     </div>
-                    <div class="rounded-md bg-surface-container-low px-3 py-2">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="min-w-0">
-                                <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Meta do bloco</p>
-                                <p class="mt-1 text-xs font-semibold text-primary">${Math.max(5, Math.round(Number(dw.targetSec || 1500) / 60))} min</p>
-                            </div>
-                            <div class="min-w-0">
-                                <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Estado</p>
-                                <p class="mt-1 text-xs font-semibold text-on-surface">${this.escapeHtml(contextStatus)}</p>
-                            </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-1">
+                        <div class="min-w-0">
+                            <p class="text-[10px] uppercase tracking-[0.08em] font-semibold text-outline">Meta do bloco</p>
+                            <p class="mt-1 text-sm font-semibold text-primary">${Math.max(5, Math.round(Number(dw.targetSec || 1500) / 60))} min</p>
+                        </div>
+                        <div class="min-w-0 sm:border-l sm:border-outline-variant/12 sm:pl-4">
+                            <p class="text-[10px] uppercase tracking-[0.08em] font-semibold text-outline">Estado</p>
+                            <p class="mt-1 text-sm font-semibold text-on-surface">${this.escapeHtml(contextStatus)}</p>
                         </div>
                     </div>
                     ${helperText ? `<p class="text-[11px] text-outline leading-relaxed">${this.escapeHtml(helperText)}</p>` : ''}
@@ -2646,12 +2677,9 @@ render: {
                     const statusText = m.status === 'done' ? 'Concluída' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
                     const isDone = m.status === 'done' || m.completed;
                     const isInProgress = m.status === 'in_progress';
-                    const cardStateClass = isDone
-                        ? 'border-emerald-500/35 bg-emerald-500/[0.035] shadow-sm shadow-emerald-500/10'
-                        : (isInProgress
-                            ? 'border-amber-500/40 bg-amber-500/[0.035] shadow-sm shadow-amber-500/10'
-                            : 'border-outline-variant/10 bg-surface-container-lowest shadow-sm');
-                    const accentClass = isDone ? 'bg-emerald-500' : (isInProgress ? 'bg-amber-500' : 'bg-primary/30');
+                    const rowStateClass = isDone
+                        ? 'lo-dense-item--done'
+                        : (isInProgress ? 'lo-dense-item--progress' : '');
                     const statusBadge = isDone
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25'
                         : (isInProgress
@@ -2669,57 +2697,53 @@ render: {
                             : `window.app.startDeepWorkForMicro('${m.id}')`);
                     const isFocoPlanned = app._isPlannedThisWeek(m.id);
                     const focoPlannedBadge = isFocoPlanned
-                        ? '<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
-                        : '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-widest">Captura</span>';
+                        ? '<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-[0.08em]"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
+                        : '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-[0.08em]">Captura</span>';
                     const orphanBadge = !focusEligibility.ok
                         ? '<span title="Ação sem Entrega associada (Não Alinhada)" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-widest border border-amber-500/20"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Não Alinhado</span>'
                         : '';
                     const trailId = `foco-trail-${idx}`;
                     const toggleTrail = `const p=document.getElementById('${trailId}'); if(!p) return; p.classList.toggle('hidden');`;
                     return `
-                    <div class="relative overflow-hidden p-5 rounded-2xl border ${cardStateClass} hover:shadow-md transition-all group min-w-0">
-                        <div class="absolute left-0 top-0 bottom-0 w-1 ${accentClass}"></div>
-                        ${isDone ? '<div class="absolute right-3 bottom-3 pointer-events-none opacity-[0.07]"><span class="material-symbols-outlined notranslate text-6xl text-emerald-500">verified</span></div>' : ''}
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded-full">
+                    <div class="lo-dense-item ${rowStateClass} group min-w-0">
+                        <div class="flex flex-wrap items-start justify-between gap-2 mb-1">
+                            <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-[0.08em] rounded-full">
                                 ${app.escapeHtml(m.dimension || 'Geral')}
                             </span>
-                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="window.app.editEntity('${m.id}', 'micros')" class="p-1 hover:text-primary"><span class="material-symbols-outlined notranslate text-sm">edit</span></button>
-                                <button onclick="window.app.deleteEntity('${m.id}', 'micros')" class="p-1 hover:text-error"><span class="material-symbols-outlined notranslate text-sm">delete</span></button>
+                            <div class="flex items-center gap-1">
+                                <button onclick="window.app.editEntity('${m.id}', 'micros')" class="h-7 w-7 inline-flex items-center justify-center rounded-md border border-outline-variant/20 text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Editar"><span class="material-symbols-outlined notranslate text-sm">edit</span></button>
+                                <button onclick="window.app.deleteEntity('${m.id}', 'micros')" class="h-7 w-7 inline-flex items-center justify-center rounded-md border border-outline-variant/20 text-outline hover:text-error hover:bg-surface-container-high transition-colors" title="Excluir"><span class="material-symbols-outlined notranslate text-sm">delete</span></button>
                             </div>
                         </div>
-                        <h3 class="font-bold text-on-surface mb-1 line-clamp-2">${app.escapeHtml(m.title)}</h3>
+                        <h3 class="font-semibold text-sm md:text-base text-on-surface mb-1 line-clamp-1">${app.escapeHtml(m.title)}</h3>
                         <div class="flex flex-wrap gap-1.5 mb-2">${focoPlannedBadge}${orphanBadge}</div>
                         <p class="text-xs text-outline mb-3 line-clamp-1">${app.escapeHtml(ctx.parentLabel || 'Sem vínculo em Planos')}</p>
-                        <div class="grid grid-cols-2 gap-2 mb-4 text-[10px]">
-                            <div class="rounded-lg bg-surface-container-low px-3 py-2">
-                                <span class="block uppercase tracking-widest text-outline font-bold">Foco</span>
-                                <span class="font-bold text-primary">${focusText}</span>
+                        <div class="lo-dense-item__meta mb-1">
+                            <div class="lo-dense-metric">
+                                <span class="lo-dense-metric__label text-outline">Foco</span>
+                                <span class="text-xs font-semibold text-primary">${focusText}</span>
                             </div>
-                            <div class="rounded-lg bg-surface-container-low px-3 py-2">
+                            <div class="lo-dense-metric">
                                 <span class="block uppercase tracking-widest text-outline font-bold">Sessões</span>
-                                <span class="font-bold text-on-surface">${sessionCount}</span>
+                                <span class="text-xs font-semibold text-on-surface">${sessionCount}</span>
+                            </div>
+                            <div class="lo-dense-metric">
+                                <span class="lo-dense-metric__label text-outline">Prazo</span>
+                                <span class="text-xs font-semibold text-on-surface">${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>
                             </div>
                         </div>
 
-                        <div class="pt-4 border-t border-outline-variant/10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            <div class="flex items-center gap-2 text-outline">
-                                <span class="material-symbols-outlined notranslate text-xs">event</span>
-                                <span class="text-[10px] font-bold uppercase">${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>
-                                <span class="text-[10px] font-bold uppercase rounded-full px-2 py-0.5 ${statusBadge}">${statusText}</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <button type="button" onclick="${toggleTrail}" class="px-3 py-1.5 rounded-lg border border-outline-variant/20 text-outline text-[10px] font-bold uppercase tracking-widest hover:text-on-surface hover:bg-surface-container-high transition-colors">Trilha</button>
-                                ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg ${focusEligibility.ok ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15'} text-[10px] font-bold uppercase tracking-widest">${actionLabel}</button>` : ''}
-                                ${m.status === 'done' ?
-                                    `<button onclick="window.app.completeMicroAction('${m.id}')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">Reabrir</button>` :
-                                    `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
-                                }
-                            </div>
+                        <div class="lo-dense-item__actions">
+                            <span class="text-[10px] font-bold uppercase tracking-[0.08em] rounded-full px-2 py-0.5 ${statusBadge}">${statusText}</span>
+                            <button type="button" onclick="${toggleTrail}" class="px-3 py-1.5 rounded-lg border border-outline-variant/20 text-outline text-[10px] font-bold uppercase tracking-[0.08em] hover:text-on-surface hover:bg-surface-container-high transition-colors">Trilha</button>
+                            ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg ${focusEligibility.ok ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15'} text-[10px] font-bold uppercase tracking-[0.08em]">${actionLabel}</button>` : ''}
+                            ${m.status === 'done' ?
+                                `<button onclick="window.app.completeMicroAction('${m.id}')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-[0.08em] hover:bg-primary/20">Reabrir</button>` :
+                                `<button onclick="window.app.completeMicroAction('${m.id}')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-[0.08em] text-primary border border-primary/20 hover:bg-primary/10">Concluir</button>`
+                            }
                         </div>
-                        <div id="${trailId}" class="hidden mt-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-3 space-y-2">
-                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Trilha</p>
+                        <div id="${trailId}" class="lo-dense-trail hidden mt-1 space-y-2">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.08em] text-outline">Trilha</p>
                             <div class="text-xs text-on-surface-variant space-y-1">
                                 <p><span class="font-semibold text-on-surface">Meta:</span> ${app.escapeHtml(ctx.meta?.title || '-')}</p>
                                 <p><span class="font-semibold text-on-surface">Projeto:</span> ${app.escapeHtml(ctx.okr?.title || '-')}</p>
@@ -2731,7 +2755,7 @@ render: {
                 }).join('');
 
                 if (filtered.length === 0) {
-                    listContainer.innerHTML = `<div class="col-span-full rounded-2xl border border-dashed border-outline-variant/30 bg-surface-container-lowest p-8 text-center">
+                    listContainer.innerHTML = `<div class="rounded-xl border border-dashed border-outline-variant/30 bg-surface-container-lowest p-8 text-center">
                         <span class="material-symbols-outlined notranslate text-3xl text-outline mb-2">checklist</span>
                         <p class="font-bold text-on-surface">Nenhuma ação encontrada.</p>
                         <p class="text-sm text-on-surface-variant mt-1">Crie uma ação em Planos ou ajuste os filtros para montar sua fila de execução.</p>
