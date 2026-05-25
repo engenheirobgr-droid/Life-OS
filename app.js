@@ -20,12 +20,12 @@ import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
 import { attachCadence } from './js/cadence.js?v=20260523-purpose-legacy-cleanup-v1';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260524-alignment-v1';
+import { attachIdentity } from './js/identity.js?v=20260525-profile-manual-v1';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260524-closure-ui-v1';
 import { attachStateModule } from './js/state.js?v=20260524-alignment-v1';
-import { attachRenderModule } from './js/render.js?v=20260524-alignment-v1';
+import { attachRenderModule } from './js/render.js?v=20260525-profile-manual-v1';
 import { attachPlanningModule } from './js/planning.js?v=20260524-alignment-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260524-alignment-v1',
+    appBuildVersion: '20260525-profile-manual-v2',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -2221,6 +2221,9 @@ _getAudioContext: function() {
             this.switchPlanosTab(tabId);
             if (this.render.planos) this.render.planos();
         }
+        if (tabId && this.currentView === 'perfil') {
+            this.setProfileTab(tabId);
+        }
 
         if (sectionId) {
             if (this.currentView === 'painel' && this.switchPainelScreen) {
@@ -2262,6 +2265,10 @@ _getAudioContext: function() {
                 if (propositoMap[sectionId]) this.switchPropositoScreen(propositoMap[sectionId]);
             }
             // Usa requestAnimationFrame para esperar pelo próximo ciclo de renderização
+            if (this.currentView === 'perfil') {
+                const targetProfileTab = this.getProfileTabForSection(sectionId);
+                if (targetProfileTab) this.setProfileTab(targetProfileTab);
+            }
             requestAnimationFrame(() => {
                 const scrollToSection = () => {
                     const section = document.getElementById(sectionId);
@@ -2290,6 +2297,48 @@ _getAudioContext: function() {
                 }
             });
         }
+    },
+
+    normalizeProfileTab: function(tab) {
+        const value = String(tab || '').trim().toLowerCase();
+        if (['perfil', 'notas', 'manual', 'progresso'].includes(value)) return value;
+        return 'perfil';
+    },
+
+    getProfileTabForSection: function(sectionId = '') {
+        const section = String(sectionId || '').trim();
+        const tabBySection = {
+            'notes-section': 'notas',
+            'manual-guide-section': 'manual',
+            'gamification-profile-panel': 'progresso',
+            'account-section': 'perfil',
+            'social-access-section': 'perfil',
+            'day-capacity-profile-section': 'perfil'
+        };
+        return tabBySection[section] || '';
+    },
+
+    setProfileTab: function(tab = 'perfil') {
+        this.profileActiveTab = this.normalizeProfileTab(tab);
+        this.syncProfileTabVisibility();
+    },
+
+    syncProfileTabVisibility: function() {
+        if (this.currentView !== 'perfil') return;
+        const activeTab = this.normalizeProfileTab(this.profileActiveTab || 'perfil');
+        document.querySelectorAll('[data-profile-tab-content]').forEach((node) => {
+            const targetTab = this.normalizeProfileTab(node.getAttribute('data-profile-tab-content'));
+            node.classList.toggle('hidden', targetTab !== activeTab);
+        });
+        document.querySelectorAll('[data-profile-tab]').forEach((button) => {
+            const tab = this.normalizeProfileTab(button.getAttribute('data-profile-tab'));
+            const isActive = tab === activeTab;
+            button.classList.toggle('text-primary', isActive);
+            button.classList.toggle('border-b-2', isActive);
+            button.classList.toggle('border-primary', isActive);
+            button.classList.toggle('text-outline', !isActive);
+            button.classList.toggle('hover:text-primary', !isActive);
+        });
     },
 
     _getFlowState: function() {
@@ -2598,6 +2647,8 @@ _getAudioContext: function() {
     focusTypeFilter: 'Tudo',
     focusStatusFilter: 'Tudo',
     focusDistributionViewMode: 'one_line',
+    profileActiveTab: 'perfil',
+    manualGuideScreenFilter: 'all',
     profileNotesFilter: 'all',
     expandedProfileNoteId: '',
     currentTextGroup: null,
@@ -3219,6 +3270,7 @@ renderProfileChrome: function() {
 
     // Alias para compatibilidade com as chamadas do index.html
     navigate: function(viewName) {
+        if (viewName === 'perfil') this.profileActiveTab = 'perfil';
         return this.switchView(viewName);
     },
 

@@ -1,12 +1,32 @@
 <main class="pt-6 lg:pt-10 pb-20 px-6 max-w-7xl mx-auto">
 <!-- Page Header -->
-<section class="mb-12">
+<section class="mb-0">
     <p class="font-label text-xs uppercase tracking-[0.2em] text-outline mb-4">Conta & Configurações</p>
     <h2 class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Perfil</h2>
     <div class="mt-6 h-px w-24 bg-primary"></div>
 </section>
+<section class="mb-6">
+    <nav class="mt-4 flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0">
+        <button id="profile-tab-btn-perfil" type="button" data-profile-tab="perfil" onclick="window.app.setProfileTab('perfil')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-primary border-b-2 border-primary">
+            Perfil
+        </button>
+        <button id="profile-tab-btn-notas" type="button" data-profile-tab="notas" onclick="window.app.setProfileTab('notas')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary">
+            Notas
+        </button>
+        <button id="profile-tab-btn-manual" type="button" data-profile-tab="manual" onclick="window.app.setProfileTab('manual')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary">
+            Manual
+        </button>
+        <button id="profile-tab-btn-progresso" type="button" data-profile-tab="progresso" onclick="window.app.setProfileTab('progresso')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary">
+            Progresso
+        </button>
+    </nav>
+</section>
 <!-- Profile Header -->
-<section class="mt-8 flex flex-col items-center text-center space-y-4 pt-4">
+<section data-profile-tab-content="perfil" class="mt-8 flex flex-col items-center text-center space-y-4 pt-4">
 <div class="relative group">
 <div class="w-32 h-32 rounded-full overflow-hidden ring-4 ring-surface-container-high transition-transform duration-300 group-hover:scale-105">
 <img id="profile-avatar-image" alt="User Profile" class="w-full h-full object-cover cursor-zoom-in" onclick="window.app.openProfileAvatarPreview()" title="Abrir imagem do perfil" data-alt="close-up portrait of a thoughtful man in a linen shirt against a soft neutral background with warm morning light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDE4p8AoYVsz6pEXUcgS6BkD6ZMnpFej1qRvtAnjsOWWGCk7xJhzaMTg6eRpIrmf1nkexNBtrYL3KbuHY6ZwSPi-Kdj4ivoosw4MlhSqGkDRZeaWiu0ULKlO9WJofnhhFK3dg6DTg4IQBS1fYuInfMqPQH2xU1CoJ_kNGEuGwa-nEMQzBHm4jSNxfxVSNi8W5QYdVVAzvIMm62lcyjTcDnQkk9xlvlKrssjp1lApdoTVkjnhRL8luZ5XJaaZ8Tgexi6luLt5O1w6g"/>
@@ -28,7 +48,7 @@
 </div>
 </section>
 <!-- Account -->
-<section id="account-section" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
+<section id="account-section" data-profile-tab-content="perfil" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
     <div class="flex items-start justify-end">
         <span class="material-symbols-outlined notranslate text-primary text-2xl">verified_user</span>
     </div>
@@ -64,7 +84,7 @@
     </div>
 </section>
 <!-- Social Access -->
-<section id="social-access-section" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-4">
+<section id="social-access-section" data-profile-tab-content="perfil" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-4">
     <div class="flex items-start justify-between gap-4">
         <div>
             <div class="flex items-center gap-2 mb-2">
@@ -84,7 +104,7 @@
     </div>
 </section>
 <!-- Gamification -->
-<section id="gamification-profile-panel" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-6">
+<section id="gamification-profile-panel" data-profile-tab-content="progresso" class="hidden mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-6">
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
             <p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-2">Identidade em progresso</p>
@@ -124,7 +144,7 @@
     </div>
 </section>
 <!-- Notes -->
-<section id="notes-section" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
+<section id="notes-section" data-profile-tab-content="notas" class="hidden mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
     <div class="flex items-start justify-between gap-4">
         <div>
             <p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-2">Memoria externa</p>
@@ -164,7 +184,7 @@
     <div id="notes-list" class="space-y-2"></div>
 </section>
 <!-- Manual de Uso (Trilha Interativa) -->
-<section id="manual-guide-section" class="mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
+<section id="manual-guide-section" data-profile-tab-content="manual" class="hidden mt-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 md:p-6 space-y-5">
     <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
             <p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-2">Trilha de Domínio</p>
@@ -179,12 +199,30 @@
     <div class="h-1.5 rounded-full bg-outline-variant/20 overflow-hidden">
         <div id="manual-guide-progress-bar" class="h-full rounded-full bg-primary transition-all duration-500" style="width:0%"></div>
     </div>
+    <nav id="manual-guide-screen-nav" class="flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0">
+        <button type="button" data-manual-screen="all" onclick="window.app.setManualGuideScreenFilter('all')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-primary border-b-2 border-primary">Todas</button>
+        <button type="button" data-manual-screen="hoje" onclick="window.app.setManualGuideScreenFilter('hoje')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary">Hoje</button>
+        <button type="button" data-manual-screen="painel" onclick="window.app.setManualGuideScreenFilter('painel')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary">Painel</button>
+        <button type="button" data-manual-screen="planos" onclick="window.app.setManualGuideScreenFilter('planos')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary">Planos</button>
+        <button type="button" data-manual-screen="foco" onclick="window.app.setManualGuideScreenFilter('foco')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary">Foco</button>
+        <button type="button" data-manual-screen="proposito" onclick="window.app.setManualGuideScreenFilter('proposito')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary">Propósito</button>
+        <button type="button" data-manual-screen="perfil" onclick="window.app.setManualGuideScreenFilter('perfil')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary">Perfil</button>
+        <button type="button" data-manual-screen="social" onclick="window.app.setManualGuideScreenFilter('social')"
+            class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary">Social</button>
+    </nav>
     <div id="manual-guide-list" class="space-y-3"></div>
     <p class="text-[10px] text-outline italic leading-relaxed">As referências citadas remetem a literatura estabelecida em psicologia positiva, neurociência da atenção e ciência do comportamento. Não substitui acompanhamento profissional.</p>
 </section>
 
 <!-- Settings Menu -->
-<div class="mt-8 space-y-2">
+<div data-profile-tab-content="perfil" class="mt-8 space-y-2">
 <!-- Group: Preferências -->
 <div class="pb-2">
 <h3 class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-6 px-4">Preferências</h3>
@@ -401,7 +439,7 @@
 </div>
 </div>
 <!-- Danger Zone -->
-<div class="mt-8 pt-8 pb-12 space-y-4 border-t border-error/20">
+<div data-profile-tab-content="perfil" class="mt-8 pt-8 pb-12 space-y-4 border-t border-error/20">
     <h3 class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-error px-4 mb-6">Zona de Perigo</h3>
     <button onclick="window.app.factoryReset()" class="w-full py-4 bg-red-500/10 text-error border border-error/30 font-bold tracking-wide rounded-xl hover:bg-error hover:text-white transition-all flex items-center justify-center gap-2 active:scale-95">
         <span class="material-symbols-outlined notranslate text-xl">delete_forever</span>

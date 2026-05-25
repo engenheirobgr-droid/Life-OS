@@ -2293,7 +2293,7 @@
                 <input type="hidden" id="quick-note-edit-id">
                 <p class="text-[10px] text-outline leading-relaxed flex items-center gap-1.5">
                     <span class="material-symbols-outlined notranslate text-[13px]">info</span>
-                    Notas ficam salvas em <button type="button" onclick="window.app.closeQuickNoteModal(); window.app.switchView('perfil')" class="underline hover:text-primary transition-colors">Perfil → Notas</button>, onde você pode buscar, editar e vincular.
+                    Notas ficam salvas em <button type="button" onclick="window.app.closeQuickNoteModal(); window.app.flowNavigate('perfil','notes-section')" class="underline hover:text-primary transition-colors">Perfil → Notas</button>, onde você pode buscar, editar e vincular.
                 </p>
             </div>
             <div class="p-5 border-t border-outline-variant/20 flex gap-3 shrink-0">
@@ -3060,7 +3060,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260524-closure-ui-v1"></script>
+    <script type="module" src="app.js?v=20260525-profile-manual-v2"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3091,7 +3091,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260524-closure-ui-v1')
+                navigator.serviceWorker.register('sw.js?v=20260525-profile-manual-v2')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

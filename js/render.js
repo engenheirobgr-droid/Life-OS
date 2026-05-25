@@ -2062,6 +2062,7 @@ setTodayChecklistDayPart: function(dayPart = 'all') {
 
 openDayCapacityProfileSettings: async function() {
         this.hojeScreen = 'checklist';
+        this.setProfileTab('perfil');
         await this.switchView('perfil', { preserveScroll: true });
         const reveal = () => {
             const section = document.getElementById('day-capacity-profile-section');
@@ -4225,6 +4226,7 @@ render: {
             app.renderNotesPanel();
             app.renderManualGuide();
             if (app.renderSocialAccessPanel) app.renderSocialAccessPanel();
+            app.syncProfileTabVisibility();
             app.updateProfileAppVersion();
         },
 

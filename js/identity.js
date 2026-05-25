@@ -1006,6 +1006,84 @@ manualGuideChapters: [
         }
     ],
 
+normalizeManualGuideScreen: function(screenId = 'all') {
+        const value = String(screenId || '').trim().toLowerCase();
+        const allowed = new Set(['all', 'hoje', 'painel', 'planos', 'foco', 'proposito', 'perfil', 'social']);
+        return allowed.has(value) ? value : 'all';
+    },
+
+getManualGuideScreens: function() {
+        return [
+            { id: 'all', label: 'Todas' },
+            { id: 'hoje', label: 'Hoje' },
+            { id: 'painel', label: 'Painel' },
+            { id: 'planos', label: 'Planos' },
+            { id: 'foco', label: 'Foco' },
+            { id: 'proposito', label: 'Proposito' },
+            { id: 'perfil', label: 'Perfil' },
+            { id: 'social', label: 'Social' }
+        ];
+    },
+
+getManualGuideScreenLabel: function(screenId = 'all') {
+        const normalized = this.normalizeManualGuideScreen(screenId);
+        const found = this.getManualGuideScreens().find((item) => item.id === normalized);
+        return found ? found.label : 'Outros';
+    },
+
+getManualGuideScreenForChapter: function(chapter) {
+        const chapterId = String(chapter?.id || '').trim();
+        const screenByChapterId = {
+            'visao-geral': 'proposito',
+            'identidade': 'proposito',
+            'bem-estar': 'proposito',
+            'legado': 'proposito',
+            'odyssey': 'proposito',
+            'ikigai': 'proposito',
+            'visao': 'proposito',
+            'jornada-guiada': 'proposito',
+            'planos': 'planos',
+            'woop': 'planos',
+            'protocolos-base': 'planos',
+            'hierarquia-diagnostico': 'planos',
+            'habitos': 'planos',
+            'habitos-ponte': 'planos',
+            'maturacao-habitos': 'planos',
+            'hoje': 'hoje',
+            'cadencia': 'hoje',
+            'ritual-sugestao': 'hoje',
+            'mapa-capacidade': 'hoje',
+            'foco': 'foco',
+            'reflexao': 'painel',
+            'padroes': 'painel',
+            'carga-recuperacao': 'painel',
+            'notas': 'perfil',
+            'gamificacao': 'perfil',
+            'social': 'social'
+        };
+        if (screenByChapterId[chapterId]) return screenByChapterId[chapterId];
+        const fallbackView = String(chapter?.cta?.view || '').trim().toLowerCase();
+        return this.normalizeManualGuideScreen(fallbackView || 'perfil');
+    },
+
+setManualGuideScreenFilter: function(screenId = 'all') {
+        this.manualGuideScreenFilter = this.normalizeManualGuideScreen(screenId);
+        this.renderManualGuide();
+    },
+
+syncManualGuideScreenNav: function(activeScreen = 'all') {
+        const normalized = this.normalizeManualGuideScreen(activeScreen);
+        document.querySelectorAll('[data-manual-screen]').forEach((button) => {
+            const screen = this.normalizeManualGuideScreen(button.getAttribute('data-manual-screen'));
+            const isActive = screen === normalized;
+            button.classList.toggle('text-primary', isActive);
+            button.classList.toggle('border-b-2', isActive);
+            button.classList.toggle('border-primary', isActive);
+            button.classList.toggle('text-outline', !isActive);
+            button.classList.toggle('hover:text-primary', !isActive);
+        });
+    },
+
 ensureManualGuideState: function() {
         if (!window.sistemaVidaState.profile) return;
         const profile = window.sistemaVidaState.profile;
@@ -1044,11 +1122,16 @@ manualGuideJumpTo: function(view, sectionId) {
         if (sectionId) {
             this.flowNavigate(view, sectionId, '');
         } else {
-            this.switchView(view);
+            if (view === 'perfil') this.profileActiveTab = 'perfil';
+            this.switchView(view).then(() => {
+                if (view === 'perfil') this.setProfileTab('perfil');
+            }).catch(() => {});
         }
     },
 
 openManualChapter: function(chapterId) {
+        const chapter = (this.manualGuideChapters || []).find((item) => item.id === chapterId);
+        if (chapter) this.manualGuideScreenFilter = this.getManualGuideScreenForChapter(chapter);
         this.flowNavigate('perfil', 'manual-guide-section', '');
         // Expand the chapter after navigation settles
         setTimeout(() => {
@@ -1077,10 +1160,24 @@ renderManualGuide: function() {
         if (!list) return;
         this.ensureManualGuideState();
         const esc = (s) => this.escapeHtml(String(s || ''));
-        const cards = this.manualGuideChapters.map((ch, idx) => {
+        const activeScreen = this.normalizeManualGuideScreen(this.manualGuideScreenFilter || 'all');
+        this.manualGuideScreenFilter = activeScreen;
+        this.syncManualGuideScreenNav(activeScreen);
+
+        const chaptersWithContext = this.manualGuideChapters.map((ch, idx) => ({
+            ...ch,
+            _manualOrder: idx,
+            _manualScreen: this.getManualGuideScreenForChapter(ch)
+        }));
+        const filteredChapters = activeScreen === 'all'
+            ? chaptersWithContext
+            : chaptersWithContext.filter((chapter) => chapter._manualScreen === activeScreen);
+
+        const renderCard = (ch, displayIndex) => {
             const isRead = this.isManualChapterRead(ch.id);
-            const refs = (ch.refs || []).map(r => `<li>${esc(r)}</li>`).join('');
-            const how = (ch.how || []).map(h => `<li>${esc(h)}</li>`).join('');
+            const refs = (ch.refs || []).map((r) => `<li>${esc(r)}</li>`).join('');
+            const how = (ch.how || []).map((h) => `<li>${esc(h)}</li>`).join('');
+            const screenLabel = this.getManualGuideScreenLabel(ch._manualScreen);
             const ctaSectionArg = ch.cta && ch.cta.sectionId ? `,'${esc(ch.cta.sectionId)}'` : '';
             const cta = ch.cta ? `
                 <button type="button" onclick="window.app.manualGuideJumpTo('${esc(ch.cta.view)}'${ctaSectionArg})"
@@ -1096,7 +1193,7 @@ renderManualGuide: function() {
                         <span class="material-symbols-outlined notranslate text-[18px]">${esc(ch.icon)}</span>
                     </span>
                     <div class="min-w-0 flex-1">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Capítulo ${idx + 1}</p>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Capitulo ${displayIndex + 1} - ${esc(screenLabel)}</p>
                         <p class="text-sm font-bold text-on-surface leading-tight mt-0.5">${esc(ch.title)}</p>
                         <p class="text-[11px] text-outline mt-0.5 leading-snug">${esc(ch.subtitle)}</p>
                     </div>
@@ -1105,7 +1202,7 @@ renderManualGuide: function() {
                 </button>
                 <div id="manual-ch-body-${esc(ch.id)}" class="hidden px-5 pb-5 pt-1 space-y-4 text-sm text-on-surface-variant leading-relaxed">
                     <div>
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">O que é</p>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">O que e</p>
                         <p>${ch.what}</p>
                     </div>
                     <div>
@@ -1120,8 +1217,42 @@ renderManualGuide: function() {
                     ${cta}
                 </div>
             </div>`;
-        }).join('');
-        list.innerHTML = cards;
+        };
+
+        if (!filteredChapters.length) {
+            list.innerHTML = '<p class="text-xs text-outline italic rounded-xl bg-surface-container-low p-4">Nenhum capitulo nesta sessao.</p>';
+            this.renderManualGuideProgress();
+            return;
+        }
+
+        if (activeScreen === 'all') {
+            const screenOrder = ['proposito', 'planos', 'hoje', 'foco', 'painel', 'perfil', 'social'];
+            let displayIndex = 0;
+            list.innerHTML = screenOrder.map((screenId) => {
+                const groupItems = filteredChapters.filter((chapter) => chapter._manualScreen === screenId);
+                if (!groupItems.length) return '';
+                const groupLabel = this.getManualGuideScreenLabel(screenId);
+                const cards = groupItems
+                    .sort((a, b) => a._manualOrder - b._manualOrder)
+                    .map((chapter) => {
+                        const html = renderCard(chapter, displayIndex);
+                        displayIndex += 1;
+                        return html;
+                    })
+                    .join('');
+                return `
+                <section class="space-y-3">
+                    <div class="flex items-center justify-between gap-2 px-1">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-outline">${esc(groupLabel)}</p>
+                        <span class="text-[10px] text-outline">${groupItems.length} item(ns)</span>
+                    </div>
+                    <div class="space-y-3">${cards}</div>
+                </section>`;
+            }).filter(Boolean).join('');
+        } else {
+            const ordered = filteredChapters.sort((a, b) => a._manualOrder - b._manualOrder);
+            list.innerHTML = ordered.map((chapter, index) => renderCard(chapter, index)).join('');
+        }
         this.renderManualGuideProgress();
     },
     });
