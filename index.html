@@ -149,9 +149,14 @@
         }
 
         .deep-work-clock-shell--reference {
-            background: radial-gradient(130% 125% at 50% 16%, #11253a 0%, #09192a 48%, #071322 100%);
-            border-color: rgba(38, 204, 205, 0.22) !important;
-            box-shadow: inset 0 1px 0 rgba(137, 235, 236, 0.08), 0 0 28px rgba(21, 203, 205, 0.12);
+            background: radial-gradient(
+                130% 125% at 50% 16%,
+                color-mix(in srgb, var(--md-sys-color-primary) 14%, var(--md-sys-color-surface-container-lowest)) 0%,
+                color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 90%, #000) 56%,
+                color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 84%, #000) 100%
+            );
+            border-color: color-mix(in srgb, var(--md-sys-color-primary) 26%, transparent) !important;
+            box-shadow: inset 0 1px 0 color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent), 0 0 24px color-mix(in srgb, var(--md-sys-color-primary) 10%, transparent);
         }
 
         .deep-work-ring-accent {
@@ -159,7 +164,7 @@
         }
 
         .deep-work-ring-orb-glow {
-            box-shadow: 0 0 52px rgba(23, 224, 220, 0.18), inset 0 0 38px rgba(23, 224, 220, 0.08);
+            box-shadow: 0 0 46px color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent), inset 0 0 30px color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
             pointer-events: none;
         }
 
@@ -170,25 +175,26 @@
         }
 
         .deep-work-ring-track {
-            stroke: rgba(131, 164, 188, 0.22);
+            stroke: color-mix(in srgb, var(--md-sys-color-outline) 36%, transparent);
             stroke-width: 4.6;
         }
 
         .deep-work-ring-grid {
-            opacity: 0.56;
+            opacity: 0.82;
+            filter: drop-shadow(0 0 1px color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent));
         }
 
         .deep-work-ring-tick-major {
-            stroke: rgba(102, 208, 218, 0.56);
-            stroke-width: 0.95;
+            stroke: color-mix(in srgb, var(--md-sys-color-primary) 68%, white 32%);
+            stroke-width: 1.05;
             stroke-linecap: round;
         }
 
         .deep-work-ring-tick-minor {
-            stroke: rgba(112, 148, 174, 0.42);
-            stroke-width: 0.78;
+            stroke: color-mix(in srgb, var(--md-sys-color-primary) 42%, white 58%);
+            stroke-width: 0.86;
             stroke-linecap: round;
-            opacity: 0.72;
+            opacity: 0.62;
         }
 
         .deep-work-ring-progress {
@@ -3319,7 +3325,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260526-focus-ui-v7"></script>
+    <script type="module" src="app.js?v=20260526-focus-ui-v8"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3350,7 +3356,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260526-focus-ui-v7')
+                navigator.serviceWorker.register('sw.js?v=20260526-focus-ui-v8')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

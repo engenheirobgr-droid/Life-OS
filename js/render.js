@@ -1371,7 +1371,7 @@ renderDeepWorkClockVisual: function(options = {}) {
                 const y1 = 60 + (49.2 * Math.sin(angle));
                 const x2 = 60 + (52.8 * Math.cos(angle));
                 const y2 = 60 + (52.8 * Math.sin(angle));
-                return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="deep-work-ring-tick-major"></line>`;
+                return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(98, 220, 224, 0.9)" stroke-width="1.08" stroke-linecap="round"></line>`;
             }).join('');
             const minorTicks = Array.from({ length: 60 }, (_, i) => {
                 if (i % 5 === 0) return '';
@@ -1380,7 +1380,7 @@ renderDeepWorkClockVisual: function(options = {}) {
                 const y1 = 60 + (50.4 * Math.sin(angle));
                 const x2 = 60 + (52.7 * Math.cos(angle));
                 const y2 = 60 + (52.7 * Math.sin(angle));
-                return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="deep-work-ring-tick-minor"></line>`;
+                return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="rgba(86, 158, 172, 0.56)" stroke-width="0.9" stroke-linecap="round"></line>`;
             }).join('');
             return `
                 <div class="deep-work-clock-shell deep-work-clock-shell--reference rounded-xl border border-primary/20 px-4 py-6 md:py-7 text-center shadow-inner overflow-hidden h-full flex items-center justify-center" data-running="${activeMotion ? 'true' : 'false'}" data-mode="${mode}">
@@ -1393,9 +1393,9 @@ renderDeepWorkClockVisual: function(options = {}) {
                                     <stop offset="100%" stop-color="#18c9d3" stop-opacity="0.8"></stop>
                                 </linearGradient>
                                 <radialGradient id="deep-work-ring-disk" cx="50%" cy="42%" r="64%">
-                                    <stop offset="0%" stop-color="#102437" stop-opacity="0.9"></stop>
-                                    <stop offset="72%" stop-color="#0a1b2d" stop-opacity="0.78"></stop>
-                                    <stop offset="100%" stop-color="#081828" stop-opacity="0.56"></stop>
+                                    <stop offset="0%" stop-color="#0c2a2f" stop-opacity="0.9"></stop>
+                                    <stop offset="72%" stop-color="#092127" stop-opacity="0.8"></stop>
+                                    <stop offset="100%" stop-color="#06181e" stop-opacity="0.62"></stop>
                                 </radialGradient>
                             </defs>
                             <circle cx="60" cy="60" r="57.2" fill="none" class="deep-work-ring-outer"></circle>
@@ -1419,20 +1419,24 @@ renderDeepWorkClockVisual: function(options = {}) {
 
 
         return `
-            <div class="deep-work-clock-shell rounded-xl border border-primary/20 px-4 py-6 md:py-7 text-center shadow-inner h-full flex flex-col justify-center" data-running="${activeMotion ? 'true' : 'false'}" data-mode="${mode}">
-                <div class="mx-auto w-full max-w-[20rem]">
-                    <div class="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.08em] font-semibold text-outline mb-3">
-                        <span>${modeLabel}</span>
-                        <span>${pctLabel}</span>
+            <div class="deep-work-clock-shell rounded-xl border border-primary/20 px-4 py-6 md:py-7 text-center shadow-inner h-full flex items-center justify-center" data-running="${activeMotion ? 'true' : 'false'}" data-mode="${mode}">
+                <div class="mx-auto w-full max-w-[24rem] h-64 md:h-72 flex flex-col">
+                    <div class="w-full">
+                        <div class="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.08em] font-semibold text-outline mb-3">
+                            <span>${modeLabel}</span>
+                            <span>${pctLabel}</span>
+                        </div>
+                        <div class="relative h-2 rounded-full bg-surface-container-highest overflow-hidden mb-5">
+                            <div class="h-full bg-primary transition-all duration-700 ease-out" style="width:${Math.max(3, pctValue)}%"></div>
+                            <span class="deep-work-progress-dot absolute top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full bg-primary border border-surface-container-lowest transition-all duration-700 ease-out" style="left:calc(${Math.max(3, pctValue)}% - 5px)"></span>
+                        </div>
                     </div>
-                    <div class="relative h-2 rounded-full bg-surface-container-highest overflow-hidden mb-5">
-                        <div class="h-full bg-primary transition-all duration-700 ease-out" style="width:${Math.max(3, pctValue)}%"></div>
-                        <span class="deep-work-progress-dot absolute top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full bg-primary border border-surface-container-lowest transition-all duration-700 ease-out" style="left:calc(${Math.max(3, pctValue)}% - 5px)"></span>
+                    <div class="flex-1 flex flex-col items-center justify-center">
+                        <p class="text-[11px] uppercase tracking-[0.08em] font-semibold text-outline">${modeLabel}</p>
+                        ${timerHtml}
+                        ${phaseHtml}
                     </div>
                 </div>
-                <p class="text-[11px] uppercase tracking-[0.08em] font-semibold text-outline">${modeLabel}</p>
-                ${timerHtml}
-                ${phaseHtml}
             </div>`;
     },
 
