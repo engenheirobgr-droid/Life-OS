@@ -1364,8 +1364,8 @@ renderDeepWorkClockVisual: function(options = {}) {
             const dotY = 60 + (54 * Math.sin(dotAngle * Math.PI / 180));
             const pulseClass = activeMotion ? 'deep-work-ring-pulse' : '';
             return `
-                <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-surface-container-lowest px-4 py-6 md:py-7 text-center shadow-inner overflow-hidden h-full flex items-center justify-center">
-                    <div class="relative mx-auto h-60 w-60 md:h-64 md:w-64 max-w-full">
+                <div class="deep-work-clock-shell rounded-2xl border border-primary/20 bg-surface-container-lowest px-4 py-5 md:px-5 md:py-6 text-center shadow-inner overflow-hidden h-full flex items-center justify-center">
+                    <div class="relative mx-auto h-56 w-56 md:h-64 md:w-64 max-w-full">
                         <svg viewBox="0 0 120 120" class="h-full w-full text-primary" role="img" aria-label="Progresso do bloco ${pctLabel}">
                             <defs>
                                 <linearGradient id="deep-work-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1386,7 +1386,7 @@ renderDeepWorkClockVisual: function(options = {}) {
                             <path d="M60 22 C75 38 94 46 94 66 C94 84 79 98 60 98 C41 98 26 84 26 66 C26 46 45 38 60 22Z" fill="currentColor" opacity="0.045"></path>
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <p class="text-xs uppercase tracking-[0.14em] font-bold text-outline">${mode === 'break' ? 'Pausa' : 'Tempo restante'}</p>
+                            <p class="text-[11px] uppercase tracking-[0.14em] font-bold text-outline">${mode === 'break' ? 'Pausa' : 'Tempo restante'}</p>
                             ${timerHtml}
                             ${phaseHtml}
                         </div>
@@ -1396,8 +1396,8 @@ renderDeepWorkClockVisual: function(options = {}) {
 
 
         return `
-            <div class="deep-work-clock-shell rounded-xl border border-primary/20 bg-primary/5 px-4 py-6 md:py-7 text-center shadow-inner h-full flex flex-col justify-center">
-                <p class="text-xs uppercase tracking-[0.14em] font-bold text-outline">Tempo restante</p>
+            <div class="deep-work-clock-shell rounded-2xl border border-primary/20 bg-primary/5 px-4 py-6 md:px-5 md:py-7 text-center shadow-inner h-full flex flex-col justify-center">
+                <p class="text-[11px] uppercase tracking-[0.14em] font-bold text-outline">Tempo restante</p>
                 ${timerHtml}
                 ${phaseHtml}
             </div>`;
@@ -1511,11 +1511,7 @@ renderDeepWorkImmersiveOverlay: function() {
                 event.stopPropagation();
                 if (action === 'pause') return window.app.toggleDeepWorkPause();
                 if (action === 'reset') return window.app.resetDeepWorkSession();
-                if (action === 'finish') {
-                    const modeNow = String(window.sistemaVidaState?.deepWork?.mode || 'focus');
-                    if (modeNow === 'break') return window.app.skipBreak();
-                    return window.app.finishDeepWorkNow();
-                }
+                if (action === 'finish') return window.app.finishDeepWorkNow();
             }, true);
             content.dataset.dwActionsBound = '1';
         }
@@ -1539,6 +1535,47 @@ renderDeepWorkImmersiveOverlay: function() {
             : 'ring';
         const progressTotal = Math.max(1, dw.mode === 'focus' ? Number(dw.targetSec || 5400) : Number(dw.breakSec || 1200));
         const progress = Math.max(0, Math.min(1, 1 - (Number(dw.remainingSec || 0) / progressTotal)));
+        const microContext = selectedMicro ? this.getMicroPlanContext(selectedMicro) : null;
+        const habitMeta = linkedHabit?.linkedMetaId
+            ? (state.entities?.metas || []).find((meta) => meta.id === linkedHabit.linkedMetaId)
+            : null;
+        const contextPath = selectedMicro
+            ? (microContext?.path || 'Sem trilha definida')
+            : habitMeta
+                ? `Meta: ${habitMeta.title}`
+                : linkedHabit
+                    ? 'Sessao de habito'
+                    : 'Sessao livre';
+        const overlayMicroSchedule = selectedMicro ? (this.getMicroSuggestedSchedule?.(selectedMicro) || null) : null;
+        const overlayExecutionLabel = selectedMicro
+            ? (overlayMicroSchedule?.startTime ? `${overlayMicroSchedule.startTime} · Definido automaticamente` : 'Sem horario definido')
+            : linkedHabit?.startTime
+                ? `${linkedHabit.startTime} · Definido manualmente`
+                : 'Sem horario definido';
+        const overlayEstimatedMinutes = selectedMicro
+            ? Math.max(1, Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 5400) / 60))
+            : Math.max(1, Math.round(Number(dw.targetSec || 5400) / 60));
+        const overlayPurposeLabel = microContext?.meta?.purpose || habitMeta?.purpose || 'Sem proposito definido';
+        const overlayDimensionLabel = selectedMicro?.dimension || linkedHabit?.dimension || microContext?.meta?.dimension || habitMeta?.dimension || 'Geral';
+        const overlayTrailRows = [
+            { icon: 'task_alt', label: 'Acao', value: selectedMicro?.title || (linkedHabit ? 'Sessao de habito' : 'Sessao livre') },
+            { icon: 'deployed_code', label: 'Entrega', value: microContext?.macro?.title || 'Sem entrega vinculada' },
+            { icon: 'account_tree', label: 'Projeto', value: microContext?.okr?.title || 'Sem projeto vinculado' },
+            { icon: 'flag', label: 'Meta', value: microContext?.meta?.title || habitMeta?.title || 'Sem meta vinculada' },
+            { icon: 'monitor_heart', label: 'Area', value: overlayDimensionLabel },
+            { icon: 'timer', label: 'Carga total estimada', value: `${overlayEstimatedMinutes} min · Ajustado ${selectedMicro ? 'automaticamente' : 'manualmente'}` },
+            { icon: 'schedule', label: 'Execucao no dia', value: overlayExecutionLabel },
+            { icon: 'auto_awesome', label: 'Proposito (nivel 0)', value: overlayPurposeLabel, emphasis: true }
+        ];
+        const overlayTrailHtml = overlayTrailRows.map((row) => `
+            <div class="flex items-start gap-2.5">
+                <span class="mt-0.5 material-symbols-outlined notranslate text-[15px] ${row.emphasis ? 'text-primary' : 'text-white/55'}">${row.icon}</span>
+                <div class="min-w-0">
+                    <p class="text-[9px] font-bold uppercase tracking-widest ${row.emphasis ? 'text-primary/80' : 'text-white/45'}">${this.escapeHtml(row.label)}</p>
+                    <p class="mt-0.5 break-words ${row.emphasis ? 'font-headline italic text-sm text-white' : 'text-sm text-white'}">${this.escapeHtml(row.value)}</p>
+                </div>
+            </div>
+        `).join('');
         const helperText = dw.mode === 'break'
             ? 'Pausa ativa para recuperar energia antes do proximo bloco.'
             : `Base ${Math.round(Number(state.baseCapacityMinutes) || 0)} min · Sem ajuste adicional do check-in.`;
@@ -1567,19 +1604,34 @@ renderDeepWorkImmersiveOverlay: function() {
         overlay.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         content.innerHTML = `
-            <div class="min-h-screen px-4 py-6 md:px-8 md:py-8 text-white">
-                <div class="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl flex-col gap-6">
-                    <div class="flex items-start justify-between gap-4">
+            <div class="min-h-screen px-4 py-4 text-white md:px-6 md:py-6">
+                <div class="mx-auto flex min-h-[calc(100vh-2rem)] max-w-7xl flex-col gap-4">
+                    <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                         <div class="min-w-0">
-                            <h2 class="text-2xl md:text-4xl font-headline italic font-bold text-white">${dw.mode === 'break' ? 'Pausa em andamento' : 'Foco em andamento'}</h2>
-                            ${helperText ? `<p class="mt-2 max-w-2xl text-sm md:text-base text-white/68">${this.escapeHtml(helperText)}</p>` : ''}
+                            <p class="text-[11px] font-bold uppercase tracking-[0.28em] text-white/55">${dw.mode === 'break' ? 'RECUPERACAO' : 'SESSAO TRAVADA'}</p>
+                            <h2 class="mt-2 text-2xl font-headline italic font-bold text-white md:text-[2.5rem]">${dw.mode === 'break' ? 'Pausa em andamento' : 'Foco em andamento'}</h2>
+                            ${helperText ? `<p class="mt-2 max-w-2xl text-sm leading-relaxed text-white/68">${this.escapeHtml(helperText)}</p>` : ''}
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 self-start lg:min-w-[18rem]">
+                            <div class="rounded-2xl border border-white/10 bg-white/6 px-3 py-2.5">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-white/55">Meta</p>
+                                <p class="mt-1 text-sm font-semibold text-white">${Math.max(5, Math.round(Number(dw.targetSec || 5400) / 60))} min</p>
+                            </div>
+                            <div class="rounded-2xl border border-white/10 bg-white/6 px-3 py-2.5">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-white/55">Modo</p>
+                                <p class="mt-1 text-sm font-semibold text-white">${dw.mode === 'break' ? 'Pausa' : 'Foco'}</p>
+                            </div>
+                            <div class="rounded-2xl border border-white/10 bg-white/6 px-3 py-2.5">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-white/55">Avanco</p>
+                                <p class="mt-1 text-sm font-semibold text-white">${Math.round(progress * 100)}%</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.22fr)_minmax(360px,0.78fr)]">
-                        <section class="rounded-[28px] border border-white/10 bg-[rgba(255,255,255,0.045)] p-5 md:p-7 shadow-[0_30px_80px_rgba(0,0,0,0.34)] backdrop-blur-sm">
-                            <div class="grid h-full grid-cols-1 gap-5 lg:grid-cols-[minmax(360px,1.15fr)_minmax(280px,0.85fr)] lg:items-stretch">
-                                <div class="min-w-0">
+                    <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.28fr)_minmax(320px,0.72fr)]">
+                        <section class="rounded-[28px] border border-white/10 bg-[rgba(255,255,255,0.045)] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.34)] backdrop-blur-sm md:p-5">
+                            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(270px,0.92fr)] lg:items-stretch">
+                                <div class="min-w-0 space-y-4">
                                     ${this.renderDeepWorkClockVisual({
                                         style: clockStyle,
                                         timeText: this.formatClock(dw.remainingSec),
@@ -1592,46 +1644,42 @@ renderDeepWorkImmersiveOverlay: function() {
                                         canCompleteSelectedMicro: !!(selectedMicro && selectedMicro.status !== 'done')
                                     })}
                                 </div>
-                                <div class="min-w-0 h-full flex flex-col justify-between gap-4">
-                                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Ação ativa</p>
-                                            <p class="mt-1 text-base font-semibold text-white">${this.escapeHtml(selectedMicro?.title || 'Sem ação ativa')}</p>
+                                <aside class="min-w-0">
+                                    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                                        <div class="flex flex-wrap items-center gap-2 border-b border-white/10 pb-3">
+                                            <button
+                                                type="button"
+                                                data-deep-work-action="pause"
+                                                title="${dw.isPaused ? 'Retomar foco' : 'Pausar foco'}"
+                                                aria-label="${dw.isPaused ? 'Retomar foco' : 'Pausar foco'}"
+                                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-white/10 text-white transition-colors hover:bg-white/14">
+                                                <span class="material-symbols-outlined notranslate text-[18px]">${dw.isPaused ? 'play_arrow' : 'pause'}</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                data-deep-work-action="reset"
+                                                title="Reiniciar"
+                                                aria-label="Reiniciar"
+                                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-white/90 transition-colors hover:bg-white/10">
+                                                <span class="material-symbols-outlined notranslate text-[18px]">restart_alt</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                data-deep-work-action="finish"
+                                                title="${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}"
+                                                aria-label="${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}"
+                                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/25 transition-all hover:opacity-95">
+                                                <span class="material-symbols-outlined notranslate text-[18px]">${dw.mode === 'break' ? 'stop_circle' : 'flag'}</span>
+                                            </button>
                                         </div>
-                                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Habito origem</p>
-                                            <p class="mt-1 text-base font-semibold text-white">${this.escapeHtml(linkedHabit?.title || 'Sessao livre')}</p>
-                                        </div>
+                                        <div class="mt-3 space-y-2">${overlayTrailHtml}</div>
                                     </div>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Meta do bloco</p>
-                                            <p class="mt-1 text-base font-semibold text-white">${Math.max(5, Math.round(Number(dw.targetSec || 5400) / 60))} min</p>
-                                        </div>
-                                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                            <p class="text-[10px] font-bold uppercase tracking-widest text-white/60">Modo atual</p>
-                                            <p class="mt-1 text-base font-semibold text-white">${dw.mode === 'break' ? 'Pausa' : 'Foco'}</p>
-                                        </div>
-                                    </div>
-                                    <div class="rounded-xl border border-white/10 bg-white/5 p-1">
-                                        <div class="grid grid-cols-3 gap-1.5">
-                                        <button type="button" data-deep-work-action="pause" class="rounded-lg border border-white/12 bg-white/10 px-2 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white hover:bg-white/14 transition-colors">
-                                            ${dw.isPaused ? 'Retomar' : 'Pausar'}
-                                        </button>
-                                        <button type="button" data-deep-work-action="reset" class="rounded-lg border border-white/12 bg-white/5 px-2 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white/90 hover:bg-white/10 transition-colors">
-                                            Reiniciar
-                                        </button>
-                                        <button type="button" data-deep-work-action="finish" class="rounded-lg bg-primary px-2 py-2.5 text-[11px] font-bold uppercase tracking-wider text-on-primary shadow-lg shadow-primary/25 hover:opacity-95 transition-all">
-                                            ${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}
-                                        </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                </aside>
                             </div>
                         </section>
 
                         <aside class="space-y-4">
-                            ${checklistHtml || `<div class="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/70 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">${dw.mode === 'break' ? 'A pausa fica em tela cheia ate o encerramento para manter a recuperacao no mesmo fluxo.' : 'Selecione uma ação com passos para acompanhar o roteiro completo aqui.'}</div>`}
+                            ${checklistHtml || `<div class="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm leading-relaxed text-white/70 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">${dw.mode === 'break' ? 'A pausa fica em tela cheia ate o encerramento para manter a recuperacao no mesmo fluxo.' : 'Selecione uma acao com passos para acompanhar o roteiro completo aqui.'}</div>`}
                         </aside>
                     </div>
                 </div>
@@ -1648,6 +1696,8 @@ renderDeepWorkPanel: function() {
 
         const statusEl = document.getElementById('deep-work-status');
         const stepEl = document.getElementById('deep-work-step');
+        const statusDisplayEl = document.getElementById('deep-work-status-display');
+        const stepDisplayEl = document.getElementById('deep-work-step-display');
         const timerEl = document.getElementById('deep-work-timer');
         const phaseEl = document.getElementById('deep-work-phase');
         const clockVisualEl = document.getElementById('deep-work-clock-visual');
@@ -1660,9 +1710,11 @@ renderDeepWorkPanel: function() {
         const intentionEl = document.getElementById('deep-work-intention');
         const startBtn = document.getElementById('deep-work-start-btn');
         const startIconEl = document.getElementById('deep-work-start-icon');
+        const startLabelEl = document.getElementById('deep-work-start-label');
         const resetBtn = document.getElementById('deep-work-reset-btn');
         const finishBtn = document.getElementById('deep-work-finish-btn');
         const finishIconEl = document.getElementById('deep-work-finish-icon');
+        const finishLabelEl = document.getElementById('deep-work-finish-label');
         const contextActionsEl = document.getElementById('deep-work-context-actions');
         const contextCardEl = document.getElementById('deep-work-context-card');
         const executionChecklistEl = document.getElementById('deep-work-execution-checklist');
@@ -1781,9 +1833,13 @@ renderDeepWorkPanel: function() {
                 : (canCompleteSelectedMicro ? 'Sessão concluída' : 'Pausa de recuperação');
         }
         if (statusEl) statusEl.textContent = statusText;
+        if (statusDisplayEl) statusDisplayEl.textContent = statusText;
         if (stepEl) {
             stepEl.textContent = stepText;
             stepEl.classList.toggle('hidden', !stepText);
+        }
+        if (stepDisplayEl) {
+            stepDisplayEl.textContent = stepText || 'Escolha um contexto e entre no bloco quando estiver pronto.';
         }
         const timeText = this.formatClock(dw.remainingSec);
         const phaseText = dw.mode === 'focus' ? 'Bloco' : 'Pausa';
@@ -1817,40 +1873,38 @@ renderDeepWorkPanel: function() {
             chip.classList.toggle('bg-surface-container-high', !isActive);
         });
 
-        const baseBtn = 'inline-flex items-center justify-center w-9 h-9 rounded-lg transition-all disabled:opacity-50';
-        const primaryBtn = `${baseBtn} bg-primary text-on-primary border border-primary/30 shadow-sm`;
-        const activeBtn = `${baseBtn} bg-primary/10 border border-primary/30 text-primary ring-2 ring-primary/20`;
-        const iconBtn = 'inline-flex items-center justify-center w-9 h-9 rounded-lg border border-outline-variant/20 bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors disabled:opacity-50';
-        const finishIconBtn = 'inline-flex items-center justify-center w-9 h-9 rounded-lg border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 transition-colors disabled:opacity-50';
+        const wideBtn = 'inline-flex h-8 w-8 items-center justify-center rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed';
+        const primaryBtn = `${wideBtn} bg-primary text-on-primary border border-primary/30 shadow-sm`;
+        const activeBtn = `${wideBtn} bg-primary/10 border border-primary/30 text-primary ring-2 ring-primary/20`;
+        const secondaryBtn = `${wideBtn} bg-surface-container-high border border-outline-variant/20 text-on-surface hover:bg-surface-container-highest`;
+        const finishBtnClass = `${wideBtn} bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15`;
         if (startBtn) {
             const shouldTogglePause = !!dw.isRunning;
             startBtn.className = shouldTogglePause ? activeBtn : primaryBtn;
             startBtn.disabled = !shouldTogglePause && !hasSelectedMicro && !hasSelectedHabit;
             startBtn.onclick = () => shouldTogglePause ? window.app.toggleDeepWorkPause() : window.app.startDeepWorkSession();
             if (startIconEl) startIconEl.textContent = shouldTogglePause ? (dw.isPaused ? 'play_arrow' : 'pause') : 'play_arrow';
+            if (startLabelEl) startLabelEl.textContent = shouldTogglePause ? (dw.isPaused ? 'Retomar foco' : 'Pausar foco') : 'Iniciar foco';
             startBtn.title = shouldTogglePause ? (dw.isPaused ? 'Retomar foco' : 'Pausar foco') : 'Iniciar foco';
             startBtn.setAttribute('aria-label', shouldTogglePause ? (dw.isPaused ? 'Retomar foco' : 'Pausar foco') : 'Iniciar foco');
         }
         if (resetBtn) {
-            resetBtn.className = iconBtn;
+            resetBtn.className = secondaryBtn;
             resetBtn.disabled = !dw.isRunning && !hasSelectedMicro && !hasSelectedHabit;
-            resetBtn.title = 'Resetar sessão';
-            resetBtn.setAttribute('aria-label', 'Resetar sessão');
+            resetBtn.title = 'Resetar sessao';
+            resetBtn.setAttribute('aria-label', 'Resetar sessao');
         }
         if (finishBtn) {
             if (dw.isRunning && dw.mode === 'focus') {
-                finishBtn.textContent = 'Finalizar sessão';
-                finishBtn.className = finishIconBtn;
+                finishBtn.className = finishBtnClass;
                 finishBtn.disabled = false;
                 finishBtn.onclick = () => window.app.finishDeepWorkNow();
             } else if (dw.isRunning && dw.mode === 'break') {
-                finishBtn.textContent = 'Pular descanso';
-                finishBtn.className = iconBtn;
+                finishBtn.className = secondaryBtn;
                 finishBtn.disabled = false;
                 finishBtn.onclick = () => window.app.skipBreak();
             } else {
-                finishBtn.textContent = 'Finalizar';
-                finishBtn.className = finishIconBtn;
+                finishBtn.className = finishBtnClass;
                 finishBtn.disabled = true;
                 finishBtn.onclick = () => window.app.finishDeepWorkNow();
             }
@@ -1858,17 +1912,20 @@ renderDeepWorkPanel: function() {
 
         if (finishBtn) {
             if (dw.isRunning && dw.mode === 'focus') {
-                finishBtn.title = 'Finalizar sessão';
-                finishBtn.setAttribute('aria-label', 'Finalizar sessão');
-                finishBtn.innerHTML = '<span class="material-symbols-outlined notranslate text-[16px]">flag</span>';
+                finishBtn.title = 'Finalizar sessao';
+                finishBtn.setAttribute('aria-label', 'Finalizar sessao');
+                if (finishIconEl) finishIconEl.textContent = 'flag';
+                if (finishLabelEl) finishLabelEl.textContent = 'Finalizar';
             } else if (dw.isRunning && dw.mode === 'break') {
                 finishBtn.title = 'Pular descanso';
                 finishBtn.setAttribute('aria-label', 'Pular descanso');
-                finishBtn.innerHTML = '<span class="material-symbols-outlined notranslate text-[16px]">skip_next</span>';
+                if (finishIconEl) finishIconEl.textContent = 'skip_next';
+                if (finishLabelEl) finishLabelEl.textContent = 'Pular descanso';
             } else {
-                finishBtn.title = 'Finalizar sessão';
-                finishBtn.setAttribute('aria-label', 'Finalizar sessão');
-                finishBtn.innerHTML = '<span class="material-symbols-outlined notranslate text-[16px]">flag</span>';
+                finishBtn.title = 'Finalizar sessao';
+                finishBtn.setAttribute('aria-label', 'Finalizar sessao');
+                if (finishIconEl) finishIconEl.textContent = 'flag';
+                if (finishLabelEl) finishLabelEl.textContent = 'Finalizar';
             }
         }
 
@@ -1902,22 +1959,49 @@ renderDeepWorkPanel: function() {
                     : selectedMicro
                         ? 'A sessão registra trabalho. A conclusão da ação continua sendo uma decisão separada.'
                         : '';
+            const microSchedule = selectedMicro ? (this.getMicroSuggestedSchedule?.(selectedMicro) || null) : null;
+            const executionLabel = selectedMicro
+                ? (microSchedule?.startTime ? `${microSchedule.startTime} · Definido automaticamente` : 'Sem horario definido')
+                : selectedHabit?.startTime
+                    ? `${selectedHabit.startTime} · Definido manualmente`
+                    : 'Sem horario definido';
+            const estimatedMinutes = selectedMicro
+                ? Math.max(1, Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 1500) / 60))
+                : Math.max(1, Math.round(Number(dw.targetSec || 1500) / 60));
+            const purposeLabel = microContext?.meta?.purpose || habitMeta?.purpose || 'Sem proposito definido';
+            const dimensionLabel = selectedMicro?.dimension || selectedHabit?.dimension || microContext?.meta?.dimension || habitMeta?.dimension || 'Geral';
+            const trailRows = [
+                { icon: 'task_alt', label: 'Acao', value: selectedMicro?.title || (selectedHabit ? 'Sessao de habito' : 'Sessao livre') },
+                { icon: 'deployed_code', label: 'Entrega', value: microContext?.macro?.title || 'Sem entrega vinculada' },
+                { icon: 'account_tree', label: 'Projeto', value: microContext?.okr?.title || 'Sem projeto vinculado' },
+                { icon: 'flag', label: 'Meta', value: microContext?.meta?.title || habitMeta?.title || 'Sem meta vinculada' },
+                { icon: 'monitor_heart', label: 'Area', value: dimensionLabel },
+                { icon: 'timer', label: 'Carga total estimada', value: `${estimatedMinutes} min · Ajustado ${selectedMicro ? 'automaticamente' : 'manualmente'}` },
+                { icon: 'schedule', label: 'Execucao no dia', value: executionLabel },
+                { icon: 'auto_awesome', label: 'Proposito (nivel 0)', value: purposeLabel, emphasis: true }
+            ];
             contextCardEl.innerHTML = `
-                <div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 space-y-3">
-                    <div>
-                        <p class="text-[10px] uppercase tracking-widest font-bold text-outline">${this.escapeHtml(contextKind)}</p>
-                        <p class="mt-1 text-sm font-semibold text-on-surface break-words">${this.escapeHtml(contextTitle)}</p>
-                        <p class="mt-1 text-xs text-on-surface-variant break-words">${this.escapeHtml(contextPath)}</p>
+                <div class="space-y-3">
+                    <div class="space-y-2">
+                        ${trailRows.map((row) => `
+                            <div class="flex items-start gap-2.5">
+                                <span class="mt-0.5 material-symbols-outlined notranslate text-[15px] ${row.emphasis ? 'text-primary' : 'text-outline'}">${row.icon}</span>
+                                <div class="min-w-0">
+                                    <p class="text-[9px] uppercase tracking-widest font-bold ${row.emphasis ? 'text-primary/80' : 'text-outline'}">${this.escapeHtml(row.label)}</p>
+                                    <p class="mt-0.5 break-words ${row.emphasis ? 'font-headline italic text-sm text-on-surface' : 'text-sm text-on-surface'}">${this.escapeHtml(row.value)}</p>
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="rounded-lg border border-outline-variant/10 bg-surface-container-low px-3 py-2">
-                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Meta do bloco</p>
-                            <p class="mt-1 text-sm font-semibold text-primary">${Math.max(5, Math.round(Number(dw.targetSec || 1500) / 60))} min</p>
-                        </div>
-                        <div class="rounded-lg border border-outline-variant/10 bg-surface-container-low px-3 py-2">
-                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Estado</p>
-                            <p class="mt-1 text-sm font-semibold text-on-surface">${this.escapeHtml(contextStatus)}</p>
-                        </div>
+                    <div class="flex flex-wrap gap-2 rounded-xl bg-surface-container-lowest px-3 py-2">
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-outline">
+                            <span class="material-symbols-outlined notranslate text-[12px]">timer</span>
+                            ${Math.max(5, Math.round(Number(dw.targetSec || 1500) / 60))} min
+                        </span>
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-outline">
+                            <span class="material-symbols-outlined notranslate text-[12px]">progress_activity</span>
+                            ${this.escapeHtml(contextStatus)}
+                        </span>
                     </div>
                     ${helperText ? `<p class="text-[11px] text-outline leading-relaxed">${this.escapeHtml(helperText)}</p>` : ''}
                 </div>`;
@@ -2018,14 +2102,14 @@ renderDeepWorkPanel: function() {
                     const displayTertiaryLabel = hasHabitAndMicro
                         ? (this.getMicroPlanContext(micro)?.path || '')
                         : '';
-                    return `<div class="flex items-center justify-between text-xs border border-outline-variant/10 rounded-lg px-3 py-2">
-                        <div class="min-w-0">
+                    return `<div class="flex items-start justify-between gap-3 rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-2.5 text-xs">
+                        <div class="min-w-0 space-y-0.5">
                             <p class="font-medium text-on-surface truncate">${this.escapeHtml(displayPrimaryLabel)}</p>
                             <p class="text-outline truncate">${this.escapeHtml(displaySecondaryLabel)}</p>
                             ${displayTertiaryLabel ? `<p class="text-outline/80 truncate">${this.escapeHtml(displayTertiaryLabel)}</p>` : ''}
                             <p class="text-outline/80 truncate">${this.escapeHtml(dateLabel)}</p>
                         </div>
-                        <span class="font-bold text-primary shrink-0">${mins} min</span>
+                        <span class="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">${mins} min</span>
                     </div>`;
                 }).join('');
             }

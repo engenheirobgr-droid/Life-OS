@@ -3220,7 +3220,6 @@ renderProfileChrome: function() {
         this.currentView = viewName;
         this.closeFabMenu();
         this.updateNavUI(viewName);
-
         const container = document.getElementById(this.config.containerId);
         if (container) {
             container.style.opacity = '0';
@@ -3244,25 +3243,30 @@ renderProfileChrome: function() {
 
         return new Promise((resolve) => {
         setTimeout(() => {
-            if (container) {
-                container.innerHTML = html;
-                container.style.opacity = '1';
-                this.executeInjectedScripts(container);
+            try {
+                if (container) {
+                    container.innerHTML = html;
+                    this.executeInjectedScripts(container);
+                }
+                if (this.render[viewName]) this.render[viewName]();
+                if (viewName === 'painel' && this.switchPainelScreen) this.switchPainelScreen(this.painelScreen || 'situacao');
+                if (viewName === 'hoje' && this.switchHojeScreen) this.switchHojeScreen(this.hojeScreen || 'checkin');
+                if (viewName === 'proposito' && this.switchPropositoScreen) this.switchPropositoScreen(this.propositoScreen || 'identidade');
+                if (this.renderAppNotificationCenter) {
+                    try { this.renderAppNotificationCenter(); } catch (_) {}
+                }
+                if (this.renderDeepWorkImmersiveOverlay) {
+                    try { this.renderDeepWorkImmersiveOverlay(); } catch (_) {}
+                }
+                if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (error) {
+                console.warn(`[switchView] Falha ao montar '${viewName}':`, error);
+                if (container) container.innerHTML = this.getViewRenderErrorTemplate(viewName);
+                this.showToast(`Nao foi possivel abrir ${viewName}. Tente novamente.`, 'error');
+            } finally {
+                if (container) container.style.opacity = '1';
+                resolve();
             }
-            if (this.render[viewName]) {
-                try { this.render[viewName](); } catch (e) { console.warn('render error:', e); }
-            }
-            if (viewName === 'painel' && this.switchPainelScreen) this.switchPainelScreen(this.painelScreen || 'situacao');
-            if (viewName === 'hoje' && this.switchHojeScreen) this.switchHojeScreen(this.hojeScreen || 'checkin');
-            if (viewName === 'proposito' && this.switchPropositoScreen) this.switchPropositoScreen(this.propositoScreen || 'identidade');
-            if (this.renderAppNotificationCenter) {
-                try { this.renderAppNotificationCenter(); } catch (_) {}
-            }
-            if (this.renderDeepWorkImmersiveOverlay) {
-                try { this.renderDeepWorkImmersiveOverlay(); } catch (_) {}
-            }
-            if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
-            resolve();
         }, 200);
         });
     },
@@ -7735,6 +7739,32 @@ ensureNotesState: function() {
 
     getFallbackTemplate: function(viewName) {
         return `<div class="p-6 mt-10 text-red-500 font-bold">Erro local de CORS: view '${viewName}' não pôde ser carregada via protocolo file. Use um servidor local.</div>`;
+    },
+
+    getViewRenderErrorTemplate: function(viewName) {
+        const safeViewName = this.escapeHtml?.(String(viewName || '')) || String(viewName || '');
+        return `
+            <section class="mx-auto mt-8 max-w-2xl rounded-3xl border border-red-200 bg-red-50/90 p-6 text-left shadow-sm">
+                <p class="text-[11px] font-bold uppercase tracking-[0.24em] text-red-500">Falha ao abrir a tela</p>
+                <h2 class="mt-2 text-2xl font-headline italic font-bold text-on-surface">Nao foi possivel renderizar "${safeViewName}"</h2>
+                <p class="mt-3 text-sm leading-relaxed text-on-surface-variant">
+                    O app interrompeu a montagem desta tela para evitar ficar preso no carregamento. Voce pode tentar novamente sem perder o restante da sessao.
+                </p>
+                <div class="mt-5 flex flex-wrap gap-3">
+                    <button
+                        type="button"
+                        onclick="window.app.switchView('${safeViewName}', { preserveScroll: true })"
+                        class="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition hover:opacity-95">
+                        Tentar novamente
+                    </button>
+                    <button
+                        type="button"
+                        onclick="window.app.switchView('hoje', { preserveScroll: true })"
+                        class="inline-flex items-center justify-center rounded-xl border border-outline-variant/30 bg-surface px-4 py-2 text-sm font-semibold text-on-surface transition hover:bg-surface-container-low">
+                        Ir para Hoje
+                    </button>
+                </div>
+            </section>`;
     },
 
     ensureDeepWorkTicking: function() {

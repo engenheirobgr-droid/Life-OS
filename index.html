@@ -692,6 +692,7 @@
             pointer-events: none;
             transform: translateX(30px);
             visibility: hidden;
+            display: none !important;
             position: absolute;
             inset-inline: 0;
             top: 0;
@@ -702,12 +703,14 @@
             pointer-events: none;
             transform: translateX(-30px);
             visibility: hidden;
+            display: none !important;
             position: absolute;
             inset-inline: 0;
             top: 0;
         }
 
         .step-active {
+            display: flex !important;
             opacity: 1;
             pointer-events: auto;
             transform: translateX(0);
@@ -1367,9 +1370,9 @@
     </header>
     <div id="header-theme-switcher"></div>
 
-    <div class="flex flex-1 overflow-hidden lg:overflow-visible">
+    <div id="app-shell" class="flex flex-1 overflow-hidden lg:overflow-visible">
         <!-- Desktop Sidebar -->
-        <aside
+        <aside id="app-sidebar"
             class="hidden lg:flex w-72 flex-col border-r border-outline-variant/30 bg-surface sticky top-0 h-screen overflow-hidden">
             <!-- Scrollable nav area -->
             <div class="flex flex-col flex-1 overflow-y-auto px-4 py-8 no-scrollbar">
@@ -1480,7 +1483,7 @@
         </aside>
 
         <!-- Main Content area -->
-        <section class="flex-1 overflow-y-auto min-h-screen pb-4 lg:pb-2 bg-background relative">
+        <section id="app-main-shell" class="flex-1 overflow-y-auto min-h-screen pb-4 lg:pb-2 bg-background relative">
             <div id="app-content" class="fade-in">
                 <!-- Views loaded here -->
                 <div class="flex min-h-[calc(100dvh-9rem)] w-full items-center justify-center px-4 text-outline" id="loading-placeholder">
@@ -1502,7 +1505,7 @@
     </div>
 
     <!-- Mobile Bottom Navigation -->
-    <nav
+    <nav id="mobile-bottom-nav"
         class="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface/90 backdrop-blur-xl border-t border-outline-variant/30 px-6 flex items-center justify-between z-50">
         <button data-view="hoje" class="nav-item-link flex flex-col items-center gap-1 transition-all [&:not(.active)>span:last-child]:hidden"
             onclick="app.navigate('hoje')">
