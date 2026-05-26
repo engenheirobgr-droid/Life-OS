@@ -99,8 +99,10 @@ export function attachSocial(app) {
             nav.querySelectorAll('.social-tab-btn').forEach(btn => {
                 const isActive = btn.dataset.tab === tabId;
                 btn.classList.toggle('active', isActive);
+                btn.classList.toggle('page-subtab-active', isActive);
                 btn.classList.toggle('text-primary', isActive);
                 btn.classList.toggle('text-outline', !isActive);
+                btn.classList.toggle('hover:text-primary', !isActive);
             });
 
             // Mostra o conteúdo correto

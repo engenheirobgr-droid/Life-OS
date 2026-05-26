@@ -1,7 +1,7 @@
-<main class="pt-6 lg:pt-10 pb-20 px-6 max-w-7xl mx-auto">
+<main class="pt-5 lg:pt-8 pb-20 px-6 max-w-7xl mx-auto">
     <!-- Greeting & Time Filter -->
     <header class="mb-4">
-        <div class="flex items-center gap-3 mb-4">
+        <div class="page-header-kicker flex items-center gap-3">
             <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Análise & Progresso</p>
             <div class="relative inline-flex group">
                 <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full text-outline/60 hover:text-primary hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="Informacoes sobre Painel">
@@ -13,18 +13,18 @@
             </div>
         </div>
         <h2 id="painel-title"
-            class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Painel de
+            class="page-title-display font-headline italic font-bold tracking-tight text-on-background">Painel de
             Evolução</h2>
-        <div class="mt-6 h-px w-24 bg-primary"></div>
-        <nav class="mt-4 flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0">
-            <button data-painel-screen="situacao" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-primary border-b-2 border-primary" onclick="window.app.switchPainelScreen('situacao')">Situação</button>
-            <button data-painel-screen="diagnostico" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('diagnostico')">Diagnóstico</button>
-            <button data-painel-screen="evolucao" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('evolucao')">Evolução</button>
-            <button data-painel-screen="padroes" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('padroes')">Padrões</button>
-            <button data-painel-screen="areas" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('areas')">Áreas</button>
-            <button data-painel-screen="okrs" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('okrs')">Projetos & Execução</button>
-            <button data-painel-screen="foco" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('foco')">Foco</button>
-            <button data-painel-screen="timeline" class="pb-4 text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('timeline')">Timeline</button>
+        <div class="page-header-divider h-px bg-primary"></div>
+        <nav class="page-subtabs flex overflow-x-auto no-scrollbar border-b border-surface-container-high pb-0">
+            <button data-painel-screen="situacao" class="page-subtab page-subtab-active text-sm uppercase tracking-widest font-label whitespace-nowrap text-primary" onclick="window.app.switchPainelScreen('situacao')">Situação</button>
+            <button data-painel-screen="diagnostico" class="page-subtab text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('diagnostico')">Diagnóstico</button>
+            <button data-painel-screen="evolucao" class="page-subtab text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('evolucao')">Evolução</button>
+            <button data-painel-screen="padroes" class="page-subtab text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('padroes')">Padrões</button>
+            <button data-painel-screen="areas" class="page-subtab text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('areas')">Áreas</button>
+            <button data-painel-screen="okrs" class="page-subtab text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('okrs')">Projetos & Execução</button>
+            <button data-painel-screen="foco" class="page-subtab text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('foco')">Foco</button>
+            <button data-painel-screen="timeline" class="page-subtab text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchPainelScreen('timeline')">Timeline</button>
         </nav>
         <!-- Anchor Chips -->
         <div class="overflow-x-auto no-scrollbar mt-4 hidden">
@@ -55,7 +55,7 @@
                 </button>
             </div>
         </div>
-        <div class="mt-5 mb-2 overflow-x-auto no-scrollbar">
+        <div class="mt-4 mb-2 overflow-x-auto no-scrollbar">
             <div class="inline-flex min-w-max gap-1 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
             <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')"
                 class="px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-wider transition-all shadow-sm">Ciclo</button>

@@ -2334,8 +2334,7 @@ _getAudioContext: function() {
             const tab = this.normalizeProfileTab(button.getAttribute('data-profile-tab'));
             const isActive = tab === activeTab;
             button.classList.toggle('text-primary', isActive);
-            button.classList.toggle('border-b-2', isActive);
-            button.classList.toggle('border-primary', isActive);
+            button.classList.toggle('page-subtab-active', isActive);
             button.classList.toggle('text-outline', !isActive);
             button.classList.toggle('hover:text-primary', !isActive);
         });
@@ -2983,14 +2982,14 @@ renderProfileChrome: function() {
     
       // 3. Remove estado ativo de TODOS os botões
       document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active', 'text-primary');
-        btn.classList.add('text-outline');
+        btn.classList.remove('active', 'text-primary', 'page-subtab-active');
+        btn.classList.add('text-outline', 'hover:text-primary');
       });
     
       const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
       if (activeBtn) {
-        activeBtn.classList.add('active', 'text-primary');
-        activeBtn.classList.remove('text-outline');
+        activeBtn.classList.add('active', 'text-primary', 'page-subtab-active');
+        activeBtn.classList.remove('text-outline', 'hover:text-primary');
       }
 
       const plannedBtn = document.getElementById('btn-stat-planned');
@@ -3537,9 +3536,9 @@ renderProfileChrome: function() {
         document.querySelectorAll('[data-painel-screen]').forEach((btn) => {
             const isActive = btn.getAttribute('data-painel-screen') === nextScreen;
             btn.classList.toggle('text-primary', isActive);
-            btn.classList.toggle('border-b-2', isActive);
-            btn.classList.toggle('border-primary', isActive);
+            btn.classList.toggle('page-subtab-active', isActive);
             btn.classList.toggle('text-outline', !isActive);
+            btn.classList.toggle('hover:text-primary', !isActive);
         });
 
         document.querySelectorAll('[data-painel-screen-content]').forEach((section) => {
@@ -3554,9 +3553,9 @@ renderProfileChrome: function() {
         document.querySelectorAll('[data-hoje-screen]').forEach((btn) => {
             const isActive = btn.getAttribute('data-hoje-screen') === nextScreen;
             btn.classList.toggle('text-primary', isActive);
-            btn.classList.toggle('border-b-2', isActive);
-            btn.classList.toggle('border-primary', isActive);
+            btn.classList.toggle('page-subtab-active', isActive);
             btn.classList.toggle('text-outline', !isActive);
+            btn.classList.toggle('hover:text-primary', !isActive);
         });
 
         document.querySelectorAll('[data-hoje-screen-content]').forEach((section) => {
@@ -3571,9 +3570,9 @@ renderProfileChrome: function() {
         document.querySelectorAll('[data-proposito-screen]').forEach((btn) => {
             const isActive = btn.getAttribute('data-proposito-screen') === nextScreen;
             btn.classList.toggle('text-primary', isActive);
-            btn.classList.toggle('border-b-2', isActive);
-            btn.classList.toggle('border-primary', isActive);
+            btn.classList.toggle('page-subtab-active', isActive);
             btn.classList.toggle('text-outline', !isActive);
+            btn.classList.toggle('hover:text-primary', !isActive);
         });
 
         document.querySelectorAll('[data-proposito-screen-content]').forEach((section) => {
