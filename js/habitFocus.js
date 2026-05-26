@@ -274,12 +274,16 @@ export function attachHabitFocusModule(app) {
             const stepMap = (habit.stepLogs && habit.stepLogs[dateKey]) || {};
             const doneCount = steps.reduce((acc, _, idx) => acc + (stepMap[idx] || stepMap[String(idx)] ? 1 : 0), 0);
             const allDone = doneCount === steps.length;
+            const completion = this.getHabitCompletionState?.(habit, dateKey);
+            const helperCopy = completion?.requiresTime
+                ? 'Passos e tempo registrado definem se o habito fecha hoje.'
+                : 'Passos concluidos definem se o habito fecha hoje.';
             return `
                 <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-4 space-y-3">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist do habito</p>
-                            <p class="mt-1 text-xs text-on-surface-variant">Passos concluidos definem se o habito fecha hoje.</p>
+                            <p class="mt-1 text-xs text-on-surface-variant">${this.escapeHtml(helperCopy)}</p>
                         </div>
                         <button type="button" onclick="window.app.toggleHabitAllSteps('${this.escapeHtml(habit.id)}','${dateKey}',${allDone ? 'true' : 'false'})" class="shrink-0 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high transition-colors">
                             ${allDone ? 'Reabrir passos' : 'Concluir passos'}

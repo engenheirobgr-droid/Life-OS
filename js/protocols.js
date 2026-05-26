@@ -889,14 +889,17 @@ export function attachProtocolsModule(app) {
             };
             const existingSteps = String(stepsInput?.value || '').trim();
             const nextSteps = protocol.steps.map(step => step.title).join('\n');
+            const suggestedMode = this.normalizeHabitTrackMode?.(protocol.suggestedHabit.trackMode || 'boolean') || 'boolean';
+            const suggestedTarget = Math.max(1, Number(protocol.suggestedHabit.targetValue) || 1);
             if (!options.force && existingSteps && existingSteps !== nextSteps) {
                 const confirmed = confirm(`Substituir os passos atuais pelo protocolo "${protocol.title}"?`);
                 if (!confirmed) return false;
             }
             if (stepsInput) stepsInput.value = nextSteps;
             if (dimensionInput && !dimensionInput.value) dimensionInput.value = protocol.suggestedHabit.dimension || 'Carreira';
-            if (modeInput) modeInput.value = 'boolean';
-            if (targetInput) targetInput.value = 1;
+            if (modeInput && !options.preserveMode) modeInput.value = suggestedMode;
+            if (targetInput && !options.preserveMode) targetInput.value = suggestedMode === 'boolean' ? 1 : suggestedTarget;
+            this.onHabitModeChange?.(modeInput?.value || suggestedMode);
             const protocolMinutes = this.getProtocolEstimatedMinutes?.(protocol, { includeOptional: false }) || 0;
             if (estimatedInput && protocolMinutes > 0 && (!estimatedInput.value || Number(estimatedInput.value) <= 0 || options.force)) {
                 estimatedInput.value = String(protocolMinutes);

@@ -262,7 +262,7 @@ finishMetaTrailWizard: function() {
 
         const meta = this._readTrailMeta();
         const okrs = this._readTrailOkrs().items;
-        const macros = this._readTrailEntregas().items;
+        const macros = this._readTrailMacros().items;
         const micros = this._readTrailMicros().items;
 
         const state = window.sistemaVidaState;
@@ -372,7 +372,7 @@ finishMetaTrailWizard: function() {
 
         this.closeMetaTrailWizard();
         this.saveState(false);
-        this.showToast(`Trilha criada: 1 meta,  projeto(s),  entrega(s),  (?es).`, 'success');
+        this.showToast(`Trilha criada: 1 meta, ${okrs.length} projeto(s), ${macros.length} entrega(s), ${micros.length} acao(oes).`, 'success');
 
         if (this.currentView === 'planos' && this.render.planos) {
             this.render.planos();
@@ -443,7 +443,7 @@ _validateMetaTrailStep: function(step) {
             return true;
         }
         if (s === 3) {
-            const macros = this._readTrailEntregas();
+            const macros = this._readTrailMacros();
             if (macros.hasPartial) {
                 this.showToast('Cada Entrega precisa de título, Projeto vinculado, início e prazo.', 'error');
                 return false;
@@ -480,7 +480,7 @@ _validateMetaTrailStep: function(step) {
                     prazo: micro.prazo
                 });
                 if (validation.ok) return false;
-                this.showToast(`Ação : `, 'error');
+                this.showToast(`Acao ${idx + 1}: ${validation.message}`, 'error');
                 return true;
             });
             if (invalidMicro) return false;
@@ -510,7 +510,7 @@ refreshTrailSummary: function() {
         if (!summary) return;
         const meta = this._readTrailMeta();
         const okrs = this._readTrailOkrs().items;
-        const macros = this._readTrailEntregas().items;
+        const macros = this._readTrailMacros().items;
         const micros = this._readTrailMicros().items;
         const okrByRow = {};
         okrs.forEach(okr => { okrByRow[okr.rowId] = okr; });
@@ -555,7 +555,7 @@ refreshTrailSummary: function() {
         const microCards = micros.length > 0
             ? micros.map((micro, idx) => `
                 <div class="bg-surface-container rounded-lg border border-outline-variant/15 p-3">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Ação </p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Acao ${idx + 1}</p>
                     <p class="text-sm font-semibold text-on-surface mt-1">${this.escapeHtml(micro.title)}</p>
                     <p class="text-xs text-outline mt-1">Entrega: ${this.escapeHtml(macroByRow[micro.macroRowId]?.title || 'Entrega não definida')}</p>
                     <p class="text-[11px] text-primary font-bold mt-2">${this._formatTrailDate(micro.inicioDate)} → ${this._formatTrailDate(micro.prazo)}</p>
@@ -2054,10 +2054,6 @@ saveNewEntity: function() {
             obj.targetValue = document.getElementById('habit-target') ? parseFloat(document.getElementById('habit-target').value) : 1;
             const protocolSel = document.getElementById('habit-protocol');
             const selectedProtocolId = protocolSel && protocolSel.value ? protocolSel.value : '';
-            if (selectedProtocolId) {
-                obj.trackMode = 'boolean';
-                obj.targetValue = 1;
-            }
             const currentTrackMode = this.normalizeHabitTrackMode?.(document.getElementById('habit-track-mode') ? document.getElementById('habit-track-mode').value : 'boolean') || 'boolean';
             obj.estimatedMinutes = (selectedProtocolId || currentTrackMode === 'timer')
                 ? 0

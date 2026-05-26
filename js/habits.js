@@ -7,7 +7,7 @@ normalizeHabitTrackMode: function(mode) {
         return 'boolean';
     },
 
-getHabitResolvedSteps: function(habit) {
+    getHabitResolvedSteps: function(habit) {
         if (!habit) return [];
         const ownSteps = Array.isArray(habit.steps)
             ? habit.steps.map(step => String(step || '').trim()).filter(Boolean)
@@ -21,18 +21,94 @@ getHabitResolvedSteps: function(habit) {
             : [];
     },
 
-isHabitDoneOnDate: function(habit, dateStr) {
-        if (!habit || !dateStr) return false;
-        const mode = this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
-        const target = Number(habit.targetValue) || 1;
-        const steps = this.getHabitResolvedSteps?.(habit) || [];
-        const hasProtocol = !!String(habit.protocolId || '').trim();
-        if ((hasProtocol || mode === 'boolean') && steps.length) {
-            const map = habit.stepLogs?.[dateStr] || {};
-            return steps.every((_, idx) => !!(map[idx] || map[String(idx)]));
+    getHabitCompletionState: function(habit, dateStr = this.getLocalDateKey()) {
+        if (!habit || !dateStr) {
+            return {
+                done: false,
+                current: 0,
+                target: 1,
+                percent: 0,
+                label: '0/1',
+                mode: 'boolean',
+                requiresSteps: false,
+                requiresTime: false,
+                stepCurrent: 0,
+                stepTarget: 0,
+                timeCurrent: 0,
+                timeTarget: 0
+            };
         }
-        const value = Number(habit.logs?.[dateStr]) || 0;
-        return mode === 'boolean' ? value > 0 : value >= target;
+        const mode = this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
+        const target = Math.max(1, Number(habit.targetValue) || 1);
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
+        const stepMap = habit.stepLogs?.[dateStr] || {};
+        const logCurrent = Math.max(0, Number(habit.logs?.[dateStr]) || 0);
+        const stepCurrent = steps.reduce((acc, _, idx) => acc + (stepMap[idx] || stepMap[String(idx)] ? 1 : 0), 0);
+        const stepTarget = steps.length;
+        const requiresSteps = stepTarget > 0;
+        const requiresTime = mode === 'timer';
+        const doneSteps = !requiresSteps || stepCurrent >= stepTarget;
+        const doneTime = !requiresTime || logCurrent >= target;
+
+        if (requiresSteps && requiresTime) {
+            const stepPercent = Math.round((stepCurrent / Math.max(1, stepTarget)) * 100);
+            const timePercent = Math.max(0, Math.min(100, Math.round((logCurrent / target) * 100)));
+            return {
+                done: doneSteps && doneTime,
+                current: logCurrent,
+                target,
+                percent: Math.round((stepPercent + timePercent) / 2),
+                label: `${stepCurrent}/${stepTarget} passos | ${logCurrent}/${target} min`,
+                mode,
+                requiresSteps,
+                requiresTime,
+                stepCurrent,
+                stepTarget,
+                timeCurrent: logCurrent,
+                timeTarget: target
+            };
+        }
+
+        if (requiresSteps) {
+            const percent = Math.round((stepCurrent / Math.max(1, stepTarget)) * 100);
+            return {
+                done: doneSteps,
+                current: stepCurrent,
+                target: stepTarget,
+                percent,
+                label: `${stepCurrent}/${stepTarget}`,
+                mode,
+                requiresSteps,
+                requiresTime,
+                stepCurrent,
+                stepTarget,
+                timeCurrent: logCurrent,
+                timeTarget: target
+            };
+        }
+
+        const done = mode === 'boolean' ? logCurrent > 0 : logCurrent >= target;
+        const denom = mode === 'boolean' ? 1 : target;
+        const shownCurrent = mode === 'boolean' ? (done ? 1 : 0) : logCurrent;
+        const percent = Math.max(0, Math.min(100, Math.round((shownCurrent / Math.max(1, denom)) * 100)));
+        return {
+            done,
+            current: shownCurrent,
+            target: denom,
+            percent,
+            label: `${shownCurrent}/${denom}`,
+            mode,
+            requiresSteps,
+            requiresTime,
+            stepCurrent,
+            stepTarget,
+            timeCurrent: logCurrent,
+            timeTarget: target
+        };
+    },
+
+    isHabitDoneOnDate: function(habit, dateStr) {
+        return !!this.getHabitCompletionState?.(habit, dateStr)?.done;
     },
 
 isHabitRoutine: function(habit) {
@@ -65,28 +141,8 @@ isHabitRoutine: function(habit) {
         return 5;
     },
 
-getHabitTodayProgressSnapshot: function(habit, dateStr = this.getLocalDateKey()) {
-        if (!habit) {
-            return { done: false, current: 0, target: 1, percent: 0, label: '0/1' };
-        }
-        const mode = this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
-        const target = Math.max(1, Number(habit.targetValue) || 1);
-        const logs = habit.logs || {};
-        const steps = this.getHabitResolvedSteps?.(habit) || [];
-        const stepMap = habit.stepLogs?.[dateStr] || {};
-        const hasProtocol = !!String(habit.protocolId || '').trim();
-        if ((hasProtocol || mode === 'boolean') && steps.length) {
-            const current = steps.reduce((acc, _, idx) => acc + (stepMap[idx] || stepMap[String(idx)] ? 1 : 0), 0);
-            const done = current >= steps.length;
-            const percent = Math.round((current / Math.max(1, steps.length)) * 100);
-            return { done, current, target: steps.length, percent, label: `${current}/${steps.length}` };
-        }
-        const current = Math.max(0, Number(logs[dateStr]) || 0);
-        const done = mode === 'boolean' ? current > 0 : current >= target;
-        const denom = mode === 'boolean' ? 1 : target;
-        const shownCurrent = mode === 'boolean' ? (done ? 1 : 0) : current;
-        const percent = Math.max(0, Math.min(100, Math.round((shownCurrent / Math.max(1, denom)) * 100)));
-        return { done, current: shownCurrent, target: denom, percent, label: `${shownCurrent}/${denom}` };
+    getHabitTodayProgressSnapshot: function(habit, dateStr = this.getLocalDateKey()) {
+        return this.getHabitCompletionState?.(habit, dateStr) || { done: false, current: 0, target: 1, percent: 0, label: '0/1' };
     },
 
 getHabitDoneDates: function(habit) {
@@ -486,36 +542,33 @@ onHabitModeChange: function(mode) {
         this.refreshCrudEstimatedFieldState?.('habits');
     },
 
-syncHabitProtocolAuthorityUI: function(protocolId = '') {
+    syncHabitProtocolAuthorityUI: function(protocolId = '') {
         const hasProtocol = !!String(protocolId || '').trim();
         const modeRow = document.getElementById('habit-mode-target-row');
         const modeInput = document.getElementById('habit-track-mode');
         const targetContainer = document.getElementById('habit-target-container');
         const targetInput = document.getElementById('habit-target');
         const authorityNote = document.getElementById('habit-protocol-authority-note');
+        const protocol = hasProtocol && typeof this.getProtocolById === 'function'
+            ? this.getProtocolById(protocolId)
+            : null;
+        const suggestedMode = this.normalizeHabitTrackMode?.(protocol?.suggestedHabit?.trackMode || 'boolean') || 'boolean';
+        const suggestedTarget = Math.max(1, Number(protocol?.suggestedHabit?.targetValue) || 1);
 
         if (modeRow) {
-            modeRow.classList.toggle('opacity-60', hasProtocol);
-            modeRow.classList.toggle('pointer-events-none', hasProtocol);
+            modeRow.classList.remove('opacity-60', 'pointer-events-none');
         }
-        if (modeInput) {
-            if (hasProtocol) modeInput.value = 'boolean';
-            modeInput.disabled = hasProtocol;
-        }
-        if (targetInput) {
-            if (hasProtocol) targetInput.value = '1';
-            targetInput.disabled = hasProtocol;
-        }
-        if (targetContainer) {
+        if (modeInput) modeInput.disabled = false;
+        if (targetInput) targetInput.disabled = false;
+        if (targetContainer) this.onHabitModeChange(modeInput?.value || 'boolean');
+        if (authorityNote) {
+            authorityNote.classList.toggle('hidden', !hasProtocol);
             if (hasProtocol) {
-                targetContainer.classList.add('hidden');
-                targetContainer.classList.remove('flex');
-                targetContainer.style.display = 'none';
-            } else {
-                this.onHabitModeChange(modeInput?.value || 'boolean');
+                authorityNote.textContent = suggestedMode === 'timer'
+                    ? `Protocolo sugere habito de tempo com alvo padrao de ${suggestedTarget} min. Voce pode ajustar ou trocar para checklist.`
+                    : 'Protocolo sugere checklist como modo padrao. Voce pode manter ou trocar para tempo.';
             }
         }
-        if (authorityNote) authorityNote.classList.toggle('hidden', !hasProtocol);
         this.refreshCrudEstimatedFieldState?.('habits');
     },
 

@@ -4900,6 +4900,97 @@ openCreateModal: function(type = 'metas', parentId = null) {
         return {};
     },
 
+    _collectEntityDescendants: function(entityType, entityId, state) {
+        const entities = state?.entities || {};
+        const result = { okrs: [], macros: [], micros: [] };
+        if (entityType === 'metas') {
+            result.okrs = (entities.okrs || []).filter((item) => item.metaId === entityId);
+            const okrIds = new Set(result.okrs.map((item) => item.id));
+            result.macros = (entities.macros || []).filter((item) => item.metaId === entityId || okrIds.has(item.okrId));
+            const macroIds = new Set(result.macros.map((item) => item.id));
+            result.micros = (entities.micros || []).filter((item) =>
+                item.metaId === entityId || okrIds.has(item.okrId) || macroIds.has(item.macroId)
+            );
+            return result;
+        }
+        if (entityType === 'okrs') {
+            result.macros = (entities.macros || []).filter((item) => item.okrId === entityId);
+            const macroIds = new Set(result.macros.map((item) => item.id));
+            result.micros = (entities.micros || []).filter((item) => item.okrId === entityId || macroIds.has(item.macroId));
+            return result;
+        }
+        if (entityType === 'macros') {
+            result.micros = (entities.micros || []).filter((item) => item.macroId === entityId);
+        }
+        return result;
+    },
+
+    _getDeleteEntityPlan: function(entityType, entityId, state) {
+        const descendants = this._collectEntityDescendants(entityType, entityId, state);
+        return {
+            rootType: entityType,
+            rootId: entityId,
+            idsByType: {
+                metas: entityType === 'metas' ? [entityId] : [],
+                okrs: [
+                    ...(entityType === 'okrs' ? [entityId] : []),
+                    ...descendants.okrs.map((item) => item.id)
+                ],
+                macros: [
+                    ...(entityType === 'macros' ? [entityId] : []),
+                    ...descendants.macros.map((item) => item.id)
+                ],
+                micros: [
+                    ...(entityType === 'micros' ? [entityId] : []),
+                    ...descendants.micros.map((item) => item.id)
+                ]
+            }
+        };
+    },
+
+    _getDeleteEntityConfirmationMessage: function(item, entityType, plan) {
+        const labels = {
+            metas: 'meta(s)',
+            okrs: 'projeto(s)',
+            macros: 'entrega(s)',
+            micros: 'acao(oes)'
+        };
+        const parts = ['okrs', 'macros', 'micros']
+            .filter((type) => type !== entityType && (plan.idsByType[type] || []).length > 0)
+            .map((type) => `${plan.idsByType[type].length} ${labels[type]}`);
+        if (!parts.length) return `Deseja realmente excluir "${item.title}"?`;
+        return `Deseja realmente excluir "${item.title}"? Isso tambem excluira ${parts.join(', ')} vinculada(s).`;
+    },
+
+    _prepareEntityTreeForDeletion: function(plan, state) {
+        const markAbandoned = (type, ids = []) => {
+            ids.forEach((id) => {
+                const item = (state.entities[type] || []).find((entry) => entry.id === id);
+                if (!item) return;
+                item.status = 'abandoned';
+                item.progress = 0;
+                if (type === 'micros') item.completed = false;
+            });
+        };
+        ['micros', 'macros', 'okrs', 'metas'].forEach((type) => markAbandoned(type, plan.idsByType[type] || []));
+        ['micros', 'macros', 'okrs', 'metas'].forEach((type) => {
+            (plan.idsByType[type] || []).forEach((id) => {
+                if (typeof this.updateCascadeProgress === 'function') this.updateCascadeProgress(id, type);
+            });
+        });
+    },
+
+    _deleteEntityWithDescendants: function(entityType, entityId, state) {
+        const plan = this._getDeleteEntityPlan(entityType, entityId, state);
+        this._prepareEntityTreeForDeletion(plan, state);
+        ['metas', 'okrs', 'macros', 'micros'].forEach((type) => {
+            const ids = new Set(plan.idsByType[type] || []);
+            if (!ids.size) return;
+            state.entities[type] = (state.entities[type] || []).filter((item) => !ids.has(item.id));
+        });
+        return plan;
+    },
+
     syncMicroWeekPlanToggle: function(microId = '') {
         const toggle = document.getElementById('add-to-week-plan');
         const toggleWrap = document.getElementById('week-plan-toggle-wrap');
@@ -7298,18 +7389,21 @@ ensureNotesState: function() {
         const entity = this.currentReviewEntity;
         const type = this.currentReviewType;
         if (!entity) return;
-
-        if (confirm(`Tem certeza que deseja excluir "${entity.title}"?`)) {
-            const list = type === 'habits' ? window.sistemaVidaState.habits : window.sistemaVidaState.entities[type];
-            const idx = list.findIndex(e => e.id === entity.id);
-            if (idx !== -1) {
-                list.splice(idx, 1);
-                this.saveState(true);
-                document.getElementById('review-entity-modal').classList.add('hidden');
-                this.showToast('Entidade excluída.', 'success');
-                if (this.currentView && this.render[this.currentView]) this.render[this.currentView]();
-            }
+        const state = window.sistemaVidaState;
+        const plan = type === 'habits' ? null : this._getDeleteEntityPlan(type, entity.id, state);
+        const message = type === 'habits'
+            ? `Deseja realmente excluir "${entity.title}"?`
+            : this._getDeleteEntityConfirmationMessage(entity, type, plan);
+        if (!confirm(message)) return;
+        if (type === 'habits') {
+            state.habits = (state.habits || []).filter((item) => item.id !== entity.id);
+        } else {
+            this._deleteEntityWithDescendants(type, entity.id, state);
         }
+        this.saveState(true);
+        document.getElementById('review-entity-modal').classList.add('hidden');
+        this.showToast('Entidade excluida.', 'success');
+        if (this.currentView && this.render[this.currentView]) this.render[this.currentView]();
     },
 
     saveDailyLog: function() {
@@ -7531,28 +7625,21 @@ ensureNotesState: function() {
     deleteEntity: function(id, type) {
         const state = window.sistemaVidaState;
         const list = type === 'habits' ? state.habits : state.entities[type];
-        const item = list.find(e => e.id === id);
-        
-        if (item && confirm(`Deseja realmente excluir "${item.title}"?`)) {
-            // Recalcula a hierarquia antes da remoção definitiva, tratando o item como excluído.
-            // Assim, os percentuais dos pais são atualizados sem depender de IDs já removidos.
-            if (type !== 'habits' && ['micros', 'macros', 'okrs', 'metas'].includes(type)) {
-                item.status = 'abandoned';
-                item.progress = 0;
-                this.updateCascadeProgress(item.id, type);
-            }
-
-            if (type === 'habits') {
-                state.habits = state.habits.filter(e => e.id !== id);
-            } else {
-                state.entities[type] = state.entities[type].filter(e => e.id !== id);
-            }
-
-            this.saveState(true); // Silencioso (rotina administrativa)
-            if (this.showToast) this.showToast('Item removido com sucesso.', 'success');
-            
-            this.switchView(this.currentView); // Refresh
+        const item = list.find((entry) => entry.id === id);
+        if (!item) return;
+        const plan = type === 'habits' ? null : this._getDeleteEntityPlan(type, id, state);
+        const message = type === 'habits'
+            ? `Deseja realmente excluir "${item.title}"?`
+            : this._getDeleteEntityConfirmationMessage(item, type, plan);
+        if (!confirm(message)) return;
+        if (type === 'habits') {
+            state.habits = state.habits.filter((entry) => entry.id !== id);
+        } else {
+            this._deleteEntityWithDescendants(type, id, state);
         }
+        this.saveState(true);
+        if (this.showToast) this.showToast('Item removido com sucesso.', 'success');
+        this.switchView(this.currentView);
     },
 
     updateDimensionVisual: function(dim, score) {
