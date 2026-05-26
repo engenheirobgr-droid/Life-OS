@@ -1367,51 +1367,51 @@ renderDeepWorkClockVisual: function(options = {}) {
             const pulseClass = activeMotion ? 'deep-work-ring-pulse' : '';
             const majorTicks = Array.from({ length: 12 }, (_, i) => {
                 const angle = ((i * 30) - 90) * Math.PI / 180;
-                const x1 = 60 + (47.5 * Math.cos(angle));
-                const y1 = 60 + (47.5 * Math.sin(angle));
-                const x2 = 60 + (53.6 * Math.cos(angle));
-                const y2 = 60 + (53.6 * Math.sin(angle));
+                const x1 = 60 + (49.2 * Math.cos(angle));
+                const y1 = 60 + (49.2 * Math.sin(angle));
+                const x2 = 60 + (52.8 * Math.cos(angle));
+                const y2 = 60 + (52.8 * Math.sin(angle));
                 return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="deep-work-ring-tick-major"></line>`;
             }).join('');
             const minorTicks = Array.from({ length: 60 }, (_, i) => {
                 if (i % 5 === 0) return '';
                 const angle = ((i * 6) - 90) * Math.PI / 180;
-                const x1 = 60 + (50.3 * Math.cos(angle));
-                const y1 = 60 + (50.3 * Math.sin(angle));
-                const x2 = 60 + (53.2 * Math.cos(angle));
-                const y2 = 60 + (53.2 * Math.sin(angle));
+                const x1 = 60 + (50.4 * Math.cos(angle));
+                const y1 = 60 + (50.4 * Math.sin(angle));
+                const x2 = 60 + (52.7 * Math.cos(angle));
+                const y2 = 60 + (52.7 * Math.sin(angle));
                 return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="deep-work-ring-tick-minor"></line>`;
             }).join('');
             return `
-                <div class="deep-work-clock-shell rounded-xl border border-primary/20 px-4 py-6 md:py-7 text-center shadow-inner overflow-hidden h-full flex items-center justify-center" data-running="${activeMotion ? 'true' : 'false'}" data-mode="${mode}">
-                    <div class="relative mx-auto h-60 w-60 md:h-64 md:w-64 max-w-full">
-                        <svg viewBox="0 0 120 120" class="h-full w-full text-primary" role="img" aria-label="Progresso do bloco ${pctLabel}">
+                <div class="deep-work-clock-shell deep-work-clock-shell--reference rounded-xl border border-primary/20 px-4 py-6 md:py-7 text-center shadow-inner overflow-hidden h-full flex items-center justify-center" data-running="${activeMotion ? 'true' : 'false'}" data-mode="${mode}">
+                    <div class="relative mx-auto h-64 w-64 md:h-72 md:w-72 max-w-full">
+                        <div class="deep-work-ring-orb-glow absolute inset-2 rounded-full"></div>
+                        <svg viewBox="0 0 120 120" class="h-full w-full deep-work-ring-accent" role="img" aria-label="Progresso do bloco ${pctLabel}">
                             <defs>
                                 <linearGradient id="deep-work-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.96"></stop>
-                                    <stop offset="100%" stop-color="currentColor" stop-opacity="0.54"></stop>
+                                    <stop offset="0%" stop-color="#1ce7de" stop-opacity="0.98"></stop>
+                                    <stop offset="100%" stop-color="#18c9d3" stop-opacity="0.8"></stop>
                                 </linearGradient>
-                                <radialGradient id="deep-work-ring-core" cx="50%" cy="40%" r="62%">
-                                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.1"></stop>
-                                    <stop offset="70%" stop-color="currentColor" stop-opacity="0.03"></stop>
-                                    <stop offset="100%" stop-color="currentColor" stop-opacity="0"></stop>
+                                <radialGradient id="deep-work-ring-disk" cx="50%" cy="42%" r="64%">
+                                    <stop offset="0%" stop-color="#102437" stop-opacity="0.9"></stop>
+                                    <stop offset="72%" stop-color="#0a1b2d" stop-opacity="0.78"></stop>
+                                    <stop offset="100%" stop-color="#081828" stop-opacity="0.56"></stop>
                                 </radialGradient>
                             </defs>
-                            <circle cx="60" cy="60" r="57" fill="url(#deep-work-ring-core)"></circle>
+                            <circle cx="60" cy="60" r="57.2" fill="none" class="deep-work-ring-outer"></circle>
+                            <circle cx="60" cy="60" r="49" fill="url(#deep-work-ring-disk)"></circle>
                             <g class="deep-work-ring-grid">
                                 ${minorTicks}
                                 ${majorTicks}
                             </g>
-                            <circle cx="60" cy="60" r="54" fill="none" stroke="var(--md-sys-color-surface-container-highest)" stroke-width="5" opacity="0.78"></circle>
-                            <circle cx="60" cy="60" r="46.5" fill="none" stroke="var(--md-sys-color-outline-variant)" stroke-width="1" opacity="0.18"></circle>
-                            <circle cx="60" cy="60" r="54" fill="none" stroke="url(#deep-work-ring-gradient)" stroke-width="6.2" stroke-linecap="round" stroke-dasharray="${dash}" stroke-dashoffset="${offset}" transform="rotate(-90 60 60)" class="${pulseClass}"></circle>
-                            <circle cx="${dotX.toFixed(2)}" cy="${dotY.toFixed(2)}" r="3.1" fill="currentColor" stroke="var(--md-sys-color-surface-container-lowest)" stroke-width="1.8"></circle>
+                            <circle cx="60" cy="60" r="54" fill="none" class="deep-work-ring-track"></circle>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="url(#deep-work-ring-gradient)" stroke-width="4.8" stroke-linecap="round" stroke-dasharray="${dash}" stroke-dashoffset="${offset}" transform="rotate(-90 60 60)" class="deep-work-ring-progress ${pulseClass}"></circle>
+                            <circle cx="${dotX.toFixed(2)}" cy="${dotY.toFixed(2)}" r="4" fill="#d9fffb" stroke="#2be7de" stroke-width="1.7" class="deep-work-ring-progress-dot"></circle>
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
                             <p class="text-[11px] uppercase tracking-[0.08em] font-semibold text-outline">${modeLabel}</p>
                             ${timerHtml}
                             ${phaseHtml}
-                            <span class="mt-2 inline-flex items-center rounded-full border border-outline-variant/20 bg-surface-container-lowest/85 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-on-surface-variant">${pctLabel}</span>
                         </div>
                     </div>
                 </div>`;

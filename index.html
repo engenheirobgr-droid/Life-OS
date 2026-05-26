@@ -148,26 +148,82 @@
             color: var(--md-sys-color-secondary);
         }
 
+        .deep-work-clock-shell--reference {
+            background: radial-gradient(130% 125% at 50% 16%, #11253a 0%, #09192a 48%, #071322 100%);
+            border-color: rgba(38, 204, 205, 0.22) !important;
+            box-shadow: inset 0 1px 0 rgba(137, 235, 236, 0.08), 0 0 28px rgba(21, 203, 205, 0.12);
+        }
+
+        .deep-work-ring-accent {
+            color: #21ddd7;
+        }
+
+        .deep-work-ring-orb-glow {
+            box-shadow: 0 0 52px rgba(23, 224, 220, 0.18), inset 0 0 38px rgba(23, 224, 220, 0.08);
+            pointer-events: none;
+        }
+
+        .deep-work-ring-outer {
+            stroke: rgba(44, 224, 219, 0.72);
+            stroke-width: 0.85;
+            filter: drop-shadow(0 0 8px rgba(30, 216, 210, 0.28));
+        }
+
+        .deep-work-ring-track {
+            stroke: rgba(131, 164, 188, 0.22);
+            stroke-width: 4.6;
+        }
+
         .deep-work-ring-grid {
-            opacity: 0.42;
+            opacity: 0.56;
         }
 
         .deep-work-ring-tick-major {
-            stroke: var(--md-sys-color-outline);
-            stroke-width: 1.05;
+            stroke: rgba(102, 208, 218, 0.56);
+            stroke-width: 0.95;
             stroke-linecap: round;
         }
 
         .deep-work-ring-tick-minor {
-            stroke: var(--md-sys-color-outline-variant);
-            stroke-width: 0.9;
+            stroke: rgba(112, 148, 174, 0.42);
+            stroke-width: 0.78;
             stroke-linecap: round;
-            opacity: 0.76;
+            opacity: 0.72;
+        }
+
+        .deep-work-ring-progress {
+            filter: drop-shadow(0 0 8px rgba(36, 228, 221, 0.36));
+        }
+
+        .deep-work-ring-progress-dot {
+            filter: drop-shadow(0 0 7px rgba(65, 244, 231, 0.62));
         }
 
         .deep-work-timer-readout {
             letter-spacing: 0.01em;
             text-shadow: 0 1px 0 rgba(0,0,0,0.03);
+        }
+
+        .deep-work-clock-shell--reference .deep-work-timer-readout {
+            text-shadow: 0 0 18px rgba(25, 206, 209, 0.2);
+        }
+
+        .deep-work-focus-icon {
+            font-size: 20px;
+            color: rgba(60, 236, 225, 0.96);
+            filter: drop-shadow(0 0 6px rgba(40, 228, 216, 0.34));
+        }
+
+        .deep-work-focus-kicker {
+            font-size: 11px;
+            letter-spacing: 0.16em;
+            font-weight: 700;
+            color: rgba(63, 238, 227, 0.95);
+        }
+
+        .deep-work-focus-subtitle {
+            font-size: 11px;
+            color: rgba(197, 214, 228, 0.74);
         }
 
         .deep-work-phase-readout {
@@ -3263,7 +3319,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260525-focus-ui-v3"></script>
+    <script type="module" src="app.js?v=20260526-focus-ui-v7"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3294,7 +3350,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260525-focus-ui-v3')
+                navigator.serviceWorker.register('sw.js?v=20260526-focus-ui-v7')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});
