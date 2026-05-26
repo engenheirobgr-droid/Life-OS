@@ -20,13 +20,13 @@ import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec
 import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
 import { attachCadence } from './js/cadence.js?v=20260523-purpose-legacy-cleanup-v1';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260525-profile-manual-v1';
+import { attachIdentity } from './js/identity.js?v=20260526-rollback-align-v1';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260524-closure-ui-v1';
-import { attachStateModule } from './js/state.js?v=20260524-alignment-v1';
-import { attachRenderModule } from './js/render.js?v=20260526-focus-ui-v14';
-import { attachPlanningModule } from './js/planning.js?v=20260524-alignment-v1';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260526-rollback-align-v1';
+import { attachStateModule } from './js/state.js?v=20260526-rollback-align-v1';
+import { attachRenderModule } from './js/render.js?v=20260526-rollback-align-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260526-rollback-align-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260526-focus-ui-v14',
+    appBuildVersion: '20260526-rollback-align-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -3221,16 +3221,8 @@ renderProfileChrome: function() {
         this.currentView = viewName;
         this.closeFabMenu();
         this.updateNavUI(viewName);
+
         const container = document.getElementById(this.config.containerId);
-        const applyOnboardingLayoutMode = () => {
-            const hasOnboardingShell = !!container?.querySelector('.onboarding-shell');
-            const onboardingMode = viewName === 'onboarding' || hasOnboardingShell;
-            const mainViewShell = document.getElementById('main-view-shell');
-            if (mainViewShell) mainViewShell.classList.toggle('onboarding-mode', onboardingMode);
-            document.documentElement.classList.toggle('onboarding-mode', onboardingMode);
-            document.body.classList.toggle('onboarding-mode', onboardingMode);
-        };
-        applyOnboardingLayoutMode();
         if (container) {
             container.style.opacity = '0';
             container.style.transition = 'opacity 0.2s ease-in-out';
@@ -3257,7 +3249,6 @@ renderProfileChrome: function() {
                 container.innerHTML = html;
                 container.style.opacity = '1';
                 this.executeInjectedScripts(container);
-                applyOnboardingLayoutMode();
             }
             if (this.render[viewName]) {
                 try { this.render[viewName](); } catch (e) { console.warn('render error:', e); }

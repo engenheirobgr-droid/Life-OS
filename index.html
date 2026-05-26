@@ -117,134 +117,12 @@
         }
 
         @keyframes deepWorkRingPulse {
-            0%, 100% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); opacity: 0.92; }
-            50% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--md-sys-color-primary) 28%, transparent)); opacity: 1; }
-        }
-
-        @keyframes deepWorkShellBreath {
-            0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 rgba(0,0,0,0); }
-            50% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 18px color-mix(in srgb, var(--md-sys-color-primary) 10%, transparent); }
+            0%, 100% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
+            50% { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--md-sys-color-primary) 38%, transparent)); }
         }
 
         .deep-work-ring-pulse {
-            animation: deepWorkRingPulse 2.8s ease-in-out infinite;
-        }
-
-        .deep-work-clock-shell {
-            position: relative;
-            isolation: isolate;
-            background-image: linear-gradient(
-                180deg,
-                color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 92%, transparent) 0%,
-                color-mix(in srgb, var(--md-sys-color-surface-container-low) 42%, transparent) 100%
-            );
-        }
-
-        .deep-work-clock-shell[data-running="true"] {
-            animation: deepWorkShellBreath 3.2s ease-in-out infinite;
-        }
-
-        .deep-work-clock-shell[data-mode="break"] .deep-work-timer-readout {
-            color: var(--md-sys-color-secondary);
-        }
-
-        .deep-work-clock-shell--reference {
-            background: radial-gradient(
-                130% 125% at 50% 16%,
-                color-mix(in srgb, var(--md-sys-color-primary) 14%, var(--md-sys-color-surface-container-lowest)) 0%,
-                color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 90%, #000) 56%,
-                color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 84%, #000) 100%
-            );
-            border-color: color-mix(in srgb, var(--md-sys-color-primary) 26%, transparent) !important;
-            box-shadow: inset 0 1px 0 color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent), 0 0 24px color-mix(in srgb, var(--md-sys-color-primary) 10%, transparent);
-        }
-
-        .deep-work-ring-accent {
-            color: #21ddd7;
-        }
-
-        .deep-work-ring-orb-glow {
-            box-shadow: 0 0 46px color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent), inset 0 0 30px color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
-            pointer-events: none;
-        }
-
-        .deep-work-ring-outer {
-            stroke: rgba(44, 224, 219, 0.72);
-            stroke-width: 0.85;
-            filter: drop-shadow(0 0 8px rgba(30, 216, 210, 0.28));
-        }
-
-        .deep-work-ring-track {
-            stroke: color-mix(in srgb, var(--md-sys-color-outline) 36%, transparent);
-            stroke-width: 4.6;
-        }
-
-        .deep-work-ring-grid {
-            opacity: 0.82;
-            filter: drop-shadow(0 0 1px color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent));
-        }
-
-        .deep-work-ring-tick-major {
-            stroke: color-mix(in srgb, var(--md-sys-color-primary) 68%, white 32%);
-            stroke-width: 1.05;
-            stroke-linecap: round;
-        }
-
-        .deep-work-ring-tick-minor {
-            stroke: color-mix(in srgb, var(--md-sys-color-primary) 42%, white 58%);
-            stroke-width: 0.86;
-            stroke-linecap: round;
-            opacity: 0.62;
-        }
-
-        .deep-work-ring-progress {
-            filter: drop-shadow(0 0 8px rgba(36, 228, 221, 0.36));
-        }
-
-        .deep-work-ring-progress-dot {
-            filter: drop-shadow(0 0 7px rgba(65, 244, 231, 0.62));
-        }
-
-        .deep-work-timer-readout {
-            letter-spacing: 0.01em;
-            text-shadow: 0 1px 0 rgba(0,0,0,0.03);
-        }
-
-        .deep-work-clock-shell--reference .deep-work-timer-readout {
-            text-shadow: 0 0 18px rgba(25, 206, 209, 0.2);
-        }
-
-        .deep-work-focus-icon {
-            font-size: 20px;
-            color: rgba(60, 236, 225, 0.96);
-            filter: drop-shadow(0 0 6px rgba(40, 228, 216, 0.34));
-        }
-
-        .deep-work-focus-kicker {
-            font-size: 11px;
-            letter-spacing: 0.16em;
-            font-weight: 700;
-            color: rgba(63, 238, 227, 0.95);
-        }
-
-        .deep-work-focus-subtitle {
-            font-size: 11px;
-            color: rgba(197, 214, 228, 0.74);
-        }
-
-        .deep-work-phase-readout {
-            letter-spacing: 0.08em;
-        }
-
-        .deep-work-progress-dot {
-            box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent);
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .deep-work-ring-pulse,
-            .deep-work-clock-shell[data-running="true"] {
-                animation: none !important;
-            }
+            animation: deepWorkRingPulse 2.4s ease-in-out infinite;
         }
 
         .glass-card {
@@ -263,30 +141,6 @@
 
         #app-content.loading {
             opacity: 0;
-        }
-
-        /* Onboarding uses a centered reading layout; hide shell scrollbar line while active */
-        #main-view-shell.onboarding-mode {
-            scrollbar-width: none;
-            border-right: 0 !important;
-        }
-
-        #main-view-shell.onboarding-mode::-webkit-scrollbar {
-            width: 0 !important;
-            height: 0 !important;
-            display: none;
-        }
-
-        html.onboarding-mode,
-        body.onboarding-mode {
-            scrollbar-width: none;
-        }
-
-        html.onboarding-mode::-webkit-scrollbar,
-        body.onboarding-mode::-webkit-scrollbar {
-            width: 0 !important;
-            height: 0 !important;
-            display: none;
         }
 
         /* Toast Animation */
@@ -949,130 +803,6 @@
             --lo-dark-border:      rgba(255,255,255,0.07);
         }
 
-        /* Reusable UI composition helpers (pilot: Foco) */
-        .lo-work-section {
-            padding: 0;
-            min-width: 0;
-        }
-
-        .lo-work-panel {
-            background: var(--lo-surface);
-            border: 1px solid var(--lo-p-border);
-            border-radius: 16px;
-            box-shadow: var(--lo-shadow-sm);
-            padding: 16px;
-            min-width: 0;
-        }
-
-        .lo-inline-group {
-            background: var(--lo-bg-subtle);
-            border: 1px solid var(--lo-p-border);
-            border-radius: 14px;
-            min-width: 0;
-            overflow: hidden;
-        }
-
-        .lo-inline-group__block {
-            padding: 16px;
-            min-width: 0;
-        }
-
-        .lo-inline-group__block + .lo-inline-group__block {
-            border-top: 1px solid var(--lo-p-border);
-        }
-
-        .lo-inline-group__label {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            opacity: 0.75;
-        }
-
-        .lo-dense-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .lo-dense-item {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding: 12px;
-            border: 1px solid var(--lo-p-border);
-            border-radius: 12px;
-            background: var(--lo-surface);
-            box-shadow: var(--lo-shadow-sm);
-            min-width: 0;
-        }
-
-        .lo-dense-item--done {
-            background: color-mix(in srgb, #10b981 4%, var(--lo-surface));
-            border-color: color-mix(in srgb, #10b981 28%, var(--lo-p-border));
-        }
-
-        .lo-dense-item--progress {
-            background: color-mix(in srgb, #f59e0b 4%, var(--lo-surface));
-            border-color: color-mix(in srgb, #f59e0b 28%, var(--lo-p-border));
-        }
-
-        .lo-dense-item__meta {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 8px;
-            min-width: 0;
-        }
-
-        .lo-dense-metric {
-            border: 1px solid var(--lo-p-border);
-            border-radius: 8px;
-            background: var(--lo-bg-subtle);
-            padding: 8px 10px;
-        }
-
-        .lo-dense-metric__label {
-            display: block;
-            margin-bottom: 2px;
-            font-size: 10px;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            opacity: 0.72;
-        }
-
-        .lo-dense-item__actions {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-start;
-            align-items: center;
-            gap: 6px;
-            min-width: 0;
-        }
-
-        .lo-dense-trail {
-            border: 1px solid var(--lo-p-border);
-            border-radius: 10px;
-            background: var(--lo-bg-subtle);
-            padding: 10px;
-        }
-
-        @media (min-width: 1024px) {
-            .lo-dense-item {
-                display: grid;
-                grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.25fr) auto;
-                align-items: center;
-                gap: 12px;
-            }
-
-            .lo-dense-item__actions {
-                justify-content: flex-end;
-            }
-
-            .lo-dense-trail {
-                grid-column: 1 / -1;
-            }
-        }
-
         /* ══════════════════════════════════════════════
            LIGHT MODE
         ══════════════════════════════════════════════ */
@@ -1210,13 +940,9 @@
         html:not(.dark) h1, html:not(.dark) h2,
         html:not(.dark) h3, html:not(.dark) h4 { letter-spacing: -0.022em !important; }
         html:not(.dark) .font-headline { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-        html:not(.dark) #data-hoje {
-            font-size: clamp(1.8rem, 5.4vw, 2.8rem) !important;
-            font-weight: 800 !important; letter-spacing: -0.03em !important; line-height: 1.02 !important;
-        }
-        html:not(.dark) #painel-title {
-            font-size: clamp(1.8rem, 5.4vw, 2.8rem) !important;
-            font-weight: 800 !important; letter-spacing: -0.03em !important; line-height: 1.02 !important;
+        html:not(.dark) #data-hoje, html:not(.dark) #painel-title {
+            font-size: clamp(2.2rem, 7vw, 3.4rem) !important;
+            font-weight: 800 !important; letter-spacing: -0.035em !important; line-height: 1.0 !important;
         }
         html:not(.dark) .font-headline.text-2xl {
             font-size: 1.3rem !important; font-weight: 700 !important; letter-spacing: -0.02em !important;
@@ -1259,25 +985,6 @@
         html.dark [class*="text-outline"],
         html.dark [class*="text-on-surface-variant"] { color: var(--lo-dark-muted) !important; }
         html.dark [class*="border-outline-variant"] { border-color: var(--lo-dark-border) !important; }
-
-        html.dark .lo-work-panel,
-        html.dark .lo-inline-group,
-        html.dark .lo-dense-item,
-        html.dark .lo-dense-metric,
-        html.dark .lo-dense-trail {
-            border-color: var(--lo-dark-border) !important;
-        }
-
-        html.dark .lo-work-panel,
-        html.dark .lo-dense-item {
-            background: var(--lo-dark-card, #111e1d) !important;
-        }
-
-        html.dark .lo-inline-group,
-        html.dark .lo-dense-metric,
-        html.dark .lo-dense-trail {
-            background: var(--lo-dark-card2, #162120) !important;
-        }
 
         html.dark .text-primary { color: var(--lo-p-dark, #2dd4bf) !important; }
         html.dark .bg-primary { background-color: var(--lo-p) !important; box-shadow: 0 4px 20px var(--lo-p-shadow) !important; }
@@ -1371,14 +1078,9 @@
         html.dark span.text-primary, html.dark p.text-primary,
         html.dark label.text-primary, html.dark div.text-primary { color: var(--lo-p-dark, #2dd4bf) !important; opacity: 1 !important; }
         html.dark .font-headline { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-        html.dark #data-hoje {
-            font-size: clamp(1.8rem, 5.4vw, 2.8rem) !important;
-            font-weight: 800 !important; letter-spacing: -0.03em !important; line-height: 1.02 !important;
-            color: var(--lo-dark-text) !important;
-        }
-        html.dark #painel-title {
-            font-size: clamp(1.8rem, 5.4vw, 2.8rem) !important;
-            font-weight: 800 !important; letter-spacing: -0.03em !important; line-height: 1.02 !important;
+        html.dark #data-hoje, html.dark #painel-title {
+            font-size: clamp(2.2rem, 7vw, 3.4rem) !important;
+            font-weight: 800 !important; letter-spacing: -0.035em !important; line-height: 1.0 !important;
             color: var(--lo-dark-text) !important;
         }
 
@@ -1750,7 +1452,7 @@
         </aside>
 
         <!-- Main Content area -->
-        <section id="main-view-shell" class="flex-1 overflow-y-auto min-h-screen pb-4 lg:pb-2 bg-background relative">
+        <section class="flex-1 overflow-y-auto min-h-screen pb-4 lg:pb-2 bg-background relative">
             <div id="app-content" class="fade-in">
                 <!-- Views loaded here -->
                 <div class="flex min-h-[calc(100dvh-9rem)] w-full items-center justify-center px-4 text-outline" id="loading-placeholder">
@@ -3358,7 +3060,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260526-focus-ui-v14"></script>
+    <script type="module" src="app.js?v=20260526-rollback-align-v1"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3389,7 +3091,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260526-focus-ui-v14')
+                navigator.serviceWorker.register('sw.js?v=20260526-rollback-align-v1')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

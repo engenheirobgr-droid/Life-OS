@@ -1,6 +1,6 @@
-<div class="animate-fade-in flex flex-col gap-6 md:gap-8 pb-20 px-6 pt-4 lg:px-10 lg:pt-6 max-w-7xl mx-auto overflow-x-hidden">
+<div class="animate-fade-in flex flex-col gap-8 md:gap-10 pb-20 px-6 pt-6 lg:px-10 lg:pt-10 max-w-7xl mx-auto overflow-x-hidden">
     <header class="order-1 mb-2 min-w-0">
-        <div class="flex items-center gap-2.5 mb-2.5">
+        <div class="flex items-center gap-3 mb-4">
             <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Foco e execucao</p>
             <div class="relative inline-flex group">
                 <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full text-outline/60 hover:text-primary hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="Informacoes sobre Foco">
@@ -11,27 +11,28 @@
                 </div>
             </div>
         </div>
-        <h1 class="font-headline text-2xl md:text-3xl italic font-bold tracking-tight text-on-background break-words">
+        <h1 class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background break-words">
             Bloco de foco
         </h1>
-        <div class="mt-4 h-px w-20 bg-primary"></div>
-        <div class="mt-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div class="mt-6 h-px w-24 bg-primary"></div>
+        <div class="mt-6 flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div id="top-values-banner" class="flex flex-wrap gap-2"></div>
         </div>
     </header>
 
-    <section id="deep-work-panel" class="order-2 lo-work-section min-w-0">
+    <section id="deep-work-panel" class="order-2 bg-surface-container-lowest p-5 md:p-8 rounded-2xl border border-outline-variant/10 shadow-sm min-w-0">
         <input id="deep-work-intention" type="hidden">
-        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(23rem,0.95fr)] gap-5 min-w-0 items-start xl:items-stretch">
-            <div class="space-y-4 min-w-0 xl:h-full">
-                <div class="lo-work-panel min-w-0 md:p-5 xl:h-full flex flex-col">
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(23rem,0.95fr)] gap-5 min-w-0 items-start">
+            <div class="space-y-4 min-w-0">
+                <div class="rounded-2xl border border-primary/20 bg-surface-container-low p-4 md:p-5 min-w-0">
                     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                         <div class="min-w-0">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.08em] text-outline">Relogio da sessao</p>
+                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Relogio da sessao</p>
+
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                            <button type="button" id="deep-work-clock-preview-btn" onclick="window.app.previewDeepWorkClock()" class="h-8 rounded-md border border-outline-variant/15 bg-surface-container-lowest px-2 text-[10px] font-bold uppercase tracking-[0.08em] text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Prever animacao visual">Preview</button>
-                            <div class="grid grid-cols-2 gap-1 rounded-lg border border-outline-variant/12 bg-surface-container-lowest/80 p-1" aria-label="Estilo do relogio de foco">
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" id="deep-work-clock-preview-btn" onclick="window.app.previewDeepWorkClock()" class="h-8 rounded-md border border-outline-variant/15 bg-surface-container-lowest px-2 text-[10px] font-bold uppercase tracking-wider text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Prever animacao visual">Preview</button>
+                            <div class="grid grid-cols-2 gap-1 rounded-lg border border-outline-variant/15 bg-surface-container-lowest p-1" aria-label="Estilo do relogio de foco">
                                 <button type="button" data-deep-work-clock-style="classic" onclick="window.app.setDeepWorkClockStyle('classic')" class="deep-work-clock-style-chip h-8 w-8 rounded-md text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Classico">
                                     <span class="material-symbols-outlined notranslate text-[16px]">timer</span>
                                 </button>
@@ -39,107 +40,104 @@
                                     <span class="material-symbols-outlined notranslate text-[16px]">donut_large</span>
                                 </button>
                             </div>
-                            <span class="hidden sm:inline-block h-6 w-px bg-outline-variant/20 mx-0.5"></span>
-                            <div class="flex items-center gap-2">
-                                <button id="deep-work-start-btn" type="button" onclick="window.app.startDeepWorkSession()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-on-primary border border-primary/30 shadow-sm transition-colors" title="Iniciar foco" aria-label="Iniciar foco">
-                                    <span id="deep-work-start-icon" class="material-symbols-outlined notranslate text-[16px]">play_arrow</span>
-                                </button>
-                                <button id="deep-work-reset-btn" type="button" onclick="window.app.resetDeepWorkSession()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface hover:bg-surface-container-highest transition-colors" title="Resetar sessao" aria-label="Resetar sessao">
-                                    <span class="material-symbols-outlined notranslate text-[16px]">restart_alt</span>
-                                </button>
-                                <button id="deep-work-finish-btn" type="button" onclick="window.app.finishDeepWorkNow()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 transition-colors" title="Finalizar sessao" aria-label="Finalizar sessao">
-                                    <span id="deep-work-finish-icon" class="material-symbols-outlined notranslate text-[16px]">flag</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
-                    <div class="sr-only" aria-live="polite">
-                        <p id="deep-work-status">Pronto para iniciar</p>
-                        <p id="deep-work-step">Selecione uma acao ou um habito para comecar</p>
-                    </div>
 
-                    <div id="deep-work-clock-visual" class="mt-4 rounded-xl border border-primary/20 bg-surface-container-lowest px-4 py-8 text-center shadow-inner min-h-[24rem] flex-1 flex flex-col justify-center">
+                    <div id="deep-work-clock-visual" class="mt-4 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-8 text-center shadow-inner min-h-[24rem] flex flex-col justify-center">
                         <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">Tempo restante</p>
                         <p id="deep-work-timer" class="mt-3 text-6xl md:text-7xl leading-none font-headline italic text-primary tabular-nums">25:00</p>
                         <p id="deep-work-phase" class="mt-3 text-[11px] uppercase tracking-[0.12em] text-on-surface-variant">Bloco</p>
                     </div>
                 </div>
 
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="sr-only" aria-live="polite">
+                        <p id="deep-work-status">Pronto para iniciar</p>
+                        <p id="deep-work-step">Selecione uma acao ou um habito para comecar</p>
+                    </div>
+                    <button id="deep-work-start-btn" type="button" onclick="window.app.startDeepWorkSession()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-on-primary border border-primary/30 shadow-sm transition-colors" title="Iniciar foco" aria-label="Iniciar foco">
+                        <span id="deep-work-start-icon" class="material-symbols-outlined notranslate text-[16px]">play_arrow</span>
+                    </button>
+                        <button id="deep-work-reset-btn" type="button" onclick="window.app.resetDeepWorkSession()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-surface-container-high border border-outline-variant/20 text-on-surface hover:bg-surface-container-highest transition-colors" title="Resetar sessao" aria-label="Resetar sessao">
+                            <span class="material-symbols-outlined notranslate text-[16px]">restart_alt</span>
+                        </button>
+                        <button id="deep-work-finish-btn" type="button" onclick="window.app.finishDeepWorkNow()" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 transition-colors" title="Finalizar sessao" aria-label="Finalizar sessao">
+                            <span id="deep-work-finish-icon" class="material-symbols-outlined notranslate text-[16px]">flag</span>
+                        </button>
+                </div>
+
                 <div id="deep-work-context-actions" class="hidden"></div>
                 <div id="deep-work-execution-checklist" class="hidden"></div>
             </div>
 
-            <aside class="min-w-0">
-                <div class="lo-inline-group">
-                    <section class="lo-inline-group__block">
-                        <div class="flex items-center justify-between gap-3 mb-3">
-                            <div>
-                                <p class="lo-inline-group__label text-outline">Configuracao do bloco</p>
-                                <p class="text-[11px] text-on-surface-variant mt-1">Escolha um contexto e inicie quando estiver pronto.</p>
-                            </div>
-                            <span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-outline">
-                                <span class="material-symbols-outlined notranslate text-[12px]">tune</span>
-                                Passo 1
-                            </span>
+            <aside class="space-y-4 min-w-0">
+                <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-4">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Configuracao do bloco</p>
+                            <p class="text-[11px] text-on-surface-variant mt-1">Escolha um contexto e inicie quando estiver pronto.</p>
                         </div>
-                        <div class="space-y-4">
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between gap-3">
-                                    <label for="deep-work-preset" class="text-[10px] font-bold uppercase tracking-[0.08em] text-outline">Duracao foco</label>
-                                    <span class="text-[10px] text-outline">Selecao rapida</span>
-                                </div>
-                                <select id="deep-work-preset" class="hidden">
-                                    <option value="15">15 minutos</option>
-                                    <option value="25" selected>25 minutos</option>
-                                    <option value="45">45 minutos</option>
-                                    <option value="50">50 minutos</option>
-                                    <option value="90">90 minutos</option>
-                                </select>
-                                <div class="rounded-lg border border-outline-variant/12 bg-surface-container-lowest/80 p-1.5">
-                                    <div class="grid grid-cols-5 gap-1.5">
-                                        <button type="button" data-deep-work-preset="15" onclick="window.app.setDeepWorkPreset(15)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">15/3</button>
-                                        <button type="button" data-deep-work-preset="25" onclick="window.app.setDeepWorkPreset(25)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">25/5</button>
-                                        <button type="button" data-deep-work-preset="45" onclick="window.app.setDeepWorkPreset(45)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">45/10</button>
-                                        <button type="button" data-deep-work-preset="50" onclick="window.app.setDeepWorkPreset(50)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">50/10</button>
-                                        <button type="button" data-deep-work-preset="90" onclick="window.app.setDeepWorkPreset(90)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">90/20</button>
-                                    </div>
+                        <span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-outline">
+                            <span class="material-symbols-outlined notranslate text-[12px]">tune</span>
+                            Passo 1
+                        </span>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="deep-work-preset" class="text-[10px] uppercase tracking-widest font-bold text-outline">Duracao foco</label>
+                                <span class="text-[10px] text-outline">Selecao rapida</span>
+                            </div>
+                            <select id="deep-work-preset" class="hidden">
+                                <option value="15">15 minutos</option>
+                                <option value="25" selected>25 minutos</option>
+                                <option value="45">45 minutos</option>
+                                <option value="50">50 minutos</option>
+                                <option value="90">90 minutos</option>
+                            </select>
+                            <div class="rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-1.5">
+                                <div class="grid grid-cols-5 gap-1.5">
+                                    <button type="button" data-deep-work-preset="15" onclick="window.app.setDeepWorkPreset(15)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">15/3</button>
+                                    <button type="button" data-deep-work-preset="25" onclick="window.app.setDeepWorkPreset(25)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">25/5</button>
+                                    <button type="button" data-deep-work-preset="45" onclick="window.app.setDeepWorkPreset(45)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">45/10</button>
+                                    <button type="button" data-deep-work-preset="50" onclick="window.app.setDeepWorkPreset(50)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">50/10</button>
+                                    <button type="button" data-deep-work-preset="90" onclick="window.app.setDeepWorkPreset(90)" class="deep-work-preset-chip min-h-9 rounded-lg border border-transparent px-1 py-2 text-[13px] font-bold leading-none text-on-surface transition-colors hover:bg-surface-container-high">90/20</button>
                                 </div>
                             </div>
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between gap-3">
-                                    <label for="deep-work-context" class="text-[10px] font-bold uppercase tracking-[0.08em] text-outline">Escolher contexto</label>
-                                    <button type="button" onclick="window.app.selectDeepWorkContext('')" class="text-[10px] font-bold uppercase tracking-[0.08em] text-outline hover:text-primary transition-colors">Limpar</button>
-                                </div>
-                                <select id="deep-work-context" onchange="window.app.selectDeepWorkContext(this.value)" class="w-full h-11 bg-surface-container-lowest text-on-surface text-sm font-medium rounded-lg px-3 outline-none border border-outline-variant/25">
-                                    <option value="">Selecione um contexto</option>
-                                </select>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="deep-work-context" class="text-[10px] uppercase tracking-widest font-bold text-outline">Escolher contexto</label>
+                                <button type="button" onclick="window.app.selectDeepWorkContext('')" class="text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors">Limpar</button>
                             </div>
+                            <select id="deep-work-context" onchange="window.app.selectDeepWorkContext(this.value)" class="w-full h-11 bg-surface-container-lowest text-on-surface text-sm font-medium rounded-lg px-3 outline-none border border-outline-variant/25">
+                                <option value="">Selecione um contexto</option>
+                            </select>
                         </div>
-                    </section>
-
-                    <section class="lo-inline-group__block">
-                        <div class="flex items-start justify-between gap-3">
-                            <p class="lo-inline-group__label text-outline">Sessao ativa</p>
-                            <span class="material-symbols-outlined notranslate text-primary text-lg">dashboard</span>
-                        </div>
-                        <div id="deep-work-context-card" class="mt-3"></div>
-                    </section>
-
+                    </div>
                 </div>
-            </aside>
 
-            <section class="lo-inline-group min-w-0 xl:col-span-2 xl:row-start-2">
-                <div class="lo-inline-group__block space-y-4">
+                <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Sessao ativa</p>
+                        </div>
+                        <span class="material-symbols-outlined notranslate text-primary text-lg">dashboard</span>
+                    </div>
+                    <div id="deep-work-context-card" class="mt-3"></div>
+                </div>
+
+                <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-4 space-y-4">
                     <div>
-                        <p class="lo-inline-group__label text-outline mb-2">Resumo da semana</p>
+                        <p class="text-[10px] uppercase tracking-widest font-bold text-outline mb-2">Resumo da semana</p>
                         <p id="deep-work-week-summary" class="text-sm text-on-surface-variant">0 sessoes, 0h00 de foco profundo.</p>
                     </div>
                     <div class="border-t border-outline-variant/10 pt-4">
-                        <p class="lo-inline-group__label text-outline mb-2">Sessoes recentes</p>
+                        <p class="text-[10px] uppercase tracking-widest font-bold text-outline mb-2">Sessoes recentes</p>
                         <div id="deep-work-history" class="space-y-2 text-sm text-on-surface-variant"></div>
                     </div>
                 </div>
-            </section>
+            </aside>
         </div>
     </section>
 
@@ -171,13 +169,13 @@
                     <option value="in_progress">Em Andamento</option>
                     <option value="done">Concluidas</option>
                 </select>
-                <button onclick="window.app.openCreateModal('micros')" class="w-full min-w-0 bg-primary text-on-primary px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-[0.08em] hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                <button onclick="window.app.openCreateModal('micros')" class="w-full min-w-0 bg-primary text-on-primary px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:shadow-lg transition-all flex items-center justify-center gap-2">
                     <span class="material-symbols-outlined notranslate text-sm">add</span> Nova Acao
                 </button>
             </div>
         </div>
 
-        <div id="micros-management-list" class="lo-dense-list min-w-0">
+        <div id="micros-management-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             <!-- Dinamicamente preenchido -->
         </div>
     </section>
