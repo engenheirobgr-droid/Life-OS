@@ -1,7 +1,7 @@
 <style>
 .tab-btn.active {
   border-bottom: 2px solid currentColor;
-  padding-bottom: calc(1rem - 2px);
+  padding-bottom: calc(0.75rem - 2px);
 }
 .tab-content {
   display: none;
@@ -15,10 +15,10 @@
 }
 </style>
 
-<main class="pt-6 lg:pt-10 pb-20 px-6 max-w-7xl mx-auto">
+<main class="pt-4 lg:pt-6 pb-20 px-6 max-w-7xl mx-auto">
 <!-- Page Introduction -->
 <header class="mb-0">
-<div class="flex items-center gap-3 mb-4">
+<div class="flex items-center gap-2.5 mb-2.5">
 <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Arquitetura & Execução</p>
 <div class="relative inline-flex group">
 <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full text-outline/60 hover:text-primary hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="Informacoes sobre Planos">
@@ -29,32 +29,32 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
 </div>
 </div>
 </div>
-<h2 class="font-headline text-4xl md:text-5xl italic font-bold tracking-tight text-on-background">Planos</h2>
-<div class="mt-6 h-px w-24 bg-primary"></div>
+<h2 class="font-headline text-2xl md:text-3xl italic font-bold tracking-tight text-on-background">Planos</h2>
+<div class="mt-4 h-px w-20 bg-primary"></div>
 </header>
 
 <!-- Tab Navigation -->
-<nav class="mt-4 flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0">
-<button class="tab-btn active text-primary hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="metas" onclick="window.app.switchPlanosTab('metas')">Metas</button>
+<nav class="mt-3 flex overflow-x-auto no-scrollbar gap-4 border-b border-surface-container-high pb-0">
+<button class="tab-btn active text-primary hover:text-primary transition-colors duration-200 whitespace-nowrap pb-3 text-sm uppercase tracking-[0.14em] font-label" data-tab="metas" onclick="window.app.switchPlanosTab('metas')">Metas</button>
 <div class="relative group inline-flex items-end shrink-0">
-  <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="okrs" onclick="window.app.switchPlanosTab('okrs')">Projetos</button>
+  <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-3 text-sm uppercase tracking-[0.14em] font-label" data-tab="okrs" onclick="window.app.switchPlanosTab('okrs')">Projetos</button>
   <div class="pointer-events-none hidden group-hover:block absolute top-full left-0 mt-1 z-30 w-60 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs text-on-surface-variant leading-relaxed shadow-xl">
     <p class="font-bold text-on-surface mb-1">Projeto de ciclo</p>
     Define o que voce quer atingir neste ciclo de 12 semanas e como vai medir o sucesso.
   </div>
 </div>
 <div class="relative group inline-flex items-end shrink-0">
-  <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="macro" onclick="window.app.switchPlanosTab('macro')">Entregas</button>
+  <button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-3 text-sm uppercase tracking-[0.14em] font-label" data-tab="macro" onclick="window.app.switchPlanosTab('macro')">Entregas</button>
   <div class="pointer-events-none hidden group-hover:block absolute top-full left-0 mt-1 z-30 w-60 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs text-on-surface-variant leading-relaxed shadow-xl">
     <p class="font-bold text-on-surface mb-1">Entrega</p>
     Um bloco de trabalho de 1-4 semanas ligado a um Projeto. Agrupa as ações que voce vai executar para avançar.
   </div>
 </div>
-<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="micro" onclick="window.app.switchPlanosTab('micro')">Ações</button>
-<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="timeline" onclick="window.app.switchPlanosTab('timeline')">Timeline</button>
-<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="semanal" onclick="window.app.switchPlanosTab('semanal')">Semanal</button>
-<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="protocolos" onclick="window.app.switchPlanosTab('protocolos')">Protocolos</button>
-<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-4 text-sm uppercase tracking-widest font-label" data-tab="ciclo" onclick="window.app.switchPlanosTab('ciclo')">Revisão de Ciclo</button>
+<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-3 text-sm uppercase tracking-[0.14em] font-label" data-tab="micro" onclick="window.app.switchPlanosTab('micro')">Ações</button>
+<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-3 text-sm uppercase tracking-[0.14em] font-label" data-tab="timeline" onclick="window.app.switchPlanosTab('timeline')">Timeline</button>
+<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-3 text-sm uppercase tracking-[0.14em] font-label" data-tab="semanal" onclick="window.app.switchPlanosTab('semanal')">Semanal</button>
+<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-3 text-sm uppercase tracking-[0.14em] font-label" data-tab="protocolos" onclick="window.app.switchPlanosTab('protocolos')">Protocolos</button>
+<button class="tab-btn text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap pb-3 text-sm uppercase tracking-[0.14em] font-label" data-tab="ciclo" onclick="window.app.switchPlanosTab('ciclo')">Revisão de Ciclo</button>
 </nav>
 
 <!-- Dimension Filters -->

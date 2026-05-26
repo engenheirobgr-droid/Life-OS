@@ -265,6 +265,30 @@
             opacity: 0;
         }
 
+        /* Onboarding uses a centered reading layout; hide shell scrollbar line while active */
+        #main-view-shell.onboarding-mode {
+            scrollbar-width: none;
+            border-right: 0 !important;
+        }
+
+        #main-view-shell.onboarding-mode::-webkit-scrollbar {
+            width: 0 !important;
+            height: 0 !important;
+            display: none;
+        }
+
+        html.onboarding-mode,
+        body.onboarding-mode {
+            scrollbar-width: none;
+        }
+
+        html.onboarding-mode::-webkit-scrollbar,
+        body.onboarding-mode::-webkit-scrollbar {
+            width: 0 !important;
+            height: 0 !important;
+            display: none;
+        }
+
         /* Toast Animation */
         @keyframes slideUp {
             from {
@@ -1186,9 +1210,13 @@
         html:not(.dark) h1, html:not(.dark) h2,
         html:not(.dark) h3, html:not(.dark) h4 { letter-spacing: -0.022em !important; }
         html:not(.dark) .font-headline { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-        html:not(.dark) #data-hoje, html:not(.dark) #painel-title {
-            font-size: clamp(2.2rem, 7vw, 3.4rem) !important;
-            font-weight: 800 !important; letter-spacing: -0.035em !important; line-height: 1.0 !important;
+        html:not(.dark) #data-hoje {
+            font-size: clamp(1.8rem, 5.4vw, 2.8rem) !important;
+            font-weight: 800 !important; letter-spacing: -0.03em !important; line-height: 1.02 !important;
+        }
+        html:not(.dark) #painel-title {
+            font-size: clamp(1.8rem, 5.4vw, 2.8rem) !important;
+            font-weight: 800 !important; letter-spacing: -0.03em !important; line-height: 1.02 !important;
         }
         html:not(.dark) .font-headline.text-2xl {
             font-size: 1.3rem !important; font-weight: 700 !important; letter-spacing: -0.02em !important;
@@ -1343,9 +1371,14 @@
         html.dark span.text-primary, html.dark p.text-primary,
         html.dark label.text-primary, html.dark div.text-primary { color: var(--lo-p-dark, #2dd4bf) !important; opacity: 1 !important; }
         html.dark .font-headline { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-        html.dark #data-hoje, html.dark #painel-title {
-            font-size: clamp(2.2rem, 7vw, 3.4rem) !important;
-            font-weight: 800 !important; letter-spacing: -0.035em !important; line-height: 1.0 !important;
+        html.dark #data-hoje {
+            font-size: clamp(1.8rem, 5.4vw, 2.8rem) !important;
+            font-weight: 800 !important; letter-spacing: -0.03em !important; line-height: 1.02 !important;
+            color: var(--lo-dark-text) !important;
+        }
+        html.dark #painel-title {
+            font-size: clamp(1.8rem, 5.4vw, 2.8rem) !important;
+            font-weight: 800 !important; letter-spacing: -0.03em !important; line-height: 1.02 !important;
             color: var(--lo-dark-text) !important;
         }
 
@@ -1717,7 +1750,7 @@
         </aside>
 
         <!-- Main Content area -->
-        <section class="flex-1 overflow-y-auto min-h-screen pb-4 lg:pb-2 bg-background relative">
+        <section id="main-view-shell" class="flex-1 overflow-y-auto min-h-screen pb-4 lg:pb-2 bg-background relative">
             <div id="app-content" class="fade-in">
                 <!-- Views loaded here -->
                 <div class="flex min-h-[calc(100dvh-9rem)] w-full items-center justify-center px-4 text-outline" id="loading-placeholder">
@@ -3325,7 +3358,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260526-focus-ui-v8"></script>
+    <script type="module" src="app.js?v=20260526-focus-ui-v14"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3356,7 +3389,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260526-focus-ui-v8')
+                navigator.serviceWorker.register('sw.js?v=20260526-focus-ui-v14')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});
