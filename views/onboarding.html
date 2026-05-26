@@ -2,42 +2,42 @@
     <div id="onboarding-progress-bar" class="h-full bg-primary transition-all duration-500 ease-out" style="width: 0%"></div>
 </div>
 
-<main class="w-full max-w-4xl lg:max-w-[68rem] xl:max-w-[70rem] mx-auto min-h-[100dvh] md:min-h-screen pt-9 md:pt-11 lg:pt-14 pb-10 md:pb-14 px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col justify-start relative overflow-x-hidden">
+<main class="w-full max-w-4xl lg:max-w-[64rem] xl:max-w-[66rem] mx-auto min-h-[100dvh] md:min-h-screen pt-7 md:pt-9 lg:pt-10 pb-8 md:pb-10 lg:pb-12 px-4 sm:px-6 lg:px-7 xl:px-8 flex flex-col justify-start relative overflow-x-hidden">
 
     <div class="absolute top-4 left-4 sm:top-8 sm:left-6 flex items-center gap-2 text-outline">
         <span class="text-[10px] font-bold uppercase tracking-widest" id="onboarding-step-indicator">1/7</span>
     </div>
 
     <!-- PASSO 0: BOAS-VINDAS -->
-    <div class="onboarding-step step-transition flex flex-col gap-5 lg:gap-7" id="step-0">
-        <div class="w-14 h-14 lg:w-[4.5rem] lg:h-[4.5rem] rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 mb-3 lg:mb-5">
-            <span class="material-symbols-outlined text-white text-[1.7rem] lg:text-[2rem]">auto_awesome</span>
+    <div class="onboarding-step step-transition flex flex-col gap-4 lg:gap-5" id="step-0">
+        <div class="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 mb-2 lg:mb-3">
+            <span class="material-symbols-outlined text-white text-[1.45rem] lg:text-[1.65rem]">auto_awesome</span>
         </div>
-        <h1 class="max-w-3xl text-[2.7rem] md:text-[3.35rem] lg:text-[4.15rem] xl:text-[4.45rem] font-headline font-bold italic leading-[0.94] tracking-[-0.03em] text-on-background">
+        <h1 class="max-w-[15ch] text-[2.15rem] md:text-[2.7rem] lg:text-[3.5rem] xl:text-[3.85rem] font-headline font-bold italic leading-[0.95] tracking-[-0.03em] text-on-background">
             Bem-vindo ao seu <span class="text-primary italic">Life OS</span>.
         </h1>
-        <p class="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-primary/80">Arquitetura para a vida real</p>
-        <p class="text-on-surface-variant text-base md:text-[1.05rem] lg:text-[1.12rem] leading-[1.7] max-w-xl lg:max-w-[38rem]">
+        <p class="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-primary/75">Arquitetura para a vida real</p>
+        <p class="text-on-surface-variant text-[0.97rem] md:text-base lg:text-[1.02rem] leading-[1.62] max-w-lg lg:max-w-[34rem]">
             O Life OS organiza rotina, metas, hábitos e valores no mesmo fluxo, para o seu dia ganhar direção sem ficar pesado.
         </p>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 max-w-2xl lg:max-w-[58rem]">
-            <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4 lg:p-[1.15rem]">
-                <span class="material-symbols-outlined text-primary text-2xl lg:text-[1.75rem] mb-2">today</span>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 lg:gap-3 max-w-2xl lg:max-w-[54rem]">
+            <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-3.5 lg:p-4">
+                <span class="material-symbols-outlined text-primary text-xl lg:text-[1.45rem] mb-1.5">today</span>
                 <p class="text-sm font-bold text-on-surface">Clareza diária</p>
                 <p class="text-xs text-outline mt-1">Check-in, foco, intenção e diário.</p>
             </div>
-            <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4 lg:p-[1.15rem]">
-                <span class="material-symbols-outlined text-primary text-2xl lg:text-[1.75rem] mb-2">flag</span>
+            <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-3.5 lg:p-4">
+                <span class="material-symbols-outlined text-primary text-xl lg:text-[1.45rem] mb-1.5">flag</span>
                 <p class="text-sm font-bold text-on-surface">Planos vivos</p>
                 <p class="text-xs text-outline mt-1">Metas, projetos, semana e revisões.</p>
             </div>
-            <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4 lg:p-[1.15rem]">
-                <span class="material-symbols-outlined text-primary text-2xl lg:text-[1.75rem] mb-2">auto_awesome</span>
+            <div class="rounded-2xl border border-outline-variant/20 bg-surface-container-low p-3.5 lg:p-4">
+                <span class="material-symbols-outlined text-primary text-xl lg:text-[1.45rem] mb-1.5">auto_awesome</span>
                 <p class="text-sm font-bold text-on-surface">Propósito prático</p>
                 <p class="text-xs text-outline mt-1">Valores, legado, visão e Flow.</p>
             </div>
         </div>
-        <button onclick="app.onboardingNext()" class="mt-2 lg:mt-3 bg-primary text-on-primary py-3.5 lg:py-4 px-7 lg:px-9 rounded-2xl font-bold font-label uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-fit">
+        <button onclick="app.onboardingNext()" class="mt-1 lg:mt-2 bg-primary text-on-primary py-3 lg:py-3.5 px-6 lg:px-8 rounded-2xl font-bold font-label uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all w-fit">
             Começar jornada
         </button>
     </div>
