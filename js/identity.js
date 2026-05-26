@@ -561,12 +561,12 @@ manualGuideChapters: [
             icon: 'menu_book',
             title: 'Visão Geral',
             subtitle: 'A arquitetura do Life OS em uma página',
-            what: 'O Life OS funciona em quatro camadas que se alimentam: <strong>Propósito</strong> (Quem eu sou → Como estou → O que quero deixar → O que posso viver → O que me move → Quem quero me tornar) → <strong>Planos</strong> (Meta→Projeto→Entrega→Ação) → <strong>Execução</strong> (Hoje + Foco) → <strong>Reflexão</strong> (Painel + Revisão Semanal). Identidade e hábitos atravessam todas as camadas.',
+            what: 'O Life OS funciona em quatro camadas que se alimentam: <strong>Propósito</strong> (Quem eu sou → Como estou → O que quero deixar → O que posso viver → O que me move → Quem quero me tornar) → <strong>Planos</strong> (Meta → Projeto → Entrega → Ação) → <strong>Execução</strong> (Hoje + Foco) → <strong>Reflexão</strong> (Painel + Revisão Semanal). Identidade e hábitos atravessam todas elas.',
             why: 'Sistemas de mudança duradoura precisam de coerência vertical: ações diárias devem servir objetivos de médio prazo, que servem propósito de longo prazo. Sem essa cadeia, o esforço diário não acumula em direção a algo significativo.',
             refs: ['Covey — 7 Habits (begin with the end in mind)', 'Locke & Latham — Goal-Setting Theory'],
             how: [
                 'Comece pelo Propósito: defina valores, forças/sombras, diagnóstico de bem-estar, Legado, Odyssey, Ikigai e Visão antes de criar Metas.',
-                'Quebre cada Meta em Projetos (90 dias) → Entregas (semanais) → Ações (atômicas, executáveis em uma sessão).',
+                'Quebre cada Meta em Projetos (até 90 dias) → Entregas curtas (até 1 mês) → Ações pequenas, feitas em poucos dias ou em uma sessão.',
                 'Use o Hoje para executar Ações e o Foco para sessões de atenção profunda.',
                 'Revise no Painel e na Revisão Semanal para fechar o ciclo.'
             ],
@@ -592,16 +592,16 @@ manualGuideChapters: [
         {
             id: 'bem-estar',
             icon: 'monitoring',
-            title: 'Bem-estar: Roda da Vida, PERMA & SWLS',
+            title: 'Bem-estar: Roda da Vida, PERMA e SWLS',
             subtitle: 'Como estou',
-            what: 'As três ferramentas não são redundantes. <strong>Roda da Vida</strong>: mapa de investimento entre áreas; pergunta "onde estou investindo demais ou negligenciando?". <strong>PERMA</strong>: qualidade da experiência de existir em 5 vetores; pergunta "onde minha vida nutre ou empobrece meu florescimento?". <strong>SWLS</strong>: 5 perguntas validadas que geram nota global de satisfação com a vida (5-35).',
-            why: 'PERMA (Seligman) e SWLS (Diener) são instrumentos validados em centenas de estudos. Usados juntos, capturam tanto o "como me sinto" (afetivo) quanto o "como avalio minha vida" (cognitivo). A Roda da Vida adiciona granularidade por dimensão para detectar áreas negligenciadas.',
+            what: 'As três ferramentas olham sua vida por ângulos diferentes. <strong>Roda da Vida</strong>: um retrato simples das áreas da vida; ajuda a perceber excessos e esquecimentos. <strong>PERMA</strong>: um mapa de bem-estar em cinco frentes; ajuda a entender como sua vida está nutrindo emoções, engajamento, relações, sentido e realização. <strong>SWLS</strong>: cinco perguntas clássicas sobre satisfação com a vida; gera uma nota global de 5 a 35.',
+            why: 'SWLS é uma escala bem estabelecida para acompanhar satisfação com a vida. PERMA é um modelo muito usado para refletir sobre florescimento e qualidade de vida. A Roda da Vida é menos "teste" e mais ferramenta de conversa consigo mesmo: ela ajuda a transformar percepção difusa em decisão prática.',
             refs: ['Seligman — Flourish (PERMA)', 'Diener et al. — Satisfaction with Life Scale (SWLS)', 'Paul J. Meyer — Wheel of Life'],
             how: [
-                'Use a Roda da Vida para decidir onde investir energia: áreas baixas podem virar Metas ou hábitos.',
-                'SWLS é rápido: use mensalmente como linha de tendência de satisfação global.',
-                'PERMA é mais profundo: use trimestralmente para entender como sua vida está nutrindo emoções, engajamento, relações, sentido e realização.',
-                'Cruze: dimensões baixas na Roda devem aparecer como Metas em Planos.'
+                'Use a Roda da Vida para decidir onde investir energia: áreas mais baixas podem virar meta, projeto ou hábito.',
+                'Use o SWLS uma vez por mês como um termômetro rápido da sua satisfação geral.',
+                'Use o PERMA com mais calma, em ritmo trimestral, para entender melhor a qualidade da sua experiência.',
+                'Cruze os resultados: se uma área aparece mal com frequência, ela merece aparecer também nos seus planos.'
             ],
             cta: { label: 'Reavaliar bem-estar', view: 'proposito', sectionId: 'proposito-roda-section' }
         },
@@ -642,8 +642,8 @@ manualGuideChapters: [
             icon: 'star',
             title: 'Ikigai',
             subtitle: 'O que me move',
-            what: 'O <strong>Ikigai</strong> cruza quatro blocos: o que você ama, o que faz bem, o que o mundo precisa e o que pode sustentar sua vida. Pergunta guia: <strong>onde mora a interseção entre prazer, talento, necessidade e sustento?</strong>',
-            why: 'A versão ocidental dos quatro círculos funciona como síntese vocacional: ela evita olhar só para paixão, só para dinheiro ou só para demanda externa. No Life OS, as interseções tornam a reflexão prática antes da síntese final.',
+            what: 'No Life OS, o <strong>Ikigai</strong> aparece na versão mais popular dos quatro blocos: o que você ama, o que faz bem, o que o mundo precisa e o que pode sustentar sua vida. Pergunta guia: <strong>onde prazer, talento, necessidade e sustento começam a conversar entre si?</strong>',
+            why: 'Essa leitura do Ikigai ajuda a não olhar só para paixão, só para dinheiro ou só para dever. Ela funciona bem como síntese vocacional prática: primeiro você amplia a conversa, depois escreve uma direção mais clara.',
             refs: ['Mieko Kamiya — Ikigai-ni-tsuite', 'Ken Mogi — The Little Book of Ikigai', 'Marc Winn — four-circle Ikigai adaptation', 'Self-Determination Theory — Deci & Ryan'],
             how: [
                 'Preencha os quatro blocos base primeiro: Amo, Sou bom, Mundo precisa e Sustento.',
@@ -673,14 +673,14 @@ manualGuideChapters: [
             id: 'planos',
             icon: 'account_tree',
             title: 'Planos: Hierarquia Meta → Projeto → Entrega → Ação',
-            subtitle: 'Cascata de objetivos com weekly planning',
-            what: 'A hierarquia decompõe ambição em ação: <strong>Meta</strong> (1-5 anos) → <strong>Projeto</strong> (trimestral, com indicadores mensuráveis) → <strong>Entrega</strong> (mensal, 2-6 semanas) → <strong>Ação</strong> (atômica, ~1 sessão). O <strong>Planejamento Semanal</strong> seleciona quais Ações entram na semana com previsão de energia.',
+            subtitle: 'Transformar direção em passos concretos',
+            what: 'A hierarquia transforma ambição em prática: <strong>Meta</strong> (1-5 anos) → <strong>Projeto</strong> (trimestral, com indicadores mensuráveis) → <strong>Entrega</strong> (curta, até 1 mês) → <strong>Ação</strong> (pequena, para caber em poucos dias ou em uma sessão). O <strong>Planejamento Semanal</strong> escolhe quais ações entram na semana com base no tempo e na energia disponíveis.',
             why: 'A camada de Projeto se inspira na lógica de objetivos com indicadores: separar objetivo qualitativo de medidas concretas evita metas vagas. Decomposição em Ações respeita a teoria da auto-eficácia (Bandura): vitórias pequenas alimentam crença de competência. Weekly planning aplica o "12 Week Year" — comprimir o foco em ciclos curtos aumenta execução.',
             refs: ['John Doerr — Measure What Matters', 'Brian Moran — The 12 Week Year', 'Albert Bandura — Self-Efficacy Theory'],
             how: [
                 'Crie 1-3 Metas por dimensão, não mais. Foco vence quantidade.',
                 'Para cada Projeto, defina 2-4 indicadores numéricos (não tarefas, mas resultados mensuráveis).',
-                'Quebre Entregas em Ações executáveis em até 7 dias, para que elas possam ser distribuídas em sessões de foco ao longo do prazo.',
+                'Quebre Entregas em Ações executáveis em até 7 dias, para que elas possam ser distribuídas ao longo da semana sem pesar demais.',
                 'No Planejamento Semanal, selecione Ações com base na energia prevista — não encha o calendário.',
                 'Pais (Meta/Projeto/Entrega) só ficam "concluídos" quando você decide; o sistema não fecha automaticamente.'
             ],
@@ -706,17 +706,17 @@ manualGuideChapters: [
         {
             id: 'notas',
             icon: 'note_stack',
-            title: 'Notas e Memoria Externa',
+            title: 'Notas e Memória Externa',
             subtitle: 'Contexto vinculado ao sistema',
-            what: 'Notas ficam no Perfil e podem ser vinculadas a Metas, Projetos, Entregas, Ações, Habitos, Forcas ou Sombras. Elas guardam contexto, links, aprendizados e referencias sem transformar o app em uma area separada de documentos.',
-            why: 'Memoria externa reduz carga cognitiva: voce nao precisa manter todo o contexto ativo na cabeca. Quando uma nota esta vinculada a uma entidade do sistema, ela vira suporte para decisao e revisao, nao apenas arquivo solto.',
+            what: 'Notas ficam no Perfil e podem ser ligadas a Metas, Projetos, Entregas, Ações, Hábitos, Forças ou Sombras. Elas guardam contexto, links, aprendizados e referências sem transformar o app em uma área separada de documentos.',
+            why: 'Guardar contexto fora da cabeça reduz desgaste mental. Quando uma nota fica ligada a um item do app, ela deixa de ser arquivo solto e passa a apoiar decisão, revisão e continuidade.',
             refs: ['David Allen — Getting Things Done', 'Tiago Forte — Building a Second Brain', 'Extended Mind / cognitive offloading'],
             how: [
-                'Crie notas curtas com titulo, corpo, tags e URL quando houver uma referencia importante.',
-                'Vincule a nota ao item que ela ajuda: uma Ação, uma Meta, um Habito ou uma Sombra.',
+                'Crie notas curtas com título, corpo, tags e URL quando houver uma referência importante.',
+                'Ligue a nota ao item que ela ajuda: uma Ação, uma Meta, um Hábito ou uma Sombra.',
                 'Use busca + filtros (Todas, Vinculadas, Avulsas) e o X da busca para limpar em um toque.',
-                'A lista de notas e compacta e agrupada por mes; na linha ficam titulo, data e status de vinculo, e o corpo completo aparece apenas ao expandir.',
-                'Prefira notas que apoiem uma decisao futura, nao colecoes infinitas de informacao.'
+                'A lista de notas é compacta e agrupada por mês; na linha ficam título, data e vínculo, e o texto completo aparece ao expandir.',
+                'Prefira notas que ajudem uma decisão futura, não coleções infinitas de informação.'
             ],
             cta: { label: 'Abrir Perfil', view: 'perfil' }
         },
@@ -725,12 +725,12 @@ manualGuideChapters: [
             icon: 'today',
             title: 'Hoje: Bússola, Diário, Gratidão & Shutdown',
             subtitle: 'A camada de execução e reflexão diária',
-            what: 'O <strong>Hoje</strong> reúne: a <strong>Bússola do Dia</strong> (frase + ação sugerida), a execução de <strong>Ações</strong> e <strong>hábitos</strong> do dia, o <strong>Diário</strong> (escrita livre + 3 gratidões) e o <strong>Shutdown Ritual</strong> (encerramento consciente do dia).',
-            why: 'A Bússola usa "implementation intentions" (Gollwitzer): declarar antecipadamente o que vai fazer aumenta execução em ~2-3x. Gratidão (3 Good Things, Seligman) por 1-2 semanas eleva afeto positivo por meses. O Shutdown Ritual fecha o "loop Zeigarnik" — tarefas inacabadas criam ruminação; declarar fechamento libera capacidade cognitiva para descansar.',
+            what: 'O <strong>Hoje</strong> reúne: a <strong>Bússola do Dia</strong> (frase + ação sugerida), a execução de <strong>Ações</strong> e <strong>hábitos</strong> do dia, o <strong>Diário</strong> (gratidão + o que funcionou) e o <strong>Shutdown Ritual</strong> (encerramento consciente do dia).',
+            why: 'Ter uma intenção clara para o dia ajuda a começar com menos atrito. Registrar gratidão e pequenos acertos costuma ampliar percepção de progresso e presença. O Shutdown Ritual ajuda a fechar pendências mentais: quando você nomeia o que ficou e decide o próximo passo, descansar fica mais fácil.',
             refs: ['Gollwitzer — Implementation Intentions', 'Seligman — Three Good Things', 'Cal Newport — Deep Work (shutdown)', 'Zeigarnik Effect'],
             how: [
                 'Abra o Hoje pela manhã; deixe a Bússola do Dia ancorar a primeira ação.',
-                'Faça o Diário e 3 gratidões à noite — específicas, não genéricas ("o sorriso do meu filho ao voltar pra casa", não "minha família").',
+                'À noite, registre uma gratidão real e o que funcionou no dia. Quanto mais específico, melhor.',
                 'Execute o Shutdown ao terminar o trabalho: revise o que ficou, anote pendências para amanhã, declare fechamento.',
                 'Não tente esvaziar todas as Ações da semana num dia só — sobrecarga mata consistência.'
             ],
@@ -742,7 +742,7 @@ manualGuideChapters: [
             title: 'Cadência e Ritmo',
             subtitle: 'Frequências saudáveis sem travar o sistema',
             what: 'A <strong>Cadência</strong> mostra se ferramentas essenciais estão em dia, próximas do vencimento ou atrasadas. O <strong>Check-in diário</strong> coleta sono, qualidade do sono, energia, humor e estresse em poucos segundos para criar uma linha de base do seu estado interno.',
-            why: 'Mudança pessoal melhora quando dados de estado são coletados perto do momento real, princípio usado em EMA (Ecological Momentary Assessment). Revisões semanais sustentam Projetos e execução; escalas como PERMA/SWLS pedem cadência mais espaçada para evitar ruído e fadiga de medição.',
+            why: 'Mudança pessoal melhora quando o registro do estado acontece perto do momento vivido. Esse é o princípio do EMA (Ecological Momentary Assessment), uma forma de observação mais próxima da vida real. Revisões semanais sustentam projetos; ferramentas como PERMA e SWLS pedem mais espaço entre uma aplicação e outra para evitar cansaço e ruído.',
             refs: ['Ecological Momentary Assessment (EMA)', 'Brian Moran — 12 Week Year', 'Diener — SWLS', 'Seligman — PERMA'],
             how: [
                 'Faça o check-in diário na aba Hoje (topo da página): sono, qualidade do sono, energia, humor e estresse.',
@@ -755,24 +755,22 @@ manualGuideChapters: [
         {
             id: 'foco',
             icon: 'timer',
-            title: 'Foco: Blocos adaptativos e Deep Work',
+            title: 'Foco: Blocos adaptativos e trabalho profundo',
             subtitle: 'Sessões curtas ou profundas conforme energia e esforço',
-            what: 'O timer de <strong>Foco</strong> agora trabalha com blocos de <strong>15/3, 25/5, 45/10, 50/10 e 90/20</strong>, conectado a uma <strong>Ação</strong> ou a um <strong>Hábito</strong>. O app sugere o bloco com base no tempo estimado, no esforço e no check-in do dia. Ao finalizar, registra Deep Work, abre o <strong>fechamento da sessão</strong> (checklist, entrega, evidências, lacunas e próximo passo) e conduz a pausa estruturada quando aplicável.',
+            what: 'O timer de <strong>Foco</strong> trabalha com blocos de <strong>15/3, 25/5, 45/10, 50/10 e 90/20</strong>, ligado a uma <strong>Ação</strong> ou a um <strong>Hábito</strong>. O app sugere o bloco com base no tempo estimado, no esforço e no check-in do dia. Ao finalizar, você pode registrar o que avançou, o que ficou em aberto e qual é o próximo passo.',
             why: 'Blocos curtos reduzem atrito para iniciar quando a energia está baixa; blocos médios ajudam execução sustentada; e o 90/20 continua reservado para trabalho profundo real. Essa gradação combina pomodoro clássico com ritmos ultradianos, em vez de tratar toda ação como se precisasse da mesma janela.',
             refs: ['Nathan Kleitman — BRAC (Basic Rest-Activity Cycle)', 'Cal Newport — Deep Work', 'Csikszentmihalyi — Flow'],
             how: [
-                'Escolha o contexto em um unico seletor (Acoes e Habitos) antes de iniciar.',
-                'Durante a sessao, Play/Pause e o controle principal; Reset e Finalizar ficam como acoes secundarias.',
-                'Hábitos podem abrir foco mesmo sem Meta explícita quando já existe Entrega compatível pela mesma área; o app usa esse fallback para não travar a execução.',
-                'Antes de iniciar, escolha um unico contexto no seletor (acao ou habito) para evitar fragmentacao.',
+                'Antes de iniciar, escolha uma ação ou um hábito no seletor. Um foco por vez ajuda o dia a não se espalhar.',
+                'Durante a sessão, Play/Pause é o controle principal; Reset e Finalizar ficam como ações secundárias.',
                 'Use os blocos sugeridos como padrão; troque manualmente só quando souber que aquele caso pede outra janela.',
-                'O bloco sugerido não tenta engolir a ação inteira: ele cobre só a melhor sessão para agora, respeitando carga total restante e capacidade do turno.',
-                'Ações não alinhadas deixam de iniciar foco estruturado até que o vínculo com Entrega, Projeto e Meta seja corrigido.',
-                'Desligue notificações; o ambiente deve sinalizar "agora é foco".',
+                'O bloco sugerido não tenta engolir a tarefa inteira: ele cobre só a melhor sessão para agora, respeitando sua carga do dia e a energia do turno.',
+                'Se a ação ainda estiver solta no plano, vale ajustar isso antes de transformar o foco em rotina.',
+                'Reduza distrações e preserve só os avisos que ajudam seu bloco.',
                 'Use a pausa correspondente ao bloco (3, 5, 10 ou 20 min) para movimento físico ou descanso real, não redes sociais.',
-                'Use "Salvar apenas nota" quando quiser registrar contexto sem concluir a micro.',
-                'Use "Salvar e concluir" quando a entrega realmente terminou.',
-                'Faça no máximo 3-4 sessões por dia; deep work é caro biologicamente.'
+                'Ao concluir, registre evidências, dúvidas e próximo passo. Esse fechamento evita recomeços confusos depois.',
+                'Em hábitos de tempo, os minutos entram no próprio hábito; nos demais, a sessão serve mais para registrar o avanço e clarear o próximo movimento.',
+                'Faça poucas sessões profundas por dia. Qualidade costuma valer mais do que volume.'
             ],
             cta: { label: 'Iniciar Foco', view: 'foco' }
         },
@@ -783,7 +781,7 @@ manualGuideChapters: [
             subtitle: 'Roteiros práticos para executar sem travar',
             what: 'A aba <strong>Protocolos</strong> (em Planos) reúne protocolos base e personalizados. Hoje o app inclui base para <strong>início do dia</strong>, <strong>noite</strong>, <strong>limpeza</strong> (diário, semanal e mensal), estudo, treino e finanças. Todo protocolo é editável, pode ser convertido em hábito pré-preenchido e agora aceita <strong>tempo estimado por passo</strong>.',
             why: 'Protocolos diminuem carga de decisão e aumentam consistência em tarefas recorrentes. Começar por um modelo sólido acelera adesão; manter edição livre evita rigidez e permite personalização real.',
-            refs: ['Implementation intentions', 'Checklists operacionais', 'Behavior design - reducing decision load'],
+            refs: ['Implementation intentions', 'Checklists operacionais', 'Behavior design — reducing decision load'],
             how: [
                 'Em Planos > Protocolos, abra um protocolo base e revise os passos.',
                 'Se quiser guardar tempo estimado, use o formato "Passo | minutos" em cada linha.',
@@ -797,20 +795,20 @@ manualGuideChapters: [
         {
             id: 'habitos',
             icon: 'repeat',
-            title: 'Hábitos: Habit Loop & Identidade em Ação',
-            subtitle: 'Cue → Routine → Reward, ancorado em quem você quer ser',
-            what: 'Cada hábito tem <strong>Gatilho</strong> (cue), <strong>Rotina</strong> (routine), <strong>Recompensa</strong> (reward) e pode estar conectado a uma força, uma sombra ou ambas. Hábitos podem ser <strong>contínuos</strong> (sem data final, para rotinas de identidade) ou ter prazo. O <strong>Hábito-Chave</strong> marca a alavanca principal do momento — aquele que, se feito, eleva os outros. Modos: construir (força), reduzir (sombra) ou substituir (resposta melhor).',
-            why: 'O Habit Loop (Duhigg, baseado em pesquisa do MIT/Graybiel) é a estrutura mínima de qualquer comportamento automatizado. James Clear adiciona a camada de identidade: "todo hábito é um voto para o tipo de pessoa que você quer ser". Implementation intentions ("depois de X, eu farei Y") aumentam aderência em meta-análises de 2-3x.',
+            title: 'Hábitos: Gatilho, Rotina e Recompensa',
+            subtitle: 'Pequenas repetições que constroem identidade',
+            what: 'Cada hábito tem <strong>Gatilho</strong>, <strong>Rotina</strong> e <strong>Recompensa</strong>, e pode estar ligado a uma força, uma sombra ou ambas. Hábitos podem ser <strong>contínuos</strong> (sem data final, para rotinas de identidade) ou ter prazo. O <strong>Hábito-Chave</strong> marca a alavanca principal do momento: aquele que, se feito, ajuda os outros a andarem melhor.',
+            why: 'Bons hábitos ficam mais fáceis quando você sabe onde começam, o que pedem de você e qual sensação deixam no fim. James Clear populariza bem a ideia de identidade: cada repetição reforça a pessoa que você está praticando ser. Planos do tipo "depois de X, vou fazer Y" também costumam aumentar a chance de continuidade.',
             refs: ['Charles Duhigg — The Power of Habit', 'James Clear — Atomic Habits', 'B.J. Fogg — Tiny Habits'],
             how: [
                 'Ancore o hábito em uma rotina existente: "depois de escovar os dentes, eu...".',
                 'Comece ridiculamente pequeno: 2 minutos, não 30. Consistência > intensidade.',
                 'Conecte à identidade: "sou alguém que..." em vez de "vou fazer X".',
-                'Sess?es de foco vindas de h?bito registram execu??o no pr?prio h?bito: timer soma minutos; modos sem timer contam execu??o quando n?o dependem de checklist.',
+                'Quando o foco nasce de um hábito de tempo, os minutos entram no próprio hábito. Nos hábitos sem meta em minutos, a sessão ajuda a registrar o avanço e o próximo passo.',
                 'Use hábito contínuo para rotinas sem data final; reserve o prazo para comportamentos que você quer consolidar e então revisar.',
                 'Marque como Hábito-Chave o comportamento que mais amplia capacidade agora — o app sugerirá com base em streak e vínculo de identidade.',
-                'Para forças, transforme a prática sugerida em rotina; para sombras, transforme o se-então em resposta substituta antes do gatilho aparecer.',
-                'Ao editar um h?bito, o v?nculo atual com Meta ? preservado mesmo que a Meta esteja fora do filtro da ?rea at? voc? trocar ou remover conscientemente.',
+                'Para forças, transforme a prática sugerida em rotina; para sombras, transforme o se-então em resposta alternativa antes do gatilho aparecer.',
+                'Ao editar um hábito, revise com cuidado a meta ligada para não mudar esse vínculo sem querer.',
                 'Use o checklist de passos para hábitos complexos; quebra em micropassos previne paralisia.'
             ],
             cta: { label: 'Criar hábito', view: 'planos' }
@@ -819,14 +817,14 @@ manualGuideChapters: [
             id: 'habitos-ponte',
             icon: 'library_add',
             title: 'Biblioteca de Sugestões',
-            subtitle: 'Templates prontos para começar agora',
-            what: 'A <strong>Biblioteca de Sugestões</strong> oferece templates de hábitos agrupados por dimensão (Saúde, Carreira, Mente, Relacionamentos, Propósito). Cada template traz gatilho, rotina, recompensa, passos e modo de rastreamento pré-preenchidos — você ajusta antes de salvar.',
-            why: 'A maior barreira para criar um bom hábito não é vontade, mas design: escolher o gatilho certo, a rotina mínima e a recompensa adequada. Templates reduzem essa fricção sem remover o julgamento — você ainda personaliza para o seu contexto antes de salvar.',
+            subtitle: 'Modelos prontos para começar agora',
+            what: 'A <strong>Biblioteca de Sugestões</strong> oferece modelos de hábitos agrupados por dimensão (Saúde, Carreira, Mente, Relacionamentos, Propósito). Cada modelo traz gatilho, rotina, recompensa, passos e modo de rastreamento já preenchidos — você ajusta antes de salvar.',
+            why: 'A maior barreira para criar um bom hábito não é vontade, mas desenho: escolher o gatilho certo, a rotina mínima e a recompensa adequada. Modelos reduzem essa fricção sem tirar seu julgamento — você ainda personaliza tudo para o seu contexto antes de salvar.',
             refs: ['BJ Fogg — Tiny Habits', 'Nir Eyal — Hooked'],
             how: [
-                'Na aba Hoje, toque em "Sugestões" para abrir a biblioteca de templates.',
-                'Escolha um template e toque em "Usar" — o formulário de criação abre pré-preenchido.',
-                'Revise gatilho, rotina e recompensa antes de salvar: o template é ponto de partida, não receita.',
+                'Na aba Hoje, toque em "Sugestões" para abrir a biblioteca de modelos.',
+                'Escolha um modelo e toque em "Usar" — o formulário de criação abre pré-preenchido.',
+                'Revise gatilho, rotina e recompensa antes de salvar: o modelo é ponto de partida, não receita.',
                 'Prefira começar com 1–2 hábitos da dimensão mais carente, não com todos ao mesmo tempo.'
             ],
             cta: { label: 'Ver hoje', view: 'hoje' }
@@ -834,16 +832,16 @@ manualGuideChapters: [
         {
             id: 'maturacao-habitos',
             icon: 'verified',
-            title: 'Maturacao de Habitos',
-            subtitle: 'Do esforco consciente para o automatico',
-            what: 'Habitos agora podem estar <strong>em formacao</strong> ou <strong>automaticos</strong>. Quando um habito sustenta consistencia por semanas, ele gradua: continua sendo acompanhado, mas passa a render XP de manutencao em vez de XP cheio.',
-            why: 'A formacao de habitos segue curva de repeticao em contexto estavel. Recompensas ajudam no inicio, mas a Teoria da Autodeterminacao alerta que recompensa externa demais pode competir com motivacao intrinseca. Graduar reduz esse risco e reforca identidade.',
+            title: 'Maturação de Hábitos',
+            subtitle: 'Do esforço consciente para o automático',
+            what: 'Hábitos podem estar <strong>em formação</strong> ou <strong>automáticos</strong>. Quando um hábito sustenta consistência por semanas, ele gradua: continua sendo acompanhado, mas passa a render XP de manutenção em vez de XP cheio.',
+            why: 'Hábitos costumam ficar mais leves com repetição em contexto estável. Recompensas ajudam no começo, mas a Teoria da Autodeterminação lembra que o ideal é, aos poucos, a motivação também vir de dentro. Essa graduação reconhece o progresso sem depender só do prêmio externo.',
             refs: ['Lally et al. — habit formation', 'James Clear — Atomic Habits', 'Deci & Ryan — Self-Determination Theory'],
             how: [
-                'Um habito gradua apos 4 semanas com 80% ou mais de consistencia.',
-                'Habitos automaticos aparecem com chip proprio e recebem XP reduzido de manutencao.',
-                'Se a consistencia cair por 2 semanas, o habito volta para formacao com aviso compassivo.',
-                'No Painel, acompanhe quantos habitos estao em formacao, automaticos e proximos de graduar.'
+                'Um hábito gradua após 4 semanas com 80% ou mais de consistência.',
+                'Hábitos automáticos aparecem com chip próprio e recebem XP reduzido de manutenção.',
+                'Se a consistência cair por 2 semanas, o hábito volta para formação com aviso compassivo.',
+                'No Painel, acompanhe quantos hábitos estão em formação, automáticos e próximos de graduar.'
             ],
             cta: { label: 'Abrir Painel', view: 'painel' }
         },
@@ -852,8 +850,8 @@ manualGuideChapters: [
             icon: 'insights',
             title: 'Painel & Revisão Semanal',
             subtitle: 'Fechamento de ciclo e aprendizado',
-            what: 'O <strong>Painel</strong> mostra scores de Foco/Execução, ciclo de 12 semanas e heatmap. A <strong>Revisão Semanal</strong> faz 5 perguntas (planejei → executei → aprendi → ajustar → próxima intenção) + autoconhecimento aplicado (força usada, sombra observada).',
-            why: 'Reflexão estruturada transforma experiência em aprendizado — sem revisão, repetimos os mesmos erros. Brian Moran (12 Week Year) mostra que a frequência de revisão (semanal > mensal > trimestral) é o maior preditor de execução de Projetos. Escrever o que aprendeu ativa metacognição e consolida memória (Bjork — desirable difficulties).',
+            what: 'O <strong>Painel</strong> mostra indicadores de Foco/Execução, ciclo de 12 semanas e um mapa visual da sua consistência. A <strong>Revisão Semanal</strong> faz 5 perguntas (planejei → executei → aprendi → ajustar → próxima intenção) e liga isso ao autoconhecimento aplicado (força usada, sombra observada).',
+            why: 'Reflexão estruturada transforma experiência em aprendizado. Sem revisão, a gente tende a repetir o mesmo erro com outro nome. Revisões mais frequentes costumam sustentar melhor a execução do que revisões raras, e escrever o que aprendeu ajuda a organizar pensamento e memória.',
             refs: ['Brian Moran — 12 Week Year', 'Robert Bjork — Desirable Difficulties', 'Kolb — Experiential Learning Cycle'],
             how: [
                 'Faça a Revisão Semanal todo domingo ou segunda — não pule, mesmo na semana ruim (especialmente nela).',
@@ -866,31 +864,31 @@ manualGuideChapters: [
         {
             id: 'padroes',
             icon: 'query_stats',
-            title: 'Lendo seus Padroes',
-            subtitle: 'Cruzamentos sem confundir correlacao com causa',
-            what: 'O Painel cruza check-ins diarios com execucao de micros e adesao a habitos. A secao so aparece com leitura completa depois de dados suficientes, para evitar conclusoes precipitadas.',
-            why: 'Dados pessoais sao ruidosos. Um padrao util nasce de repeticao: sono, humor e estresse precisam de historico antes de orientar decisoes. O sistema usa gating minimo e sempre lembra que correlacao nao e causalidade.',
+            title: 'Lendo seus Padrões',
+            subtitle: 'Cruzar sinais sem confundir coincidência com causa',
+            what: 'O Painel cruza check-ins diários com execução de ações e adesão a hábitos. A leitura mais completa só aparece quando há dados suficientes, para evitar conclusões apressadas.',
+            why: 'Dados pessoais têm muito ruído. Um padrão útil nasce de repetição: sono, humor e estresse precisam de histórico antes de orientar decisão. Por isso o app espera um mínimo de base e lembra que coincidência não é, por si só, causa.',
             refs: ['Ecological Momentary Assessment (EMA)', 'Personal informatics', 'Behavioral self-tracking'],
             how: [
                 'Faça check-in por pelo menos 14 dias para liberar os primeiros cruzamentos.',
-                'Leia diferencas como hipoteses praticas, nao como diagnostico.',
-                'Se sono baixo coincidir com pouca execucao, ajuste carga antes de culpar disciplina.',
-                'Use a Revisao Semanal para decidir um experimento pequeno para a proxima semana.'
+                'Leia diferenças como hipóteses práticas, não como diagnóstico.',
+                'Se sono baixo coincidir com pouca execução, ajuste a carga antes de culpar disciplina.',
+                'Use a Revisão Semanal para decidir um experimento pequeno para a próxima semana.'
             ],
             cta: { label: 'Abrir Painel', view: 'painel' }
         },
         {
             id: 'carga-recuperacao',
             icon: 'health_and_safety',
-            title: 'Carga e Recuperacao',
-            subtitle: 'Melhorar sem ultrapassar o limite saudavel',
-            what: 'O alerta de carga observa energia, estresse, execucao e volume planejado. Quando sinais ruins aparecem junto com carga alta, o app sugere reduzir o ritmo em vez de empurrar mais tarefas.',
-            why: 'Produtividade sustentavel depende de recuperacao. Carga alostatica acumulada aumenta risco de fadiga, abandono e burnout. O sistema deve proteger consistencia de longo prazo, nao maximizar volume a qualquer custo.',
+            title: 'Carga e Recuperação',
+            subtitle: 'Melhorar sem ultrapassar o limite saudável',
+            what: 'O alerta de carga observa energia, estresse, execução e volume planejado. Quando sinais ruins aparecem junto com carga alta, o app sugere reduzir o ritmo em vez de empurrar mais tarefas.',
+            why: 'Produtividade sustentável depende de recuperação. Quando a carga se acumula por muito tempo, cresce o risco de fadiga, abandono e burnout. O sistema deve proteger consistência de longo prazo, não maximizar volume a qualquer custo.',
             refs: ['Allostatic load', 'Ultradian rhythms', 'Cal Newport — Deep Work'],
             how: [
-                'Se o alerta aparecer, reduza micros, simplifique habitos ou escolha uma semana de manutencao.',
-                'Nao trate alerta como falha: ele e um instrumento de regulacao.',
-                'Combine com a Revisao Semanal para ajustar energia prevista e prioridades.',
+                'Se o alerta aparecer, reduza ações, simplifique hábitos ou escolha uma semana de manutenção.',
+                'Não trate o alerta como falha: ele é um instrumento de regulação.',
+                'Combine isso com a Revisão Semanal para ajustar energia prevista e prioridades.',
                 'Depois de dispensar o alerta, ele fica silencioso pelo dia.'
             ],
             cta: { label: 'Abrir Painel', view: 'painel' }
@@ -901,12 +899,12 @@ manualGuideChapters: [
             title: 'Gamificação e Progressão',
             subtitle: 'XP, streaks, maturação e níveis',
             what: 'O sistema atribui <strong>XP</strong> a cada ação: hábitos executados valem <strong>2 XP base</strong> (4 XP se for o <strong>Hábito-Chave</strong>), +1 XP por ligar a uma força, +2 XP por ligar a uma sombra, +1 XP por ter plano se-então preenchido. Retomar um hábito após pausa rende <strong>+3 XP de bônus de retomada</strong> (uma vez por mês por hábito). XP acumula em <strong>nível</strong> e <strong>streak</strong>. Hábitos que mantêm ≥80% de consistência por 4 semanas <strong>graduam</strong> de "em formação" para "automático".',
-            why: 'Sistemas de recompensa incremental (feedback loops de curto prazo) sustentam motivação intrínseca no início de uma mudança. A maturação de hábitos aplica a Teoria da Autodeterminação: à medida que o comportamento se automatiza, a recompensa externa diminui para não suplantar a motivação interna. Streaks aproveitam o efeito de continuidade — a perda de streak é mais aversiva do que o ganho de pontos.',
+            why: 'Recompensas pequenas e frequentes ajudam no começo de uma mudança, quando a consistência ainda está nascendo. A maturação de hábitos aplica a Teoria da Autodeterminação: à medida que o comportamento se automatiza, a recompensa externa diminui para não ocupar o lugar da motivação interna. Streaks também ajudam muita gente porque dão sensação de continuidade visível.',
             refs: ['Deci & Ryan — Self-Determination Theory', 'B.J. Fogg — Tiny Habits (celebration)', 'Lally et al. — habit formation curve'],
             how: [
                 'Marque o <strong>Hábito-Chave</strong> para dobrar o XP base — reserve para o hábito de maior alavancagem do momento.',
-                'Ligar hábitos a forças e sombras aumenta XP e fortalece o loop identidade → ação.',
-                'Hábitos de sombra ganham +2 XP porque exigem mais esforço cognitivo (regulação emocional).',
+                'Ligar hábitos a forças e sombras aumenta XP e fortalece o elo entre identidade e ação.',
+                'Hábitos de sombra ganham +2 XP porque costumam pedir mais atenção, autocontrole e regulação emocional.',
                 'Retomar um hábito após pausa rende +3 XP de bônus de retomada, uma vez por mês por hábito.',
                 'Manter o Hábito-Chave por 7 ou 30 dias consecutivos desbloqueia conquistas especiais.',
                 'Hábitos automáticos rendem XP reduzido — sinal de que o comportamento já está internalizado.',
@@ -918,27 +916,27 @@ manualGuideChapters: [
         {
             id: 'social',
             icon: 'groups',
-            title: 'Area Social',
+            title: 'Área Social',
             subtitle: 'Companheiros, convites e desafios leves',
-            what: 'A <strong>Area Social</strong> fica no Perfil e e opcional. Ela permite ativar compartilhamento publico, escolher exatamente quais campos podem aparecer, gerar codigo de convite, conectar companheiros, enviar reacoes leves e criar desafios semanais.',
-            why: 'Apoio social aumenta continuidade porque cria contexto compartilhado sem transformar a rotina em competicao pesada. O Life OS publica apenas um perfil reduzido quando voce ativa o opt-in: diario, check-in emocional, valores, sombras, proposito, notas, projetos, a??es e respostas de bem-estar ficam privados.',
+            what: 'A <strong>Área Social</strong> fica no Perfil e é opcional. Ela permite ativar compartilhamento público, escolher exatamente quais campos podem aparecer, gerar código de convite, conectar companheiros, enviar reações leves e criar desafios semanais.',
+            why: 'Apoio social pode aumentar continuidade porque cria contexto compartilhado sem transformar a rotina em competição pesada. No Life OS, o compartilhamento é reduzido e depende da sua escolha: diário, check-in emocional, valores, sombras, propósito, notas, projetos, ações e respostas de bem-estar continuam privados.',
             refs: ['Social accountability', 'Self-Determination Theory - relatedness', 'LGPD - minimizacao de dados'],
             how: [
-                'No Perfil, ative Area Social e depois ligue Privacidade & Compartilhamento se quiser aparecer para companheiros.',
-                'Em Campos compartilhaveis, desligue qualquer dado que nao queira mostrar no perfil publico.',
-                'Para conectar, uma pessoa gera um codigo e a outra aceita. Se a conexao nao aparecer para os dois, cada lado pode aceitar o codigo do outro.',
-                'Dias em sequencia e a soma das sequencias atuais dos companheiros visiveis, incluindo voce. Exemplo: 3 dias seus + 2 dias de um companheiro = 5 dias em sequencia no grupo.',
-                'Use reacoes e desafios como apoio leve; eles nao revelam diario, emocoes ou conteudo privado.'
+                'No Perfil, ative Área Social e depois ligue Privacidade e Compartilhamento se quiser aparecer para companheiros.',
+                'Em Campos compartilháveis, desligue qualquer dado que você não queira mostrar no perfil público.',
+                'Para conectar, uma pessoa gera um código e a outra aceita. Se a conexão não aparecer para os dois, cada lado pode aceitar o código do outro.',
+                'Dias em sequência é a soma das sequências atuais dos companheiros visíveis, incluindo você. Exemplo: 3 dias seus + 2 dias de um companheiro = 5 dias em sequência no grupo.',
+                'Use reações e desafios como apoio leve; eles não revelam diário, emoções ou conteúdo privado.'
             ],
-            cta: { label: 'Abrir Area Social', view: 'perfil', sectionId: 'social-access-section' }
+            cta: { label: 'Abrir Área Social', view: 'perfil', sectionId: 'social-access-section' }
         },
         {
             id: 'jornada-guiada',
             icon: 'explore_nearby',
             title: 'Jornada Guiada',
-            subtitle: 'Sequência de onboarding e próximos passos',
-            what: 'A <strong>Jornada Guiada</strong> (aba Perfil, seção Manual) é este guia que você está lendo. Ela rastreia quais capítulos você abriu e mostra progresso. O <strong>onboarding</strong> inicial cobre: conta, Roda da Vida, valores, propósito e identidade — cada passo desbloqueia o seguinte.',
-            why: 'Novos sistemas têm curva de ativação alta: usuários abandonam antes de ver valor. Um onboarding estruturado reduz essa barreira apresentando um subconjunto mínimo de conceitos na ordem certa. Progredir no guia também cria um efeito de comprometimento (commitment escalation) — cada capítulo lido aumenta a probabilidade de continuar.',
+            subtitle: 'Primeiros passos e próximos movimentos',
+            what: 'A <strong>Jornada Guiada</strong> (aba Perfil, seção Manual) é este guia que você está lendo. Ela marca quais capítulos você já abriu e mostra progresso. Os primeiros passos do app passam por conta, Roda da Vida, valores, propósito e identidade, em uma ordem pensada para facilitar entendimento.',
+            why: 'Sistemas novos pedem energia para fazer sentido. Uma jornada guiada reduz essa barreira porque apresenta o essencial na ordem certa, sem jogar tudo de uma vez. O progresso visível também ajuda muita gente a continuar até formar o modelo mental do app.',
             refs: ['BJ Fogg — Tiny Habits (starter steps)', 'Nielsen Norman Group — Progressive disclosure'],
             how: [
                 'Leia os capítulos na ordem sugerida para construir o modelo mental correto antes de usar cada seção.',
@@ -954,8 +952,8 @@ manualGuideChapters: [
             title: 'Ritmo e Sugestão de Ritual',
             subtitle: 'Como o app orienta o próximo passo certo',
             what: 'A <strong>Bússola do Dia</strong> (aba Hoje) organiza o ritmo em duas camadas: cadência (check-in, shutdown, revisão e planejamento) e execução (ação, hábito, rotina ou foco). A <strong>Próxima Melhor Ação</strong> não é mais só uma ação recomendada: ela pode apontar para foco em andamento, ação urgente, hábito/rotina do horário, check-in pendente ou ajuste de ritmo.',
-            why: 'Decisão de "o que fazer agora" consome energia cognitiva (ego depletion). Separar cadência de execução reduz fricção sem confundir ritual semanal com tarefa de curto prazo. Recomendações contextuais (implementation intentions) têm taxa de adesão maior do que lembretes genéricos.',
-            refs: ['Gollwitzer — Implementation Intentions', 'Roy Baumeister — Ego Depletion', 'Ecological Momentary Assessment'],
+            why: 'Decidir "o que faço agora?" gasta energia mental, especialmente em dias mais cheios. Separar cadência de execução reduz essa fricção sem misturar ritual semanal com tarefa de curto prazo. Recomendações contextuais costumam funcionar melhor do que lembretes genéricos porque chegam com mais sentido.',
+            refs: ['Gollwitzer — Implementation Intentions', 'Decision fatigue / cognitive load research', 'Ecological Momentary Assessment'],
             how: [
                 'Use a Bússola para rituais de cadência (check-in, shutdown, revisão e planejamento).',
                 'Use a Próxima Melhor Ação para decidir a execução imediata do dia.',
@@ -969,11 +967,11 @@ manualGuideChapters: [
             icon: 'schedule',
             title: 'Para Hoje e Capacidade',
             subtitle: 'Planejar o dia sem estourar energia e tempo',
-            what: 'A seção <strong>Para hoje</strong> virou o centro operacional do dia. Ela agrega micros, hábitos previstos e rotinas (hábitos com protocolo ou checklist). O <strong>Mapa do Dia</strong> mostra capacidade planejável, tempo planejado e saldo em minutos por dia ou por turno. A base dessa capacidade pode ser ajustada no <strong>Perfil</strong> com sono, compromissos fixos, básicos do dia e reserva de tempo; depois o check-in do dia pode aumentar ou reduzir a capacidade final. Hábitos de tempo usam meta em minutos; protocolos podem somar tempos por passo; micros sem estimativa usam padrões por esforço.',
-            why: 'Planejamento sem noção de capacidade cria sobrecarga silenciosa. Combinar base configurável com ajuste do check-in torna o número do dia mais honesto. Estimar tempo por padrão reduz barreira de entrada e permite ajuste rápido antes de travar o dia.',
+            what: 'A seção <strong>Para hoje</strong> virou o centro operacional do dia. Ela reúne ações, hábitos previstos e rotinas (hábitos com protocolo ou checklist). O <strong>Mapa do Dia</strong> mostra capacidade planejável, tempo planejado e saldo em minutos por dia ou por turno. A base dessa capacidade pode ser ajustada no <strong>Perfil</strong> com sono, compromissos fixos, básicos do dia e reserva de tempo; depois o check-in do dia pode aumentar ou reduzir a capacidade final. Hábitos de tempo usam meta em minutos, protocolos podem somar tempos por passo, e ações sem estimativa usam padrões por esforço.',
+            why: 'Planejamento sem noção de capacidade cria sobrecarga silenciosa. Combinar base configurável com ajuste do check-in torna o número do dia mais honesto. Estimar tempo por padrão reduz a barreira de entrada e permite ajuste rápido antes de o dia travar.',
             refs: ['Timeboxing', 'Planning fallacy (Kahneman & Tversky)', 'Behavioral design — friction as signal'],
             how: [
-                'Mapa do Dia, progresso, pendentes e lista auxiliar usam a mesma carga total do dia: acoes, habitos e rotinas.',
+                'Mapa do Dia, progresso, pendentes e lista auxiliar usam a mesma carga total do dia: ações, hábitos e rotinas.',
                 'Na aba Hoje > Para hoje, leia primeiro o status de capacidade (executável, no limite ou sobrecarregado).',
                 'Se a base do seu dia estiver errada, use o botão "Ajustar base" no próprio mapa (ou Perfil > Preferências > Base da Capacidade do Dia) antes de mexer no planejamento.',
                 'Se houver check-in no dia, confira no cabeçalho do mapa quando a capacidade foi reduzida ou ampliada.',
@@ -992,15 +990,15 @@ manualGuideChapters: [
             icon: 'account_tree',
             title: 'Diagnóstico de Hierarquia',
             subtitle: 'Verificar alinhamento da cascata Meta → Ação',
-            what: 'Em Planos, cada item mostra seu pai (ex: "Ação → Entrega → Projeto → Meta") e o número de filhos. O <strong>diagnóstico</strong> identifica: Metas sem Projetos, Projetos sem Entregas ativas, Entregas sem Ações — elos quebrados que impedem a cascata de funcionar.',
-            why: 'Objetivos desconexos criam esforço fragmentado: você executa tarefas que não servem metas maiores, ou tem metas que nunca viram ação. A cadeia de causalidade (Meta → KR → iniciativa → tarefa) é o mecanismo pelo qual Projetos transformam estratégia em execução real.',
+            what: 'Em Planos, cada item mostra seu pai (ex: "Ação → Entrega → Projeto → Meta") e o número de filhos. O <strong>diagnóstico</strong> identifica metas sem projetos, projetos sem entregas ativas e entregas sem ações: elos quebrados que impedem a cascata de funcionar.',
+            why: 'Objetivos desconexos criam esforço fragmentado: você executa tarefas que não servem metas maiores, ou tem metas que nunca viram ação. Quando a cadeia entre meta, projeto, entrega e ação fica clara, a execução diária ganha direção.',
             refs: ['John Doerr — Measure What Matters', 'Locke & Latham — Goal-Setting Theory', 'Andy Grove — High Output Management'],
             how: [
                 'Ao criar uma Entrega, associe-a a um Projeto e Meta para fechar a hierarquia.',
                 'Ao criar uma Ação, associe-a a uma Entrega para que o esforço diário apareça no Painel.',
-                'Itens não alinhados ou fora da área correta aparecem com aviso para revisão, em vez de ficarem escondidos por fallbacks genéricos.',
+                'Quando algo ficar desalinhado, trate o aviso como convite para revisão antes de seguir acumulando esforço solto.',
                 'Metas órfãs (sem Projeto ou Entrega) aparecem com aviso no Painel de hierarquia.',
-                'Revise o alinhamento na Revisão Semanal: "minhas a??es desta semana servem algum Projeto?"'
+                'Revise o alinhamento na Revisão Semanal: "minhas ações desta semana servem algum projeto?"'
             ],
             cta: { label: 'Abrir Planos', view: 'planos' }
         }
