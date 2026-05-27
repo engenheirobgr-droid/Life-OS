@@ -22,10 +22,10 @@ import { attachCadence } from './js/cadence.js?v=20260523-purpose-legacy-cleanup
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
 import { attachIdentity } from './js/identity.js?v=20260526-rollback-align-v1';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
-import { attachProtocolsModule } from './js/protocols.js?v=20260527-packages12-v1';
+import { attachProtocolsModule } from './js/protocols.js?v=20260527-weekly-coherence-v1';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260526-rollback-align-v1';
 import { attachStateModule } from './js/state.js?v=20260526-rollback-align-v1';
-import { attachRenderModule } from './js/render.js?v=20260527-packages12-v1';
+import { attachRenderModule } from './js/render.js?v=20260527-weekly-coherence-v1';
 import { attachPlanningModule } from './js/planning.js?v=20260526-rollback-align-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260527-packages12-v1',
+    appBuildVersion: '20260527-weekly-coherence-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -3614,8 +3614,7 @@ renderProfileChrome: function() {
 
     getCurrentWeekBounds: function(referenceDate = new Date()) {
         const now = new Date(referenceDate);
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
+        const startOfWeek = new Date(this._getWeekKey(now) + 'T00:00:00');
         startOfWeek.setHours(0, 0, 0, 0);
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
@@ -6624,7 +6623,7 @@ ensureNotesState: function() {
         const copyEl = document.getElementById('weekly-health-copy');
         const headingEl = document.querySelector('#weekly-health-card .font-label');
         if (!scoreEl && !barEl && !labelEl && !copyEl) return;
-        if (headingEl) headingEl.textContent = 'Executabilidade da semana';
+        if (headingEl) headingEl.textContent = 'Saúde da semana';
 
         const avg = this._computeWeeklyCompletionAverage(4);
         const loadRatio = avg > 0 && plannedCount > 0 ? plannedCount / avg : 1;

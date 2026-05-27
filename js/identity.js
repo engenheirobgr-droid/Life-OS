@@ -850,14 +850,15 @@ manualGuideChapters: [
             icon: 'insights',
             title: 'Painel & Revisão Semanal',
             subtitle: 'Fechamento de ciclo e aprendizado',
-            what: 'O <strong>Painel</strong> mostra indicadores de Foco/Execução, ciclo de 12 semanas e um mapa visual da sua consistência. A <strong>Revisão Semanal</strong> faz 5 perguntas (planejei → executei → aprendi → ajustar → próxima intenção) e liga isso ao autoconhecimento aplicado (força usada, sombra observada).',
+            what: 'O <strong>Painel</strong> mostra indicadores de Foco/Execução, ciclo de 12 semanas, Saúde da semana e um mapa visual da sua consistência. A <strong>Revisão Semanal</strong> faz 5 perguntas (planejei → executei → aprendi → ajustar → próxima intenção) e liga isso ao autoconhecimento aplicado (força usada, sombra observada).',
             why: 'Reflexão estruturada transforma experiência em aprendizado. Sem revisão, a gente tende a repetir o mesmo erro com outro nome. Revisões mais frequentes costumam sustentar melhor a execução do que revisões raras, e escrever o que aprendeu ajuda a organizar pensamento e memória.',
             refs: ['Brian Moran — 12 Week Year', 'Robert Bjork — Desirable Difficulties', 'Kolb — Experiential Learning Cycle'],
             how: [
                 'Faça a Revisão Semanal todo domingo ou segunda — não pule, mesmo na semana ruim (especialmente nela).',
                 'Seja específico: "aprendi que reuniões antes das 10h drenam minha energia para deep work" > "preciso focar mais".',
                 'Use a aba "Autoconhecimento aplicado" para fechar o loop identidade → ação → reflexão.',
-                'No Painel, observe tendências, não dias isolados — métricas voláteis enganam.'
+                'No Painel, observe tendências, não dias isolados — métricas voláteis enganam.',
+                'A Saúde da semana resume execução, carga planejada e atrasos para mostrar se a semana está sustentável.'
             ],
             cta: { label: 'Abrir Painel', view: 'painel' }
         },

@@ -16,7 +16,7 @@ const BASE_PROTOCOLS = [
             ],
             references: [
                 { label: 'Dunlosky et al. 2013', url: 'https://journals.sagepub.com/stoken/rbtfl/Z10jaVH/60XQM/full' },
-                { label: 'Roediger & Karpicke 2006', url: 'https://pubmed.ncbi.nlm.nih.gov/16507066/' },
+                { label: 'Roediger & Karpicke 2006', url: 'https://doi.org/10.1111/j.1745-6916.2006.00012.x' },
                 { label: 'Nature Reviews Psychology 2022', url: 'https://www.nature.com/articles/s44159-022-00089-1.pdf' }
             ]
         },
@@ -63,7 +63,7 @@ const BASE_PROTOCOLS = [
                 'Definir prioridade e agenda cedo reduz dispersao ao longo do dia.'
             ],
             references: [
-                { label: 'Lally et al. 2010', url: 'https://pubmed.ncbi.nlm.nih.gov/20364849/' },
+                { label: 'Lally et al. 2010', url: 'https://openresearch.surrey.ac.uk/esploro/outputs/journalArticle/How-are-habits-formed-Modelling-habit/99783513802346' },
                 { label: 'Gollwitzer 1999 (Implementation Intentions)', url: 'https://psycnet.apa.org/record/1999-05116-005' }
             ]
         },
@@ -113,7 +113,7 @@ const BASE_PROTOCOLS = [
             ],
             references: [
                 { label: 'Sleep Education - Healthy Sleep Habits', url: 'https://sleepeducation.org/healthy-sleep/healthy-sleep-habits/' },
-                { label: 'PubMed - Updating Sleep Hygiene Rules', url: 'https://pubmed.ncbi.nlm.nih.gov/38069641/' }
+                { label: 'Sleep hygiene review - ScienceDirect', url: 'https://www.sciencedirect.com/science/article/pii/S1087079224000340' }
             ]
         },
         steps: [
@@ -287,8 +287,8 @@ const BASE_PROTOCOLS = [
                 'Fechar a sessao com mobilidade e observacao reduz treino sem memoria.'
             ],
             references: [
-                { label: 'ACSM quantity and quality of exercise', url: 'https://pubmed.ncbi.nlm.nih.gov/21694556/' },
-                { label: 'ACSM resistance training overview', url: 'https://pubmed.ncbi.nlm.nih.gov/41843416/' }
+                { label: 'ACSM - Physical Activity Guidelines', url: 'https://acsm.org/education-resources/trending-topics-resources/physical-activity-guidelines/' },
+                { label: 'ACSM - Effective Resistance Training Plan', url: 'https://acsm.org/effective-resistance-training-program-infographic/' }
             ]
         },
         steps: [
@@ -333,7 +333,7 @@ const BASE_PROTOCOLS = [
                 'Acompanhamento recorrente melhora senso de controle e previsibilidade.'
             ],
             references: [
-                { label: 'Banco Central do Brasil - Gestao de Financas Pessoais', url: 'https://www.bcb.gov.br/content/cidadaniafinanceira/documentos_cidadania/Cuidando_do_seu_dinheiro_Gestao_de_Financas_Pessoais/caderno_cidadania_financeira.pdf' },
+                { label: 'ANBIMA - Planeje seu orcamento', url: 'https://comoinvestir.anbima.com.br/planeje/orcamento/planeje-seu-orcamento/' },
                 { label: 'OECD - Financial Education', url: 'https://www.oecd.org/finance/financial-education/latestdocuments/' }
             ]
         },

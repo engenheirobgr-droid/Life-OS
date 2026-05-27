@@ -2071,9 +2071,7 @@ renderDeepWorkPanel: function() {
 
         if (summaryEl) {
             const today = new Date();
-            const weekStart = new Date(today);
-            weekStart.setHours(0, 0, 0, 0);
-            weekStart.setDate(today.getDate() - today.getDay());
+            const weekStart = app.getCurrentWeekBounds(today).startOfWeek;
             const sessions = (dw.sessions || []).filter(s => {
                 const dt = new Date(`${s.endedAt || ''}T00:00:00`);
                 return !Number.isNaN(dt.getTime()) && dt >= weekStart;
@@ -2887,13 +2885,13 @@ render: {
                 if (app.hasDayActivity(app.getLocalDateKey(d))) cycleActiveDays++;
             }
 
-            // Active days this calendar week (Sunday → today)
+            // Active days this calendar week (Monday -> today)
             let weekActiveDays = 0;
-            const weekSun = new Date(today);
-            weekSun.setDate(today.getDate() - today.getDay());
-            for (let i = 0; i <= today.getDay(); i++) {
-                const d = new Date(weekSun);
-                d.setDate(weekSun.getDate() + i);
+            const weekStart = app.getCurrentWeekBounds(today).startOfWeek;
+            const elapsedWeekDays = Math.max(1, Math.floor((today.getTime() - weekStart.getTime()) / 86400000) + 1);
+            for (let i = 0; i < elapsedWeekDays; i++) {
+                const d = new Date(weekStart);
+                d.setDate(weekStart.getDate() + i);
                 if (app.hasDayActivity(app.getLocalDateKey(d))) weekActiveDays++;
             }
 
@@ -2915,7 +2913,7 @@ render: {
                 <div class="grid grid-cols-3 gap-4">
                     <div class="text-center space-y-1">
                         <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Esta semana</p>
-                        <p class="font-headline text-3xl italic text-primary">${weekActiveDays}<span class="text-base text-outline">/${today.getDay() + 1}</span></p>
+                        <p class="font-headline text-3xl italic text-primary">${weekActiveDays}<span class="text-base text-outline">/${elapsedWeekDays}</span></p>
                         <p class="text-[10px] text-on-surface-variant">dias com atividade</p>
                     </div>
                     <div class="text-center space-y-1">
@@ -3028,14 +3026,15 @@ render: {
 
             const heatmapEl = document.getElementById('week-days-container');
             if (heatmapEl) {
-                const days = ['D','S','T','Q','Q','S','S'];
+                const days = ['S','T','Q','Q','S','S','D'];
                 const today = new Date();
                 today.setHours(0,0,0,0);
-                const dayOfWeek = today.getDay(); // 0=Dom
+                const dayOfWeek = (today.getDay() + 6) % 7; // 0=Seg
+                const weekStart = app.getCurrentWeekBounds(today).startOfWeek;
                 let html = '';
                 for (let i = 0; i < 7; i++) {
-                    const d = new Date(today);
-                    d.setDate(today.getDate() - dayOfWeek + i);
+                    const d = new Date(weekStart);
+                    d.setDate(weekStart.getDate() + i);
                     const key = app.getLocalDateKey(d);
                     const isToday = i === dayOfWeek;
                     const hasDone = app.hasDayActivity(key);
@@ -3183,11 +3182,9 @@ render: {
                         </div>`;
                     }
 
-                    // Week progress strip (semana fixa: domingo -> sábado)
+                    // Week progress strip (semana fixa: segunda -> domingo)
                     const nowForWeek = new Date();
-                    const weekStart = new Date(nowForWeek);
-                    weekStart.setHours(0, 0, 0, 0);
-                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                    const weekStart = app.getCurrentWeekBounds(nowForWeek).startOfWeek;
                     let weekHtml = '<div class="flex gap-1 mt-3">';
                     for (let i = 0; i < 7; i++) {
                         const d = new Date(weekStart);
