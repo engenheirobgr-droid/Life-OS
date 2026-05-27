@@ -1970,7 +1970,7 @@ renderDeepWorkPanel: function() {
                 { icon: 'schedule', label: 'Execucao no dia', value: executionLabel }
             ];
             contextCardEl.innerHTML = `
-                <div class="space-y-3">
+                <div class="space-y-3 rounded-xl border border-outline-variant/15 bg-surface-container-lowest px-3 py-3">
                     <div class="space-y-2">
                         ${contextRows.map((row) => `
                             <div class="flex items-start gap-2.5">
@@ -1982,7 +1982,7 @@ renderDeepWorkPanel: function() {
                             </div>
                         `).join('')}
                     </div>
-                    <div class="flex flex-wrap gap-2 rounded-xl bg-surface-container-lowest px-3 py-2">
+                    <div class="flex flex-wrap gap-2 rounded-lg bg-surface-container-low px-3 py-2">
                         <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-outline">
                             <span class="material-symbols-outlined notranslate text-[12px]">timer</span>
                             ${Math.max(5, Math.round(Number(dw.targetSec || 1500) / 60))} min
@@ -2040,8 +2040,31 @@ renderDeepWorkPanel: function() {
             const checklistMicro = selectedMicro && Array.isArray(selectedMicro.steps) && selectedMicro.steps.length ? selectedMicro : null;
             const checklistHabit = !checklistMicro && selectedHabit && (this.getHabitResolvedSteps?.(selectedHabit) || []).length ? selectedHabit : null;
             if (!checklistMicro && !checklistHabit) {
-                executionChecklistEl.classList.add('hidden');
-                executionChecklistEl.innerHTML = '';
+                const selectedLabel = selectedMicro?.title || selectedHabit?.title || '';
+                const contextualMessage = hasPendingClosure
+                    ? 'Feche a sessao pendente para liberar o proximo bloco e registrar o resultado.'
+                    : selectedMicro
+                        ? 'Esta acao nao tem checklist. Use o bloco para registrar foco e conclua a acao no fechamento, quando fizer sentido.'
+                        : selectedHabit
+                            ? 'Este habito nao tem checklist hoje. Use o bloco para registrar o tempo e finalize o fechamento ao encerrar.'
+                            : '';
+                if (!contextualMessage) {
+                    executionChecklistEl.classList.add('hidden');
+                    executionChecklistEl.innerHTML = '';
+                } else {
+                    executionChecklistEl.classList.remove('hidden');
+                    executionChecklistEl.innerHTML = `
+                        <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-4 space-y-2">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-[10px] uppercase tracking-widest font-bold text-outline">${hasPendingClosure ? 'Fechamento da sessao' : 'Execucao do bloco'}</p>
+                                    <p class="mt-1 text-sm font-semibold text-on-surface">${this.escapeHtml(selectedLabel || 'Bloco em preparo')}</p>
+                                </div>
+                                <span class="material-symbols-outlined notranslate text-primary text-[18px]">${hasPendingClosure ? 'assignment_turned_in' : 'timer'}</span>
+                            </div>
+                            <p class="text-xs leading-relaxed text-on-surface-variant">${this.escapeHtml(contextualMessage)}</p>
+                        </div>`;
+                }
             } else {
                 executionChecklistEl.classList.remove('hidden');
                 executionChecklistEl.innerHTML = checklistMicro

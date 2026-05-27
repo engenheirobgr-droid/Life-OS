@@ -61,9 +61,9 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4 p-4 md:p-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] xl:items-stretch">
+                    <div class="grid grid-cols-1 gap-4 p-4 md:p-5 xl:grid-cols-[minmax(0,1.16fr)_minmax(320px,0.84fr)] xl:items-stretch">
                         <div class="min-w-0 space-y-4">
-                            <div id="deep-work-clock-visual" class="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-6 text-center shadow-inner min-h-[20rem] md:min-h-[22rem] flex flex-col justify-center">
+                            <div id="deep-work-clock-visual" class="rounded-[28px] border border-primary/20 bg-primary/5 px-4 py-6 text-center shadow-inner min-h-[16rem] md:min-h-[18rem] flex flex-col justify-center">
                                 <p class="text-[10px] uppercase tracking-[0.16em] font-bold text-outline">Tempo restante</p>
                                 <p id="deep-work-timer" class="mt-3 text-6xl md:text-7xl leading-none font-headline italic text-primary tabular-nums">25:00</p>
                                 <p id="deep-work-phase" class="mt-3 text-[11px] uppercase tracking-[0.12em] text-on-surface-variant">Bloco</p>
@@ -118,17 +118,16 @@
                                         <option value="">Selecione um contexto</option>
                                     </select>
                                 </div>
-                            </div>
-
-                            <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-low p-4">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Contexto ativo</p>
-                                        <p class="mt-1 text-[11px] text-on-surface-variant">O bloco atual e os vinculos que ele carrega.</p>
+                                <div class="border-t border-outline-variant/10 pt-4 space-y-2">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Acao selecionada</p>
+                                            <p class="mt-1 text-[11px] text-on-surface-variant">Resumo curto do bloco que vai entrar em foco.</p>
+                                        </div>
+                                        <span class="material-symbols-outlined notranslate text-primary text-lg">dashboard</span>
                                     </div>
-                                    <span class="material-symbols-outlined notranslate text-primary text-lg">dashboard</span>
+                                    <div id="deep-work-context-card"></div>
                                 </div>
-                                <div id="deep-work-context-card" class="mt-3"></div>
                             </div>
                         </aside>
                     </div>
