@@ -8349,18 +8349,11 @@ ensureNotesState: function() {
 
     finishDeepWorkNow: function() {
         this.normalizeDeepWorkState();
-        const state = window.sistemaVidaState;
-        const linkedMicro = state.deepWork?.microId ? (state.entities?.micros || []).find(m => m.id === state.deepWork.microId) : null;
-        const canCompleteLinkedMicro = !!(linkedMicro && linkedMicro.status !== 'done');
         const dw = window.sistemaVidaState.deepWork;
         if (!dw.isRunning) {
             if ((dw.pendingClosure?.microId || dw.pendingClosure?.habitId) && typeof this.openHabitFocusClosureModal === 'function') {
                 this.openHabitFocusClosureModal();
                 return;
-            }
-            if (canCompleteLinkedMicro) {
-                this.completeMicroAction(linkedMicro.id);
-                if (this.showNotification) this.showNotification('Ação concluída.');
             }
             return;
         }
@@ -8374,7 +8367,7 @@ ensureNotesState: function() {
             return;
         }
 
-        // Se está na pausa, o botão "Finalizar" também pode concluir a micro vinculada.
+        // Se está na pausa, o botão "Finalizar" apenas encerra a pausa.
         dw.isRunning = false;
         dw.isPaused = false;
         dw.mode = 'focus';
@@ -8386,22 +8379,6 @@ ensureNotesState: function() {
 
         if ((dw.pendingClosure?.microId || dw.pendingClosure?.habitId) && typeof this.openHabitFocusClosureModal === 'function') {
             this.openHabitFocusClosureModal();
-            return;
-        }
-
-        if (canCompleteLinkedMicro) {
-            this.completeMicroAction(linkedMicro.id);
-            if (this.showNotification) {
-                const doneAt = new Date().toISOString();
-                const payload = {
-                    title: 'Life OS - Foco',
-                    body: 'Sessão encerrada e ação concluída.',
-                    tag: 'lifeos-focus-session-complete',
-                    url: '/?view=foco'
-                };
-                this.showNotification(payload);
-                this.notifySelfPushEvent?.(payload, { dedupeId: `focus_manual_complete_${doneAt}` }).catch(() => {});
-            }
             return;
         }
 

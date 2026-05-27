@@ -1010,7 +1010,54 @@ _setMicroStepState: function(micro, dateStr, stepIndex, isDone) {
         return { doneCount, total: micro.steps.length, allDone };
     },
 
-syncHabitStepStateToLinkedMicro: function(habitOrId, dateStr, stepIndex, isDone) {
+    syncMicroCompletionFromSteps: function(micro, dateStr, stepState = null) {
+        if (!micro || !Array.isArray(micro.steps) || !micro.steps.length) return null;
+        const state = stepState || (() => {
+            const map = (micro.stepLogs && micro.stepLogs[dateStr]) || {};
+            const doneCount = micro.steps.reduce((acc, _, idx) => acc + (map[idx] || map[String(idx)] ? 1 : 0), 0);
+            return { doneCount, total: micro.steps.length, allDone: doneCount === micro.steps.length };
+        })();
+        const doneCount = Math.max(0, Number(state.doneCount) || 0);
+        const allDone = !!state.allDone;
+        const wasDone = micro.status === 'done';
+
+        if (allDone) {
+            micro.status = 'done';
+            micro.completed = true;
+            micro.progress = 100;
+            micro.completedDate = String(dateStr || this.getLocalDateKey());
+            if (!wasDone) {
+                const award = this.awardGamification('micro_complete', {
+                    key: `micro:${micro.id}:complete:${micro.completedDate}`,
+                    date: micro.completedDate,
+                    id: micro.id,
+                    title: micro.title,
+                    dimension: micro.dimension,
+                    planned: this._isPlannedThisWeek ? this._isPlannedThisWeek(micro.id) : false,
+                    inProgress: doneCount > 0
+                });
+                this.showGamificationToast(award);
+                this.recentCompletedMicroId = micro.id;
+                if (award) this.flashMicroCard(micro.id);
+            }
+            this.updateCascadeProgress(micro.id, 'micros');
+            return { doneCount, total: Number(state.total) || micro.steps.length, allDone: true, changed: !wasDone };
+        }
+
+        micro.progress = Number(state.total) > 0 ? Math.round((doneCount / Number(state.total)) * 100) : 0;
+        if (wasDone) {
+            micro.status = doneCount > 0 ? 'in_progress' : 'pending';
+            micro.completed = false;
+            delete micro.completedDate;
+            if (this.recentCompletedMicroId === micro.id) this.recentCompletedMicroId = '';
+            this.updateCascadeProgress(micro.id, 'micros');
+            return { doneCount, total: Number(state.total) || micro.steps.length, allDone: false, changed: true };
+        }
+
+        return { doneCount, total: Number(state.total) || micro.steps.length, allDone: false, changed: false };
+    },
+
+    syncHabitStepStateToLinkedMicro: function(habitOrId, dateStr, stepIndex, isDone) {
         const state = window.sistemaVidaState || {};
         const habit = typeof habitOrId === 'string'
             ? (state.habits || []).find(h => h.id === habitOrId)
@@ -1020,7 +1067,9 @@ syncHabitStepStateToLinkedMicro: function(habitOrId, dateStr, stepIndex, isDone)
         const activeMicro = this.getActiveLinkedMicroForHabit(habit.id, dateStr);
         if (!activeMicro) return null;
         if (!Array.isArray(activeMicro.steps) || stepIndex >= activeMicro.steps.length) return null;
-        return this._setMicroStepState(activeMicro, dateStr, stepIndex, !!isDone);
+        const microStepState = this._setMicroStepState(activeMicro, dateStr, stepIndex, !!isDone);
+        this.syncMicroCompletionFromSteps(activeMicro, dateStr, microStepState);
+        return microStepState;
     },
 
 syncMicroStepStateToLinkedHabit: function(microOrId, dateStr, stepIndex, isDone) {
@@ -1080,7 +1129,7 @@ toggleMicroExecutionStep: function(microId, dateStr, stepIndex) {
         if (!micro.stepLogs[day] || typeof micro.stepLogs[day] !== 'object') micro.stepLogs[day] = {};
         const current = !!(micro.stepLogs[day][stepIndex] || micro.stepLogs[day][String(stepIndex)]);
         const next = !current;
-        this._setMicroStepState(micro, day, stepIndex, next);
+        const microStepState = this._setMicroStepState(micro, day, stepIndex, next);
         const habitId = String(micro.sourceHabitId || '').trim();
         const habit = habitId ? (state.habits || []).find(h => h.id === habitId) : null;
         let wasDone = false;
@@ -1093,6 +1142,7 @@ toggleMicroExecutionStep: function(microId, dateStr, stepIndex) {
         if (habit && syncRes) {
             this.triggerHabitCompletionEffects(habit, day, wasDone, syncRes.allDone);
         }
+        this.syncMicroCompletionFromSteps(micro, day, microStepState);
         this.saveState(true);
         if (this.currentView === 'foco' && this.render?.foco) this.render.foco();
         if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
@@ -1122,6 +1172,7 @@ toggleMicroExecutionAllSteps: function(microId, dateStr, currentlyDone) {
         if (habit && lastSyncRes) {
             this.triggerHabitCompletionEffects(habit, day, wasDone, lastSyncRes.allDone);
         }
+        this.syncMicroCompletionFromSteps(micro, day, lastSyncRes || undefined);
         this.saveState(true);
         if (this.currentView === 'foco' && this.render?.foco) this.render.foco();
         if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
