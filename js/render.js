@@ -1539,13 +1539,6 @@ renderDeepWorkImmersiveOverlay: function() {
         const habitMeta = linkedHabit?.linkedMetaId
             ? (state.entities?.metas || []).find((meta) => meta.id === linkedHabit.linkedMetaId)
             : null;
-        const contextPath = selectedMicro
-            ? (microContext?.path || 'Sem trilha definida')
-            : habitMeta
-                ? `Meta: ${habitMeta.title}`
-                : linkedHabit
-                    ? 'Sessao de habito'
-                    : 'Sessao livre';
         const overlayMicroSchedule = selectedMicro ? (this.getMicroSuggestedSchedule?.(selectedMicro) || null) : null;
         const overlayExecutionLabel = selectedMicro
             ? (overlayMicroSchedule?.startTime ? `${overlayMicroSchedule.startTime} · Definido automaticamente` : 'Sem horario definido')
@@ -1555,24 +1548,19 @@ renderDeepWorkImmersiveOverlay: function() {
         const overlayEstimatedMinutes = selectedMicro
             ? Math.max(1, Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 5400) / 60))
             : Math.max(1, Math.round(Number(dw.targetSec || 5400) / 60));
-        const overlayPurposeLabel = microContext?.meta?.purpose || habitMeta?.purpose || 'Sem proposito definido';
         const overlayDimensionLabel = selectedMicro?.dimension || linkedHabit?.dimension || microContext?.meta?.dimension || habitMeta?.dimension || 'Geral';
-        const overlayTrailRows = [
+        const overlaySummaryRows = [
             { icon: 'task_alt', label: 'Acao', value: selectedMicro?.title || (linkedHabit ? 'Sessao de habito' : 'Sessao livre') },
-            { icon: 'deployed_code', label: 'Entrega', value: microContext?.macro?.title || 'Sem entrega vinculada' },
-            { icon: 'account_tree', label: 'Projeto', value: microContext?.okr?.title || 'Sem projeto vinculado' },
-            { icon: 'flag', label: 'Meta', value: microContext?.meta?.title || habitMeta?.title || 'Sem meta vinculada' },
             { icon: 'monitor_heart', label: 'Area', value: overlayDimensionLabel },
             { icon: 'timer', label: 'Carga total estimada', value: `${overlayEstimatedMinutes} min · Ajustado ${selectedMicro ? 'automaticamente' : 'manualmente'}` },
-            { icon: 'schedule', label: 'Execucao no dia', value: overlayExecutionLabel },
-            { icon: 'auto_awesome', label: 'Proposito (nivel 0)', value: overlayPurposeLabel, emphasis: true }
+            { icon: 'schedule', label: 'Execucao no dia', value: overlayExecutionLabel }
         ];
-        const overlayTrailHtml = overlayTrailRows.map((row) => `
+        const overlaySummaryHtml = overlaySummaryRows.map((row) => `
             <div class="flex items-start gap-2.5">
-                <span class="mt-0.5 material-symbols-outlined notranslate text-[15px] ${row.emphasis ? 'text-primary' : 'text-white/55'}">${row.icon}</span>
+                <span class="mt-0.5 material-symbols-outlined notranslate text-[15px] text-white/55">${row.icon}</span>
                 <div class="min-w-0">
-                    <p class="text-[9px] font-bold uppercase tracking-widest ${row.emphasis ? 'text-primary/80' : 'text-white/45'}">${this.escapeHtml(row.label)}</p>
-                    <p class="mt-0.5 break-words ${row.emphasis ? 'font-headline italic text-sm text-white' : 'text-sm text-white'}">${this.escapeHtml(row.value)}</p>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-white/45">${this.escapeHtml(row.label)}</p>
+                    <p class="mt-0.5 break-words text-sm text-white">${this.escapeHtml(row.value)}</p>
                 </div>
             </div>
         `).join('');
@@ -1672,7 +1660,7 @@ renderDeepWorkImmersiveOverlay: function() {
                                                 <span class="material-symbols-outlined notranslate text-[18px]">${dw.mode === 'break' ? 'stop_circle' : 'flag'}</span>
                                             </button>
                                         </div>
-                                        <div class="mt-3 space-y-2">${overlayTrailHtml}</div>
+                                        <div class="mt-3 space-y-2">${overlaySummaryHtml}</div>
                                     </div>
                                 </aside>
                             </div>
@@ -1942,8 +1930,6 @@ renderDeepWorkPanel: function() {
             const habitMeta = selectedHabit?.linkedMetaId
                 ? (state.entities?.metas || []).find((meta) => meta.id === selectedHabit.linkedMetaId)
                 : null;
-            const contextTitle = selectedMicro ? selectedMicro.title : selectedHabit?.title || 'Nenhum contexto selecionado';
-            const contextKind = selectedMicro ? 'Acao do plano' : selectedHabit ? 'Habito' : 'Sessao livre';
             const contextPath = selectedMicro
                 ? (microContext?.path || 'Sem trilha definida')
                 : habitMeta
@@ -1976,27 +1962,22 @@ renderDeepWorkPanel: function() {
             const estimatedMinutes = selectedMicro
                 ? Math.max(1, Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 1500) / 60))
                 : Math.max(1, Math.round(Number(dw.targetSec || 1500) / 60));
-            const purposeLabel = microContext?.meta?.purpose || habitMeta?.purpose || 'Sem proposito definido';
             const dimensionLabel = selectedMicro?.dimension || selectedHabit?.dimension || microContext?.meta?.dimension || habitMeta?.dimension || 'Geral';
-            const trailRows = [
+            const contextRows = [
                 { icon: 'task_alt', label: 'Acao', value: selectedMicro?.title || (selectedHabit ? 'Sessao de habito' : 'Sessao livre') },
-                { icon: 'deployed_code', label: 'Entrega', value: microContext?.macro?.title || 'Sem entrega vinculada' },
-                { icon: 'account_tree', label: 'Projeto', value: microContext?.okr?.title || 'Sem projeto vinculado' },
-                { icon: 'flag', label: 'Meta', value: microContext?.meta?.title || habitMeta?.title || 'Sem meta vinculada' },
                 { icon: 'monitor_heart', label: 'Area', value: dimensionLabel },
                 { icon: 'timer', label: 'Carga total estimada', value: `${estimatedMinutes} min · Ajustado ${selectedMicro ? 'automaticamente' : 'manualmente'}` },
-                { icon: 'schedule', label: 'Execucao no dia', value: executionLabel },
-                { icon: 'auto_awesome', label: 'Proposito (nivel 0)', value: purposeLabel, emphasis: true }
+                { icon: 'schedule', label: 'Execucao no dia', value: executionLabel }
             ];
             contextCardEl.innerHTML = `
                 <div class="space-y-3">
                     <div class="space-y-2">
-                        ${trailRows.map((row) => `
+                        ${contextRows.map((row) => `
                             <div class="flex items-start gap-2.5">
-                                <span class="mt-0.5 material-symbols-outlined notranslate text-[15px] ${row.emphasis ? 'text-primary' : 'text-outline'}">${row.icon}</span>
+                                <span class="mt-0.5 material-symbols-outlined notranslate text-[15px] text-outline">${row.icon}</span>
                                 <div class="min-w-0">
-                                    <p class="text-[9px] uppercase tracking-widest font-bold ${row.emphasis ? 'text-primary/80' : 'text-outline'}">${this.escapeHtml(row.label)}</p>
-                                    <p class="mt-0.5 break-words ${row.emphasis ? 'font-headline italic text-sm text-on-surface' : 'text-sm text-on-surface'}">${this.escapeHtml(row.value)}</p>
+                                    <p class="text-[9px] uppercase tracking-widest font-bold text-outline">${this.escapeHtml(row.label)}</p>
+                                    <p class="mt-0.5 break-words text-sm text-on-surface">${this.escapeHtml(row.value)}</p>
                                 </div>
                             </div>
                         `).join('')}
@@ -2768,8 +2749,6 @@ render: {
                     const orphanBadge = !focusEligibility.ok
                         ? '<span title="Ação sem Entrega associada (Não Alinhada)" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-widest border border-amber-500/20"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Não Alinhado</span>'
                         : '';
-                    const trailId = `foco-trail-${idx}`;
-                    const toggleTrail = `const p=document.getElementById('${trailId}'); if(!p) return; p.classList.toggle('hidden');`;
                     return `
                     <div class="relative overflow-hidden p-5 rounded-2xl border ${cardStateClass} hover:shadow-md transition-all group min-w-0">
                         <div class="absolute left-0 top-0 bottom-0 w-1 ${accentClass}"></div>
@@ -2804,20 +2783,11 @@ render: {
                                 <span class="text-[10px] font-bold uppercase rounded-full px-2 py-0.5 ${statusBadge}">${statusText}</span>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                <button type="button" onclick="${toggleTrail}" class="px-3 py-1.5 rounded-lg border border-outline-variant/20 text-outline text-[10px] font-bold uppercase tracking-widest hover:text-on-surface hover:bg-surface-container-high transition-colors">Trilha</button>
                                 ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg ${focusEligibility.ok ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15'} text-[10px] font-bold uppercase tracking-widest">${actionLabel}</button>` : ''}
                                 ${m.status === 'done' ?
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">Reabrir</button>` :
                                     `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
                                 }
-                            </div>
-                        </div>
-                        <div id="${trailId}" class="hidden mt-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-3 space-y-2">
-                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Trilha</p>
-                            <div class="text-xs text-on-surface-variant space-y-1">
-                                <p><span class="font-semibold text-on-surface">Meta:</span> ${app.escapeHtml(ctx.meta?.title || '-')}</p>
-                                <p><span class="font-semibold text-on-surface">Projeto:</span> ${app.escapeHtml(ctx.okr?.title || '-')}</p>
-                                <p><span class="font-semibold text-on-surface">Entrega:</span> ${app.escapeHtml(ctx.macro?.title || '-')}</p>
                             </div>
                         </div>
                     </div>

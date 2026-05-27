@@ -345,6 +345,7 @@ loadState: async function() {
         let cloudLoadFailed = false;
         let localOnlyLoad = false;
         let forceCloudLoad = false;
+        let activeUserId = this.getActiveUserId();
         try {
             try {
                 await this.withTimeout(this.getAuthReady({ allowAnonymous: false }), 8000, 'auth_ready');
@@ -358,7 +359,7 @@ loadState: async function() {
                     throw authError;
                 }
             }
-            const activeUserId = this.getActiveUserId();
+            activeUserId = this.getActiveUserId();
             forceCloudLoad = !localOnlyLoad && this.isRealAccount(auth.currentUser) && this.shouldForceCloudLoadForUser(activeUserId);
             const rawLocal = this.localGet('lifeos_state_backup');
             const rawCore = this.localGet('lifeos_state_backup_core');
@@ -398,8 +399,18 @@ loadState: async function() {
         const localHasPending = !!(localData && localData._pendingLocalChanges);
         const localTs = Number(localData?._lastUpdatedAt || 0);
         const cloudTs = Number(cloudData?._lastUpdatedAt || 0);
+        const localResetTs = Number(localData?._accountResetAt || 0);
+        const cloudResetTs = Number(cloudData?._accountResetAt || 0);
         const forceOnboardingReset = this.isForceOnboardingAfterReset?.() === true;
-        const shouldKeepLocal = !!localData && (
+        const localStaleAgainstCloudReset = !!(cloudData && cloudResetTs > 0 && localResetTs < cloudResetTs);
+        const cloudHasCompletedOnboarding = !!(cloudData && (
+            cloudData.onboardingComplete ||
+            this.hasOnboardingCompletionEvidence?.(cloudData) ||
+            this.hasMeaningfulSavedData?.(cloudData)
+        ));
+        const localLooksIncomplete = !!(localData && !localData.onboardingComplete && !this.hasOnboardingCompletionEvidence?.(localData));
+        const cloudShouldOverrideIncompleteLocal = cloudHasCompletedOnboarding && localLooksIncomplete;
+        const shouldKeepLocal = !!localData && !localStaleAgainstCloudReset && !cloudShouldOverrideIncompleteLocal && (
             !cloudData ||
             (localHasPending && localTs >= cloudTs) ||
             forceOnboardingReset
@@ -410,7 +421,9 @@ loadState: async function() {
         const cloudTsStr = cloudData ? new Date(Number(cloudData._lastUpdatedAt||0)).toISOString() : 'n/a';
         const localTsStr = localData ? new Date(Number(localData._lastUpdatedAt||0)).toISOString() : 'n/a';
         console.log('[SYNC] cloudTs=' + cloudTsStr + '  localTs=' + localTsStr + '  localHasPending=' + localHasPending + '  shouldKeepLocal=' + shouldKeepLocal);
-        if (shouldKeepLocal && cloudData && localHasPending) console.log('[SYNC] Keeping local pending state because it is newer/equal to cloud. Will retry cloud sync.');
+        if (localStaleAgainstCloudReset) console.warn('[SYNC] Ignoring stale local backup because cloud reset is newer.');
+        else if (cloudShouldOverrideIncompleteLocal) console.warn('[SYNC] Using cloud onboarding because the local backup is incomplete.');
+        else if (shouldKeepLocal && cloudData && localHasPending) console.log('[SYNC] Keeping local pending state because it is newer/equal to cloud. Will retry cloud sync.');
         else if (shouldKeepLocal && !cloudData) console.warn('[SYNC] Firestore unavailable — using local backup.');
         else if (localHasPending && cloudData) console.warn('[SYNC] Local pending state is older than cloud — applying cloud source of truth.');
         else if (localOnlyLoad) console.log('[SYNC] Using local guest state.');
@@ -418,6 +431,11 @@ loadState: async function() {
         else console.log('[SYNC] Using cloud state (source of truth).');
 
         if (preferred) window.sistemaVidaState = this.mergeDeep(window.sistemaVidaState, preferred);
+        if (localStaleAgainstCloudReset) {
+            this.localRemove('lifeos_state_backup', activeUserId);
+            this.localRemove('lifeos_state_backup_core', activeUserId);
+            this.localRemove('lifeos_onboarding_complete', activeUserId);
+        }
         if (forceOnboardingReset) this.applyForcedOnboardingResetState?.();
         if (forceCloudLoad && cloudData) {
             if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
@@ -614,6 +632,7 @@ factoryReset: async function() {
       );
       const previousSocialState = window.sistemaVidaState?.profile?.social || {};
       const previousInviteCode = String(previousSocialState?.invites?.lastCode || '').trim().toUpperCase();
+      const resetMarkerTs = this.getSafeMonotonicTs ? this.getSafeMonotonicTs() : Date.now();
     
       // ── Estado base virgem ──────────────────────────────────────────────────
       const baseState = {
@@ -810,6 +829,7 @@ factoryReset: async function() {
       window.sistemaVidaState = useMockup
         ? mergeDeep(baseState, mockupOverrides)
         : baseState;
+      window.sistemaVidaState._accountResetAt = resetMarkerTs;
       try { this.setForceOnboardingAfterReset?.(!useMockup); } catch (_) {}
       try { this.localSet('lifeos_onboarding_complete', useMockup ? '1' : '0'); } catch (_) {}
     
@@ -854,8 +874,8 @@ factoryReset: async function() {
         await this.getAuthReady({ allowAnonymous: false });
         const resetUserId = this.getActiveUserId();
         try {
-          window.sistemaVidaState._pendingLocalChanges = !useMockup;
-          window.sistemaVidaState._lastUpdatedAt = this.getSafeMonotonicTs ? this.getSafeMonotonicTs() : Date.now();
+          window.sistemaVidaState._pendingLocalChanges = false;
+          window.sistemaVidaState._lastUpdatedAt = resetMarkerTs;
           this.persistLocalMirror(resetUserId);
         } catch (_) {}
         const isCloudUser = !!(resetUserId && resetUserId !== 'guest' && !auth.currentUser?.isAnonymous);
@@ -891,7 +911,9 @@ factoryReset: async function() {
         const newCloudState = JSON.parse(JSON.stringify(window.sistemaVidaState));
         delete newCloudState.profile?.avatarUrl;
         delete newCloudState.profile?.odysseyImages;
-        newCloudState._lastUpdatedAt = Date.now();
+        newCloudState._accountResetAt = resetMarkerTs;
+        newCloudState._lastUpdatedAt = resetMarkerTs;
+        newCloudState._pendingLocalChanges = false;
         await this.withTimeout(setDoc(stateRef, newCloudState), 10000, 'firestore_reset');
         cloudResetOk = true;
         // NÃO usa localStorage.clear() — bloqueado em ambientes sandbox/iframe

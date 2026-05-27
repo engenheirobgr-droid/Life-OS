@@ -547,35 +547,38 @@ export function attachHabitFocusModule(app) {
                 });
             }
 
-            const linkedEntity = createdMicro
-                ? { entityType: 'micros', entityId: createdMicro.id }
-                : (micro
-                    ? { entityType: 'micros', entityId: micro.id }
-                    : (habit ? { entityType: 'habits', entityId: habit.id } : null));
-            const noteBody = buildFocusClosureBody({
-                habit,
-                protocol,
-                micro: createdMicro || micro,
-                focusSec: Number(closure.focusSec || 0),
-                delivery: createdMicro?.title || '',
-                evidence,
-                gaps,
-                nextStep
-            });
+            const shouldCreateClosureNote = !!(createdMicro || evidence || gaps || nextStep);
+            if (shouldCreateClosureNote) {
+                const linkedEntity = createdMicro
+                    ? { entityType: 'micros', entityId: createdMicro.id }
+                    : (micro
+                        ? { entityType: 'micros', entityId: micro.id }
+                        : (habit ? { entityType: 'habits', entityId: habit.id } : null));
+                const noteBody = buildFocusClosureBody({
+                    habit,
+                    protocol,
+                    micro: createdMicro || micro,
+                    focusSec: Number(closure.focusSec || 0),
+                    delivery: createdMicro?.title || '',
+                    evidence,
+                    gaps,
+                    nextStep
+                });
 
-            state.profile.notes.unshift({
-                id: `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
-                title: `Sessao de foco - ${(createdMicro || micro || habit)?.title || 'Registro'}`,
-                body: noteBody,
-                url: '',
-                tags: ['foco', habit ? 'habito' : 'micro', protocol?.title ? protocol.title.toLowerCase() : ''].filter(Boolean),
-                linkedTo: linkedEntity,
-                sourceType: 'habit_focus_session',
-                sourceHabitId: habit?.id || '',
-                sourceMicroId: (createdMicro?.id || micro?.id || ''),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            });
+                state.profile.notes.unshift({
+                    id: `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
+                    title: `Sessao de foco - ${(createdMicro || micro || habit)?.title || 'Registro'}`,
+                    body: noteBody,
+                    url: '',
+                    tags: ['foco', habit ? 'habito' : 'micro', protocol?.title ? protocol.title.toLowerCase() : ''].filter(Boolean),
+                    linkedTo: linkedEntity,
+                    sourceType: 'habit_focus_session',
+                    sourceHabitId: habit?.id || '',
+                    sourceMicroId: (createdMicro?.id || micro?.id || ''),
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                });
+            }
 
             state.deepWork.pendingClosure = null;
             this.closeHabitFocusClosureModal();
