@@ -1067,7 +1067,7 @@ renderTimeline: function() {
             if (!entity.id) return;
             if (renderedIds[tipo] && renderedIds[tipo].has(entity.id)) return;
             let fallbackDays = 7;
-            if (tipo === 'okrs') fallbackDays = 92;
+            if (tipo === 'okrs') fallbackDays = 84;
             else if (tipo === 'macros') fallbackDays = 31;
             else if (tipo === 'micros') fallbackDays = 7;
             else if (tipo === 'metas') fallbackDays = Math.max(180, Math.round(this.getMetaHorizonYears(entity) * 365));
@@ -2527,7 +2527,7 @@ render: {
 
             if (cycleBar) cycleBar.style.width = cyclePercent + '%';
             if (cycleVal) cycleVal.textContent = cyclePercent + '%';
-            if (cycleWeekText) cycleWeekText.textContent = `Semana ${diffWeeks} de 12 - ${elapsedCycleDays}/84 dias`;
+            if (cycleWeekText) cycleWeekText.textContent = `Semana ${diffWeeks} de 12 - dia ${elapsedCycleDays} de 84`;
 
             // Dynamic Projeto Rendering
             const okrList = document.getElementById('painel-okr-list');
@@ -4566,4 +4566,5 @@ render: {
     },
     });
 }
+
 

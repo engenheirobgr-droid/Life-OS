@@ -112,8 +112,8 @@ const BASE_PROTOCOLS = [
                 'Ritual noturno consistente melhora regularidade de sono.'
             ],
             references: [
-                { label: 'AASM Sleep Hygiene Guidance', url: 'https://sleepeducation.org/healthy-sleep/healthy-sleep-habits/' },
-                { label: 'CDC Sleep Hygiene', url: 'https://www.cdc.gov/sleep/about_sleep/sleep_hygiene.html' }
+                { label: 'Sleep Education - Healthy Sleep Habits', url: 'https://sleepeducation.org/healthy-sleep/healthy-sleep-habits/' },
+                { label: 'PubMed - Updating Sleep Hygiene Rules', url: 'https://pubmed.ncbi.nlm.nih.gov/38069641/' }
             ]
         },
         steps: [
@@ -333,8 +333,8 @@ const BASE_PROTOCOLS = [
                 'Acompanhamento recorrente melhora senso de controle e previsibilidade.'
             ],
             references: [
-                { label: 'Consumer.gov - Making a Budget', url: 'https://consumer.gov/your-money/making-budget' },
-                { label: 'CFPB - Assess your spending', url: 'https://www.consumerfinance.gov/owning-a-home/prepare/assess-your-spending/' }
+                { label: 'Banco Central do Brasil - Gestao de Financas Pessoais', url: 'https://www.bcb.gov.br/content/cidadaniafinanceira/documentos_cidadania/Cuidando_do_seu_dinheiro_Gestao_de_Financas_Pessoais/caderno_cidadania_financeira.pdf' },
+                { label: 'OECD - Financial Education', url: 'https://www.oecd.org/finance/financial-education/latestdocuments/' }
             ]
         },
         steps: [

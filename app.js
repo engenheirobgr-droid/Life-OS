@@ -22,10 +22,10 @@ import { attachCadence } from './js/cadence.js?v=20260523-purpose-legacy-cleanup
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
 import { attachIdentity } from './js/identity.js?v=20260526-rollback-align-v1';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
-import { attachProtocolsModule } from './js/protocols.js?v=20260519-execution-capacity-v9';
+import { attachProtocolsModule } from './js/protocols.js?v=20260527-packages12-v1';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260526-rollback-align-v1';
 import { attachStateModule } from './js/state.js?v=20260526-rollback-align-v1';
-import { attachRenderModule } from './js/render.js?v=20260526-rollback-align-v1';
+import { attachRenderModule } from './js/render.js?v=20260527-packages12-v1';
 import { attachPlanningModule } from './js/planning.js?v=20260526-rollback-align-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260527-onboarding-mobile-title-v4',
+    appBuildVersion: '20260527-packages12-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -2581,7 +2581,7 @@ _getAudioContext: function() {
         }
     },
 
-    showToast: function(message, type = 'success') {
+    showToast: function(messageOrPayload, type = 'success', options = {}) {
         let container = document.getElementById('global-toast-container');
         if (!container) {
             container = document.createElement('div');
@@ -2589,19 +2589,35 @@ _getAudioContext: function() {
             container.className = 'fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none';
             document.body.appendChild(container);
         }
-        
+        const payload = messageOrPayload && typeof messageOrPayload === 'object' && !Array.isArray(messageOrPayload)
+            ? messageOrPayload
+            : { message: String(messageOrPayload || '') };
+        let title = String(payload.title || '').trim();
+        const message = String(payload.body || payload.message || '').trim();
+        const iconOverride = String(options.icon || payload.icon || '').trim();
+        const isGamificationToast = /\bXP\b|Conquista|nivel|nível|desbloqueado|Gamificacao|Gamificação/i.test(`${title} ${message}`);
+        if (!title && isGamificationToast) title = 'Gamificacao';
+        const duration = Math.max(1800, Number(options.durationMs || payload.durationMs) || (isGamificationToast ? 5600 : 3500));
+
         const toast = document.createElement('div');
         const isSuccess = type === 'success';
         const isWarning = type === 'warning';
-        const icon = isSuccess ? 'check_circle' : (isWarning ? 'info' : 'error');
-        const bgColor = isSuccess ? 'bg-surface-container-highest' : (isWarning ? 'bg-surface-container-highest' : 'bg-error');
+        const icon = iconOverride || (isSuccess ? 'check_circle' : (isWarning ? 'info' : 'error'));
+        const bgColor = isGamificationToast
+            ? 'bg-surface-container-low'
+            : (isSuccess ? 'bg-surface-container-lowest' : (isWarning ? 'bg-surface-container-lowest' : 'bg-error'));
         const textColor = isSuccess ? 'text-primary' : (isWarning ? 'text-amber-600' : 'text-white');
-        const ringColor = isSuccess ? 'ring-primary/20' : (isWarning ? 'ring-amber-400/20' : 'ring-error/20');
+        const ringColor = isSuccess ? 'ring-primary/15' : (isWarning ? 'ring-amber-400/20' : 'ring-error/20');
+        const borderColor = isGamificationToast ? 'border-primary/20' : (isSuccess ? 'border-primary/12' : 'border-outline-variant/10');
+        const maxWidthClass = options.maxWidthClass || payload.maxWidthClass || (isGamificationToast ? 'max-w-md' : 'max-w-sm');
         
-        toast.className = `flex max-w-sm items-center gap-3 px-5 py-3 rounded-2xl shadow-xl transform transition-all duration-500 translate-y-8 opacity-0 ${bgColor} border border-outline-variant/10 ring-4 ${ringColor}`;
+        toast.className = `pointer-events-auto flex ${maxWidthClass} items-start gap-3 px-5 py-3 rounded-2xl shadow-xl transform transition-all duration-500 translate-y-8 opacity-0 ${bgColor} border ${borderColor} ring-4 ${ringColor}`;
         toast.innerHTML = `
-            <span class="material-symbols-outlined notranslate ${textColor} text-xl">${icon}</span>
-            <p class="text-sm font-semibold ${isSuccess || isWarning ? 'text-on-surface' : 'text-white'}">${message}</p>
+            <span class="material-symbols-outlined notranslate ${textColor} text-xl mt-0.5 shrink-0">${icon}</span>
+            <div class="min-w-0 space-y-0.5">
+                ${title ? `<p class="text-[11px] font-bold uppercase tracking-[0.18em] ${isSuccess || isWarning ? 'text-primary' : 'text-white/80'}">${title}</p>` : ''}
+                <p class="text-sm leading-relaxed font-semibold ${isSuccess || isWarning ? 'text-on-surface' : 'text-white'}">${message}</p>
+            </div>
         `;
         
         container.appendChild(toast);
@@ -2615,7 +2631,7 @@ _getAudioContext: function() {
         setTimeout(() => {
             toast.classList.add('translate-y-4', 'opacity-0');
             setTimeout(() => toast.remove(), 500);
-        }, 3500);
+        }, duration);
     },
     clearBlockingMessage: function() {
         const el = document.getElementById('crud-blocking-message');
@@ -3021,8 +3037,9 @@ renderProfileChrome: function() {
         const today = new Date();
         const cycleStart = new Date((state.cycleStartDate || this.getLocalDateKey()) + 'T00:00:00');
         const elapsedDays = Math.max(0, Math.floor((today - cycleStart) / 864e5));
-        const cyclePct = Math.min(100, Math.round((elapsedDays / 84) * 100));
-        const weekNumber = Math.max(1, Math.min(12, Math.ceil(Math.max(1, elapsedDays + 1) / 7)));
+        const cycleDay = Math.max(1, Math.min(84, elapsedDays + 1));
+        const cyclePct = Math.min(100, Math.round((cycleDay / 84) * 100));
+        const weekNumber = Math.max(1, Math.min(12, Math.ceil(cycleDay / 7)));
         const okrRows = activeOkrs.length
             ? activeOkrs.map(okr => {
                 const macros = (state.entities?.macros || []).filter(m => m.okrId === okr.id);
@@ -3063,6 +3080,8 @@ renderProfileChrome: function() {
                 </div>
                 ${okrRows}
             </div>`;
+        const cycleSummaryEl = panel.querySelector('.space-y-2 p');
+        if (cycleSummaryEl) cycleSummaryEl.textContent = `Semana ${weekNumber} de 12 · dia ${cycleDay} de 84`;
     },
 
     // ── Renderização da aba Semanal ─────────────────────────────────────────────
@@ -3212,6 +3231,11 @@ renderProfileChrome: function() {
     switchView: async function(viewName, options = {}) {
         if (!viewName) return;
         this.normalizeDeepWorkState?.();
+        if (!options._fromSocialRedirect && viewName === 'social' && typeof this.isSocialFeatureEnabled === 'function' && !this.isSocialFeatureEnabled()) {
+            this.profileActiveTab = 'perfil';
+            this.showToast('A Area Social esta oculta neste perfil. Ative em Perfil quando quiser.', 'warning');
+            return this.switchView('perfil', { ...options, _fromSocialRedirect: true });
+        }
         if (!options.force && viewName !== 'foco' && window.sistemaVidaState?.deepWork?.isRunning) {
             this.showToast('A sessao de foco esta ativa. Finalize ou reinicie o bloco antes de sair da tela imersiva.', 'error');
             this.renderDeepWorkImmersiveOverlay?.();
@@ -3274,6 +3298,9 @@ renderProfileChrome: function() {
     // Alias para compatibilidade com as chamadas do index.html
     navigate: function(viewName) {
         if (viewName === 'perfil') this.profileActiveTab = 'perfil';
+        if (viewName === 'social' && typeof this.isSocialFeatureEnabled === 'function' && !this.isSocialFeatureEnabled()) {
+            this.profileActiveTab = 'perfil';
+        }
         return this.switchView(viewName);
     },
 
@@ -4539,7 +4566,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
             const startRef = String(inicioDate || this.getLocalDateKey());
             const days = this.getDayDiffBetween(startRef, prazo);
             if (days === null || days < 0) return { ok: false, message: 'Projeto precisa de início e prazo válidos. O prazo não pode vir antes do início.' };
-            if (days > 92) return { ok: false, message: 'Projeto deve ficar dentro de até 3 meses (máx. 92 dias). Se for maior, transforme em Meta ou divida em Projetos menores.' };
+            if (days > 84) return { ok: false, message: 'Projeto deve caber no ciclo de 12 semanas (max. 84 dias). Se passar disso, transforme em Meta ou divida em Projetos menores.' };
             return { ok: true };
         }
 
@@ -6595,7 +6622,9 @@ ensureNotesState: function() {
         const barEl = document.getElementById('weekly-health-bar');
         const labelEl = document.getElementById('weekly-health-label');
         const copyEl = document.getElementById('weekly-health-copy');
+        const headingEl = document.querySelector('#weekly-health-card .font-label');
         if (!scoreEl && !barEl && !labelEl && !copyEl) return;
+        if (headingEl) headingEl.textContent = 'Executabilidade da semana';
 
         const avg = this._computeWeeklyCompletionAverage(4);
         const loadRatio = avg > 0 && plannedCount > 0 ? plannedCount / avg : 1;
@@ -6625,7 +6654,19 @@ ensureNotesState: function() {
             }
         }
 
-        if (scoreEl) scoreEl.textContent = plannedCount > 0 ? `${score}` : '--';
+        if (plannedCount > 0) {
+            copy = `${doneCount}/${plannedCount} acoes concluidas. Baseado em execucao, carga planejada e atrasos.`;
+            if (score >= 75) label = 'Saudavel';
+            else if (score >= 45) label = 'Pede atencao';
+        } else {
+            copy = 'Planeje acoes para medir a executabilidade real da semana.';
+        }
+
+        if (scoreEl) {
+            scoreEl.innerHTML = plannedCount > 0
+                ? `${score}<span class="ml-1 text-base font-bold not-italic text-outline">/100</span>`
+                : '--';
+        }
         if (labelEl) labelEl.textContent = label;
         if (copyEl) copyEl.textContent = copy;
         if (barEl) {
@@ -8640,6 +8681,7 @@ onAuthStateChanged(auth, (user) => {
 document.addEventListener("DOMContentLoaded", () => {
     app.init();
 });
+
 
 
 
