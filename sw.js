@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v282';
+const CACHE_NAME = 'sistema-vida-v283';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260527-onboarding-mobile-title-v2',
+    './app.js?v=20260527-onboarding-mobile-title-v3',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
     './js/notifications.js?v=20260518-exec-flow-v1',
@@ -23,7 +23,7 @@ const ASSETS_TO_CACHE = [
     './views/perfil.html?v=20260526-rollback-align-v1',
     './views/painel.html?v=20260526-rollback-align-v1',
     './views/foco.html?v=20260526-rollback-align-v1',
-    './views/onboarding.html?v=20260527-onboarding-mobile-title-v2',
+    './views/onboarding.html?v=20260527-onboarding-mobile-title-v3',
     './views/social.html?v=20260526-rollback-align-v1'
 ];
 
