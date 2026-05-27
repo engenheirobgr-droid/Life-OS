@@ -1812,9 +1812,17 @@ renderDeepWorkPanel: function() {
         const selectedMicro = selectedMicroId ? (state.entities.micros || []).find(m => m.id === selectedMicroId) : null;
         const selectedHabit = selectedHabitId ? (state.habits || []).find(h => h.id === selectedHabitId) : null;
         const canCompleteSelectedMicro = !!(selectedMicro && selectedMicro.status !== 'done');
+        const latestFocusSession = Array.isArray(dw.sessions)
+            ? dw.sessions.find((session) => session && session.mode === 'focus' && String(session.microId || '').trim())
+            : null;
         const hasPendingClosure = !!(
             (dw.pendingClosure?.microId && selectedMicro && dw.pendingClosure.microId === selectedMicro.id)
             || (dw.pendingClosure?.habitId && selectedHabit && dw.pendingClosure.habitId === selectedHabit.id)
+        );
+        const shouldShowQuickCompleteForSelectedMicro = !!(
+            selectedMicro
+            && latestFocusSession
+            && String(latestFocusSession.microId || '') === selectedMicro.id
         );
         let statusText = 'Pronto para iniciar';
         let stepText = '';
@@ -2008,7 +2016,13 @@ renderDeepWorkPanel: function() {
         }
 
         if (contextActionsEl) {
-            const shouldShowQuickComplete = !!(hasSelectedMicro && canCompleteSelectedMicro && (dw.mode === 'break' || !dw.isRunning));
+            const shouldShowQuickComplete = !!(
+                hasSelectedMicro
+                && canCompleteSelectedMicro
+                && !hasPendingClosure
+                && !dw.isRunning
+                && shouldShowQuickCompleteForSelectedMicro
+            );
             const shouldShowClosure = !!(hasPendingClosure && typeof window.app.openHabitFocusClosureModal === 'function');
             contextActionsEl.classList.toggle('hidden', !(shouldShowQuickComplete || shouldShowClosure));
             if (shouldShowClosure && !selectedMicro && selectedHabit) {
