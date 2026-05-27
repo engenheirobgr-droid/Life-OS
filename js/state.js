@@ -403,15 +403,13 @@ loadState: async function() {
         const cloudResetTs = Number(cloudData?._accountResetAt || 0);
         const forceOnboardingReset = this.isForceOnboardingAfterReset?.() === true;
         const localStaleAgainstCloudReset = !!(cloudData && cloudResetTs > 0 && localResetTs < cloudResetTs);
-        const cloudHasCompletedOnboarding = !!(cloudData && (
-            cloudData.onboardingComplete ||
-            this.hasOnboardingCompletionEvidence?.(cloudData) ||
-            this.hasMeaningfulSavedData?.(cloudData)
-        ));
-        const localLooksIncomplete = !!(localData && !localData.onboardingComplete && !this.hasOnboardingCompletionEvidence?.(localData));
+        const cloudHasCompletedOnboarding = !!(cloudData && this.isOnboardingSatisfied?.(cloudData));
+        const localLooksIncomplete = !!(localData && !this.isOnboardingSatisfied?.(localData));
+        const localHasMeaningfulProgress = !!(localData && this.isOnboardingSatisfied?.(localData));
         const cloudShouldOverrideIncompleteLocal = cloudHasCompletedOnboarding && localLooksIncomplete;
         const shouldKeepLocal = !!localData && !localStaleAgainstCloudReset && !cloudShouldOverrideIncompleteLocal && (
             !cloudData ||
+            (localHasMeaningfulProgress && !cloudHasCompletedOnboarding) ||
             (localHasPending && localTs >= cloudTs) ||
             forceOnboardingReset
         );

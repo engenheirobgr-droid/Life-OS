@@ -351,7 +351,7 @@ const app = {
             this.localSet('lifeos_state_backup', JSON.stringify(this.getPersistableState('full')), userId);
         } catch (_) {}
         try {
-            const completed = !!window.sistemaVidaState?.onboardingComplete;
+            const completed = !!this.isOnboardingSatisfied?.(window.sistemaVidaState);
             this.localSet('lifeos_onboarding_complete', completed ? '1' : '0', userId);
         } catch (_) {}
     },
@@ -368,6 +368,10 @@ const app = {
     applyForcedOnboardingResetState: function() {
         if (!this.isForceOnboardingAfterReset()) return false;
         if (!window.sistemaVidaState) return false;
+        if (this.isOnboardingSatisfied?.(window.sistemaVidaState)) {
+            this.setForceOnboardingAfterReset?.(false);
+            return false;
+        }
         if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
         window.sistemaVidaState.onboardingComplete = false;
         try { this.localSet('lifeos_onboarding_complete', '0'); } catch (_) {}
@@ -470,12 +474,19 @@ const app = {
             hasObjectItems(state?.weekPlans) ||
             hasObjectItems(state?.reviews);
     },
+    isOnboardingSatisfied: function(state = window.sistemaVidaState) {
+        return !!(
+            state?.onboardingComplete ||
+            this.hasOnboardingCompletionEvidence?.(state) ||
+            this.hasMeaningfulSavedData?.(state)
+        );
+    },
     reconcileOnboardingCompletion: function() {
         if (!window.sistemaVidaState || window.sistemaVidaState.onboardingComplete) return;
-        if (this.isForceOnboardingAfterReset?.()) return;
-        const hasCompletionEvidence = this.hasOnboardingCompletionEvidence?.(window.sistemaVidaState);
-        const hasSavedData = this.hasMeaningfulSavedData?.(window.sistemaVidaState);
-        if (!hasCompletionEvidence && !hasSavedData) return;
+        if (!this.isOnboardingSatisfied?.(window.sistemaVidaState)) return;
+        if (this.isForceOnboardingAfterReset?.()) {
+            this.setForceOnboardingAfterReset?.(false);
+        }
 
         window.sistemaVidaState.onboardingComplete = true;
         this._stateSchemaNeedsSave = true;
@@ -487,7 +498,7 @@ const app = {
         const currentView = this.currentView || '';
         if (!currentView) return;
         const deepWorkBusy = !!(state.deepWork?.isRunning || state.deepWork?.pendingClosure?.microId || state.deepWork?.pendingClosure?.habitId);
-        if (!!state.onboardingComplete) {
+        if (this.isOnboardingSatisfied?.(state)) {
             if (currentView === 'onboarding') this.switchView('hoje').catch(() => {});
             return;
         }
@@ -3239,7 +3250,7 @@ renderProfileChrome: function() {
 
         // Always navigate — even if something above threw
         this.applyForcedOnboardingResetState();
-        if (!window.sistemaVidaState.onboardingComplete) {
+        if (!this.isOnboardingSatisfied?.(window.sistemaVidaState)) {
             this.switchView('onboarding');
         } else {
             if (this.shouldShowSplashOnOpen()) {
