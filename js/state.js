@@ -512,6 +512,7 @@ loadState: async function() {
         this.normalizeDailyLogsState();
         this.normalizeDeepWorkState();
         this.renderSidebarValues();
+        this.syncOnboardingRouteFromState?.();
         if (shouldSeedCloudAfterLoad) {
             window.sistemaVidaState._pendingLocalChanges = true;
         }

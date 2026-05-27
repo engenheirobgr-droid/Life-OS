@@ -465,6 +465,19 @@ const app = {
         try { this.localSet('lifeos_onboarding_complete', '1'); } catch (_) {}
         console.log('[Onboarding] Dados existentes detectados; onboarding marcado como concluído.');
     },
+    syncOnboardingRouteFromState: function() {
+        const state = window.sistemaVidaState || {};
+        const currentView = this.currentView || '';
+        if (!currentView) return;
+        const deepWorkBusy = !!(state.deepWork?.isRunning || state.deepWork?.pendingClosure?.microId || state.deepWork?.pendingClosure?.habitId);
+        if (!!state.onboardingComplete) {
+            if (currentView === 'onboarding') this.switchView('hoje').catch(() => {});
+            return;
+        }
+        if (currentView !== 'onboarding' && !deepWorkBusy) {
+            this.switchView('onboarding').catch(() => {});
+        }
+    },
     reloadCloudStateForCurrentUser: async function(options = {}) {
         if (!this.isRealAccount()) return false;
         const userId = this.getActiveUserId();
@@ -2762,7 +2775,9 @@ _getAudioContext: function() {
                 app.normalizeDimensionsState();
                 app.normalizeEntitiesState();
                 app.normalizeDailyLogsState();
+                app.reconcileOnboardingCompletion?.();
                 app.persistLocalMirror();
+                app.syncOnboardingRouteFromState?.();
                 // Re-render active view so changes appear immediately
                 try {
                     const view = app.currentView;
@@ -2813,8 +2828,10 @@ _getAudioContext: function() {
                             app.normalizeDimensionsState();
                             app.normalizeEntitiesState();
                             app.normalizeDailyLogsState();
+                            app.reconcileOnboardingCompletion?.();
                             app.persistLocalMirror();
                             app.updateSyncBadge('ok');
+                            app.syncOnboardingRouteFromState?.();
                             try { if (app.currentView && app.render && app.render[app.currentView]) app.render[app.currentView](); } catch (_) {}
                         }).catch((e) => { console.warn('[SYNC] Periodic pull error:', e); });
                     }, 60000);
