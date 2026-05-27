@@ -442,6 +442,23 @@ const app = {
             const score = Number(dimension?.score);
             return Number.isFinite(score) && score > 0;
         });
+        const looksPristineResetState =
+            !hasItems(profile.values) &&
+            !hasPurpose &&
+            !hasEntityItems &&
+            !hasItems(state?.habits) &&
+            !hasIdentityItems &&
+            !hasItems(profile.notes) &&
+            !hasObjectItems(state?.weekPlans) &&
+            !hasObjectItems(state?.reviews) &&
+            !hasItems(profile.dailyCheckins) &&
+            !hasObjectItems(state?.dailyLogs) &&
+            Object.values(state?.dimensions || {}).every((dimension) => {
+                const score = Number(dimension?.score);
+                return !Number.isFinite(score) || score <= 1;
+            });
+
+        if (looksPristineResetState) return false;
 
         return hasItems(profile.values) ||
             hasWheelScores ||
@@ -6671,7 +6688,7 @@ ensureNotesState: function() {
         }
 
         if (plannedCount > 0) {
-            copy = `${doneCount}/${plannedCount} acoes concluidas. Baseado em execucao, carga planejada e atrasos.`;
+            copy = `${copy} Baseado em execucao, carga planejada e atrasos.`;
             if (score >= 75) label = 'Saudavel';
             else if (score >= 45) label = 'Pede atencao';
         } else {

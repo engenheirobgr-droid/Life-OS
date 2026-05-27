@@ -2891,7 +2891,9 @@ render: {
             // Current streak (from streak counter logic already elsewhere)
             let streak = 0;
             const check = new Date(today);
-            check.setDate(check.getDate() - 1);
+            if (!app.hasDayActivity(app.getLocalDateKey(check))) {
+                check.setDate(check.getDate() - 1);
+            }
             while (streak < 365) {
                 if (app.hasDayActivity(app.getLocalDateKey(check))) {
                     streak++;
