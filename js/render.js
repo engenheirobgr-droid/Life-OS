@@ -3414,7 +3414,7 @@ render: {
                             });
                             const cards = items.map((item) => buildHabitCard(item.habit)).join('');
                             return `
-                                <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
+                                <div class="space-y-3">
                                     <div class="flex items-center gap-2">
                                         <span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings:'FILL' 1">${dimGroup.icon}</span>
                                         <div class="min-w-0">
@@ -3422,7 +3422,9 @@ render: {
                                             <p class="text-sm font-semibold text-on-surface truncate">${dimension} · ${items.length} hábito${items.length === 1 ? '' : 's'}</p>
                                         </div>
                                     </div>
-                                    <div class="flex gap-4 overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">${cards}</div>
+                                    <div class="overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">
+                                        <div class="flex gap-4 min-w-max">${cards}</div>
+                                    </div>
                                 </div>`;
                         }).join('');
                         return dayGroups ? `
