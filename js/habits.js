@@ -1,11 +1,22 @@
 export function attachHabits(app) {
     Object.assign(app, {
-normalizeHabitTrackMode: function(mode) {
-        const normalized = String(mode || 'boolean').trim().toLowerCase();
-        if (['timer', 'time', 'tempo', 'minutes', 'minutos'].includes(normalized)) return 'timer';
-        if (normalized === 'numeric') return 'numeric';
-        return 'boolean';
-    },
+        habitsViewMode: 'scheduled',
+
+        getHabitsViewMode: function() {
+            return ['intent', 'scheduled'].includes(this.habitsViewMode) ? this.habitsViewMode : 'scheduled';
+        },
+
+        setHabitsViewMode: function(mode = 'intent') {
+            this.habitsViewMode = ['intent', 'scheduled'].includes(mode) ? mode : 'intent';
+            if (typeof this.render?.hoje === 'function') this.render.hoje();
+        },
+
+        normalizeHabitTrackMode: function(mode) {
+            const normalized = String(mode || 'boolean').trim().toLowerCase();
+            if (['timer', 'time', 'tempo', 'minutes', 'minutos'].includes(normalized)) return 'timer';
+            if (normalized === 'numeric') return 'numeric';
+            return 'boolean';
+        },
 
     getHabitResolvedSteps: function(habit) {
         if (!habit) return [];

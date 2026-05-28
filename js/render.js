@@ -3360,48 +3360,133 @@ render: {
                     </div>`;
                 };
 
-                // Group habits by intent
-                const intentOrder = ['meta', 'strength', 'shadow', 'loose'];
-                const intentConfig = {
-                    meta:     { label: 'Sustenta meta',   icon: 'flag',                    color: 'text-primary' },
-                    strength: { label: 'Pratica força',   icon: 'workspace_premium',       color: 'text-primary' },
-                    shadow:   { label: 'Protege sombra',  icon: 'change_circle',           color: 'text-secondary' },
-                    loose:    { label: 'Sem vínculo',     icon: 'radio_button_unchecked',  color: 'text-outline' }
-                };
-                const grouped = { meta: [], strength: [], shadow: [], loose: [] };
-                state.habits.forEach(habit => {
-                    const intent = app._getHabitIntent(habit, state);
-                    grouped[intent.key].push(habit);
+                const viewMode = app.getHabitsViewMode ? app.getHabitsViewMode() : 'intent';
+                const toggleButtons = Array.from(document.querySelectorAll('#habits-view-mode-toggle button[data-habits-view-mode]'));
+                toggleButtons.forEach((button) => {
+                    const active = button.dataset.habitsViewMode === viewMode;
+                    button.className = active
+                        ? 'rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10'
+                        : 'rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface hover:text-primary hover:bg-surface-container transition-colors';
                 });
+
+                const normalizeDim = (dim) => {
+                    const value = String(dim || 'Geral').trim();
+                    return value.length ? value : 'Geral';
+                };
+                const dayPartLabels = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite', sem_horario: 'Sem horário' };
+                const dayPartOrder = ['manha', 'tarde', 'noite', 'sem_horario'];
+                const dimensionOrder = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
+
+                const buildScheduledHtml = () => {
+                    const grouped = {};
+                    state.habits.forEach((habit) => {
+                        const schedule = typeof app.getHabitScheduleContext === 'function'
+                            ? app.getHabitScheduleContext(habit)
+                            : { startTime: String(habit.startTime || '').trim(), dayPart: 'sem_horario' };
+                        const dimension = normalizeDim(habit.dimension);
+                        const dayPart = dayPartOrder.includes(schedule.dayPart) ? schedule.dayPart : 'sem_horario';
+                        grouped[dimension] = grouped[dimension] || {
+                            icon: habitIconMap[dimension] || 'stars',
+                            dayParts: { manha: [], tarde: [], noite: [], sem_horario: [] }
+                        };
+                        grouped[dimension].dayParts[dayPart].push({ habit, schedule });
+                    });
+
+                    const dimensions = Object.keys(grouped).sort((a, b) => {
+                        const ai = dimensionOrder.indexOf(a);
+                        const bi = dimensionOrder.indexOf(b);
+                        const aIndex = ai === -1 ? dimensionOrder.length : ai;
+                        const bIndex = bi === -1 ? dimensionOrder.length : bi;
+                        if (aIndex !== bIndex) return aIndex - bIndex;
+                        return a.localeCompare(b, 'pt-BR');
+                    });
+
+                    return dimensions.map((dimension) => {
+                        const dimGroup = grouped[dimension];
+                        const dayGroups = dayPartOrder.map((part) => {
+                            const items = dimGroup.dayParts[part];
+                            if (!items.length) return '';
+                            items.sort((a, b) => {
+                                const aMin = app.toClockMinutes ? app.toClockMinutes(a.schedule.startTime || '') : null;
+                                const bMin = app.toClockMinutes ? app.toClockMinutes(b.schedule.startTime || '') : null;
+                                if (aMin !== bMin) return (aMin || 9999) - (bMin || 9999);
+                                return String(a.habit.title || '').localeCompare(String(b.habit.title || ''), 'pt-BR');
+                            });
+                            const cards = items.map((item) => buildHabitCard(item.habit)).join('');
+                            return `
+                                <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings:'FILL' 1">${dimGroup.icon}</span>
+                                        <div class="min-w-0">
+                                            <p class="text-[11px] font-bold uppercase tracking-widest text-outline">${dayPartLabels[part]}</p>
+                                            <p class="text-sm font-semibold text-on-surface truncate">${dimension} · ${items.length} hábito${items.length === 1 ? '' : 's'}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-4 overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">${cards}</div>
+                                </div>`;
+                        }).join('');
+                        return dayGroups ? `
+                            <div class="space-y-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings:'FILL' 1">${dimGroup.icon}</span>
+                                    <span class="text-sm font-semibold text-on-surface">${dimension}</span>
+                                    <span class="text-[10px] text-outline">${Object.values(dimGroup.dayParts).flat().length} hábito${Object.values(dimGroup.dayParts).flat().length === 1 ? '' : 's'}</span>
+                                </div>
+                                ${dayGroups}
+                            </div>` : '';
+                    }).join('');
+                };
 
                 let habitsHtml = '';
-                let totalRendered = 0;
-                intentOrder.forEach(key => {
-                    const cards = (grouped[key] || [])
-                        .slice()
-                        .sort((a, b) => {
-                            const aToday = a.frequency === 'manual' ? true : (typeof app.isHabitScheduledForDate === 'function' ? app.isHabitScheduledForDate(a, todayStr) : true);
-                            const bToday = b.frequency === 'manual' ? true : (typeof app.isHabitScheduledForDate === 'function' ? app.isHabitScheduledForDate(b, todayStr) : true);
-                            if (aToday !== bToday) return aToday ? -1 : 1;
-                            return String(a.title || '').localeCompare(String(b.title || ''), 'pt-BR');
-                        })
-                        .map(buildHabitCard)
-                        .filter(Boolean);
-                    if (!cards.length) return;
-                    totalRendered += cards.length;
-                    const cfg = intentConfig[key];
-                    habitsHtml += `
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined notranslate ${cfg.color} text-[14px]" style="font-variation-settings:'FILL' 1">${cfg.icon}</span>
-                            <span class="text-[10px] font-bold uppercase tracking-widest ${cfg.color}">${cfg.label}</span>
-                            <span class="text-[10px] text-outline">${cards.length}</span>
-                        </div>
-                        <div class="flex gap-4 overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">${cards.join('')}</div>
-                    </div>`;
-                });
+                if (viewMode === 'scheduled') {
+                    habitsHtml = buildScheduledHtml();
+                } else {
+                    // Group habits by intent
+                    const intentOrder = ['meta', 'strength', 'shadow', 'loose'];
+                    const intentConfig = {
+                        meta:     { label: 'Sustenta meta',   icon: 'flag',                    color: 'text-primary' },
+                        strength: { label: 'Pratica força',   icon: 'workspace_premium',       color: 'text-primary' },
+                        shadow:   { label: 'Protege sombra',  icon: 'change_circle',           color: 'text-secondary' },
+                        loose:    { label: 'Sem vínculo',     icon: 'radio_button_unchecked',  color: 'text-outline' }
+                    };
+                    const grouped = { meta: [], strength: [], shadow: [], loose: [] };
+                    state.habits.forEach(habit => {
+                        const intent = app._getHabitIntent(habit, state);
+                        grouped[intent.key].push(habit);
+                    });
 
-                if (totalRendered === 0) {
+                    let totalRendered = 0;
+                    intentOrder.forEach(key => {
+                        const cards = (grouped[key] || [])
+                            .slice()
+                            .sort((a, b) => {
+                                const aToday = a.frequency === 'manual' ? true : (typeof app.isHabitScheduledForDate === 'function' ? app.isHabitScheduledForDate(a, todayStr) : true);
+                                const bToday = b.frequency === 'manual' ? true : (typeof app.isHabitScheduledForDate === 'function' ? app.isHabitScheduledForDate(b, todayStr) : true);
+                                if (aToday !== bToday) return aToday ? -1 : 1;
+                                return String(a.title || '').localeCompare(String(b.title || ''), 'pt-BR');
+                            })
+                            .map(buildHabitCard)
+                            .filter(Boolean);
+                        if (!cards.length) return;
+                        totalRendered += cards.length;
+                        const cfg = intentConfig[key];
+                        habitsHtml += `
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined notranslate ${cfg.color} text-[14px]" style="font-variation-settings:'FILL' 1">${cfg.icon}</span>
+                                    <span class="text-[10px] font-bold uppercase tracking-widest ${cfg.color}">${cfg.label}</span>
+                                    <span class="text-[10px] text-outline">${cards.length}</span>
+                                </div>
+                                <div class="flex gap-4 overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">${cards.join('')}</div>
+                            </div>`;
+                    });
+
+                    if (totalRendered === 0) {
+                        habitsHtml = '';
+                    }
+                }
+
+                if (!habitsHtml) {
                     habitsHtml = `
                     <div class="flex flex-col items-center py-6 text-center gap-3">
                         <span class="material-symbols-outlined notranslate text-outline text-4xl">self_improvement</span>

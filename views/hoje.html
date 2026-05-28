@@ -257,11 +257,15 @@
 </section>
 <!-- Section: Hábitos -->
 <section id="hoje-habits-section" data-hoje-screen-content="habitos" class="mt-8 space-y-4 hidden">
-<div class="mb-6 flex items-center justify-between gap-4">
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
         <h3 class="font-headline text-2xl italic">Seus hábitos</h3>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
+        <div id="habits-view-mode-toggle" class="inline-flex rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-1">
+            <button type="button" data-habits-view-mode="intent" onclick="window.app.setHabitsViewMode('intent')" class="rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10">Por intenção</button>
+            <button type="button" data-habits-view-mode="scheduled" onclick="window.app.setHabitsViewMode('scheduled')" class="rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface hover:text-primary hover:bg-surface-container transition-colors">Por hora/dimensão</button>
+        </div>
         <button type="button" onclick="window.app.openHabitSuggestionsModal()"
             class="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant/20 bg-surface-container-low px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container transition-colors">
             <span class="material-symbols-outlined notranslate text-[14px]">lightbulb</span>
