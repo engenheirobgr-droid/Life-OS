@@ -7777,11 +7777,15 @@ ensureNotesState: function() {
     },
 
     updateNavUI: function(activeView) {
+        const socialEnabled = typeof this.isSocialFeatureEnabled === 'function' ? this.isSocialFeatureEnabled() : true;
         document.querySelectorAll('.nav-item-link').forEach(btn => {
             const icon = btn.querySelector('.material-symbols-outlined.notranslate');
             const iconWrap = icon ? icon.parentElement : null;
             const label = btn.querySelector('span:last-child');
             const view = btn.getAttribute('data-view') || btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            if (view === 'social') {
+                btn.style.display = socialEnabled ? '' : 'none';
+            }
             btn.setAttribute('data-active', view === activeView ? 'true' : 'false');
 
             if (view === activeView) {
