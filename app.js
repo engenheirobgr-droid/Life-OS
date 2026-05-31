@@ -25,7 +25,7 @@ import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260527-weekly-coherence-v1';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260526-rollback-align-v1';
 import { attachStateModule } from './js/state.js?v=20260526-rollback-align-v1';
-import { attachRenderModule } from './js/render.js?v=20260527-weekly-coherence-v1';
+import { attachRenderModule } from './js/render.js?v=20260531-foco-toolbar-v2';
 import { attachPlanningModule } from './js/planning.js?v=20260526-rollback-align-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260527-weekly-coherence-v1',
+    appBuildVersion: '20260531-foco-toolbar-v2',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -8345,7 +8345,7 @@ ensureNotesState: function() {
         this._deepWorkClockPreviewActive = false;
         const previewBtn = document.getElementById('deep-work-clock-preview-btn');
         if (previewBtn) {
-            previewBtn.textContent = 'Preview';
+            previewBtn.innerHTML = '<span class="material-symbols-outlined notranslate text-[16px]">visibility</span>';
             previewBtn.disabled = false;
             previewBtn.classList.remove('bg-primary', 'text-on-primary');
         }
@@ -8366,7 +8366,7 @@ ensureNotesState: function() {
             : 'classic';
         const previewBtn = document.getElementById('deep-work-clock-preview-btn');
         if (previewBtn) {
-            previewBtn.textContent = 'Preview...';
+            previewBtn.innerHTML = '<span class="material-symbols-outlined notranslate text-[16px]">visibility</span>';
             previewBtn.disabled = true;
             previewBtn.classList.add('bg-primary', 'text-on-primary');
         }

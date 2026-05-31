@@ -1692,6 +1692,7 @@ renderDeepWorkPanel: function() {
         const summaryEl = document.getElementById('deep-work-week-summary');
         const historyEl = document.getElementById('deep-work-history');
         const presetEl = document.getElementById('deep-work-preset');
+        const compactPresetEl = document.getElementById('deep-work-preset-compact');
         const microEl = document.getElementById('deep-work-micro');
         const habitEl = document.getElementById('deep-work-habit');
         const contextEl = document.getElementById('deep-work-context');
@@ -1712,6 +1713,9 @@ renderDeepWorkPanel: function() {
                 ? this.getDeepWorkPresetConfig(Math.round((dw.targetSec || 1500) / 60))
                 : { minutes: Math.max(5, Math.round((dw.targetSec || 1500) / 60)) };
             presetEl.value = String(presetConfig.minutes);
+            if (compactPresetEl) compactPresetEl.value = String(presetConfig.minutes);
+        } else if (compactPresetEl && presetEl) {
+            compactPresetEl.value = String(presetEl.value || '25');
         }
         if (presetEl) {
             const activePreset = String(presetEl.value || '25');
@@ -1930,13 +1934,6 @@ renderDeepWorkPanel: function() {
             const habitMeta = selectedHabit?.linkedMetaId
                 ? (state.entities?.metas || []).find((meta) => meta.id === selectedHabit.linkedMetaId)
                 : null;
-            const contextPath = selectedMicro
-                ? (microContext?.path || 'Sem trilha definida')
-                : habitMeta
-                    ? `Meta: ${habitMeta.title}`
-                    : selectedHabit
-                        ? 'Sem meta vinculada'
-                        : 'Escolha uma ação ou um hábito para montar o bloco.';
             const contextStatus = selectedMicro
                 ? (selectedMicro.status === 'done'
                     ? 'Concluida'
@@ -1946,53 +1943,53 @@ renderDeepWorkPanel: function() {
                 : selectedHabit
                     ? ((this.getHabitTodayProgressSnapshot?.(selectedHabit)?.label) || 'Sem progresso hoje')
                     : 'Aguardando selecao';
-            const helperText = hasPendingClosure
-                ? 'Feche a sessao pendente antes de iniciar outro bloco.'
-                : selectedHabit
-                    ? 'O fechamento do hábito decide conclusão e eventual entrega para o plano.'
-                    : selectedMicro
-                        ? 'A sessão registra trabalho. A conclusão da ação continua sendo uma decisão separada.'
-                        : '';
             const microSchedule = selectedMicro ? (this.getMicroSuggestedSchedule?.(selectedMicro) || null) : null;
             const executionLabel = selectedMicro
-                ? (microSchedule?.startTime ? `${microSchedule.startTime} · Definido automaticamente` : 'Sem horario definido')
-                : selectedHabit?.startTime
-                    ? `${selectedHabit.startTime} · Definido manualmente`
-                    : 'Sem horario definido';
+                ? (microSchedule?.startTime || 'Sem horario definido')
+                : selectedHabit?.startTime || 'Sem horario definido';
             const estimatedMinutes = selectedMicro
                 ? Math.max(1, Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 1500) / 60))
                 : Math.max(1, Math.round(Number(dw.targetSec || 1500) / 60));
             const dimensionLabel = selectedMicro?.dimension || selectedHabit?.dimension || microContext?.meta?.dimension || habitMeta?.dimension || 'Geral';
-            const contextRows = [
-                { icon: 'task_alt', label: 'Acao', value: selectedMicro?.title || (selectedHabit ? 'Sessao de habito' : 'Sessao livre') },
-                { icon: 'monitor_heart', label: 'Area', value: dimensionLabel },
-                { icon: 'timer', label: 'Carga total estimada', value: `${estimatedMinutes} min · Ajustado ${selectedMicro ? 'automaticamente' : 'manualmente'}` },
-                { icon: 'schedule', label: 'Execucao no dia', value: executionLabel }
+            const titleLabel = selectedMicro?.title || selectedHabit?.title || 'Nenhuma acao selecionada';
+            const pathLabel = selectedMicro
+                ? (microContext?.parentLabel || microContext?.path || 'Sem vinculo em Planos')
+                : habitMeta
+                    ? `Meta: ${habitMeta.title}`
+                    : selectedHabit
+                        ? 'Habito sem meta vinculada'
+                        : 'Escolha uma acao ou um habito para montar o bloco.';
+            const helperLabel = selectedMicro
+                ? 'Sessao vinculada ao bloco atual.'
+                : selectedHabit
+                    ? 'Habito selecionado para a sessao.'
+                    : 'Escolha um contexto para ver o resumo aqui.';
+            const contextMetaChips = [
+                { icon: 'folder_open', value: dimensionLabel },
+                { icon: 'timer', value: `${estimatedMinutes} min` },
+                { icon: 'schedule', value: executionLabel },
+                { icon: 'progress_activity', value: contextStatus }
             ];
             contextCardEl.innerHTML = `
-                <div class="space-y-3 rounded-xl border border-outline-variant/15 bg-surface-container-lowest px-3 py-3">
-                    <div class="space-y-2">
-                        ${contextRows.map((row) => `
-                            <div class="flex items-start gap-2.5">
-                                <span class="mt-0.5 material-symbols-outlined notranslate text-[15px] text-outline">${row.icon}</span>
-                                <div class="min-w-0">
-                                    <p class="text-[9px] uppercase tracking-widest font-bold text-outline">${this.escapeHtml(row.label)}</p>
-                                    <p class="mt-0.5 break-words text-sm text-on-surface">${this.escapeHtml(row.value)}</p>
-                                </div>
+                <div class="rounded-xl border border-primary/10 bg-surface-container-lowest px-3 py-2.5">
+                    <div class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+                        <div class="min-w-0 xl:flex-1">
+                            <p class="truncate text-sm font-semibold text-on-surface">${this.escapeHtml(titleLabel)}</p>
+                            <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+                                <span class="truncate text-on-surface-variant">${this.escapeHtml(helperLabel)}</span>
+                                <span class="hidden text-outline xl:inline">•</span>
+                                <span class="truncate text-outline">${this.escapeHtml(pathLabel)}</span>
                             </div>
-                        `).join('')}
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 xl:ml-4 xl:max-w-[48%] xl:justify-end">
+                            ${contextMetaChips.map((chip) => `
+                                <span class="inline-flex items-center gap-1 rounded-full border border-outline-variant/15 bg-surface-container-low px-2 py-0.5 text-[10px] font-medium text-on-surface-variant">
+                                    <span class="material-symbols-outlined notranslate text-[12px] text-outline">${chip.icon}</span>
+                                    ${this.escapeHtml(chip.value)}
+                                </span>
+                            `).join('')}
+                        </div>
                     </div>
-                    <div class="flex flex-wrap gap-2 rounded-lg bg-surface-container-low px-3 py-2">
-                        <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-outline">
-                            <span class="material-symbols-outlined notranslate text-[12px]">timer</span>
-                            ${Math.max(5, Math.round(Number(dw.targetSec || 1500) / 60))} min
-                        </span>
-                        <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-outline">
-                            <span class="material-symbols-outlined notranslate text-[12px]">progress_activity</span>
-                            ${this.escapeHtml(contextStatus)}
-                        </span>
-                    </div>
-                    ${helperText ? `<p class="text-[11px] text-outline leading-relaxed">${this.escapeHtml(helperText)}</p>` : ''}
                 </div>`;
         }
 
@@ -2089,45 +2086,54 @@ renderDeepWorkPanel: function() {
         if (historyEl) {
             const rows = (dw.sessions || []).slice(0, 5);
             if (rows.length === 0) {
-                historyEl.innerHTML = '<p class="text-xs text-outline italic">Nenhuma sessão registrada.</p>';
+                historyEl.innerHTML = '<p class="text-xs text-outline italic">Nenhuma sessao registrada.</p>';
             } else {
-                historyEl.innerHTML = rows.map((s) => {
-                    const mins = Math.max(1, Math.round((Number(s.focusSec) || 0) / 60));
-                    const micro = (state.entities.micros || []).find(m => m.id === s.microId);
-                    const habit = s.habitId ? (state.habits || []).find(h => h.id === s.habitId) : null;
-                    const microLabel = micro?.title || s.microTitle || s.intention || 'Sem vínculo';
-                    const ctx = micro ? this.getMicroPlanContext(micro) : null;
-                    const primaryLabel = micro?.title || habit?.title || s.microTitle || s.habitTitle || s.intention || 'Sem vinculo';
-                    const secondaryLabel = micro
-                        ? (this.getMicroPlanContext(micro)?.path || 'Acao do plano')
-                        : habit
-                            ? (habit.linkedMetaId
-                                ? `Habito vinculado a ${(state.entities?.metas || []).find((meta) => meta.id === habit.linkedMetaId)?.title || 'meta'}`
-                                : 'Sessao de habito')
-                            : '';
-                    const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
-                    const hasHabitAndMicro = !!(habit?.title || s.habitTitle) && !!(micro?.title || s.microTitle);
-                    const resolvedHabitLabel = habit?.title || s.habitTitle || '';
-                    const resolvedMicroLabel = micro?.title || s.microTitle || '';
-                    const displayPrimaryLabel = hasHabitAndMicro
-                        ? `Hábito: ${resolvedHabitLabel}`
-                        : primaryLabel;
-                    const displaySecondaryLabel = hasHabitAndMicro
-                        ? `Ação gerada: ${resolvedMicroLabel}`
-                        : (secondaryLabel || dateLabel);
-                    const displayTertiaryLabel = hasHabitAndMicro
-                        ? (this.getMicroPlanContext(micro)?.path || '')
-                        : '';
-                    return `<div class="flex items-start justify-between gap-3 rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-2.5 text-xs">
-                        <div class="min-w-0 space-y-0.5">
-                            <p class="font-medium text-on-surface truncate">${this.escapeHtml(displayPrimaryLabel)}</p>
-                            <p class="text-outline truncate">${this.escapeHtml(displaySecondaryLabel)}</p>
-                            ${displayTertiaryLabel ? `<p class="text-outline/80 truncate">${this.escapeHtml(displayTertiaryLabel)}</p>` : ''}
-                            <p class="text-outline/80 truncate">${this.escapeHtml(dateLabel)}</p>
+                historyEl.innerHTML = `
+                    <div class="overflow-hidden rounded-xl border border-outline-variant/10 bg-surface-container-low">
+                        <div class="hidden grid-cols-[120px_minmax(0,1.35fr)_100px_minmax(0,1.2fr)_40px] gap-4 border-b border-outline-variant/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-outline md:grid">
+                            <span>Data</span>
+                            <span>Acao</span>
+                            <span>Foco</span>
+                            <span>Notas</span>
+                            <span></span>
                         </div>
-                        <span class="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">${mins} min</span>
+                        ${rows.map((s) => {
+                            const mins = Math.max(1, Math.round((Number(s.focusSec) || 0) / 60));
+                            const micro = (state.entities.micros || []).find(m => m.id === s.microId);
+                            const habit = s.habitId ? (state.habits || []).find(h => h.id === s.habitId) : null;
+                            const primaryLabel = micro?.title || habit?.title || s.microTitle || s.habitTitle || s.intention || 'Sem vinculo';
+                            const notesLabel = micro
+                                ? (this.getMicroPlanContext(micro)?.path || 'Sessao registrada sem observacoes.')
+                                : habit
+                                    ? 'Sessao de habito registrada.'
+                                    : (s.intention || 'Sessao registrada.');
+                            const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
+                            return `
+                                <div class="grid gap-2 border-b border-outline-variant/10 px-3 py-3 text-xs last:border-b-0 md:grid-cols-[120px_minmax(0,1.35fr)_100px_minmax(0,1.2fr)_40px] md:items-center md:gap-4">
+                                    <div class="min-w-0">
+                                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Data</p>
+                                        <p class="text-on-surface">${this.escapeHtml(dateLabel)}</p>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Acao</p>
+                                        <p class="truncate font-semibold text-on-surface">${this.escapeHtml(primaryLabel)}</p>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Foco</p>
+                                        <p class="font-semibold text-primary">${mins} min</p>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Notas</p>
+                                        <p class="truncate text-on-surface-variant">${this.escapeHtml(notesLabel)}</p>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container-lowest text-primary">
+                                            <span class="material-symbols-outlined notranslate text-[16px]">format_list_bulleted</span>
+                                        </span>
+                                    </div>
+                                </div>`;
+                        }).join('')}
                     </div>`;
-                }).join('');
             }
         }
 
@@ -2737,24 +2743,21 @@ render: {
                 // Ordenar por prazo
                 filtered.sort((a,b) => (a.prazo || '9999').localeCompare(b.prazo || '9999'));
 
-                listContainer.innerHTML = filtered.map((m, idx) => {
+                listContainer.innerHTML = filtered.map((m) => {
                     const ctx = app.getMicroPlanContext(m);
                     const focusText = app.formatDurationHuman(m.focusSec || 0);
                     const sessionCount = Number(m.focusSessions || 0);
-                    const statusText = m.status === 'done' ? 'Concluída' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
+                    const statusText = m.status === 'done' ? 'Concluida' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
                     const isDone = m.status === 'done' || m.completed;
                     const isInProgress = m.status === 'in_progress';
-                    const cardStateClass = isDone
-                        ? 'border-emerald-500/35 bg-emerald-500/[0.035] shadow-sm shadow-emerald-500/10'
-                        : (isInProgress
-                            ? 'border-amber-500/40 bg-amber-500/[0.035] shadow-sm shadow-amber-500/10'
-                            : 'border-outline-variant/10 bg-surface-container-lowest shadow-sm');
-                    const accentClass = isDone ? 'bg-emerald-500' : (isInProgress ? 'bg-amber-500' : 'bg-primary/30');
+                    const rowStateClass = isDone
+                        ? 'border-emerald-500/30 bg-emerald-500/[0.035]'
+                        : (isInProgress ? 'border-amber-500/35 bg-amber-500/[0.035]' : 'border-outline-variant/10 bg-surface-container-low');
                     const statusBadge = isDone
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25'
                         : (isInProgress
                             ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25'
-                            : 'bg-surface-container-high text-on-surface-variant border border-outline-variant/20');
+                            : 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20');
                     const isTimerMicro = state.deepWork?.isRunning && state.deepWork?.microId === m.id;
                     const focusEligibility = app.getMicroFocusEligibility?.(m) || { ok: true };
                     const actionLabel = !focusEligibility.ok
@@ -2766,51 +2769,49 @@ render: {
                             ? `window.app.openMicroInFocus('${m.id}', false)`
                             : `window.app.startDeepWorkForMicro('${m.id}')`);
                     const isFocoPlanned = app._isPlannedThisWeek(m.id);
-                    const focoPlannedBadge = isFocoPlanned
-                        ? '<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
-                        : '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-outline text-[9px] font-bold uppercase tracking-widest">Captura</span>';
+                    const sourceBadge = isFocoPlanned
+                        ? '<span class="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
+                        : '<span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-outline">Captura</span>';
                     const orphanBadge = !focusEligibility.ok
-                        ? '<span title="Ação sem Entrega associada (Não Alinhada)" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-widest border border-amber-500/20"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Não Alinhado</span>'
+                        ? '<span title="Acao sem Entrega associada (Nao Alinhada)" class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Nao alinhado</span>'
                         : '';
                     return `
-                    <div class="relative overflow-hidden p-5 rounded-2xl border ${cardStateClass} hover:shadow-md transition-all group min-w-0">
-                        <div class="absolute left-0 top-0 bottom-0 w-1 ${accentClass}"></div>
-                        ${isDone ? '<div class="absolute right-3 bottom-3 pointer-events-none opacity-[0.07]"><span class="material-symbols-outlined notranslate text-6xl text-emerald-500">verified</span></div>' : ''}
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded-full">
-                                ${app.escapeHtml(m.dimension || 'Geral')}
-                            </span>
-                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="window.app.editEntity('${m.id}', 'micros')" class="p-1 hover:text-primary"><span class="material-symbols-outlined notranslate text-sm">edit</span></button>
-                                <button onclick="window.app.deleteEntity('${m.id}', 'micros')" class="p-1 hover:text-error"><span class="material-symbols-outlined notranslate text-sm">delete</span></button>
+                    <div class="rounded-2xl border ${rowStateClass} overflow-hidden shadow-sm transition-colors hover:border-primary/20">
+                        <div class="grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,2.1fr)_minmax(130px,0.95fr)_minmax(120px,0.75fr)_90px_90px_120px_minmax(190px,1.2fr)_44px] md:items-center md:gap-4">
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Acao</p>
+                                <p class="truncate font-semibold text-on-surface">${app.escapeHtml(m.title)}</p>
+                                <div class="mt-1 flex flex-wrap gap-1.5">${sourceBadge}${orphanBadge}<span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">${app.escapeHtml(m.dimension || 'Geral')}</span></div>
                             </div>
-                        </div>
-                        <h3 class="font-bold text-on-surface mb-1 line-clamp-2">${app.escapeHtml(m.title)}</h3>
-                        <div class="flex flex-wrap gap-1.5 mb-2">${focoPlannedBadge}${orphanBadge}</div>
-                        <p class="text-xs text-outline mb-3 line-clamp-1">${app.escapeHtml(ctx.parentLabel || 'Sem vínculo em Planos')}</p>
-                        <div class="grid grid-cols-2 gap-2 mb-4 text-[10px]">
-                            <div class="rounded-lg bg-surface-container-low px-3 py-2">
-                                <span class="block uppercase tracking-widest text-outline font-bold">Foco</span>
-                                <span class="font-bold text-primary">${focusText}</span>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Categoria</p>
+                                <p class="truncate text-sm text-on-surface-variant">${app.escapeHtml(ctx.parentLabel || 'Sem vinculo em Planos')}</p>
                             </div>
-                            <div class="rounded-lg bg-surface-container-low px-3 py-2">
-                                <span class="block uppercase tracking-widest text-outline font-bold">Sessões</span>
-                                <span class="font-bold text-on-surface">${sessionCount}</span>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Sessao</p>
+                                <p class="text-sm text-on-surface">${sessionCount} ${sessionCount === 1 ? 'sessao' : 'sessoes'}</p>
                             </div>
-                        </div>
-
-                        <div class="pt-4 border-t border-outline-variant/10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            <div class="flex items-center gap-2 text-outline">
-                                <span class="material-symbols-outlined notranslate text-xs">event</span>
-                                <span class="text-[10px] font-bold uppercase">${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>
-                                <span class="text-[10px] font-bold uppercase rounded-full px-2 py-0.5 ${statusBadge}">${statusText}</span>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Duracao</p>
+                                <p class="text-sm font-semibold text-primary">${focusText}</p>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2">
-                                ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="px-3 py-1.5 rounded-lg ${focusEligibility.ok ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15'} text-[10px] font-bold uppercase tracking-widest">${actionLabel}</button>` : ''}
-                                ${m.status === 'done' ?
-                                    `<button onclick="window.app.completeMicroAction('${m.id}')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20">Reabrir</button>` :
-                                    `<button onclick="window.app.completeMicroAction('${m.id}')" class="text-[10px] font-bold uppercase text-primary hover:underline">Concluir</button>`
-                                }
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Agenda</p>
+                                <p class="text-sm text-on-surface-variant">${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</p>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Status</p>
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${statusBadge}">${statusText}</span>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Acoes</p>
+                                <div class="flex items-center gap-2 whitespace-nowrap md:justify-start">
+                                    ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="inline-flex h-8 items-center justify-center rounded-lg px-3 text-[10px] font-bold uppercase tracking-widest ${focusEligibility.ok ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15'}">${actionLabel}</button>` : `<button onclick="window.app.completeMicroAction('${m.id}')" class="inline-flex h-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 px-3 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/20">Reabrir</button>`}
+                                    ${m.status !== 'done' ? `<button onclick="window.app.completeMicroAction('${m.id}')" class="inline-flex h-8 items-center justify-center text-[10px] font-bold uppercase tracking-widest text-primary hover:underline">Concluir</button>` : ''}
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-end">
+                                <button onclick="window.app.editEntity('${m.id}', 'micros')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="Editar acao"><span class="material-symbols-outlined notranslate text-[16px]">edit</span></button>
                             </div>
                         </div>
                     </div>
@@ -2818,10 +2819,10 @@ render: {
                 }).join('');
 
                 if (filtered.length === 0) {
-                    listContainer.innerHTML = `<div class="col-span-full rounded-2xl border border-dashed border-outline-variant/30 bg-surface-container-lowest p-8 text-center">
-                        <span class="material-symbols-outlined notranslate text-3xl text-outline mb-2">checklist</span>
-                        <p class="font-bold text-on-surface">Nenhuma ação encontrada.</p>
-                        <p class="text-sm text-on-surface-variant mt-1">Crie uma ação em Planos ou ajuste os filtros para montar sua fila de execução.</p>
+                    listContainer.innerHTML = `<div class="rounded-2xl border border-dashed border-outline-variant/30 bg-surface-container-low p-8 text-center">
+                        <span class="material-symbols-outlined notranslate mb-2 text-3xl text-outline">checklist</span>
+                        <p class="font-bold text-on-surface">Nenhuma acao encontrada.</p>
+                        <p class="mt-1 text-sm text-on-surface-variant">Crie uma acao em Planos ou ajuste os filtros para montar sua fila de execucao.</p>
                     </div>`;
                 }
             }
