@@ -2400,7 +2400,7 @@ renderTodayActionList: function() {
                 <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
                     <div class="flex items-center justify-between gap-3">
                         <div>
-                            <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Habitos de hoje</p>
+                            <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">H&aacute;bitos de hoje</p>
                             <p class="mt-1 text-xs text-on-surface-variant">${visibleHabits.length} previstos neste recorte do dia.</p>
                         </div>
                         <button type="button" onclick="window.app.switchHojeScreen('habitos')" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-low transition-colors">Ver todos</button>
@@ -2410,25 +2410,24 @@ renderTodayActionList: function() {
                             const habitObj = (window.sistemaVidaState?.habits || []).find((habit) => habit.id === item.sourceId);
                             const focusBtn = (habitObj && this.canStartFocusFromHabit?.(habitObj))
                                 ? `<div class="inline-flex items-center gap-1">
-                                    <button type="button" onclick="window.app.startFocusFromHabitDirect('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-primary/20 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/15 transition-colors">Iniciar foco</button>
-                                    <button type="button" onclick="window.app.openHabitFocusModal('${this.escapeHtml(item.sourceId)}')" title="Configurar no Foco" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-outline-variant/20 text-outline hover:text-primary hover:bg-surface-container-high transition-colors">
+                                    <button type="button" onclick="window.app.startFocusFromHabitDirect('${this.escapeHtml(item.sourceId)}')" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary hover:bg-primary/15 transition-colors" title="Foco" aria-label="Foco"><span class="material-symbols-outlined notranslate text-[14px]">timer</span></button>
+                                    <button type="button" onclick="window.app.openHabitFocusModal('${this.escapeHtml(item.sourceId)}')" title="Configurar no Foco" aria-label="Configurar no Foco" class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-outline-variant/20 text-outline hover:text-primary hover:bg-surface-container-high transition-colors">
                                         <span class="material-symbols-outlined notranslate text-[14px]">tune</span>
                                     </button>
                                 </div>`
                                 : '';
-                            const typeLabel = item.sourceType === 'routine' ? 'Rotina' : 'Habito';
+                            const typeLabel = item.sourceType === 'routine' ? 'Rotina' : 'H&aacute;bito';
                             return `
                                 <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low px-3 py-2.5">
                                     <div class="flex items-start justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <p class="text-[10px] uppercase tracking-widest text-outline">${typeLabel}${item.startTime ? ` · ${this.escapeHtml(item.startTime)}` : ''}</p>
-                                            <p class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(item.title)}</p>
-                                            <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(item.dimension || 'Geral')} · ${Math.round(Number(item.estimatedMinutes) || 0)} min ${item.progressLabel ? `· ${this.escapeHtml(item.progressLabel)}` : ''}</p>
-                                        </div>
+                                        <p class="min-w-0 pr-2 text-sm font-semibold leading-snug text-on-surface md:truncate">${this.escapeHtml(item.title)}</p>
                                         <div class="flex flex-wrap justify-end gap-1.5 shrink-0">
-                                            <button type="button" onclick="window.app.openHabitToday('${this.escapeHtml(item.sourceId)}')" class="px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">Registrar</button>
+                                            <button type="button" onclick="window.app.openHabitToday('${this.escapeHtml(item.sourceId)}')" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-primary/20 text-primary hover:bg-primary/10 transition-colors" title="Registrar h&aacute;bito" aria-label="Registrar h&aacute;bito"><span class="material-symbols-outlined notranslate text-[14px]">task_alt</span></button>
                                             ${focusBtn}
                                         </div>
+                                    </div>
+                                    <div class="mt-1.5 min-w-0">
+                                        <p class="text-[11px] leading-snug text-outline">${this.escapeHtml(item.dimension || 'Geral')} &middot; ${Math.round(Number(item.estimatedMinutes) || 0)} min ${item.progressLabel ? `&middot; ${this.escapeHtml(item.progressLabel)}` : ''}${item.startTime ? ` &middot; ${this.escapeHtml(item.startTime)}` : ''}</p>
                                     </div>
                                 </div>`;
                         }).join('')}
