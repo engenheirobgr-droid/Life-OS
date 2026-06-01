@@ -25,8 +25,8 @@ import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260527-weekly-coherence-v1';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260526-rollback-align-v1';
 import { attachStateModule } from './js/state.js?v=20260526-rollback-align-v1';
-import { attachRenderModule } from './js/render.js?v=20260601-foco-mobile-polish-v1';
-import { attachPlanningModule } from './js/planning.js?v=20260601-foco-mobile-polish-v1';
+import { attachRenderModule } from './js/render.js?v=20260601-foco-mobile-polish-v2';
+import { attachPlanningModule } from './js/planning.js?v=20260601-foco-mobile-polish-v2';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260601-foco-mobile-polish-v1',
+    appBuildVersion: '20260601-foco-mobile-polish-v2',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {

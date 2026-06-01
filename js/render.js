@@ -2108,28 +2108,42 @@ renderDeepWorkPanel: function() {
                                     ? 'Sessao de habito registrada.'
                                     : (s.intention || 'Sessao registrada.');
                             const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
+                            const sourceKind = micro ? 'Ação' : (habit ? 'Hábito' : 'Sessão');
                             return `
-                                <div class="grid gap-2 border-b border-outline-variant/10 px-3 py-3 text-xs last:border-b-0 md:grid-cols-[120px_minmax(0,1.35fr)_100px_minmax(0,1.2fr)_40px] md:items-center md:gap-4">
-                                    <div class="min-w-0">
-                                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Data</p>
-                                        <p class="text-on-surface">${this.escapeHtml(dateLabel)}</p>
+                                <div class="border-b border-outline-variant/10 px-3 py-3 text-xs last:border-b-0">
+                                    <div class="md:hidden space-y-2">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <div class="min-w-0 flex flex-wrap items-center gap-2">
+                                                <p class="shrink-0 text-on-surface">${this.escapeHtml(dateLabel)}</p>
+                                                <span class="inline-flex shrink-0 rounded-full bg-surface-container-high px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">${this.escapeHtml(sourceKind)}</span>
+                                            </div>
+                                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest text-primary">
+                                                <span class="material-symbols-outlined notranslate text-[16px]">format_list_bulleted</span>
+                                            </span>
+                                        </div>
+                                        <div class="flex items-start justify-between gap-3">
+                                            <p class="min-w-0 flex-1 font-semibold text-on-surface">${this.escapeHtml(primaryLabel)}</p>
+                                            <p class="shrink-0 font-semibold text-primary">${mins} min</p>
+                                        </div>
                                     </div>
-                                    <div class="min-w-0">
-                                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Acao</p>
-                                        <p class="truncate font-semibold text-on-surface">${this.escapeHtml(primaryLabel)}</p>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Foco</p>
-                                        <p class="font-semibold text-primary">${mins} min</p>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Notas</p>
-                                        <p class="truncate text-on-surface-variant">${this.escapeHtml(notesLabel)}</p>
-                                    </div>
-                                    <div class="flex justify-end">
-                                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container-lowest text-primary">
-                                            <span class="material-symbols-outlined notranslate text-[16px]">format_list_bulleted</span>
-                                        </span>
+                                    <div class="hidden md:grid md:grid-cols-[120px_minmax(0,1.35fr)_100px_minmax(0,1.2fr)_40px] md:items-center md:gap-4">
+                                        <div class="min-w-0">
+                                            <p class="text-on-surface">${this.escapeHtml(dateLabel)}</p>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="truncate font-semibold text-on-surface">${this.escapeHtml(primaryLabel)}</p>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="font-semibold text-primary">${mins} min</p>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="truncate text-on-surface-variant">${this.escapeHtml(notesLabel)}</p>
+                                        </div>
+                                        <div class="flex justify-end">
+                                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container-lowest text-primary">
+                                                <span class="material-symbols-outlined notranslate text-[16px]">format_list_bulleted</span>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>`;
                         }).join('')}
@@ -2803,7 +2817,6 @@ render: {
                             <div class="flex items-start justify-between gap-3 pl-1">
                                 <div class="min-w-0 flex-1">
                                     <p class="line-clamp-2 text-sm font-semibold leading-snug text-on-surface">${app.escapeHtml(m.title)}</p>
-                                    <div class="mt-2 flex flex-wrap items-center gap-1">${sourceBadge}${dimensionBadge}<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[9px]">event</span>${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>${orphanBadge}</div>
                                 </div>
                                 <div class="flex items-center gap-2 shrink-0">
                                     ${m.status !== 'done'
@@ -2814,6 +2827,7 @@ render: {
                                     <button onclick="window.app.editEntity('${m.id}', 'micros')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="Editar acao" aria-label="Editar acao"><span class="material-symbols-outlined notranslate text-[16px]">edit</span></button>
                                 </div>
                             </div>
+                            <div class="mt-2 flex flex-wrap items-center gap-1 pl-1 pr-1">${sourceBadge}${dimensionBadge}<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[9px]">event</span>${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>${orphanBadge}</div>
                             <div class="mt-3 grid grid-cols-2 gap-2 pl-1">
                                 <div class="rounded-xl bg-surface-container-high px-3 py-2">
                                     <p class="text-[9px] font-bold uppercase tracking-widest text-outline">Sessao</p>
