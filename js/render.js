@@ -994,6 +994,7 @@ renderTimeline: function() {
         const container = document.getElementById('timeline-container');
         if (!container) return;
 
+        const app = this;
         const state = window.sistemaVidaState;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -1059,6 +1060,436 @@ renderTimeline: function() {
         };
 
         // ── Entidades (Render) ─────────────────────────────────────
+        const nodeMap = new Map();
+        const rootNodes = [];
+        const syntheticNodeCache = new Map();
+        const entityNodeKeys = { metas: new Map(), okrs: new Map(), macros: new Map(), micros: new Map() };
+        const entities = state.entities || {};
+
+        const resolveEntityDimension = (entity, tipo) => {
+            if (!entity || typeof entity !== 'object') return 'Geral';
+            if (entity.dimension) return entity.dimension;
+            if (entity.dimensionName) return entity.dimensionName;
+            if (tipo === 'okrs') {
+                const meta = (entities.metas || []).find((item) => item.id === entity.metaId);
+                return meta?.dimension || meta?.dimensionName || 'Geral';
+            }
+            if (tipo === 'macros') {
+                const okr = (entities.okrs || []).find((item) => item.id === entity.okrId);
+                const meta = okr
+                    ? (entities.metas || []).find((item) => item.id === okr.metaId)
+                    : (entities.metas || []).find((item) => item.id === entity.metaId);
+                return meta?.dimension || meta?.dimensionName || 'Geral';
+            }
+            if (tipo === 'micros') {
+                const macro = (entities.macros || []).find((item) => item.id === entity.macroId);
+                const okr = macro
+                    ? (entities.okrs || []).find((item) => item.id === macro.okrId)
+                    : (entities.okrs || []).find((item) => item.id === entity.okrId);
+                const meta = okr
+                    ? (entities.metas || []).find((item) => item.id === okr.metaId)
+                    : (entities.metas || []).find((item) => item.id === entity.metaId);
+                return meta?.dimension || meta?.dimensionName || 'Geral';
+            }
+            return 'Geral';
+        };
+
+        const resolveEntityTimelineRange = (entity, tipo) => {
+            if (!entity?.id) return null;
+            let fallbackDays = 7;
+            if (tipo === 'okrs') fallbackDays = 84;
+            else if (tipo === 'macros') fallbackDays = 31;
+            else if (tipo === 'micros') fallbackDays = 7;
+            else if (tipo === 'metas') fallbackDays = Math.max(180, Math.round(app.getMetaHorizonYears(entity) * 365));
+
+            const hasPrazo = entity.prazo && entity.prazo.trim() !== '';
+            const hasInicio = entity.inicioDate && entity.inicioDate.trim() !== '';
+            const hasCreatedAt = entity.createdAt !== undefined && entity.createdAt !== null && String(entity.createdAt).trim() !== '';
+            let createdAtDate = null;
+            if (hasCreatedAt) {
+                if (typeof entity.createdAt === 'number') {
+                    createdAtDate = new Date(entity.createdAt);
+                } else {
+                    const createdRaw = String(entity.createdAt).trim();
+                    createdAtDate = createdRaw.includes('T') ? new Date(createdRaw) : new Date(createdRaw + 'T00:00:00');
+                }
+            }
+            const hasValidCreatedAt = !!(createdAtDate && !Number.isNaN(createdAtDate.getTime()));
+
+            let taskStart = hasInicio ? new Date(entity.inicioDate + 'T00:00:00') : null;
+            let taskEnd = hasPrazo ? new Date(entity.prazo + 'T00:00:00') : null;
+            if (!taskStart && taskEnd) {
+                if (hasValidCreatedAt) {
+                    taskStart = new Date(createdAtDate.getTime());
+                } else {
+                    taskStart = new Date(taskEnd.getTime());
+                    taskStart.setDate(taskStart.getDate() - (fallbackDays - 1));
+                }
+            } else if (taskStart && !taskEnd) {
+                taskEnd = new Date(taskStart.getTime());
+                taskEnd.setDate(taskEnd.getDate() + (fallbackDays - 1));
+            } else if (!taskStart && !taskEnd) {
+                if (hasValidCreatedAt) {
+                    taskStart = new Date(createdAtDate.getTime());
+                    taskEnd = new Date(createdAtDate.getTime());
+                    taskEnd.setDate(taskEnd.getDate() + (fallbackDays - 1));
+                } else {
+                    taskEnd = new Date(today);
+                    taskStart = new Date(today);
+                    taskStart.setDate(taskStart.getDate() - (fallbackDays - 1));
+                }
+            }
+
+            if (Number.isNaN(taskStart?.getTime?.())) taskStart = new Date(today);
+            if (Number.isNaN(taskEnd?.getTime?.())) taskEnd = new Date(today);
+            if (taskEnd < taskStart) {
+                const swap = taskStart;
+                taskStart = taskEnd;
+                taskEnd = swap;
+            }
+
+            const isOutsideWindow = taskEnd < startDate || taskStart > endDate;
+            if (isOutsideWindow) {
+                if (tipo !== 'metas') return null;
+                if (taskStart > endDate) {
+                    taskStart = new Date(endDate);
+                    taskEnd = new Date(endDate);
+                } else if (taskEnd < startDate) {
+                    taskStart = new Date(startDate);
+                    taskEnd = new Date(startDate);
+                }
+            }
+
+            const visualStart = new Date(Math.max(taskStart, startDate));
+            const visualEnd = new Date(Math.min(taskEnd, endDate));
+            const totalWindowTime = endDate - startDate;
+            const oneDayMs = 1000 * 60 * 60 * 24;
+            const leftPct = ((visualStart - startDate) / totalWindowTime) * 100;
+            const widthPct = (((visualEnd - visualStart) + oneDayMs) / totalWindowTime) * 100;
+            const progress = Number(entity.progress) || (entity.status === 'done' ? 100 : 0);
+            const isOverdue = taskEnd < today && entity.status !== 'done';
+            const isMicro = tipo === 'micros';
+
+            let barBg = isMicro ? 'bg-outline/30' : 'bg-outline/40';
+            if (entity.status === 'done') barBg = 'bg-emerald-500';
+            else if (isOverdue) barBg = 'bg-error/80';
+            else if (entity.status === 'in_progress') barBg = 'bg-amber-500';
+
+            const minWidthPctByType = { metas: 6, okrs: 5, macros: 4, micros: 3 };
+            const visualWidth = Math.min(100, Math.max(widthPct, minWidthPctByType[tipo] || 3));
+            const maxLeftForWidth = Math.max(0, 100 - visualWidth);
+            const visualLeft = Math.min(Math.max(0, leftPct), maxLeftForWidth);
+
+            return {
+                progress,
+                visualLeft,
+                visualWidth,
+                barBg,
+                barHeight: isMicro ? 'h-4' : 'h-6',
+                txtColor: (entity.status === 'done' || entity.status === 'in_progress' || isOverdue) ? 'text-white' : 'text-on-surface-variant',
+                showInlineTitle: visualWidth >= 8
+            };
+        };
+
+        const makeNode = ({ key, type, entity = null, entityId = '', title = '', isSynthetic = false, resolvedDimension = 'Geral' }) => {
+            const node = {
+                key,
+                type,
+                entity,
+                entityId,
+                title,
+                parentKey: '',
+                depth: 0,
+                children: [],
+                isSynthetic,
+                resolvedDimension,
+                dateRange: entity ? resolveEntityTimelineRange(entity, type) : null,
+                status: entity?.status || '',
+                progress: Number(entity?.progress) || (entity?.status === 'done' ? 100 : 0)
+            };
+            nodeMap.set(key, node);
+            if (entityId && entityNodeKeys[type]) entityNodeKeys[type].set(entityId, key);
+            return node;
+        };
+
+        const addRoot = (node) => {
+            if (!node || rootNodes.some((item) => item.key === node.key)) return;
+            node.parentKey = '';
+            node.depth = 0;
+            rootNodes.push(node);
+        };
+
+        const attachChild = (parent, child) => {
+            if (!parent || !child) return;
+            if (!parent.children.some((item) => item.key === child.key)) parent.children.push(child);
+            child.parentKey = parent.key;
+            child.depth = parent.depth + 1;
+        };
+
+        const getNodeByEntity = (type, entityId) => {
+            const key = entityNodeKeys[type]?.get(entityId);
+            return key ? nodeMap.get(key) : null;
+        };
+
+        const getSyntheticNode = (parent, scope, title, dimension = 'Geral') => {
+            const parentKey = parent?.key || 'root';
+            const cacheKey = `${scope}:${parentKey}`;
+            if (syntheticNodeCache.has(cacheKey)) return syntheticNodeCache.get(cacheKey);
+            const node = makeNode({
+                key: `synthetic:${scope}:${parentKey}`,
+                type: 'synthetic',
+                title,
+                isSynthetic: true,
+                resolvedDimension: dimension || parent?.resolvedDimension || 'Geral'
+            });
+            if (parent) attachChild(parent, node);
+            else addRoot(node);
+            syntheticNodeCache.set(cacheKey, node);
+            return node;
+        };
+
+        (entities.metas || []).forEach((meta) => {
+            if (!meta?.id || !String(meta.title || '').trim()) return;
+            makeNode({
+                key: `metas:${meta.id}`,
+                type: 'metas',
+                entity: meta,
+                entityId: meta.id,
+                title: meta.title,
+                resolvedDimension: resolveEntityDimension(meta, 'metas')
+            });
+        });
+        (entities.metas || []).forEach((meta) => {
+            const node = getNodeByEntity('metas', meta.id);
+            if (!node) return;
+            const parentNode = meta.parentMetaId ? getNodeByEntity('metas', meta.parentMetaId) : null;
+            if (parentNode) attachChild(parentNode, node);
+            else addRoot(node);
+        });
+        (entities.okrs || []).forEach((okr) => {
+            if (!okr?.id || !String(okr.title || '').trim()) return;
+            const node = makeNode({
+                key: `okrs:${okr.id}`,
+                type: 'okrs',
+                entity: okr,
+                entityId: okr.id,
+                title: okr.title,
+                resolvedDimension: resolveEntityDimension(okr, 'okrs')
+            });
+            const parentMeta = getNodeByEntity('metas', okr.metaId);
+            if (parentMeta) attachChild(parentMeta, node);
+            else attachChild(getSyntheticNode(null, 'missing-meta', 'Sem Meta', node.resolvedDimension), node);
+        });
+        (entities.macros || []).forEach((macro) => {
+            if (!macro?.id || !String(macro.title || '').trim()) return;
+            const node = makeNode({
+                key: `macros:${macro.id}`,
+                type: 'macros',
+                entity: macro,
+                entityId: macro.id,
+                title: macro.title,
+                resolvedDimension: resolveEntityDimension(macro, 'macros')
+            });
+            const parentOkr = getNodeByEntity('okrs', macro.okrId);
+            if (parentOkr) {
+                attachChild(parentOkr, node);
+                return;
+            }
+            const parentMeta = getNodeByEntity('metas', macro.metaId);
+            const branchRoot = parentMeta || getSyntheticNode(null, 'missing-meta', 'Sem Meta', node.resolvedDimension);
+            attachChild(getSyntheticNode(branchRoot, 'missing-project', 'Sem Projeto', node.resolvedDimension), node);
+        });
+        (entities.micros || []).forEach((micro) => {
+            if (!micro?.id || !String(micro.title || '').trim()) return;
+            const node = makeNode({
+                key: `micros:${micro.id}`,
+                type: 'micros',
+                entity: micro,
+                entityId: micro.id,
+                title: micro.title,
+                resolvedDimension: resolveEntityDimension(micro, 'micros')
+            });
+            const parentMacro = getNodeByEntity('macros', micro.macroId);
+            if (parentMacro) {
+                attachChild(parentMacro, node);
+                return;
+            }
+            const parentOkr = getNodeByEntity('okrs', micro.okrId);
+            if (parentOkr) {
+                attachChild(getSyntheticNode(parentOkr, 'missing-delivery', 'Sem Entrega', node.resolvedDimension), node);
+                return;
+            }
+            const parentMeta = getNodeByEntity('metas', micro.metaId);
+            const branchRoot = parentMeta || getSyntheticNode(null, 'missing-meta', 'Sem Meta', node.resolvedDimension);
+            const missingProjectNode = getSyntheticNode(branchRoot, 'missing-project', 'Sem Projeto', node.resolvedDimension);
+            attachChild(getSyntheticNode(missingProjectNode, 'missing-delivery', 'Sem Entrega', node.resolvedDimension), node);
+        });
+
+        const sortWeight = (node) => {
+            if (node.type === 'metas') return 0;
+            if (node.type === 'okrs') return 1;
+            if (node.type === 'synthetic' && node.title === 'Sem Projeto') return 2;
+            if (node.type === 'synthetic' && node.title === 'Sem Entrega') return 3;
+            if (node.type === 'synthetic') return 4;
+            if (node.type === 'macros') return 5;
+            if (node.type === 'micros') return 6;
+            return 9;
+        };
+        const parseSortDate = (rawValue) => {
+            const value = String(rawValue || '').trim();
+            if (!value) return Number.POSITIVE_INFINITY;
+            const parsed = value.includes('T') ? new Date(value) : new Date(value + 'T00:00:00');
+            const time = parsed.getTime();
+            return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+        };
+        const getNodePrimarySortDate = (node) => {
+            if (!node?.entity) return Number.POSITIVE_INFINITY;
+            return parseSortDate(node.entity.inicioDate || node.entity.prazo || '');
+        };
+        const getNodeSecondarySortDate = (node) => {
+            if (!node?.entity) return Number.POSITIVE_INFINITY;
+            return parseSortDate(node.entity.prazo || node.entity.inicioDate || '');
+        };
+        const sortTree = (nodes) => {
+            nodes.sort((a, b) => {
+                const diff = sortWeight(a) - sortWeight(b);
+                if (diff !== 0) return diff;
+                const primaryDiff = getNodePrimarySortDate(a) - getNodePrimarySortDate(b);
+                if (primaryDiff !== 0) return primaryDiff;
+                const secondaryDiff = getNodeSecondarySortDate(a) - getNodeSecondarySortDate(b);
+                if (secondaryDiff !== 0) return secondaryDiff;
+                return String(a.title || '').localeCompare(String(b.title || ''), 'pt-BR');
+            });
+            nodes.forEach((node) => {
+                if (node.children.length) sortTree(node.children);
+            });
+        };
+        sortTree(rootNodes);
+
+        let hierarchyRelevantKeys = null;
+        if (hType && hId) {
+            const targetNode = getNodeByEntity(hType, hId);
+            if (targetNode) {
+                hierarchyRelevantKeys = new Set();
+                const pathKeys = [];
+                const collectDescendants = (node) => {
+                    hierarchyRelevantKeys.add(node.key);
+                    node.children.forEach((child) => collectDescendants(child));
+                };
+                collectDescendants(targetNode);
+                let currentNode = targetNode;
+                while (currentNode) {
+                    hierarchyRelevantKeys.add(currentNode.key);
+                    pathKeys.unshift(currentNode.key);
+                    currentNode = currentNode.parentKey ? nodeMap.get(currentNode.parentKey) : null;
+                }
+                window.app.expandTimelinePath(pathKeys);
+            }
+        }
+
+        const nodeMatchesSelf = (node) => {
+            if (hierarchyRelevantKeys && !hierarchyRelevantKeys.has(node.key)) return false;
+            if (node.isSynthetic) return currentFilter === 'Todas' || !!hierarchyRelevantKeys;
+            if (!filterStatus(node.entity || {})) return false;
+            if (!hType && currentFilter !== 'Todas' && node.resolvedDimension !== currentFilter) return false;
+            return true;
+        };
+
+        const pruneTree = (node) => {
+            const children = node.children.map((child) => pruneTree(child)).filter(Boolean);
+            const selfMatch = nodeMatchesSelf(node);
+            if (!selfMatch && children.length === 0) return null;
+            return { ...node, children };
+        };
+
+        const filteredRoots = rootNodes.map((node) => pruneTree(node)).filter(Boolean);
+        const esc = (value) => app.escapeHtml(String(value || ''));
+        const toSafeKey = (value) => String(value || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+        const renderNode = (node) => {
+            const hasChildren = node.children.length > 0;
+            const isExpanded = hasChildren ? window.app.isTimelineNodeExpanded(node) : false;
+            const metrics = node.dateRange;
+            const borderColor = node.isSynthetic ? 'border-outline-variant/30' : (dimColorMap[node.resolvedDimension] || 'border-outline-variant/40');
+            const childrenId = `timeline-children-${toSafeKey(node.key)}`;
+            const depthOffset = node.depth * 16;
+            const titleHtml = node.isSynthetic
+                ? `<span class="text-xs text-on-surface-variant leading-tight truncate font-medium">${esc(node.title)}</span>`
+                : `<button onclick='event.stopPropagation(); window.app.openTimelineEntity(${JSON.stringify(node.entityId)}, ${JSON.stringify(node.type)})' class="text-xs text-on-surface leading-tight truncate font-medium group-hover:text-primary transition-colors text-left hover:underline" title="Abrir em Planos">${esc(node.title)}</button>`;
+            const barHtml = metrics
+                ? `
+                    <div class="absolute ${metrics.barHeight} rounded-lg overflow-hidden shadow-sm transition-all group-hover:shadow-md ${metrics.barBg} ${metrics.txtColor}"
+                         style="left:${metrics.visualLeft.toFixed(2)}%; width:${metrics.visualWidth.toFixed(2)}%"
+                         title="${esc(`${node.title} | Progresso: ${metrics.progress}%`)}">
+                        <div class="absolute top-0 bottom-0 left-0 bg-black/20 dark:bg-white/10" style="width: ${metrics.progress}%"></div>
+                        <div class="absolute inset-0 flex items-center px-2">
+                            <span class="text-[10px] font-bold truncate leading-none z-10 drop-shadow-sm whitespace-nowrap block ${metrics.showInlineTitle ? 'w-full text-center' : 'w-0 h-0 overflow-hidden'}">${metrics.showInlineTitle ? esc(node.title) : ''}</span>
+                        </div>
+                    </div>`
+                : `<div class="absolute inset-y-3 left-0 right-0 border border-dashed border-outline-variant/20 rounded-lg bg-surface-container-low/40"></div>`;
+
+            const rowHtml = `
+                <div class="flex items-center border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors group">
+                    <div class="w-48 shrink-0 px-4 py-3 border-r border-outline-variant/20 flex flex-col justify-center overflow-hidden">
+                        <div class="${borderColor} flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity border-l-4 pl-2" style="margin-left:${depthOffset}px">
+                            ${hasChildren
+                                ? `<button type="button"
+                                        onclick='event.stopPropagation(); window.app.toggleTimelineNode(${JSON.stringify(node.key)})'
+                                        class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-outline hover:bg-surface-container-highest hover:text-primary transition-colors"
+                                        aria-expanded="${isExpanded ? 'true' : 'false'}"
+                                        aria-controls="${childrenId}"
+                                        aria-label="${isExpanded ? 'Recolher' : 'Expandir'} ${esc(node.title)}">
+                                        <span class="material-symbols-outlined notranslate text-[16px]">${isExpanded ? 'expand_more' : 'chevron_right'}</span>
+                                   </button>`
+                                : '<span class="inline-flex h-5 w-5 shrink-0"></span>'}
+                            ${titleHtml}
+                        </div>
+                    </div>
+                    <div class="flex-1 relative h-12 py-3 flex items-center cursor-default group/bar">
+                        ${barHtml}
+                    </div>
+                </div>`;
+
+            if (!hasChildren) return rowHtml;
+            return `${rowHtml}<div id="${childrenId}" class="${isExpanded ? '' : 'hidden'}">${node.children.map((child) => renderNode(child)).join('')}</div>`;
+        };
+
+        const timelineRowsHTML = filteredRoots.map((node) => renderNode(node)).join('');
+        const rowsContent = timelineRowsHTML || `
+            <div class="flex flex-col items-center justify-center py-16 text-outline">
+                <span class="material-symbols-outlined notranslate text-4xl mb-3">calendar_today</span>
+                <p class="text-sm italic">
+                    Nenhuma entidade correspondente ao seu filtro atual foi encontrada nesta janela de visualizaÃ§Ã£o.
+                </p>
+            </div>`;
+
+        const timelineLegendHTML = `
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 px-2 opacity-60">
+                <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>ConcluÃ­do
+                </span>
+                <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
+                    <span class="inline-block w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span>Em andamento
+                </span>
+                <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
+                    <span class="inline-block w-2 h-2 rounded-full bg-outline/40 flex-shrink-0"></span>Pendente
+                </span>
+                <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
+                    <span class="inline-block w-2 h-2 rounded-full bg-error/80 flex-shrink-0"></span>Atrasado
+                </span>
+            </div>`;
+
+        container.innerHTML = `
+            <div class="relative min-w-[600px]">
+                ${headerHTML}
+                <div class="relative pb-6">
+                    ${todayLine}
+                    ${rowsContent}
+                </div>
+                ${timelineLegendHTML}
+            </div>`;
+        return;
+
         let rowsHTML = '';
         const renderedIds = { metas: new Set(), okrs: new Set(), macros: new Set(), micros: new Set() };
 

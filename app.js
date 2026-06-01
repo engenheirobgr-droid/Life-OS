@@ -2707,6 +2707,7 @@ _getAudioContext: function() {
     manualGuideScreenFilter: 'all',
     profileNotesFilter: 'all',
     expandedProfileNoteId: '',
+    timelineExpandedNodes: {},
     currentTextGroup: null,
     currentTextKey: null,
     onboardingStep: 0,
@@ -3599,6 +3600,45 @@ renderProfileChrome: function() {
         if (this.render.planos) this.render.planos();
         this.renderTimeline();
         this.showToast('Filtros de Planos limpos.', 'success');
+    },
+
+    getTimelineDefaultExpanded: function(node) {
+        if (!node || typeof node !== 'object') return false;
+        const rawType = typeof node.type === 'string' && node.type
+            ? node.type
+            : String(node.key || '').split(':')[0];
+        return rawType === 'metas';
+    },
+
+    isTimelineNodeExpanded: function(node) {
+        const expandedMap = this.timelineExpandedNodes || {};
+        if (!node || !node.key) return false;
+        if (Object.prototype.hasOwnProperty.call(expandedMap, node.key)) {
+            return !!expandedMap[node.key];
+        }
+        return this.getTimelineDefaultExpanded(node);
+    },
+
+    toggleTimelineNode: function(nodeKey) {
+        if (!nodeKey) return;
+        if (!this.timelineExpandedNodes || typeof this.timelineExpandedNodes !== 'object') {
+            this.timelineExpandedNodes = {};
+        }
+        const current = Object.prototype.hasOwnProperty.call(this.timelineExpandedNodes, nodeKey)
+            ? !!this.timelineExpandedNodes[nodeKey]
+            : this.getTimelineDefaultExpanded({ key: nodeKey });
+        this.timelineExpandedNodes[nodeKey] = !current;
+        this.renderTimeline();
+    },
+
+    expandTimelinePath: function(nodeKeys = []) {
+        if (!Array.isArray(nodeKeys) || nodeKeys.length === 0) return;
+        if (!this.timelineExpandedNodes || typeof this.timelineExpandedNodes !== 'object') {
+            this.timelineExpandedNodes = {};
+        }
+        nodeKeys.filter(Boolean).forEach((key) => {
+            this.timelineExpandedNodes[key] = true;
+        });
     },
 
     setPainelFilter: function(filter) {
