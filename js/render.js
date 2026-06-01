@@ -2803,7 +2803,7 @@ render: {
                             <div class="flex items-start justify-between gap-3 pl-1">
                                 <div class="min-w-0 flex-1">
                                     <p class="line-clamp-2 text-sm font-semibold leading-snug text-on-surface">${app.escapeHtml(m.title)}</p>
-                                    <div class="mt-2 flex items-center gap-1 overflow-x-auto no-scrollbar">${sourceBadge}${dimensionBadge}<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[9px]">event</span>${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>${orphanBadge}</div>
+                                    <div class="mt-2 flex flex-wrap items-center gap-1">${sourceBadge}${dimensionBadge}<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[9px]">event</span>${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>${orphanBadge}</div>
                                 </div>
                                 <div class="flex items-center gap-2 shrink-0">
                                     ${m.status !== 'done'
@@ -3738,11 +3738,11 @@ render: {
                     };
 
                     const startBtn = !focusEligibility.ok
-                        ? `<button onclick="event.stopPropagation(); app.editEntity('${micro.id}', 'micros');" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Corrigir</button>`
+                        ? `<button onclick="event.stopPropagation(); app.editEntity('${micro.id}', 'micros');" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors" title="Corrigir ação" aria-label="Corrigir ação"><span class="material-symbols-outlined notranslate text-[16px]">warning</span></button>`
                         : (shouldStart
-                        ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Iniciar</button>`
+                        ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', true);" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors" title="Iniciar" aria-label="Iniciar"><span class="material-symbols-outlined notranslate text-[16px]">play_arrow</span></button>`
                         : (micro.status === 'in_progress'
-                            ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', false);" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors">Gerenciar</button>`
+                            ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', false);" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors" title="Gerenciar" aria-label="Gerenciar"><span class="material-symbols-outlined notranslate text-[16px]">timer</span></button>`
                             : ''));
 
                     html += `

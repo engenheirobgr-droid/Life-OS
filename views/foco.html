@@ -35,13 +35,13 @@
                                 <p id="deep-work-status-display" class="mt-1 text-lg font-semibold text-on-background">Pronto para iniciar</p>
                                 <p id="deep-work-step-display" class="mt-1 text-sm text-on-surface-variant">Escolha um contexto e entre no bloco quando estiver pronto.</p>
                             </div>
-                            <div class="flex flex-wrap items-center justify-start gap-2 shrink-0 lg:justify-end">
+                            <div class="flex w-full flex-nowrap items-center justify-start gap-1.5 overflow-x-auto no-scrollbar shrink-0 lg:w-auto lg:flex-wrap lg:justify-end lg:gap-2 lg:overflow-visible">
                                 <label for="deep-work-preset-compact" class="sr-only">Duracao foco</label>
-                                <div class="relative rounded-xl border border-outline-variant/15 bg-surface-container-low shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                                <div class="relative shrink-0 rounded-xl border border-outline-variant/15 bg-surface-container-low shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                                     <span class="pointer-events-none absolute inset-y-0 left-2 inline-flex items-center text-outline">
                                         <span class="material-symbols-outlined notranslate text-[14px]">timer</span>
                                     </span>
-                                    <select id="deep-work-preset-compact" onchange="window.app.setDeepWorkPreset(Number(this.value || 25))" class="h-10 min-w-[98px] appearance-none rounded-xl border-0 bg-transparent pl-7 pr-7 text-[11px] font-bold tracking-[0.08em] text-on-surface outline-none transition-colors hover:bg-surface-container-high focus:bg-surface-container-high">
+                                    <select id="deep-work-preset-compact" onchange="window.app.setDeepWorkPreset(Number(this.value || 25))" class="h-10 min-w-[88px] appearance-none rounded-xl border-0 bg-transparent pl-7 pr-6 text-[11px] font-bold tracking-[0.08em] text-on-surface outline-none transition-colors hover:bg-surface-container-high focus:bg-surface-container-high md:min-w-[98px]">
                                         <option value="15">15/3</option>
                                         <option value="25" selected>25/5</option>
                                         <option value="45">45/10</option>
@@ -53,7 +53,7 @@
                                     </span>
                                 </div>
 
-                                <div class="grid grid-cols-3 gap-1 rounded-xl border border-outline-variant/15 bg-surface-container-low p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]" aria-label="Visualizacao do relogio de foco">
+                                <div class="grid shrink-0 grid-cols-3 gap-1 rounded-xl border border-outline-variant/15 bg-surface-container-low p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]" aria-label="Visualizacao do relogio de foco">
                                     <button type="button" id="deep-work-clock-preview-btn" onclick="window.app.previewDeepWorkClock()" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-outline hover:text-primary hover:bg-surface-container-high transition-colors" title="Prever animacao visual" aria-label="Prever animacao visual">
                                         <span class="material-symbols-outlined notranslate text-[16px]">visibility</span>
                                     </button>
@@ -65,7 +65,7 @@
                                     </button>
                                 </div>
 
-                                <div class="flex items-center gap-1 rounded-xl border border-outline-variant/15 bg-surface-container-low p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                                <div class="flex shrink-0 items-center gap-1 rounded-xl border border-outline-variant/15 bg-surface-container-low p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                                     <button id="deep-work-start-btn" type="button" onclick="window.app.startDeepWorkSession()" class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-on-primary border border-primary/30 shadow-sm transition-colors" title="Iniciar foco" aria-label="Iniciar foco">
                                         <span id="deep-work-start-icon" class="material-symbols-outlined notranslate text-[16px]">play_arrow</span>
                                         <span id="deep-work-start-label" class="sr-only">Iniciar</span>

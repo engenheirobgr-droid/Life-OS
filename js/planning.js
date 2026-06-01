@@ -930,23 +930,26 @@ _renderNextActionCard: function(next, variant = 'today') {
             <div class="${wrapper} border rounded-2xl p-5 md:p-6">
                 <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div class="min-w-0">
-                        <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">Próxima melhor ação</p>
+                        <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">Pr&oacute;xima melhor a&ccedil;&atilde;o</p>
                         <h4 class="font-headline text-xl md:text-2xl font-bold text-on-background leading-tight">${this.escapeHtml(micro.title)}</h4>
                         <div class="mt-3 flex flex-wrap gap-2">${reasons}</div>
                         <p class="mt-3 text-xs text-on-surface-variant leading-relaxed">${metaText}</p>
                     </div>
                     <div class="flex flex-wrap md:flex-col gap-2 md:min-w-[140px]">
                         <button type="button" onclick="window.app.completeMicroAction('${micro.id}')"
-                            class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">
-                            Concluir
+                            class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary hover:opacity-90 active:scale-95 transition-all"
+                            title="Concluir a&ccedil;&atilde;o" aria-label="Concluir a&ccedil;&atilde;o">
+                            <span class="material-symbols-outlined notranslate text-[18px]">check</span>
                         </button>
                         <button type="button" onclick="window.app.adjustMicroScheduleContextually('${micro.id}')"
-                            class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest active:scale-95 transition-all">
-                            ${this.escapeHtml(scheduleAction.label)}
+                            class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-on-surface hover:bg-surface-container-highest active:scale-95 transition-all"
+                            title="${this.escapeHtml(scheduleAction.title || scheduleAction.label)}" aria-label="${this.escapeHtml(scheduleAction.title || scheduleAction.label)}">
+                            <span class="material-symbols-outlined notranslate text-[18px]">${this.escapeHtml(scheduleAction.icon || 'event_upcoming')}</span>
                         </button>
                         <button type="button" onclick="window.app.openEntityReview('${micro.id}', 'micros')"
-                            class="flex-1 md:flex-none px-4 py-2 rounded-xl border border-outline-variant/30 text-outline text-xs font-bold uppercase tracking-widest hover:bg-surface-container-high active:scale-95 transition-all">
-                            Ver detalhes
+                            class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant/30 text-outline hover:bg-surface-container-high active:scale-95 transition-all"
+                            title="Ver detalhes" aria-label="Ver detalhes">
+                            <span class="material-symbols-outlined notranslate text-[18px]">visibility</span>
                         </button>
                     </div>
                 </div>
