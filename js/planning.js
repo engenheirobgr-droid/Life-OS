@@ -918,6 +918,10 @@ _renderNextActionCard: function(next, variant = 'today') {
             `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">Esforço ${effortLabel}</span>`,
             ...(next.reasons || []).map(r => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">${this.escapeHtml(r)}</span>`)
         ].join('');
+        const scheduleAction = this.getMicroScheduleAdjustmentAction?.(micro) || {
+            title: 'Adiar para amanha',
+            label: 'Adiar'
+        };
         const wrapper = variant === 'panel'
             ? 'bg-primary/5 border-primary/20'
             : 'bg-surface-container-lowest border-primary/20 shadow-sm';
@@ -936,9 +940,9 @@ _renderNextActionCard: function(next, variant = 'today') {
                             class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all">
                             Concluir
                         </button>
-                        <button type="button" onclick="window.app.postponeMicroOneDay('${micro.id}')"
+                        <button type="button" onclick="window.app.adjustMicroScheduleContextually('${micro.id}')"
                             class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest active:scale-95 transition-all">
-                            Adiar
+                            ${this.escapeHtml(scheduleAction.label)}
                         </button>
                         <button type="button" onclick="window.app.openEntityReview('${micro.id}', 'micros')"
                             class="flex-1 md:flex-none px-4 py-2 rounded-xl border border-outline-variant/30 text-outline text-xs font-bold uppercase tracking-widest hover:bg-surface-container-high active:scale-95 transition-all">

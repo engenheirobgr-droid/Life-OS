@@ -25,8 +25,8 @@ import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260527-weekly-coherence-v1';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260526-rollback-align-v1';
 import { attachStateModule } from './js/state.js?v=20260526-rollback-align-v1';
-import { attachRenderModule } from './js/render.js?v=20260531-foco-toolbar-v2';
-import { attachPlanningModule } from './js/planning.js?v=20260526-rollback-align-v1';
+import { attachRenderModule } from './js/render.js?v=20260601-foco-schedule-context-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260601-foco-schedule-context-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260531-foco-toolbar-v2',
+    appBuildVersion: '20260601-foco-schedule-context-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -5108,6 +5108,68 @@ openCreateModal: function(type = 'metas', parentId = null) {
             if (plannedOption) plannedOption.remove();
             if (statusSelect.value === 'planned') statusSelect.value = 'all';
         }
+    },
+
+    getMicroScheduleAdjustmentAction: function(input) {
+        const state = window.sistemaVidaState;
+        const micro = typeof input === 'string'
+            ? (state.entities.micros || []).find(m => m.id === input)
+            : input;
+        const todayStr = this.getLocalDateKey();
+        const startDate = String(micro?.inicioDate || micro?.prazo || '').trim();
+        const isFuture = !!startDate && startDate > todayStr;
+
+        if (isFuture) {
+            return {
+                mode: 'bring_today',
+                icon: 'keyboard_double_arrow_left',
+                title: 'Trazer para hoje',
+                label: 'Hoje'
+            };
+        }
+
+        return {
+            mode: 'postpone_tomorrow',
+            icon: 'event_upcoming',
+            title: 'Adiar para amanha',
+            label: 'Adiar'
+        };
+    },
+
+    adjustMicroScheduleContextually: function(id) {
+        const state = window.sistemaVidaState;
+        const micro = (state.entities.micros || []).find(m => m.id === id);
+        if (!micro) {
+            this.showToast('Acao nao encontrada para ajustar agenda.', 'error');
+            return;
+        }
+
+        const scheduleAction = this.getMicroScheduleAdjustmentAction(micro);
+        const todayStr = this.getLocalDateKey();
+
+        if (scheduleAction.mode === 'bring_today') {
+            const fromDate = String(micro.inicioDate || micro.prazo || '');
+            const formattedFromDate = fromDate
+                ? fromDate.split('-').reverse().slice(0, 2).join('/')
+                : 'outro dia';
+            const shouldBringToToday = confirm(`Essa acao esta agendada para ${formattedFromDate}. Deseja traze-la para hoje?`);
+            if (!shouldBringToToday) return;
+
+            micro.inicioDate = todayStr;
+            if (!micro.prazo || micro.prazo < todayStr) {
+                micro.prazo = todayStr;
+            }
+
+            this.saveState(false);
+            this.showToast('Acao trazida para hoje', 'success');
+            if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+            if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+            if (this.currentView === 'painel' && this.render.painel) this.render.painel();
+            return;
+        }
+
+        this.postponeMicroOneDay(id);
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
     },
 
     /**

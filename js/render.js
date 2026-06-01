@@ -2758,6 +2758,14 @@ render: {
                         : (isInProgress
                             ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25'
                             : 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20');
+                    const mobileCardClass = isDone
+                        ? 'bg-emerald-500/[0.04] border-emerald-500/30'
+                        : (isInProgress
+                            ? 'bg-amber-500/[0.04] border-amber-500/35'
+                            : 'bg-surface-container-lowest border-outline-variant/15');
+                    const mobileAccentClass = isDone
+                        ? 'bg-emerald-500'
+                        : (isInProgress ? 'bg-amber-500' : 'bg-primary/30');
                     const isTimerMicro = state.deepWork?.isRunning && state.deepWork?.microId === m.id;
                     const focusEligibility = app.getMicroFocusEligibility?.(m) || { ok: true };
                     const actionLabel = !focusEligibility.ok
@@ -2772,45 +2780,82 @@ render: {
                     const sourceBadge = isFocoPlanned
                         ? '<span class="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
                         : '<span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-outline">Captura</span>';
+                    const dimensionBadge = `<span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">${app.escapeHtml(m.dimension || 'Geral')}</span>`;
                     const orphanBadge = !focusEligibility.ok
                         ? '<span title="Acao sem Entrega associada (Nao Alinhada)" class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Nao alinhado</span>'
                         : '';
+                    const mobilePrimaryIcon = !focusEligibility.ok
+                        ? 'warning'
+                        : ((m.status === 'in_progress' || isTimerMicro) ? 'timer' : 'play_arrow');
+                    const mobilePrimaryTitle = m.status === 'done'
+                        ? 'Reabrir acao'
+                        : actionLabel;
+                    const scheduleAction = m.status !== 'done'
+                        ? (app.getMicroScheduleAdjustmentAction?.(m) || {
+                            icon: 'event_upcoming',
+                            title: 'Adiar para amanha',
+                            label: 'Adiar'
+                        })
+                        : null;
                     return `
-                    <div class="rounded-2xl border ${rowStateClass} overflow-hidden shadow-sm transition-colors hover:border-primary/20">
-                        <div class="grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,2.1fr)_minmax(130px,0.95fr)_minmax(120px,0.75fr)_90px_90px_120px_minmax(190px,1.2fr)_44px] md:items-center md:gap-4">
+                    <div class="md:hidden">
+                        <div class="relative overflow-hidden rounded-2xl border ${mobileCardClass} px-4 py-3 shadow-sm transition-colors">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 ${mobileAccentClass}"></div>
+                            <div class="flex items-start justify-between gap-3 pl-1">
+                                <div class="min-w-0 flex-1">
+                                    <p class="line-clamp-2 text-sm font-semibold leading-snug text-on-surface">${app.escapeHtml(m.title)}</p>
+                                    <div class="mt-2 flex items-center gap-1 overflow-x-auto no-scrollbar">${sourceBadge}${dimensionBadge}<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[9px]">event</span>${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>${orphanBadge}</div>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    ${m.status !== 'done'
+                                        ? `<button onclick="${actionHandler}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg ${focusEligibility.ok ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15'}" title="${mobilePrimaryTitle}" aria-label="${mobilePrimaryTitle}"><span class="material-symbols-outlined notranslate text-[18px]">${mobilePrimaryIcon}</span></button>`
+                                        : `<button onclick="window.app.completeMicroAction('${m.id}')" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary hover:bg-primary/20" title="Reabrir acao" aria-label="Reabrir acao"><span class="material-symbols-outlined notranslate text-[18px]">undo</span></button>`}
+                                    ${m.status !== 'done' ? `<button onclick="window.app.completeMicroAction('${m.id}')" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-primary transition-colors hover:border-primary/20 hover:bg-primary/10" title="Concluir acao" aria-label="Concluir acao"><span class="material-symbols-outlined notranslate text-[18px]">check</span></button>` : ''}
+                                    ${scheduleAction ? `<button onclick="window.app.adjustMicroScheduleContextually('${m.id}')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="${scheduleAction.title}" aria-label="${scheduleAction.title}"><span class="material-symbols-outlined notranslate text-[16px]">${scheduleAction.icon}</span></button>` : ''}
+                                    <button onclick="window.app.editEntity('${m.id}', 'micros')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="Editar acao" aria-label="Editar acao"><span class="material-symbols-outlined notranslate text-[16px]">edit</span></button>
+                                </div>
+                            </div>
+                            <div class="mt-3 grid grid-cols-2 gap-2 pl-1">
+                                <div class="rounded-xl bg-surface-container-high px-3 py-2">
+                                    <p class="text-[9px] font-bold uppercase tracking-widest text-outline">Sessao</p>
+                                    <p class="mt-1 text-sm font-semibold text-on-surface">${sessionCount} ${sessionCount === 1 ? 'sessao' : 'sessoes'}</p>
+                                </div>
+                                <div class="rounded-xl bg-surface-container-high px-3 py-2">
+                                    <p class="text-[9px] font-bold uppercase tracking-widest text-outline">Duracao</p>
+                                    <p class="mt-1 text-sm font-semibold text-primary">${focusText}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hidden rounded-2xl border ${rowStateClass} overflow-hidden shadow-sm transition-colors hover:border-primary/20 md:block">
+                        <div class="gap-3 px-4 py-3 md:grid md:grid-cols-[minmax(0,2.1fr)_minmax(130px,0.95fr)_minmax(120px,0.75fr)_90px_90px_120px_minmax(190px,1.2fr)_44px] md:items-center md:gap-4">
                             <div class="min-w-0">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Acao</p>
                                 <p class="truncate font-semibold text-on-surface">${app.escapeHtml(m.title)}</p>
-                                <div class="mt-1 flex flex-wrap gap-1.5">${sourceBadge}${orphanBadge}<span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">${app.escapeHtml(m.dimension || 'Geral')}</span></div>
+                                <div class="mt-1 flex flex-wrap gap-1.5">${sourceBadge}${orphanBadge}${dimensionBadge}</div>
                             </div>
                             <div class="min-w-0">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Categoria</p>
                                 <p class="truncate text-sm text-on-surface-variant">${app.escapeHtml(ctx.parentLabel || 'Sem vinculo em Planos')}</p>
                             </div>
                             <div class="min-w-0">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Sessao</p>
                                 <p class="text-sm text-on-surface">${sessionCount} ${sessionCount === 1 ? 'sessao' : 'sessoes'}</p>
                             </div>
                             <div class="min-w-0">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Duracao</p>
                                 <p class="text-sm font-semibold text-primary">${focusText}</p>
                             </div>
                             <div class="min-w-0">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Agenda</p>
                                 <p class="text-sm text-on-surface-variant">${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</p>
                             </div>
                             <div class="min-w-0">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Status</p>
                                 <span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${statusBadge}">${statusText}</span>
                             </div>
                             <div class="min-w-0">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-outline md:hidden">Acoes</p>
                                 <div class="flex items-center gap-2 whitespace-nowrap md:justify-start">
                                     ${m.status !== 'done' ? `<button onclick="${actionHandler}" class="inline-flex h-8 items-center justify-center rounded-lg px-3 text-[10px] font-bold uppercase tracking-widest ${focusEligibility.ok ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15'}">${actionLabel}</button>` : `<button onclick="window.app.completeMicroAction('${m.id}')" class="inline-flex h-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 px-3 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/20">Reabrir</button>`}
                                     ${m.status !== 'done' ? `<button onclick="window.app.completeMicroAction('${m.id}')" class="inline-flex h-8 items-center justify-center text-[10px] font-bold uppercase tracking-widest text-primary hover:underline">Concluir</button>` : ''}
                                 </div>
                             </div>
-                            <div class="flex items-center justify-end">
+                            <div class="flex items-center justify-end gap-2">
+                                ${scheduleAction ? `<button onclick="window.app.adjustMicroScheduleContextually('${m.id}')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="${scheduleAction.title}" aria-label="${scheduleAction.title}"><span class="material-symbols-outlined notranslate text-[16px]">${scheduleAction.icon}</span></button>` : ''}
                                 <button onclick="window.app.editEntity('${m.id}', 'micros')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="Editar acao"><span class="material-symbols-outlined notranslate text-[16px]">edit</span></button>
                             </div>
                         </div>
@@ -3687,6 +3732,12 @@ render: {
                     const planBadge = isPlanned ? badge('event', 'Semana', 'text-primary', 'bg-primary/5') : badge('inbox', 'Captura', 'text-on-surface-variant', 'bg-surface-container-high');
                     const focusEligibility = app.getMicroFocusEligibility?.(micro) || { ok: true };
                     const orphanBadge = !focusEligibility.ok ? badge('warning', 'Não Alinhado', 'text-amber-600 dark:text-amber-400', 'bg-amber-500/10') : '';
+                    const scheduleAction = app.getMicroScheduleAdjustmentAction?.(micro) || {
+                        icon: 'event_upcoming',
+                        title: 'Adiar para amanha',
+                        label: 'Adiar'
+                    };
+
                     const startBtn = !focusEligibility.ok
                         ? `<button onclick="event.stopPropagation(); app.editEntity('${micro.id}', 'micros');" class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors">Corrigir</button>`
                         : (shouldStart
@@ -3707,8 +3758,8 @@ render: {
                                         ${notesBadge}
                                         <div class="flex items-center gap-1 shrink-0">
                                             ${startBtn}
-                                            <button type="button" title="Adiar para amanhã" onclick="event.stopPropagation(); app.postponeMicroOneDay('${micro.id}');" class="w-7 h-7 flex items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-90">
-                                                <span class="material-symbols-outlined notranslate text-[18px]">event_upcoming</span>
+                                            <button type="button" title="${scheduleAction.title}" onclick="event.stopPropagation(); app.adjustMicroScheduleContextually('${micro.id}');" class="w-7 h-7 flex items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-90">
+                                                <span class="material-symbols-outlined notranslate text-[18px]">${scheduleAction.icon}</span>
                                             </button>
                                             <span class="material-symbols-outlined notranslate text-outline-variant text-sm transition-transform group-[.open]:rotate-180">keyboard_arrow_down</span>
                                         </div>
