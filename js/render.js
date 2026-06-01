@@ -4270,33 +4270,43 @@ render: {
                         const actionButton = entityType === 'micros' && !isDone
                             ? `
                                 <button onclick="event.stopPropagation(); ${focusEligibility.ok ? `app.openMicroInFocus('${item.id}', ${isPending ? 'true' : 'false'})` : `app.editEntity('${item.id}', 'micros')`}"
-                                    class="p-2.5 border ${focusEligibility.ok ? (isPending ? 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary') : 'border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 text-amber-700 dark:text-amber-400'} rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold transition-colors">
-                                    <span class="material-symbols-outlined notranslate text-base">${focusEligibility.ok ? (isPending ? 'play_arrow' : 'timer') : 'warning'}</span> ${focusEligibility.ok ? (isPending ? 'Iniciar' : 'Gerenciar') : 'Corrigir'}
+                                    class="inline-flex h-11 w-full items-center justify-center rounded-xl border ${focusEligibility.ok ? (isPending ? 'border-amber-500/30 bg-amber-500/5 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400' : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10') : 'border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/15 dark:text-amber-400'} transition-colors"
+                                    title="${focusEligibility.ok ? (isPending ? 'Iniciar' : 'Gerenciar') : 'Corrigir'}"
+                                    aria-label="${focusEligibility.ok ? (isPending ? 'Iniciar' : 'Gerenciar') : 'Corrigir'}">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">${focusEligibility.ok ? (isPending ? 'play_arrow' : 'timer') : 'warning'}</span>
                                 </button>
                             `
                             : (isDone
                                 ? `
                                 ${entityType === 'micros'
                                     ? `<button onclick="event.stopPropagation(); app.completeMicroAction('${item.id}')"
-                                        class="p-2.5 border border-primary/30 bg-primary/10 hover:bg-primary/20 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-primary transition-colors">
-                                        <span class="material-symbols-outlined notranslate text-base">undo</span> Reabrir
+                                        class="inline-flex h-11 w-full items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/20"
+                                        title="Reabrir"
+                                        aria-label="Reabrir">
+                                        <span class="material-symbols-outlined notranslate text-[18px]">undo</span>
                                     </button>`
                                     : `<button onclick="event.stopPropagation(); app.deleteEntity('${item.id}', '${entityType}')"
-                                        class="p-2.5 border border-outline-variant/30 hover:bg-error-container/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-error transition-colors">
-                                        <span class="material-symbols-outlined notranslate text-base">delete</span> Excluir
+                                        class="inline-flex h-11 w-full items-center justify-center rounded-xl border border-outline-variant/30 text-outline transition-colors hover:bg-error-container/10 hover:text-error"
+                                        title="Excluir"
+                                        aria-label="Excluir">
+                                        <span class="material-symbols-outlined notranslate text-[18px]">delete</span>
                                     </button>`
                                 }
                                 `
                                 : (isPending
                                     ? `
-                                <div class="p-2.5 border border-outline-variant/20 bg-surface-container-low rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline" title="Inicia automaticamente quando uma ação filha entra em execução">
-                                    <span class="material-symbols-outlined notranslate text-base">account_tree</span> Inicia via cascata
+                                <div class="inline-flex h-11 w-full items-center justify-center rounded-xl border border-outline-variant/20 bg-surface-container-low text-outline"
+                                    title="Inicia via cascata"
+                                    aria-label="Inicia via cascata">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">account_tree</span>
                                 </div>
                                 `
                                     : `
                                 <button onclick="event.stopPropagation(); app.forceCompleteEntity('${item.id}', '${entityType}')"
-                                    class="p-2.5 border ${isReadyToClose ? 'border-emerald-500/50 bg-emerald-500/15 hover:bg-emerald-500/25 ring-2 ring-emerald-500/20' : 'border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10'} rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 transition-colors">
-                                    <span class="material-symbols-outlined notranslate text-base">check_circle</span> ${isReadyToClose ? 'Fechar agora' : 'Concluir'}
+                                    class="inline-flex h-11 w-full items-center justify-center rounded-xl border ${isReadyToClose ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-700 ring-2 ring-emerald-500/20 hover:bg-emerald-500/25 dark:text-emerald-300' : 'border-emerald-500/30 bg-emerald-500/5 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300'} transition-colors"
+                                    title="${isReadyToClose ? 'Fechar agora' : 'Concluir'}"
+                                    aria-label="${isReadyToClose ? 'Fechar agora' : 'Concluir'}">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">check_circle</span>
                                 </button>
                                 `));
 
@@ -4344,18 +4354,24 @@ render: {
                             </div>
 
                             ${woopCardHtml}
-                            <div class="grid grid-cols-3 gap-2">
+                            <div class="grid grid-cols-4 gap-2">
                                 <button onclick="event.stopPropagation(); app.openEntityReview('${item.id}', '${entityType}')"
-                                    class="col-span-3 p-2.5 bg-primary/10 border border-primary/25 text-primary hover:bg-primary/15 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all">
-                                    <span class="material-symbols-outlined notranslate text-base">settings_accessibility</span> Gerir Estrategia
+                                    class="inline-flex h-11 w-full items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary transition-all hover:bg-primary/15"
+                                    title="Gerir estrat&eacute;gia"
+                                    aria-label="Gerir estrat&eacute;gia">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">settings_accessibility</span>
                                 </button>
                                 <button onclick="event.stopPropagation(); app.editEntity('${item.id}', '${entityType}')"
-                                    class="p-2.5 border border-outline-variant/30 hover:bg-surface-container-high rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-on-surface transition-colors">
-                                    <span class="material-symbols-outlined notranslate text-base">edit</span> Editar
+                                    class="inline-flex h-11 w-full items-center justify-center rounded-xl border border-outline-variant/30 text-outline transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                                    title="Editar"
+                                    aria-label="Editar">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">edit</span>
                                 </button>
                                 <button onclick="event.stopPropagation(); app.duplicateEntity('${item.id}', '${entityType}')"
-                                    class="p-2.5 border border-outline-variant/30 hover:bg-surface-container-high rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold text-outline hover:text-on-surface transition-colors">
-                                    <span class="material-symbols-outlined notranslate text-base">content_copy</span> Duplicar
+                                    class="inline-flex h-11 w-full items-center justify-center rounded-xl border border-outline-variant/30 text-outline transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                                    title="Duplicar"
+                                    aria-label="Duplicar">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">content_copy</span>
                                 </button>
                                 ${actionButton}
                             </div>
