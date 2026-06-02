@@ -1117,6 +1117,17 @@ importFromExcel: async function(event) {
             .replace(/[\u0300-\u036f]/g, '')
             .trim()
             .toLowerCase();
+        const resolvePermaKeyFromLabel = (value) => {
+            const raw = normalizeLookupKey(value);
+            if (!raw) return '';
+            if (['p', 'e', 'r', 'm', 'a'].includes(raw)) return raw.toUpperCase();
+            if (raw.includes('(p)') || raw.includes('emocoes positivas')) return 'P';
+            if (raw.includes('(e)') || raw.includes('engajamento')) return 'E';
+            if (raw.includes('(r)') || raw.includes('relacionamentos')) return 'R';
+            if (raw.includes('(m)') || raw.includes('significado')) return 'M';
+            if (raw.includes('(a)') || raw.includes('realizacao')) return 'A';
+            return '';
+        };
         const buildNamedIndex = (items, idKey = 'id', titleKeys = ['title']) => {
             const byId = new Map();
             const byTitle = new Map();
@@ -1173,6 +1184,90 @@ importFromExcel: async function(event) {
             let habitIndex = buildNamedIndex([]);
             let strengthIndex = buildNamedIndex([]);
             let shadowIndex = buildNamedIndex([]);
+            const importDateKey = this.getLocalDateKey();
+            const importedWellbeingSignals = {
+                wheelDimensions: new Set(),
+                permaKeys: new Set(),
+                swlsHasContent: false,
+                odysseyHasContent: false
+            };
+            const importedHistoryDates = { wheel: '', perma: '', odyssey: '', swls: '' };
+            const updateImportedHistoryDate = (kind, dateKey) => {
+                if (!kind || !/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return;
+                if (!String(importedHistoryDates[kind] || '').trim() || String(dateKey).localeCompare(String(importedHistoryDates[kind])) > 0) {
+                    importedHistoryDates[kind] = String(dateKey);
+                }
+            };
+            const createImportedWellbeingSnapshot = (kind, dateKey = importDateKey) => {
+                if (!kind || !/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return;
+                if (!window.sistemaVidaState.wellbeingHistory || typeof window.sistemaVidaState.wellbeingHistory !== 'object') {
+                    window.sistemaVidaState.wellbeingHistory = { wheel: {}, perma: {}, odyssey: {} };
+                }
+                if (!window.sistemaVidaState.wellbeingHistory[kind] || typeof window.sistemaVidaState.wellbeingHistory[kind] !== 'object') {
+                    window.sistemaVidaState.wellbeingHistory[kind] = {};
+                }
+                if (kind !== 'swls' && window.sistemaVidaState.wellbeingHistory[kind][dateKey]) return;
+                if (kind === 'wheel') {
+                    this.normalizeDimensionsState?.();
+                    const scores = {};
+                    (this.getWheelAxes?.() || []).forEach((dim) => {
+                        scores[dim] = Number(window.sistemaVidaState.dimensions?.[dim]?.score) || 1;
+                    });
+                    const values = Object.values(scores);
+                    if (!values.length) return;
+                    window.sistemaVidaState.wellbeingHistory.wheel[dateKey] = {
+                        avg: values.length ? Math.round(values.reduce((sum, n) => sum + n, 0) / values.length) : 0,
+                        scores
+                    };
+                    return;
+                }
+                if (kind === 'perma') {
+                    this.normalizePermaState?.();
+                    const scores = {};
+                    ['P', 'E', 'R', 'M', 'A'].forEach((key) => {
+                        scores[key] = this.normalizePermaScore ? this.normalizePermaScore(window.sistemaVidaState.perma?.[key]) : Number(window.sistemaVidaState.perma?.[key]) || 0;
+                    });
+                    const values = Object.values(scores);
+                    if (!values.length) return;
+                    window.sistemaVidaState.wellbeingHistory.perma[dateKey] = {
+                        avg: values.length ? Math.round((values.reduce((sum, n) => sum + n, 0) / values.length) * 10) / 10 : 0,
+                        scores
+                    };
+                    return;
+                }
+                if (kind === 'odyssey') {
+                    const odyssey = window.sistemaVidaState.profile?.odyssey || {};
+                    const odysseyTitles = window.sistemaVidaState.profile?.odysseyTitles || {};
+                    const filledScenarios = ['cenarioA', 'cenarioB', 'cenarioC'].filter((key) => String(odyssey[key] || '').trim());
+                    if (!filledScenarios.length) return;
+                    window.sistemaVidaState.wellbeingHistory.odyssey[dateKey] = {
+                        filledScenarios,
+                        titles: {
+                            cenarioA: String(odysseyTitles.cenarioA || 'Cenario A'),
+                            cenarioB: String(odysseyTitles.cenarioB || 'Cenario B'),
+                            cenarioC: String(odysseyTitles.cenarioC || 'Cenario C')
+                        }
+                    };
+                    return;
+                }
+                if (kind === 'swls') {
+                    if (!window.sistemaVidaState.swls || typeof window.sistemaVidaState.swls !== 'object') {
+                        window.sistemaVidaState.swls = { answers: [4, 4, 4, 4, 4], lastScore: 20, lastDate: "", history: {} };
+                    }
+                    if (!window.sistemaVidaState.swls.history || typeof window.sistemaVidaState.swls.history !== 'object') {
+                        window.sistemaVidaState.swls.history = {};
+                    }
+                    if (window.sistemaVidaState.swls.history[dateKey]) return;
+                    const answers = Array.isArray(window.sistemaVidaState.swls.answers)
+                        ? window.sistemaVidaState.swls.answers.slice(0, 5).map((answer) => this.normalizeSwlsAnswer(answer))
+                        : [4, 4, 4, 4, 4];
+                    while (answers.length < 5) answers.push(4);
+                    const score = Math.max(5, Math.min(35, Math.round(Number(window.sistemaVidaState.swls.lastScore) || answers.reduce((sum, n) => sum + n, 0))));
+                    window.sistemaVidaState.swls.lastScore = score;
+                    window.sistemaVidaState.swls.lastDate = dateKey;
+                    window.sistemaVidaState.swls.history[dateKey] = { score, answers };
+                }
+            };
             const warningLabels = {
                 root: {
                     plan_parent: 'Planos rejeitados por vinculo pai ausente/invalido',
@@ -1442,20 +1537,27 @@ importFromExcel: async function(event) {
                         let dimKey = Object.keys(window.sistemaVidaState.dimensions).find(k => k.toLowerCase().replace(/[áàãâäéèêëíìîïóòõôöúùûüç]/g, '') === kLow.replace(/[áàãâäéèêëíìîïóòõôöúùûüç]/g, '')) || key;
                         if (!window.sistemaVidaState.dimensions[dimKey]) window.sistemaVidaState.dimensions[dimKey] = { score: 1 };
                         window.sistemaVidaState.dimensions[dimKey].score = parseFloat(val) || 1;
+                        importedWellbeingSignals.wheelDimensions.add(String(dimKey || ''));
                     } 
                     else if (cat.includes('perma')) {
-                        let pKey = kLow.toUpperCase();
-                        if (['P','E','R','M','A'].includes(pKey)) window.sistemaVidaState.perma[pKey] = this.normalizePermaScore(val);
+                        let pKey = resolvePermaKeyFromLabel(key);
+                        if (['P','E','R','M','A'].includes(pKey)) {
+                            window.sistemaVidaState.perma[pKey] = this.normalizePermaScore(val);
+                            importedWellbeingSignals.permaKeys.add(pKey);
+                        }
                     } 
                     else if (cat.includes('swls')) {
                         const score = Number(window.sistemaVidaState.swls.lastScore) || 0;
                         if (kLow === 'score') {
                             window.sistemaVidaState.swls.lastScore = Math.max(5, Math.min(35, Math.round(Number(val) || score || 20)));
+                            importedWellbeingSignals.swlsHasContent = true;
                         } else if (kLow === 'data') {
-                            window.sistemaVidaState.swls.lastDate = String(val || '');
+                            window.sistemaVidaState.swls.lastDate = normalizeDateKey(val) || String(val || '').trim();
+                            importedWellbeingSignals.swlsHasContent = true;
                         } else if (/^q[1-5]$/.test(kLow)) {
                             const idx = Number(kLow.replace('q', '')) - 1;
                             window.sistemaVidaState.swls.answers[idx] = this.normalizeSwlsAnswer(val);
+                            importedWellbeingSignals.swlsHasContent = true;
                         }
                     }
                     else if (cat.includes('ikigai')) {
@@ -1463,7 +1565,7 @@ importFromExcel: async function(event) {
                         else if (kLow.includes('voca')) window.sistemaVidaState.profile.ikigai.vocacao = val;
                         else if (kLow.includes('paix')) window.sistemaVidaState.profile.ikigai.paixao = val;
                         else if (kLow.includes('prof')) window.sistemaVidaState.profile.ikigai.profissao = val;
-                        else if (kLow.includes('amo')) window.sistemaVidaState.profile.ikigai.love = val;
+                        else if (kLow.includes('amo') || kLow.includes('ama') || kLow.includes('love')) window.sistemaVidaState.profile.ikigai.love = val;
                         else if (kLow.includes('bom')) window.sistemaVidaState.profile.ikigai.good = val;
                         else if (kLow.includes('precisa')) window.sistemaVidaState.profile.ikigai.need = val;
                         else if (kLow.includes('pago')) window.sistemaVidaState.profile.ikigai.paid = val;
@@ -1531,9 +1633,12 @@ importFromExcel: async function(event) {
                 });
                 this.normalizeSwlsState();
                 const swlsState = window.sistemaVidaState.swls;
-                if (swlsState.lastDate) {
+                const swlsDateKey = normalizeDateKey(swlsState.lastDate) || String(swlsState.lastDate || '').trim();
+                if (swlsDateKey) {
                     if (!swlsState.history || typeof swlsState.history !== 'object') swlsState.history = {};
-                    swlsState.history[swlsState.lastDate] = { score: swlsState.lastScore, answers: [...swlsState.answers] };
+                    swlsState.lastDate = swlsDateKey;
+                    swlsState.history[swlsDateKey] = { score: swlsState.lastScore, answers: [...swlsState.answers] };
+                    updateImportedHistoryDate('swls', swlsDateKey);
                 }
                 strengthIndex = buildNamedIndex(window.sistemaVidaState.profile.identity?.strengths || []);
                 shadowIndex = buildNamedIndex(window.sistemaVidaState.profile.identity?.shadows || []);
@@ -1564,6 +1669,7 @@ importFromExcel: async function(event) {
                         if (text) window.sistemaVidaState.profile.odyssey.cenarioC = text;
                         if (title) window.sistemaVidaState.profile.odysseyTitles.cenarioC = title;
                     }
+                    if (text) importedWellbeingSignals.odysseyHasContent = true;
                 });
             }
 
@@ -1994,6 +2100,7 @@ importFromExcel: async function(event) {
                         if (!window.sistemaVidaState.wellbeingHistory[kind]) window.sistemaVidaState.wellbeingHistory[kind] = {};
                         window.sistemaVidaState.wellbeingHistory[kind][dateKey] = payload;
                     }
+                    updateImportedHistoryDate(kind, dateKey);
                 });
             }
 
@@ -2059,6 +2166,30 @@ importFromExcel: async function(event) {
             }
 
             // Finalização
+            if (
+                !importedHistoryDates.wheel
+                && importedWellbeingSignals.wheelDimensions.size >= (this.getWheelAxes?.().length || 8)
+                && this.hasMeaningfulWheelContent?.()
+            ) {
+                createImportedWellbeingSnapshot('wheel', importDateKey);
+                updateImportedHistoryDate('wheel', importDateKey);
+            }
+            if (
+                !importedHistoryDates.perma
+                && importedWellbeingSignals.permaKeys.size === 5
+                && this.hasCompletePermaContent?.()
+            ) {
+                createImportedWellbeingSnapshot('perma', importDateKey);
+                updateImportedHistoryDate('perma', importDateKey);
+            }
+            if (!importedHistoryDates.swls && importedWellbeingSignals.swlsHasContent) {
+                createImportedWellbeingSnapshot('swls', normalizeDateKey(window.sistemaVidaState.swls?.lastDate) || importDateKey);
+                updateImportedHistoryDate('swls', normalizeDateKey(window.sistemaVidaState.swls?.lastDate) || importDateKey);
+            }
+            if (!importedHistoryDates.odyssey && importedWellbeingSignals.odysseyHasContent) {
+                createImportedWellbeingSnapshot('odyssey', importDateKey);
+                updateImportedHistoryDate('odyssey', importDateKey);
+            }
             this.normalizeSwlsState();
             this.normalizePermaState();
             this.normalizeEntitiesState();
@@ -2068,6 +2199,7 @@ importFromExcel: async function(event) {
             this.ensureIdentityState?.();
             this.ensureHabitMaturityState?.();
             this.ensureGamificationState?.();
+            this.ensureCadenceState?.();
             Object.entries(window.sistemaVidaState.reviews || {}).forEach(([weekKey, review]) => {
                 this.updateIdentityWeeklyLogs?.(weekKey, review);
             });

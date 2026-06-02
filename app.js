@@ -17,17 +17,17 @@ import {
 // Phase 9 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
-import { attachNotifications } from './js/notifications.js?v=20260518-exec-flow-v1';
-import { attachCadence } from './js/cadence.js?v=20260523-purpose-legacy-cleanup-v1';
+import { attachNotifications } from './js/notifications.js?v=20260602-safe-phases-v8';
+import { attachCadence } from './js/cadence.js?v=20260602-safe-phases-v8';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
 import { attachIdentity } from './js/identity.js?v=20260526-rollback-align-v1';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260527-weekly-coherence-v1';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260526-rollback-align-v1';
-import { attachStateModule } from './js/state.js?v=20260526-rollback-align-v1';
-import { attachRenderModule } from './js/render.js?v=20260601-modal-desktop-v1';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260602-safe-phases-v8';
+import { attachStateModule } from './js/state.js?v=20260602-safe-phases-v8';
+import { attachRenderModule } from './js/render.js?v=20260602-safe-phases-v8';
 import { attachPlanningModule } from './js/planning.js?v=20260601-modal-desktop-v1';
-import { attachGamificationModule } from './js/gamification.js?v=20260516-wellbeing-prompts-v205';
+import { attachGamificationModule } from './js/gamification.js?v=20260602-safe-phases-v8';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260601-modal-desktop-v1',
+    appBuildVersion: '20260602-safe-phases-v8',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -1040,6 +1040,29 @@ normalizeSwlsAnswer: function(rawValue) {
         }).slice(0, 200);
     },
 
+    clearFinishedDeepWorkRuntime: function(options = {}) {
+        this.normalizeDeepWorkState();
+        const state = window.sistemaVidaState;
+        const dw = state.deepWork;
+        const keepSelection = options.keepSelection !== false;
+        const presetConfig = this.getDeepWorkPresetConfig(Math.round((Number(dw.targetSec) || 1500) / 60));
+        dw.isRunning = false;
+        dw.isPaused = false;
+        dw.mode = 'focus';
+        dw.targetSec = presetConfig.targetSec;
+        dw.breakSec = presetConfig.breakSec;
+        dw.remainingSec = presetConfig.targetSec;
+        dw.lastTickAt = 0;
+        dw.deadlineAtMs = 0;
+        delete dw.completedFocusSec;
+        if (!keepSelection) {
+            dw.habitId = '';
+            dw.microId = '';
+            dw.intention = '';
+        }
+        this.stopDeepWorkTicking?.();
+    },
+
     getDeepWorkPresetConfig: function(minutes) {
         const presets = [
             { minutes: 15, breakMinutes: 3, label: '15/3' },
@@ -1440,30 +1463,11 @@ getDimensionIdentity: function(dimension, level) {
         const awards = (Array.isArray(results) ? results : [results]).filter(Boolean);
         if (!awards.length) return;
         this.showFloatingXp(xpTotal || awards.reduce((sum, item) => sum + (Number(item.xp) || 0), 0));
-        if (this.pushSocialInternalNotification) {
-            awards.forEach((award) => {
-                this.pushSocialInternalNotification('xp_gain', {
-                    xp: award.xp,
-                    title: award.sourceTitle || 'Acao registrada',
-                    message: `+${award.xp} XP`
-                }).catch(() => {});
-                if (award.tierPromotion || award.dimensionLeveledUp || award.totalLeveledUp) {
-                    this.pushSocialInternalNotification('level_up', {
-                        level: award.totalLevel,
-                        title: 'Subiu de nivel',
-                        message: `Sistema nivel ${award.totalLevel}`
-                    }).catch(() => {});
-                }
-                if (Array.isArray(award.achievementsUnlocked) && award.achievementsUnlocked.length) {
-                    const first = award.achievementsUnlocked[0];
-                    this.pushSocialInternalNotification('achievement_unlock', {
-                        title: first.title || 'Conquista desbloqueada',
-                        icon: first.icon || 'military_tech',
-                        message: first.title || 'Conquista desbloqueada'
-                    }).catch(() => {});
-                }
-            });
-        }
+        awards.forEach((award) => {
+            const policy = this.getGamificationChannelPolicy?.(award) || null;
+            this.logGamificationInternalEvents?.(award, policy);
+            this.publishGamificationMilestoneNotification?.(award, policy);
+        });
         // Nota: o broadcast social é gerenciado pelo showGamificationToast() em gamification.js
         // para evitar emissão dupla e garantir que apenas o evento final processado seja enviado.
         const levelAward = awards.find(item => item.tierPromotion)
@@ -5333,6 +5337,197 @@ ensureNotesState: function() {
         return found ? `${found.group}: ${found.label}` : `${linkedTo.entityType}: ${linkedTo.entityId}`;
     },
 
+    getNoteContextBadge: function(entityType = '', fallback = 'Nota') {
+        const normalizedType = this.normalizeEntityType(entityType);
+        const map = {
+            metas: 'Meta',
+            okrs: 'Projeto',
+            macros: 'Entrega',
+            micros: 'Acao',
+            habits: 'Habito',
+            strengths: 'Forca',
+            shadows: 'Sombra'
+        };
+        return map[normalizedType] || fallback;
+    },
+
+    getNoteCompactContext: function(note) {
+        const context = this.getNoteLinkContext(note);
+        if (!context.linked) return { badge: 'Nota', detail: '' };
+        const sourceType = String(note?.sourceType || '').toLowerCase();
+        if (!context.entityType) {
+            return {
+                badge: sourceType.includes('focus') || sourceType.includes('habit') ? 'Foco' : 'Nota',
+                detail: 'Sessao registrada'
+            };
+        }
+        const badge = this.getNoteContextBadge(context.entityType, 'Nota');
+        const detail = String(context.label || '')
+            .replace(/^[^:]+:\s*/u, '')
+            .trim();
+        return { badge, detail };
+    },
+
+    getNotePreviewText: function(note, maxLength = 100) {
+        const raw = String(note?.body || '').trim();
+        if (!raw) return '';
+        const ignoredLines = new Set([
+            'entrega concreta',
+            'evidencia',
+            'duvidas e lacunas',
+            'proximo passo'
+        ]);
+        const lines = raw
+            .split(/\r?\n/)
+            .map((line) => String(line || '').trim())
+            .filter(Boolean)
+            .filter((line) => {
+                const normalized = line
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .trim()
+                    .toLowerCase();
+                if (ignoredLines.has(normalized)) return false;
+                return !normalized.startsWith('origem:') && !normalized.startsWith('acao do plano:') && !normalized.startsWith('tempo de foco:');
+            });
+        const preview = lines[0] || raw.replace(/\s+/g, ' ').trim();
+        return preview.length > maxLength ? `${preview.slice(0, maxLength)}...` : preview;
+    },
+
+    getNoteBodyDisplayText: function(note) {
+        return String(note?.body || '')
+            .replace(/\r\n/g, '\n')
+            .replace(/\n{2,}/g, '\n')
+            .trim();
+    },
+
+    getNoteTimelineSections: function(note) {
+        const raw = this.getNoteBodyDisplayText(note);
+        if (!raw) return {};
+        const lines = raw.split('\n').map((line) => String(line || '').trim()).filter(Boolean);
+        if (!lines.length) return {};
+        const normalized = (value) => String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
+        const sections = {};
+        let currentKey = '';
+        lines.forEach((line) => {
+            const key = normalized(line);
+            if (key.startsWith('tempo de foco:')) {
+                sections.time = line.replace(/^tempo de foco:\s*/i, '').trim();
+                currentKey = '';
+                return;
+            }
+            if (key === 'evidencia') { currentKey = 'evidence'; return; }
+            if (key === 'duvidas e lacunas') { currentKey = 'gaps'; return; }
+            if (key === 'proximo passo') { currentKey = 'next'; return; }
+            if (key === 'entrega concreta') { currentKey = 'delivery'; return; }
+            if (currentKey && !sections[currentKey]) {
+                sections[currentKey] = line;
+            }
+        });
+        return sections;
+    },
+
+    getNoteTimelineSummary: function(note, maxLength = 140) {
+        const sections = this.getNoteTimelineSections(note);
+        if (!Object.keys(sections).length) return this.getNotePreviewText(note, maxLength);
+        const parts = [];
+        if (sections.time) parts.push(`${sections.time} foco`);
+        if (sections.evidence) parts.push(`Evidencia: ${sections.evidence}`);
+        else if (sections.delivery) parts.push(`Entrega: ${sections.delivery}`);
+        if (sections.next) parts.push(`Proximo: ${sections.next}`);
+        else if (sections.gaps) parts.push(`Lacunas: ${sections.gaps}`);
+        const summary = (parts.length ? parts : [this.getNotePreviewText(note, maxLength)]).join('\n');
+        return summary.length > maxLength ? `${summary.slice(0, maxLength)}...` : summary;
+    },
+
+    getNoteTimelineDetailText: function(note, maxLength = 140) {
+        const sections = this.getNoteTimelineSections(note);
+        const parts = [];
+        if (sections.evidence) parts.push(`Evidencia: ${sections.evidence}`);
+        else if (sections.delivery) parts.push(`Entrega: ${sections.delivery}`);
+        if (sections.next) parts.push(`Proximo: ${sections.next}`);
+        else if (sections.gaps) parts.push(`Lacunas: ${sections.gaps}`);
+        const summary = (parts.length ? parts : [this.getNotePreviewText(note, maxLength)]).join('\n');
+        return summary.length > maxLength ? `${summary.slice(0, maxLength)}...` : summary;
+    },
+
+    normalizeNoteComparisonText: function(text) {
+        return String(text || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^\w\s]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+    },
+
+    isNoteContextDetailRedundant: function(note, detail = '') {
+        const normalizedDetail = this.normalizeNoteComparisonText(detail);
+        if (!normalizedDetail) return false;
+        const normalizedTitle = this.normalizeNoteComparisonText(note?.title || '');
+        if (!normalizedTitle) return false;
+        return normalizedTitle.includes(normalizedDetail) || normalizedDetail.includes(normalizedTitle);
+    },
+
+    renderNoteExpandedContent: function(note, options = {}) {
+        const detail = String(options.detail ?? '').trim();
+        const showDetail = options.showDetail !== false && detail && !this.isNoteContextDetailRedundant(note, detail);
+        const bodyMode = options.bodyMode === 'preview' ? 'preview' : 'full';
+        const bodyText = bodyMode === 'preview'
+            ? this.getNotePreviewText(note, Number(options.previewLength) || 220)
+            : this.getNoteBodyDisplayText(note);
+        const url = note?.url
+            ? `<a href="${this.escapeHtml(note.url)}" target="_blank" rel="noopener" class="text-[10px] text-primary hover:underline truncate">${this.escapeHtml(note.url)}</a>`
+            : '';
+        const tags = Array.isArray(note?.tags) ? note.tags : [];
+        const structuredBody = bodyMode === 'full' ? (() => {
+            const lines = bodyText.split('\n').map((line) => String(line || '').trim()).filter(Boolean);
+            if (!lines.length) return '';
+            const normalized = (value) => String(value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim()
+                .toLowerCase();
+            const sections = [];
+            let current = null;
+            lines.forEach((line) => {
+                const key = normalized(line);
+                if (key.startsWith('tempo de foco:')) {
+                    sections.push({ kind: 'time', label: 'Tempo de foco', value: line.replace(/^tempo de foco:\s*/i, '').trim() });
+                    current = null;
+                    return;
+                }
+                if (key === 'evidencia') { current = { label: 'Evidencia', value: '' }; sections.push(current); return; }
+                if (key === 'duvidas e lacunas') { current = { label: 'Duvidas e lacunas', value: '' }; sections.push(current); return; }
+                if (key === 'proximo passo') { current = { label: 'Proximo passo', value: '' }; sections.push(current); return; }
+                if (key === 'entrega concreta') { current = { label: 'Entrega concreta', value: '' }; sections.push(current); return; }
+                if (current && !current.value) current.value = line;
+                else sections.push({ label: '', value: line });
+            });
+            return sections.map((section) => {
+                if (section.kind === 'time') {
+                    return `<div class="text-xs text-on-surface-variant leading-snug"><span class="font-medium text-on-surface">${this.escapeHtml(section.label)}:</span> ${this.escapeHtml(section.value)}</div>`;
+                }
+                if (section.label) {
+                    return `<div class="flex items-start gap-2 text-xs leading-snug text-on-surface-variant"><span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70"></span><div><p class="font-medium text-on-surface">${this.escapeHtml(section.label)}</p><p>${this.escapeHtml(section.value || '—')}</p></div></div>`;
+                }
+                return `<p class="text-xs text-on-surface-variant leading-snug">${this.escapeHtml(section.value)}</p>`;
+            }).join('');
+        })() : '';
+        return `
+            ${showDetail ? `<p class="text-[10px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(detail)}</p>` : ''}
+            ${bodyText ? (bodyMode === 'full'
+                ? `<div class="space-y-2">${structuredBody}</div>`
+                : `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line break-words">${this.escapeHtml(bodyText)}</p>`) : ''}
+            ${url}
+            ${tags.length ? `<div class="flex flex-wrap gap-1">${tags.map(tag => `<span class="inline-flex rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+        `;
+    },
+
     getNoteLinkContext: function(note) {
         if (!note || typeof note !== 'object') {
             return { linked: false, entityType: '', entityId: '', label: '' };
@@ -5376,7 +5571,7 @@ ensureNotesState: function() {
                 linked: true,
                 entityType: '',
                 entityId: '',
-                label: sourceType.includes('habit') ? 'Habitos: origem de sessao' : 'Foco: origem de sessao'
+                label: sourceType.includes('habit') ? 'Habitos: sessao registrada' : 'Foco: sessao registrada'
             };
         }
 
@@ -5588,19 +5783,35 @@ ensureNotesState: function() {
         if (titleEl) titleEl.textContent = entityTitle || 'Entidade';
 
         if (notes.length) {
-            listEl.innerHTML = notes.map(note => `
-                <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-low p-4 space-y-1">
-                    <div class="flex items-start justify-between gap-2">
-                        <span class="text-sm font-semibold text-on-surface leading-snug">${this.escapeHtml(note.title || 'Nota')}</span>
-                        <button type="button" onclick="window.app.openNoteForEdit('${note.id}')"
-                            class="shrink-0 p-1 rounded-md hover:bg-surface-container-highest text-outline transition-colors">
-                            <span class="material-symbols-outlined notranslate text-[16px]">edit</span>
-                        </button>
-                    </div>
-                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line break-words">${this.escapeHtml(note.body)}</p>` : ''}
-                    ${note.tags?.length ? `<div class="flex flex-wrap gap-1 pt-1">${note.tags.map(t => `<span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">${this.escapeHtml(t)}</span>`).join('')}</div>` : ''}
-                </div>
-            `).join('');
+            listEl.innerHTML = notes.map(note => {
+                const compactContext = this.getNoteCompactContext(note);
+                const dateRef = new Date(String(note.updatedAt || note.createdAt || ''));
+                const hasDate = !Number.isNaN(dateRef.getTime());
+                const dateStr = hasDate ? dateRef.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
+                const metaBadges = [
+                    compactContext.badge || 'Nota',
+                    String(note?.sourceType || '').toLowerCase().includes('focus') ? 'Foco' : ''
+                ].filter(Boolean);
+                return `
+                    <article class="rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden">
+                        <div class="px-3 py-2 border-b border-outline-variant/10">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <h4 class="text-sm font-bold text-on-surface leading-snug truncate">${this.escapeHtml(note.title || 'Nota')}</h4>
+                                    <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-outline">
+                                        ${metaBadges.map((badge, idx) => `<span class="inline-flex rounded-full ${idx === 0 ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'} px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">${this.escapeHtml(badge)}</span>`).join('')}
+                                        ${dateStr ? `<span>${dateStr}</span>` : ''}
+                                    </div>
+                                </div>
+                                <button type="button" onclick="window.app.openNoteForEdit('${note.id}')"
+                                    class="shrink-0 p-1 rounded-md hover:bg-surface-container-highest text-outline transition-colors">
+                                    <span class="material-symbols-outlined notranslate text-[16px]">edit</span>
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
         } else {
             listEl.innerHTML = `<p class="text-sm text-outline italic text-center py-6">Nenhuma nota vinculada a esta entidade ainda.</p>`;
         }
@@ -7080,10 +7291,8 @@ ensureNotesState: function() {
         this.saveState(true);
         const isNextWeek = weekKey > this._getWeekKey();
         this.closeWeeklyPlanModal();
-        if (award) this.showGamificationAwardEffects(award);
-        this.showNotification(award
-            ? `${isNextWeek ? 'Plano da próxima semana salvo' : 'Plano semanal salvo'}! +${award.xp} XP`
-            : (isNextWeek ? 'Plano da próxima semana salvo!' : 'Plano semanal salvo!'));
+        if (award) this.showGamificationToast(award);
+        else this.showNotification(isNextWeek ? 'Plano da próxima semana salvo!' : 'Plano semanal salvo!');
         if (this.renderWeeklyPlans) this.renderWeeklyPlans();
         if (this.currentView === 'planos' && this.render.planos) {
             this.render.planos();
@@ -8109,8 +8318,7 @@ ensureNotesState: function() {
                     tag: 'lifeos-focus-ended',
                     url: '/?view=foco'
                 };
-                this.showNotification(payload);
-                this.notifySelfPushEvent?.(payload, { dedupeId: `focus_end_${endedAtTs}` }).catch(() => {});
+                this.publishNotificationEvent?.(payload, { dedupeId: `focus_end_${endedAtTs}` }).catch(() => {});
             }
             this.saveState(true);
             this.ensureDeepWorkTicking();
@@ -8136,8 +8344,7 @@ ensureNotesState: function() {
                 tag: 'lifeos-break-ended',
                 url: '/?view=foco'
             };
-            this.showNotification(payload);
-            this.notifySelfPushEvent?.(payload, { dedupeId: `break_end_${breakEndedAt}` }).catch(() => {});
+            this.publishNotificationEvent?.(payload, { dedupeId: `break_end_${breakEndedAt}` }).catch(() => {});
         }
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
         else this.renderDeepWorkImmersiveOverlay?.();
@@ -8581,8 +8788,7 @@ ensureNotesState: function() {
                 tag: 'lifeos-break-stopped',
                 url: '/?view=foco'
             };
-            this.showNotification(payload);
-            this.notifySelfPushEvent?.(payload, { dedupeId: `break_manual_end_${breakStoppedAt}` }).catch(() => {});
+            this.publishNotificationEvent?.(payload, { dedupeId: `break_manual_end_${breakStoppedAt}` }).catch(() => {});
         }
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
         else this.renderDeepWorkImmersiveOverlay?.();
@@ -8608,8 +8814,7 @@ ensureNotesState: function() {
                 tag: 'lifeos-break-skipped',
                 url: '/?view=foco'
             };
-            this.showNotification(payload);
-            this.notifySelfPushEvent?.(payload, { dedupeId: `break_skipped_${breakSkippedAt}` }).catch(() => {});
+            this.publishNotificationEvent?.(payload, { dedupeId: `break_skipped_${breakSkippedAt}` }).catch(() => {});
         }
         if (this.currentView === 'foco') this.renderDeepWorkPanel();
         else this.renderDeepWorkImmersiveOverlay?.();

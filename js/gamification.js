@@ -1,5 +1,94 @@
 export function attachGamificationModule(app) {
     Object.assign(app, {
+getGamificationChannelPolicy: function(result = {}) {
+        const hasAchievement = !!(result.achievementsUnlocked && result.achievementsUnlocked.length);
+        const leveledUp = !!(result.tierPromotion || result.totalLeveledUp || result.dimensionLeveledUp || hasAchievement);
+        const eventType = String(result.eventType || '').trim();
+        const xp = Number(result.xp || 0);
+        return {
+            eventType,
+            xp,
+            leveledUp,
+            hasAchievement,
+            shouldLogInternalXp: !!(
+                leveledUp
+                || hasAchievement
+                || ['deep_work', 'weekly_review', 'weekly_plan'].includes(eventType)
+                || xp >= 15
+            ),
+            shouldNotifyMilestone: !!(
+                leveledUp
+                || hasAchievement
+                || ['weekly_review', 'weekly_plan'].includes(eventType)
+            )
+        };
+    },
+
+logGamificationInternalEvents: function(result = {}, policy = null) {
+        if (!this.pushSocialInternalNotification) return;
+        const resolvedPolicy = policy || this.getGamificationChannelPolicy?.(result) || {};
+        const sourceLabel = result.sourceTitle
+            ? this.escapeHtml(result.sourceTitle).slice(0, 48) + (result.sourceTitle.length > 48 ? '...' : '')
+            : null;
+        const whyPrefix = sourceLabel || ({
+            micro_complete: 'Acao concluida',
+            habit_complete: 'Habito registrado',
+            daily_checkin: 'Check-in feito',
+            daily_diary: 'Diario registrado',
+            daily_shutdown: 'Shutdown feito',
+            weekly_plan: 'Semana planejada',
+            weekly_review: 'Revisao semanal',
+            deep_work: 'Sessao de foco'
+        })[resolvedPolicy.eventType] || null;
+
+        if (resolvedPolicy.shouldLogInternalXp) {
+            this.pushSocialInternalNotification('xp_gain', {
+                xp: result.xp,
+                title: whyPrefix || 'Acao registrada',
+                message: `+${result.xp} XP`
+            }).catch(() => {});
+        }
+        if (resolvedPolicy.leveledUp) {
+            this.pushSocialInternalNotification('level_up', {
+                level: result.totalLevel,
+                title: 'Subiu de nivel',
+                message: `Sistema nivel ${result.totalLevel}`
+            }).catch(() => {});
+        }
+        if (resolvedPolicy.hasAchievement) {
+            const first = result.achievementsUnlocked[0];
+            this.pushSocialInternalNotification('achievement_unlock', {
+                title: first.title || 'Conquista desbloqueada',
+                icon: first.icon || 'military_tech',
+                message: first.title || 'Conquista desbloqueada'
+            }).catch(() => {});
+        }
+    },
+
+publishGamificationMilestoneNotification: function(result = {}, policy = null) {
+        const resolvedPolicy = policy || this.getGamificationChannelPolicy?.(result) || {};
+        if (!resolvedPolicy.shouldNotifyMilestone || !this.publishNotificationEvent) return;
+        const payload = {
+            title: 'Life OS',
+            tag: `lifeos-gamification-${resolvedPolicy.eventType || 'event'}`,
+            url: '/?view=painel'
+        };
+        if (resolvedPolicy.hasAchievement) {
+            payload.body = `Conquista desbloqueada: ${result.achievementsUnlocked[0]?.title || 'Nova conquista'}.`;
+        } else if (resolvedPolicy.leveledUp) {
+            payload.body = `Novo nivel no sistema: ${result.totalLevel}.`;
+        } else if (resolvedPolicy.eventType === 'weekly_plan') {
+            payload.body = `Planejamento semanal salvo${resolvedPolicy.xp ? ` com +${resolvedPolicy.xp} XP` : ''}.`;
+        } else if (resolvedPolicy.eventType === 'weekly_review') {
+            payload.body = `Revisao semanal salva${resolvedPolicy.xp ? ` com +${resolvedPolicy.xp} XP` : ''}.`;
+        } else {
+            return;
+        }
+        this.publishNotificationEvent(payload, {
+            dedupeId: `${resolvedPolicy.eventType || 'gamification'}_${result.totalLevel || result.xp || Date.now()}`
+        }).catch(() => {});
+    },
+
 getDimensionProgressionCatalog: function() {
         return {
             'Saúde': {
@@ -368,28 +457,9 @@ showGamificationToast: function(result) {
         }
 
         this.showToast(parts.join(' · '), 'success');
-        if (this.pushSocialInternalNotification) {
-            this.pushSocialInternalNotification('xp_gain', {
-                xp: result.xp,
-                title: whyPrefix || 'Acao registrada',
-                message: `+${result.xp} XP`
-            }).catch(() => {});
-            if (leveledUp) {
-                this.pushSocialInternalNotification('level_up', {
-                    level: result.totalLevel,
-                    title: 'Subiu de nivel',
-                    message: `Sistema nivel ${result.totalLevel}`
-                }).catch(() => {});
-            }
-            if (result.achievementsUnlocked && result.achievementsUnlocked.length) {
-                const first = result.achievementsUnlocked[0];
-                this.pushSocialInternalNotification('achievement_unlock', {
-                    title: first.title || 'Conquista desbloqueada',
-                    icon: first.icon || 'military_tech',
-                    message: first.title || 'Conquista desbloqueada'
-                }).catch(() => {});
-            }
-        }
+        const policy = this.getGamificationChannelPolicy?.(result) || {};
+        this.logGamificationInternalEvents?.(result, policy);
+        this.publishGamificationMilestoneNotification?.(result, policy);
         if (this.broadcastSocialActivityToConnections) {
             const genericLabel = ({
                 micro_complete: 'Micro concluida',

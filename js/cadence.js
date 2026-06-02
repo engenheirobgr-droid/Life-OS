@@ -1,5 +1,63 @@
 export function attachCadence(app) {
     Object.assign(app, {
+getLatestWellbeingHistoryDate: function(kind) {
+        const history = kind === 'swls'
+            ? window.sistemaVidaState?.swls?.history
+            : window.sistemaVidaState?.wellbeingHistory?.[kind];
+        if (!history || typeof history !== 'object') return '';
+        return Object.keys(history)
+            .filter((dateKey) => /^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || '')))
+            .sort((a, b) => String(b).localeCompare(String(a)))[0] || '';
+    },
+
+hasMeaningfulWheelContent: function() {
+        const dimensions = window.sistemaVidaState?.dimensions || {};
+        const axes = this.getWheelAxes ? this.getWheelAxes() : ['Saude', 'Mente', 'Carreira', 'Financas', 'Relacionamentos', 'Familia', 'Lazer', 'Proposito'];
+        const scores = axes
+            .map((axis) => Number(dimensions?.[axis]?.score))
+            .filter((score) => Number.isFinite(score));
+        return scores.length === axes.length && scores.some((score) => score !== 1);
+    },
+
+hasCompletePermaContent: function() {
+        const perma = window.sistemaVidaState?.perma || {};
+        return ['P', 'E', 'R', 'M', 'A']
+            .every((key) => Number(perma?.[key]) > 0);
+    },
+
+hasMeaningfulSwlsContent: function() {
+        const swls = window.sistemaVidaState?.swls || {};
+        if (String(swls.lastDate || '').trim()) return true;
+        return Object.keys(swls.history || {}).some((dateKey) => /^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || '')));
+    },
+
+ensureDerivedCadenceEntry: function(toolKey, dateKey, options = {}) {
+        if (!toolKey || !/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return;
+        if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
+        if (!window.sistemaVidaState.profile.cadence || typeof window.sistemaVidaState.profile.cadence !== 'object') {
+            window.sistemaVidaState.profile.cadence = {};
+        }
+        const previous = window.sistemaVidaState.profile.cadence[toolKey] || {};
+        if (String(previous.lastAt || '').trim()) return;
+        const markerKey = options.markerKey || 'migratedFromContent';
+        const history = Array.isArray(previous.history) ? [...previous.history] : [];
+        const at = String(options.updatedAt || `${dateKey}T12:00:00.000Z`);
+        if (!history.some((entry) => String(entry?.date || '') === dateKey)) {
+            history.unshift({ date: dateKey, at });
+        }
+        window.sistemaVidaState.profile.cadence[toolKey] = {
+            ...previous,
+            lastAt: dateKey,
+            updatedAt: at,
+            history: history
+                .filter((entry) => /^\d{4}-\d{2}-\d{2}$/.test(String(entry?.date || '')))
+                .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.at || '').localeCompare(String(a.at || '')))
+                .slice(0, 24),
+            [markerKey]: true
+        };
+        this._cadenceNeedsMigrationSave = true;
+    },
+
 ensureCadenceState: function() {
         if (!window.sistemaVidaState.profile) window.sistemaVidaState.profile = {};
         const profile = window.sistemaVidaState.profile;
@@ -50,14 +108,40 @@ ensureCadenceState: function() {
             ['legacy', this.hasCompleteLegacyContent?.()],
             ['vision', this.hasCompleteVisionContent?.()]
         ].forEach(([key, hasContent]) => {
-            if (!hasContent || profile.cadence[key]?.lastAt) return;
-            profile.cadence[key] = {
-                ...(profile.cadence[key] || {}),
-                lastAt: legacyPurposeCadence.lastAt || this.getLocalDateKey(),
-                updatedAt: legacyPurposeCadence.updatedAt || new Date().toISOString(),
-                migratedFromContent: true
-            };
-            this._cadenceNeedsMigrationSave = true;
+            if (!hasContent) return;
+            this.ensureDerivedCadenceEntry?.(
+                key,
+                legacyPurposeCadence.lastAt || this.getLocalDateKey(),
+                {
+                    markerKey: 'migratedFromContent',
+                    updatedAt: legacyPurposeCadence.updatedAt || new Date().toISOString()
+                }
+            );
+        });
+        [
+            {
+                key: 'wheel',
+                dateKey: this.getLatestWellbeingHistoryDate?.('wheel') || (this.hasMeaningfulWheelContent?.() ? this.getLocalDateKey() : ''),
+                markerKey: this.getLatestWellbeingHistoryDate?.('wheel') ? 'migratedFromHistory' : 'migratedFromContent'
+            },
+            {
+                key: 'perma',
+                dateKey: this.getLatestWellbeingHistoryDate?.('perma') || (this.hasCompletePermaContent?.() ? this.getLocalDateKey() : ''),
+                markerKey: this.getLatestWellbeingHistoryDate?.('perma') ? 'migratedFromHistory' : 'migratedFromContent'
+            },
+            {
+                key: 'swls',
+                dateKey: String(profile.swls?.lastDate || window.sistemaVidaState?.swls?.lastDate || '').trim() || this.getLatestWellbeingHistoryDate?.('swls'),
+                markerKey: String(profile.swls?.lastDate || window.sistemaVidaState?.swls?.lastDate || '').trim() ? 'migratedFromContent' : 'migratedFromHistory'
+            },
+            {
+                key: 'odyssey',
+                dateKey: this.getLatestWellbeingHistoryDate?.('odyssey') || (this.hasCompleteOdysseyContent?.() ? this.getLocalDateKey() : ''),
+                markerKey: this.getLatestWellbeingHistoryDate?.('odyssey') ? 'migratedFromHistory' : 'migratedFromContent'
+            }
+        ].forEach((entry) => {
+            if (!entry.dateKey) return;
+            this.ensureDerivedCadenceEntry?.(entry.key, entry.dateKey, { markerKey: entry.markerKey });
         });
     },
 

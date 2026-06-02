@@ -236,8 +236,23 @@ renderTimelineHistory: function() {
             if (d.notes.length) {
                 notesHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Anotações</p><ul class="space-y-1.5">${
                     d.notes.map(n => {
-                        const linkLabel = this.getNoteLinkContext(n).label;
-                        return `<li class="text-xs flex flex-wrap items-baseline gap-1.5"><span class="font-medium text-on-surface">${this.escapeHtml(n.title)}</span>${linkLabel ? `<span class="inline-flex rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-secondary">${this.escapeHtml(linkLabel)}</span>` : ''}${n.body ? `<span class="text-on-surface-variant"> — ${this.escapeHtml(n.body.slice(0, 100))}${n.body.length > 100 ? '…' : ''}</span>` : ''}</li>`;
+                        const compactContext = this.getNoteCompactContext(n);
+                        const timelineSections = this.getNoteTimelineSections(n);
+                        const preview = this.getNoteTimelineDetailText(n, 150);
+                        const showContextDetail = compactContext.detail && !this.isNoteContextDetailRedundant(n, compactContext.detail);
+                        const metaBadges = [compactContext.badge];
+                        if (String(n?.sourceType || '').toLowerCase().includes('focus')) metaBadges.push('Foco');
+                        return `<li class="rounded-lg bg-surface-container-low px-2.5 py-2 space-y-1">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="text-xs font-medium text-on-surface">${this.escapeHtml(n.title)}</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1.5 text-[10px] text-outline">
+                                ${metaBadges.map((badge, idx) => `<span class="inline-flex rounded-full ${idx === 0 ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'} px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">${this.escapeHtml(badge)}</span>`).join('')}
+                                ${timelineSections.time ? `<span>${this.escapeHtml(timelineSections.time)} foco</span>` : ''}
+                            </div>
+                            ${showContextDetail ? `<p class="text-[10px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(compactContext.detail)}</p>` : ''}
+                            ${preview ? `<p class="text-xs leading-snug whitespace-pre-line text-on-surface-variant">${this.escapeHtml(preview)}</p>` : ''}
+                        </li>`;
                     }).join('')
                 }</ul></div>`;
             }
@@ -574,7 +589,9 @@ renderNotesPanel: function(showAll) {
         const renderCard = (note) => {
             const linkContext = this.getNoteLinkContext(note);
             const isLinked = !!linkContext.linked;
-            const linkLabel = linkContext.label;
+            const compactContext = this.getNoteCompactContext(note);
+            const linkLabel = compactContext.detail || linkContext.label;
+            const showHeaderDetail = isLinked && linkLabel && !this.isNoteContextDetailRedundant(note, linkLabel);
             const isLoose = !isLinked;
             const createdDt = note.createdAt ? new Date(note.createdAt) : null;
             const updatedDt = note.updatedAt ? new Date(note.updatedAt) : null;
@@ -582,30 +599,23 @@ renderNotesPanel: function(showAll) {
             const updatedOk = updatedDt && !Number.isNaN(updatedDt.getTime());
             const dateRef = updatedOk ? updatedDt : createdOk ? createdDt : null;
             const dateStr = dateRef ? dateRef.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
-            const url = note.url
-                ? `<a href="${this.escapeHtml(note.url)}" target="_blank" rel="noopener" class="text-[10px] text-primary hover:underline truncate">${this.escapeHtml(note.url)}</a>`
-                : '';
             const isExpanded = this.expandedProfileNoteId === note.id;
             return `<article class="rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden transition-colors ${isExpanded ? 'shadow-sm' : ''}">
-                <button type="button" onclick="window.app.toggleProfileNoteExpanded('${this.escapeHtml(note.id)}')" class="w-full text-left px-3 py-2.5 hover:bg-surface-container-high transition-colors">
+                <button type="button" onclick="window.app.toggleProfileNoteExpanded('${this.escapeHtml(note.id)}')" class="w-full text-left px-3 py-2 hover:bg-surface-container-high transition-colors">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-center gap-1.5">
-                                <h4 class="text-sm font-bold text-on-surface leading-snug truncate">${this.escapeHtml(note.title)}</h4>
-                                <span class="inline-flex rounded-full ${isLinked ? 'bg-secondary/10 text-secondary' : 'bg-surface-container-high text-outline'} px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">${isLinked ? 'Vinculada' : 'Avulsa'}</span>
-                            </div>
-                            <div class="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] text-outline">
+                            <h4 class="text-sm font-bold text-on-surface leading-snug truncate">${this.escapeHtml(note.title)}</h4>
+                            <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-outline">
+                                <span class="inline-flex rounded-full ${isLinked ? 'bg-secondary/10 text-secondary' : 'bg-surface-container-high text-outline'} px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">${this.escapeHtml(compactContext.badge || (isLinked ? 'Vinculada' : 'Avulsa'))}</span>
                                 ${dateStr ? `<span>${dateStr}</span>` : ''}
+                                ${showHeaderDetail ? `<span>&bull;</span><span class="truncate">${this.escapeHtml(linkLabel)}</span>` : ''}
                             </div>
                         </div>
                         <span class="material-symbols-outlined notranslate text-outline text-[18px] transition-transform ${isExpanded ? 'rotate-180' : ''}">expand_more</span>
                     </div>
                 </button>
-                <div class="${isExpanded ? '' : 'hidden'} border-t border-outline-variant/10 px-3 py-3 space-y-3">
-                    ${linkLabel ? `<p class="text-[10px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(linkLabel)}</p>` : ''}
-                    ${note.body ? `<p class="text-xs text-on-surface-variant leading-relaxed whitespace-pre-line break-words">${this.escapeHtml(note.body)}</p>` : ''}
-                    ${url}
-                    ${(note.tags || []).length ? `<div class="flex flex-wrap gap-1">${(note.tags || []).map(tag => `<span class="inline-flex rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">${this.escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+                <div class="${isExpanded ? '' : 'hidden'} border-t border-outline-variant/10 px-3 py-2.5 space-y-2">
+                    ${this.renderNoteExpandedContent(note, { detail: linkLabel, bodyMode: 'full' })}
                     <div class="flex flex-wrap items-center gap-2 pt-1">
                         ${isLoose ? `<button type="button" onclick="event.stopPropagation(); window.app.transformProfileNoteToMicro('${this.escapeHtml(note.id)}')" class="h-9 px-3 rounded-xl bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Transformar em ação</button>` : ''}
                         <button type="button" onclick="event.stopPropagation(); window.app.editProfileNote('${this.escapeHtml(note.id)}')" class="h-9 px-3 rounded-xl bg-surface-container-high text-[10px] font-bold uppercase tracking-wider text-outline hover:text-primary transition-colors">Vincular</button>

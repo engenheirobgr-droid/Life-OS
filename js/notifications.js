@@ -314,6 +314,31 @@ showNotification: function(messageOrOptions, toastType = 'success') {
         }
     },
 
+publishNotificationEvent: async function(messageOrOptions, options = {}) {
+        const payload = typeof messageOrOptions === 'string'
+            ? { body: messageOrOptions }
+            : { ...(messageOrOptions || {}) };
+        const toastType = payload.toastType || options.toastType || 'success';
+        const preferPush = options.preferPush !== false;
+        const dedupeId = String(options.dedupeId || payload.dedupeId || '').trim();
+
+        if (this.isAppInForeground?.()) {
+            this.showNotification(payload, toastType);
+            return { delivered: 'toast' };
+        }
+
+        if (preferPush && this.notifySelfPushEvent) {
+            const pushed = await this.notifySelfPushEvent(payload, {
+                dedupeId: dedupeId || undefined,
+                forceWhenForeground: !!options.forceWhenForeground
+            }).catch(() => false);
+            if (pushed) return { delivered: 'push' };
+        }
+
+        this.showNotification(payload, toastType);
+        return { delivered: 'local' };
+    },
+
 getOpenNudgeLog: function() {
         try {
             return JSON.parse(this.localGet('lifeos_open_nudges_log') || '{}') || {};
@@ -520,8 +545,10 @@ scheduleLocalNotifications: function() {
                     tag: nudge.tag,
                     url: '/'
                 };
-                this.showNotification(payload, 'info');
-                this.notifySelfPushEvent(payload, { dedupeId: `open_nudge_${todayKey}_${nudge.id}` }).catch(() => {});
+                this.publishNotificationEvent?.(payload, {
+                    toastType: 'info',
+                    dedupeId: `open_nudge_${todayKey}_${nudge.id}`
+                }).catch(() => {});
                 this.markOpenNudgeShownToday(nudge.id, todayKey);
             }, 2500 + (idx * 1800));
         });
@@ -558,8 +585,10 @@ scheduleRiskNotifications: function() {
             };
 
             setTimeout(() => {
-                this.showNotification(payload, 'info');
-                this.notifySelfPushEvent(payload, { dedupeId: `risk_${dedupeKey}` }).catch(() => {});
+                this.publishNotificationEvent?.(payload, {
+                    toastType: 'info',
+                    dedupeId: `risk_${dedupeKey}`
+                }).catch(() => {});
                 sentLog[dedupeKey] = true;
                 try { this.localSet('lifeos_risk_alerts_sent', JSON.stringify(sentLog)); } catch (_) {}
             }, 2200 + (idx * 1300));

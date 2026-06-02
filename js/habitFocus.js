@@ -1,10 +1,22 @@
-function buildFocusClosureBody({ habit, protocol, micro, focusSec, delivery, evidence, gaps, nextStep }) {
+function normalizeFocusNoteToken(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+}
+
+function buildFocusClosureBody({ habit, protocol, micro, focusSec, delivery, evidence, gaps, nextStep, noteSubject = '' }) {
     const lines = [];
-    if (habit?.title) lines.push(`Origem: habito ${habit.title}`);
+    const subjectKey = normalizeFocusNoteToken(noteSubject);
+    const habitKey = normalizeFocusNoteToken(habit?.title);
+    const microKey = normalizeFocusNoteToken(micro?.title);
+    const deliveryKey = normalizeFocusNoteToken(delivery);
+    if (habit?.title && habitKey && habitKey !== subjectKey) lines.push(`Origem: habito ${habit.title}`);
     if (protocol?.title) lines.push(`Protocolo: ${protocol.title}`);
-    if (micro?.title) lines.push(`Acao do plano: ${micro.title}`);
+    if (micro?.title && microKey && microKey !== subjectKey && microKey !== deliveryKey) lines.push(`Acao do plano: ${micro.title}`);
     if (focusSec > 0) lines.push(`Tempo de foco: ${Math.max(1, Math.round(focusSec / 60))} min`);
-    if (delivery) lines.push('', 'Entrega concreta', delivery);
+    if (delivery && deliveryKey !== subjectKey && deliveryKey !== microKey) lines.push('', 'Entrega concreta', delivery);
     if (evidence) lines.push('', 'Evidencia', evidence);
     if (gaps) lines.push('', 'Duvidas e lacunas', gaps);
     if (nextStep) lines.push('', 'Proximo passo', nextStep);
@@ -474,6 +486,7 @@ export function attachHabitFocusModule(app) {
             this.ensureNotesState();
             this.normalizeDeepWorkState();
             const state = window.sistemaVidaState;
+            const dw = state.deepWork || {};
             const closure = state.deepWork?.pendingClosure;
             if (!closure?.microId && !closure?.habitId) {
                 this.closeHabitFocusClosureModal();
@@ -549,6 +562,7 @@ export function attachHabitFocusModule(app) {
 
             const shouldCreateClosureNote = !!(createdMicro || evidence || gaps || nextStep);
             if (shouldCreateClosureNote) {
+                const noteSubject = (createdMicro || micro || habit)?.title || 'Registro';
                 const linkedEntity = createdMicro
                     ? { entityType: 'micros', entityId: createdMicro.id }
                     : (micro
@@ -562,12 +576,13 @@ export function attachHabitFocusModule(app) {
                     delivery: createdMicro?.title || '',
                     evidence,
                     gaps,
-                    nextStep
+                    nextStep,
+                    noteSubject
                 });
 
                 state.profile.notes.unshift({
                     id: `note_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
-                    title: `Sessao de foco - ${(createdMicro || micro || habit)?.title || 'Registro'}`,
+                    title: `Foco: ${noteSubject}`,
                     body: noteBody,
                     url: '',
                     tags: ['foco', habit ? 'habito' : 'micro', protocol?.title ? protocol.title.toLowerCase() : ''].filter(Boolean),
@@ -591,17 +606,26 @@ export function attachHabitFocusModule(app) {
             }
 
             this.saveState(true);
-            if (this.currentView === 'foco' && this.render?.foco) this.render.foco();
-            if (this.currentView === 'planos' && this.render?.planos) this.render.planos();
-            if (this.currentView === 'habitos' && this.render?.habitos) this.render.habitos();
-            if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+            if (dw.isRunning && dw.mode === 'break') {
+                this.renderDeepWorkImmersiveOverlay?.();
+            } else {
+                if (this.currentView === 'foco' && this.render?.foco) this.render.foco();
+                if (this.currentView === 'planos' && this.render?.planos) this.render.planos();
+                if (this.currentView === 'habitos' && this.render?.habitos) this.render.habitos();
+                if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+            }
             this.showToast('Fechamento da sessao registrado.', 'success');
         },
 
         remindHabitFocusClosureLater: function() {
+            this.normalizeDeepWorkState();
+            const dw = window.sistemaVidaState?.deepWork || {};
             this.closeHabitFocusClosureModal();
+            this.saveState(true);
             this.showToast('Tudo bem. O fechamento ficou pendente para voce retomar depois.', 'success');
-            if (this.currentView === 'foco' && this.render?.foco) this.render.foco();
+            if (dw.isRunning && dw.mode === 'break') this.renderDeepWorkImmersiveOverlay?.();
+            else if (this.currentView === 'foco' && this.render?.foco) this.render.foco();
+            else this.renderDeepWorkImmersiveOverlay?.();
         }
     });
 }
