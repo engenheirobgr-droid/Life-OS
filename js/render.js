@@ -1785,6 +1785,7 @@ renderDeepWorkClockVisual: function(options = {}) {
         const escapedPhase = this.escapeHtml(phaseText || phaseLabel);
         const activeMotion = isRunning && !isPaused;
         const timerHtml = `<p id="deep-work-timer" class="mt-2 text-5xl md:text-6xl lg:text-7xl leading-none font-headline italic text-primary tabular-nums">${escapedTime}</p>`;
+        const progressHtml = `<p class="mt-1 text-[11px] font-semibold tracking-[0.08em] text-outline">${pctLabel}</p>`;
         const phaseHtml = `<p id="deep-work-phase" class="mt-2 text-xs uppercase tracking-[0.12em] text-on-surface-variant">${escapedPhase}</p>`;
 
         if (style === 'ring') {
@@ -1819,6 +1820,7 @@ renderDeepWorkClockVisual: function(options = {}) {
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
                             <p class="text-[11px] uppercase tracking-[0.14em] font-bold text-outline">${mode === 'break' ? 'Pausa' : 'Tempo restante'}</p>
                             ${timerHtml}
+                            ${progressHtml}
                             ${phaseHtml}
                         </div>
                     </div>
@@ -1830,6 +1832,7 @@ renderDeepWorkClockVisual: function(options = {}) {
             <div class="deep-work-clock-shell rounded-2xl border border-primary/20 bg-primary/5 px-4 py-6 md:px-5 md:py-7 text-center shadow-inner h-full flex flex-col justify-center">
                 <p class="text-[11px] uppercase tracking-[0.14em] font-bold text-outline">Tempo restante</p>
                 ${timerHtml}
+                ${progressHtml}
                 ${phaseHtml}
             </div>`;
     },
@@ -1855,13 +1858,12 @@ renderDeepWorkExecutionChecklistHTML: function(micro, options = {}) {
         const linkedHabit = micro.sourceHabitId
             ? (state.habits || []).find(h => h.id === micro.sourceHabitId)
             : null;
-
         return `
             <div class="${containerClass}">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist de execucao</p>
-                        <p class="text-xs text-on-surface-variant mt-1">${linkedHabit ? `Sincronizado com o habito ${this.escapeHtml(linkedHabit.title || '')}.` : 'Use este roteiro durante a sessao de foco.'}</p>
+                        ${linkedHabit ? `<p class="text-xs text-on-surface-variant mt-1">Sincronizado com o habito ${this.escapeHtml(linkedHabit.title || '')}.</p>` : ''}
                     </div>
                     <button type="button" onclick="window.app.toggleMicroExecutionAllSteps('${this.escapeHtml(micro.id)}','${todayKey}',${allDone ? 'true' : 'false'})" class="shrink-0 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high transition-colors">
                         ${allDone ? 'Reabrir passos' : 'Concluir passos'}
@@ -2031,25 +2033,49 @@ renderDeepWorkImmersiveOverlay: function() {
                             <h2 class="mt-2 text-2xl font-headline italic font-bold text-white md:text-[2.5rem]">${dw.mode === 'break' ? 'Pausa em andamento' : 'Foco em andamento'}</h2>
                             ${helperText ? `<p class="mt-2 max-w-2xl text-sm leading-relaxed text-white/68">${this.escapeHtml(helperText)}</p>` : ''}
                         </div>
-                        <div class="grid grid-cols-3 gap-2 self-start lg:min-w-[18rem]">
-                            <div class="rounded-2xl border border-white/10 bg-white/6 px-3 py-2.5">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-white/55">Meta</p>
-                                <p class="mt-1 text-sm font-semibold text-white">${Math.max(5, Math.round(Number(dw.targetSec || 5400) / 60))} min</p>
+                        <div class="flex w-full items-stretch justify-between gap-2 self-start lg:min-w-[18rem] lg:max-w-[24rem]">
+                            <div class="grid min-w-0 flex-1 grid-cols-2 gap-2">
+                                <div class="rounded-2xl border border-white/10 bg-white/6 px-3 py-2.5">
+                                    <p class="text-[10px] font-bold uppercase tracking-widest text-white/55">Meta</p>
+                                    <p class="mt-1 text-sm font-semibold text-white">${Math.max(5, Math.round(Number(dw.targetSec || 5400) / 60))} min</p>
+                                </div>
+                                <div class="rounded-2xl border border-white/10 bg-white/6 px-3 py-2.5">
+                                    <p class="text-[10px] font-bold uppercase tracking-widest text-white/55">Modo</p>
+                                    <p class="mt-1 text-sm font-semibold text-white">${dw.mode === 'break' ? 'Pausa' : 'Foco'}</p>
+                                </div>
                             </div>
-                            <div class="rounded-2xl border border-white/10 bg-white/6 px-3 py-2.5">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-white/55">Modo</p>
-                                <p class="mt-1 text-sm font-semibold text-white">${dw.mode === 'break' ? 'Pausa' : 'Foco'}</p>
-                            </div>
-                            <div class="rounded-2xl border border-white/10 bg-white/6 px-3 py-2.5">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-white/55">Avanco</p>
-                                <p class="mt-1 text-sm font-semibold text-white">${Math.round(progress * 100)}%</p>
+                            <div class="flex shrink-0 items-center gap-2">
+                                <button
+                                    type="button"
+                                    data-deep-work-action="pause"
+                                    title="${dw.isPaused ? 'Retomar foco' : 'Pausar foco'}"
+                                    aria-label="${dw.isPaused ? 'Retomar foco' : 'Pausar foco'}"
+                                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-white/10 text-white transition-colors hover:bg-white/14">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">${dw.isPaused ? 'play_arrow' : 'pause'}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    data-deep-work-action="reset"
+                                    title="Reiniciar"
+                                    aria-label="Reiniciar"
+                                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-white/90 transition-colors hover:bg-white/10">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">restart_alt</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    data-deep-work-action="finish"
+                                    title="${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}"
+                                    aria-label="${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}"
+                                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/25 transition-all hover:opacity-95">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">${dw.mode === 'break' ? 'stop_circle' : 'flag'}</span>
+                                </button>
                             </div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.28fr)_minmax(320px,0.72fr)]">
                         <section class="rounded-[28px] border border-white/10 bg-[rgba(255,255,255,0.045)] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.34)] backdrop-blur-sm md:p-5">
-                            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(270px,0.92fr)] lg:items-stretch">
+                            <div class="grid grid-cols-1 gap-4">
                                 <div class="min-w-0 space-y-4">
                                     ${this.renderDeepWorkClockVisual({
                                         style: clockStyle,
@@ -2063,37 +2089,6 @@ renderDeepWorkImmersiveOverlay: function() {
                                         canCompleteSelectedMicro: !!(selectedMicro && selectedMicro.status !== 'done')
                                     })}
                                 </div>
-                                <aside class="min-w-0">
-                                    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                        <div class="flex flex-wrap items-center gap-2 border-b border-white/10 pb-3">
-                                            <button
-                                                type="button"
-                                                data-deep-work-action="pause"
-                                                title="${dw.isPaused ? 'Retomar foco' : 'Pausar foco'}"
-                                                aria-label="${dw.isPaused ? 'Retomar foco' : 'Pausar foco'}"
-                                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-white/10 text-white transition-colors hover:bg-white/14">
-                                                <span class="material-symbols-outlined notranslate text-[18px]">${dw.isPaused ? 'play_arrow' : 'pause'}</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                data-deep-work-action="reset"
-                                                title="Reiniciar"
-                                                aria-label="Reiniciar"
-                                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-white/5 text-white/90 transition-colors hover:bg-white/10">
-                                                <span class="material-symbols-outlined notranslate text-[18px]">restart_alt</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                data-deep-work-action="finish"
-                                                title="${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}"
-                                                aria-label="${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}"
-                                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/25 transition-all hover:opacity-95">
-                                                <span class="material-symbols-outlined notranslate text-[18px]">${dw.mode === 'break' ? 'stop_circle' : 'flag'}</span>
-                                            </button>
-                                        </div>
-                                        <div class="mt-3 space-y-2">${overlaySummaryHtml}</div>
-                                    </div>
-                                </aside>
                             </div>
                         </section>
 

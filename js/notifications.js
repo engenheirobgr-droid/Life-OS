@@ -2,6 +2,12 @@ import { setDoc, deleteDoc } from './firebase.js';
 
 export function attachNotifications(app) {
     Object.assign(app, {
+isAppInForeground: function() {
+        if (typeof document === 'undefined') return false;
+        const isVisible = document.visibilityState === 'visible';
+        const hasFocus = typeof document.hasFocus === 'function' ? document.hasFocus() : true;
+        return isVisible && hasFocus;
+    },
 getPushErrorMessage: function(error) {
         const msg = String(error?.message || error?.code || error || '');
         if (msg.includes('push_public_key') || msg.includes('Unexpected token') || msg.includes('api')) {
@@ -233,6 +239,7 @@ notifySelfPushEvent: async function(payload = {}, options = {}) {
             const state = window.sistemaVidaState || {};
             if (!state.settings?.notificationsEnabled) return false;
             if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return false;
+            if (!options.forceWhenForeground && this.isAppInForeground?.()) return false;
             if (!this.isRealAccount || !this.isRealAccount()) return false;
             const idToken = await this.getCurrentIdToken();
             const body = String(payload.body || '').trim();
@@ -285,8 +292,9 @@ showNotification: function(messageOrOptions, toastType = 'success') {
         const requireInteraction = !!payload.requireInteraction;
 
         this.showToast(body, payload.toastType || toastType);
+        const shouldShowSystemNotification = !!payload.forceWhenForeground || !this.isAppInForeground?.();
         // Mostra notificação real do SO se permissão concedida e app aberto
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        if (shouldShowSystemNotification && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             try {
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.ready.then(reg => {
