@@ -90,6 +90,12 @@ normalizeEntitiesState: function() {
         state.entities.micros = state.entities.micros.map((micro) => {
             const progress = clampProgress(micro?.progress);
             const status = normalizedStatus(micro?.status, progress, micro?.completed, true);
+            const normalizedSchedule = this.normalizeMicroScheduleContract
+                ? this.normalizeMicroScheduleContract(micro, { rejectIfMissingPrazo: false })
+                : {
+                    inicioDate: String(micro?.inicioDate || '').trim(),
+                    prazo: String(micro?.prazo || '').trim()
+                };
             return {
                 ...micro,
                 id: String(micro?.id || ''),
@@ -100,6 +106,8 @@ normalizeEntitiesState: function() {
                 sourceProtocolId: String(micro?.sourceProtocolId || ''),
                 steps: Array.isArray(micro?.steps) ? micro.steps.map(step => String(step || '').trim()).filter(Boolean) : [],
                 stepLogs: (micro?.stepLogs && typeof micro.stepLogs === 'object' && !Array.isArray(micro.stepLogs)) ? micro.stepLogs : {},
+                inicioDate: normalizedSchedule.inicioDate || '',
+                prazo: normalizedSchedule.prazo || '',
                 progress: status === 'done' ? 100 : progress,
                 status,
                 completed: status === 'done',
@@ -1273,6 +1281,7 @@ importFromExcel: async function(event) {
                     plan_parent: 'Planos rejeitados por vinculo pai ausente/invalido',
                     plan_validation: 'Planos rejeitados por contrato de validacao',
                     plan_dimension: 'Planos rejeitados por dimensao ausente/inconsistente',
+                    micro_schedule_reject: 'Micros rejeitadas por contrato de agenda',
                     habit_meta_link: 'Habitos rejeitados por meta vinculada inexistente',
                     habit_dimension: 'Habitos rejeitados por dimensao ausente/incompativel',
                     review_lookup: 'Revisoes com referencia de identidade nao encontrada'
@@ -1289,6 +1298,13 @@ importFromExcel: async function(event) {
                 root: new Map(),
                 consequence: new Map(),
                 details: []
+            };
+            const microImportStats = {
+                importedWithoutAdjustment: 0,
+                importedWithAdjustment: 0,
+                rejected: 0,
+                adjustedSamples: [],
+                rejectedSamples: []
             };
             const registerImportWarning = (kind, code, message) => {
                 const target = kind === 'consequence' ? importWarningState.consequence : importWarningState.root;
@@ -1424,11 +1440,13 @@ importFromExcel: async function(event) {
                     const keyResultsText = String(getValue(row, ['Resultados-chave', 'Resultados-chave (texto)', 'Key_Results', 'Key Results', 'KRs']) || '');
 
                     let context = getValue(row, ['Contexto', 'Contexto / Indicador', 'Contexto_Indicador', 'Notes', 'Descrição']);
+                    let inicioDate = normalizeDateKey(getValue(row, ['Início', 'Inicio', 'Inicio_Date', 'Start_Date', 'Data de início', 'Data_Inicio']));
                     let prazo = normalizeDateKey(getValue(row, ['Prazo', 'Prazo / Ciclo', 'Ciclo', 'Deadline', 'Data']));
                     
                     if (type === 'metas' || type === 'okrs') {
                         obj.purpose = context;
                         obj.prazo = prazo;
+                        if (inicioDate && type === 'okrs') obj.inicioDate = inicioDate;
                         if (successCriteria) obj.successCriteria = successCriteria;
                         if (challengeLevel >= 1 && challengeLevel <= 5) obj.challengeLevel = Math.round(challengeLevel);
                         if (commitmentLevel >= 1 && commitmentLevel <= 5) obj.commitmentLevel = Math.round(commitmentLevel);
@@ -1443,10 +1461,15 @@ importFromExcel: async function(event) {
                             if (krProgress !== null) obj.progress = krProgress;
                         }
                     }
-                    else if (type === 'macros') { obj.description = context; obj.prazo = prazo; }
+                    else if (type === 'macros') {
+                        obj.description = context;
+                        obj.prazo = prazo;
+                        if (inicioDate) obj.inicioDate = inicioDate;
+                    }
                     else if (type === 'micros') {
                         obj.indicator = context;
                         obj.completed = toBool(getValue(row, ['Concluída', 'Concluida', 'Completed']), status === 'done');
+                        obj.inicioDate = inicioDate;
                         obj.prazo = prazo;
                         obj.protocolId = String(getValue(row, ['Protocol_ID', 'Protocolo_ID']) || '').trim();
                         obj.sourceHabitId = String(getValue(row, ['Habito_Origem_ID', 'Hábito_Origem_ID']) || '').trim();
@@ -1456,6 +1479,25 @@ importFromExcel: async function(event) {
                         obj.effort = String(getValue(row, ['Esforço', 'Esforco']) || '').trim();
                         obj.estimatedMinutes = toInt(getValue(row, ['Minutos estimados', 'Minutos_Estimados', 'Estimated_Minutes']), 0);
                         obj.startTime = normalizeTimeValue(getValue(row, ['Hora', 'Hora_Inicio', 'Start_Time']));
+                        const normalizedMicroSchedule = this.normalizeMicroScheduleContract
+                            ? this.normalizeMicroScheduleContract(obj, { rejectIfMissingPrazo: true })
+                            : { inicioDate: obj.inicioDate || '', prazo: obj.prazo || '', adjusted: false, rejected: false };
+                        if (normalizedMicroSchedule.rejected) {
+                            const safeTitle = String(obj.title || '').trim() || '(sem título)';
+                            microImportStats.rejected += 1;
+                            if (microImportStats.rejectedSamples.length < 3) {
+                                microImportStats.rejectedSamples.push(`Ação "${safeTitle}" rejeitada: ${normalizedMicroSchedule.rejectReason || 'prazo obrigatório para micros'}.`);
+                            }
+                            pushPlanImportWarning('micros', safeTitle, normalizedMicroSchedule.rejectReason || 'prazo obrigatório para micros. Linha ignorada.', 'micro_schedule_reject');
+                            return;
+                        }
+                        obj.inicioDate = normalizedMicroSchedule.inicioDate || '';
+                        obj.prazo = normalizedMicroSchedule.prazo || '';
+                        if (normalizedMicroSchedule.adjusted) {
+                            obj._microScheduleImportState = 'adjusted';
+                        } else {
+                            obj._microScheduleImportState = 'unchanged';
+                        }
                     }
 
                     if (explicitParentLabel) obj._parentTitle = explicitParentLabel;
@@ -1503,6 +1545,18 @@ importFromExcel: async function(event) {
                 window.sistemaVidaState.entities.macros = finalizeImportedChildren('macros', window.sistemaVidaState.entities.macros, okrIndex);
                 macroIndex = buildNamedIndex(window.sistemaVidaState.entities.macros);
                 window.sistemaVidaState.entities.micros = finalizeImportedChildren('micros', window.sistemaVidaState.entities.micros, macroIndex);
+                window.sistemaVidaState.entities.micros.forEach((micro) => {
+                    const importState = String(micro._microScheduleImportState || '').trim();
+                    if (importState === 'adjusted') {
+                        microImportStats.importedWithAdjustment += 1;
+                        if (microImportStats.adjustedSamples.length < 3) {
+                            microImportStats.adjustedSamples.push(`Ação "${String(micro.title || '').trim() || '(sem título)'}" ajustada para ${micro.inicioDate} → ${micro.prazo}.`);
+                        }
+                    } else if (importState === 'unchanged') {
+                        microImportStats.importedWithoutAdjustment += 1;
+                    }
+                    delete micro._microScheduleImportState;
+                });
                 microIndex = buildNamedIndex(window.sistemaVidaState.entities.micros);
             }
 
@@ -2213,13 +2267,21 @@ importFromExcel: async function(event) {
             const summarizeWarningBuckets = (buckets) => buckets
                 .map((bucket) => `${bucket.label} (${bucket.count})`)
                 .join('; ');
+            const microImportSummary = `Micros — sem ajuste: ${microImportStats.importedWithoutAdjustment}; com ajuste: ${microImportStats.importedWithAdjustment}; rejeitadas: ${microImportStats.rejected}`;
+            const microImportSamples = [
+                ...microImportStats.adjustedSamples.slice(0, 2),
+                ...microImportStats.rejectedSamples.slice(0, 2)
+            ];
             if (totalWarningCount) {
                 console.warn('[Import warnings][causas-raiz]', rootWarnings);
                 console.warn('[Import warnings][consequencias]', consequenceWarnings);
             }
+            if (microImportStats.rejected || microImportStats.importedWithAdjustment) {
+                console.warn('[Import micros][contract]', microImportStats);
+            }
             alert(totalWarningCount
-                ? `Planilha importada com sucesso, com ${totalWarningCount} aviso(s).\nCausas raiz (${rootWarningCount}): ${summarizeWarningBuckets(rootWarnings) || 'nenhuma'}\nConsequencias (${consequenceWarningCount}): ${summarizeWarningBuckets(consequenceWarnings) || 'nenhuma'}`
-                : 'Planilha importada com sucesso.');
+                ? `Planilha importada com sucesso, com ${totalWarningCount} aviso(s).\n${microImportSummary}\nCausas raiz (${rootWarningCount}): ${summarizeWarningBuckets(rootWarnings) || 'nenhuma'}\nConsequencias (${consequenceWarningCount}): ${summarizeWarningBuckets(consequenceWarnings) || 'nenhuma'}${microImportSamples.length ? `\nExemplos: ${microImportSamples.join(' | ')}` : ''}`
+                : `Planilha importada com sucesso.\n${microImportSummary}${microImportSamples.length ? `\nExemplos: ${microImportSamples.join(' | ')}` : ''}`);
             window.app.switchView('painel');
             importSucceeded = true;
             
@@ -2271,7 +2333,7 @@ exportToExcelFull: function() {
         XLSX.utils.book_append_sheet(wb, wsSummary, "Resumo");
 
         // 1. Aba: Planos
-        const planosCol = ["ID", "Tipo", "Dimensão", "Título", "Status", "Concluida", "Contexto_Indicador", "Prazo", "Progresso", "ID_Pai", "Critério_Sucesso", "Desafio", "Comprometimento", "Key_Results", "Protocol_ID", "Habito_Origem_ID", "Protocolo_Origem_ID", "Passos", "Steps_JSON", "Step_Logs_JSON", "Esforco", "Minutos_Estimados", "Hora_Inicio", "Notas"];
+        const planosCol = ["ID", "Tipo", "Dimensão", "Título", "Status", "Concluida", "Contexto_Indicador", "Inicio", "Prazo", "Progresso", "ID_Pai", "Critério_Sucesso", "Desafio", "Comprometimento", "Key_Results", "Protocol_ID", "Habito_Origem_ID", "Protocolo_Origem_ID", "Passos", "Steps_JSON", "Step_Logs_JSON", "Esforco", "Minutos_Estimados", "Hora_Inicio", "Notas"];
         const planosData = [planosCol];
         const types = ['metas', 'okrs', 'macros', 'micros'];
         types.forEach(t => {
@@ -2290,7 +2352,7 @@ exportToExcelFull: function() {
                     .filter(Boolean)
                     .join('; ');
                 planosData.push([
-                    e.id, t.slice(0, -1), e.dimension || "Geral", e.title, e.status || "", e.completed ? 'sim' : 'nao', context, e.prazo || "", e.progress || 0, parentId,
+                    e.id, t.slice(0, -1), e.dimension || "Geral", e.title, e.status || "", e.completed ? 'sim' : 'nao', context, e.inicioDate || "", e.prazo || "", e.progress || 0, parentId,
                     e.successCriteria || "", e.challengeLevel || "", e.commitmentLevel || "", keyResultsText,
                     e.protocolId || "", e.sourceHabitId || "", e.sourceProtocolId || "",
                     Array.isArray(e.steps) ? e.steps.join(' || ') : "", JSON.stringify(Array.isArray(e.steps) ? e.steps : []), JSON.stringify(e.stepLogs || {}),
@@ -2299,7 +2361,7 @@ exportToExcelFull: function() {
             });
         });
         const wsPlanos = XLSX.utils.aoa_to_sheet(planosData);
-        wsPlanos['!cols'] = [{wch:15}, {wch:10}, {wch:15}, {wch:40}, {wch:12}, {wch:10}, {wch:40}, {wch:15}, {wch:10}, {wch:15}, {wch:30}, {wch:12}, {wch:16}, {wch:42}, {wch:18}, {wch:18}, {wch:20}, {wch:32}, {wch:40}, {wch:24}, {wch:12}, {wch:14}, {wch:12}, {wch:30}];
+        wsPlanos['!cols'] = [{wch:15}, {wch:10}, {wch:15}, {wch:40}, {wch:12}, {wch:10}, {wch:40}, {wch:15}, {wch:15}, {wch:10}, {wch:15}, {wch:30}, {wch:12}, {wch:16}, {wch:42}, {wch:18}, {wch:18}, {wch:20}, {wch:32}, {wch:40}, {wch:24}, {wch:12}, {wch:14}, {wch:12}, {wch:30}];
         XLSX.utils.book_append_sheet(wb, wsPlanos, "Planos");
 
         // 2. Aba: Propósito
@@ -2750,7 +2812,7 @@ exportToExcel: function() {
         setCols(wsSummary, [28, 72]);
         XLSX.utils.book_append_sheet(wb, wsSummary, "Resumo");
 
-        const planVisibleCols = ["Tipo", "Dimensão", "Título", "Status", "Concluída", "Plano Pai", "Contexto", "Prazo", "Progresso", "Critério de Sucesso", "Desafio", "Comprometimento", "Resultados-chave", "Passos", "Esforço", "Minutos estimados", "Hora", "Notas"];
+        const planVisibleCols = ["Tipo", "Dimensão", "Título", "Status", "Concluída", "Plano Pai", "Contexto", "Início", "Prazo", "Progresso", "Critério de Sucesso", "Desafio", "Comprometimento", "Resultados-chave", "Passos", "Esforço", "Minutos estimados", "Hora", "Notas"];
         const planHiddenCols = ["ID", "ID_Pai", "Protocol_ID", "Habito_Origem_ID", "Protocolo_Origem_ID", "Steps_JSON", "Step_Logs_JSON"];
         const planRows = [planVisibleCols.concat(planHiddenCols)];
         ['metas', 'okrs', 'macros', 'micros'].forEach((type) => {
@@ -2768,6 +2830,7 @@ exportToExcel: function() {
                     item.completed ? "sim" : "nao",
                     parentTitle,
                     context,
+                    item.inicioDate || "",
                     item.prazo || "",
                     item.progress || 0,
                     item.successCriteria || "",
@@ -2790,7 +2853,7 @@ exportToExcel: function() {
             });
         });
         const wsPlans = XLSX.utils.aoa_to_sheet(planRows);
-        setCols(wsPlans, [12, 14, 32, 14, 12, 28, 40, 14, 10, 28, 10, 16, 40, 30, 14, 16, 12, 32], [16, 16, 18, 18, 20, 26, 24]);
+        setCols(wsPlans, [12, 14, 32, 14, 12, 28, 40, 14, 14, 10, 28, 10, 16, 40, 30, 14, 16, 12, 32], [16, 16, 18, 18, 20, 26, 24]);
         XLSX.utils.book_append_sheet(wb, wsPlans, "Planos");
 
         const purposeVisibleCols = ["Categoria", "Tipo", "Título", "Texto", "Dimensão", "Descrição", "Evidência", "Risco de Excesso", "Prática", "Gatilho", "Impacto", "Resposta Desejada", "Obstáculo", "Se-Então"];

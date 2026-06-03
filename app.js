@@ -17,17 +17,17 @@ import {
 // Phase 9 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
-import { attachNotifications } from './js/notifications.js?v=20260603-ui-batch-ab-v2';
-import { attachCadence } from './js/cadence.js?v=20260603-ui-batch-ab-v2';
+import { attachNotifications } from './js/notifications.js?v=20260603-ui-batch-ab-v8';
+import { attachCadence } from './js/cadence.js?v=20260603-ui-batch-ab-v8';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260603-ui-batch-ab-v2';
+import { attachIdentity } from './js/identity.js?v=20260603-ui-batch-ab-v8';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
-import { attachProtocolsModule } from './js/protocols.js?v=20260603-ui-batch-ab-v2';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260603-ui-batch-ab-v2';
-import { attachStateModule } from './js/state.js?v=20260603-ui-batch-ab-v2';
-import { attachRenderModule } from './js/render.js?v=20260603-ui-batch-ab-v2';
-import { attachPlanningModule } from './js/planning.js?v=20260601-modal-desktop-v1';
-import { attachGamificationModule } from './js/gamification.js?v=20260603-ui-batch-ab-v2';
+import { attachProtocolsModule } from './js/protocols.js?v=20260603-ui-batch-ab-v8';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260603-ui-batch-ab-v8';
+import { attachStateModule } from './js/state.js?v=20260603-ui-batch-ab-v8';
+import { attachRenderModule } from './js/render.js?v=20260603-ui-batch-ab-v8';
+import { attachPlanningModule } from './js/planning.js?v=20260603-ui-batch-ab-v8';
+import { attachGamificationModule } from './js/gamification.js?v=20260603-ui-batch-ab-v8';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260603-ui-batch-ab-v2',
+    appBuildVersion: '20260603-ui-batch-ab-v8',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -2704,6 +2704,9 @@ _getAudioContext: function() {
     planosActiveTab: 'metas',
     planosHierarchyType: '',
     planosHierarchyId: '',
+    hojeOverdueSelectionOpen: false,
+    hojeOverdueSelectedIds: [],
+    hojeFutureMicrosOpen: false,
     focusTypeFilter: 'Tudo',
     focusStatusFilter: 'Tudo',
     focusDistributionViewMode: 'one_line',
@@ -2947,12 +2950,13 @@ _getAudioContext: function() {
         if (m.status === 'done') return; // ignora concluídas
 
         const hasPrazo = m.prazo && m.prazo.trim() !== '';
-        const hasInicio = m.inicioDate && m.inicioDate.trim() !== '';
 
         if (!hasPrazo) return; // sem prazo, sem risco calculável
 
+        const effectiveStartKey = this.resolveMicroEffectiveStartDate(m);
+        const timing = this.classifyMicroForDate(m);
         const prazo = new Date(m.prazo + 'T00:00:00');
-        const inicio = hasInicio ? new Date(m.inicioDate + 'T00:00:00') : null;
+        const inicio = effectiveStartKey ? new Date(effectiveStartKey + 'T00:00:00') : null;
 
         const diasAteVencer = Math.floor((prazo - today) / (1000 * 60 * 60 * 24));
 
@@ -2975,7 +2979,7 @@ _getAudioContext: function() {
         }
 
         // Risco 4: vence em até 2 dias e ainda não tem inicioDate
-        if (!inicio && diasAteVencer <= 2) {
+        if (timing.status === 'future' && diasAteVencer <= 2) {
           alerts.push({ id: m.id, title: m.title, tipo: 'urgente', dias: diasAteVencer });
         }
       });
@@ -3725,6 +3729,11 @@ renderProfileChrome: function() {
         const { startOfWeek, endOfWeek } = this.getCurrentWeekBounds();
         return start <= endOfWeek && end >= startOfWeek;
     },
+    isMicroDateWindowInCurrentWeek: function(micro) {
+        const windowState = this.getMicroEffectiveWindow(micro);
+        if (!windowState.valid) return false;
+        return this.isDateWindowInCurrentWeek(windowState.startDate, windowState.dueDate);
+    },
 
     getCurrentMonthBounds: function(referenceDate = new Date()) {
         const now = new Date(referenceDate);
@@ -3765,6 +3774,11 @@ renderProfileChrome: function() {
         if (Number.isNaN(start.getTime())) return false;
         const { startOfMonth, endOfMonth } = this.getCurrentMonthBounds();
         return start <= endOfMonth && end >= startOfMonth;
+    },
+    isMicroDateWindowInCurrentMonth: function(micro) {
+        const windowState = this.getMicroEffectiveWindow(micro);
+        if (!windowState.valid) return false;
+        return this.isDateWindowInCurrentMonth(windowState.startDate, windowState.dueDate);
     },
 
     saveValues: function(essentialValues, importantValues) {
@@ -4657,6 +4671,146 @@ openCreateModal: function(type = 'metas', parentId = null) {
         if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
         return Math.floor((end - start) / (1000 * 60 * 60 * 24));
     },
+    getDateKeyOffset: function(dateKey, offsetDays = 0) {
+        const raw = String(dateKey || '').trim();
+        if (!raw) return '';
+        const base = new Date(`${raw}T00:00:00`);
+        if (Number.isNaN(base.getTime())) return '';
+        base.setDate(base.getDate() + (Number(offsetDays) || 0));
+        return this.getLocalDateKey(base);
+    },
+    resolveMicroEffectiveStartDate: function(input, { windowDays = 7 } = {}) {
+        const micro = input?.micro || input || {};
+        const explicitStart = String(micro?.inicioDate || '').trim();
+        if (explicitStart) return explicitStart;
+        const prazo = String(micro?.prazo || '').trim();
+        if (!prazo) return '';
+        return this.getDateKeyOffset(prazo, -Math.max(0, Number(windowDays) || 7));
+    },
+    getMicroEffectiveWindow: function(input, { windowDays = 7 } = {}) {
+        const micro = input?.micro || input || {};
+        const prazo = String(micro?.prazo || '').trim();
+        const startDate = this.resolveMicroEffectiveStartDate(micro, { windowDays });
+        const diffDays = startDate && prazo ? this.getDayDiffBetween(startDate, prazo) : null;
+        return {
+            startDate,
+            dueDate: prazo,
+            diffDays,
+            valid: !!prazo && !!startDate && diffDays !== null && diffDays >= 0 && diffDays <= windowDays,
+            usesExplicitStart: !!String(micro?.inicioDate || '').trim()
+        };
+    },
+    classifyMicroForDate: function(input, dateKey = this.getLocalDateKey()) {
+        const state = window.sistemaVidaState || {};
+        const entities = state.entities || {};
+        const micro = typeof input === 'string'
+            ? (entities.micros || []).find((item) => String(item?.id || '') === String(input || ''))
+            : (input?.micro || input);
+        if (!micro) {
+            return { status: 'invalid', startDate: '', dueDate: '', valid: false, isDone: false };
+        }
+        const windowState = this.getMicroEffectiveWindow(micro);
+        const isDone = micro.status === 'done' || !!micro.completed;
+        if (!windowState.valid || !windowState.dueDate) {
+            return { ...windowState, status: 'invalid', isDone };
+        }
+        if (windowState.dueDate < dateKey) {
+            return { ...windowState, status: 'overdue', isDone };
+        }
+        if (windowState.startDate > dateKey) {
+            return { ...windowState, status: 'future', isDone };
+        }
+        return { ...windowState, status: 'active_today', isDone };
+    },
+    normalizeMicroScheduleContract: function(input, { windowDays = 7, rejectIfMissingPrazo = false } = {}) {
+        const micro = input?.micro || input || {};
+        const safeWindowDays = Math.max(0, Number(windowDays) || 7);
+        let inicioDate = String(micro?.inicioDate || '').trim();
+        let prazo = String(micro?.prazo || '').trim();
+        let adjusted = false;
+        const changes = [];
+
+        if (!prazo) {
+            if (inicioDate) {
+                prazo = this.getDateKeyOffset(inicioDate, safeWindowDays);
+                adjusted = true;
+                changes.push('set_due_from_start');
+            } else if (rejectIfMissingPrazo) {
+                return {
+                    inicioDate: '',
+                    prazo: '',
+                    adjusted: false,
+                    rejected: true,
+                    invalid: true,
+                    rejectReason: 'prazo obrigatório para micros',
+                    changes: ['missing_due']
+                };
+            } else {
+                return {
+                    inicioDate: '',
+                    prazo: '',
+                    adjusted: false,
+                    rejected: false,
+                    invalid: true,
+                    changes: ['missing_due']
+                };
+            }
+        }
+
+        if (!inicioDate && prazo) {
+            inicioDate = this.getDateKeyOffset(prazo, -safeWindowDays);
+            adjusted = true;
+            changes.push('set_start_from_due');
+        }
+
+        const diffDays = inicioDate && prazo ? this.getDayDiffBetween(inicioDate, prazo) : null;
+        if (inicioDate && prazo && (diffDays === null || diffDays < 0 || diffDays > safeWindowDays)) {
+            inicioDate = this.getDateKeyOffset(prazo, -safeWindowDays);
+            adjusted = true;
+            changes.push(diffDays !== null && diffDays < 0 ? 'rebased_start_from_due_invalid_order' : 'rebased_start_from_due');
+        }
+
+        return {
+            inicioDate,
+            prazo,
+            adjusted,
+            rejected: false,
+            invalid: !prazo,
+            changes
+        };
+    },
+    applyNormalizedMicroScheduleContract: function(micro, options = {}) {
+        if (!micro || typeof micro !== 'object') {
+            return { inicioDate: '', prazo: '', adjusted: false, rejected: true, invalid: true, rejectReason: 'micro inválida', changes: ['invalid_micro'] };
+        }
+        const normalized = this.normalizeMicroScheduleContract(micro, options);
+        if (normalized.rejected) return normalized;
+        micro.inicioDate = normalized.inicioDate || '';
+        micro.prazo = normalized.prazo || '';
+        return normalized;
+    },
+    rebaseMicroScheduleToStart: function(micro, startDate = this.getLocalDateKey(), { windowDays = 7 } = {}) {
+        if (!micro || typeof micro !== 'object') {
+            return { inicioDate: '', prazo: '', adjusted: false, rejected: true, invalid: true, rejectReason: 'micro inválida', changes: ['invalid_micro'] };
+        }
+        const safeWindowDays = Math.max(0, Number(windowDays) || 7);
+        const boundedStart = String(startDate || '').trim() || this.getLocalDateKey();
+        const maxDueDate = this.getDateKeyOffset(boundedStart, safeWindowDays);
+        micro.inicioDate = boundedStart;
+        if (!micro.prazo || micro.prazo < boundedStart) {
+            micro.prazo = boundedStart;
+        } else if (micro.prazo > maxDueDate) {
+            micro.prazo = maxDueDate;
+        }
+        return {
+            inicioDate: micro.inicioDate,
+            prazo: micro.prazo,
+            adjusted: true,
+            rejected: false,
+            invalid: false,
+            changes: ['rebase_to_start']
+        };
+    },
     validateEntityTimeWindow: function(type, { prazo = '', inicioDate = '', metaHorizonYears = 1 } = {}) {
         const normalizedType = String(type || '');
         const hasPrazo = !!String(prazo || '').trim();
@@ -5015,6 +5169,164 @@ openCreateModal: function(type = 'metas', parentId = null) {
         return !!(plan && plan.selectedMicros && plan.selectedMicros.includes(microId));
     },
 
+    getOverdueMicros: function(todayStr = this.getLocalDateKey()) {
+        return (window.sistemaVidaState.entities?.micros || []).filter((micro) => {
+            if (micro.status === 'done' || micro.completed) return false;
+            return this.classifyMicroForDate(micro, todayStr).status === 'overdue';
+        });
+    },
+
+    isTodayFutureMicro: function(input) {
+        const state = window.sistemaVidaState || {};
+        const entities = state.entities || {};
+        const micro = typeof input === 'string'
+            ? (entities.micros || []).find((item) => String(item?.id || '') === String(input || ''))
+            : (input?.micro || input);
+        if (!micro || micro.status === 'done' || micro.completed) return false;
+        return this.classifyMicroForDate(micro).status === 'future';
+    },
+
+    getActiveTodayActionItems: function(dateKey = this.getLocalDateKey()) {
+        const items = this.getTodayActionItems ? this.getTodayActionItems(dateKey) : [];
+        if (!items.length) return [];
+        const microById = new Map(
+            (window.sistemaVidaState.entities?.micros || [])
+                .filter((micro) => micro && micro.id)
+                .map((micro) => [String(micro.id), micro])
+        );
+        return items
+            .filter((item) => {
+                if (item?.sourceType !== 'micro') return true;
+                const micro = item.micro || microById.get(String(item.sourceId || ''));
+                return this.classifyMicroForDate(micro, dateKey).status === 'active_today';
+            })
+            .map((item) => {
+                if (item?.sourceType !== 'micro') return item;
+                const micro = item.micro || microById.get(String(item.sourceId || ''));
+                return micro ? { ...item, micro } : item;
+            });
+    },
+
+    getFutureTodayActionItems: function(dateKey = this.getLocalDateKey()) {
+        const items = this.getTodayActionItems ? this.getTodayActionItems(dateKey) : [];
+        if (!items.length) return [];
+        const microById = new Map(
+            (window.sistemaVidaState.entities?.micros || [])
+                .filter((micro) => micro && micro.id)
+                .map((micro) => [String(micro.id), micro])
+        );
+        return items
+            .filter((item) => {
+                if (item?.sourceType !== 'micro') return false;
+                const micro = item.micro || microById.get(String(item.sourceId || ''));
+                return this.classifyMicroForDate(micro, dateKey).status === 'future';
+            })
+            .map((item) => {
+                const micro = item.micro || microById.get(String(item.sourceId || ''));
+                return micro ? { ...item, micro } : item;
+            });
+    },
+
+    reconcileHojeOverdueSelection: function(overdueMicros = this.getOverdueMicros()) {
+        const validIds = new Set((overdueMicros || []).map((micro) => String(micro.id || '')).filter(Boolean));
+        const current = Array.isArray(this.hojeOverdueSelectedIds) ? this.hojeOverdueSelectedIds : [];
+        const next = current.map((id) => String(id || '')).filter((id) => validIds.has(id));
+        if (next.length !== current.length || next.some((id, idx) => id !== current[idx])) {
+            this.hojeOverdueSelectedIds = next;
+        }
+        if (!validIds.size) {
+            this.hojeOverdueSelectedIds = [];
+            this.hojeOverdueSelectionOpen = false;
+        }
+        return this.hojeOverdueSelectedIds;
+    },
+
+    getHojeOverdueSelectedIds: function(overdueMicros = this.getOverdueMicros()) {
+        return this.reconcileHojeOverdueSelection(overdueMicros);
+    },
+
+    isHojeOverdueFullySelected: function(overdueMicros = this.getOverdueMicros()) {
+        const validMicros = overdueMicros || [];
+        if (!validMicros.length) return false;
+        const selected = new Set(this.getHojeOverdueSelectedIds(validMicros));
+        return validMicros.every((micro) => selected.has(String(micro.id || '')));
+    },
+
+    toggleHojeOverdueSelectionPanel: function(forceOpen = null) {
+        this.hojeOverdueSelectionOpen = typeof forceOpen === 'boolean' ? forceOpen : !this.hojeOverdueSelectionOpen;
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+    },
+
+    toggleHojeFutureMicrosPanel: function(forceOpen = null) {
+        this.hojeFutureMicrosOpen = typeof forceOpen === 'boolean' ? forceOpen : !this.hojeFutureMicrosOpen;
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+    },
+
+    toggleHojeOverdueSelectAll: function(checked) {
+        const overdueMicros = this.getOverdueMicros();
+        this.hojeOverdueSelectedIds = checked
+            ? overdueMicros.map((micro) => String(micro.id || '')).filter(Boolean)
+            : [];
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+    },
+
+    toggleHojeOverdueItemSelection: function(microId, checked) {
+        const id = String(microId || '').trim();
+        if (!id) return;
+        const overdueIds = new Set(this.getOverdueMicros().map((micro) => String(micro.id || '')).filter(Boolean));
+        if (!overdueIds.has(id)) return;
+        const selected = new Set(this.getHojeOverdueSelectedIds());
+        if (checked) selected.add(id);
+        else selected.delete(id);
+        this.hojeOverdueSelectedIds = Array.from(selected);
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+    },
+    rebaseSpecificMicrosToDate: function(ids = [], targetDate = this.getLocalDateKey()) {
+        const requestedIds = Array.isArray(ids) ? ids.map((id) => String(id || '').trim()).filter(Boolean) : [];
+        if (!requestedIds.length) return 0;
+        const requestedSet = new Set(requestedIds);
+        let count = 0;
+        (window.sistemaVidaState.entities?.micros || []).forEach((micro) => {
+            const microId = String(micro?.id || '').trim();
+            if (!microId || !requestedSet.has(microId) || micro.status === 'done' || micro.completed) return;
+            const beforeStart = String(micro.inicioDate || '');
+            const beforeDue = String(micro.prazo || '');
+            this.rebaseMicroScheduleToStart(micro, targetDate);
+            if (beforeStart !== String(micro.inicioDate || '') || beforeDue !== String(micro.prazo || '')) {
+                count++;
+            }
+        });
+        return count;
+    },
+
+    migrateSpecificOverdueTasks: function(ids = []) {
+        const requestedIds = Array.isArray(ids) ? ids.map((id) => String(id || '').trim()).filter(Boolean) : [];
+        if (!requestedIds.length) return 0;
+
+        const requestedSet = new Set(requestedIds);
+        const todayStr = this.getLocalDateKey();
+        let count = 0;
+
+        this.getOverdueMicros(todayStr).forEach((micro) => {
+            const microId = String(micro.id || '').trim();
+            if (!microId || !requestedSet.has(microId)) return;
+            micro.prazo = todayStr;
+            // Keep overdue migrations visible in Hoje by revalidating the 7-day window
+            // against the new due date instead of leaving the micro in an invalid state.
+            this.applyNormalizedMicroScheduleContract(micro);
+            count++;
+        });
+
+        if (count > 0) {
+            this.saveState(false);
+            this.reconcileHojeOverdueSelection();
+            this.showToast(`${count} tarefa${count === 1 ? '' : 's'} migrada${count === 1 ? '' : 's'} para hoje!`, 'success');
+            if (this.render.hoje) this.render.hoje();
+        }
+
+        return count;
+    },
+
     _getEntityCounts: function(entityType, entityId, state) {
         const e = state.entities;
         if (entityType === 'metas') {
@@ -5184,8 +5496,8 @@ openCreateModal: function(type = 'metas', parentId = null) {
             ? (state.entities.micros || []).find(m => m.id === input)
             : input;
         const todayStr = this.getLocalDateKey();
-        const startDate = String(micro?.inicioDate || micro?.prazo || '').trim();
-        const isFuture = !!startDate && startDate > todayStr;
+        const timing = this.classifyMicroForDate(micro, todayStr);
+        const isFuture = timing.status === 'future';
 
         if (isFuture) {
             return {
@@ -5216,23 +5528,21 @@ openCreateModal: function(type = 'metas', parentId = null) {
         const todayStr = this.getLocalDateKey();
 
         if (scheduleAction.mode === 'bring_today') {
-            const fromDate = String(micro.inicioDate || micro.prazo || '');
+            const fromDate = this.resolveMicroEffectiveStartDate(micro) || String(micro.prazo || '');
             const formattedFromDate = fromDate
                 ? fromDate.split('-').reverse().slice(0, 2).join('/')
                 : 'outro dia';
             const shouldBringToToday = confirm(`Essa acao esta agendada para ${formattedFromDate}. Deseja traze-la para hoje?`);
             if (!shouldBringToToday) return;
 
-            micro.inicioDate = todayStr;
-            if (!micro.prazo || micro.prazo < todayStr) {
-                micro.prazo = todayStr;
-            }
+            this.rebaseMicroScheduleToStart(micro, todayStr);
 
             this.saveState(false);
             this.showToast('Acao trazida para hoje', 'success');
             if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
             if (this.currentView === 'foco' && this.render.foco) this.render.foco();
             if (this.currentView === 'painel' && this.render.painel) this.render.painel();
+            if (this.currentView === 'planos' && this.render.planos) this.render.planos();
             return;
         }
 
@@ -6451,10 +6761,8 @@ ensureNotesState: function() {
     getDailyMicroExecutionRate: function(dateKey) {
         const micros = window.sistemaVidaState.entities?.micros || [];
         const dueOrActive = micros.filter(m => {
-            const start = m.inicioDate || m.prazo || '';
-            const due = m.prazo || '';
-            if (!due) return false;
-            return start <= dateKey && due >= dateKey;
+            const timing = this.classifyMicroForDate(m, dateKey);
+            return timing.status === 'active_today';
         });
         const done = dueOrActive.filter(m =>
             m.status === 'done' && (!m.completedDate || m.completedDate <= dateKey)
@@ -6683,7 +6991,7 @@ ensureNotesState: function() {
             : (state.entities?.micros || []).filter((m) =>
                 m.status !== 'done'
                 && m.status !== 'abandoned'
-                && this.isDateWindowInCurrentWeek(m.inicioDate, m.prazo)
+                && this.isMicroDateWindowInCurrentWeek(m)
             );
 
         if (weekMicros.length >= 4) {
@@ -7214,12 +7522,20 @@ ensureNotesState: function() {
         const macroId = document.getElementById('wp-new-macro-id')?.value || '';
         const title = (document.getElementById('wp-new-micro-title')?.value || '').trim();
         const effort = document.getElementById('wp-new-micro-effort')?.value || 'medio';
-        const inicioDate = document.getElementById('wp-new-micro-start')?.value || this._getWeeklyPlanKey();
-        const prazo = document.getElementById('wp-new-micro-deadline')?.value || '';
+        let inicioDate = document.getElementById('wp-new-micro-start')?.value || '';
+        let prazo = document.getElementById('wp-new-micro-deadline')?.value || '';
 
         if (!macroId) { this.showToast('Selecione uma entrega pai.', 'error'); return; }
         if (!title) { this.showToast('Informe o título da ação.', 'error'); return; }
         if (!prazo) { this.showToast('Informe o prazo da ação.', 'error'); return; }
+
+        if (this.normalizeMicroScheduleContract) {
+            const normalizedSchedule = this.normalizeMicroScheduleContract({ inicioDate, prazo });
+            inicioDate = normalizedSchedule.inicioDate || '';
+            prazo = normalizedSchedule.prazo || '';
+        } else if (!inicioDate) {
+            inicioDate = this._getWeeklyPlanKey();
+        }
 
         const state = window.sistemaVidaState;
         const macro = (state.entities?.macros || []).find(m => m.id === macroId);
@@ -7635,22 +7951,7 @@ ensureNotesState: function() {
     },
 
     migrateOverdueTasks: function() {
-        const state = window.sistemaVidaState;
-        const todayStr = this.getLocalDateKey();
-        let count = 0;
-
-        (state.entities.micros || []).forEach(m => {
-            if (m.status !== 'done' && m.prazo && m.prazo < todayStr) {
-                m.prazo = todayStr;
-                count++;
-            }
-        });
-
-        if (count > 0) {
-            this.saveState(false);
-            this.showToast(`${count} tarefas migradas para hoje!`, 'success');
-            if (this.render.hoje) this.render.hoje();
-        }
+        return this.migrateSpecificOverdueTasks(this.getOverdueMicros().map((micro) => String(micro.id || '')).filter(Boolean));
     },
 
     /**
@@ -7670,10 +7971,7 @@ ensureNotesState: function() {
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = this.getLocalDateKey(tomorrow);
 
-        micro.inicioDate = tomorrowStr;
-        if (!micro.prazo || micro.prazo < tomorrowStr) {
-            micro.prazo = tomorrowStr;
-        }
+        this.rebaseMicroScheduleToStart(micro, tomorrowStr);
 
         this.saveState(false);
         this.showToast('Ação adiada para amanhã', 'success');
@@ -8105,6 +8403,13 @@ ensureNotesState: function() {
                 }
                 if (!confirm('Isso vai substituir todos os seus dados pelo conteúdo do arquivo. Continuar?')) return;
                 Object.assign(window.sistemaVidaState, parsed);
+                this.ensureSettingsState?.();
+                this.normalizePermaState?.();
+                this.normalizeDimensionsState?.();
+                this.normalizeEntitiesState?.();
+                this.normalizeSwlsState?.();
+                this.normalizeDailyLogsState?.();
+                this.normalizeDeepWorkState?.();
                 await this.saveState(true);
                 this.showToast('Dados importados com sucesso.', 'success');
                 if (this.currentView) this.render[this.currentView]?.();
@@ -8478,6 +8783,10 @@ ensureNotesState: function() {
                 this.showToast(focusEligibility.reason, 'error');
                 return;
             }
+            if (this.classifyMicroForDate(selectedMicro).status === 'future') {
+                this.showToast('Essa ação ainda está em Futuro. Use "Trazer para hoje" antes de iniciar foco.', 'warning');
+                return;
+            }
         } else {
             selectedHabit = (state.habits || []).find(h => h.id === chosenHabit);
             if (!selectedHabit || !this.canStartFocusFromHabit?.(selectedHabit)) {
@@ -8531,6 +8840,10 @@ ensureNotesState: function() {
             this.showToast(focusEligibility.reason, 'error');
             return;
         }
+        if (this.classifyMicroForDate(micro).status === 'future') {
+            this.showToast('Essa ação ainda está em Futuro. Use "Trazer para hoje" antes de iniciar foco.', 'warning');
+            return;
+        }
         const dw = state.deepWork;
         if (dw.isRunning) {
             this.showToast('Já existe um bloco de foco em andamento.', 'error');
@@ -8567,6 +8880,10 @@ ensureNotesState: function() {
         const focusEligibility = this.getMicroFocusEligibility(micro);
         if (!focusEligibility.ok) {
             this.showToast(focusEligibility.reason, 'error');
+            return;
+        }
+        if (this.classifyMicroForDate(micro).status === 'future') {
+            this.showToast('Essa ação ainda está em Futuro. Use "Trazer para hoje" antes de abrir no foco.', 'warning');
             return;
         }
         const dw = state.deepWork;

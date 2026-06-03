@@ -1352,11 +1352,8 @@ getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
             micro && micro.id && micro.status !== 'abandoned'
         );
         const isMicroInWindow = (micro) => {
-            const start = micro.inicioDate ? new Date(`${micro.inicioDate}T00:00:00`) : null;
-            const due = micro.prazo ? new Date(`${micro.prazo}T00:00:00`) : null;
-            if (!due || Number.isNaN(due.getTime())) return false;
-            if (start && !Number.isNaN(start.getTime())) return start <= now && due >= now;
-            return due >= now;
+            const timing = this.classifyMicroForDate ? this.classifyMicroForDate(micro, today) : null;
+            return timing ? (timing.status === 'active_today' || timing.status === 'future') : false;
         };
 
         micros.filter(isMicroInWindow).forEach((micro) => {
@@ -1444,9 +1441,11 @@ getTodayCapacityState: function(dateKey = this.getLocalDateKey()) {
         const checkinAdjustment = this.getCapacityAdjustmentFromCheckin ? this.getCapacityAdjustmentFromCheckin(dateKey) : { factor: 1, extraBufferMinutes: 0, reasons: [], label: '' };
         const baseCapacityMinutes = Math.max(60, defaults.awakeMinutes - defaults.fixedCommitmentsMinutes - defaults.dailyBasicsMinutes - defaults.bufferMinutes);
         const capacityMinutes = Math.max(45, Math.round((baseCapacityMinutes * checkinAdjustment.factor) - checkinAdjustment.extraBufferMinutes));
-        const items = this.getTodayActionItems
-            ? this.getTodayActionItems(dateKey)
-            : (this.getTodayChecklistItems ? this.getTodayChecklistItems(dateKey) : []);
+        const items = this.getActiveTodayActionItems
+            ? this.getActiveTodayActionItems(dateKey)
+            : (this.getTodayActionItems
+                ? this.getTodayActionItems(dateKey)
+                : (this.getTodayChecklistItems ? this.getTodayChecklistItems(dateKey) : []));
         const pendingItems = items.filter((item) => !item.done);
         const activeDayPart = (this.getTodayChecklistMode?.() === 'horario')
             ? this.getTodayChecklistDayPart?.() || 'all'
@@ -1587,15 +1586,17 @@ getNextBestAction: function(options = {}) {
         );
 
         const candidates = micros.map(micro => {
+            const timing = this.classifyMicroForDate ? this.classifyMicroForDate(micro, todayStr) : null;
+            if (!timing || timing.status === 'invalid') return null;
+            if (scope === 'today' && timing.status === 'future') return null;
             const reasons = [];
             let score = 0;
             const { macro, okr, meta } = this._getMicroContext(micro);
             const prazo = micro.prazo ? new Date(micro.prazo + 'T00:00:00') : null;
-            const inicio = micro.inicioDate ? new Date(micro.inicioDate + 'T00:00:00') : null;
             const daysToDue = prazo && !Number.isNaN(prazo.getTime())
                 ? Math.floor((prazo - today) / (1000 * 60 * 60 * 24))
                 : null;
-            const hasStarted = !inicio || Number.isNaN(inicio.getTime()) || inicio <= today;
+            const hasStarted = timing.status === 'active_today' || timing.status === 'overdue';
             const plannedThisWeek = this._isPlannedThisWeek(micro.id);
             const dimScoreRaw = Number(state.dimensions?.[micro.dimension]?.score);
             const dimScore = Number.isFinite(dimScoreRaw) ? dimScoreRaw : null;
@@ -1669,7 +1670,7 @@ getNextBestAction: function(options = {}) {
             }
 
             return { micro, macro, okr, meta, score, reasons: reasons.slice(0, 3), daysToDue, plannedThisWeek, effort };
-        }).filter(item => item.score > 0);
+        }).filter(item => item && item.score > 0);
 
         const energy = Math.max(0, Math.min(5, Number(state.energy || 0)));
         const energyMatched = !options.skipEnergyFilter && energy > 0 && energy <= 2
@@ -1796,8 +1797,15 @@ saveNewEntity: function() {
         if (usaAgendamento) {
             inicioDate = document.getElementById('crud-inicio-date')?.value || '';
             prazo = document.getElementById('crud-prazo-date')?.value || '';
-            if (type !== 'okrs' && !inicioDate && prazo) inicioDate = prazo; // fallback retrô para macro/micro
-            if (!prazo && inicioDate) prazo = inicioDate; // consistência mínima
+            if (type === 'micros' && this.normalizeMicroScheduleContract) {
+                const normalizedSchedule = this.normalizeMicroScheduleContract({ inicioDate, prazo });
+                inicioDate = normalizedSchedule.inicioDate || '';
+                prazo = normalizedSchedule.prazo || '';
+            } else {
+                if (type === 'micros' && !inicioDate && prazo && this.getDateKeyOffset) inicioDate = this.getDateKeyOffset(prazo, -7);
+                else if (type === 'macros' && !inicioDate && prazo) inicioDate = prazo;
+                if (!prazo && inicioDate) prazo = inicioDate; // consistência mínima
+            }
         } else {
             prazo = document.getElementById('create-prazo')?.value || '';
         }
@@ -2350,12 +2358,13 @@ processQuarterlyReview: async function() {
                     carried++;
                     if (migrateChecked) {
                         const macrosIds = state.entities.macros.filter(m => m.okrId === id).map(m => m.id);
-                        state.entities.micros.forEach(micro => {
-                            if (macrosIds.includes(micro.macroId) && micro.status !== 'done' && micro.prazo !== todayStr) {
-                                micro.prazo = todayStr;
-                                migrated++;
-                            }
-                        });
+                        const idsToMigrate = state.entities.micros
+                            .filter((micro) => macrosIds.includes(micro.macroId) && micro.status !== 'done')
+                            .map((micro) => String(micro.id || ''))
+                            .filter(Boolean);
+                        if (idsToMigrate.length && typeof this.rebaseSpecificMicrosToDate === 'function') {
+                            migrated += this.rebaseSpecificMicrosToDate(idsToMigrate, todayStr);
+                        }
                     }
                 }
                 processed++;
@@ -2410,7 +2419,7 @@ editEntity: function(id, type) {
         }
         const inicioInput = document.getElementById('crud-inicio-date');
         const prazoInput = document.getElementById('crud-prazo-date');
-        if (inicioInput) inicioInput.value = item.inicioDate || item.agendamento?.inicioDate || (type === 'okrs' ? '' : (item.prazo || ''));
+        if (inicioInput) inicioInput.value = item.inicioDate || item.agendamento?.inicioDate || (type === 'micros' ? (this.resolveMicroEffectiveStartDate?.(item) || '') : (type === 'okrs' ? '' : (item.prazo || '')));
         if (prazoInput) prazoInput.value = item.prazo || '';
         document.getElementById('crud-context').value = item.purpose || item.description || item.indicator || '';
         const successCriteriaInput = document.getElementById('crud-success-criteria');

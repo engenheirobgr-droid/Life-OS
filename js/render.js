@@ -1128,7 +1128,12 @@ renderTimeline: function() {
             }
             const hasValidCreatedAt = !!(createdAtDate && !Number.isNaN(createdAtDate.getTime()));
 
-            let taskStart = hasInicio ? new Date(entity.inicioDate + 'T00:00:00') : null;
+            const resolvedMicroStart = tipo === 'micros'
+                ? (app.resolveMicroEffectiveStartDate?.(entity) || '')
+                : '';
+            let taskStart = tipo === 'micros'
+                ? (resolvedMicroStart ? new Date(resolvedMicroStart + 'T00:00:00') : null)
+                : (hasInicio ? new Date(entity.inicioDate + 'T00:00:00') : null);
             let taskEnd = hasPrazo ? new Date(entity.prazo + 'T00:00:00') : null;
             if (!taskStart && taskEnd) {
                 if (hasValidCreatedAt) {
@@ -1356,7 +1361,10 @@ renderTimeline: function() {
         };
         const getNodePrimarySortDate = (node) => {
             if (!node?.entity) return Number.POSITIVE_INFINITY;
-            return parseSortDate(node.entity.inicioDate || node.entity.prazo || '');
+            const rawStart = node.tipo === 'micros'
+                ? (app.resolveMicroEffectiveStartDate?.(node.entity) || node.entity.inicioDate || node.entity.prazo || '')
+                : (node.entity.inicioDate || node.entity.prazo || '');
+            return parseSortDate(rawStart);
         };
         const getNodeSecondarySortDate = (node) => {
             if (!node?.entity) return Number.POSITIVE_INFINITY;
@@ -1530,7 +1538,12 @@ renderTimeline: function() {
             }
             const hasValidCreatedAt = !!(createdAtDate && !Number.isNaN(createdAtDate.getTime()));
 
-            let taskStart = hasInicio ? new Date(entity.inicioDate + 'T00:00:00') : null;
+            const resolvedMicroStart = tipo === 'micros'
+                ? (this.resolveMicroEffectiveStartDate?.(entity) || '')
+                : '';
+            let taskStart = tipo === 'micros'
+                ? (resolvedMicroStart ? new Date(resolvedMicroStart + 'T00:00:00') : null)
+                : (hasInicio ? new Date(entity.inicioDate + 'T00:00:00') : null);
             let taskEnd = hasPrazo ? new Date(entity.prazo + 'T00:00:00') : null;
 
             if (!taskStart && taskEnd) {
@@ -2750,7 +2763,7 @@ renderTodayCapacityMap: function() {
 renderTodayActionList: function() {
         const container = document.getElementById('today-action-list');
         if (!container) return;
-        const items = this.getTodayActionItems ? this.getTodayActionItems(this.getLocalDateKey()) : [];
+        const items = this.getActiveTodayActionItems ? this.getActiveTodayActionItems(this.getLocalDateKey()) : [];
         const mode = this.getTodayChecklistMode();
         const activeDayPart = this.getTodayChecklistDayPart();
         const labels = {
@@ -2889,7 +2902,7 @@ renderTodayActionList: function() {
                 ? '<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 text-xs text-outline italic">Sem carga prevista para hoje.</div>'
                 : '');
 
-        container.innerHTML = `${organizerHtml}${scheduledMicrosHtml}${unscheduledHtml}${habitsHtml}`;
+        container.innerHTML = `${unscheduledHtml}${habitsHtml}`;
     },
 
 render: {
@@ -2923,11 +2936,11 @@ render: {
                     const macroIds = new Set(micros.map(m => m.macroId).filter(Boolean));
                     macros = macros.filter(m => macroIds.has(m.id));
                 } else {
-                    micros = micros.filter((m) => app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
+                    micros = micros.filter((m) => app.isMicroDateWindowInCurrentWeek ? app.isMicroDateWindowInCurrentWeek(m) : app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
                     macros = macros.filter((m) => app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
                 }
             } else if (filter === 'mes') {
-                micros = micros.filter((m) => app.isDateWindowInCurrentMonth(m.inicioDate, m.prazo));
+                micros = micros.filter((m) => app.isMicroDateWindowInCurrentMonth ? app.isMicroDateWindowInCurrentMonth(m) : app.isDateWindowInCurrentMonth(m.inicioDate, m.prazo));
                 macros = macros.filter((m) => app.isDateWindowInCurrentMonth(m.inicioDate, m.prazo));
             }
             
@@ -3201,6 +3214,8 @@ render: {
                     const statusText = m.status === 'done' ? 'Concluida' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
                     const isDone = m.status === 'done' || m.completed;
                     const isInProgress = m.status === 'in_progress';
+                    const timing = app.classifyMicroForDate?.(m, app.getLocalDateKey()) || { status: 'active_today' };
+                    const isFutureAction = timing.status === 'future';
                     const rowStateClass = isDone
                         ? 'border-emerald-500/30 bg-emerald-500/[0.035]'
                         : (isInProgress ? 'border-amber-500/35 bg-amber-500/[0.035]' : 'border-outline-variant/10 bg-surface-container-low');
@@ -3219,14 +3234,25 @@ render: {
                         : (isInProgress ? 'bg-amber-500' : 'bg-primary/30');
                     const isTimerMicro = state.deepWork?.isRunning && state.deepWork?.microId === m.id;
                     const focusEligibility = app.getMicroFocusEligibility?.(m) || { ok: true };
+                    const scheduleAction = m.status !== 'done'
+                        ? (app.getMicroScheduleAdjustmentAction?.(m) || {
+                            icon: 'event_upcoming',
+                            title: 'Adiar para amanha',
+                            label: 'Adiar'
+                        })
+                        : null;
                     const actionLabel = !focusEligibility.ok
                         ? 'Corrigir'
-                        : ((m.status === 'in_progress' || isTimerMicro) ? 'Gerenciar' : 'Iniciar');
+                        : (isFutureAction
+                            ? (scheduleAction?.label || 'Hoje')
+                            : ((m.status === 'in_progress' || isTimerMicro) ? 'Gerenciar' : 'Iniciar'));
                     const actionHandler = !focusEligibility.ok
                         ? `window.app.editEntity('${m.id}', 'micros')`
-                        : ((m.status === 'in_progress' || isTimerMicro)
+                        : (isFutureAction
+                            ? `window.app.adjustMicroScheduleContextually('${m.id}')`
+                            : ((m.status === 'in_progress' || isTimerMicro)
                             ? `window.app.openMicroInFocus('${m.id}', false)`
-                            : `window.app.startDeepWorkForMicro('${m.id}')`);
+                            : `window.app.startDeepWorkForMicro('${m.id}')`));
                     const isFocoPlanned = app._isPlannedThisWeek(m.id);
                     const sourceBadge = isFocoPlanned
                         ? '<span class="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
@@ -3244,17 +3270,10 @@ render: {
                         : '';
                     const mobilePrimaryIcon = !focusEligibility.ok
                         ? 'warning'
-                        : ((m.status === 'in_progress' || isTimerMicro) ? 'timer' : 'play_arrow');
+                        : (isFutureAction ? (scheduleAction?.icon || 'keyboard_double_arrow_left') : ((m.status === 'in_progress' || isTimerMicro) ? 'timer' : 'play_arrow'));
                     const mobilePrimaryTitle = m.status === 'done'
                         ? 'Reabrir acao'
                         : actionLabel;
-                    const scheduleAction = m.status !== 'done'
-                        ? (app.getMicroScheduleAdjustmentAction?.(m) || {
-                            icon: 'event_upcoming',
-                            title: 'Adiar para amanha',
-                            label: 'Adiar'
-                        })
-                        : null;
                     return `
                     <div class="md:hidden">
                         <div class="relative overflow-hidden rounded-2xl border ${mobileCardClass} px-4 py-3 shadow-sm transition-colors">
@@ -3515,7 +3534,7 @@ render: {
             const _selectedIds = (_weekPlan && _weekPlan.selectedMicros) || [];
             const weekMicros = _selectedIds.length > 0
               ? state.entities.micros.filter(m => _selectedIds.includes(m.id))
-              : state.entities.micros.filter((m) => app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
+              : state.entities.micros.filter((m) => app.isMicroDateWindowInCurrentWeek ? app.isMicroDateWindowInCurrentWeek(m) : app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
             const weekDone = weekMicros.filter(m => m.status === 'done').length;
             const weekProgress = weekMicros.length > 0
               ? Math.round((weekDone / weekMicros.length) * 100)
@@ -4029,18 +4048,11 @@ render: {
             const todayStr = app.getLocalDateKey();
             
             const isInTodayWindow = (m) => {
-                // Normalização para meia-noite local para comparação precisa
-                const now = new Date();
-                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                const inicioStr = m.inicioDate || m.prazo;
-                const prazoStr = m.prazo;
-                if (!prazoStr) return false; // Sem prazo, sem janela
-                const start = new Date(inicioStr + 'T00:00:00');
-                const end = new Date(prazoStr + 'T00:00:00');
-                return start <= today && end >= today;
+                const timing = app.classifyMicroForDate ? app.classifyMicroForDate(m, todayStr) : null;
+                return timing ? timing.status === 'active_today' : false;
             };
-            const allTodayEntries = app.getTodayActionItems
-                ? app.getTodayActionItems(todayStr)
+            const allTodayEntries = app.getActiveTodayActionItems
+                ? app.getActiveTodayActionItems(todayStr)
                 : (state.entities.micros || [])
                     .filter(isInTodayWindow)
                     .map((micro) => {
@@ -4108,11 +4120,11 @@ render: {
                         if (aPart !== bPart) return aPart - bPart;
                     }
                     const getUrgencyRank = (micro) => {
+                        const timing = app.classifyMicroForDate ? app.classifyMicroForDate(micro, todayStr) : { status: 'active_today' };
                         if (micro.status === 'in_progress') return 0;
                         if (micro.status === 'done' || micro.completed) return 4;
                         if (micro.prazo && micro.prazo < todayStr) return 1;
-                        const startDate = micro.inicioDate || micro.prazo || '';
-                        if (startDate && startDate <= todayStr && micro.status === 'pending') return 2;
+                        if (timing.status === 'active_today' && micro.status === 'pending') return 2;
                         return 3;
                     };
                     const aRank = getUrgencyRank(aMicro);
@@ -4126,8 +4138,18 @@ render: {
                     return String(aMicro.title || '').localeCompare(String(bMicro.title || ''), 'pt-BR');
                 });
 
-            let lastGroup = '';
-            todayMicros.forEach((entry, idx) => {
+            const isFutureChecklistEntry = (entry) => app.isTodayFutureMicro ? app.isTodayFutureMicro(entry?.micro) : false;
+
+            const currentTodayMicros = todayMicros.filter((entry) => !isFutureChecklistEntry(entry));
+            const futureTodayMicros = todayMicros.filter((entry) => isFutureChecklistEntry(entry));
+            if (!futureTodayMicros.length && app.hojeFutureMicrosOpen) {
+                app.hojeFutureMicrosOpen = false;
+            }
+
+            const renderChecklistEntries = (entries, sectionKey = 'current') => {
+                let sectionHtml = '';
+                let lastGroup = '';
+                entries.forEach((entry) => {
                 const micro = entry.micro;
                 const schedule = app.getMicroScheduleContext
                     ? app.getMicroScheduleContext(micro)
@@ -4137,7 +4159,7 @@ render: {
                     : (micro.dimension || 'Geral');
                 if (groupLabel !== lastGroup) {
                     lastGroup = groupLabel;
-                    html += `
+                    sectionHtml += `
                     <div class="pt-2 first:pt-0">
                         <div class="flex items-center gap-3">
                             <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">${app.escapeHtml(groupLabel)}</span>
@@ -4146,12 +4168,13 @@ render: {
                     </div>`;
                 }
                 const dimensionLabel = micro.dimension || 'Geral';
+                const trailId = `trail-${sectionKey}-${app.escapeHtml(String(micro.id || 'item'))}`;
                 if (micro.status === 'done' || micro.completed) {
                     const notesCount = app.getLinkedNotes('micros', micro.id).length;
                     const notesBadge = notesCount ? `<button type="button" data-type="micros" data-id="${micro.id}" data-title="${app.escapeHtml(micro.title)}" onclick="event.stopPropagation(); window.app.openEntityNotesModal(this.dataset.type, this.dataset.id, this.dataset.title)" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
                         `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</button>` : '';
                     const isRecentCompletion = micro.id === app.recentCompletedMicroId;
-                    html += `
+                    sectionHtml += `
                     <div class="relative overflow-hidden bg-emerald-500/[0.04] border border-emerald-500/25 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm shadow-emerald-500/5 ${isRecentCompletion ? 'micro-complete-feedback' : ''}">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
                         <div class="absolute right-3 bottom-2 pointer-events-none opacity-[0.05]">
@@ -4177,9 +4200,9 @@ render: {
                     const notesBadge = notesCount ? `<button type="button" data-type="micros" data-id="${micro.id}" data-title="${app.escapeHtml(micro.title)}" onclick="event.stopPropagation(); window.app.openEntityNotesModal(this.dataset.type, this.dataset.id, this.dataset.title)" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
                         `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</button>` : '';
 
-                    const startDate = micro.inicioDate || micro.prazo || '';
-                    const shouldStart = !!startDate && startDate <= todayStr && micro.status === 'pending';
-                    const isOverdue = micro.prazo && micro.prazo < todayStr;
+                    const timing = app.classifyMicroForDate ? app.classifyMicroForDate(micro, todayStr) : { status: 'active_today' };
+                    const shouldStart = timing.status === 'active_today' && micro.status === 'pending';
+                    const isOverdue = timing.status === 'overdue';
                     const isPlanned = app._isPlannedThisWeek(micro.id);
                     const estimatedMinutes = Math.max(1, Number(app.getMicroEstimatedMinutes?.(micro)) || 0);
                     const estimateSource = app.getMicroEstimatedMinutesSource?.(micro) || 'suggested';
@@ -4207,9 +4230,9 @@ render: {
                             ? `<button onclick="event.stopPropagation(); app.openMicroInFocus('${micro.id}', false);" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors" title="Gerenciar" aria-label="Gerenciar"><span class="material-symbols-outlined notranslate text-[16px]">timer</span></button>`
                             : ''));
 
-                    html += `
+                    sectionHtml += `
                     <div class="space-y-2">
-                        <div class="relative overflow-hidden ${micro.status === 'in_progress' ? 'bg-amber-500/[0.04] border border-amber-500/35 shadow-sm shadow-amber-500/10' : 'bg-surface-container-lowest border border-outline-variant/10 shadow-[0_2px_8px_rgba(0,0,0,0.03)]'} px-4 py-3 rounded-xl group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('trail-${idx}').classList.toggle('hidden')">
+                        <div class="relative overflow-hidden ${micro.status === 'in_progress' ? 'bg-amber-500/[0.04] border border-amber-500/35 shadow-sm shadow-amber-500/10' : 'bg-surface-container-lowest border border-outline-variant/10 shadow-[0_2px_8px_rgba(0,0,0,0.03)]'} px-4 py-3 rounded-xl group cursor-pointer active:scale-[0.98] transition-all checklist-item" onclick="document.getElementById('${trailId}').classList.toggle('hidden')">
                             <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${micro.status === 'in_progress' ? 'bg-amber-500' : 'bg-primary/30'}"></div>
                             <div class="flex items-center gap-3">
                                 <div class="w-5 h-5 rounded-full border-2 ${micro.status === 'in_progress' ? 'border-amber-500 bg-amber-500/10' : 'border-outline-variant'} flex items-center justify-center group-hover:border-primary transition-colors checklist-item-check shrink-0" onclick="event.stopPropagation(); app.completeMicroAction('${micro.id}');"></div>
@@ -4243,7 +4266,7 @@ render: {
                             </div>` : ''}
                         </div>
 
-                        <div class="hidden bg-surface-container-low rounded-lg p-4 space-y-3 relative trail-line text-on-surface-variant overflow-hidden" id="trail-${idx}">
+                        <div class="hidden bg-surface-container-low rounded-lg p-4 space-y-3 relative trail-line text-on-surface-variant overflow-hidden" id="${trailId}">
                             <div class="absolute left-[12px] top-3 bottom-3 w-px bg-primary/10"></div>
                             
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
@@ -4318,26 +4341,100 @@ render: {
                         </div>
                     </div>`;
                 }
-            });
+                });
+                return sectionHtml;
+            };
+
+            html += renderChecklistEntries(currentTodayMicros, 'current');
+
+            if (futureTodayMicros.length) {
+                const futureExpanded = !!app.hojeFutureMicrosOpen;
+                html += `
+                <div class="mt-3 rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-3 shadow-sm">
+                    <button type="button"
+                        onclick="window.app.toggleHojeFutureMicrosPanel()"
+                        class="flex w-full items-start justify-between gap-3 text-left">
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-[10px] font-label uppercase tracking-widest text-outline font-bold">Futuro</span>
+                            <span class="mt-1 block text-xs text-on-surface-variant">${futureTodayMicros.length} ação${futureTodayMicros.length === 1 ? '' : 'ões'} agendada${futureTodayMicros.length === 1 ? '' : 's'} para outro dia.</span>
+                        </span>
+                        <span class="material-symbols-outlined notranslate text-outline text-[18px] transition-transform ${futureExpanded ? 'rotate-180' : ''}">expand_more</span>
+                    </button>
+                    <div class="${futureExpanded ? 'mt-3 space-y-2' : 'hidden'}">
+                        ${renderChecklistEntries(futureTodayMicros, 'future')}
+                    </div>
+                </div>`;
+            }
 
             // Se houver tarefas atrasadas, adiciona um banner/botão de resolução rápida
             const localTodayStr = app.getLocalDateKey();
-            const overdueList = (state.entities.micros || []).filter(m => m.status !== 'done' && m.prazo && m.prazo < localTodayStr);
+            const overdueList = app.getOverdueMicros ? app.getOverdueMicros(localTodayStr) : (state.entities.micros || []).filter(m => m.status !== 'done' && m.prazo && m.prazo < localTodayStr);
             const atrasadasCount = overdueList.length;
 
             if (atrasadasCount > 0) {
+                const selectedIds = app.getHojeOverdueSelectedIds ? app.getHojeOverdueSelectedIds(overdueList) : [];
+                const selectedSet = new Set(selectedIds);
+                const selectedCount = selectedIds.length;
+                const allSelected = atrasadasCount > 0 && selectedCount === atrasadasCount;
+                const listExpanded = !!app.hojeOverdueSelectionOpen;
+                const overdueItemsHtml = overdueList.map((micro) => {
+                    const microId = String(micro.id || '');
+                    const checked = selectedSet.has(microId) ? 'checked' : '';
+                    const prazoLabel = micro.prazo ? micro.prazo.split('-').reverse().slice(0, 2).join('/') : 'Sem prazo';
+                    const isPlannedThisWeek = app._isPlannedThisWeek ? app._isPlannedThisWeek(microId) : false;
+                    const dimensionLabel = app.escapeHtml(micro.dimension || 'Geral');
+                    const scheduleBadge = isPlannedThisWeek
+                        ? `<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-primary"><span class="material-symbols-outlined notranslate text-[11px]">event</span>Semana</span>`
+                        : `<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[11px]">inbox</span>Captura</span>`;
+                    return `
+                    <label class="flex items-start gap-3 rounded-lg border border-amber-200/70 dark:border-amber-900/30 bg-white/60 dark:bg-amber-950/10 px-3 py-2 cursor-pointer">
+                        <input type="checkbox" ${checked}
+                            onchange="app.toggleHojeOverdueItemSelection('${app.escapeHtml(microId)}', this.checked)"
+                            class="mt-0.5 h-4 w-4 shrink-0 rounded border-amber-300 text-amber-600 focus:ring-amber-500/30"
+                            aria-label="Selecionar tarefa atrasada">
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-sm font-medium text-amber-950 dark:text-amber-100 leading-snug">${app.escapeHtml(micro.title || 'Ação sem título')}</span>
+                            <span class="mt-2 flex flex-nowrap items-center gap-1 overflow-x-auto no-scrollbar">
+                                <span class="inline-flex shrink-0 items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-primary">${dimensionLabel}</span>
+                                <span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[11px]">event</span>${app.escapeHtml(prazoLabel)}</span>
+                                ${scheduleBadge}
+                            </span>
+                        </span>
+                    </label>`;
+                }).join('');
                 const migrationBtnHtml = `
-                <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-4 rounded-xl mb-4 flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined notranslate text-amber-600 dark:text-amber-400">warning</span>
-                        <div>
-                            <p class="text-sm font-bold text-amber-900 dark:text-amber-100">${atrasadasCount} tarefas em atraso</p>
-                            <p class="text-xs text-amber-700/70 dark:text-amber-400/70">Deseja migrá-las para o planejamento de hoje?</p>
+                <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-4 rounded-xl mb-4 space-y-3">
+                    <button type="button"
+                        onclick="app.toggleHojeOverdueSelectionPanel()"
+                        class="flex w-full items-start justify-between gap-3 text-left">
+                        <span class="material-symbols-outlined notranslate text-amber-600 dark:text-amber-400 mt-0.5 shrink-0">warning</span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-sm font-bold text-amber-900 dark:text-amber-100">${atrasadasCount} tarefas em atraso</span>
+                            <span class="block text-xs text-amber-700/70 dark:text-amber-400/70">Deseja migrá-las para o planejamento de hoje?</span>
+                        </span>
+                        <span class="material-symbols-outlined notranslate text-[18px] text-amber-700 dark:text-amber-300 transition-transform ${listExpanded ? 'rotate-180' : ''}">expand_more</span>
+                    </button>
+                    <div class="${listExpanded ? 'space-y-3' : 'hidden'}">
+                        <div class="flex items-center justify-between gap-3">
+                            <input id="overdue-select-all"
+                                type="checkbox"
+                                ${allSelected ? 'checked' : ''}
+                                onchange="app.toggleHojeOverdueSelectAll(this.checked)"
+                                class="h-4 w-4 shrink-0 rounded border-amber-300 text-amber-600 focus:ring-amber-500/30"
+                                aria-label="Selecionar todas as tarefas atrasadas">
+                            <div class="flex items-center gap-2">
+                                <button type="button"
+                                    onclick="app.migrateSpecificOverdueTasks(app.getHojeOverdueSelectedIds())"
+                                    ${selectedCount === 0 ? 'disabled' : ''}
+                                    class="inline-flex items-center justify-center rounded-lg px-4 py-2 text-xs font-bold shadow-sm transition-all active:scale-95 whitespace-nowrap ${selectedCount === 0 ? 'bg-amber-200/80 dark:bg-amber-900/20 text-amber-700/60 dark:text-amber-400/60 cursor-not-allowed shadow-none' : 'bg-amber-600 hover:bg-amber-700 text-white'}">
+                                    Migrar selecionadas
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            ${overdueItemsHtml}
                         </div>
                     </div>
-                    <button onclick="app.migrateOverdueTasks()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95 whitespace-nowrap">
-                        Migrar Tudo
-                    </button>
                 </div>`;
                 html = migrationBtnHtml + html;
             }
@@ -4350,6 +4447,11 @@ render: {
             }
 
             container.innerHTML = html;
+            const overdueSelectAll = document.getElementById('overdue-select-all');
+            if (overdueSelectAll && atrasadasCount > 0 && app.getHojeOverdueSelectedIds) {
+                const selectedCount = app.getHojeOverdueSelectedIds(overdueList).length;
+                overdueSelectAll.indeterminate = selectedCount > 0 && selectedCount < atrasadasCount;
+            }
             if (app.recentCompletedMicroId) {
                 const completedId = app.recentCompletedMicroId;
                 setTimeout(() => {
@@ -4719,13 +4821,20 @@ render: {
                         const focusEligibility = entityType === 'micros'
                             ? (app.getMicroFocusEligibility?.(item) || { ok: true })
                             : { ok: true };
+                        const microTiming = entityType === 'micros'
+                            ? (app.classifyMicroForDate?.(item, app.getLocalDateKey()) || { status: 'active_today' })
+                            : { status: 'active_today' };
+                        const isFutureMicro = entityType === 'micros' && microTiming.status === 'future';
+                        const scheduleAction = entityType === 'micros'
+                            ? (app.getMicroScheduleAdjustmentAction?.(item) || { icon: 'keyboard_double_arrow_left', title: 'Trazer para hoje', label: 'Hoje' })
+                            : null;
                         const actionButton = entityType === 'micros' && !isDone
                             ? `
-                                <button onclick="event.stopPropagation(); ${focusEligibility.ok ? `app.openMicroInFocus('${item.id}', ${isPending ? 'true' : 'false'})` : `app.editEntity('${item.id}', 'micros')`}"
-                                    class="inline-flex h-11 w-full items-center justify-center rounded-xl border ${focusEligibility.ok ? (isPending ? 'border-amber-500/30 bg-amber-500/5 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400' : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10') : 'border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/15 dark:text-amber-400'} transition-colors"
-                                    title="${focusEligibility.ok ? (isPending ? 'Iniciar' : 'Gerenciar') : 'Corrigir'}"
-                                    aria-label="${focusEligibility.ok ? (isPending ? 'Iniciar' : 'Gerenciar') : 'Corrigir'}">
-                                    <span class="material-symbols-outlined notranslate text-[18px]">${focusEligibility.ok ? (isPending ? 'play_arrow' : 'timer') : 'warning'}</span>
+                                <button onclick="event.stopPropagation(); ${focusEligibility.ok ? (isFutureMicro ? `app.adjustMicroScheduleContextually('${item.id}')` : `app.openMicroInFocus('${item.id}', ${isPending ? 'true' : 'false'})`) : `app.editEntity('${item.id}', 'micros')`}"
+                                    class="inline-flex h-11 w-full items-center justify-center rounded-xl border ${focusEligibility.ok ? (isFutureMicro ? 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10' : (isPending ? 'border-amber-500/30 bg-amber-500/5 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400' : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10')) : 'border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/15 dark:text-amber-400'} transition-colors"
+                                    title="${focusEligibility.ok ? (isFutureMicro ? (scheduleAction?.title || 'Trazer para hoje') : (isPending ? 'Iniciar' : 'Gerenciar')) : 'Corrigir'}"
+                                    aria-label="${focusEligibility.ok ? (isFutureMicro ? (scheduleAction?.title || 'Trazer para hoje') : (isPending ? 'Iniciar' : 'Gerenciar')) : 'Corrigir'}">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">${focusEligibility.ok ? (isFutureMicro ? (scheduleAction?.icon || 'keyboard_double_arrow_left') : (isPending ? 'play_arrow' : 'timer')) : 'warning'}</span>
                                 </button>
                             `
                             : (isDone
