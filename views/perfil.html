@@ -36,10 +36,10 @@
 </button>
 <input type="file" id="profile-photo-input" accept="image/*" class="hidden" onchange="window.app.onProfilePhotoSelected(event)">
 </div>
-<div class="space-y-1 relative group inline-block">
-    <div class="flex items-center justify-center gap-3">
-        <h2 id="perfil-nome-display" class="font-headline italic text-3xl tracking-tight text-on-surface">Seu Nome</h2>
-        <button onclick="app.openProfileModal()" class="p-1.5 rounded-full hover:bg-surface-container-high text-outline hover:text-primary transition-all opacity-0 group-hover:opacity-100">
+<div class="space-y-1 relative group inline-flex flex-col items-center">
+    <div class="relative inline-flex items-center justify-center">
+        <h2 id="perfil-nome-display" class="text-center font-headline italic text-3xl tracking-tight text-on-surface">Seu Nome</h2>
+        <button onclick="app.openProfileModal()" class="absolute left-full ml-2 p-1.5 rounded-full hover:bg-surface-container-high text-outline hover:text-primary transition-all opacity-0 group-hover:opacity-100">
             <span class="material-symbols-outlined notranslate text-sm">edit</span>
         </button>
     </div>

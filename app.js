@@ -17,17 +17,17 @@ import {
 // Phase 9 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
-import { attachNotifications } from './js/notifications.js?v=20260602-safe-phases-v23';
-import { attachCadence } from './js/cadence.js?v=20260602-safe-phases-v23';
+import { attachNotifications } from './js/notifications.js?v=20260603-ui-batch-ab-v2';
+import { attachCadence } from './js/cadence.js?v=20260603-ui-batch-ab-v2';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260602-safe-phases-v23';
+import { attachIdentity } from './js/identity.js?v=20260603-ui-batch-ab-v2';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
-import { attachProtocolsModule } from './js/protocols.js?v=20260602-phase5-protocols-v3';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260602-safe-phases-v23';
-import { attachStateModule } from './js/state.js?v=20260602-safe-phases-v23';
-import { attachRenderModule } from './js/render.js?v=20260602-safe-phases-v23';
+import { attachProtocolsModule } from './js/protocols.js?v=20260603-ui-batch-ab-v2';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260603-ui-batch-ab-v2';
+import { attachStateModule } from './js/state.js?v=20260603-ui-batch-ab-v2';
+import { attachRenderModule } from './js/render.js?v=20260603-ui-batch-ab-v2';
 import { attachPlanningModule } from './js/planning.js?v=20260601-modal-desktop-v1';
-import { attachGamificationModule } from './js/gamification.js?v=20260602-safe-phases-v23';
+import { attachGamificationModule } from './js/gamification.js?v=20260603-ui-batch-ab-v2';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260602-safe-phases-v23',
+    appBuildVersion: '20260603-ui-batch-ab-v2',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {

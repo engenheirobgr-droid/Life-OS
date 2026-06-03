@@ -568,8 +568,7 @@ export function attachProtocolsModule(app) {
                         <div class="flex flex-col gap-3">
                             <div class="flex flex-col gap-3">
                                 <div class="min-w-0 max-w-2xl">
-                                    <p class="text-xs font-label uppercase tracking-[0.2em] text-outline">Biblioteca Curada</p>
-                                    <div class="mt-2 flex items-center justify-between gap-3">
+                                    <div class="flex items-center justify-between gap-3">
                                         <h3 class="min-w-0 pr-2 font-headline text-[1.75rem] italic font-bold leading-none text-on-background">Protocolos</h3>
                                         <button type="button" onclick="window.app.openProtocolModal()"
                                             class="inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-on-primary hover:opacity-90 active:scale-95 transition-all">

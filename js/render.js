@@ -3272,15 +3272,15 @@ render: {
                                     <button onclick="window.app.editEntity('${m.id}', 'micros')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="Editar acao" aria-label="Editar acao"><span class="material-symbols-outlined notranslate text-[16px]">edit</span></button>
                                 </div>
                             </div>
-                            <div class="mt-2 flex flex-nowrap items-center gap-1 overflow-x-auto no-scrollbar pl-1 pr-1">
+                            <div class="mt-2 flex flex-nowrap items-center gap-0.5 overflow-x-auto no-scrollbar pl-1 pr-1">
                                 ${mobileSourceBadge}${mobileDimensionBadge}<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[9px]">event</span>${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>${mobileOrphanBadge}
-                                <div class="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5">
+                                <div class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5">
                                     <span class="text-[8px] font-bold uppercase tracking-[0.08em] text-outline">${sessionCount === 1 ? 'Sessao:' : 'Sessoes:'}</span>
-                                    <span class="text-xs font-semibold text-on-surface">${sessionCount}</span>
+                                    <span class="text-[10px] font-semibold text-on-surface">${sessionCount}</span>
                                 </div>
-                                <div class="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5">
+                                <div class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5">
                                     <span class="text-[8px] font-bold uppercase tracking-[0.08em] text-outline">Duracao:</span>
-                                    <span class="text-xs font-semibold text-primary">${focusText}</span>
+                                    <span class="text-[10px] font-semibold text-primary">${focusText}</span>
                                 </div>
                             </div>
                         </div>
@@ -4225,7 +4225,7 @@ render: {
                                             <span class="material-symbols-outlined notranslate text-outline-variant text-sm transition-transform group-[.open]:rotate-180">keyboard_arrow_down</span>
                                         </div>
                                     </div>
-                                    <div class="flex flex-nowrap items-center gap-1 overflow-hidden text-[9px] font-bold uppercase tracking-wide leading-none">
+                                    <div class="flex flex-nowrap items-center gap-0.5 overflow-hidden text-[9px] font-bold uppercase tracking-wide leading-none">
                                         ${dimensionBadge}
                                         ${statusBadge}
                                         ${overdueBadge}

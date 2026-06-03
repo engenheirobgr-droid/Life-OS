@@ -62,8 +62,8 @@
             </div>
             <button type="button" onclick="window.app.openManualChapter('identidade')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors text-2xl shrink-0" title="Ver no Guia">menu_book</button>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-0">
+            <section class="lg:col-span-4 lg:pr-5">
                 <div class="flex items-center justify-between gap-3 mb-3">
                     <div>
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Valores</p>
@@ -72,8 +72,8 @@
                     <button onclick="document.getElementById('values-selection-tool').classList.remove('hidden'); document.getElementById('values-selection-tool').scrollIntoView({behavior: 'smooth'})" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Editar Valores">edit</button>
                 </div>
                 <div id="top-values-banner" class="flex flex-wrap gap-2 min-h-[32px]"></div>
-            </div>
-            <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
+            </section>
+            <section class="border-t border-outline-variant/10 pt-6 lg:col-span-4 lg:border-t-0 lg:border-l lg:pl-6 lg:pr-5 lg:pt-0">
                 <div class="flex items-center justify-between gap-3 mb-3">
                     <div>
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Forças</p>
@@ -87,10 +87,10 @@
                         <button onclick="window.app.addCustomIdentityItem('strengths')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar força">add_circle</button>
                     </div>
                 </div>
-                <div id="identity-strengths-list" class="flex flex-wrap gap-2 min-h-[32px] mb-2"></div>
+                <div id="identity-strengths-list" class="flex flex-col gap-3 min-h-[32px] mb-2"></div>
                 <div id="identity-strengths-options" class="hidden flex flex-wrap gap-2 mt-2 pt-2 border-t border-outline-variant/10"></div>
-            </div>
-            <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10">
+            </section>
+            <section class="border-t border-outline-variant/10 pt-6 lg:col-span-4 lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0">
                 <div class="flex items-center justify-between gap-3 mb-3">
                     <div>
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Sombras</p>
@@ -104,9 +104,9 @@
                         <button onclick="window.app.addCustomIdentityItem('shadows')" class="material-symbols-outlined notranslate text-outline hover:text-primary transition-colors" title="Adicionar sombra">add_circle</button>
                     </div>
                 </div>
-                <div id="identity-shadows-list" class="flex flex-wrap gap-2 min-h-[32px] mb-2"></div>
+                <div id="identity-shadows-list" class="flex flex-col gap-3 min-h-[32px] mb-2"></div>
                 <div id="identity-shadows-options" class="hidden flex flex-wrap gap-2 mt-2 pt-2 border-t border-outline-variant/10"></div>
-            </div>
+            </section>
         </div>
     </div>
 </section>
