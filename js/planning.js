@@ -372,7 +372,7 @@ finishMetaTrailWizard: function() {
 
         this.closeMetaTrailWizard();
         this.saveState(false);
-        this.showToast(`Trilha criada: 1 meta, ${okrs.length} projeto(s), ${macros.length} entrega(s), ${micros.length} acao(oes).`, 'success');
+        this.showToast(`Trilha criada: 1 meta, ${okrs.length} projeto(s), ${macros.length} entrega(s) e ${micros.length} ${micros.length === 1 ? 'ação' : 'ações'}.`, 'success');
 
         if (this.currentView === 'planos' && this.render.planos) {
             this.render.planos();
@@ -850,7 +850,7 @@ _renderNextActionCard: function(next, variant = 'today') {
                 <div class="${wrapper} border rounded-2xl p-5 md:p-6">
                     <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div class="min-w-0">
-                            <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">Próxima melhor ação</p>
+                            <p class="ui-section-label mb-2 text-primary">Próxima melhor ação</p>
                             <h4 class="font-headline text-xl md:text-2xl font-bold text-on-background leading-tight flex items-center gap-2">
                                 <span class="material-symbols-outlined notranslate text-primary text-[20px]">${icon}</span>
                                 <span class="min-w-0 truncate">${this.escapeHtml(title)}</span>
@@ -928,7 +928,7 @@ _renderNextActionCard: function(next, variant = 'today') {
             <div class="${wrapper} border rounded-2xl p-5 md:p-6">
                 <div class="space-y-3">
                     <div class="flex items-center justify-between gap-3">
-                        <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold">Pr&oacute;xima melhor a&ccedil;&atilde;o</p>
+                        <p class="ui-section-label text-primary">Pr&oacute;xima melhor a&ccedil;&atilde;o</p>
                         <div class="flex shrink-0 gap-1.5">
                         <button type="button" onclick="window.app.completeMicroAction('${micro.id}')"
                             class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-on-primary hover:opacity-90 active:scale-95 transition-all"

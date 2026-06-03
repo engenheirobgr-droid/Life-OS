@@ -234,7 +234,7 @@ renderTimelineHistory: function() {
 
             let notesHtml = '';
             if (d.notes.length) {
-                notesHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Anotações</p><ul class="space-y-1.5">${
+                notesHtml = `<div><p class="ui-section-label mb-2">Anotações</p><ul class="space-y-1.5">${
                     d.notes.map(n => {
                         const compactContext = this.getNoteCompactContext(n);
                         const timelineSections = this.getNoteTimelineSections(n);
@@ -259,7 +259,7 @@ renderTimelineHistory: function() {
 
             let cadenceHtml = '';
             if (d.cadenceEvents.length) {
-                cadenceHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Ritmos e revisões</p><div class="flex flex-wrap gap-2">${
+                cadenceHtml = `<div><p class="ui-section-label mb-2">Ritmos e revisões</p><div class="flex flex-wrap gap-2">${
                     d.cadenceEvents.map(event => `<span class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary"><span class="material-symbols-outlined notranslate text-[13px]">${this.escapeHtml(event.icon || 'history')}</span>${this.escapeHtml(event.label)}</span>`).join('')
                 }</div></div>`;
             }
@@ -435,7 +435,7 @@ renderWeeklyPlans: function() {
                             <span class="material-symbols-outlined notranslate text-outline text-sm transition-transform group-open:rotate-180">expand_more</span>
                         </summary>
                         <div class="px-5 pb-5 border-t border-outline-variant/10">
-                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline mt-4 mb-2 flex items-center gap-1">
+                            <p class="ui-section-label mt-4 mb-2 flex items-center gap-1">
                                 <span class="material-symbols-outlined notranslate text-[14px]">edit_calendar</span>
                                 Plano da Semana
                             </p>
@@ -461,25 +461,25 @@ _renderWeekPlanCard: function(plan, state, isCurrent) {
         return `<div class="space-y-4 mt-4">
             ${plan.intention ? `
             <div class="flex flex-col gap-1">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Intenção</p>
+                <p class="ui-section-label">Intenção</p>
                 <p class="text-sm text-on-surface leading-relaxed">${plan.intention}</p>
             </div>` : ''}
 
             <div class="flex gap-6">
                 <div class="flex flex-col gap-0.5">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Energia</p>
+                    <p class="ui-section-label">Energia</p>
                     <p class="text-sm text-on-surface">${energyLabels[plan.energyForecast] || plan.energyForecast}</p>
                 </div>
                 ${selectedMicros.length > 0 ? `
                 <div class="flex flex-col gap-0.5">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Execução</p>
+                    <p class="ui-section-label">Execução</p>
                     <p class="text-sm text-on-surface font-bold text-primary">${doneMicros.length}/${selectedMicros.length} <span class="text-outline font-normal">(${completionPct}%)</span></p>
                 </div>` : ''}
             </div>
 
             ${selectedMicros.length > 0 ? `
             <div class="flex flex-col gap-2">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Ações Planejadas</p>
+                <p class="ui-section-label">Ações Planejadas</p>
                 <div class="space-y-1.5">
                     ${selectedMicros.map(m => {
                         const done = m.status === 'done' || m.completed;
@@ -755,17 +755,18 @@ renderPatternsPanel: function() {
                         <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                             <span class="material-symbols-outlined notranslate text-primary text-2xl">query_stats</span>
                         </div>
-                        <div>
-                            <div class="mt-1 flex items-center gap-2">
-                                <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Padroes desbloqueavel</p>
-                                <div class="relative inline-flex group">
-                                    <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-outline-variant/20 text-[10px] font-semibold text-outline transition-colors hover:border-primary/30 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="Como o painel de correlacoes funciona">i</button>
+                        <div class="min-w-0 flex-1">
+                            <div class="mt-1 flex items-start gap-2">
+                                <h4 class="font-headline text-lg font-bold leading-tight text-on-surface sm:text-xl">Correlações de bem-estar</h4>
+                                <div class="relative inline-flex group shrink-0">
+                                    <button type="button" class="ui-help-button ui-help-button--compact" aria-label="Como o painel de correlações funciona">
+                                        <span class="material-symbols-outlined notranslate text-[12px]">info</span>
+                                    </button>
                                     <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-3rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
-                                        Quando houver ${gate.minDays} check-ins, o Painel cruza sono, humor, estresse, ações e habitos para mostrar o que mais impacta seu desempenho.
+                                        Quando houver ${gate.minDays} check-ins, o Painel cruza sono, humor, estresse, ações e hábitos para mostrar o que mais impacta seu desempenho.
                                     </div>
                                 </div>
                             </div>
-                            <h4 class="mt-1 font-headline text-lg font-bold leading-tight text-on-surface sm:text-xl">Correlacoes de bem-estar</h4>
                         </div>
                     </div>
                     <div class="space-y-2">
@@ -779,9 +780,9 @@ renderPatternsPanel: function() {
                     </div>
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         ${[
-                            { icon: 'bedtime', label: 'Sono vs Ações', desc: 'Noites bem dormidas aumentam execucao?' },
-                            { icon: 'mood', label: 'Humor vs Habitos', desc: 'Dias mais alegres manteem habitos?' },
-                            { icon: 'stress_management', label: 'Estresse vs Entregas', desc: 'Pressao alta reduz performance?' }
+                            { icon: 'bedtime', label: 'Sono vs Ações', desc: 'Noites bem dormidas aumentam a execução?' },
+                            { icon: 'mood', label: 'Humor vs Hábitos', desc: 'Dias mais alegres mantêm hábitos?' },
+                            { icon: 'stress_management', label: 'Estresse vs Entregas', desc: 'Pressão alta reduz a performance?' }
                         ].map(c => `
                         <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low p-3 opacity-50 select-none">
                             <span class="material-symbols-outlined notranslate text-outline text-xl">${c.icon}</span>
@@ -809,8 +810,8 @@ renderPatternsPanel: function() {
         const deltaText = (a, b, labelA, labelB) => {
             if (!Number.isFinite(Number(a)) || !Number.isFinite(Number(b))) return 'Ainda faltam dias em um dos grupos.';
             const delta = Math.round((Number(a) - Number(b)) * 100);
-            if (Math.abs(delta) < 5) return `${labelA} e ${labelB} estao parecidos.`;
-            return `${labelA} esta ${delta > 0 ? '+' : ''}${delta} pts vs ${labelB}.`;
+            if (Math.abs(delta) < 5) return `${labelA} e ${labelB} estão parecidos.`;
+            return `${labelA} está ${delta > 0 ? '+' : ''}${delta} pts vs ${labelB}.`;
         };
         const cards = [
             {
@@ -822,7 +823,7 @@ renderPatternsPanel: function() {
             },
             {
                 icon: 'mood',
-                title: 'Humor vs habitos',
+                title: 'Humor vs hábitos',
                 value: `${fmtPct(moodGood)} / ${fmtPct(moodLow)}`,
                 body: deltaText(moodGood, moodLow, 'Humor alto', 'humor baixo'),
                 trend: rows.map(r => r.habitRate)
@@ -864,7 +865,7 @@ renderGamificationProfile: function() {
         const totalTrailEl = document.getElementById('gamification-overall-trail');
         const totalIdentity = this.getOverallLevelIdentity(totalProgress.level);
         if (totalLevelEl) totalLevelEl.textContent = `Nivel ${totalProgress.level} - ${totalIdentity.name}`;
-        if (totalXpEl) totalXpEl.textContent = `${totalProgress.current}/${totalProgress.next} XP para o proximo nivel - ${gamification.totalXp} XP total`;
+        if (totalXpEl) totalXpEl.textContent = `${totalProgress.current}/${totalProgress.next} XP para o próximo nível - ${gamification.totalXp} XP total`;
         if (totalBarEl) totalBarEl.style.width = `${totalProgress.pct}%`;
 
         if (totalTrailEl) {
@@ -890,7 +891,7 @@ renderGamificationProfile: function() {
                         <div class="min-w-0">
                             <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Trilha geral</p>
                             <p class="mt-1 text-sm font-bold text-on-surface">${this.escapeHtml(totalIdentity.name)}</p>
-                            <p class="text-[10px] text-outline mt-0.5">${nextStage ? `Proxima etapa: ${this.escapeHtml(nextStage)}` : 'Voce esta no topo da trilha geral'}</p>
+                            <p class="text-[10px] text-outline mt-0.5">${nextStage ? `Próxima etapa: ${this.escapeHtml(nextStage)}` : 'Você está no topo da trilha geral'}</p>
                         </div>
                         <span class="material-symbols-outlined notranslate text-primary text-xl">military_tech</span>
                     </div>
@@ -1479,7 +1480,7 @@ renderTimeline: function() {
             <div class="flex flex-col items-center justify-center py-16 text-outline">
                 <span class="material-symbols-outlined notranslate text-4xl mb-3">calendar_today</span>
                 <p class="text-sm italic">
-                    Nenhuma entidade correspondente ao seu filtro atual foi encontrada nesta janela de visualizaÃ§Ã£o.
+                    Nenhuma entidade correspondente ao seu filtro atual foi encontrada nesta janela de visualização.
                 </p>
             </div>`;
 
@@ -1888,7 +1889,7 @@ renderDeepWorkExecutionChecklistHTML: function(micro, options = {}) {
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist de execucao</p>
-                        ${linkedHabit ? `<p class="text-xs text-on-surface-variant mt-1">Sincronizado com o habito ${this.escapeHtml(linkedHabit.title || '')}.</p>` : ''}
+                        ${linkedHabit ? `<p class="text-xs text-on-surface-variant mt-1">Sincronizado com o hábito ${this.escapeHtml(linkedHabit.title || '')}.</p>` : ''}
                     </div>
                     <button type="button" onclick="window.app.toggleMicroExecutionAllSteps('${this.escapeHtml(micro.id)}','${todayKey}',${allDone ? 'true' : 'false'})" class="shrink-0 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high transition-colors">
                         ${allDone ? 'Reabrir passos' : 'Concluir passos'}
@@ -1906,7 +1907,7 @@ renderDeepWorkExecutionChecklistHTML: function(micro, options = {}) {
                         </button>`;
                     }).join('')}
                 </div>
-                <p class="${noteClass}">${doneCount}/${steps.length} passos concluidos hoje.</p>
+                <p class="${noteClass}">${doneCount}/${steps.length} passos concluídos hoje.</p>
             </div>`;
     },
 
@@ -1931,8 +1932,8 @@ renderDeepWorkHabitChecklistHTML: function(habit, options = {}) {
             <div class="${containerClass}">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist do habito</p>
-                        <p class="text-xs text-on-surface-variant mt-1">Os passos definem a conclusao do habito. O foco registra o tempo.</p>
+                        <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist do hábito</p>
+                        <p class="text-xs text-on-surface-variant mt-1">Os passos definem a conclusão do hábito. O foco registra o tempo.</p>
                     </div>
                     <button type="button" onclick="window.app.toggleHabitAllSteps('${this.escapeHtml(habit.id)}','${todayKey}',${allDone ? 'true' : 'false'})" class="shrink-0 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high transition-colors">
                         ${allDone ? 'Reabrir passos' : 'Concluir passos'}
@@ -1950,7 +1951,7 @@ renderDeepWorkHabitChecklistHTML: function(habit, options = {}) {
                         </button>`;
                     }).join('')}
                 </div>
-                <p class="${noteClass}">${doneCount}/${steps.length} passos concluidos hoje.</p>
+                <p class="${noteClass}">${doneCount}/${steps.length} passos concluídos hoje.</p>
             </div>`;
     },
 
@@ -1999,19 +2000,19 @@ renderDeepWorkImmersiveOverlay: function() {
             : null;
         const overlayMicroSchedule = selectedMicro ? (this.getMicroSuggestedSchedule?.(selectedMicro) || null) : null;
         const overlayExecutionLabel = selectedMicro
-            ? (overlayMicroSchedule?.startTime ? `${overlayMicroSchedule.startTime} · Definido automaticamente` : 'Sem horario definido')
+            ? (overlayMicroSchedule?.startTime ? `${overlayMicroSchedule.startTime} · Definido automaticamente` : 'Sem horário definido')
             : linkedHabit?.startTime
                 ? `${linkedHabit.startTime} · Definido manualmente`
-                : 'Sem horario definido';
+                : 'Sem horário definido';
         const overlayEstimatedMinutes = selectedMicro
             ? Math.max(1, Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 5400) / 60))
             : Math.max(1, Math.round(Number(dw.targetSec || 5400) / 60));
         const overlayDimensionLabel = selectedMicro?.dimension || linkedHabit?.dimension || microContext?.meta?.dimension || habitMeta?.dimension || 'Geral';
         const overlaySummaryRows = [
-            { icon: 'task_alt', label: 'Acao', value: selectedMicro?.title || (linkedHabit ? 'Sessao de habito' : 'Sessao livre') },
-            { icon: 'monitor_heart', label: 'Area', value: overlayDimensionLabel },
+            { icon: 'task_alt', label: 'Ação', value: selectedMicro?.title || (linkedHabit ? 'Sessão de hábito' : 'Sessão livre') },
+            { icon: 'monitor_heart', label: 'Área', value: overlayDimensionLabel },
             { icon: 'timer', label: 'Carga total estimada', value: `${overlayEstimatedMinutes} min · Ajustado ${selectedMicro ? 'automaticamente' : 'manualmente'}` },
-            { icon: 'schedule', label: 'Execucao no dia', value: overlayExecutionLabel }
+            { icon: 'schedule', label: 'Execução no dia', value: overlayExecutionLabel }
         ];
         const overlaySummaryHtml = overlaySummaryRows.map((row) => `
             <div class="flex items-start gap-2.5">
@@ -2089,8 +2090,8 @@ renderDeepWorkImmersiveOverlay: function() {
                                 <button
                                     type="button"
                                     data-deep-work-action="finish"
-                                    title="${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}"
-                                    aria-label="${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessao'}"
+                                    title="${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessão'}"
+                                    aria-label="${dw.mode === 'break' ? 'Encerrar pausa' : 'Finalizar sessão'}"
                                     class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/25 transition-all hover:opacity-95">
                                     <span class="material-symbols-outlined notranslate text-[18px]">${dw.mode === 'break' ? 'stop_circle' : 'flag'}</span>
                                 </button>
@@ -2118,7 +2119,7 @@ renderDeepWorkImmersiveOverlay: function() {
                         </section>
 
                         <aside class="space-y-4">
-                            ${checklistHtml || `<div class="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm leading-relaxed text-white/70 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">${dw.mode === 'break' ? 'A pausa fica em tela cheia ate o encerramento para manter a recuperacao no mesmo fluxo.' : 'Selecione uma acao com passos para acompanhar o roteiro completo aqui.'}</div>`}
+                            ${checklistHtml || `<div class="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm leading-relaxed text-white/70 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">${dw.mode === 'break' ? 'A pausa fica em tela cheia até o encerramento para manter a recuperação no mesmo fluxo.' : 'Selecione uma ação com passos para acompanhar o roteiro completo aqui.'}</div>`}
                         </aside>
                     </div>
                 </div>
@@ -2211,7 +2212,7 @@ renderDeepWorkPanel: function() {
                 dw.habitId = '';
                 selectedHabitId = '';
             }
-            habitEl.innerHTML = ['<option value="">Selecione um habito</option>'].concat(
+            habitEl.innerHTML = ['<option value="">Selecione um hábito</option>'].concat(
                 habits.map((habit) => {
                     const progress = this.getHabitTodayProgressSnapshot?.(habit) || { label: '0/1' };
                     return `<option value="${this.escapeHtml(habit.id)}" ${habit.id === selectedHabitId ? 'selected' : ''}>${this.escapeHtml(habit.title)} - ${this.escapeHtml(progress.label)}</option>`;
@@ -2363,8 +2364,8 @@ renderDeepWorkPanel: function() {
 
         if (finishBtn) {
             if (dw.isRunning && dw.mode === 'focus') {
-                finishBtn.title = 'Finalizar sessao';
-                finishBtn.setAttribute('aria-label', 'Finalizar sessao');
+                finishBtn.title = 'Finalizar sessão';
+                finishBtn.setAttribute('aria-label', 'Finalizar sessão');
                 if (finishIconEl) finishIconEl.textContent = 'flag';
                 if (finishLabelEl) finishLabelEl.textContent = 'Finalizar';
             } else if (dw.isRunning && dw.mode === 'break') {
@@ -2373,8 +2374,8 @@ renderDeepWorkPanel: function() {
                 if (finishIconEl) finishIconEl.textContent = 'skip_next';
                 if (finishLabelEl) finishLabelEl.textContent = 'Pular descanso';
             } else {
-                finishBtn.title = 'Finalizar sessao';
-                finishBtn.setAttribute('aria-label', 'Finalizar sessao');
+                finishBtn.title = 'Finalizar sessão';
+                finishBtn.setAttribute('aria-label', 'Finalizar sessão');
                 if (finishIconEl) finishIconEl.textContent = 'flag';
                 if (finishLabelEl) finishLabelEl.textContent = 'Finalizar';
             }
@@ -2387,33 +2388,33 @@ renderDeepWorkPanel: function() {
                 : null;
             const contextStatus = selectedMicro
                 ? (selectedMicro.status === 'done'
-                    ? 'Concluida'
+                    ? 'Concluída'
                     : selectedMicro.status === 'in_progress'
                         ? 'Em andamento'
                         : 'Pendente')
                 : selectedHabit
                     ? ((this.getHabitTodayProgressSnapshot?.(selectedHabit)?.label) || 'Sem progresso hoje')
-                    : 'Aguardando selecao';
+                    : 'Aguardando seleção';
             const microSchedule = selectedMicro ? (this.getMicroSuggestedSchedule?.(selectedMicro) || null) : null;
             const executionLabel = selectedMicro
-                ? (microSchedule?.startTime || 'Sem horario definido')
-                : selectedHabit?.startTime || 'Sem horario definido';
+                ? (microSchedule?.startTime || 'Sem horário definido')
+                : selectedHabit?.startTime || 'Sem horário definido';
             const estimatedMinutes = selectedMicro
                 ? Math.max(1, Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 1500) / 60))
                 : Math.max(1, Math.round(Number(dw.targetSec || 1500) / 60));
             const dimensionLabel = selectedMicro?.dimension || selectedHabit?.dimension || microContext?.meta?.dimension || habitMeta?.dimension || 'Geral';
-            const titleLabel = selectedMicro?.title || selectedHabit?.title || 'Nenhuma acao selecionada';
+            const titleLabel = selectedMicro?.title || selectedHabit?.title || 'Nenhuma ação selecionada';
             const pathLabel = selectedMicro
-                ? (microContext?.parentLabel || microContext?.path || 'Sem vinculo em Planos')
+                ? (microContext?.parentLabel || microContext?.path || 'Sem vínculo em Planos')
                 : habitMeta
                     ? `Meta: ${habitMeta.title}`
                     : selectedHabit
-                        ? 'Habito sem meta vinculada'
-                        : 'Escolha uma acao ou um habito para montar o bloco.';
+                        ? 'Hábito sem meta vinculada'
+                        : 'Escolha uma ação ou um hábito para montar o bloco.';
             const helperLabel = selectedMicro
-                ? 'Sessao vinculada ao bloco atual.'
+                ? 'Sessão vinculada ao bloco atual.'
                 : selectedHabit
-                    ? 'Habito selecionado para a sessao.'
+                    ? 'Hábito selecionado para a sessão.'
                     : 'Escolha um contexto para ver o resumo aqui.';
             const contextMetaChips = [
                 { icon: 'folder_open', value: dimensionLabel },
@@ -2457,24 +2458,24 @@ renderDeepWorkPanel: function() {
             if (shouldShowClosure && !selectedMicro && selectedHabit) {
                 contextActionsEl.innerHTML = `
                     <div class="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center justify-between gap-3">
-                        <p class="text-[11px] text-on-surface-variant leading-snug">A sessao de <span class="font-bold text-on-surface">${this.escapeHtml(selectedHabit.title)}</span> terminou. Registre o fechamento antes de seguir.</p>
+                        <p class="text-[11px] text-on-surface-variant leading-snug">A sessão de <span class="font-bold text-on-surface">${this.escapeHtml(selectedHabit.title)}</span> terminou. Registre o fechamento antes de seguir.</p>
                         <button onclick="window.app.openHabitFocusClosureModal()" class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-widest hover:opacity-90">
-                            Fechar sessao
+                            Fechar sessão
                         </button>
                     </div>`;
             } else
             if (shouldShowClosure && selectedMicro) {
                 contextActionsEl.innerHTML = `
                     <div class="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center justify-between gap-3">
-                        <p class="text-[11px] text-on-surface-variant leading-snug">A sessao de <span class="font-bold text-on-surface">${this.escapeHtml(selectedMicro.title)}</span> terminou. Registre a entrega antes de seguir.</p>
+                        <p class="text-[11px] text-on-surface-variant leading-snug">A sessão de <span class="font-bold text-on-surface">${this.escapeHtml(selectedMicro.title)}</span> terminou. Registre a entrega antes de seguir.</p>
                         <button onclick="window.app.openHabitFocusClosureModal()" class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-widest hover:opacity-90">
-                            Fechar sessao
+                            Fechar sessão
                         </button>
                     </div>`;
             } else if (shouldShowQuickComplete && selectedMicro) {
                 contextActionsEl.innerHTML = `
                     <div class="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center justify-between gap-3">
-                        <p class="text-[11px] text-on-surface-variant leading-snug">Sessao finalizada para <span class="font-bold text-on-surface">${this.escapeHtml(selectedMicro.title)}</span>. Concluir agora?</p>
+                        <p class="text-[11px] text-on-surface-variant leading-snug">Sessão finalizada para <span class="font-bold text-on-surface">${this.escapeHtml(selectedMicro.title)}</span>. Concluir agora?</p>
                         <button onclick="window.app.completeMicroAction('${selectedMicro.id}')" class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-widest hover:opacity-90">
                             Concluir
                         </button>
@@ -2490,11 +2491,11 @@ renderDeepWorkPanel: function() {
             if (!checklistMicro && !checklistHabit) {
                 const selectedLabel = selectedMicro?.title || selectedHabit?.title || '';
                 const contextualMessage = hasPendingClosure
-                    ? 'Feche a sessao pendente para liberar o proximo bloco e registrar o resultado.'
+                    ? 'Feche a sessão pendente para liberar o próximo bloco e registrar o resultado.'
                     : selectedMicro
-                        ? 'Esta acao nao tem checklist. Use o bloco para registrar foco e conclua a acao no fechamento, quando fizer sentido.'
+                        ? 'Esta ação não tem checklist. Use o bloco para registrar foco e conclua a ação no fechamento, quando fizer sentido.'
                         : selectedHabit
-                            ? 'Este habito nao tem checklist hoje. Use o bloco para registrar o tempo e finalize o fechamento ao encerrar.'
+                            ? 'Este hábito não tem checklist hoje. Use o bloco para registrar o tempo e finalize o fechamento ao encerrar.'
                             : '';
                 if (!contextualMessage) {
                     executionChecklistEl.classList.add('hidden');
@@ -2505,7 +2506,7 @@ renderDeepWorkPanel: function() {
                         <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-4 space-y-2">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
-                                    <p class="text-[10px] uppercase tracking-widest font-bold text-outline">${hasPendingClosure ? 'Fechamento da sessao' : 'Execucao do bloco'}</p>
+                                    <p class="text-[10px] uppercase tracking-widest font-bold text-outline">${hasPendingClosure ? 'Fechamento da sessão' : 'Execução do bloco'}</p>
                                     <p class="mt-1 text-sm font-semibold text-on-surface">${this.escapeHtml(selectedLabel || 'Bloco em preparo')}</p>
                                 </div>
                                 <span class="material-symbols-outlined notranslate text-primary text-[18px]">${hasPendingClosure ? 'assignment_turned_in' : 'timer'}</span>
@@ -2537,13 +2538,13 @@ renderDeepWorkPanel: function() {
         if (historyEl) {
             const rows = (dw.sessions || []).slice(0, 5);
             if (rows.length === 0) {
-                historyEl.innerHTML = '<p class="text-xs text-outline italic">Nenhuma sessao registrada.</p>';
+                historyEl.innerHTML = '<p class="text-xs text-outline italic">Nenhuma sessão registrada.</p>';
             } else {
                 historyEl.innerHTML = `
                     <div class="overflow-hidden rounded-xl border border-outline-variant/10 bg-surface-container-low">
                         <div class="hidden grid-cols-[120px_minmax(0,1.35fr)_100px_minmax(0,1.2fr)_40px] gap-4 border-b border-outline-variant/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-outline md:grid">
                             <span>Data</span>
-                            <span>Acao</span>
+                            <span>Ação</span>
                             <span>Foco</span>
                             <span>Notas</span>
                             <span></span>
@@ -2552,12 +2553,12 @@ renderDeepWorkPanel: function() {
                             const mins = Math.max(1, Math.round((Number(s.focusSec) || 0) / 60));
                             const micro = (state.entities.micros || []).find(m => m.id === s.microId);
                             const habit = s.habitId ? (state.habits || []).find(h => h.id === s.habitId) : null;
-                            const primaryLabel = micro?.title || habit?.title || s.microTitle || s.habitTitle || s.intention || 'Sem vinculo';
+                            const primaryLabel = micro?.title || habit?.title || s.microTitle || s.habitTitle || s.intention || 'Sem vínculo';
                             const notesLabel = micro
-                                ? (this.getMicroPlanContext(micro)?.path || 'Sessao registrada sem observacoes.')
+                                ? (this.getMicroPlanContext(micro)?.path || 'Sessão registrada sem observações.')
                                 : habit
-                                    ? 'Sessao de habito registrada.'
-                                    : (s.intention || 'Sessao registrada.');
+                                    ? 'Sessão de hábito registrada.'
+                                    : (s.intention || 'Sessão registrada.');
                             const dateLabel = this.formatDateTimeLocal(s.endedAtTs) || s.endedAt || '';
                             const sourceKind = micro ? 'Ação' : (habit ? 'Hábito' : 'Sessão');
                             return `
@@ -2714,7 +2715,7 @@ renderTodayCapacityMap: function() {
             <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Mapa do dia</p>
+                        <p class="ui-section-label">Mapa do dia</p>
                         <p class="mt-1 text-xs text-on-surface-variant">${this.escapeHtml(state.activeLabel || 'Dia inteiro')}</p>
                         ${adjustmentLabel ? `<p class="mt-1 text-[11px] text-outline">${adjustmentLabel}</p>` : ''}
                     </div>
@@ -2722,11 +2723,11 @@ renderTodayCapacityMap: function() {
                 </div>
                 <div class="mt-3 space-y-2">
                     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Organizacao da lista</p>
+                        <p class="ui-section-label">Organização da lista</p>
                         <div class="flex items-center gap-2">
                             <div class="inline-flex rounded-xl border border-outline-variant/15 bg-surface-container-low p-1">
-                                <button type="button" onclick="window.app.setTodayChecklistMode('dimensao')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'dimensao' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Dimensao</button>
-                                <button type="button" onclick="window.app.setTodayChecklistMode('horario')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'horario' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Horario</button>
+                                <button type="button" onclick="window.app.setTodayChecklistMode('dimensao')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'dimensao' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Dimensão</button>
+                                <button type="button" onclick="window.app.setTodayChecklistMode('horario')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'horario' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Horário</button>
                             </div>
                             <button type="button" onclick="window.app.openDayCapacityProfileSettings()" class="rounded-lg border border-primary/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors">
                                 Ajustar base
@@ -2767,7 +2768,7 @@ renderTodayActionList: function() {
         const mode = this.getTodayChecklistMode();
         const activeDayPart = this.getTodayChecklistDayPart();
         const labels = {
-            manha: 'Manha',
+            manha: 'Manhã',
             tarde: 'Tarde',
             noite: 'Noite',
             sem_horario: 'Sem horário'
@@ -2799,7 +2800,7 @@ renderTodayActionList: function() {
         const organizerHtml = mode === 'horario'
             ? `
                 <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-3 shadow-sm">
-                    <p class="mb-2 text-[10px] font-label uppercase tracking-widest text-outline font-bold">Filtrar turno</p>
+                    <p class="ui-section-label mb-2">Filtrar turno</p>
                     <div class="grid grid-cols-2 gap-2 md:grid-cols-5">
                         ${partButtons}
                     </div>
@@ -2810,12 +2811,12 @@ renderTodayActionList: function() {
             ? `
                 <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
                     <div>
-                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Acoes agendadas</p>
-                        <p class="mt-1 text-xs text-on-surface-variant">Micros com horario definido para hoje.</p>
+                        <p class="ui-section-label">Ações agendadas</p>
+                        <p class="mt-1 text-xs text-on-surface-variant">Micros com horário definido para hoje.</p>
                     </div>
                     <div class="space-y-2">
                         ${visibleScheduledMicros.map((item) => {
-                            const partLabel = labels[item.dayPart] || 'Sem horario';
+                            const partLabel = labels[item.dayPart] || 'Sem horário';
                             return `
                             <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low px-3 py-2.5">
                                 <div class="flex items-center justify-between gap-3">
@@ -2838,8 +2839,8 @@ renderTodayActionList: function() {
             ? `
                 <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
                     <div>
-                        <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">Ações sem horario</p>
-                        <p class="mt-1 text-xs text-on-surface-variant">Ajuste rapido para tirar itens do bucket sem perder o card principal.</p>
+                            <p class="ui-section-label">Ações sem horário</p>
+                        <p class="mt-1 text-xs text-on-surface-variant">Ajuste rápido para tirar itens do agrupamento sem perder o card principal.</p>
                     </div>
                     <div class="space-y-2">
                         ${visibleUnscheduledMicros.map((item) => `
@@ -2850,7 +2851,7 @@ renderTodayActionList: function() {
                                         <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(item.dimension || 'Geral')} · ${Math.round(Number(item.estimatedMinutes) || 0)} min</p>
                                     </div>
                                     <div class="flex flex-wrap gap-1.5">
-                                        <button type="button" onclick="window.app.assignMicroPreferredDayPart('${this.escapeHtml(item.sourceId)}','manha')" class="px-2.5 py-1 rounded-lg border border-outline-variant/20 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">Manha</button>
+                                        <button type="button" onclick="window.app.assignMicroPreferredDayPart('${this.escapeHtml(item.sourceId)}','manha')" class="px-2.5 py-1 rounded-lg border border-outline-variant/20 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">Manhã</button>
                                         <button type="button" onclick="window.app.assignMicroPreferredDayPart('${this.escapeHtml(item.sourceId)}','tarde')" class="px-2.5 py-1 rounded-lg border border-outline-variant/20 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">Tarde</button>
                                         <button type="button" onclick="window.app.assignMicroPreferredDayPart('${this.escapeHtml(item.sourceId)}','noite')" class="px-2.5 py-1 rounded-lg border border-outline-variant/20 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">Noite</button>
                                     </div>
@@ -2865,7 +2866,7 @@ renderTodayActionList: function() {
                 <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
                     <div class="flex items-center justify-between gap-3">
                         <div>
-                            <p class="text-[10px] font-label uppercase tracking-widest text-outline font-bold">H&aacute;bitos de hoje</p>
+                            <p class="ui-section-label">H&aacute;bitos de hoje</p>
                             <p class="mt-1 text-xs text-on-surface-variant">${visibleHabits.length} previstos neste recorte do dia.</p>
                         </div>
                         <button type="button" onclick="window.app.switchHojeScreen('habitos')" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-low transition-colors">Ver todos</button>
@@ -3211,7 +3212,7 @@ render: {
                     const ctx = app.getMicroPlanContext(m);
                     const focusText = app.formatDurationHuman(m.focusSec || 0);
                     const sessionCount = Number(m.focusSessions || 0);
-                    const statusText = m.status === 'done' ? 'Concluida' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
+                    const statusText = m.status === 'done' ? 'Concluída' : (m.status === 'in_progress' ? 'Em andamento' : 'Pendente');
                     const isDone = m.status === 'done' || m.completed;
                     const isInProgress = m.status === 'in_progress';
                     const timing = app.classifyMicroForDate?.(m, app.getLocalDateKey()) || { status: 'active_today' };
@@ -3263,16 +3264,16 @@ render: {
                         : '<span class="inline-flex items-center rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-outline">Captura</span>';
                     const mobileDimensionBadge = `<span class="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-primary">${app.escapeHtml(m.dimension || 'Geral')}</span>`;
                     const orphanBadge = !focusEligibility.ok
-                        ? '<span title="Acao sem Entrega associada (Nao Alinhada)" class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Nao alinhado</span>'
+                        ? '<span title="Ação sem entrega associada (não alinhada)" class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Não alinhado</span>'
                         : '';
                     const mobileOrphanBadge = !focusEligibility.ok
-                        ? '<span title="Acao sem Entrega associada (Nao Alinhada)" class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-amber-600 dark:text-amber-400"><span class="material-symbols-outlined notranslate text-[9px]">warning</span>Nao alinhado</span>'
+                        ? '<span title="Ação sem entrega associada (não alinhada)" class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-amber-600 dark:text-amber-400"><span class="material-symbols-outlined notranslate text-[9px]">warning</span>Não alinhado</span>'
                         : '';
                     const mobilePrimaryIcon = !focusEligibility.ok
                         ? 'warning'
                         : (isFutureAction ? (scheduleAction?.icon || 'keyboard_double_arrow_left') : ((m.status === 'in_progress' || isTimerMicro) ? 'timer' : 'play_arrow'));
                     const mobilePrimaryTitle = m.status === 'done'
-                        ? 'Reabrir acao'
+                        ? 'Reabrir ação'
                         : actionLabel;
                     return `
                     <div class="md:hidden">
@@ -3285,20 +3286,20 @@ render: {
                                 <div class="flex items-center gap-2 shrink-0">
                                     ${m.status !== 'done'
                                         ? `<button onclick="${actionHandler}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg ${focusEligibility.ok ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15'}" title="${mobilePrimaryTitle}" aria-label="${mobilePrimaryTitle}"><span class="material-symbols-outlined notranslate text-[18px]">${mobilePrimaryIcon}</span></button>`
-                                        : `<button onclick="window.app.completeMicroAction('${m.id}')" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary hover:bg-primary/20" title="Reabrir acao" aria-label="Reabrir acao"><span class="material-symbols-outlined notranslate text-[18px]">undo</span></button>`}
-                                    ${m.status !== 'done' ? `<button onclick="window.app.completeMicroAction('${m.id}')" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-primary transition-colors hover:border-primary/20 hover:bg-primary/10" title="Concluir acao" aria-label="Concluir acao"><span class="material-symbols-outlined notranslate text-[18px]">check</span></button>` : ''}
+                                        : `<button onclick="window.app.completeMicroAction('${m.id}')" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary hover:bg-primary/20" title="Reabrir ação" aria-label="Reabrir ação"><span class="material-symbols-outlined notranslate text-[18px]">undo</span></button>`}
+                                    ${m.status !== 'done' ? `<button onclick="window.app.completeMicroAction('${m.id}')" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-primary transition-colors hover:border-primary/20 hover:bg-primary/10" title="Concluir ação" aria-label="Concluir ação"><span class="material-symbols-outlined notranslate text-[18px]">check</span></button>` : ''}
                                     ${scheduleAction ? `<button onclick="window.app.adjustMicroScheduleContextually('${m.id}')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="${scheduleAction.title}" aria-label="${scheduleAction.title}"><span class="material-symbols-outlined notranslate text-[16px]">${scheduleAction.icon}</span></button>` : ''}
-                                    <button onclick="window.app.editEntity('${m.id}', 'micros')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="Editar acao" aria-label="Editar acao"><span class="material-symbols-outlined notranslate text-[16px]">edit</span></button>
+                                    <button onclick="window.app.editEntity('${m.id}', 'micros')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="Editar ação" aria-label="Editar ação"><span class="material-symbols-outlined notranslate text-[16px]">edit</span></button>
                                 </div>
                             </div>
                             <div class="mt-2 flex flex-nowrap items-center gap-0.5 overflow-x-auto no-scrollbar pl-1 pr-1">
                                 ${mobileSourceBadge}${mobileDimensionBadge}<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[9px]">event</span>${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>${mobileOrphanBadge}
                                 <div class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5">
-                                    <span class="text-[8px] font-bold uppercase tracking-[0.08em] text-outline">${sessionCount === 1 ? 'Sessao:' : 'Sessoes:'}</span>
+                                    <span class="text-[8px] font-bold uppercase tracking-[0.08em] text-outline">${sessionCount === 1 ? 'Sessão:' : 'Sessões:'}</span>
                                     <span class="text-[10px] font-semibold text-on-surface">${sessionCount}</span>
                                 </div>
                                 <div class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5">
-                                    <span class="text-[8px] font-bold uppercase tracking-[0.08em] text-outline">Duracao:</span>
+                                    <span class="text-[8px] font-bold uppercase tracking-[0.08em] text-outline">Duração:</span>
                                     <span class="text-[10px] font-semibold text-primary">${focusText}</span>
                                 </div>
                             </div>
@@ -3311,10 +3312,10 @@ render: {
                                 <div class="mt-1 flex flex-wrap gap-1.5">${sourceBadge}${orphanBadge}${dimensionBadge}</div>
                             </div>
                             <div class="min-w-0">
-                                <p class="truncate text-sm text-on-surface-variant">${app.escapeHtml(ctx.parentLabel || 'Sem vinculo em Planos')}</p>
+                                <p class="truncate text-sm text-on-surface-variant">${app.escapeHtml(ctx.parentLabel || 'Sem vínculo em Planos')}</p>
                             </div>
                             <div class="min-w-0">
-                                <p class="text-sm text-on-surface">${sessionCount} ${sessionCount === 1 ? 'sessao' : 'sessoes'}</p>
+                                <p class="text-sm text-on-surface">${sessionCount} ${sessionCount === 1 ? 'sessão' : 'sessões'}</p>
                             </div>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-primary">${focusText}</p>
@@ -3333,7 +3334,7 @@ render: {
                             </div>
                             <div class="flex items-center justify-end gap-2">
                                 ${scheduleAction ? `<button onclick="window.app.adjustMicroScheduleContextually('${m.id}')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="${scheduleAction.title}" aria-label="${scheduleAction.title}"><span class="material-symbols-outlined notranslate text-[16px]">${scheduleAction.icon}</span></button>` : ''}
-                                <button onclick="window.app.editEntity('${m.id}', 'micros')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="Editar acao"><span class="material-symbols-outlined notranslate text-[16px]">edit</span></button>
+                                <button onclick="window.app.editEntity('${m.id}', 'micros')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="Editar ação"><span class="material-symbols-outlined notranslate text-[16px]">edit</span></button>
                             </div>
                         </div>
                     </div>
@@ -3343,8 +3344,8 @@ render: {
                 if (filtered.length === 0) {
                     listContainer.innerHTML = `<div class="rounded-2xl border border-dashed border-outline-variant/30 bg-surface-container-low p-8 text-center">
                         <span class="material-symbols-outlined notranslate mb-2 text-3xl text-outline">checklist</span>
-                        <p class="font-bold text-on-surface">Nenhuma acao encontrada.</p>
-                        <p class="mt-1 text-sm text-on-surface-variant">Crie uma acao em Planos ou ajuste os filtros para montar sua fila de execucao.</p>
+                        <p class="font-bold text-on-surface">Nenhuma ação encontrada.</p>
+                        <p class="mt-1 text-sm text-on-surface-variant">Crie uma ação em Planos ou ajuste os filtros para montar sua fila de execução.</p>
                     </div>`;
                 }
             }
@@ -3839,7 +3840,7 @@ render: {
                     const chipsRow = chipItems.join('');
                     const scheduleHint = visibleToday
                         ? ''
-                        : `<p class="mt-1 text-[10px] text-outline leading-tight">Nao esta previsto para hoje</p>`;
+                        : `<p class="mt-1 text-[10px] text-outline leading-tight">Não está previsto para hoje</p>`;
                     const maturityClass = habit.isKey
                         ? 'border-amber-500/25 bg-amber-500/[0.04]'
                         : hasFocusSessionInProgress
@@ -4061,7 +4062,7 @@ render: {
                             id: `micro:${micro.id}`,
                             sourceType: 'micro',
                             sourceId: micro.id,
-                            title: micro.title || 'Acao',
+                            title: micro.title || 'Ação',
                             dimension: micro.dimension || 'Geral',
                             estimatedMinutes: Math.max(1, Number(app.getMicroEstimatedMinutes?.(micro)) || 0),
                             startTime: schedule.startTime || '',
@@ -4155,7 +4156,7 @@ render: {
                     ? app.getMicroScheduleContext(micro)
                     : { startTime: entry.startTime || '', dayPart: entry.dayPart || 'sem_horario' };
                 const groupLabel = todayMode === 'horario'
-                    ? ({ manha: 'Manha', tarde: 'Tarde', noite: 'Noite', sem_horario: 'Sem horario' })[schedule.dayPart || 'sem_horario']
+                    ? ({ manha: 'Manhã', tarde: 'Tarde', noite: 'Noite', sem_horario: 'Sem horário' })[schedule.dayPart || 'sem_horario']
                     : (micro.dimension || 'Geral');
                 if (groupLabel !== lastGroup) {
                     lastGroup = groupLabel;
@@ -4320,8 +4321,8 @@ render: {
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">schedule</span>
                                 <div class="flex flex-col min-w-0">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Execucao no dia</span>
-                                    <span class="text-xs break-words">${schedule.startTime ? `${schedule.startTime} · ${scheduleSourceLabel || 'Definido'}` : 'Sem horario definido'}</span>
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Execução no dia</span>
+                                    <span class="text-xs break-words">${schedule.startTime ? `${schedule.startTime} · ${scheduleSourceLabel || 'Definido'}` : 'Sem horário definido'}</span>
                                 </div>
                             </div>
 
@@ -4356,7 +4357,7 @@ render: {
                         class="flex w-full items-start justify-between gap-3 text-left">
                         <span class="min-w-0 flex-1">
                             <span class="block text-[10px] font-label uppercase tracking-widest text-outline font-bold">Futuro</span>
-                            <span class="mt-1 block text-xs text-on-surface-variant">${futureTodayMicros.length} ação${futureTodayMicros.length === 1 ? '' : 'ões'} agendada${futureTodayMicros.length === 1 ? '' : 's'} para outro dia.</span>
+                            <span class="mt-1 block text-xs text-on-surface-variant">${futureTodayMicros.length} ${futureTodayMicros.length === 1 ? 'ação' : 'ações'} agendada${futureTodayMicros.length === 1 ? '' : 's'} para outro dia.</span>
                         </span>
                         <span class="material-symbols-outlined notranslate text-outline text-[18px] transition-transform ${futureExpanded ? 'rotate-180' : ''}">expand_more</span>
                     </button>

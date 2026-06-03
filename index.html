@@ -1763,11 +1763,11 @@
     <!-- CRUD Modal Universal -->
     <div id="crud-modal"
         class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-        <div class="bg-surface-container-lowest w-full max-w-3xl rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[94vh]">
-            <div class="p-6 border-b border-outline-variant/20 flex items-start justify-between gap-3">
+        <div class="ui-modal-shell w-full max-w-3xl max-h-[94vh]">
+            <div class="ui-modal-header">
                 <div class="min-w-0">
-                    <h3 id="modal-title" class="font-headline text-xl font-bold text-on-background">Novo Item</h3>
-                    <p class="text-[11px] text-outline mt-1">Preencha o essencial. O restante pode ser refinado depois.</p>
+                    <h3 id="modal-title" class="ui-modal-title font-headline text-xl font-bold text-on-background">Novo Item</h3>
+                    <p class="ui-modal-description mt-1 text-[11px] text-outline">Preencha o essencial. O restante pode ser refinado depois.</p>
                 </div>
                 <button id="crud-notes-btn" type="button" onclick="window.app.openEntityNotesModal()"
                     class="hidden items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant text-xs font-bold transition-colors">
@@ -1776,7 +1776,7 @@
                 </button>
             </div>
 
-            <form id="crud-form" onsubmit="event.preventDefault()" class="p-6 flex flex-col gap-4 overflow-y-auto no-scrollbar">
+            <form id="crud-form" onsubmit="event.preventDefault()" class="ui-modal-body flex flex-col gap-4 overflow-y-auto no-scrollbar">
                 <div id="crud-blocking-message" class="hidden rounded-xl border border-error/30 bg-error/10 text-error px-4 py-3 text-sm font-medium leading-relaxed"></div>
                 <div id="crud-title-group" class="flex flex-col gap-1.5">
                     <label for="crud-title"
@@ -1935,7 +1935,7 @@
                 <!-- Seletor de Propósito — apenas para Metas, usa resumos do perfil -->
                 <div id="crud-purpose-selector-group" class="hidden flex-col gap-2">
                     <label class="text-xs font-bold uppercase tracking-widest text-outline">Vincular ao Propósito</label>
-                    <p class="text-[11px] text-outline -mt-1">Selecione o propósito do seu perfil que esta meta serve.</p>
+                    <p class="text-[11px] text-outline -mt-1">Selecione o propósito do seu perfil ao qual esta meta serve.</p>
                     <div id="crud-purpose-options" class="flex flex-wrap gap-2"></div>
                     <p id="crud-purpose-none" class="hidden text-xs text-outline italic">Nenhum resumo de propósito encontrado. Preencha Ikigai, Legado e Visão na aba Propósito.</p>
                 </div>
@@ -2087,7 +2087,7 @@
                             class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                             <option value="">- Sem protocolo -</option>
                         </select>
-                        <p class="text-[10px] text-outline">O protocolo preenche a estrutura e passa a definir o tempo total do habito.</p>
+                        <p class="text-[10px] text-outline">O protocolo preenche a estrutura e passa a definir o tempo total do hábito.</p>
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label for="habit-steps"
@@ -2131,7 +2131,7 @@
                                 value="1" min="1">
                         </div>
                     </div>
-                    <p id="habit-protocol-authority-note" class="hidden text-[10px] text-outline">O protocolo sugere um modo padrao, mas voce pode ajustar o habito para checklist ou tempo.</p>
+                    <p id="habit-protocol-authority-note" class="hidden text-[10px] text-outline">O protocolo sugere um modo padrão, mas você pode ajustar o hábito para checklist ou tempo.</p>
 
                     <div class="flex flex-col sm:grid sm:grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
@@ -2192,7 +2192,7 @@
                             <input type="time" id="habit-start-time"
                                 onchange="window.app.updateHabitReminderPreview()"
                                 class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
-                            <p class="text-[10px] text-outline">Este horario organiza o habito no Pra hoje. O lembrete usa esta base, mas nao define mais o turno por conta propria.</p>
+                            <p class="text-[10px] text-outline">Este horário organiza o hábito no Pra hoje. O lembrete usa esta base, mas não define mais o turno por conta própria.</p>
                         </div>
                         <div class="flex items-end">
                             <label class="h-12 w-full px-4 rounded-lg border border-outline-variant/20 bg-surface-container-low flex items-center gap-3 cursor-pointer">
@@ -2287,7 +2287,7 @@
             </form>
 
             <div
-                class="p-6 border-t border-outline-variant/20 flex items-center justify-end gap-3 bg-surface-container-low/30">
+                class="ui-modal-footer flex items-center justify-end gap-3 bg-surface-container-low/30">
                 <button type="button" onclick="window.app.closeModal()"
                     class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">
                     Cancelar
@@ -2303,13 +2303,13 @@
     <!-- Entity Notes Modal -->
     <div id="entity-notes-modal"
         class="hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-        <div class="bg-surface-container-lowest w-full max-w-xl sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden flex flex-col max-h-[82vh]">
-            <div class="p-5 border-b border-outline-variant/20 flex items-start justify-between gap-3">
+        <div class="ui-modal-shell w-full max-w-xl max-h-[82vh]">
+            <div class="ui-modal-header">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="material-symbols-outlined notranslate text-primary text-xl shrink-0">sticky_note_2</span>
                     <div class="min-w-0">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Notas vinculadas</p>
-                        <h4 id="entity-notes-modal-title" class="font-headline text-base font-bold text-on-background truncate"></h4>
+                        <p class="ui-section-label">Notas vinculadas</p>
+                        <h4 id="entity-notes-modal-title" class="ui-modal-title font-headline text-base font-bold text-on-background truncate"></h4>
                     </div>
                 </div>
                 <button type="button" onclick="window.app.closeEntityNotesModal()"
@@ -2317,8 +2317,8 @@
                     <span class="material-symbols-outlined notranslate text-xl">close</span>
                 </button>
             </div>
-            <div id="entity-notes-modal-list" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
-            <div class="p-4 border-t border-outline-variant/20 bg-surface-container-low/50">
+            <div id="entity-notes-modal-list" class="ui-modal-body flex-1 overflow-y-auto space-y-3"></div>
+            <div class="ui-modal-footer bg-surface-container-low/50">
                 <button type="button" onclick="window.app.openNewNoteFromEntityModal()"
                     class="w-full py-3 bg-primary text-on-primary rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:shadow-md active:scale-95 transition-all">
                     <span class="material-symbols-outlined notranslate text-[18px]">add</span>
@@ -2336,27 +2336,27 @@
     </div>
 
     <div id="habit-focus-modal" class="hidden fixed inset-0 z-[111] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-        <div class="w-full max-w-2xl rounded-3xl border border-outline-variant/10 bg-surface-container-lowest shadow-2xl overflow-hidden">
-            <div class="px-6 py-5 border-b border-outline-variant/10 flex items-start justify-between gap-4">
+        <div class="ui-modal-shell w-full max-w-2xl">
+            <div class="ui-modal-header">
                 <div class="min-w-0">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Sessao de foco</p>
-                    <h3 id="habit-focus-title" class="mt-1 font-headline text-2xl italic font-bold text-on-background">Nova entrega</h3>
-                    <p id="habit-focus-helper" class="mt-2 text-sm text-on-surface-variant"></p>
+                    <p class="ui-section-label">Sessão de foco</p>
+                    <h3 id="habit-focus-title" class="ui-modal-title mt-1 font-headline text-2xl italic font-bold text-on-background">Nova entrega</h3>
+                    <p id="habit-focus-helper" class="ui-modal-description mt-2 text-sm text-on-surface-variant"></p>
                     <p id="habit-focus-context" class="mt-2 text-[11px] text-outline"></p>
                 </div>
                 <button type="button" onclick="window.app.closeHabitFocusModal()" class="rounded-full p-2 text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
                     <span class="material-symbols-outlined notranslate">close</span>
                 </button>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="ui-modal-body space-y-4">
                 <input type="hidden" id="habit-focus-habit-id">
                 <div class="flex flex-col gap-1.5">
                     <label for="habit-focus-delivery" class="text-xs font-label uppercase tracking-widest text-outline font-bold">O que vou entregar</label>
-                    <input id="habit-focus-delivery" type="text" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" placeholder="Ex.: Ler o capitulo 3 e fazer resumo">
+                    <input id="habit-focus-delivery" type="text" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface" placeholder="Ex.: Ler o capítulo 3 e fazer um resumo">
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1.5">
-                        <label for="habit-focus-minutes" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duracao da sessao</label>
+                        <label for="habit-focus-minutes" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duração da sessão</label>
                         <select id="habit-focus-minutes" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-12 px-4 text-on-surface">
                             <option value="15">15/3</option>
                             <option value="25" selected>25/5</option>
@@ -2371,39 +2371,39 @@
                     </div>
                 </div>
             </div>
-            <div class="px-6 py-4 border-t border-outline-variant/10 bg-surface-container-low/30 flex items-center justify-end gap-3">
+            <div class="ui-modal-footer flex items-center justify-end gap-3 bg-surface-container-low/30">
                 <button type="button" onclick="window.app.closeHabitFocusModal()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">Cancelar</button>
-                <button type="button" onclick="window.app.startHabitFocusSession()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Criar sessao</button>
+                <button type="button" onclick="window.app.startHabitFocusSession()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Criar sessão</button>
             </div>
         </div>
     </div>
 
     <div id="habit-focus-closure-modal" class="hidden fixed inset-0 z-[112] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-        <div class="w-full max-w-2xl rounded-3xl border border-outline-variant/10 bg-surface-container-lowest shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-            <div class="px-6 py-5 border-b border-outline-variant/10 flex items-start justify-between gap-4">
+        <div class="ui-modal-shell w-full max-w-2xl max-h-[92vh]">
+            <div class="ui-modal-header">
                 <div class="min-w-0">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Fechamento da sessao</p>
-                    <h3 id="habit-focus-closure-title" class="mt-1 font-headline text-2xl italic font-bold text-on-background">Registrar sessao</h3>
-                    <p id="habit-focus-closure-subtitle" class="mt-2 text-sm text-on-surface-variant"></p>
+                    <p class="ui-section-label">Fechamento da sessão</p>
+                    <h3 id="habit-focus-closure-title" class="ui-modal-title mt-1 font-headline text-2xl italic font-bold text-on-background">Registrar sessão</h3>
+                    <p id="habit-focus-closure-subtitle" class="ui-modal-description mt-2 text-sm text-on-surface-variant"></p>
                     <p id="habit-focus-closure-context" class="mt-2 text-[11px] text-outline"></p>
                 </div>
                 <button type="button" onclick="window.app.remindHabitFocusClosureLater()" class="rounded-full p-2 text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
                     <span class="material-symbols-outlined notranslate">close</span>
                 </button>
             </div>
-            <div class="p-6 space-y-4 overflow-y-auto flex-1">
+            <div class="ui-modal-body space-y-4 overflow-y-auto flex-1">
                 <div id="habit-focus-closure-habit-summary" class="hidden rounded-xl border border-outline-variant/15 bg-surface-container-low/40 px-4 py-3 text-xs text-on-surface-variant"></div>
                 <div id="habit-focus-closure-habit-checklist" class="hidden"></div>
                 <div id="habit-focus-closure-habit-complete-wrap" class="hidden rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3">
                     <label class="inline-flex items-center gap-3 text-sm text-on-surface">
                         <input id="habit-focus-closure-habit-complete" type="checkbox" class="w-4 h-4 rounded border-outline-variant/40 text-primary focus:ring-primary/20">
-                        <span id="habit-focus-closure-habit-complete-label">Concluir habito hoje</span>
+                        <span id="habit-focus-closure-habit-complete-label">Concluir hábito hoje</span>
                     </label>
                 </div>
                 <div id="habit-focus-closure-existing-complete-wrap" class="hidden rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3">
                     <label class="inline-flex items-center gap-3 text-sm text-on-surface">
                         <input id="habit-focus-closure-existing-complete" type="checkbox" class="w-4 h-4 rounded border-outline-variant/40 text-primary focus:ring-primary/20">
-                        <span>Concluir acao atual agora</span>
+                        <span>Concluir ação atual agora</span>
                     </label>
                 </div>
                 <div id="habit-focus-closure-plan-wrap" class="rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3 space-y-3">
@@ -2418,12 +2418,12 @@
                             <select id="habit-focus-closure-plan-macro" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface"></select>
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <label for="habit-focus-closure-plan-title" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Acao gerada</label>
-                            <input id="habit-focus-closure-plan-title" type="text" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface" placeholder="Ex.: Consolidar resumo da sessao">
+                            <label for="habit-focus-closure-plan-title" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Ação gerada</label>
+                            <input id="habit-focus-closure-plan-title" type="text" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface" placeholder="Ex.: Consolidar o resumo da sessão">
                         </div>
                         <label class="inline-flex items-center gap-3 text-sm text-on-surface">
                             <input id="habit-focus-closure-plan-complete" type="checkbox" class="w-4 h-4 rounded border-outline-variant/40 text-primary focus:ring-primary/20">
-                            <span>Essa acao ja foi concluida</span>
+                            <span>Essa ação já foi concluída</span>
                         </label>
                     </div>
                     <textarea id="habit-focus-closure-delivery" class="hidden"></textarea>
@@ -2432,29 +2432,29 @@
                     <button id="habit-focus-closure-details-toggle" type="button" onclick="window.app.toggleHabitFocusClosureDetails()" class="w-full flex items-center justify-between gap-3 text-left">
                         <div>
                             <p class="text-xs font-label uppercase tracking-widest text-outline font-bold">Adicionar detalhes</p>
-                            <p class="mt-1 text-xs text-on-surface-variant">Evidencias, duvidas, lacunas, proximo passo e contexto complementar.</p>
+                            <p class="mt-1 text-xs text-on-surface-variant">Evidências, dúvidas, lacunas, próximo passo e contexto complementar.</p>
                         </div>
                         <span id="habit-focus-closure-details-icon" class="material-symbols-outlined notranslate text-outline">expand_more</span>
                     </button>
                     <div id="habit-focus-closure-details-panel" class="hidden mt-3 space-y-3">
                         <div class="flex flex-col gap-1.5">
-                            <label for="habit-focus-closure-evidence" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Evidencia</label>
+                            <label for="habit-focus-closure-evidence" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Evidência</label>
                             <textarea id="habit-focus-closure-evidence" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="Resumo criado, exercicios resolvidos, arquivo salvo..."></textarea>
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <label for="habit-focus-closure-gaps" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Duvidas e lacunas</label>
+                            <label for="habit-focus-closure-gaps" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Dúvidas e lacunas</label>
                             <textarea id="habit-focus-closure-gaps" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que ainda ficou confuso?"></textarea>
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <label for="habit-focus-closure-next-step" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Proximo passo</label>
+                            <label for="habit-focus-closure-next-step" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Próximo passo</label>
                             <textarea id="habit-focus-closure-next-step" rows="2" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="O que faz sentido estudar ou entregar depois?"></textarea>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="px-6 py-4 border-t border-outline-variant/10 bg-surface-container-low/30 flex flex-wrap items-center justify-end gap-3">
+            <div class="ui-modal-footer flex flex-wrap items-center justify-end gap-3 bg-surface-container-low/30">
                 <button type="button" onclick="window.app.remindHabitFocusClosureLater()" class="px-5 py-2.5 text-sm font-bold text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors rounded-lg">Depois</button>
-                <button type="button" onclick="window.app.saveHabitFocusClosure()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Concluir sessao</button>
+                <button type="button" onclick="window.app.saveHabitFocusClosure()" class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Concluir sessão</button>
             </div>
         </div>
     </div>
@@ -3049,7 +3049,7 @@
                 <div class="space-y-1">
                     <div class="flex justify-between text-xs font-label uppercase tracking-widest font-bold"><label
                             for="e-slider">E - Engajamento (0-10)</label><span id="val-e" class="text-primary">7.0</span></div>
-                    <p class="text-xs leading-snug text-on-surface-variant">O quanto voce entra em estado de foco, interesse e presenca no que faz?</p>
+                    <p class="text-xs leading-snug text-on-surface-variant">O quanto você entra em estado de foco, interesse e presença no que faz?</p>
                     <input type="range" id="e-slider" min="0" max="10" step="0.1" value="7.0" class="w-full accent-primary"
                         oninput="document.getElementById('val-e').textContent = this.value"
                         style="touch-action: pan-y; overscroll-behavior: contain;">
@@ -3299,7 +3299,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260603-ui-system-v9"></script>
+    <script type="module" src="app.js?v=20260603-ui-system-v12"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3330,7 +3330,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260603-ui-system-v9')
+                navigator.serviceWorker.register('sw.js?v=20260603-ui-system-v12')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

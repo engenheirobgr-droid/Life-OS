@@ -12,14 +12,14 @@ function buildFocusClosureBody({ habit, protocol, micro, focusSec, delivery, evi
     const habitKey = normalizeFocusNoteToken(habit?.title);
     const microKey = normalizeFocusNoteToken(micro?.title);
     const deliveryKey = normalizeFocusNoteToken(delivery);
-    if (habit?.title && habitKey && habitKey !== subjectKey) lines.push(`Origem: habito ${habit.title}`);
+    if (habit?.title && habitKey && habitKey !== subjectKey) lines.push(`Origem: hábito ${habit.title}`);
     if (protocol?.title) lines.push(`Protocolo: ${protocol.title}`);
-    if (micro?.title && microKey && microKey !== subjectKey && microKey !== deliveryKey) lines.push(`Acao do plano: ${micro.title}`);
+    if (micro?.title && microKey && microKey !== subjectKey && microKey !== deliveryKey) lines.push(`Ação do plano: ${micro.title}`);
     if (focusSec > 0) lines.push(`Tempo de foco: ${Math.max(1, Math.round(focusSec / 60))} min`);
     if (delivery && deliveryKey !== subjectKey && deliveryKey !== microKey) lines.push('', 'Entrega concreta', delivery);
-    if (evidence) lines.push('', 'Evidencia', evidence);
-    if (gaps) lines.push('', 'Duvidas e lacunas', gaps);
-    if (nextStep) lines.push('', 'Proximo passo', nextStep);
+    if (evidence) lines.push('', 'Evidência', evidence);
+    if (gaps) lines.push('', 'Dúvidas e lacunas', gaps);
+    if (nextStep) lines.push('', 'Próximo passo', nextStep);
     return lines.join('\n');
 }
 
@@ -61,7 +61,7 @@ export function attachHabitFocusModule(app) {
             const state = window.sistemaVidaState;
             const dw = state.deepWork;
             if (dw.isRunning && String(dw.habitId || '') !== String(habitId || '')) {
-                this.showToast('Finalize ou pause o bloco atual antes de trocar de habito.', 'error');
+                this.showToast('Finalize ou pause o bloco atual antes de trocar de hábito.', 'error');
                 if (this.currentView !== 'foco') this.navigate?.('foco');
                 return;
             }
@@ -73,7 +73,7 @@ export function attachHabitFocusModule(app) {
                 return;
             }
             if (!this.canStartFocusFromHabit(habit)) {
-                this.showToast('Esse habito ainda nao esta pronto para abrir uma sessao de foco.', 'error');
+                this.showToast('Esse hábito ainda não está pronto para abrir uma sessão de foco.', 'error');
                 return;
             }
             dw.habitId = habit.id;
@@ -109,32 +109,32 @@ export function attachHabitFocusModule(app) {
         openHabitFocusModal: function(habitId) {
             this.normalizeDeepWorkState();
             if (window.sistemaVidaState.deepWork?.pendingClosure?.microId || window.sistemaVidaState.deepWork?.pendingClosure?.habitId) {
-                this.showToast('Existe uma sessao anterior esperando fechamento.', 'error');
+                this.showToast('Existe uma sessão anterior aguardando fechamento.', 'error');
                 this.openHabitFocusClosureModal?.();
                 return;
             }
-            if (this.enforceDeepWorkInteractionLock?.('A sessao de foco esta ativa. Finalize, pause ou reinicie antes de abrir outro fluxo.')) return;
+            if (this.enforceDeepWorkInteractionLock?.('A sessão de foco está ativa. Finalize, pause ou reinicie antes de abrir outro fluxo.')) return;
             const habit = (window.sistemaVidaState?.habits || []).find(item => item.id === habitId);
             if (!habit) {
-                this.showToast('Habito nao encontrado.', 'error');
+                this.showToast('Hábito não encontrado.', 'error');
                 return;
             }
             this.selectDeepWorkHabit(habit.id, { navigate: true });
-            this.showToast(`Habito "${habit.title}" selecionado no Foco para configuracao.`, 'success');
+            this.showToast(`Hábito "${habit.title}" selecionado no Foco para configuração.`, 'success');
         },
 
         startFocusFromHabitDirect: function(habitId) {
             this.normalizeDeepWorkState();
             const dw = window.sistemaVidaState?.deepWork || {};
             if (dw.pendingClosure?.microId || dw.pendingClosure?.habitId) {
-                this.showToast('Existe uma sessao anterior esperando fechamento.', 'error');
+                this.showToast('Existe uma sessão anterior aguardando fechamento.', 'error');
                 this.openHabitFocusClosureModal?.();
                 return;
             }
-            if (this.enforceDeepWorkInteractionLock?.('A sessao de foco esta ativa. Finalize, pause ou reinicie antes de iniciar outro bloco.')) return;
+            if (this.enforceDeepWorkInteractionLock?.('A sessão de foco está ativa. Finalize, pause ou reinicie antes de iniciar outro bloco.')) return;
             const habit = (window.sistemaVidaState?.habits || []).find(item => item.id === habitId);
             if (!habit) {
-                this.showToast('Habito nao encontrado.', 'error');
+                this.showToast('Hábito não encontrado.', 'error');
                 return;
             }
             this.selectDeepWorkHabit(habit.id, { navigate: true, autoStart: true });
@@ -175,8 +175,8 @@ export function attachHabitFocusModule(app) {
             if (habitSummaryEl) {
                 if (habit && habitProgress) {
                     const summaryBits = [`Progresso hoje: ${habitProgress.label}`];
-                    if (isTimerHabit) summaryBits.push(`Meta diaria: ${Math.max(1, Math.round(Number(habit.targetValue) || 0))} min`);
-                    if (habitProgress.done) summaryBits.push('Concluido hoje');
+                    if (isTimerHabit) summaryBits.push(`Meta diária: ${Math.max(1, Math.round(Number(habit.targetValue) || 0))} min`);
+                    if (habitProgress.done) summaryBits.push('Concluído hoje');
                     habitSummaryEl.textContent = summaryBits.join(' | ');
                     habitSummaryEl.classList.remove('hidden');
                 } else {
@@ -194,7 +194,7 @@ export function attachHabitFocusModule(app) {
                     habitCompleteWrapEl.classList.remove('hidden');
                     habitCompleteEl.checked = !!habitProgress?.done;
                     const label = document.getElementById('habit-focus-closure-habit-complete-label');
-                    if (label) label.textContent = 'Concluir habito hoje';
+                    if (label) label.textContent = 'Concluir hábito hoje';
                 } else {
                     habitCompleteWrapEl.classList.add('hidden');
                     habitCompleteEl.checked = false;
@@ -219,8 +219,8 @@ export function attachHabitFocusModule(app) {
                 id: `micro_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
                 title: String(title || '').trim(),
                 dimension: resolvedDimension,
-                context: `Acao derivada do habito ${habit.title}.`,
-                indicator: `Gerada a partir de sessao de foco do habito ${habit.title}.`,
+                context: `Ação derivada do hábito ${habit.title}.`,
+                indicator: `Gerada a partir de sessão de foco do hábito ${habit.title}.`,
                 effort: 'medio',
                 obstacle: '',
                 ifThen: '',
@@ -288,13 +288,13 @@ export function attachHabitFocusModule(app) {
             const allDone = doneCount === steps.length;
             const completion = this.getHabitCompletionState?.(habit, dateKey);
             const helperCopy = completion?.requiresTime
-                ? 'Passos e tempo registrado definem se o habito fecha hoje.'
-                : 'Passos concluidos definem se o habito fecha hoje.';
+                ? 'Passos e tempo registrados definem se o hábito fecha hoje.'
+                : 'Passos concluídos definem se o hábito fecha hoje.';
             return `
                 <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-4 space-y-3">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist do habito</p>
+                            <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist do hábito</p>
                             <p class="mt-1 text-xs text-on-surface-variant">${this.escapeHtml(helperCopy)}</p>
                         </div>
                         <button type="button" onclick="window.app.toggleHabitAllSteps('${this.escapeHtml(habit.id)}','${dateKey}',${allDone ? 'true' : 'false'})" class="shrink-0 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high transition-colors">
@@ -313,7 +313,7 @@ export function attachHabitFocusModule(app) {
                                 </button>`;
                         }).join('')}
                     </div>
-                    <p class="text-[10px] text-outline">${doneCount}/${steps.length} passos concluidos hoje.</p>
+                    <p class="text-[10px] text-outline">${doneCount}/${steps.length} passos concluídos hoje.</p>
                 </div>`;
         },
 
@@ -357,12 +357,12 @@ export function attachHabitFocusModule(app) {
             const isTimerHabit = habit && (this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean') === 'timer';
             const isBooleanHabit = habit && (this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean') === 'boolean' && !habitSteps.length;
 
-            document.getElementById('habit-focus-closure-title').textContent = micro?.title || habit?.title || 'Fechar sessao';
+            document.getElementById('habit-focus-closure-title').textContent = micro?.title || habit?.title || 'Fechar sessão';
             document.getElementById('habit-focus-closure-subtitle').textContent = micro
-                ? 'A sessao foi registrada. Agora decida apenas o que fechar.'
-                : 'A sessao foi registrada. Agora finalize o que realmente aconteceu.';
+                ? 'A sessão foi registrada. Agora decida apenas o que fechar.'
+                : 'A sessão foi registrada. Agora finalize o que realmente aconteceu.';
             document.getElementById('habit-focus-closure-context').textContent = [
-                habit?.title ? `Habito: ${habit.title}` : '',
+                habit?.title ? `Hábito: ${habit.title}` : '',
                 protocol?.title ? `Protocolo: ${protocol.title}` : '',
                 closure.focusSec ? `Tempo: ${Math.max(1, Math.round(Number(closure.focusSec || 0) / 60))} min` : ''
             ].filter(Boolean).join(' | ');
@@ -402,7 +402,7 @@ export function attachHabitFocusModule(app) {
                 if (habit && habitProgress) {
                     const summaryBits = [`Progresso hoje: ${habitProgress.label}`];
                     if (isTimerHabit) summaryBits.push(`Meta diaria: ${Math.max(1, Math.round(Number(habit.targetValue) || 0))} min`);
-                    if (habitProgress.done) summaryBits.push('Concluido hoje');
+                    if (habitProgress.done) summaryBits.push('Concluído hoje');
                     habitSummaryEl.textContent = summaryBits.join(' | ');
                     habitSummaryEl.classList.remove('hidden');
                 } else {
@@ -422,7 +422,7 @@ export function attachHabitFocusModule(app) {
                     habitCompleteWrapEl.classList.remove('hidden');
                     habitCompleteEl.checked = !!habitProgress?.done;
                     const label = document.getElementById('habit-focus-closure-habit-complete-label');
-                    if (label) label.textContent = 'Concluir habito hoje';
+                    if (label) label.textContent = 'Concluir hábito hoje';
                 } else {
                     habitCompleteWrapEl.classList.add('hidden');
                     habitCompleteEl.checked = false;
@@ -445,22 +445,22 @@ export function attachHabitFocusModule(app) {
                 planPanelEl.classList.add('hidden');
                 if (!canCreatePlanAction) {
                     if (micro) {
-                        planHelperEl.textContent = 'Esta sessao ja esta vinculada a uma acao do plano. Use "Concluir acao atual agora" se quiser fechar a acao existente.';
+                        planHelperEl.textContent = 'Esta sessão já está vinculada a uma ação do plano. Use "Concluir ação atual agora" se quiser fechar a ação existente.';
                     } else if (!habit?.linkedMetaId) {
-                        planHelperEl.textContent = 'Este habito nao esta vinculado a uma meta. A sessao sera salva como historico e nota.';
+                        planHelperEl.textContent = 'Este hábito não está vinculado a uma meta. A sessão será salva como histórico e nota.';
                     } else if (!eligibleMacros.length) {
-                        planHelperEl.textContent = 'Nao ha entregas compativeis nessa meta para criar uma acao agora.';
+                        planHelperEl.textContent = 'Não há entregas compatíveis nessa meta para criar uma ação agora.';
                     } else {
-                        planHelperEl.textContent = 'A acao do plano ja existe nesta sessao.';
+                        planHelperEl.textContent = 'A ação do plano já existe nesta sessão.';
                     }
                 } else {
-                    planHelperEl.textContent = 'Abra esta parte so se a sessao realmente gerou uma entrega concreta do plano.';
+                    planHelperEl.textContent = 'Abra esta parte só se a sessão realmente gerou uma entrega concreta do plano.';
                 }
                 planMacroEl.innerHTML = eligibleMacros.length
                     ? eligibleMacros.map((macro) =>
                         `<option value="${this.escapeHtml(macro.id)}" ${macro.id === resolvedPreferredMacro ? 'selected' : ''}>${this.escapeHtml(this.buildHabitFocusMacroLabel(macro))}</option>`
                     ).join('')
-                    : '<option value="">Nenhuma entrega compativel</option>';
+                    : '<option value="">Nenhuma entrega compatível</option>';
             }
 
             modal.classList.remove('hidden');
@@ -528,15 +528,15 @@ export function attachHabitFocusModule(app) {
 
             if (shouldCreatePlanAction) {
                 if (!habit?.linkedMetaId) {
-                    this.showToast('Vincule o habito a uma meta antes de criar uma acao do plano.', 'error');
+                    this.showToast('Vincule o hábito a uma meta antes de criar uma ação do plano.', 'error');
                     return;
                 }
                 if (!planMacroId) {
-                    this.showToast('Escolha a entrega que vai receber esta acao.', 'error');
+                    this.showToast('Escolha a entrega que vai receber esta ação.', 'error');
                     return;
                 }
                 if (!planTitle) {
-                    this.showToast('Descreva a acao concreta gerada por esta sessao.', 'error');
+                    this.showToast('Descreva a ação concreta gerada por esta sessão.', 'error');
                     return;
                 }
                 createdMicro = this.createFocusMicroFromHabit({
@@ -549,7 +549,7 @@ export function attachHabitFocusModule(app) {
                     markDone: false
                 });
                 if (!createdMicro) {
-                    this.showToast('Nao foi possivel criar a acao: a entrega selecionada esta sem area valida.', 'error');
+                    this.showToast('Não foi possível criar a ação: a entrega selecionada está sem área válida.', 'error');
                     return;
                 }
                 habit.preferredFocusMacroId = planMacroId;
@@ -614,7 +614,7 @@ export function attachHabitFocusModule(app) {
                 if (this.currentView === 'habitos' && this.render?.habitos) this.render.habitos();
                 if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
             }
-            this.showToast('Fechamento da sessao registrado.', 'success');
+            this.showToast('Fechamento da sessão registrado.', 'success');
         },
 
         remindHabitFocusClosureLater: function() {

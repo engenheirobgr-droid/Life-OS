@@ -673,7 +673,7 @@ export function attachSocial(app) {
                 const items = grouped[section.key] || [];
                 return `<div class="space-y-2">
                     <div class="flex items-center justify-between gap-3">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">${section.label}</p>
+                        <p class="ui-section-label">${section.label}</p>
                         <span class="text-[10px] text-outline">${items.length ? `${items.length} evento(s)` : 'Sem eventos'}</span>
                     </div>
                     ${items.length
