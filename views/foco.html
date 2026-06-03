@@ -1,5 +1,5 @@
 <div class="animate-fade-in flex flex-col gap-6 md:gap-8 pb-20 px-5 pt-5 lg:px-8 lg:pt-8 max-w-7xl mx-auto overflow-x-hidden">
-    <header class="order-1 mb-2 min-w-0">
+    <header class="order-1 mb-2 min-w-0 ui-page-header">
         <div class="page-header-kicker flex items-center gap-3">
             <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Foco e execucao</p>
             <div class="relative inline-flex group">
@@ -11,9 +11,21 @@
                 </div>
             </div>
         </div>
-        <h1 class="page-title-display font-headline italic font-bold tracking-tight text-on-background break-words">
-            Bloco de foco
-        </h1>
+        <div class="ui-page-title-row">
+            <div class="ui-page-title-stack">
+                <h1 class="page-title-display ui-page-title font-headline italic font-bold tracking-tight text-on-background break-words">
+                    Bloco de foco
+                </h1>
+            </div>
+            <div class="relative inline-flex group shrink-0">
+                <button type="button" class="ui-help-button" aria-label="Informacoes sobre Foco">
+                    <span class="material-symbols-outlined notranslate">info</span>
+                </button>
+                <div class="ui-help-tooltip hidden group-hover:block group-focus-within:block">
+                    Escolha uma acao ou um habito, inicie o bloco e finalize com registro de tempo.
+                </div>
+            </div>
+        </div>
         <div class="page-header-divider h-px bg-primary"></div>
         <div class="mt-4 flex flex-wrap gap-2">
             <div id="top-values-banner" class="flex flex-wrap gap-2"></div>
@@ -23,11 +35,11 @@
     <section id="deep-work-panel" class="order-2 min-w-0">
         <input id="deep-work-intention" type="hidden">
         <div class="min-w-0 space-y-4">
-                <section class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest shadow-sm overflow-hidden">
+                <section class="ui-surface overflow-hidden">
                     <div class="border-b border-outline-variant/10 px-4 py-3 md:px-5">
                         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                             <div class="min-w-0">
-                                <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Ritual de foco</p>
+                                <p class="ui-section-label">Ritual de foco</p>
                                 <div class="sr-only" aria-live="polite">
                                     <p id="deep-work-status">Pronto para iniciar</p>
                                     <p id="deep-work-step">Selecione uma acao ou um habito para comecar</p>
@@ -84,7 +96,7 @@
                     </div>
 
                     <div class="p-4 md:p-5 space-y-4">
-                        <section class="rounded-2xl border border-outline-variant/15 bg-surface-container-low overflow-hidden">
+                        <section class="ui-surface-subtle overflow-hidden">
                             <select id="deep-work-preset" class="hidden">
                                 <option value="15">15 minutos</option>
                                 <option value="25" selected>25 minutos</option>
@@ -94,7 +106,7 @@
                             </select>
                             <div class="p-3 md:p-4 space-y-2">
                                 <div class="flex items-center justify-between gap-3">
-                                    <label for="deep-work-context" class="text-[10px] uppercase tracking-widest font-bold text-outline">Montagem do bloco</label>
+                                    <label for="deep-work-context" class="ui-section-label text-outline">Montagem do bloco</label>
                                     <button type="button" onclick="window.app.selectDeepWorkContext('')" class="inline-flex items-center rounded-md px-1.5 py-1 text-[10px] font-bold uppercase tracking-widest text-outline hover:bg-surface-container-high hover:text-primary transition-colors">Limpar</button>
                                 </div>
                                 <div class="min-w-0">
@@ -118,14 +130,14 @@
                 </section>
 
                 <section class="grid grid-cols-1 gap-4">
-                    <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4 shadow-sm">
+                    <div class="ui-surface p-4">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Historico recente</p>
+                                <p class="ui-section-label">Historico recente</p>
                             </div>
                             <span class="material-symbols-outlined notranslate text-outline text-lg">history</span>
                         </div>
-                        <div class="mt-3 rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-3">
+                        <div class="mt-3 ui-surface-subtle px-3 py-3">
                             <div class="flex items-center justify-between gap-3">
                                 <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Cadencia semanal</p>
                                 <span class="material-symbols-outlined notranslate text-outline text-[16px]">monitoring</span>
@@ -137,10 +149,10 @@
                 </section>
 
                 <section class="contents md:block md:space-y-5 md:rounded-2xl md:border md:border-outline-variant/10 md:bg-surface-container-lowest md:p-5 md:shadow-sm">
-                    <div class="mt-4 rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4 shadow-sm space-y-4 md:mt-0">
+                    <div class="mt-4 ui-surface p-4 space-y-4 md:mt-0">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <h2 class="text-lg md:text-2xl font-headline italic font-bold text-on-background">Fila de foco</h2>
+                                <h2 class="text-lg md:text-2xl font-headline italic font-bold text-on-background ui-section-title">Fila de foco</h2>
                             </div>
                             <button onclick="window.app.openCreateModal('micros')" class="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-[10px] font-bold uppercase tracking-widest text-on-primary shadow-sm transition-all hover:shadow-lg">
                                 <span class="material-symbols-outlined notranslate text-sm">add</span>

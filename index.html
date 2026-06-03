@@ -943,18 +943,33 @@
         html:not(.dark) h1, html:not(.dark) h2,
         html:not(.dark) h3, html:not(.dark) h4 { letter-spacing: -0.022em !important; }
         html:not(.dark) .font-headline { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-        html:not(.dark) .page-title-display {
+        html:not(.dark) .page-title-display,
+        html:not(.dark) .ui-page-title {
             font-size: clamp(2rem, 5.8vw, 3rem) !important;
-            font-weight: 800 !important; letter-spacing: -0.035em !important; line-height: 1.0 !important;
+            font-weight: 800 !important;
+            letter-spacing: -0.04em !important;
+            line-height: 0.98 !important;
         }
-        html:not(.dark) .font-headline.text-2xl {
-            font-size: 1.3rem !important; font-weight: 700 !important; letter-spacing: -0.02em !important;
+        html:not(.dark) .font-headline.text-2xl,
+        html:not(.dark) .ui-section-title {
+            font-size: 1.28rem !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.022em !important;
+            line-height: 1.08 !important;
+        }
+        html:not(.dark) .ui-card-title {
+            font-size: 1.05rem !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.018em !important;
+            line-height: 1.15 !important;
         }
         html:not(.dark) [class*="text-[10px]"][class*="uppercase"] {
-            font-size: 10.5px !important; font-weight: 600 !important;
-            letter-spacing: 0.10em !important; opacity: 0.55 !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.14em !important;
+            opacity: 0.72 !important;
         }
-        html:not(.dark) [class*="text-[10px]"][class*="uppercase"].text-primary { opacity: 0.9 !important; }
+        html:not(.dark) [class*="text-[10px]"][class*="uppercase"].text-primary { opacity: 0.96 !important; }
 
         /* Scrollbar */
         html:not(.dark) ::-webkit-scrollbar { width: 3px; height: 3px; }
@@ -1075,36 +1090,66 @@
         html.dark .lifeos-splash__button { background: var(--lo-p) !important; box-shadow: 0 4px 20px var(--lo-p-shadow) !important; border-radius: 14px !important; }
 
         html.dark [class*="text-[10px]"][class*="uppercase"] {
-            color: var(--lo-dark-muted) !important; opacity: 0.75 !important;
+            color: var(--lo-dark-muted) !important;
+            letter-spacing: 0.14em !important;
+            opacity: 0.78 !important;
         }
         html.dark [class*="text-[10px]"][class*="uppercase"].text-primary,
         html.dark span.text-primary, html.dark p.text-primary,
         html.dark label.text-primary, html.dark div.text-primary { color: var(--lo-p-dark, #2dd4bf) !important; opacity: 1 !important; }
         html.dark .font-headline { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-        html.dark .page-title-display {
+        html.dark .page-title-display,
+        html.dark .ui-page-title {
             font-size: clamp(2rem, 5.8vw, 3rem) !important;
-            font-weight: 800 !important; letter-spacing: -0.035em !important; line-height: 1.0 !important;
+            font-weight: 800 !important; letter-spacing: -0.04em !important; line-height: 0.98 !important;
             color: var(--lo-dark-text) !important;
         }
 
         .page-header-kicker {
-            margin-bottom: 0.75rem;
+            display: none;
         }
-        .page-title-display {
+        .ui-page-header {
+            margin-bottom: 0.25rem;
+        }
+        .ui-page-title-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.9rem;
+        }
+        .ui-page-title-stack {
+            min-width: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .page-title-display,
+        .ui-page-title {
             line-height: 0.98;
+        }
+        .ui-page-subtitle {
+            max-width: 44rem;
+            font-size: 0.95rem;
+            line-height: 1.55;
+            color: var(--tw-outline, #6f797a);
         }
         .page-header-divider {
             margin-top: 1rem;
             width: 4.5rem;
         }
         .page-subtabs {
-            margin-top: 0.75rem;
-            gap: 1.25rem;
+            margin-top: 1rem;
+            gap: 1rem;
         }
         .page-subtab {
-            padding-bottom: 0.75rem;
+            padding-bottom: 0.85rem;
             border-bottom: 2px solid transparent;
-            transition: color 180ms ease, border-color 180ms ease;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            transition: color 180ms ease, border-color 180ms ease, opacity 180ms ease;
         }
         .page-subtab-active {
             border-bottom-color: currentColor;
@@ -1113,6 +1158,129 @@
             padding: 0.375rem 0.875rem;
             font-size: 0.8125rem;
             line-height: 1.1;
+        }
+        .ui-section-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .ui-section-copy {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .ui-section-label {
+            font-size: 0.625rem;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--tw-outline, #6f797a);
+        }
+        .ui-section-meta {
+            font-size: 0.8rem;
+            line-height: 1.45;
+            color: var(--tw-outline, #6f797a);
+        }
+        .ui-surface {
+            border-radius: 1.35rem;
+            border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 68%, transparent);
+            background: var(--md-sys-color-surface-container-lowest);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+        }
+        .ui-surface-subtle {
+            border-radius: 1.1rem;
+            background: color-mix(in srgb, var(--md-sys-color-surface-container-low) 80%, transparent);
+            border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 42%, transparent);
+        }
+        .ui-help-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            flex-shrink: 0;
+            border-radius: 999px;
+            border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 52%, transparent);
+            background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 72%, transparent);
+            color: var(--md-sys-color-outline);
+            transition: border-color 180ms ease, color 180ms ease, background 180ms ease, transform 180ms ease;
+        }
+        .ui-help-button:hover,
+        .ui-help-button:focus-visible {
+            border-color: color-mix(in srgb, var(--md-sys-color-primary) 30%, transparent);
+            color: var(--md-sys-color-primary);
+            background: color-mix(in srgb, var(--md-sys-color-primary) 10%, var(--md-sys-color-surface-container-high));
+            outline: none;
+        }
+        .ui-help-button .material-symbols-outlined {
+            font-size: 15px;
+            line-height: 1;
+        }
+        .ui-help-button--compact {
+            width: 1.3rem;
+            height: 1.3rem;
+        }
+        .ui-help-button--compact .material-symbols-outlined {
+            font-size: 12px;
+        }
+        .ui-help-tooltip {
+            position: absolute;
+            top: calc(100% + 0.45rem);
+            left: 0;
+            z-index: 30;
+            width: min(19rem, calc(100vw - 2rem));
+            border-radius: 1rem;
+            border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 52%, transparent);
+            background: var(--md-sys-color-surface-container-lowest);
+            padding: 0.9rem 1rem;
+            font-size: 0.75rem;
+            line-height: 1.55;
+            color: var(--md-sys-color-on-surface-variant);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+        }
+        .ui-modal-shell {
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 1.75rem;
+            background: var(--md-sys-color-surface-container-lowest);
+            box-shadow: 0 26px 64px rgba(15, 23, 42, 0.16);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .ui-modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.35rem 1.5rem 1rem;
+            border-bottom: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 42%, transparent);
+        }
+        .ui-modal-title {
+            font-size: 1.35rem;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            font-weight: 800;
+            color: var(--md-sys-color-on-background);
+        }
+        .ui-modal-description {
+            margin-top: 0.35rem;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+        .ui-modal-body {
+            padding: 1.25rem 1.5rem;
+        }
+        .ui-modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem 1.35rem;
+            border-top: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 32%, transparent);
         }
 
         html.dark ::-webkit-scrollbar { width: 3px; height: 3px; }
@@ -1185,8 +1353,14 @@
         #crud-modal > div,
         #habit-focus-modal > div,
         #habit-focus-closure-modal > div,
-        #entity-notes-modal > div {
+        #entity-notes-modal > div,
+        #protocol-modal > div,
+        #identity-item-modal > div,
+        #profile-edit-modal > div,
+        #quarterly-modal > div,
+        #habit-suggestions-modal > div {
             border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 1.75rem !important;
         }
         @media (min-width: 900px) {
             #crud-form {
@@ -3125,7 +3299,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260603-ui-batch-ab-v8"></script>
+    <script type="module" src="app.js?v=20260603-ui-system-v9"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3156,7 +3330,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260603-ui-batch-ab-v8')
+                navigator.serviceWorker.register('sw.js?v=20260603-ui-system-v9')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

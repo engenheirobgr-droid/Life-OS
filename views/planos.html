@@ -13,7 +13,7 @@
 
 <main class="pt-5 lg:pt-8 pb-20 px-6 max-w-7xl mx-auto">
 <!-- Page Introduction -->
-<header class="mb-0">
+<header class="mb-0 ui-page-header">
 <div class="page-header-kicker flex items-center gap-3">
 <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Arquitetura & Execução</p>
 <div class="relative inline-flex group">
@@ -25,12 +25,22 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
 </div>
 </div>
 </div>
-<h2 class="page-title-display font-headline italic font-bold tracking-tight text-on-background">Planos</h2>
+<h2 class="page-title-display ui-page-title font-headline italic font-bold tracking-tight text-on-background">Planos</h2>
+<div class="mt-3 flex justify-end">
+<div class="relative inline-flex group">
+<button type="button" class="ui-help-button" aria-label="Informacoes sobre Planos">
+<span class="material-symbols-outlined notranslate">info</span>
+</button>
+<div class="ui-help-tooltip hidden group-hover:block group-focus-within:block">
+A arquitetura da sua intencao: metas, projetos, entregas, acoes, timeline e planejamento semanal.
+</div>
+</div>
+</div>
 <div class="page-header-divider h-px bg-primary"></div>
 </header>
 
 <!-- Tab Navigation -->
-<nav class="page-subtabs flex overflow-x-auto no-scrollbar border-b border-surface-container-high pb-0">
+<nav class="page-subtabs ui-page-tabs flex overflow-x-auto no-scrollbar border-b border-surface-container-high pb-0">
 <button class="tab-btn page-subtab page-subtab-active active text-primary hover:text-primary transition-colors duration-200 whitespace-nowrap text-sm uppercase tracking-widest font-label" data-tab="metas" onclick="window.app.switchPlanosTab('metas')">Metas</button>
 <div class="relative group inline-flex items-end shrink-0">
   <button class="tab-btn page-subtab text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap text-sm uppercase tracking-widest font-label" data-tab="okrs" onclick="window.app.switchPlanosTab('okrs')">Projetos</button>
@@ -142,7 +152,7 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
     <!-- Header com título e botão planejar -->
     <div class="mb-6">
         <div>
-            <h3 class="font-headline text-2xl italic font-bold">Planejamento Semanal</h3>
+            <h3 class="font-headline text-2xl italic font-bold ui-section-title">Planejamento Semanal</h3>
         </div>
     </div>
 
@@ -175,7 +185,7 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
 <section class="mt-4 tab-content" id="tab-ciclo">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h3 class="font-headline text-2xl italic font-bold">Revisão de Ciclo</h3>
+            <h3 class="font-headline text-2xl italic font-bold ui-section-title">Revisão de Ciclo</h3>
             <p class="mt-1 text-sm text-outline leading-relaxed">Projetos, pendências e decisões do ciclo de 12 semanas.</p>
         </div>
     </div>
@@ -189,10 +199,10 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
 
 <!-- Modal de Revisão Trimestral -->
 <div id="quarterly-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
-    <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl max-w-md w-full p-6 shadow-xl flex flex-col max-h-[80vh]">
-        <div class="flex justify-between items-center mb-6 shrink-0">
+    <div class="ui-modal-shell max-w-md w-full p-6 shadow-xl max-h-[80vh]">
+        <div class="ui-modal-header mb-6 shrink-0 p-0 pb-6 border-b border-outline-variant/10">
             <div>
-                <h3 class="font-headline text-2xl italic">Revisão de Projetos</h3>
+                <h3 class="font-headline text-2xl italic ui-modal-title">Revisão de Projetos</h3>
                 <p class="text-xs text-outline mt-1">Decida o destino dos seus projetos ativos.</p>
             </div>
             <button onclick="window.app.closeQuarterlyModal()" class="text-outline hover:text-on-surface transform transition-transform active:scale-90">
@@ -205,17 +215,17 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
 </div>
 
 <div id="protocol-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-end sm:items-center justify-center p-4">
-    <div class="w-full max-w-4xl rounded-3xl border border-outline-variant/10 bg-surface-container-lowest shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div class="flex items-center justify-between gap-4 px-6 py-5 border-b border-outline-variant/10">
+    <div class="ui-modal-shell w-full max-w-4xl max-h-[90vh]">
+        <div class="ui-modal-header">
             <div class="min-w-0">
                 <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Biblioteca de Protocolos</p>
-                <h3 id="protocol-modal-title" class="mt-1 font-headline text-2xl italic font-bold text-on-background">Novo protocolo</h3>
+                <h3 id="protocol-modal-title" class="mt-1 font-headline text-2xl italic font-bold text-on-background ui-modal-title">Novo protocolo</h3>
             </div>
             <button type="button" onclick="window.app.closeProtocolModal()" class="rounded-full p-2 text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
                 <span class="material-symbols-outlined notranslate">close</span>
             </button>
         </div>
-        <div class="overflow-y-auto px-6 py-5 space-y-5">
+        <div class="ui-modal-body overflow-y-auto space-y-5">
             <input type="hidden" id="protocol-edit-id">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="md:col-span-2 flex flex-col gap-1.5">
@@ -253,7 +263,7 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
                 <label for="protocol-description" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Descricao</label>
                 <textarea id="protocol-description" rows="3" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none"></textarea>
             </div>
-            <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4 space-y-4">
+            <div class="ui-surface-subtle p-4 space-y-4">
                 <div>
                     <p class="text-xs font-label uppercase tracking-widest text-outline font-bold">Ficha metodologica</p>
                     <p class="mt-1 text-[11px] text-outline">Explique em linguagem simples por que esse protocolo faz sentido.</p>
@@ -276,7 +286,7 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
                 <textarea id="protocol-steps" rows="8" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm p-3 text-on-surface resize-none" placeholder="Um passo por linha ou Passo | 10"></textarea>
                 <p class="text-[10px] text-outline">Use <strong>Passo | minutos</strong> para guardar o tempo estimado de cada etapa.</p>
             </div>
-            <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4 space-y-4">
+            <div class="ui-surface-subtle p-4 space-y-4">
                 <div>
                     <p class="text-xs font-label uppercase tracking-widest text-outline font-bold">Sugestao para habito</p>
                     <p class="mt-1 text-[11px] text-outline">Esses campos ajudam a preencher um habito quando o protocolo for aplicado.</p>

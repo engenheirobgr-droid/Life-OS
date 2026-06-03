@@ -1,6 +1,6 @@
 <main class="pt-5 lg:pt-8 pb-20 px-6 max-w-7xl mx-auto">
 <!-- Header Section -->
-<section class="mb-0">
+<section class="ui-page-header">
     <div class="page-header-kicker flex items-center gap-3">
         <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Rotina & Execução</p>
         <div class="relative inline-flex group">
@@ -12,17 +12,29 @@
             </div>
         </div>
     </div>
-    <div class="flex flex-col sm:flex-row sm:items-baseline gap-3 sm:gap-5">
-        <h2 id="data-hoje" class="page-title-display font-headline italic font-bold tracking-tight text-on-background"></h2>
-        <div class="page-streak-pill bg-surface-container-highest border border-outline-variant/10 text-on-surface rounded-full flex items-center gap-2 font-bold shadow-sm w-fit">
-            <span class="material-symbols-outlined notranslate text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
-            <span id="header-streak">-- dias</span>
+    <div class="ui-page-title-row">
+        <div class="ui-page-title-stack">
+            <div class="flex flex-col sm:flex-row sm:items-baseline gap-3 sm:gap-5">
+                <h2 id="data-hoje" class="page-title-display ui-page-title font-headline italic font-bold tracking-tight text-on-background"></h2>
+                <div class="page-streak-pill bg-surface-container-highest border border-outline-variant/10 text-on-surface rounded-full flex items-center gap-2 font-bold shadow-sm w-fit">
+                    <span class="material-symbols-outlined notranslate text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+                    <span id="header-streak">-- dias</span>
+                </div>
+            </div>
+        </div>
+        <div class="relative inline-flex group shrink-0">
+            <button type="button" class="ui-help-button" aria-label="Informacoes sobre Hoje">
+                <span class="material-symbols-outlined notranslate">info</span>
+            </button>
+            <div class="ui-help-tooltip hidden group-hover:block group-focus-within:block">
+                O Hoje organiza energia, intencao, proxima melhor acao, acoes planejadas e fechamento do dia.
+            </div>
         </div>
     </div>
     <div class="page-header-divider h-px bg-primary"></div>
 </section>
 
-<nav class="page-subtabs flex overflow-x-auto no-scrollbar border-b border-surface-container-high pb-0">
+<nav class="page-subtabs ui-page-tabs flex overflow-x-auto no-scrollbar border-b border-surface-container-high pb-0">
     <button data-hoje-screen="checkin" class="page-subtab page-subtab-active text-sm uppercase tracking-widest font-label whitespace-nowrap text-primary" onclick="window.app.switchHojeScreen('checkin')">Check-in</button>
     <button data-hoje-screen="checklist" class="page-subtab text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchHojeScreen('checklist')">Para hoje</button>
     <button data-hoje-screen="habitos" class="page-subtab text-sm uppercase tracking-widest font-label whitespace-nowrap text-outline hover:text-primary" onclick="window.app.switchHojeScreen('habitos')">Hábitos</button>
@@ -237,7 +249,7 @@
 <!-- Section: Checklist do dia -->
 <section id="hoje-checklist-section" data-hoje-screen-content="checklist" class="mt-8 space-y-6 hidden">
 <div class="flex items-baseline justify-between mb-6">
-<h3 class="font-headline text-2xl italic">Para hoje</h3>
+<h3 class="font-headline text-2xl italic ui-section-title">Para hoje</h3>
 <span id="macros-pendentes-badge" class="text-xs font-label uppercase tracking-wider text-outline font-medium">0 Pendentes</span>
 </div>
 <div id="day-progress-card" class="hidden rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4 shadow-sm">
@@ -260,7 +272,7 @@
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div class="flex flex-wrap items-center gap-2">
         <div>
-            <h3 class="font-headline text-2xl italic">Seus hábitos</h3>
+            <h3 class="font-headline text-2xl italic ui-section-title">Seus hábitos</h3>
         </div>
         <button type="button" onclick="window.app.openHabitSuggestionsModal()"
             class="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant/20 bg-surface-container-low px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container transition-colors">
@@ -278,8 +290,8 @@
     <div class="w-full max-w-2xl rounded-2xl border border-outline-variant/10 bg-surface-container-lowest shadow-xl flex flex-col max-h-[85vh] overflow-hidden">
         <div class="flex items-start justify-between gap-4 px-5 py-4 border-b border-outline-variant/10 shrink-0">
             <div>
-                <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Biblioteca curada</p>
-                <h3 class="mt-0.5 text-sm font-bold text-on-surface">Hábitos sugeridos</h3>
+                <p class="ui-section-label text-primary">Biblioteca curada</p>
+                <h3 class="ui-card-title mt-0.5 text-on-surface">Hábitos sugeridos</h3>
                 <p class="mt-1 text-xs text-on-surface-variant leading-relaxed">Escolha um template pronto e ajuste do seu jeito antes de salvar.</p>
             </div>
             <button type="button" onclick="window.app.closeHabitSuggestionsModal()"
@@ -318,7 +330,7 @@
 <div class="flex items-center justify-between gap-3 mb-4">
     <div class="flex items-center gap-3">
         <span class="material-symbols-outlined notranslate text-tertiary">bedtime</span>
-        <h3 class="font-headline text-2xl italic">Como foi o dia</h3>
+        <h3 class="font-headline text-2xl italic ui-section-title">Como foi o dia</h3>
     </div>
     <button type="button" id="diario-toggle-btn" onclick="window.toggleDiarioSection()"
         class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors">

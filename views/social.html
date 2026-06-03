@@ -9,7 +9,7 @@
 </style>
 
 <main class="pt-5 lg:pt-8 pb-20 px-6 max-w-7xl mx-auto">
-<header class="mb-0">
+<header class="mb-0 ui-page-header">
     <div class="page-header-kicker flex items-center gap-3">
         <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Conexões & Compartilhamento</p>
         <div class="relative inline-flex group">
@@ -22,11 +22,21 @@
         </div>
     </div>
     <h2 class="page-title-display font-headline italic font-bold tracking-tight text-on-background">Área Social</h2>
+    <div class="mt-3 flex justify-end">
+        <div class="relative inline-flex group">
+            <button type="button" class="ui-help-button" aria-label="Informacoes sobre Area Social">
+                <span class="material-symbols-outlined notranslate">info</span>
+            </button>
+            <div class="ui-help-tooltip hidden group-hover:block group-focus-within:block">
+                Gerencie convites, conexoes, desafios e seu perfil publico em um espaco proprio.
+            </div>
+        </div>
+    </div>
     <div class="page-header-divider h-px bg-primary"></div>
 </header>
 
 <!-- Tabs Navigation -->
-<nav id="social-tabs-nav" class="page-subtabs flex overflow-x-auto no-scrollbar border-b border-surface-container-high pb-0 mb-8">
+<nav id="social-tabs-nav" class="page-subtabs ui-page-tabs flex overflow-x-auto no-scrollbar border-b border-surface-container-high pb-0 mb-8">
     <button class="social-tab-btn tab-btn page-subtab page-subtab-active active text-primary hover:text-primary transition-colors duration-200 whitespace-nowrap text-sm uppercase tracking-widest font-label" data-tab="tab-social-conexoes" onclick="window.app.switchSocialTab('tab-social-conexoes')">Conexões</button>
     <button class="social-tab-btn tab-btn page-subtab text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap text-sm uppercase tracking-widest font-label" data-tab="tab-social-convites" onclick="window.app.switchSocialTab('tab-social-convites')">Convites & Desafios</button>
     <button class="social-tab-btn tab-btn page-subtab text-outline hover:text-primary transition-colors duration-200 whitespace-nowrap text-sm uppercase tracking-widest font-label" data-tab="tab-social-privacidade" onclick="window.app.switchSocialTab('tab-social-privacidade')">Privacidade</button>
