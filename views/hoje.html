@@ -48,10 +48,10 @@
 <!-- Boas-vindas -->
 <section data-hoje-screen-content="checkin" class="mt-8">
     <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-5 sm:p-6 flex items-start sm:items-center gap-4">
-        <div class="relative shrink-0">
-            <img id="welcome-avatar" class="w-16 h-16 rounded-full object-cover border-2 border-primary/20" alt="Foto de perfil" src="">
-            <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                <span class="material-symbols-outlined notranslate text-[12px] text-on-primary">person</span>
+        <div class="shrink-0">
+            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-primary/15 bg-primary/8 overflow-hidden flex items-center justify-center">
+                <img id="welcome-avatar" class="hidden w-full h-full object-cover" alt="Foto de perfil" src="">
+                <span id="welcome-avatar-fallback" class="material-symbols-outlined notranslate text-[26px] sm:text-[28px] text-primary">person</span>
             </div>
         </div>
         <div class="min-w-0 flex-1">

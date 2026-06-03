@@ -1,30 +1,30 @@
-const CACHE_NAME = 'sistema-vida-v332';
+const CACHE_NAME = 'sistema-vida-v347';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260602-safe-phases-v8',
+    './app.js?v=20260602-safe-phases-v23',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
-    './js/notifications.js?v=20260602-safe-phases-v8',
-    './js/cadence.js?v=20260602-safe-phases-v8',
+    './js/notifications.js?v=20260602-safe-phases-v23',
+    './js/cadence.js?v=20260602-safe-phases-v23',
     './js/onboarding.js?v=20260523-sprint2-onboarding-v1',
-    './js/identity.js?v=20260526-rollback-align-v1',
+    './js/identity.js?v=20260602-safe-phases-v23',
     './js/habits.js?v=20260520-habit-card-v1',
-    './js/protocols.js?v=20260527-weekly-coherence-v1',
-    './js/habitFocus.js?v=20260602-safe-phases-v8',
-    './js/state.js?v=20260602-safe-phases-v8',
-    './js/render.js?v=20260602-safe-phases-v8',
+    './js/protocols.js?v=20260602-phase5-protocols-v3',
+    './js/habitFocus.js?v=20260602-safe-phases-v23',
+    './js/state.js?v=20260602-safe-phases-v23',
+    './js/render.js?v=20260602-safe-phases-v23',
     './js/planning.js?v=20260601-modal-desktop-v1',
-    './js/gamification.js?v=20260602-safe-phases-v8',
+    './js/gamification.js?v=20260602-safe-phases-v23',
     './js/social.js?v=20260516-wellbeing-prompts-v205',
-    './views/hoje.html?v=20260602-safe-phases-v8',
-    './views/planos.html?v=20260602-safe-phases-v8',
-    './views/proposito.html?v=20260602-safe-phases-v8',
-    './views/perfil.html?v=20260602-safe-phases-v8',
-    './views/painel.html?v=20260602-safe-phases-v8',
-    './views/foco.html?v=20260602-safe-phases-v8',
-    './views/onboarding.html?v=20260602-safe-phases-v8',
-    './views/social.html?v=20260602-safe-phases-v8'
+    './views/hoje.html?v=20260602-safe-phases-v23',
+    './views/planos.html?v=20260602-safe-phases-v23',
+    './views/proposito.html?v=20260602-safe-phases-v23',
+    './views/perfil.html?v=20260602-safe-phases-v23',
+    './views/painel.html?v=20260602-safe-phases-v23',
+    './views/foco.html?v=20260602-safe-phases-v23',
+    './views/onboarding.html?v=20260602-safe-phases-v23',
+    './views/social.html?v=20260602-safe-phases-v23'
 ];
 
 self.addEventListener('install', (event) => {

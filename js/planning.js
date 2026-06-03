@@ -587,14 +587,12 @@ updatePurposePanel: function(dimension, type) {
 
         const profile = window.sistemaVidaState?.profile || {};
         const values = profile.values || [];
-        const ikigai = profile.ikigai || {};
-        const legacyObj = profile.legacyObj || {};
 
         // Verifica se há algum dado para mostrar
         const hasValues = values.length > 0;
-        const hasIkigai = !!(ikigai.sintese || ikigai.love);
+        const hasIkigai = !!window.app.getIkigaiPreferredText(profile);
         const legacyKey = this._dimensionLegacyMap[dimension];
-        const legacyText = legacyKey ? (legacyObj[legacyKey] || '') : '';
+        const legacyText = legacyKey ? window.app.getLegacyPreferredText(legacyKey, profile) : '';
         const hasLegacy = !!legacyText;
 
         if (!hasValues && !hasIkigai && !hasLegacy) {
@@ -620,7 +618,7 @@ updatePurposePanel: function(dimension, type) {
         }
 
         if (hasIkigai && ikigaiSection && ikigaiText) {
-            ikigaiText.textContent = ikigai.sintese || ikigai.love || '';
+            ikigaiText.textContent = window.app.getIkigaiPreferredText(profile);
             ikigaiSection.classList.remove('hidden');
             ikigaiSection.style.display = 'flex';
         } else if (ikigaiSection) {

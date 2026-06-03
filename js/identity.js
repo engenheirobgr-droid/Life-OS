@@ -1199,7 +1199,7 @@ renderManualGuide: function() {
                     <span id="manual-ch-badge-${esc(ch.id)}" class="text-[10px] font-bold uppercase tracking-wider text-primary shrink-0">${isRead ? 'Lido' : 'Novo'}</span>
                     <span id="manual-ch-chevron-${esc(ch.id)}" class="material-symbols-outlined notranslate text-outline text-[18px] transition-transform shrink-0">expand_more</span>
                 </button>
-                <div id="manual-ch-body-${esc(ch.id)}" class="hidden px-5 pb-5 pt-1 space-y-4 text-sm text-on-surface-variant leading-relaxed">
+                <div id="manual-ch-body-${esc(ch.id)}" class="hidden px-5 pb-5 pt-1 space-y-3 text-sm text-on-surface-variant leading-relaxed">
                     <div>
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">O que e</p>
                         <p>${ch.what}</p>
@@ -1207,7 +1207,7 @@ renderManualGuide: function() {
                     <div>
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Por que funciona</p>
                         <p>${esc(ch.why)}</p>
-                        ${refs ? `<ul class="mt-2 list-disc list-inside text-[11px] text-outline space-y-0.5">${refs}</ul>` : ''}
+                        ${refs ? `<details class="mt-2"><summary class="cursor-pointer text-[11px] font-bold uppercase tracking-wider text-outline">Referencias</summary><ul class="mt-2 list-disc list-inside text-[11px] text-outline space-y-0.5">${refs}</ul></details>` : ''}
                     </div>
                     <div>
                         <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Como usar</p>

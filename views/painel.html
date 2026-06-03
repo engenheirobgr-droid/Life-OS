@@ -69,8 +69,15 @@
 
     <section id="painel-situacao-section" data-painel-screen-content="situacao" class="mt-4 space-y-4">
         <div class="space-y-1">
-            <h3 class="font-headline text-2xl italic">Situação</h3>
-            <p class="text-sm text-on-surface-variant leading-relaxed">O estado real do ciclo, da semana e do seu ritmo de execução.</p>
+            <div class="flex items-center gap-2">
+                <h3 class="font-headline text-2xl italic">Situação</h3>
+                <div class="relative inline-flex group">
+                    <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-outline-variant/20 text-[10px] font-semibold text-outline transition-colors hover:border-primary/30 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="O que mostra a situação do painel">i</button>
+                    <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                        O estado real do ciclo, da semana e do seu ritmo de execução.
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -138,15 +145,29 @@
     <section id="painel-diagnostico-section" data-painel-screen-content="diagnostico" class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
         <div class="space-y-4">
             <div class="space-y-1">
-                <h3 class="font-headline text-2xl italic">Diagnóstico</h3>
-                <p class="text-sm text-on-surface-variant leading-relaxed">Sinais que merecem atenção antes de criar mais plano.</p>
+                <div class="flex items-center gap-2">
+                    <h3 class="font-headline text-2xl italic">Diagnóstico</h3>
+                    <div class="relative inline-flex group">
+                        <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-outline-variant/20 text-[10px] font-semibold text-outline transition-colors hover:border-primary/30 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="O que mostra o diagnóstico do painel">i</button>
+                        <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                            Sinais que merecem atenção antes de criar mais plano.
+                        </div>
+                    </div>
+                </div>
             </div>
             <div id="painel-diagnostics" class="space-y-3"></div>
         </div>
         <div class="space-y-4">
             <div class="space-y-1">
-                <h3 class="font-headline text-2xl italic">Decisão</h3>
-                <p class="text-sm text-on-surface-variant leading-relaxed">O próximo movimento recomendado para destravar a semana.</p>
+                <div class="flex items-center gap-2">
+                    <h3 class="font-headline text-2xl italic">Decisão</h3>
+                    <div class="relative inline-flex group">
+                        <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-outline-variant/20 text-[10px] font-semibold text-outline transition-colors hover:border-primary/30 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="O que mostra a decisão do painel">i</button>
+                        <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                            O próximo movimento recomendado para destravar a semana.
+                        </div>
+                    </div>
+                </div>
             </div>
             <div id="painel-decision" class="space-y-3"></div>
         </div>
@@ -154,8 +175,15 @@
 
     <section id="painel-evolucao-section" data-painel-screen-content="evolucao" class="mt-8 space-y-4 hidden">
         <div class="space-y-1">
-            <h3 class="font-headline text-2xl italic">Evolução Pessoal</h3>
-            <p class="text-sm text-on-surface-variant leading-relaxed">Como suas forças, sombras e hábitos estão conversando nesta semana.</p>
+            <div class="flex items-center gap-2">
+                <h3 class="font-headline text-2xl italic">Evolução Pessoal</h3>
+                <div class="relative inline-flex group">
+                    <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-outline-variant/20 text-[10px] font-semibold text-outline transition-colors hover:border-primary/30 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="O que mostra a evolução pessoal">i</button>
+                    <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                        Como suas forças, sombras e hábitos estão conversando nesta semana.
+                    </div>
+                </div>
+            </div>
         </div>
         <div id="personal-evolution-panel" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
         <div id="habit-maturity-panel" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
@@ -165,8 +193,15 @@
 
     <section id="painel-padroes-section" data-painel-screen-content="padroes" class="mt-8 space-y-4 hidden">
         <div class="space-y-1">
-            <h3 class="font-headline text-2xl italic">Padrões</h3>
-            <p class="text-sm text-on-surface-variant leading-relaxed">Cruzamentos leves entre check-in, execução, hábitos e carga.</p>
+            <div class="flex items-center gap-2">
+                <h3 class="font-headline text-2xl italic">Padrões</h3>
+                <div class="relative inline-flex group">
+                    <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-outline-variant/20 text-[10px] font-semibold text-outline transition-colors hover:border-primary/30 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="O que mostra a seção de padrões">i</button>
+                    <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                        Cruzamentos leves entre check-in, execução, hábitos e carga.
+                    </div>
+                </div>
+            </div>
         </div>
         <div id="load-recovery-panel"></div>
         <div id="patterns-panel" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
@@ -448,7 +483,7 @@
     <section id="painel-timeline-section" data-painel-screen-content="timeline" class="mt-8 space-y-4 hidden">
         <div class="space-y-1">
             <h3 class="font-headline text-2xl italic">Linha do Tempo</h3>
-            <p class="text-sm text-on-surface-variant leading-relaxed">Agenda histórica — o que você fez e viveu em cada dia.</p>
+            <p class="text-sm text-on-surface-variant leading-relaxed">Agenda histórica do que você fez e viveu em cada dia.</p>
         </div>
         <div id="timeline-history-container" class="space-y-2"></div>
     </section>

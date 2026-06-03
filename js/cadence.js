@@ -390,7 +390,7 @@ getNextRitualSuggestion: function() {
             diary:        { view: 'hoje',    sectionId: 'hoje-diario-section',       tabId: '' },
             shutdown:     { view: 'hoje',    sectionId: 'hoje-diario-section',       tabId: '' },
             weeklyPlan:   { view: 'planos',  sectionId: 'tab-semanal',              tabId: 'semanal' },
-            weeklyReview: { view: 'planos',  sectionId: 'weekly-plan-primary-action', tabId: 'semanal' },
+            weeklyReview: { view: 'planos',  sectionId: 'semanal-current-card',      tabId: 'semanal' },
             cycleReview:  { view: 'planos',  sectionId: 'tab-ciclo',                tabId: 'ciclo' },
             wheel:        { view: 'proposito', sectionId: 'proposito-roda-section', tabId: '' },
             perma:        { view: 'proposito', sectionId: 'perma-section',          tabId: '' },

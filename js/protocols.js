@@ -564,18 +564,22 @@ export function attachProtocolsModule(app) {
             });
             container.innerHTML = `
                 <div class="flex flex-col gap-4">
-                    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-5 shadow-sm">
-                        <div class="max-w-2xl">
-                            <p class="text-xs font-label uppercase tracking-[0.2em] text-outline">Biblioteca Curada</p>
-                            <h3 class="mt-2 font-headline text-2xl italic font-bold text-on-background">Protocolos</h3>
-                            <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Protocolos-base do app e suas versoes editadas. Eles servem como ponto de partida para preencher checklists de habitos com passos claros e metodologia coerente.</p>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="window.app.openProtocolModal()"
-                                class="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-on-primary hover:opacity-90 active:scale-95 transition-all">
-                                <span class="material-symbols-outlined notranslate text-[16px]">add</span>
-                                Novo protocolo
-                            </button>
+                    <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-5 shadow-sm">
+                        <div class="flex flex-col gap-3">
+                            <div class="flex flex-col gap-3">
+                                <div class="min-w-0 max-w-2xl">
+                                    <p class="text-xs font-label uppercase tracking-[0.2em] text-outline">Biblioteca Curada</p>
+                                    <div class="mt-2 flex items-center justify-between gap-3">
+                                        <h3 class="min-w-0 pr-2 font-headline text-[1.75rem] italic font-bold leading-none text-on-background">Protocolos</h3>
+                                        <button type="button" onclick="window.app.openProtocolModal()"
+                                            class="inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-on-primary hover:opacity-90 active:scale-95 transition-all">
+                                            <span class="material-symbols-outlined notranslate text-[14px]">add</span>
+                                            Protocolo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="max-w-2xl text-sm text-on-surface-variant leading-relaxed">Protocolos-base e versoes editadas para transformar rotinas recorrentes em passos claros, reutilizaveis e mais faceis de executar.</p>
                         </div>
                     </div>
                     ${families.map((family) => {

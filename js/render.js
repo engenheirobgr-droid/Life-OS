@@ -112,7 +112,7 @@ renderFlowModal: function() {
             ) +
             section('Ritmo Semanal', 'date_range',
                 row('edit_calendar', 'Planejamento semanal', 'Selecionar ações e definir a intenção da semana', '+15 XP', s.weekPlanDone, 'planos', 'tab-semanal', 'semanal', 'weeklyPlan') +
-                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'planos', 'weekly-plan-primary-action', 'semanal', 'weeklyReview')
+                row('rate_review', 'Revisão semanal', 'Avaliar execução, padrões e ajustar o rumo', '+25–30 XP', s.weekReviewDone, 'planos', 'semanal-current-card', 'semanal', 'weeklyReview')
             ) +
             section('Ritmo Mensal', 'calendar_month',
                 row('donut_large', 'Roda da Vida', 'Pontuar as 8 dimensões e ver onde está desequilibrado', '', s.wheelThisMonth, 'proposito', 'proposito-roda-section', '', 'wheel') +
@@ -334,10 +334,6 @@ renderWeeklyPlans: function() {
         // Card da semana atual
         const currentCard = document.getElementById('semanal-current-card');
         const currentPlan = weekPlans[weekKey];
-        const primaryLabel = document.getElementById('weekly-plan-primary-label');
-        const primaryIcon = document.getElementById('weekly-plan-primary-icon');
-        if (primaryLabel) primaryLabel.textContent = currentPlan ? 'Editar Plano' : 'Criar Plano da Semana';
-        if (primaryIcon) primaryIcon.textContent = currentPlan ? 'edit_calendar' : 'event_available';
         if (currentCard) {
             currentCard.className = 'mb-10';
             currentCard.innerHTML = this._renderWeeklyPlanShell({
@@ -433,7 +429,7 @@ renderWeeklyPlans: function() {
                                 <span class="material-symbols-outlined notranslate text-outline text-lg">calendar_month</span>
                                 <div>
                                     <p class="text-sm font-bold text-on-surface flex items-center flex-wrap gap-1">${fmt(start)} — ${fmt(end)}${reviewBadge}</p>
-                                    ${plan.intention ? `<p class="text-xs text-outline mt-0.5 truncate max-w-[240px]">${plan.intention}</p>` : ''}
+                                    ${plan.intention ? `<p class="text-xs text-outline mt-0.5 leading-snug line-clamp-2 max-w-[280px]">${plan.intention}</p>` : ''}
                                 </div>
                             </div>
                             <span class="material-symbols-outlined notranslate text-outline text-sm transition-transform group-open:rotate-180">expand_more</span>
@@ -760,9 +756,16 @@ renderPatternsPanel: function() {
                             <span class="material-symbols-outlined notranslate text-primary text-2xl">query_stats</span>
                         </div>
                         <div>
-                            <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Padroes desbloqueavel</p>
-                            <h4 class="mt-1 font-headline text-xl font-bold text-on-surface">Correlacoes de bem-estar</h4>
-                            <p class="mt-1.5 text-sm text-on-surface-variant leading-relaxed max-w-2xl">Quando houver ${gate.minDays} check-ins, o Painel vai cruzar sono, humor, estresse, ações e habitos — mostrando o que realmente impacta seu desempenho.</p>
+                            <div class="mt-1 flex items-center gap-2">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Padroes desbloqueavel</p>
+                                <div class="relative inline-flex group">
+                                    <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-outline-variant/20 text-[10px] font-semibold text-outline transition-colors hover:border-primary/30 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25" aria-label="Como o painel de correlacoes funciona">i</button>
+                                    <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-3rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                                        Quando houver ${gate.minDays} check-ins, o Painel cruza sono, humor, estresse, ações e habitos para mostrar o que mais impacta seu desempenho.
+                                    </div>
+                                </div>
+                            </div>
+                            <h4 class="mt-1 font-headline text-lg font-bold leading-tight text-on-surface sm:text-xl">Correlacoes de bem-estar</h4>
                         </div>
                     </div>
                     <div class="space-y-2">
@@ -773,9 +776,8 @@ renderPatternsPanel: function() {
                         <div class="h-2.5 w-full rounded-full bg-surface-container-high overflow-hidden">
                             <div class="h-full rounded-full bg-primary transition-all duration-500" style="width:${pct}%"></div>
                         </div>
-                        <p class="text-[11px] text-outline">${remaining > 0 ? `Faltam ${remaining} dia${remaining === 1 ? '' : 's'} de check-in para desbloquear.` : 'Quase la!'}</p>
                     </div>
-                    <div class="grid grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         ${[
                             { icon: 'bedtime', label: 'Sono vs Ações', desc: 'Noites bem dormidas aumentam execucao?' },
                             { icon: 'mood', label: 'Humor vs Habitos', desc: 'Dias mais alegres manteem habitos?' },
@@ -787,7 +789,7 @@ renderPatternsPanel: function() {
                             <p class="text-[11px] text-outline/70 mt-1 leading-snug italic">${c.desc}</p>
                         </div>`).join('')}
                     </div>
-                    <div class="pt-2 border-t border-outline-variant/10">
+                    <div class="pt-2 border-t border-outline-variant/10 flex justify-center">
                         <button type="button" onclick="window.app.flowNavigate('hoje','daily-checkin-panel')" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-on-primary text-xs font-bold uppercase tracking-wider rounded-xl shadow-sm hover:opacity-90 active:scale-95 transition-all">
                             <span class="material-symbols-outlined notranslate text-[15px]">self_improvement</span>
                             Fazer check-in agora
@@ -3230,8 +3232,15 @@ render: {
                         ? '<span class="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary"><span class="material-symbols-outlined notranslate text-[10px]">event</span>Semana</span>'
                         : '<span class="inline-flex items-center rounded-full bg-surface-container-high px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-outline">Captura</span>';
                     const dimensionBadge = `<span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">${app.escapeHtml(m.dimension || 'Geral')}</span>`;
+                    const mobileSourceBadge = isFocoPlanned
+                        ? '<span class="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-primary"><span class="material-symbols-outlined notranslate text-[9px]">event</span>Semana</span>'
+                        : '<span class="inline-flex items-center rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-outline">Captura</span>';
+                    const mobileDimensionBadge = `<span class="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-primary">${app.escapeHtml(m.dimension || 'Geral')}</span>`;
                     const orphanBadge = !focusEligibility.ok
                         ? '<span title="Acao sem Entrega associada (Nao Alinhada)" class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400"><span class="material-symbols-outlined notranslate text-[10px]">warning</span>Nao alinhado</span>'
+                        : '';
+                    const mobileOrphanBadge = !focusEligibility.ok
+                        ? '<span title="Acao sem Entrega associada (Nao Alinhada)" class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-amber-600 dark:text-amber-400"><span class="material-symbols-outlined notranslate text-[9px]">warning</span>Nao alinhado</span>'
                         : '';
                     const mobilePrimaryIcon = !focusEligibility.ok
                         ? 'warning'
@@ -3263,15 +3272,15 @@ render: {
                                     <button onclick="window.app.editEntity('${m.id}', 'micros')" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-variant/15 bg-surface-container-lowest text-outline transition-colors hover:border-primary/20 hover:text-primary" title="Editar acao" aria-label="Editar acao"><span class="material-symbols-outlined notranslate text-[16px]">edit</span></button>
                                 </div>
                             </div>
-                            <div class="mt-2 flex flex-wrap items-center gap-1 pl-1 pr-1">${sourceBadge}${dimensionBadge}<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[9px]">event</span>${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>${orphanBadge}</div>
-                            <div class="mt-3 grid grid-cols-2 gap-2 pl-1">
-                                <div class="rounded-xl bg-surface-container-high px-3 py-2">
-                                    <p class="text-[9px] font-bold uppercase tracking-widest text-outline">Sessao</p>
-                                    <p class="mt-1 text-sm font-semibold text-on-surface">${sessionCount} ${sessionCount === 1 ? 'sessao' : 'sessoes'}</p>
+                            <div class="mt-2 flex flex-nowrap items-center gap-1 overflow-x-auto no-scrollbar pl-1 pr-1">
+                                ${mobileSourceBadge}${mobileDimensionBadge}<span class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-container-high px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-on-surface-variant"><span class="material-symbols-outlined notranslate text-[9px]">event</span>${m.prazo ? m.prazo.split('-').reverse().slice(0,2).join('/') : 'S/P'}</span>${mobileOrphanBadge}
+                                <div class="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5">
+                                    <span class="text-[8px] font-bold uppercase tracking-[0.08em] text-outline">${sessionCount === 1 ? 'Sessao:' : 'Sessoes:'}</span>
+                                    <span class="text-xs font-semibold text-on-surface">${sessionCount}</span>
                                 </div>
-                                <div class="rounded-xl bg-surface-container-high px-3 py-2">
-                                    <p class="text-[9px] font-bold uppercase tracking-widest text-outline">Duracao</p>
-                                    <p class="mt-1 text-sm font-semibold text-primary">${focusText}</p>
+                                <div class="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5">
+                                    <span class="text-[8px] font-bold uppercase tracking-[0.08em] text-outline">Duracao:</span>
+                                    <span class="text-xs font-semibold text-primary">${focusText}</span>
                                 </div>
                             </div>
                         </div>
@@ -3437,9 +3446,10 @@ render: {
 
             // Renderizar saudação com foto e nome
             const welcomeAvatar = document.getElementById('welcome-avatar');
+            const welcomeAvatarFallback = document.getElementById('welcome-avatar-fallback');
             const welcomeMessage = document.getElementById('welcome-message');
             const welcomeGreeting = document.getElementById('welcome-greeting');
-            if (welcomeAvatar && welcomeMessage && welcomeGreeting) {
+            if (welcomeAvatar && welcomeAvatarFallback && welcomeMessage && welcomeGreeting) {
                 const profile = state.profile || {};
                 const rawName = String(profile.name || '').trim();
                 const avatarUrl = profile.avatarUrl || '';
@@ -3447,10 +3457,12 @@ render: {
                 // Configurar avatar
                 if (avatarUrl) {
                     welcomeAvatar.src = avatarUrl;
-                    welcomeAvatar.style.display = 'block';
+                    welcomeAvatar.classList.remove('hidden');
+                    welcomeAvatarFallback.classList.add('hidden');
                 } else {
                     welcomeAvatar.src = '';
-                    welcomeAvatar.style.display = 'none';
+                    welcomeAvatar.classList.add('hidden');
+                    welcomeAvatarFallback.classList.remove('hidden');
                 }
 
                 // Configurar nome — quando sem nome, mensagem de boas-vindas neutra
@@ -4238,7 +4250,7 @@ render: {
                                 <span class="material-symbols-outlined notranslate text-primary text-xl bg-surface-container-lowest p-0.5 rounded-full">check_circle</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Ação</span>
-                                    <span class="text-sm font-medium truncate">${micro.title}</span>
+                                    <span class="text-sm font-medium break-words">${micro.title}</span>
                                 </div>
                             </div>
                             
@@ -4246,7 +4258,7 @@ render: {
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">account_tree</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Entrega</span>
-                                    <span class="text-xs truncate">${macro.title || '-'}</span>
+                                    <span class="text-xs break-words">${macro.title || '-'}</span>
                                 </div>
                             </div>
                             
@@ -4254,7 +4266,7 @@ render: {
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">track_changes</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Projeto</span>
-                                    <span class="text-xs truncate">${okr.title || '-'}</span>
+                                    <span class="text-xs break-words">${okr.title || '-'}</span>
                                 </div>
                             </div>
                             
@@ -4262,7 +4274,7 @@ render: {
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">flag</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Meta</span>
-                                    <span class="text-xs text-on-surface-variant font-medium truncate">${meta.title || '-'}</span>
+                                    <span class="text-xs text-on-surface-variant font-medium break-words">${meta.title || '-'}</span>
                                 </div>
                             </div>
                             
@@ -4270,7 +4282,7 @@ render: {
                                 <span class="material-symbols-outlined notranslate text-primary text-xl bg-surface-container-lowest p-0.5 rounded-full">${dimIcon}</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Área</span>
-                                    <span class="text-xs truncate">${micro.dimension}</span>
+                                    <span class="text-xs break-words">${micro.dimension}</span>
                                 </div>
                             </div>
                             
@@ -4278,7 +4290,7 @@ render: {
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">timer</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Carga total estimada</span>
-                                    <span class="text-xs truncate">${Math.round(estimatedMinutes)} min${estimateSourceLabel ? ` · ${estimateSourceLabel}` : ''}</span>
+                                    <span class="text-xs break-words">${Math.round(estimatedMinutes)} min${estimateSourceLabel ? ` · ${estimateSourceLabel}` : ''}</span>
                                 </div>
                             </div>
 
@@ -4286,7 +4298,7 @@ render: {
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">schedule</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Execucao no dia</span>
-                                    <span class="text-xs truncate">${schedule.startTime ? `${schedule.startTime} · ${scheduleSourceLabel || 'Definido'}` : 'Sem horario definido'}</span>
+                                    <span class="text-xs break-words">${schedule.startTime ? `${schedule.startTime} · ${scheduleSourceLabel || 'Definido'}` : 'Sem horario definido'}</span>
                                 </div>
                             </div>
 
@@ -4294,7 +4306,7 @@ render: {
                                 <span class="material-symbols-outlined notranslate text-primary text-xl bg-surface-container-lowest p-0.5 rounded-full" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold text-primary">Propósito (Nível 0)</span>
-                                    <span class="text-base font-headline italic truncate">${meta.purpose || '-'}</span>
+                                    <span class="text-base font-headline italic break-words">${meta.purpose || '-'}</span>
                                 </div>
                             </div>
 
@@ -4387,6 +4399,10 @@ render: {
             if (!filterArea) return; // Wait for view to be ready
             
             if (document.getElementById('hier-type')) {
+                const advancedFilters = document.getElementById('planos-advanced-filters');
+                if (advancedFilters && (app.planosHierarchyType || app.planosStatusFilter === 'pending' || app.planosStatusFilter === 'in_progress' || app.planosStatusFilter === 'done' || app.planosStatusFilter === 'planned')) {
+                    advancedFilters.open = true;
+                }
                 document.getElementById('hier-type').value = app.planosHierarchyType || '';
                 const hierIdSelect = document.getElementById('hier-id');
                 if (app.planosHierarchyType) {
@@ -4648,7 +4664,7 @@ render: {
                                 <span class="material-symbols-outlined notranslate ${colorClass} text-base bg-surface-container-lowest p-1 rounded-full shrink-0 mt-0.5 ring-1 ring-outline-variant/10" style="font-variation-settings: 'FILL' 1;">${icon}</span>
                                 <div class="flex flex-col min-w-0 flex-1">
                                     <span class="text-[9px] uppercase tracking-wider opacity-60 font-bold ${colorClass}">${node.label}</span>
-                                    <span class="${titleClass} ${node.label === 'Propósito (Nível 0)' ? 'line-clamp-2' : 'break-words'}">${node.title}</span>
+                                    <span class="${titleClass} break-words">${node.title}</span>
                                 </div>
                             </div>`;
                         });
@@ -4659,7 +4675,7 @@ render: {
                                     <span class="material-symbols-outlined notranslate text-primary text-base bg-surface-container-lowest p-1 rounded-full shrink-0 mt-0.5 ring-1 ring-outline-variant/10" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
                                     <div class="flex flex-col min-w-0 flex-1">
                                         <span class="text-[9px] uppercase tracking-wider opacity-70 font-bold text-primary">${purposeNode.label}</span>
-                                        <span class="text-sm font-headline italic text-on-surface line-clamp-2">${purposeNode.title}</span>
+                                        <span class="text-sm font-headline italic text-on-surface break-words">${purposeNode.title}</span>
                                     </div>
                                 </div>`;
                         }
@@ -4750,24 +4766,24 @@ render: {
                         <div data-entity-id="${item.id}" data-entity-type="${entityType}" class="bg-surface-container-lowest p-4 md:p-5 rounded-2xl border ${highlightClass} hover:shadow-lg transition-all group cursor-pointer overflow-hidden relative" onclick="app.toggleTrail(this)">
                             <div class="absolute left-0 top-0 bottom-0 w-1 ${accentClass}"></div>
                             ${isDone ? '<div class="absolute right-4 bottom-4 pointer-events-none opacity-[0.07]"><span class="material-symbols-outlined notranslate text-7xl text-emerald-500">verified</span></div>' : ''}
-                            <div class="flex items-start justify-between gap-3 mb-3">
+                            <div class="flex items-start gap-3 mb-3">
                                 <div class="space-y-1.5 flex-1 min-w-0">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <span class="shrink-0 bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-label font-bold uppercase tracking-wider">${item.dimension || 'Geral'}</span>
-                                        ${microPlanChip}
-                                        ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold">ALINHADO</span>' : ''}
-                                        ${entityType === 'micros' ? (() => {
-                                            const notesCount = app.getLinkedNotes('micros', item.id).length;
-                                            return notesCount ? `<button type="button" data-type="micros" data-id="${item.id}" data-title="${app.escapeHtml(item.title)}" onclick="event.stopPropagation(); window.app.openEntityNotesModal(this.dataset.type, this.dataset.id, this.dataset.title)" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
-                                                `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</button>` : '';
-                                        })() : ''}
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2 flex-wrap min-w-0">
+                                            <span class="shrink-0 bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-label font-bold uppercase tracking-wider">${item.dimension || 'Geral'}</span>
+                                            ${statusChip}
+                                            ${microPlanChip}
+                                            ${isAligned ? '<span class="shrink-0 bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full border border-primary/20 font-bold">ALINHADO</span>' : ''}
+                                            ${entityType === 'micros' ? (() => {
+                                                const notesCount = app.getLinkedNotes('micros', item.id).length;
+                                                return notesCount ? `<button type="button" data-type="micros" data-id="${item.id}" data-title="${app.escapeHtml(item.title)}" onclick="event.stopPropagation(); window.app.openEntityNotesModal(this.dataset.type, this.dataset.id, this.dataset.title)" class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest rounded-full px-2 py-1 transition-colors">` +
+                                                    `<span class="material-symbols-outlined notranslate text-[14px]">sticky_note_2</span>${notesCount}</button>` : '';
+                                            })() : ''}
+                                        </div>
+                                        <span class="material-symbols-outlined notranslate text-outline text-lg transition-transform group-hover:translate-x-0.5 shrink-0 mt-0.5">chevron_right</span>
                                     </div>
-                                    <h4 class="font-headline text-lg md:text-xl font-semibold leading-tight line-clamp-2">${item.title}</h4>
+                                    <h4 class="font-headline text-lg md:text-xl font-semibold leading-tight">${item.title}</h4>
                                     ${subMetaText ? `<p class="text-[11px] text-outline">${subMetaText}</p>` : ''}
-                                </div>
-                                <div class="flex flex-col items-end gap-2 shrink-0">
-                                    ${statusChip}
-                                    <span class="material-symbols-outlined notranslate text-outline text-lg transition-transform group-hover:translate-x-0.5">chevron_right</span>
                                 </div>
                             </div>
 

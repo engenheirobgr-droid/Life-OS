@@ -68,23 +68,14 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
     </div>
 </div>
 <!-- Advanced Filters (Raio-X Relacional & Status) -->
-<div id="planos-advanced-filters" class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 mb-4 space-y-4">
-    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+<details id="planos-advanced-filters" class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 mb-4">
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
         <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1">
-            <span class="material-symbols-outlined notranslate text-[14px]">account_tree</span> Raio-X Relacional:
+            <span class="material-symbols-outlined notranslate text-[14px]">account_tree</span> Raio-X Relacional
         </span>
-        <div class="flex gap-2 w-full sm:w-auto">
-            <select id="hier-type" onchange="window.app.planosHierarchyType = this.value; window.app.planosHierarchyId = ''; window.app.render.planos(); window.app.renderTimeline();" class="flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none">
-                <option value="">Mostrar Tudo</option>
-                <option value="metas">Por Meta</option>
-                <option value="okrs">Por Projeto</option>
-                <option value="macros">Por Entrega</option>
-            </select>
-            <select id="hier-id" onchange="window.app.planosHierarchyId = this.value; window.app.render.planos(); window.app.renderTimeline();" class="hidden flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none w-full sm:max-w-[250px] truncate">
-                <option value="">Selecione...</option>
-            </select>
-        </div>
-    </div>
+        <span class="material-symbols-outlined notranslate text-outline text-[18px]">expand_more</span>
+    </summary>
+    <div class="space-y-4 pt-4">
     <div class="space-y-2 pt-3 border-t border-outline-variant/10">
         <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1 shrink-0">
             <span class="material-symbols-outlined notranslate text-[14px]">check_circle</span> Status:
@@ -99,6 +90,22 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
             </div>
         </div>
     </div>
+    <div class="space-y-2 pt-3 border-t border-outline-variant/10">
+        <span class="text-[10px] font-label uppercase tracking-widest text-outline font-bold flex items-center gap-1 shrink-0">
+            <span class="material-symbols-outlined notranslate text-[14px]">account_tree</span> Raio-X Relacional:
+        </span>
+        <div class="flex gap-2 w-full sm:w-auto">
+            <select id="hier-type" onchange="window.app.planosHierarchyType = this.value; window.app.planosHierarchyId = ''; window.app.render.planos(); window.app.renderTimeline();" class="flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none">
+                <option value="">Mostrar Tudo</option>
+                <option value="metas">Por Meta</option>
+                <option value="okrs">Por Projeto</option>
+                <option value="macros">Por Entrega</option>
+            </select>
+            <select id="hier-id" onchange="window.app.planosHierarchyId = this.value; window.app.render.planos(); window.app.renderTimeline();" class="hidden flex-1 sm:flex-none bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-1.5 outline-none w-full sm:max-w-[250px] truncate">
+                <option value="">Selecione...</option>
+            </select>
+        </div>
+    </div>
     <div class="pt-3 border-t border-outline-variant/10">
         <button onclick="window.app.clearPlanosFilters()"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-surface-container-high text-on-surface-variant text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest transition-colors">
@@ -107,6 +114,7 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
         </button>
     </div>
 </div>
+</details>
 <!-- Tab: Metas -->
 <section class="mt-4 tab-content active space-y-12" id="tab-metas">
 <div id="metas-container" class="space-y-12"></div>
@@ -132,20 +140,15 @@ A arquitetura da sua intenção: metas, projetos, entregas, ações, timeline e 
 <!-- Tab: Semanal -->
 <section class="mt-4 tab-content" id="tab-semanal">
     <!-- Header com título e botão planejar -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="mb-6">
         <div>
             <h3 class="font-headline text-2xl italic font-bold">Planejamento Semanal</h3>
         </div>
-        <button id="weekly-plan-primary-action" onclick="window.app.openWeeklyPlanModal()"
-            class="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all">
-            <span id="weekly-plan-primary-icon" class="material-symbols-outlined notranslate text-[18px]">edit_calendar</span>
-            <span id="weekly-plan-primary-label">Planejar Semana</span>
-        </button>
     </div>
 
     <!-- Card da semana atual -->
     <div id="semanal-current-card" class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-6 mb-10">
-        <p class="text-sm text-outline italic">Nenhum plano para esta semana ainda. Clique em "Planejar Semana" para começar.</p>
+        <p class="text-sm text-outline italic">Nenhum plano para esta semana ainda. Clique em "Criar Plano" para começar.</p>
     </div>
 
     <!-- Histórico de semanas -->

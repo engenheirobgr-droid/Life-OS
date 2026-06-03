@@ -17,17 +17,17 @@ import {
 // Phase 9 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
-import { attachNotifications } from './js/notifications.js?v=20260602-safe-phases-v8';
-import { attachCadence } from './js/cadence.js?v=20260602-safe-phases-v8';
+import { attachNotifications } from './js/notifications.js?v=20260602-safe-phases-v23';
+import { attachCadence } from './js/cadence.js?v=20260602-safe-phases-v23';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260526-rollback-align-v1';
+import { attachIdentity } from './js/identity.js?v=20260602-safe-phases-v23';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
-import { attachProtocolsModule } from './js/protocols.js?v=20260527-weekly-coherence-v1';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260602-safe-phases-v8';
-import { attachStateModule } from './js/state.js?v=20260602-safe-phases-v8';
-import { attachRenderModule } from './js/render.js?v=20260602-safe-phases-v8';
+import { attachProtocolsModule } from './js/protocols.js?v=20260602-phase5-protocols-v3';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260602-safe-phases-v23';
+import { attachStateModule } from './js/state.js?v=20260602-safe-phases-v23';
+import { attachRenderModule } from './js/render.js?v=20260602-safe-phases-v23';
 import { attachPlanningModule } from './js/planning.js?v=20260601-modal-desktop-v1';
-import { attachGamificationModule } from './js/gamification.js?v=20260602-safe-phases-v8';
+import { attachGamificationModule } from './js/gamification.js?v=20260602-safe-phases-v23';
 import { attachSocial } from './js/social.js?v=20260516-wellbeing-prompts-v205';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260602-safe-phases-v8',
+    appBuildVersion: '20260602-safe-phases-v23',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -3142,19 +3142,17 @@ renderProfileChrome: function() {
             : `<div class="mt-4 rounded-xl bg-surface-container-low p-4 text-sm text-on-surface-variant leading-relaxed">${emptyText}</div>`;
         return `
         <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-6 flex flex-col gap-4">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-primary">${this.escapeHtml(label || 'Semana')}</p>
-                    <h4 class="font-headline text-xl font-bold italic mt-1 text-on-background">${this.escapeHtml(this._formatWeekRange(weekKey || this._getWeekKey()))}</h4>
-                </div>
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-primary">${this.escapeHtml(label || 'Semana')}</p>
                 ${actionLabel ? `
                 <button onclick="window.app.openWeeklyPlanModal(${options})"
-                    class="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
+                    class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-on-primary hover:opacity-90 transition-opacity">
                     <span class="material-symbols-outlined notranslate text-[16px]">${this.escapeHtml(actionIcon || 'edit_calendar')}</span>
                     ${this.escapeHtml(actionLabel)}
                 </button>
-                ` : ''}
+                ` : '<span></span>'}
             </div>
+            <h4 class="font-headline text-xl font-bold italic leading-tight text-on-background sm:text-2xl">${this.escapeHtml(this._formatWeekRange(weekKey || this._getWeekKey()))}</h4>
             ${body}
         </div>`;
     },
@@ -3811,13 +3809,11 @@ renderProfileChrome: function() {
         const dimension = (document.getElementById('trail-meta-dimension')?.value || '').trim();
         const profile = window.sistemaVidaState?.profile || {};
         const values = Array.isArray(profile.values) ? profile.values : [];
-        const ikigai = profile.ikigai || {};
-        const legacyObj = profile.legacyObj || {};
         const legacyKey = this._dimensionLegacyMap ? this._dimensionLegacyMap[dimension] : null;
 
         const valuesText = values.length ? values.slice(0, 3).join(' · ') : '';
-        const ikigaiText = (ikigai.sintese || ikigai.love || '').trim();
-        const legacyText = (legacyKey ? (legacyObj[legacyKey] || '') : '').trim();
+        const ikigaiText = this.getIkigaiPreferredText(profile);
+        const legacyText = legacyKey ? this.getLegacyPreferredText(legacyKey, profile) : '';
         const hasAny = !!(valuesText || ikigaiText || legacyText);
 
         const valuesWrap = document.getElementById('trail-purpose-values');
@@ -4530,6 +4526,34 @@ openCreateModal: function(type = 'metas', parentId = null) {
         'Carreira': 'profissao', 'Finanças': 'profissao',
         'Família': 'familia', 'Relacionamentos': 'familia',
         'Propósito': 'mundo', 'Saúde': null, 'Mente': null, 'Lazer': null
+    },
+
+    getPurposePreferredText: function(summaryText, fullText, fallbackText = '') {
+        const summary = String(summaryText || '').trim();
+        if (summary) return summary;
+        const full = String(fullText || '').trim();
+        if (full) return full;
+        return String(fallbackText || '').trim();
+    },
+
+    getLegacyPreferredText: function(legacyKey, profile = null) {
+        const source = profile || window.sistemaVidaState?.profile || {};
+        const legacyObj = source.legacyObj || {};
+        if (!legacyKey) return '';
+        return this.getPurposePreferredText(legacyObj[`${legacyKey}Resumo`], legacyObj[legacyKey]);
+    },
+
+    getVisionPreferredText: function(visionKey, profile = null) {
+        const source = profile || window.sistemaVidaState?.profile || {};
+        const vision = source.vision || {};
+        const summaryKey = `${visionKey}Resumo`;
+        return this.getPurposePreferredText(vision[summaryKey], vision[visionKey]);
+    },
+
+    getIkigaiPreferredText: function(profile = null) {
+        const source = profile || window.sistemaVidaState?.profile || {};
+        const ikigai = source.ikigai || {};
+        return this.getPurposePreferredText(ikigai.sinteseResumo, ikigai.sintese, ikigai.love);
     },
 
     togglePurposePanel: function() {
@@ -6769,8 +6793,6 @@ ensureNotesState: function() {
         const profile = state.profile || {};
         const values = Array.isArray(profile.values) ? profile.values.filter(Boolean) : [];
         const vision = profile.vision || {};
-        const ikigai = profile.ikigai || {};
-        const legacyObj = profile.legacyObj || {};
 
         const dimScores = Object.entries(state.dimensions || {})
             .map(([dim, data]) => ({ dim, score: Number(data?.score) || 0 }))
@@ -6788,13 +6810,13 @@ ensureNotesState: function() {
             next?.meta?.purpose,
             next?.meta?.successCriteria,
             vision.quote,
-            vision.saude,
-            vision.carreira,
-            vision.intelecto,
-            ikigai.sintese,
-            legacyObj.familia,
-            legacyObj.profissao,
-            legacyObj.mundo
+            this.getVisionPreferredText('saude', profile),
+            this.getVisionPreferredText('carreira', profile),
+            this.getVisionPreferredText('intelecto', profile),
+            this.getIkigaiPreferredText(profile),
+            this.getLegacyPreferredText('familia', profile),
+            this.getLegacyPreferredText('profissao', profile),
+            this.getLegacyPreferredText('mundo', profile)
         ].map(v => String(v || '').trim()).filter(Boolean);
         const personalAnchor = purposePieces[seed % Math.max(1, purposePieces.length)] || values[0] || theme;
         const valueText = values.length ? `valor ${values[0]}` : `área ${theme}`;
@@ -6806,7 +6828,7 @@ ensureNotesState: function() {
         return {
             theme,
             quote,
-            personal: `Hoje, lembre-se de agir a partir de ${this.escapeHtml(personalAnchor)}.`,
+            personal: `Hoje, lembre-se de agir a partir de "${this.escapeHtml(personalAnchor)}".`,
             direction
         };
     },
@@ -6827,12 +6849,20 @@ ensureNotesState: function() {
                     <span class="material-symbols-outlined notranslate text-primary text-2xl shrink-0 mt-0.5">explore</span>
                     <div class="min-w-0 flex-1">
                         <p class="text-[10px] font-label uppercase tracking-widest text-primary font-bold mb-2">Bússola do Dia · ${this.escapeHtml(compass.theme)}</p>
-                        <p class="text-sm text-on-surface leading-relaxed">${compass.personal}</p>
-                        <blockquote class="mt-4 pl-0">
-                            <p class="font-headline text-xl md:text-2xl italic text-on-background leading-snug">${quoteText}</p>
-                            <p class="mt-2 text-[11px] font-bold uppercase tracking-widest text-outline">${quoteSource}</p>
-                        </blockquote>
-                        <p class="mt-4 text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(compass.quote.reflection)} ${this.escapeHtml(compass.direction)}</p>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-on-surface leading-relaxed">${compass.personal}</p>
+                            </div>
+                            <div class="border-t border-outline-variant/15 pt-4">
+                                <blockquote class="pl-0">
+                                    <p class="font-headline text-xl md:text-2xl italic text-on-background leading-snug">${quoteText}</p>
+                                    <p class="mt-2 text-[11px] font-bold uppercase tracking-widest text-outline">${quoteSource}</p>
+                                </blockquote>
+                            </div>
+                            <div class="border-t border-outline-variant/15 pt-4">
+                                <p class="text-xs text-on-surface-variant leading-relaxed">${this.escapeHtml(compass.quote.reflection)} ${this.escapeHtml(compass.direction)}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>`;
@@ -7315,10 +7345,9 @@ ensureNotesState: function() {
     _showReviewPurposeAnchor: function() {
         document.getElementById('review-purpose-anchor')?.remove();
         const state = window.sistemaVidaState;
-        const ikigai = state.profile?.ikigai || {};
         const values = Array.isArray(state.profile?.values) ? state.profile.values.filter(Boolean) : [];
         const vision = state.profile?.vision || {};
-        const anchor = ikigai.sintese || vision.quote || values[0] || '';
+        const anchor = this.getIkigaiPreferredText(state.profile) || vision.quote || values[0] || '';
         const el = document.createElement('div');
         el.id = 'review-purpose-anchor';
         el.innerHTML = `
