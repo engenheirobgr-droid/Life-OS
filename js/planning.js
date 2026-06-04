@@ -220,16 +220,6 @@ onTypeChange: function(type) {
 applyDefaultDeadlineByType: function(type, forceRecalc = false) {
         if (this.editingEntity) return;
         const today = this.getLocalDateKey();
-        const addDays = (dateKey, days) => {
-            const base = new Date(String(dateKey || today) + 'T00:00:00');
-            base.setDate(base.getDate() + Number(days || 0));
-            return this.getLocalDateKey(base);
-        };
-        const addYears = (dateKey, years) => {
-            const base = new Date(String(dateKey || today) + 'T00:00:00');
-            base.setFullYear(base.getFullYear() + Number(years || 0));
-            return this.getLocalDateKey(base);
-        };
         const setIfAllowed = (input, value) => {
             if (!input) return;
             if (forceRecalc || !input.value) input.value = value;
@@ -237,9 +227,11 @@ applyDefaultDeadlineByType: function(type, forceRecalc = false) {
 
         if (type === 'metas') {
             const horizonYears = Number(document.getElementById('crud-meta-horizon')?.value || 1);
-            const years = Number.isFinite(horizonYears) && horizonYears > 0 ? horizonYears : 1;
             const deadlineInput = document.getElementById('create-prazo');
-            setIfAllowed(deadlineInput, addYears(today, years));
+            const fallbackDueDate = this.getDefaultEntityDeadlineByType
+                ? this.getDefaultEntityDeadlineByType('metas', { metaHorizonYears: horizonYears })
+                : today;
+            setIfAllowed(deadlineInput, fallbackDueDate);
             return;
         }
 
@@ -247,9 +239,10 @@ applyDefaultDeadlineByType: function(type, forceRecalc = false) {
         const inicioInput = document.getElementById('crud-inicio-date');
         const prazoInput = document.getElementById('crud-prazo-date');
         const startDate = String(inicioInput?.value || today);
-        const offsets = { okrs: 90, macros: 30, micros: 7 };
-        const offsetDays = offsets[type] || 0;
-        setIfAllowed(prazoInput, addDays(startDate, offsetDays));
+        const fallbackDueDate = this.getDefaultEntityDeadlineByType
+            ? this.getDefaultEntityDeadlineByType(type, { startDate })
+            : startDate;
+        setIfAllowed(prazoInput, fallbackDueDate);
     },
 
 finishMetaTrailWizard: function() {
@@ -413,9 +406,15 @@ _validateMetaTrailStep: function(step) {
                 this.showToast(horizonAlign.message || 'Ajuste o horizonte da meta para continuar.', 'error');
                 return false;
             }
-            const validation = this.validateEntityTimeWindow('metas', { prazo: meta.prazo, metaHorizonYears: horizonAlign.horizonYears });
-            if (!validation.ok) {
-                this.showToast(validation.message, 'error');
+            const normalizedMeta = this.normalizeEntityTimeWindowContract
+                ? this.normalizeEntityTimeWindowContract('metas', { prazo: meta.prazo, horizonYears: horizonAlign.horizonYears }, {
+                    adjust: false,
+                    rejectIfMissingPrazo: true,
+                    metaHorizonYears: horizonAlign.horizonYears
+                })
+                : { rejected: false };
+            if (normalizedMeta.rejected) {
+                this.showToast(normalizedMeta.rejectReason || 'Ajuste o prazo da meta para continuar.', 'error');
                 return false;
             }
             return true;
@@ -431,12 +430,19 @@ _validateMetaTrailStep: function(step) {
                 return false;
             }
             const invalidOkr = okrs.items.find((okr, idx) => {
-                const validation = this.validateEntityTimeWindow('okrs', {
-                    inicioDate: okr.inicioDate,
-                    prazo: okr.prazo
-                });
-                if (validation.ok) return false;
-                this.showToast(`Projeto ${idx + 1}: ${validation.message}`, 'error');
+                const normalized = this.normalizeEntityTimeWindowContract
+                    ? this.normalizeEntityTimeWindowContract('okrs', {
+                        inicioDate: okr.inicioDate,
+                        prazo: okr.prazo
+                    }, {
+                        adjust: false,
+                        deriveMissingBounds: false,
+                        requireExplicitStart: true,
+                        rejectIfMissingPrazo: true
+                    })
+                    : { rejected: false };
+                if (!normalized.rejected) return false;
+                this.showToast(`Projeto ${idx + 1}: ${normalized.rejectReason || 'Ajuste início e prazo para caber no ciclo de 12 semanas.'}`, 'error');
                 return true;
             });
             if (invalidOkr) return false;
@@ -453,12 +459,19 @@ _validateMetaTrailStep: function(step) {
                 return false;
             }
             const invalidEntrega = macros.items.find((macro, idx) => {
-                const validation = this.validateEntityTimeWindow('macros', {
-                    inicioDate: macro.inicioDate,
-                    prazo: macro.prazo
-                });
-                if (validation.ok) return false;
-                this.showToast(`Entrega ${idx + 1}: ${validation.message}`, 'error');
+                const normalized = this.normalizeEntityTimeWindowContract
+                    ? this.normalizeEntityTimeWindowContract('macros', {
+                        inicioDate: macro.inicioDate,
+                        prazo: macro.prazo
+                    }, {
+                        adjust: false,
+                        deriveMissingBounds: false,
+                        requireExplicitStart: true,
+                        rejectIfMissingPrazo: true
+                    })
+                    : { rejected: false };
+                if (!normalized.rejected) return false;
+                this.showToast(`Entrega ${idx + 1}: ${normalized.rejectReason || 'Ajuste início e prazo para caber em até 31 dias.'}`, 'error');
                 return true;
             });
             if (invalidEntrega) return false;
@@ -1802,9 +1815,20 @@ saveNewEntity: function() {
                 inicioDate = normalizedSchedule.inicioDate || '';
                 prazo = normalizedSchedule.prazo || '';
             } else {
-                if (type === 'micros' && !inicioDate && prazo && this.getDateKeyOffset) inicioDate = this.getDateKeyOffset(prazo, -7);
-                else if (type === 'macros' && !inicioDate && prazo) inicioDate = prazo;
-                if (!prazo && inicioDate) prazo = inicioDate; // consistência mínima
+                const normalizedPlanWindow = this.normalizeEntityTimeWindowContract
+                    ? this.normalizeEntityTimeWindowContract(type, { inicioDate, prazo }, {
+                        adjust: false,
+                        deriveMissingBounds: false,
+                        requireExplicitStart: true,
+                        rejectIfMissingPrazo: true
+                    })
+                    : { rejected: false, inicioDate, prazo };
+                if (normalizedPlanWindow.rejected) {
+                    app.showBlockingMessage(normalizedPlanWindow.rejectReason || 'Ajuste início e prazo antes de salvar.');
+                    return;
+                }
+                inicioDate = normalizedPlanWindow.inicioDate || '';
+                prazo = normalizedPlanWindow.prazo || '';
             }
         } else {
             prazo = document.getElementById('create-prazo')?.value || '';
@@ -1898,6 +1922,10 @@ saveNewEntity: function() {
             obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
             if (type === 'metas') {
                 obj.horizonYears = metaHorizonYears;
+                if (hasInvalidCurrentParent) {
+                    app.showBlockingMessage('A meta pai atual ficou incompatível com o prazo ou horizonte selecionado. Escolha outra meta pai antes de salvar.');
+                    return;
+                }
                 if (parentId) {
                     const parentMeta = window.sistemaVidaState.entities.metas.find(m => m.id === parentId);
                     if (!parentMeta) {
@@ -1909,9 +1937,15 @@ saveNewEntity: function() {
                         app.showToast('Não é possível criar ciclo entre metas pai e filhas.', 'error');
                         return;
                     }
-                    const parentHorizon = this.getMetaHorizonYears(parentMeta);
-                    if (parentHorizon <= metaHorizonYears) {
-                        app.showToast('A meta pai precisa ter horizonte maior do que a meta filha.', 'error');
+                    const parentMetaValidation = this.validateMetaParentContract
+                        ? this.validateMetaParentContract(parentMeta, {
+                            childHorizonYears: metaHorizonYears,
+                            childPrazo: obj.prazo,
+                            childId: id
+                        })
+                        : { ok: true };
+                    if (!parentMetaValidation.ok) {
+                        app.showToast(parentMetaValidation.message || 'A meta pai precisa ter horizonte maior do que a meta filha.', 'error');
                         return;
                     }
                     obj.parentMetaId = parentId;
@@ -2560,14 +2594,16 @@ editEntity: function(id, type) {
                 parentTypeLabel = 'Entrega';
             }
             const hasOption = Array.from(parentSelect.options || []).some(opt => opt.value === parentId);
-            if (parentId && !hasOption && type !== 'metas') {
+            if (parentId && !hasOption) {
                 parentSelect.dataset.invalidCurrentParentId = parentId;
                 parentSelect.dataset.invalidCurrentParentType = parentTypeLabel;
                 parentSelect.dataset.invalidCurrentParentTitle = item.title || '';
                 const placeholder = document.createElement('option');
                 const ghost = placeholder;
                 placeholder.value = '';
-                ghost.textContent = 'Vínculo atual (fora do filtro de dimensão)';
+                ghost.textContent = type === 'metas'
+                    ? 'Vínculo atual (fora do contrato de prazo/horizonte)'
+                    : 'Vínculo atual (fora do filtro de dimensão)';
                 ghost.dataset.ghostLineage = 'true';
                 parentSelect.insertBefore(ghost, parentSelect.firstChild);
             }

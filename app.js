@@ -17,18 +17,18 @@ import {
 // Phase 9 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
-import { attachNotifications } from './js/notifications.js?v=20260603-ui-system-v12';
-import { attachCadence } from './js/cadence.js?v=20260603-ui-system-v12';
+import { attachNotifications } from './js/notifications.js?v=20260603-ui-system-v13';
+import { attachCadence } from './js/cadence.js?v=20260603-ui-system-v13';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260603-ui-system-v12';
+import { attachIdentity } from './js/identity.js?v=20260603-ui-system-v13';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
-import { attachProtocolsModule } from './js/protocols.js?v=20260603-ui-system-v12';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260603-ui-system-v12';
-import { attachStateModule } from './js/state.js?v=20260603-ui-system-v12';
-import { attachRenderModule } from './js/render.js?v=20260603-ui-system-v12';
-import { attachPlanningModule } from './js/planning.js?v=20260603-ui-system-v12';
-import { attachGamificationModule } from './js/gamification.js?v=20260603-ui-system-v12';
-import { attachSocial } from './js/social.js?v=20260603-ui-system-v12';
+import { attachProtocolsModule } from './js/protocols.js?v=20260603-ui-system-v13';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260603-ui-system-v13';
+import { attachStateModule } from './js/state.js?v=20260603-ui-system-v13';
+import { attachRenderModule } from './js/render.js?v=20260603-ui-system-v13';
+import { attachPlanningModule } from './js/planning.js?v=20260603-ui-system-v13';
+import { attachGamificationModule } from './js/gamification.js?v=20260603-ui-system-v13';
+import { attachSocial } from './js/social.js?v=20260603-ui-system-v13';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260603-ui-system-v12',
+    appBuildVersion: '20260603-ui-system-v13',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -3360,23 +3360,28 @@ renderProfileChrome: function() {
         if (!entityId || !entityType) return;
         this.planosHierarchyType = entityType;
         this.planosHierarchyId = entityId;
-        this.navigate('planos');
-
-        setTimeout(() => {
+        const openInPlanos = () => {
             const tabMap = { metas: 'metas', okrs: 'okrs', macros: 'macro', micros: 'micro' };
             const targetTab = tabMap[entityType] || 'metas';
             this.switchPlanosTab(targetTab);
             if (this.render.planos) this.render.planos();
-
-            const card = document.querySelector(`[data-entity-type="${entityType}"][data-entity-id="${entityId}"]`);
-            if (card) {
+            requestAnimationFrame(() => {
+                const card = document.querySelector(`[data-entity-type="${entityType}"][data-entity-id="${entityId}"]`);
+                if (!card) return;
                 card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 const trail = card.querySelector('.trail-panel');
                 if (trail && trail.classList.contains('hidden')) this.toggleTrail(card);
                 card.classList.add('ring-2', 'ring-primary/40');
                 setTimeout(() => card.classList.remove('ring-2', 'ring-primary/40'), 1600);
-            }
-        }, 350);
+            });
+        };
+
+        const navPromise = this.navigate('planos');
+        if (navPromise && typeof navPromise.then === 'function') {
+            navPromise.then(openInPlanos);
+            return;
+        }
+        openInPlanos();
     },
 
     openFocusDetails: function() {
@@ -3903,12 +3908,23 @@ renderProfileChrome: function() {
             return local.toISOString().split('T')[0];
         };
         const today = new Date();
-        const metaDeadline = new Date(today);
-        metaDeadline.setDate(metaDeadline.getDate() + 84);
-        const macroDeadline = new Date(today);
-        macroDeadline.setDate(macroDeadline.getDate() + 30);
-        const microDeadline = new Date(today);
-        microDeadline.setDate(microDeadline.getDate() + 7);
+        const todayKey = this.getLocalDateKey(today);
+        const metaDeadlineKey = this.getDefaultEntityDeadlineByType
+            ? this.getDefaultEntityDeadlineByType('metas', { metaHorizonYears: 1 })
+            : todayKey;
+        const okrDeadlineKey = this.getDefaultEntityDeadlineByType
+            ? this.getDefaultEntityDeadlineByType('okrs', { startDate: todayKey })
+            : todayKey;
+        const macroDeadlineKey = this.getDefaultEntityDeadlineByType
+            ? this.getDefaultEntityDeadlineByType('macros', { startDate: todayKey })
+            : todayKey;
+        const microDeadlineKey = this.getDefaultEntityDeadlineByType
+            ? this.getDefaultEntityDeadlineByType('micros', { startDate: todayKey })
+            : todayKey;
+        const metaDeadline = new Date(`${metaDeadlineKey}T00:00:00`);
+        const okrDeadline = new Date(`${okrDeadlineKey}T00:00:00`);
+        const macroDeadline = new Date(`${macroDeadlineKey}T00:00:00`);
+        const microDeadline = new Date(`${microDeadlineKey}T00:00:00`);
 
         const titleEl = document.getElementById('trail-meta-title');
         const dimEl = document.getElementById('trail-meta-dimension');
@@ -3930,7 +3946,7 @@ renderProfileChrome: function() {
             title: template.okrTitle || '',
             metric: template.microIndicator || '',
             inicioDate: toDate(today),
-            prazo: toDate(metaDeadline),
+            prazo: toDate(okrDeadline),
             keyResults: [{ title: template.microIndicator || 'Resultado inicial da trilha', current: 0, target: 1 }]
         });
         this.addTrailMacroRow({
@@ -3997,16 +4013,27 @@ renderProfileChrome: function() {
         if (!modal) return;
 
         const today = new Date();
-        const metaDeadline = new Date(today);
-        metaDeadline.setDate(metaDeadline.getDate() + 84);
-        const macroDeadline = new Date(today);
-        macroDeadline.setDate(macroDeadline.getDate() + 30);
+        const todayKey = this.getLocalDateKey(today);
+        const metaDeadlineKey = this.getDefaultEntityDeadlineByType
+            ? this.getDefaultEntityDeadlineByType('metas', { metaHorizonYears: 1 })
+            : todayKey;
+        const okrDeadlineKey = this.getDefaultEntityDeadlineByType
+            ? this.getDefaultEntityDeadlineByType('okrs', { startDate: todayKey })
+            : todayKey;
+        const macroDeadlineKey = this.getDefaultEntityDeadlineByType
+            ? this.getDefaultEntityDeadlineByType('macros', { startDate: todayKey })
+            : todayKey;
+        const microDeadlineKey = this.getDefaultEntityDeadlineByType
+            ? this.getDefaultEntityDeadlineByType('micros', { startDate: todayKey })
+            : todayKey;
+        const metaDeadline = new Date(`${metaDeadlineKey}T00:00:00`);
+        const okrDeadline = new Date(`${okrDeadlineKey}T00:00:00`);
+        const macroDeadline = new Date(`${macroDeadlineKey}T00:00:00`);
         const microOne = new Date(today);
-        microOne.setDate(microOne.getDate() + 3);
+        microOne.setTime(new Date(`${this.getDateKeyOffset(microDeadlineKey, -4)}T00:00:00`).getTime());
         const microTwoStart = new Date(today);
-        microTwoStart.setDate(microTwoStart.getDate() + 4);
-        const microTwoDeadline = new Date(today);
-        microTwoDeadline.setDate(microTwoDeadline.getDate() + 7);
+        microTwoStart.setTime(new Date(`${this.getDateKeyOffset(microDeadlineKey, -3)}T00:00:00`).getTime());
+        const microTwoDeadline = new Date(`${microDeadlineKey}T00:00:00`);
         const toDate = (d) => {
             const local = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
             return local.toISOString().split('T')[0];
@@ -4039,7 +4066,7 @@ renderProfileChrome: function() {
         if (macroList) macroList.innerHTML = '';
         if (microList) microList.innerHTML = '';
 
-        this.addTrailOkrRow({ inicioDate: toDate(today), prazo: toDate(metaDeadline) });
+        this.addTrailOkrRow({ inicioDate: toDate(today), prazo: toDate(okrDeadline) });
         this.addTrailMacroRow({ inicioDate: toDate(today), prazo: toDate(macroDeadline) });
         this.addTrailMacroRow({ inicioDate: toDate(today), prazo: toDate(macroDeadline) });
         this.addTrailMicroRow({ inicioDate: toDate(today), prazo: toDate(microOne) });
@@ -4643,6 +4670,47 @@ openCreateModal: function(type = 'metas', parentId = null) {
         }
         return 1;
     },
+    getDefaultMetaDeadlineDays: function(metaHorizonYears = 1) {
+        const normalized = this.normalizeMetaHorizonYears(metaHorizonYears);
+        return Math.max(1, Math.round(Number(normalized || 1) * 365));
+    },
+    getDefaultEntityDeadlineByType: function(type, { startDate = '', metaHorizonYears = 1 } = {}) {
+        const normalizedType = String(type || '').trim();
+        if (normalizedType === 'metas') {
+            return this.getDateKeyOffset(this.getLocalDateKey(), this.getDefaultMetaDeadlineDays(metaHorizonYears));
+        }
+        const baseDate = String(startDate || '').trim() || this.getLocalDateKey();
+        const offsetDays = this.getEntityTimeWindowLimitDays(normalizedType);
+        if (!offsetDays) return '';
+        return this.getDateKeyOffset(baseDate, offsetDays);
+    },
+    validateMetaParentContract: function(parentMeta, { childHorizonYears = 1, childPrazo = '', childId = '' } = {}) {
+        if (!parentMeta || typeof parentMeta !== 'object') {
+            return { ok: false, message: 'Meta pai selecionada não encontrada.' };
+        }
+        const parentId = String(parentMeta.id || '').trim();
+        const normalizedChildId = String(childId || '').trim();
+        if (normalizedChildId && parentId && normalizedChildId === parentId) {
+            return { ok: false, message: 'Não é possível vincular uma meta a ela mesma.' };
+        }
+        const parentHorizon = this.getMetaHorizonYears(parentMeta);
+        const normalizedChildHorizon = this.normalizeMetaHorizonYears(childHorizonYears);
+        if (!(parentHorizon > normalizedChildHorizon)) {
+            return { ok: false, message: 'A meta pai precisa ter horizonte maior do que a meta filha.' };
+        }
+        const childDue = String(childPrazo || '').trim();
+        const parentDue = String(parentMeta?.prazo || '').trim();
+        if (childDue && parentDue && childDue > parentDue) {
+            return { ok: false, message: 'A meta filha precisa terminar antes ou no mesmo prazo da meta pai.' };
+        }
+        return {
+            ok: true,
+            parentHorizon,
+            childHorizon: normalizedChildHorizon,
+            parentDue,
+            childDue
+        };
+    },
 
     getMetaParentChain: function(metaId) {
         const chain = [];
@@ -4700,6 +4768,244 @@ openCreateModal: function(type = 'metas', parentId = null) {
             usesExplicitStart: !!String(micro?.inicioDate || '').trim()
         };
     },
+    getEntityTimeWindowLimitDays: function(type) {
+        const normalizedType = String(type || '').trim();
+        if (normalizedType === 'okrs') return 84;
+        if (normalizedType === 'macros') return 31;
+        if (normalizedType === 'micros') return 7;
+        return 0;
+    },
+    normalizeEntityTimeWindowContract: function(type, input, options = {}) {
+        const entity = input?.entity || input || {};
+        const normalizedType = String(type || '').trim();
+        const rejectIfMissingPrazo = options.rejectIfMissingPrazo === true;
+        const allowAdjustments = options.adjust !== false;
+        const allowDerivedBounds = options.deriveMissingBounds !== false;
+        const requireExplicitStart = options.requireExplicitStart === true;
+        const changes = [];
+        let adjusted = false;
+
+        if (normalizedType === 'metas') {
+            let prazo = String(entity?.prazo || '').trim();
+            let horizonYears = this.normalizeMetaHorizonYears(
+                Number(options.metaHorizonYears || entity?.horizonYears || this.getMetaHorizonYears(entity) || 1)
+            );
+
+            if (!prazo) {
+                if (rejectIfMissingPrazo) {
+                    return {
+                        inicioDate: '',
+                        prazo: '',
+                        adjusted: false,
+                        rejected: true,
+                        invalid: true,
+                        horizonYears,
+                        rejectReason: 'prazo obrigatorio para metas',
+                        changes: ['missing_due']
+                    };
+                }
+                return {
+                    inicioDate: '',
+                    prazo: '',
+                    adjusted: false,
+                    rejected: false,
+                    invalid: true,
+                    horizonYears,
+                    changes: ['missing_due']
+                };
+            }
+
+            let days = this.getDayDiffFromNow(prazo);
+            if (days === null) {
+                return {
+                    inicioDate: '',
+                    prazo,
+                    adjusted: false,
+                    rejected: true,
+                    invalid: true,
+                    horizonYears,
+                    rejectReason: 'prazo invalido para meta',
+                    changes: ['invalid_due']
+                };
+            }
+
+            const inferredHorizon = this.inferMetaHorizonYearsByDays(days);
+            if (inferredHorizon && inferredHorizon !== horizonYears) {
+                horizonYears = inferredHorizon;
+                adjusted = true;
+                changes.push('aligned_horizon_to_due');
+            }
+
+            const initialRule = this.getMetaHorizonRule(horizonYears);
+            if (days < initialRule.min || days > initialRule.max) {
+                if (!allowAdjustments) {
+                    return {
+                        inicioDate: '',
+                        prazo,
+                        adjusted: false,
+                        rejected: true,
+                        invalid: true,
+                        horizonYears,
+                        rejectReason: `meta fora da janela do horizonte ${initialRule.label}`,
+                        changes: [days < initialRule.min ? 'below_horizon_window' : 'above_horizon_window']
+                    };
+                }
+                const clampedDays = Math.max(initialRule.min, Math.min(initialRule.max, days));
+                prazo = this.getDateKeyOffset(this.getLocalDateKey(), clampedDays);
+                adjusted = true;
+                changes.push(days < initialRule.min ? 'clamped_due_to_min_horizon' : 'clamped_due_to_max_horizon');
+                days = clampedDays;
+            }
+
+            const validation = this.validateEntityTimeWindow('metas', { prazo, metaHorizonYears: horizonYears });
+            if (!validation.ok) {
+                return {
+                    inicioDate: '',
+                    prazo,
+                    adjusted,
+                    rejected: true,
+                    invalid: true,
+                    horizonYears,
+                    rejectReason: validation.message,
+                    changes
+                };
+            }
+
+            return {
+                inicioDate: '',
+                prazo,
+                adjusted,
+                rejected: false,
+                invalid: false,
+                horizonYears,
+                changes
+            };
+        }
+
+        const windowDays = Math.max(0, Number(options.windowDays) || this.getEntityTimeWindowLimitDays(normalizedType));
+        if (!windowDays) {
+            return {
+                inicioDate: String(entity?.inicioDate || '').trim(),
+                prazo: String(entity?.prazo || '').trim(),
+                adjusted: false,
+                rejected: false,
+                invalid: false,
+                changes: ['unsupported_type']
+            };
+        }
+
+        let inicioDate = String(entity?.inicioDate || '').trim();
+        let prazo = String(entity?.prazo || '').trim();
+
+        if (!prazo) {
+            if (inicioDate && allowDerivedBounds) {
+                prazo = this.getDateKeyOffset(inicioDate, windowDays);
+                adjusted = true;
+                changes.push('set_due_from_start');
+            } else if (rejectIfMissingPrazo) {
+                return {
+                    inicioDate: '',
+                    prazo: '',
+                    adjusted: false,
+                    rejected: true,
+                    invalid: true,
+                    rejectReason: 'prazo obrigatorio para o plano',
+                    changes: ['missing_due']
+                };
+            } else {
+                return {
+                    inicioDate: '',
+                    prazo: '',
+                    adjusted: false,
+                    rejected: false,
+                    invalid: true,
+                    changes: ['missing_due']
+                };
+            }
+        }
+
+        if (!inicioDate && prazo) {
+            if (requireExplicitStart) {
+                return {
+                    inicioDate: '',
+                    prazo,
+                    adjusted: false,
+                    rejected: true,
+                    invalid: true,
+                    rejectReason: 'inicio obrigatorio para o plano',
+                    changes: ['missing_start']
+                };
+            }
+            if (allowDerivedBounds) {
+                inicioDate = this.getDateKeyOffset(prazo, -windowDays);
+                adjusted = true;
+                changes.push('set_start_from_due');
+            }
+        }
+
+        const diffDays = inicioDate && prazo ? this.getDayDiffBetween(inicioDate, prazo) : null;
+        if (inicioDate && prazo && (diffDays === null || diffDays < 0 || diffDays > windowDays)) {
+                if (!allowAdjustments) {
+                    return {
+                        inicioDate,
+                        prazo,
+                    adjusted: false,
+                    rejected: true,
+                    invalid: true,
+                    rejectReason: 'janela temporal invalida para o plano',
+                    changes: [diffDays === null ? 'invalid_window' : (diffDays < 0 ? 'invalid_order' : 'window_overflow')]
+                };
+            }
+            inicioDate = this.getDateKeyOffset(prazo, -windowDays);
+            adjusted = true;
+            changes.push(diffDays !== null && diffDays < 0 ? 'rebased_start_from_due_invalid_order' : 'rebased_start_from_due');
+        }
+
+        const validation = this.validateEntityTimeWindow(normalizedType, { inicioDate, prazo });
+        if (!validation.ok) {
+            return {
+                inicioDate,
+                prazo,
+                adjusted,
+                rejected: true,
+                invalid: true,
+                rejectReason: validation.message,
+                changes
+            };
+        }
+
+        return {
+            inicioDate,
+            prazo,
+            adjusted,
+            rejected: false,
+            invalid: false,
+            changes
+        };
+    },
+    applyNormalizedEntityTimeWindowContract: function(entity, type, options = {}) {
+        if (!entity || typeof entity !== 'object') {
+            return {
+                inicioDate: '',
+                prazo: '',
+                adjusted: false,
+                rejected: true,
+                invalid: true,
+                rejectReason: 'entidade invalida',
+                changes: ['invalid_entity']
+            };
+        }
+        const normalized = this.normalizeEntityTimeWindowContract(type, entity, options);
+        if (normalized.rejected) return normalized;
+        if (type === 'metas') {
+            entity.prazo = normalized.prazo || '';
+            if (normalized.horizonYears) entity.horizonYears = normalized.horizonYears;
+            return normalized;
+        }
+        entity.inicioDate = normalized.inicioDate || '';
+        entity.prazo = normalized.prazo || '';
+        return normalized;
+    },
     classifyMicroForDate: function(input, dateKey = this.getLocalDateKey()) {
         const state = window.sistemaVidaState || {};
         const entities = state.entities || {};
@@ -4723,71 +5029,10 @@ openCreateModal: function(type = 'metas', parentId = null) {
         return { ...windowState, status: 'active_today', isDone };
     },
     normalizeMicroScheduleContract: function(input, { windowDays = 7, rejectIfMissingPrazo = false } = {}) {
-        const micro = input?.micro || input || {};
-        const safeWindowDays = Math.max(0, Number(windowDays) || 7);
-        let inicioDate = String(micro?.inicioDate || '').trim();
-        let prazo = String(micro?.prazo || '').trim();
-        let adjusted = false;
-        const changes = [];
-
-        if (!prazo) {
-            if (inicioDate) {
-                prazo = this.getDateKeyOffset(inicioDate, safeWindowDays);
-                adjusted = true;
-                changes.push('set_due_from_start');
-            } else if (rejectIfMissingPrazo) {
-                return {
-                    inicioDate: '',
-                    prazo: '',
-                    adjusted: false,
-                    rejected: true,
-                    invalid: true,
-                    rejectReason: 'prazo obrigatório para micros',
-                    changes: ['missing_due']
-                };
-            } else {
-                return {
-                    inicioDate: '',
-                    prazo: '',
-                    adjusted: false,
-                    rejected: false,
-                    invalid: true,
-                    changes: ['missing_due']
-                };
-            }
-        }
-
-        if (!inicioDate && prazo) {
-            inicioDate = this.getDateKeyOffset(prazo, -safeWindowDays);
-            adjusted = true;
-            changes.push('set_start_from_due');
-        }
-
-        const diffDays = inicioDate && prazo ? this.getDayDiffBetween(inicioDate, prazo) : null;
-        if (inicioDate && prazo && (diffDays === null || diffDays < 0 || diffDays > safeWindowDays)) {
-            inicioDate = this.getDateKeyOffset(prazo, -safeWindowDays);
-            adjusted = true;
-            changes.push(diffDays !== null && diffDays < 0 ? 'rebased_start_from_due_invalid_order' : 'rebased_start_from_due');
-        }
-
-        return {
-            inicioDate,
-            prazo,
-            adjusted,
-            rejected: false,
-            invalid: !prazo,
-            changes
-        };
+        return this.normalizeEntityTimeWindowContract('micros', input, { windowDays, rejectIfMissingPrazo });
     },
     applyNormalizedMicroScheduleContract: function(micro, options = {}) {
-        if (!micro || typeof micro !== 'object') {
-            return { inicioDate: '', prazo: '', adjusted: false, rejected: true, invalid: true, rejectReason: 'micro inválida', changes: ['invalid_micro'] };
-        }
-        const normalized = this.normalizeMicroScheduleContract(micro, options);
-        if (normalized.rejected) return normalized;
-        micro.inicioDate = normalized.inicioDate || '';
-        micro.prazo = normalized.prazo || '';
-        return normalized;
+        return this.applyNormalizedEntityTimeWindowContract(micro, 'micros', options);
     },
     rebaseMicroScheduleToStart: function(micro, startDate = this.getLocalDateKey(), { windowDays = 7 } = {}) {
         if (!micro || typeof micro !== 'object') {
@@ -4982,6 +5227,7 @@ openCreateModal: function(type = 'metas', parentId = null) {
         
         if (parentType && window.sistemaVidaState.entities[parentType]) {
             const childMetaHorizon = Number(horizonSelect?.value || 1);
+            const childMetaPrazo = String(document.getElementById('create-prazo')?.value || '').trim();
             const editingId = this.editingEntity?.id || '';
             const parents = window.sistemaVidaState.entities[parentType].filter(p => {
                 if (editingId && p.id === editingId) return false;
@@ -4992,8 +5238,12 @@ openCreateModal: function(type = 'metas', parentId = null) {
                 return !currentDim || currentDim === 'Geral' || p.dimension === currentDim || p.dimension === 'Geral';
             }).filter(p => {
                 if (type !== 'metas') return true;
-                const parentHorizon = this.getMetaHorizonYears(p);
-                if (!(parentHorizon > childMetaHorizon)) return false;
+                const parentContract = this.validateMetaParentContract(p, {
+                    childHorizonYears: childMetaHorizon,
+                    childPrazo: childMetaPrazo,
+                    childId: editingId
+                });
+                if (!parentContract.ok) return false;
                 if (!editingId) return true;
                 const parentChain = this.getMetaParentChain(p.id);
                 return !parentChain.includes(editingId);

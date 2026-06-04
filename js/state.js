@@ -1281,6 +1281,7 @@ importFromExcel: async function(event) {
                     plan_parent: 'Planos rejeitados por vinculo pai ausente/invalido',
                     plan_validation: 'Planos rejeitados por contrato de validacao',
                     plan_dimension: 'Planos rejeitados por dimensao ausente/inconsistente',
+                    plan_time_adjust: 'Planos ajustados para caber na janela temporal',
                     micro_schedule_reject: 'Micros rejeitadas por contrato de agenda',
                     habit_meta_link: 'Habitos rejeitados por meta vinculada inexistente',
                     habit_dimension: 'Habitos rejeitados por dimensao ausente/incompativel',
@@ -1306,6 +1307,18 @@ importFromExcel: async function(event) {
                 adjustedSamples: [],
                 rejectedSamples: []
             };
+            const createTimeWindowBucket = () => ({
+                importedWithoutAdjustment: 0,
+                importedWithAdjustment: 0,
+                rejected: 0,
+                adjustedSamples: [],
+                rejectedSamples: []
+            });
+            const planTimeImportStats = {
+                metas: createTimeWindowBucket(),
+                okrs: createTimeWindowBucket(),
+                macros: createTimeWindowBucket()
+            };
             const registerImportWarning = (kind, code, message) => {
                 const target = kind === 'consequence' ? importWarningState.consequence : importWarningState.root;
                 const label = warningLabels[kind]?.[code] || code;
@@ -1322,6 +1335,50 @@ importFromExcel: async function(event) {
                 const itemLabel = getImportedPlanLabel(type);
                 const safeTitle = String(title || '').trim() || '(sem título)';
                 pushRootImportWarning(code, `Planos: ${itemLabel} "${safeTitle}" - ${message}`);
+            };
+            const applyImportedEntityTimeWindowContract = (type, items) => {
+                const stats = planTimeImportStats[type];
+                return (items || []).filter((item) => {
+                    const normalized = this.normalizeEntityTimeWindowContract
+                        ? this.normalizeEntityTimeWindowContract(type, item, {
+                            rejectIfMissingPrazo: true,
+                            metaHorizonYears: type === 'metas' ? this.getMetaHorizonYears(item) : undefined
+                        })
+                        : { inicioDate: item.inicioDate || '', prazo: item.prazo || '', adjusted: false, rejected: false, horizonYears: item.horizonYears };
+                    const safeTitle = String(item?.title || '').trim() || '(sem titulo)';
+                    if (normalized.rejected) {
+                        if (stats) {
+                            stats.rejected += 1;
+                            if (stats.rejectedSamples.length < 3) {
+                                stats.rejectedSamples.push(`${getImportedPlanLabel(type)} "${safeTitle}" rejeitado: ${normalized.rejectReason || 'janela temporal invalida'}.`);
+                            }
+                        }
+                        pushPlanImportWarning(type, safeTitle, `${normalized.rejectReason || 'janela temporal invalida'}. Linha ignorada.`, 'plan_validation');
+                        return false;
+                    }
+                    if (type === 'metas') {
+                        item.prazo = normalized.prazo || '';
+                        if (normalized.horizonYears) item.horizonYears = normalized.horizonYears;
+                    } else {
+                        item.inicioDate = normalized.inicioDate || '';
+                        item.prazo = normalized.prazo || '';
+                    }
+                    if (stats) {
+                        if (normalized.adjusted) {
+                            stats.importedWithAdjustment += 1;
+                            if (stats.adjustedSamples.length < 3) {
+                                const nextWindow = type === 'metas'
+                                    ? `prazo ${item.prazo}${item.horizonYears ? ` · horizonte ${item.horizonYears}a` : ''}`
+                                    : `${item.inicioDate} → ${item.prazo}`;
+                                stats.adjustedSamples.push(`${getImportedPlanLabel(type)} "${safeTitle}" ajustado para ${nextWindow}.`);
+                            }
+                            pushRootImportWarning('plan_time_adjust', `Planos: ${getImportedPlanLabel(type)} "${safeTitle}" ajustado para caber na janela temporal.`);
+                        } else {
+                            stats.importedWithoutAdjustment += 1;
+                        }
+                    }
+                    return true;
+                });
             };
             const finalizeImportedMetas = (metaItems, metaLookup) => {
                 return (metaItems || []).filter((meta) => {
@@ -1355,6 +1412,42 @@ importFromExcel: async function(event) {
                     }
                     return true;
                 });
+            };
+            const enforceImportedMetaParentContract = (metaItems) => {
+                const pending = Array.isArray(metaItems) ? metaItems.slice() : [];
+                let changed = true;
+                while (changed) {
+                    changed = false;
+                    const validIds = new Set(pending.map((item) => String(item?.id || '').trim()).filter(Boolean));
+                    const nextItems = pending.filter((meta) => {
+                        const parentId = String(meta?.parentMetaId || '').trim();
+                        if (!parentId) return true;
+                        if (!validIds.has(parentId)) {
+                            pushPlanImportWarning('metas', meta.title, 'Meta pai informada não permaneceu válida após a validação temporal. Linha ignorada.', 'plan_parent');
+                            changed = true;
+                            return false;
+                        }
+                        const parentMeta = pending.find((item) => String(item?.id || '').trim() === parentId) || null;
+                        const parentValidation = this.validateMetaParentContract
+                            ? this.validateMetaParentContract(parentMeta, {
+                                childHorizonYears: this.getMetaHorizonYears(meta),
+                                childPrazo: meta.prazo,
+                                childId: meta.id
+                            })
+                            : { ok: true };
+                        if (!parentValidation.ok) {
+                            pushPlanImportWarning('metas', meta.title, `${parentValidation.message} Linha ignorada.`, 'plan_validation');
+                            changed = true;
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (changed) {
+                        pending.length = 0;
+                        pending.push(...nextItems);
+                    }
+                }
+                return pending;
             };
             const finalizeImportedChildren = (type, items, index) => {
                 return (items || []).filter((item) => {
@@ -1479,8 +1572,8 @@ importFromExcel: async function(event) {
                         obj.effort = String(getValue(row, ['Esforço', 'Esforco']) || '').trim();
                         obj.estimatedMinutes = toInt(getValue(row, ['Minutos estimados', 'Minutos_Estimados', 'Estimated_Minutes']), 0);
                         obj.startTime = normalizeTimeValue(getValue(row, ['Hora', 'Hora_Inicio', 'Start_Time']));
-                        const normalizedMicroSchedule = this.normalizeMicroScheduleContract
-                            ? this.normalizeMicroScheduleContract(obj, { rejectIfMissingPrazo: true })
+                        const normalizedMicroSchedule = this.normalizeEntityTimeWindowContract
+                            ? this.normalizeEntityTimeWindowContract('micros', obj, { rejectIfMissingPrazo: true })
                             : { inicioDate: obj.inicioDate || '', prazo: obj.prazo || '', adjusted: false, rejected: false };
                         if (normalizedMicroSchedule.rejected) {
                             const safeTitle = String(obj.title || '').trim() || '(sem título)';
@@ -1539,10 +1632,14 @@ importFromExcel: async function(event) {
                     delete micro._parentTitle;
                 });
                 window.sistemaVidaState.entities.metas = finalizeImportedMetas(window.sistemaVidaState.entities.metas, metaIndex);
+                window.sistemaVidaState.entities.metas = applyImportedEntityTimeWindowContract('metas', window.sistemaVidaState.entities.metas);
+                window.sistemaVidaState.entities.metas = enforceImportedMetaParentContract(window.sistemaVidaState.entities.metas);
                 metaIndex = buildNamedIndex(window.sistemaVidaState.entities.metas);
                 window.sistemaVidaState.entities.okrs = finalizeImportedChildren('okrs', window.sistemaVidaState.entities.okrs, metaIndex);
+                window.sistemaVidaState.entities.okrs = applyImportedEntityTimeWindowContract('okrs', window.sistemaVidaState.entities.okrs);
                 okrIndex = buildNamedIndex(window.sistemaVidaState.entities.okrs);
                 window.sistemaVidaState.entities.macros = finalizeImportedChildren('macros', window.sistemaVidaState.entities.macros, okrIndex);
+                window.sistemaVidaState.entities.macros = applyImportedEntityTimeWindowContract('macros', window.sistemaVidaState.entities.macros);
                 macroIndex = buildNamedIndex(window.sistemaVidaState.entities.macros);
                 window.sistemaVidaState.entities.micros = finalizeImportedChildren('micros', window.sistemaVidaState.entities.micros, macroIndex);
                 window.sistemaVidaState.entities.micros.forEach((micro) => {
@@ -2268,9 +2365,23 @@ importFromExcel: async function(event) {
                 .map((bucket) => `${bucket.label} (${bucket.count})`)
                 .join('; ');
             const microImportSummary = `Micros — sem ajuste: ${microImportStats.importedWithoutAdjustment}; com ajuste: ${microImportStats.importedWithAdjustment}; rejeitadas: ${microImportStats.rejected}`;
+            const planTimeSummary = ['metas', 'okrs', 'macros']
+                .map((type) => {
+                    const stats = planTimeImportStats[type];
+                    return `${getImportedPlanLabel(type)}s — sem ajuste: ${stats.importedWithoutAdjustment}; com ajuste: ${stats.importedWithAdjustment}; rejeitadas: ${stats.rejected}`;
+                })
+                .join('\n');
             const microImportSamples = [
                 ...microImportStats.adjustedSamples.slice(0, 2),
                 ...microImportStats.rejectedSamples.slice(0, 2)
+            ];
+            const planTimeSamples = [
+                ...planTimeImportStats.metas.adjustedSamples.slice(0, 1),
+                ...planTimeImportStats.okrs.adjustedSamples.slice(0, 1),
+                ...planTimeImportStats.macros.adjustedSamples.slice(0, 1),
+                ...planTimeImportStats.metas.rejectedSamples.slice(0, 1),
+                ...planTimeImportStats.okrs.rejectedSamples.slice(0, 1),
+                ...planTimeImportStats.macros.rejectedSamples.slice(0, 1)
             ];
             if (totalWarningCount) {
                 console.warn('[Import warnings][causas-raiz]', rootWarnings);
@@ -2279,9 +2390,12 @@ importFromExcel: async function(event) {
             if (microImportStats.rejected || microImportStats.importedWithAdjustment) {
                 console.warn('[Import micros][contract]', microImportStats);
             }
+            if (Object.values(planTimeImportStats).some((stats) => stats.rejected || stats.importedWithAdjustment)) {
+                console.warn('[Import plans][time-window-contract]', planTimeImportStats);
+            }
             alert(totalWarningCount
-                ? `Planilha importada com sucesso, com ${totalWarningCount} aviso(s).\n${microImportSummary}\nCausas raiz (${rootWarningCount}): ${summarizeWarningBuckets(rootWarnings) || 'nenhuma'}\nConsequencias (${consequenceWarningCount}): ${summarizeWarningBuckets(consequenceWarnings) || 'nenhuma'}${microImportSamples.length ? `\nExemplos: ${microImportSamples.join(' | ')}` : ''}`
-                : `Planilha importada com sucesso.\n${microImportSummary}${microImportSamples.length ? `\nExemplos: ${microImportSamples.join(' | ')}` : ''}`);
+                ? `Planilha importada com sucesso, com ${totalWarningCount} aviso(s).\n${planTimeSummary}\n${microImportSummary}\nCausas raiz (${rootWarningCount}): ${summarizeWarningBuckets(rootWarnings) || 'nenhuma'}\nConsequencias (${consequenceWarningCount}): ${summarizeWarningBuckets(consequenceWarnings) || 'nenhuma'}${[...planTimeSamples, ...microImportSamples].length ? `\nExemplos: ${[...planTimeSamples, ...microImportSamples].join(' | ')}` : ''}`
+                : `Planilha importada com sucesso.\n${planTimeSummary}\n${microImportSummary}${[...planTimeSamples, ...microImportSamples].length ? `\nExemplos: ${[...planTimeSamples, ...microImportSamples].join(' | ')}` : ''}`);
             window.app.switchView('painel');
             importSucceeded = true;
             

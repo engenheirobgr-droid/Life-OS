@@ -1228,18 +1228,28 @@
         }
         .ui-help-tooltip {
             position: absolute;
-            top: calc(100% + 0.45rem);
+            top: calc(100% + 0.55rem);
             left: 0;
             z-index: 30;
-            width: min(19rem, calc(100vw - 2rem));
+            width: min(19rem, calc(100vw - 1.5rem));
+            max-width: calc(100vw - 1.5rem);
             border-radius: 1rem;
-            border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 52%, transparent);
-            background: var(--md-sys-color-surface-container-lowest);
+            border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 64%, transparent);
+            background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 90%, white 10%);
             padding: 0.9rem 1rem;
             font-size: 0.75rem;
             line-height: 1.55;
-            color: var(--md-sys-color-on-surface-variant);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+            color: var(--md-sys-color-on-surface);
+            overflow-wrap: anywhere;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16);
+        }
+        .ui-help-tooltip--align-end {
+            left: auto;
+            right: 0;
+        }
+        .ui-help-tooltip--contrast {
+            background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 76%, var(--md-sys-color-surface-container-lowest) 24%);
         }
         .ui-modal-shell {
             border: 1px solid rgba(148, 163, 184, 0.18);
@@ -3299,7 +3309,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260603-ui-system-v12"></script>
+    <script type="module" src="app.js?v=20260603-ui-system-v13"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3330,7 +3340,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260603-ui-system-v12')
+                navigator.serviceWorker.register('sw.js?v=20260603-ui-system-v13')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

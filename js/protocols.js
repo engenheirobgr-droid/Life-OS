@@ -553,7 +553,7 @@ export function attachProtocolsModule(app) {
                 return acc;
             }, {});
 
-            const familyOrder = ['estudo', 'limpeza', 'treino', 'financas', 'geral'];
+            const familyOrder = ['rotina', 'estudo', 'limpeza', 'treino', 'financas', 'geral'];
             const families = Object.keys(grouped).sort((a, b) => {
                 const ia = familyOrder.indexOf(a);
                 const ib = familyOrder.indexOf(b);
@@ -562,91 +562,117 @@ export function attachProtocolsModule(app) {
                 if (ib === -1) return -1;
                 return ia - ib;
             });
+            const baseProtocolsCount = protocols.filter((protocol) => protocol.isBase).length;
             container.innerHTML = `
-                <div class="flex flex-col gap-4">
-                    <div class="ui-surface p-5">
-                        <div class="flex flex-col gap-3">
-                            <div class="flex flex-col gap-3">
-                                <div class="min-w-0 max-w-2xl">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <h3 class="min-w-0 pr-2 font-headline text-[1.75rem] italic font-bold leading-none text-on-background ui-section-title">Protocolos</h3>
-                                        <button type="button" onclick="window.app.openProtocolModal()"
-                                            class="inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-on-primary hover:opacity-90 active:scale-95 transition-all">
-                                            <span class="material-symbols-outlined notranslate text-[14px]">add</span>
-                                            Protocolo
-                                        </button>
+                <div class="flex flex-col gap-5">
+                    <section class="ui-surface overflow-hidden">
+                        <div class="grid gap-4 p-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(240px,0.9fr)] lg:items-end">
+                            <div class="min-w-0 space-y-3">
+                                <p class="ui-section-label">Biblioteca de execucao</p>
+                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <div class="min-w-0 max-w-2xl">
+                                        <h3 class="ui-section-title min-w-0 pr-2 font-headline text-[1.75rem] italic font-bold leading-none text-on-background">Protocolos</h3>
+                                        <p class="mt-2 text-sm leading-relaxed text-on-surface-variant">Protocolos-base e versoes editadas para transformar rotinas recorrentes em passos claros, reutilizaveis e mais faceis de executar.</p>
                                     </div>
+                                    <button type="button" onclick="window.app.openProtocolModal()"
+                                        class="inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-on-primary transition-all hover:opacity-90 active:scale-95">
+                                        <span class="material-symbols-outlined notranslate text-[14px]">add</span>
+                                        Protocolo
+                                    </button>
                                 </div>
                             </div>
-                            <p class="max-w-2xl text-sm text-on-surface-variant leading-relaxed">Protocolos-base e versoes editadas para transformar rotinas recorrentes em passos claros, reutilizaveis e mais faceis de executar.</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="ui-surface-subtle px-4 py-3">
+                                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Biblioteca ativa</p>
+                                    <p class="mt-1 text-2xl font-semibold text-on-background">${protocols.length}</p>
+                                    <p class="mt-1 text-xs text-on-surface-variant">protocolos disponiveis</p>
+                                </div>
+                                <div class="ui-surface-subtle px-4 py-3">
+                                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Base do app</p>
+                                    <p class="mt-1 text-2xl font-semibold text-on-background">${baseProtocolsCount}</p>
+                                    <p class="mt-1 text-xs text-on-surface-variant">rotas prontas para uso</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </section>
                     ${families.map((family) => {
                         const items = grouped[family] || [];
                         return `
                             <section class="space-y-4">
                                 <div class="flex items-center gap-3">
-                                    <p class="ui-section-label text-primary">${this.escapeHtml(familyMap[family] || family)}</p>
+                                    <div class="rounded-full border border-primary/12 bg-primary/10 px-3 py-1.5">
+                                        <p class="ui-section-label text-primary">${this.escapeHtml(familyMap[family] || family)}</p>
+                                    </div>
                                     <div class="h-px flex-1 bg-surface-container-high"></div>
-                                    <span class="text-[10px] text-outline">${items.length}</span>
+                                    <span class="text-[10px] font-bold uppercase tracking-widest text-outline">${items.length} protocolo${items.length === 1 ? '' : 's'}</span>
                                 </div>
-                                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
                                     ${items.map((protocol) => {
                                         const references = protocol.evidenceCard.references || [];
                                         const principles = protocol.evidenceCard.principles || [];
                                         const suggestedHabitSummary = this.formatProtocolSuggestedHabitSummary(protocol);
+                                        const estimatedMinutes = this.getProtocolEstimatedMinutes(protocol, { includeOptional: false });
                                         return `
-                                            <article class="ui-surface p-5 space-y-4">
-                                                <div class="flex items-start justify-between gap-3">
-                                                    <div class="min-w-0">
-                                                        <div class="flex flex-wrap items-center gap-2">
-                                                            <p class="ui-card-title text-on-surface">${this.escapeHtml(protocol.title)}</p>
-                                                            ${protocol.isBase ? `<span class="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">Base do app</span>` : ''}
-                                                        </div>
-                                                        <p class="mt-1 text-sm text-on-surface-variant leading-relaxed">${this.escapeHtml(protocol.description)}</p>
-                                                    </div>
-                                                    <div class="shrink-0 text-right">
-                                                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">${this.escapeHtml(this.getProtocolCadenceLabel(protocol.cadence))}</p>
-                                                        <p class="mt-1 text-[10px] text-outline">${protocol.steps.length} passo${protocol.steps.length === 1 ? '' : 's'} · ${this.getProtocolEstimatedMinutes(protocol, { includeOptional: false })} min</p>
-                                                    </div>
-                                                </div>
-                                                <div class="ui-surface-subtle p-4 space-y-2">
-                                                    <p class="ui-section-label">Por que esse protocolo existe</p>
-                                                    <p class="text-sm text-on-surface-variant leading-relaxed">${this.escapeHtml(protocol.rationaleShort || protocol.evidenceCard.summary || 'Sem resumo ainda.')}</p>
-                                                    ${principles.length ? `<div class="pt-1 space-y-1">${principles.map(item => `<p class="text-xs text-on-surface-variant leading-relaxed">- ${this.escapeHtml(item)}</p>`).join('')}</div>` : ''}
-                                                    ${references.length ? `<div class="pt-2 space-y-1"><p class="ui-section-label">Referencias</p>${references.map(ref => `<a href="${this.escapeHtml(ref.url)}" target="_blank" rel="noopener noreferrer" class="block text-xs text-primary hover:underline">${this.escapeHtml(ref.label || ref.url)}</a>`).join('')}</div>` : ''}
-                                                </div>
-                                                <div class="space-y-2">
-                                                    <p class="ui-section-label">Passos</p>
-                                                    <div class="space-y-2">
-                                                        ${protocol.steps.map((step, idx) => `
-                                                            <div class="flex items-start gap-3 rounded-xl bg-surface-container-low px-3 py-2.5">
-                                                                <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">${idx + 1}</span>
-                                                                <div class="min-w-0 flex-1">
-                                                                    <p class="text-sm text-on-surface leading-relaxed">${this.escapeHtml(step.title)}</p>
-                                                                    <p class="mt-1 text-[10px] text-outline">${Math.round(Number(step.estimatedMinutes) || 0)} min${step.optional ? ' · opcional' : ''}</p>
-                                                                </div>
+                                            <article class="ui-surface overflow-hidden">
+                                                <div class="border-b border-outline-variant/10 px-5 py-4">
+                                                    <div class="flex items-start justify-between gap-3">
+                                                        <div class="min-w-0">
+                                                            <div class="flex flex-wrap items-center gap-2">
+                                                                <p class="ui-card-title text-on-surface">${this.escapeHtml(protocol.title)}</p>
+                                                                ${protocol.isBase ? `<span class="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">Base do app</span>` : ''}
                                                             </div>
-                                                        `).join('')}
+                                                            <p class="mt-1 text-sm leading-relaxed text-on-surface-variant">${this.escapeHtml(protocol.description)}</p>
+                                                        </div>
+                                                        <div class="shrink-0 text-right">
+                                                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline">${this.escapeHtml(this.getProtocolCadenceLabel(protocol.cadence))}</p>
+                                                            <p class="mt-1 text-[10px] text-outline">${protocol.steps.length} passo${protocol.steps.length === 1 ? '' : 's'} · ${estimatedMinutes} min</p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                ${suggestedHabitSummary ? `
-                                                    <div class="ui-surface-subtle px-4 py-3">
-                                                        <p class="ui-section-label text-primary">Sugestao de habito</p>
-                                                        <p class="mt-1 text-sm text-on-surface-variant leading-relaxed">${this.escapeHtml(suggestedHabitSummary)}</p>
+                                                <div class="space-y-4 p-5">
+                                                    <div class="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(230px,0.85fr)]">
+                                                        <div class="ui-surface-subtle p-4 space-y-2">
+                                                            <p class="ui-section-label">Por que esse protocolo existe</p>
+                                                            <p class="text-sm leading-relaxed text-on-surface-variant">${this.escapeHtml(protocol.rationaleShort || protocol.evidenceCard.summary || 'Sem resumo ainda.')}</p>
+                                                            ${principles.length ? `<div class="space-y-1 pt-1">${principles.map(item => `<p class="text-xs leading-relaxed text-on-surface-variant">- ${this.escapeHtml(item)}</p>`).join('')}</div>` : ''}
+                                                            ${references.length ? `<div class="space-y-1 pt-2"><p class="ui-section-label">Referencias</p>${references.map(ref => `<a href="${this.escapeHtml(ref.url)}" target="_blank" rel="noopener noreferrer" class="block text-xs text-primary hover:underline">${this.escapeHtml(ref.label || ref.url)}</a>`).join('')}</div>` : ''}
+                                                        </div>
+                                                        <div class="ui-surface-subtle px-4 py-3">
+                                                            <p class="ui-section-label text-primary">${suggestedHabitSummary ? 'Sugestao de habito' : 'Encaixe do protocolo'}</p>
+                                                            <p class="mt-1 text-sm leading-relaxed text-on-surface-variant">${this.escapeHtml(suggestedHabitSummary || 'Use este protocolo como ritual sob demanda, checklist de sessao ou base para uma rotina editavel.')}</p>
+                                                        </div>
                                                     </div>
-                                                ` : ''}
-                                                <div class="flex flex-wrap gap-2 pt-1">
-                                                    <button type="button" onclick="window.app.openProtocolModal('${protocol.id}')"
-                                                        class="inline-flex items-center gap-2 rounded-lg bg-surface-container-high px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-on-surface hover:bg-surface-container-highest transition-colors">
-                                                        <span class="material-symbols-outlined notranslate text-[14px]">edit</span>
-                                                        Editar
-                                                    </button>
-                                                    <button type="button" onclick="window.app.createHabitFromProtocol('${protocol.id}')"
-                                                        class="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-primary hover:bg-primary/15 transition-colors">
-                                                        <span class="material-symbols-outlined notranslate text-[14px]">playlist_add_check</span>
-                                                        Usar em habito
-                                                    </button>
+
+                                                    <div class="space-y-3">
+                                                        <div class="flex items-center justify-between gap-3">
+                                                            <p class="ui-section-label">Passos</p>
+                                                            <p class="text-[10px] font-bold uppercase tracking-widest text-outline">${protocol.steps.length} item${protocol.steps.length === 1 ? '' : 's'}</p>
+                                                        </div>
+                                                        <div class="space-y-2">
+                                                            ${protocol.steps.map((step, idx) => `
+                                                                <div class="flex items-start gap-3 rounded-xl bg-surface-container-low px-3 py-2.5">
+                                                                    <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">${idx + 1}</span>
+                                                                    <div class="min-w-0 flex-1">
+                                                                        <p class="text-sm leading-relaxed text-on-surface">${this.escapeHtml(step.title)}</p>
+                                                                        <p class="mt-1 text-[10px] text-outline">${Math.round(Number(step.estimatedMinutes) || 0)} min${step.optional ? ' · opcional' : ''}</p>
+                                                                    </div>
+                                                                </div>
+                                                            `).join('')}
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="flex flex-wrap gap-2 pt-1">
+                                                        <button type="button" onclick="window.app.openProtocolModal('${protocol.id}')"
+                                                            class="inline-flex items-center gap-2 rounded-lg bg-surface-container-high px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-on-surface transition-colors hover:bg-surface-container-highest">
+                                                            <span class="material-symbols-outlined notranslate text-[14px]">edit</span>
+                                                            Editar
+                                                        </button>
+                                                        <button type="button" onclick="window.app.createHabitFromProtocol('${protocol.id}')"
+                                                            class="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/15">
+                                                            <span class="material-symbols-outlined notranslate text-[14px]">playlist_add_check</span>
+                                                            Usar em habito
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </article>
                                         `;
