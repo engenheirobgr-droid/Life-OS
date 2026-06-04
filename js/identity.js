@@ -1187,16 +1187,15 @@ renderManualGuide: function() {
             return `
             <div id="manual-ch-card-${esc(ch.id)}" class="rounded-xl border border-outline-variant/15 bg-surface-container-low overflow-hidden ${isRead ? 'manual-ch-read' : ''}">
                 <button type="button" onclick="window.app.toggleManualChapter('${esc(ch.id)}')"
-                    class="w-full flex items-center gap-3 p-4 text-left hover:bg-surface-container transition-colors">
+                    class="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 text-left hover:bg-surface-container transition-colors">
                     <span class="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary shrink-0">
                         <span class="material-symbols-outlined notranslate text-[18px]">${esc(ch.icon)}</span>
                     </span>
                     <div class="min-w-0 flex-1">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Capitulo ${displayIndex + 1} - ${esc(screenLabel)}</p>
-                        <p class="text-sm font-bold text-on-surface leading-tight mt-0.5">${esc(ch.title)}</p>
-                        <p class="text-[11px] text-outline mt-0.5 leading-snug">${esc(ch.subtitle)}</p>
+                        <p class="text-[9px] font-bold uppercase tracking-[0.18em] text-outline sm:text-[10px]">Capitulo ${displayIndex + 1} - ${esc(screenLabel)}</p>
+                        <p class="mt-0.5 text-sm font-bold leading-snug text-on-surface">${esc(ch.title)}</p>
+                        <p class="mt-1 text-[11px] leading-snug text-outline">${esc(ch.subtitle)}</p>
                     </div>
-                    <span id="manual-ch-badge-${esc(ch.id)}" class="text-[10px] font-bold uppercase tracking-wider text-primary shrink-0">${isRead ? 'Lido' : 'Novo'}</span>
                     <span id="manual-ch-chevron-${esc(ch.id)}" class="material-symbols-outlined notranslate text-outline text-[18px] transition-transform shrink-0">expand_more</span>
                 </button>
                 <div id="manual-ch-body-${esc(ch.id)}" class="hidden px-5 pb-5 pt-1 space-y-3 text-sm text-on-surface-variant leading-relaxed">

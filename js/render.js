@@ -762,7 +762,7 @@ renderPatternsPanel: function() {
                                     <button type="button" class="ui-help-button ui-help-button--compact" aria-label="Como o painel de correlações funciona">
                                         <span class="material-symbols-outlined notranslate text-[12px]">info</span>
                                     </button>
-                                    <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-3rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                                    <div class="ui-help-tooltip ui-help-tooltip--align-center ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
                                         Quando houver ${gate.minDays} check-ins, o Painel cruza sono, humor, estresse, ações e hábitos para mostrar o que mais impacta seu desempenho.
                                     </div>
                                 </div>

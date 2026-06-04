@@ -11,7 +11,7 @@
                 <button type="button" class="ui-help-button" aria-label="Informações sobre o Painel">
                     <span class="material-symbols-outlined notranslate">info</span>
                 </button>
-                <div class="ui-help-tooltip hidden group-hover:block group-focus-within:block">
+                <div class="ui-help-tooltip ui-help-tooltip--align-end ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
                     O Painel mostra situação, diagnóstico e decisões para acompanhar o ciclo, a semana e a execução real.
                 </div>
             </div>
@@ -76,7 +76,7 @@
                 <h3 class="font-headline text-2xl italic ui-section-title">Situação</h3>
                 <div class="relative inline-flex group">
                     <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que mostra a situação do painel"><span class="material-symbols-outlined notranslate">info</span></button>
-                    <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                    <div class="ui-help-tooltip ui-help-tooltip--align-center ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
                         O estado real do ciclo, da semana e do seu ritmo de execução.
                     </div>
                 </div>
@@ -121,7 +121,12 @@
             <div>
                 <div class="flex items-center gap-1.5">
                     <p class="text-[10px] font-label uppercase tracking-widest text-outline">Saúde da semana</p>
-                    <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que significa o índice de saúde da semana" title="Índice baseado em execução, carga planejada e atrasos."><span class="material-symbols-outlined notranslate">info</span></button>
+                    <div class="relative inline-flex group">
+                        <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que significa o índice de saúde da semana"><span class="material-symbols-outlined notranslate">info</span></button>
+                        <div class="ui-help-tooltip ui-help-tooltip--align-center ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
+                            Índice baseado em execução, carga planejada e atrasos.
+                        </div>
+                    </div>
                 </div>
                 <p id="weekly-health-label" class="mt-1 text-sm font-bold text-on-surface">Sem dados suficientes</p>
                 <p id="weekly-health-copy" class="mt-1 text-xs text-on-surface-variant leading-relaxed">Planeje ações para medir se a semana está executável.</p>
@@ -152,7 +157,7 @@
                     <h3 class="font-headline text-2xl italic ui-section-title">Diagnóstico</h3>
                     <div class="relative inline-flex group">
                         <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que mostra o diagnóstico do painel"><span class="material-symbols-outlined notranslate">info</span></button>
-                        <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                        <div class="ui-help-tooltip ui-help-tooltip--align-center ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
                             Sinais que merecem atenção antes de criar mais plano.
                         </div>
                     </div>
@@ -166,7 +171,7 @@
                     <h3 class="font-headline text-2xl italic ui-section-title">Decisão</h3>
                     <div class="relative inline-flex group">
                         <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que mostra a decisão do painel"><span class="material-symbols-outlined notranslate">info</span></button>
-                        <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                        <div class="ui-help-tooltip ui-help-tooltip--align-center ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
                             O próximo movimento recomendado para destravar a semana.
                         </div>
                     </div>
@@ -182,7 +187,7 @@
                 <h3 class="font-headline text-2xl italic ui-section-title">Evolução Pessoal</h3>
                 <div class="relative inline-flex group">
                     <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que mostra a evolução pessoal"><span class="material-symbols-outlined notranslate">info</span></button>
-                    <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                    <div class="ui-help-tooltip ui-help-tooltip--align-center ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
                         Como suas forças, sombras e hábitos estão conversando nesta semana.
                     </div>
                 </div>
@@ -200,7 +205,7 @@
                 <h3 class="font-headline text-2xl italic ui-section-title">Padrões</h3>
                 <div class="relative inline-flex group">
                     <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que mostra a seção de padrões"><span class="material-symbols-outlined notranslate">info</span></button>
-                    <div class="hidden group-hover:block group-focus-within:block absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 text-xs leading-relaxed text-on-surface-variant shadow-xl sm:left-0 sm:right-auto">
+                    <div class="ui-help-tooltip ui-help-tooltip--align-center ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
                         Cruzamentos leves entre check-in, execução, hábitos e carga.
                     </div>
                 </div>

@@ -17,18 +17,18 @@ import {
 // Phase 9 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
-import { attachNotifications } from './js/notifications.js?v=20260603-ui-system-v13';
-import { attachCadence } from './js/cadence.js?v=20260603-ui-system-v13';
+import { attachNotifications } from './js/notifications.js?v=20260604-ui-system-v21';
+import { attachCadence } from './js/cadence.js?v=20260604-ui-system-v21';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260603-ui-system-v13';
+import { attachIdentity } from './js/identity.js?v=20260604-ui-system-v21';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
-import { attachProtocolsModule } from './js/protocols.js?v=20260603-ui-system-v13';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260603-ui-system-v13';
-import { attachStateModule } from './js/state.js?v=20260603-ui-system-v13';
-import { attachRenderModule } from './js/render.js?v=20260603-ui-system-v13';
-import { attachPlanningModule } from './js/planning.js?v=20260603-ui-system-v13';
-import { attachGamificationModule } from './js/gamification.js?v=20260603-ui-system-v13';
-import { attachSocial } from './js/social.js?v=20260603-ui-system-v13';
+import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v21';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v21';
+import { attachStateModule } from './js/state.js?v=20260604-ui-system-v21';
+import { attachRenderModule } from './js/render.js?v=20260604-ui-system-v21';
+import { attachPlanningModule } from './js/planning.js?v=20260604-ui-system-v21';
+import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v21';
+import { attachSocial } from './js/social.js?v=20260604-ui-system-v21';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260603-ui-system-v13',
+    appBuildVersion: '20260604-ui-system-v21',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -3200,11 +3200,98 @@ renderProfileChrome: function() {
         </div>`;
     },
 
+    getHelpTooltipForButton: function(button) {
+        if (!(button instanceof Element)) return null;
+        const group = button.closest('.group');
+        if (!group) return null;
+        group.classList.add('ui-help-anchor');
+        return group.querySelector('.ui-help-tooltip');
+    },
+
+    positionHelpTooltip: function(button, tooltip) {
+        if (!(button instanceof Element) || !(tooltip instanceof Element)) return;
+        const margin = 12;
+        const previousDisplay = tooltip.style.display;
+        const previousVisibility = tooltip.style.visibility;
+        const wasHidden = getComputedStyle(tooltip).display === 'none';
+        if (wasHidden) {
+            tooltip.style.display = 'block';
+            tooltip.style.visibility = 'hidden';
+        }
+
+        tooltip.classList.remove('ui-help-tooltip--above');
+        tooltip.style.setProperty('--ui-help-shift-x', '0px');
+        tooltip.style.setProperty('--ui-help-shift-y', '0px');
+
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const buttonRect = button.getBoundingClientRect();
+        let rect = tooltip.getBoundingClientRect();
+
+        const computeHorizontalShift = (currentRect) => {
+            let shiftX = 0;
+            if (currentRect.right > viewportWidth - margin) shiftX += (viewportWidth - margin) - currentRect.right;
+            if (currentRect.left < margin) shiftX += margin - currentRect.left;
+            return shiftX;
+        };
+
+        if (rect.bottom > viewportHeight - margin && buttonRect.top > rect.height + margin) {
+            tooltip.classList.add('ui-help-tooltip--above');
+            rect = tooltip.getBoundingClientRect();
+        }
+
+        tooltip.style.setProperty('--ui-help-shift-x', `${computeHorizontalShift(rect)}px`);
+
+        if (wasHidden) {
+            if (previousDisplay) tooltip.style.display = previousDisplay;
+            else tooltip.style.removeProperty('display');
+            if (previousVisibility) tooltip.style.visibility = previousVisibility;
+            else tooltip.style.removeProperty('visibility');
+        }
+    },
+
+    repositionVisibleHelpTooltips: function() {
+        document.querySelectorAll('.ui-help-button').forEach((button) => {
+            const tooltip = this.getHelpTooltipForButton(button);
+            if (!tooltip) return;
+            if (getComputedStyle(tooltip).display === 'none') return;
+            this.positionHelpTooltip(button, tooltip);
+        });
+    },
+
+    initializeHelpTooltips: function() {
+        if (this._helpTooltipsInitialized) return;
+        this._helpTooltipsInitialized = true;
+
+        const schedulePosition = (button) => {
+            button.closest('.group')?.classList.add('ui-help-anchor');
+            const tooltip = this.getHelpTooltipForButton(button);
+            if (!tooltip) return;
+            requestAnimationFrame(() => this.positionHelpTooltip(button, tooltip));
+        };
+
+        document.addEventListener('mouseenter', (event) => {
+            const button = event.target.closest?.('.ui-help-button');
+            if (!button) return;
+            schedulePosition(button);
+        }, true);
+
+        document.addEventListener('focusin', (event) => {
+            const button = event.target.closest?.('.ui-help-button');
+            if (!button) return;
+            schedulePosition(button);
+        });
+
+        window.addEventListener('resize', () => this.repositionVisibleHelpTooltips());
+        window.addEventListener('scroll', () => this.repositionVisibleHelpTooltips(), true);
+    },
+
     init: async function() {
         console.log("Sistema Vida OS inicializando...", this.appBuildVersion);
     // Signal dead-man's switch that the module loaded
     document.dispatchEvent(new CustomEvent('lifeos-app-ready'));
         console.log("[DIAG] localStorage keys:", Object.keys(localStorage).filter(k => k.startsWith("lifeos")));
+        this.initializeHelpTooltips();
         try {
             await this.withTimeout(this.loadState(), 12000, 'loadState');
         } catch (err) {
