@@ -2,6 +2,12 @@ import { auth, db, getDoc, setDoc, deleteDoc, getDocs, collection } from './fire
 
 export function attachStateModule(app) {
     Object.assign(app, {
+formatDateTimeForSheet: function(dateTimeValue, fallbackDate = '') {
+        const formatted = dateTimeValue && this.formatDateTimeLocal ? this.formatDateTimeLocal(dateTimeValue) : '';
+        if (formatted) return formatted;
+        return String(fallbackDate || '').trim();
+    },
+
 normalizeEntitiesState: function() {
         const state = window.sistemaVidaState;
         if (!state.entities || typeof state.entities !== 'object') {
@@ -1108,11 +1114,6 @@ importFromExcel: async function(event) {
                 return buildLocalIsoDateTime(year, month, day, hours, minutes);
             }
             return '';
-        };
-        const formatDateTimeForSheet = (dateTimeValue, fallbackDate = '') => {
-            const formatted = dateTimeValue && this.formatDateTimeLocal ? this.formatDateTimeLocal(dateTimeValue) : '';
-            if (formatted) return formatted;
-            return String(fallbackDate || '').trim();
         };
         const getSheetHeaderSet = (sheet) => new Set(
             ((XLSX.utils.sheet_to_json(sheet, { header: 1, range: 0 })?.[0]) || [])
@@ -2729,8 +2730,8 @@ exportToExcelFull: function() {
             ]);
             const lastFocusRow = focusData[focusData.length - 1];
             if (lastFocusRow) {
-                lastFocusRow[0] = formatDateTimeForSheet(session?.startedAtTs, session?.startedAt || "");
-                lastFocusRow[1] = formatDateTimeForSheet(session?.endedAtTs, session?.endedAt || "");
+                lastFocusRow[0] = this.formatDateTimeForSheet(session?.startedAtTs, session?.startedAt || "");
+                lastFocusRow[1] = this.formatDateTimeForSheet(session?.endedAtTs, session?.endedAt || "");
                 lastFocusRow.splice(2, 0, String(session?.startedAtTs || ""), String(session?.endedAtTs || ""));
             }
         });
@@ -3211,8 +3212,8 @@ exportToExcel: function() {
             ]);
             const lastFriendlyFocusRow = focusRows[focusRows.length - 1];
             if (lastFriendlyFocusRow) {
-                lastFriendlyFocusRow[0] = formatDateTimeForSheet(session?.startedAtTs, session?.startedAt || "");
-                lastFriendlyFocusRow[1] = formatDateTimeForSheet(session?.endedAtTs, session?.endedAt || "");
+                lastFriendlyFocusRow[0] = this.formatDateTimeForSheet(session?.startedAtTs, session?.startedAt || "");
+                lastFriendlyFocusRow[1] = this.formatDateTimeForSheet(session?.endedAtTs, session?.endedAt || "");
                 lastFriendlyFocusRow.splice(focusVisibleCols.length + 2, 0, String(session?.startedAtTs || ""), String(session?.endedAtTs || ""));
             }
         });
