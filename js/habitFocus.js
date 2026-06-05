@@ -80,8 +80,18 @@ export function attachHabitFocusModule(app) {
             if (!dw.isRunning) {
                 dw.microId = '';
                 dw.intention = habit.title || '';
-                const suggestedMinutes = Math.max(5, Number(this.getHabitEstimatedMinutes?.(habit)) || 25);
+                const suggestedMinutes = this.getSuggestedHabitFocusPresetMinutes?.(habit)
+                    || Math.max(5, Number(this.getHabitEstimatedMinutes?.(habit)) || 25);
                 this.applyDeepWorkPresetConfig(suggestedMinutes);
+                if (options.autoStart) {
+                    this.pendingFocusMicroId = '';
+                    this.pendingFocusHabitId = habit.id;
+                    this.pendingFocusAutoStart = true;
+                    this.pendingFocusMinutes = suggestedMinutes;
+                    this.saveState(false);
+                    if (options.navigate !== false) this.navigate?.('foco');
+                    return;
+                }
             }
             this.syncDeepWorkContextSelectorFromState?.();
             if (options.autoStart && !dw.isRunning) {
@@ -215,6 +225,8 @@ export function attachHabitFocusModule(app) {
             if (!resolvedDimension) return null;
             const now = new Date();
             const safeDate = dateKey || this.getLocalDateKey(now);
+            const frozenSchedule = this.getHabitScheduleContext?.(habit) || { startTime: '' };
+            const frozenSessionMinutes = Math.max(0, Math.round(Number(sessionPresetMinutes) || 0));
             const micro = {
                 id: `micro_${Date.now()}${Math.random().toString(36).slice(2, 7)}`,
                 title: String(title || '').trim(),
@@ -226,15 +238,15 @@ export function attachHabitFocusModule(app) {
                 ifThen: '',
                 inicioDate: safeDate,
                 prazo: safeDate,
-                startTime: '',
+                startTime: String(frozenSchedule.startTime || '').trim(),
                 macroId: macro.id,
                 okrId: macro.okrId || '',
                 metaId: macro.metaId || okr?.metaId || '',
                 status: markDone ? 'done' : 'in_progress',
                 completed: !!markDone,
                 progress: markDone ? 100 : 0,
-                estimatedMinutes: Math.max(0, Math.round(Number(sessionPresetMinutes) || 0)),
-                focusBlockMinutes: Math.max(0, Math.round(Number(sessionPresetMinutes) || 0)),
+                estimatedMinutes: frozenSessionMinutes,
+                focusBlockMinutes: frozenSessionMinutes,
                 focusSec: Math.max(0, Number(focusSec) || 0),
                 focusSessions: focusSec > 0 ? 1 : 0,
                 lastFocusDate: safeDate,

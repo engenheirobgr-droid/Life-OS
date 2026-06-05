@@ -442,21 +442,21 @@ showGamificationToast: function(result) {
                 : ['Boa execução!', 'Pequena vitória!', 'Consistência conta!'];
         const opener = openers[Math.floor(Math.random() * openers.length)];
 
-        const parts = [];
-        if (whyPrefix) parts.push(whyPrefix);
-        parts.push(`${opener} +${result.xp} XP`);
+        const lines = [];
+        if (whyPrefix) lines.push(whyPrefix);
+        lines.push(`${opener} +${result.xp} XP`);
 
         if (result.achievementsUnlocked && result.achievementsUnlocked.length) {
-            parts.push(`Conquista: ${result.achievementsUnlocked[0].title}`);
+            lines.push(`Conquista: ${result.achievementsUnlocked[0].title}`);
         } else if (result.dimension && result.identity) {
-            parts.push(tierPromotion
+            lines.push(tierPromotion
                 ? `${result.dimension}: agora ${result.identity.title}`
                 : `${result.identity.title} · nível ${result.dimensionLevel}`);
         } else {
-            parts.push(`Sistema nível ${result.totalLevel}`);
+            lines.push(`Sistema nível ${result.totalLevel}`);
         }
 
-        this.showToast(parts.join(' · '), 'success');
+        this.showToast({ title: 'Gamificacao', lines }, 'success');
         const policy = this.getGamificationChannelPolicy?.(result) || {};
         this.logGamificationInternalEvents?.(result, policy);
         this.publishGamificationMilestoneNotification?.(result, policy);

@@ -200,6 +200,32 @@ ensureHabitMaturityState: function() {
         });
     },
 
+cleanupHabitPlanReferencesAfterDeletion: function(plan, state = window.sistemaVidaState) {
+        const habits = state?.habits || [];
+        const metas = state?.entities?.metas || [];
+        const macros = state?.entities?.macros || [];
+        const removedMetaIds = new Set((plan?.idsByType?.metas || []).map((id) => String(id || '')).filter(Boolean));
+        const removedMacroIds = new Set((plan?.idsByType?.macros || []).map((id) => String(id || '')).filter(Boolean));
+        let changes = 0;
+
+        habits.forEach((habit) => {
+            const linkedMetaId = String(habit?.linkedMetaId || '').trim();
+            const preferredMacroId = String(habit?.preferredFocusMacroId || '').trim();
+
+            if (linkedMetaId && (removedMetaIds.has(linkedMetaId) || !metas.some((meta) => String(meta?.id || '') === linkedMetaId))) {
+                habit.linkedMetaId = null;
+                changes += 1;
+            }
+
+            if (preferredMacroId && (removedMacroIds.has(preferredMacroId) || !macros.some((macro) => String(macro?.id || '') === preferredMacroId))) {
+                habit.preferredFocusMacroId = '';
+                changes += 1;
+            }
+        });
+
+        return changes;
+    },
+
 getHabitScheduleAnchorDate: function(habit) {
         const raw = String(habit?.scheduleStartDate || habit?.createdAt || '').trim();
         if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;

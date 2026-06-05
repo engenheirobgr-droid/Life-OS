@@ -1316,6 +1316,35 @@
         .ui-modal-body {
             padding: 1.25rem 1.5rem;
         }
+        #habit-focus-closure-modal .ui-modal-shell {
+            background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 88%, var(--md-sys-color-surface-container-lowest) 12%);
+            box-shadow: 0 28px 72px rgba(2, 8, 23, 0.42);
+        }
+        #habit-focus-closure-modal .ui-modal-header {
+            background: linear-gradient(180deg, color-mix(in srgb, var(--md-sys-color-surface-container-highest) 72%, transparent) 0%, transparent 100%);
+        }
+        #habit-focus-closure-modal .ui-section-label,
+        #habit-focus-closure-modal .text-outline {
+            color: color-mix(in srgb, var(--md-sys-color-on-surface) 62%, transparent) !important;
+        }
+        #habit-focus-closure-modal .ui-modal-title {
+            color: var(--md-sys-color-on-surface) !important;
+        }
+        #habit-focus-closure-modal .ui-modal-description,
+        #habit-focus-closure-modal #habit-focus-closure-context,
+        #habit-focus-closure-modal .text-on-surface-variant {
+            color: color-mix(in srgb, var(--md-sys-color-on-surface) 78%, transparent) !important;
+        }
+        #habit-focus-closure-modal .ui-modal-body > .rounded-xl,
+        #habit-focus-closure-modal #habit-focus-closure-habit-summary,
+        #habit-focus-closure-modal #habit-focus-closure-habit-complete-wrap,
+        #habit-focus-closure-modal #habit-focus-closure-existing-complete-wrap,
+        #habit-focus-closure-modal #habit-focus-closure-plan-wrap {
+            background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 86%, transparent) !important;
+        }
+        #habit-focus-closure-modal .ui-modal-footer {
+            background: color-mix(in srgb, var(--md-sys-color-surface-container-low) 78%, transparent);
+        }
         .ui-modal-footer {
             display: flex;
             align-items: center;
@@ -1899,12 +1928,13 @@
                             <div class="flex flex-col gap-1.5">
                                 <label for="crud-inicio-date" class="text-xs text-outline font-bold uppercase tracking-widest">Início</label>
                                 <input type="date" id="crud-inicio-date"
-                                    onchange="window.app.applyDefaultDeadlineByType(document.getElementById('crud-type').value, true)"
+                                    onchange="window.app.applyDefaultDeadlineByType(document.getElementById('crud-type').value, true); window.app.onCrudDateWindowChange()"
                                     class="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface">
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label for="crud-prazo-date" class="text-xs text-outline font-bold uppercase tracking-widest">Prazo</label>
                                 <input type="date" id="crud-prazo-date"
+                                    onchange="window.app.onCrudDateWindowChange()"
                                     class="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface">
                             </div>
                         </div>
@@ -3341,7 +3371,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260604-ui-system-v21"></script>
+    <script type="module" src="app.js?v=20260604-ui-system-v23"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3372,7 +3402,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260604-ui-system-v21')
+                navigator.serviceWorker.register('sw.js?v=20260604-ui-system-v23')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

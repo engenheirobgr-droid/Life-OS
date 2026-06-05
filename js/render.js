@@ -105,7 +105,7 @@ renderFlowModal: function() {
                 sub('Ao longo do dia', 'light_mode') +
                 row('task_alt', 'Executar ações', 'Avançar ao menos uma ação do plano semanal', '+12–22 XP', s.microsDoneToday, 'hoje', 'hoje-checklist-section') +
                 row('repeat', 'Registrar hábitos', 'Marcar os hábitos concluídos no dia', '+6–10 XP', s.habitsDoneToday, 'hoje', 'hoje-habits-section') +
-                row('timer', 'Sessão de foco', 'Bloco de deep work com Pomodoro (90/20)', '+10–40 XP', s.focusToday, 'foco', 'deep-work-panel') +
+                row('timer', 'Sessão de foco', 'Bloco de foco com preset dinâmico da sessão do dia', '+10–40 XP', s.focusToday, 'foco', 'deep-work-panel') +
                 sub('Noite', 'nightlight') +
                 row('auto_stories', 'Diário & Gratidão', 'Reflexão do dia e três coisas pelas quais é grato', '+8 XP', s.diaryDone, 'hoje', 'hoje-diario-section', '', 'diary') +
                 row('power_settings_new', 'Shutdown ritual', 'Fechar o dia com intenção e limpar a mente', '+8 XP', s.shutdownDone, 'hoje', 'hoje-diario-section', '', 'shutdown')
@@ -212,7 +212,7 @@ renderTimelineHistory: function() {
 
             let habitsHtml = '';
             if (d.habitsDone.length) {
-                habitsHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Hábitos concluídos</p><ul class="space-y-1">${
+                habitsHtml = `<div><p class="text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Hábitos Concluídos</p><ul class="space-y-1">${
                     d.habitsDone.map(h => `<li class="flex items-center gap-2 text-xs text-on-surface-variant"><span class="material-symbols-outlined notranslate text-primary text-[14px]">${habitIconMap[h.dimension] || 'stars'}</span>${this.escapeHtml(h.title)}</li>`).join('')
                 }</ul></div>`;
             }
@@ -384,7 +384,7 @@ renderWeeklyPlans: function() {
                     actionIcon: 'auto_awesome',
                     actionOptions: `weekKey: '${nextWeekKey}', nextWeek: true, suggestCarryover: true`,
                     isCurrent: false,
-                    emptyText: `<span class="font-bold text-primary">Há ${suggestions.length} ação${suggestions.length > 1 ? 'ões' : ''} pendente${suggestions.length > 1 ? 's' : ''} para considerar.</span> Priorizei o que ficou planejado e não concluído, está atrasado ou já estava em andamento.`
+                    emptyText: `<span class="font-bold text-primary">Há ${suggestions.length} ação${suggestions.length > 1 ? 'ões' : ''} pendente${suggestions.length > 1 ? 's' : ''} para considerar.</span> Priorizei o que ficou planejado e não Concluído ou já estava em andamento.`
                 });
             } else {
                 nextCard.innerHTML = this._renderWeeklyPlanShell({
@@ -986,7 +986,7 @@ renderGamificationProfile: function() {
                 { icon: 'power_settings_new', label: 'Shutdown', xp: '+8 XP', note: 'conta uma vez por dia' },
                 { icon: 'edit_calendar', label: 'Planejamento semanal', xp: '+15 XP', note: 'conta uma vez por semana' },
                 { icon: 'task_alt', label: 'Ação concluída', xp: '+12 XP', note: '+6 se está no plano da semana' },
-                { icon: 'repeat', label: 'Hábito concluído', xp: '+2 a +8 XP', note: '2 base, 4 se for chave, com bônus por força, sombra e se-então; automáticos recebem 50%' },
+                { icon: 'repeat', label: 'Hábito Concluído', xp: '+2 a +8 XP', note: '2 base, 4 se for chave, com bônus por força, sombra e se-então; automáticos recebem 50%' },
                 { icon: 'timer', label: 'Foco profundo', xp: '+10 a +40 XP', note: 'varia pela duração do bloco' },
                 { icon: 'rate_review', label: 'Revisão semanal', xp: '+25 XP', note: 'conta uma vez por semana' }
             ];
@@ -1487,7 +1487,7 @@ renderTimeline: function() {
         const timelineLegendHTML = `
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 px-2 opacity-60">
                 <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
-                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>ConcluÃ­do
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>Concluído
                 </span>
                 <span class="flex items-center gap-1.5 text-[10px] text-outline font-label uppercase tracking-widest">
                     <span class="inline-block w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span>Em andamento
@@ -1907,7 +1907,7 @@ renderDeepWorkExecutionChecklistHTML: function(micro, options = {}) {
                         </button>`;
                     }).join('')}
                 </div>
-                <p class="${noteClass}">${doneCount}/${steps.length} passos concluídos hoje.</p>
+                <p class="${noteClass}">${doneCount}/${steps.length} passos Concluídos hoje.</p>
             </div>`;
     },
 
@@ -1933,7 +1933,6 @@ renderDeepWorkHabitChecklistHTML: function(habit, options = {}) {
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist do hábito</p>
-                        <p class="text-xs text-on-surface-variant mt-1">Os passos definem a conclusão do hábito. O foco registra o tempo.</p>
                     </div>
                     <button type="button" onclick="window.app.toggleHabitAllSteps('${this.escapeHtml(habit.id)}','${todayKey}',${allDone ? 'true' : 'false'})" class="shrink-0 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high transition-colors">
                         ${allDone ? 'Reabrir passos' : 'Concluir passos'}
@@ -1951,7 +1950,7 @@ renderDeepWorkHabitChecklistHTML: function(habit, options = {}) {
                         </button>`;
                     }).join('')}
                 </div>
-                <p class="${noteClass}">${doneCount}/${steps.length} passos concluídos hoje.</p>
+                <p class="${noteClass}">${doneCount}/${steps.length} passos Concluídos hoje.</p>
             </div>`;
     },
 
@@ -1999,19 +1998,33 @@ renderDeepWorkImmersiveOverlay: function() {
             ? (state.entities?.metas || []).find((meta) => meta.id === linkedHabit.linkedMetaId)
             : null;
         const overlayMicroSchedule = selectedMicro ? (this.getMicroSuggestedSchedule?.(selectedMicro) || null) : null;
-        const overlayExecutionLabel = selectedMicro
-            ? (overlayMicroSchedule?.startTime ? `${overlayMicroSchedule.startTime} · Definido automaticamente` : 'Sem horário definido')
-            : linkedHabit?.startTime
-                ? `${linkedHabit.startTime} · Definido manualmente`
-                : 'Sem horário definido';
+        const overlayLivePlan = selectedMicro ? (this.getMicroLiveExecutionPlan?.(selectedMicro) || null) : null;
+        const overlayExecutionParts = selectedMicro
+            ? [
+                overlayMicroSchedule?.startTime ? `${overlayMicroSchedule.startTime} · Definido automaticamente` : 'Sem horário definido',
+                overlayLivePlan?.displayLabel || ''
+            ].filter(Boolean)
+            : [
+                linkedHabit?.startTime ? `${linkedHabit.startTime} · Definido manualmente` : 'Sem horário definido'
+            ].filter(Boolean);
+        const overlayExecutionLabel = overlayExecutionParts.join(' · ');
         const overlayEstimatedMinutes = selectedMicro
-            ? Math.max(1, Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 5400) / 60))
+            ? Math.max(1, Number(overlayLivePlan?.totalLoadMinutes) || Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 5400) / 60))
             : Math.max(1, Math.round(Number(dw.targetSec || 5400) / 60));
+        const overlaySessionLabel = selectedMicro
+            ? (overlayLivePlan?.displayLabel || `${Math.max(1, Math.round(Number(dw.targetSec || 5400) / 60))} min`)
+            : `${overlayEstimatedMinutes} min`;
         const overlayDimensionLabel = selectedMicro?.dimension || linkedHabit?.dimension || microContext?.meta?.dimension || habitMeta?.dimension || 'Geral';
         const overlaySummaryRows = [
             { icon: 'task_alt', label: 'Ação', value: selectedMicro?.title || (linkedHabit ? 'Sessão de hábito' : 'Sessão livre') },
             { icon: 'monitor_heart', label: 'Área', value: overlayDimensionLabel },
-            { icon: 'timer', label: 'Carga total estimada', value: `${overlayEstimatedMinutes} min · Ajustado ${selectedMicro ? 'automaticamente' : 'manualmente'}` },
+            {
+                icon: 'timer',
+                label: selectedMicro && !overlayLivePlan?.isHabitDerived ? 'Carga total da ação' : 'Tempo da sessão',
+                value: selectedMicro && !overlayLivePlan?.isHabitDerived
+                    ? `${overlayEstimatedMinutes} min · Ajustado automaticamente`
+                    : `${overlaySessionLabel} · Ajustado ${selectedMicro ? 'automaticamente' : 'manualmente'}`
+            },
             { icon: 'schedule', label: 'Execução no dia', value: overlayExecutionLabel }
         ];
         const overlaySummaryHtml = overlaySummaryRows.map((row) => `
@@ -2396,14 +2409,25 @@ renderDeepWorkPanel: function() {
                     ? ((this.getHabitTodayProgressSnapshot?.(selectedHabit)?.label) || 'Sem progresso hoje')
                     : 'Aguardando seleção';
             const microSchedule = selectedMicro ? (this.getMicroSuggestedSchedule?.(selectedMicro) || null) : null;
-            const executionLabel = selectedMicro
-                ? (microSchedule?.startTime || 'Sem horário definido')
-                : selectedHabit?.startTime || 'Sem horário definido';
+            const scheduleSourceLabel = this.getScheduleSourceLabel?.(microSchedule?.source || '') || '';
+            const livePlan = selectedMicro ? (this.getMicroLiveExecutionPlan?.(selectedMicro) || null) : null;
+            const executionParts = selectedMicro
+                ? [
+                    microSchedule?.startTime ? `${microSchedule.startTime} · ${scheduleSourceLabel || 'Definido automaticamente'}` : 'Sem horário definido',
+                    livePlan?.displayLabel || ''
+                ].filter(Boolean)
+                : [
+                    selectedHabit?.startTime ? `${selectedHabit.startTime} · Definido manualmente` : 'Sem horário definido'
+                ].filter(Boolean);
+            const executionLabel = executionParts.join(' · ');
             const estimatedMinutes = selectedMicro
-                ? Math.max(1, Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 1500) / 60))
+                ? Math.max(1, Number(livePlan?.totalLoadMinutes) || Number(this.getMicroEstimatedMinutes?.(selectedMicro)) || Math.round(Number(dw.targetSec || 1500) / 60))
                 : Math.max(1, Math.round(Number(dw.targetSec || 1500) / 60));
             const dimensionLabel = selectedMicro?.dimension || selectedHabit?.dimension || microContext?.meta?.dimension || habitMeta?.dimension || 'Geral';
             const titleLabel = selectedMicro?.title || selectedHabit?.title || 'Nenhuma ação selecionada';
+            const timeChip = selectedMicro
+                ? (livePlan?.displayLabel || `${Math.max(1, Math.round(Number(dw.targetSec || 1500) / 60))} min`)
+                : `${estimatedMinutes} min`;
             const pathLabel = selectedMicro
                 ? (microContext?.parentLabel || microContext?.path || 'Sem vínculo em Planos')
                 : habitMeta
@@ -2418,7 +2442,7 @@ renderDeepWorkPanel: function() {
                     : 'Escolha um contexto para ver o resumo aqui.';
             const contextMetaChips = [
                 { icon: 'folder_open', value: dimensionLabel },
-                { icon: 'timer', value: `${estimatedMinutes} min` },
+                { icon: 'timer', value: timeChip },
                 { icon: 'schedule', value: executionLabel },
                 { icon: 'progress_activity', value: contextStatus }
             ];
@@ -2493,7 +2517,7 @@ renderDeepWorkPanel: function() {
                 const contextualMessage = hasPendingClosure
                     ? 'Feche a sessão pendente para liberar o próximo bloco e registrar o resultado.'
                     : selectedMicro
-                        ? 'Esta ação não tem checklist. Use o bloco para registrar foco e conclua a ação no fechamento, quando fizer sentido.'
+                        ? 'Esta ação não tem checklist. Use o bloco para registrar foco e concluir.'
                         : selectedHabit
                             ? 'Este hábito não tem checklist hoje. Use o bloco para registrar o tempo e finalize o fechamento ao encerrar.'
                             : '';
@@ -2797,44 +2821,6 @@ renderTodayActionList: function() {
             </button>`;
         }).join('');
 
-        const organizerHtml = mode === 'horario'
-            ? `
-                <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-3 shadow-sm">
-                    <p class="ui-section-label mb-2">Filtrar turno</p>
-                    <div class="grid grid-cols-2 gap-2 md:grid-cols-5">
-                        ${partButtons}
-                    </div>
-                </div>`
-            : '';
-
-        const scheduledMicrosHtml = mode === 'horario' && visibleScheduledMicros.length
-            ? `
-                <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
-                    <div>
-                        <p class="ui-section-label">Ações agendadas</p>
-                        <p class="mt-1 text-xs text-on-surface-variant">Micros com horário definido para hoje.</p>
-                    </div>
-                    <div class="space-y-2">
-                        ${visibleScheduledMicros.map((item) => {
-                            const partLabel = labels[item.dayPart] || 'Sem horário';
-                            return `
-                            <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low px-3 py-2.5">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <p class="text-[10px] uppercase tracking-widest text-outline">${this.escapeHtml(partLabel)}${item.startTime ? ` · ${this.escapeHtml(item.startTime)}` : ''}</p>
-                                        <p class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(item.title)}</p>
-                                        <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(item.dimension || 'Geral')} · ${Math.round(Number(item.estimatedMinutes) || 0)} min</p>
-                                    </div>
-                                    <button type="button" onclick="window.app.openMicroInFocus('${this.escapeHtml(item.sourceId)}', true)" class="shrink-0 px-2.5 py-1 rounded-lg border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/10 transition-colors">
-                                        Iniciar
-                                    </button>
-                                </div>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                </div>`
-            : '';
-
         const unscheduledHtml = mode === 'horario' && visibleUnscheduledMicros.length
             ? `
                 <div class="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm space-y-3">
@@ -2848,7 +2834,7 @@ renderTodayActionList: function() {
                                 <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                     <div class="min-w-0">
                                         <p class="text-sm font-semibold text-on-surface truncate">${this.escapeHtml(item.title)}</p>
-                                        <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(item.dimension || 'Geral')} · ${Math.round(Number(item.estimatedMinutes) || 0)} min</p>
+                                        <p class="text-[11px] text-outline mt-0.5">${this.escapeHtml(item.dimension || 'Geral')} · ${this.escapeHtml(item.timeLabel || `${Math.round(Number(item.estimatedMinutes) || 0)} min`)}</p>
                                     </div>
                                     <div class="flex flex-wrap gap-1.5">
                                         <button type="button" onclick="window.app.assignMicroPreferredDayPart('${this.escapeHtml(item.sourceId)}','manha')" class="px-2.5 py-1 rounded-lg border border-outline-variant/20 text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">Manhã</button>
@@ -2974,7 +2960,8 @@ render: {
                 const delayedMicros = micros.filter(m => m.status !== 'done' && m.prazo && m.prazo < todayStr).length;
                 atrasadasVal.textContent = delayedMicros;
             }
-            app.renderWeeklyHealthScore({ execScore, plannedCount: totalMicros, doneCount: doneMicros });
+            const plannedLoadMinutes = micros.reduce((sum, micro) => sum + Math.max(0, Number(app.getMicroEstimatedMinutes?.(micro)) || 0), 0);
+            app.renderWeeklyHealthScore({ execScore, plannedCount: totalMicros, doneCount: doneMicros, plannedLoadMinutes });
             // ---------------------------------------------------------
             
             // Fix Filter Buttons Highlight
@@ -3372,6 +3359,38 @@ render: {
                         app.applyDeepWorkPresetConfig?.(pendingMinutes);
                     } else if (app.getSuggestedFocusPresetMinutes) {
                         app.applyDeepWorkPresetConfig?.(app.getSuggestedFocusPresetMinutes(micro));
+                    }
+                    if (presetEl && state.deepWork?.targetSec) presetEl.value = String(Math.round(Number(state.deepWork.targetSec) / 60));
+                    if (autoStart && !state.deepWork.isRunning) app.startDeepWorkSession();
+                    else app.renderDeepWorkPanel();
+                    const panel = document.getElementById('deep-work-panel');
+                    if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
+            if (app.pendingFocusHabitId) {
+                const pendingId = app.pendingFocusHabitId;
+                const autoStart = !!app.pendingFocusAutoStart;
+                const pendingMinutes = Math.max(0, Math.round(Number(app.pendingFocusMinutes) || 0));
+                app.pendingFocusHabitId = '';
+                app.pendingFocusAutoStart = false;
+                app.pendingFocusMinutes = 0;
+                const habit = (state.habits || []).find((item) => item.id === pendingId);
+                if (habit) {
+                    state.deepWork.microId = '';
+                    state.deepWork.habitId = habit.id;
+                    state.deepWork.intention = habit.title || '';
+                    const habitEl = document.getElementById('deep-work-habit');
+                    const contextEl = document.getElementById('deep-work-context');
+                    const intentionEl = document.getElementById('deep-work-intention');
+                    const presetEl = document.getElementById('deep-work-preset');
+                    if (habitEl) habitEl.value = habit.id;
+                    if (contextEl) contextEl.value = `habit:${habit.id}`;
+                    if (intentionEl) intentionEl.value = habit.title || '';
+                    if (pendingMinutes > 0) {
+                        app.applyDeepWorkPresetConfig?.(pendingMinutes);
+                    } else if (app.getSuggestedHabitFocusPresetMinutes) {
+                        app.applyDeepWorkPresetConfig?.(app.getSuggestedHabitFocusPresetMinutes(habit));
                     }
                     if (presetEl && state.deepWork?.targetSec) presetEl.value = String(Math.round(Number(state.deepWork.targetSec) / 60));
                     if (autoStart && !state.deepWork.isRunning) app.startDeepWorkSession();
@@ -3814,7 +3833,7 @@ render: {
                         if (variant === 'continuous') {
                             return base
                                 .replace('bg-primary/10 text-primary', 'border border-primary/12 bg-primary/[0.08] text-primary')
-                                .replace('>ContÃ­nuo<', '>Continuo<');
+                                .replace('>Contínuo<', '>Continuo<');
                         }
                         if (variant === 'today') {
                             return base.replace('bg-primary/10 text-primary', 'border border-primary/12 bg-primary/[0.08] text-primary');
@@ -3822,7 +3841,7 @@ render: {
                         return base.replace('bg-surface-container-high text-outline', 'border border-outline-variant/20 bg-surface-container-high text-on-surface-variant');
                     };
                     const continuousDisplayChip = habit.continuous
-                        ? `<span class="inline-flex items-center whitespace-nowrap gap-1 rounded-full border border-primary/12 bg-primary/[0.08] px-2 py-0.5 text-[9px] leading-none font-semibold tracking-normal text-primary"><span class="material-symbols-outlined notranslate text-[11px]">all_inclusive</span>Continuo</span>`
+                        ? `<span class="inline-flex items-center whitespace-nowrap gap-1 rounded-full border border-primary/12 bg-primary/[0.08] px-2 py-0.5 text-[9px] leading-none font-semibold tracking-normal text-primary"><span class="material-symbols-outlined notranslate text-[11px]">all_inclusive</span>Contínuo</span>`
                         : '';
                     const linkedProtocol = habit.protocolId && typeof app.getProtocolById === 'function'
                         ? app.getProtocolById(habit.protocolId)
@@ -4205,6 +4224,7 @@ render: {
                     const shouldStart = timing.status === 'active_today' && micro.status === 'pending';
                     const isOverdue = timing.status === 'overdue';
                     const isPlanned = app._isPlannedThisWeek(micro.id);
+                    const livePlan = app.getMicroLiveExecutionPlan?.(micro, todayStr) || null;
                     const estimatedMinutes = Math.max(1, Number(app.getMicroEstimatedMinutes?.(micro)) || 0);
                     const estimateSource = app.getMicroEstimatedMinutesSource?.(micro) || 'suggested';
                     const estimateSourceLabel = app.getEstimateSourceLabel?.(estimateSource) || '';
@@ -4213,7 +4233,7 @@ render: {
                     const dimensionBadge = badge(dimIcon, micro.dimension || 'Geral', 'text-primary', 'bg-primary/5');
                     const statusBadge = micro.status === 'in_progress' ? badge('radio_button_checked', 'Andamento', 'text-amber-600 dark:text-amber-400', 'bg-amber-500/10') : '';
                     const overdueBadge = isOverdue ? badge('alarm', 'Atrasada', 'text-red-600 dark:text-red-400', 'bg-red-500/10') : '';
-                    const timeBadge = badge('timer', `${Math.round(estimatedMinutes)} min`, 'text-on-surface-variant', 'bg-surface-container-high');
+                    const timeBadge = badge('timer', app.getMicroExecutionTimeBadgeLabel?.(micro, todayStr) || `${Math.round(estimatedMinutes)} min`, 'text-on-surface-variant', 'bg-surface-container-high');
                     const planBadge = isPlanned ? badge('event', 'Semana', 'text-primary', 'bg-primary/5') : badge('inbox', 'Captura', 'text-on-surface-variant', 'bg-surface-container-high');
                     const focusEligibility = app.getMicroFocusEligibility?.(micro) || { ok: true };
                     const orphanBadge = !focusEligibility.ok ? badge('warning', 'Não Alinhado', 'text-amber-600 dark:text-amber-400', 'bg-amber-500/10') : '';
@@ -4313,8 +4333,8 @@ render: {
                             <div class="flex items-center gap-4 relative z-10 min-w-0">
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">timer</span>
                                 <div class="flex flex-col min-w-0">
-                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Carga total estimada</span>
-                                    <span class="text-xs break-words">${Math.round(estimatedMinutes)} min${estimateSourceLabel ? ` · ${estimateSourceLabel}` : ''}</span>
+                                    <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">${livePlan?.isHabitDerived ? 'Tempo da sessão' : 'Carga total da ação'}</span>
+                                    <span class="text-xs break-words">${livePlan?.isHabitDerived ? (livePlan?.displayLabel || `${Math.round(estimatedMinutes)} min`) : `${Math.round(estimatedMinutes)} min`}${estimateSourceLabel && !livePlan?.isHabitDerived ? ` · ${estimateSourceLabel}` : ''}</span>
                                 </div>
                             </div>
 
@@ -4322,7 +4342,10 @@ render: {
                                 <span class="material-symbols-outlined notranslate text-outline text-xl bg-surface-container-lowest p-0.5 rounded-full">schedule</span>
                                 <div class="flex flex-col min-w-0">
                                     <span class="text-[9px] uppercase tracking-tighter opacity-50 font-bold">Execução no dia</span>
-                                    <span class="text-xs break-words">${schedule.startTime ? `${schedule.startTime} · ${scheduleSourceLabel || 'Definido'}` : 'Sem horário definido'}</span>
+                                    <span class="text-xs break-words">${[
+                                        schedule.startTime ? `${schedule.startTime} · ${scheduleSourceLabel || 'Definido'}` : 'Sem horário definido',
+                                        livePlan?.displayLabel || ''
+                                    ].filter(Boolean).join(' · ')}</span>
                                 </div>
                             </div>
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Sistema Vida - Core OS
  * Vanilla JS Single Page Application Controller with Data Binding
  */
@@ -17,18 +17,18 @@ import {
 // Phase 9 extracted modules — attached to app after object definition
 import { attachSubjectiveScales } from './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205';
 import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec-flow-v1';
-import { attachNotifications } from './js/notifications.js?v=20260604-ui-system-v21';
-import { attachCadence } from './js/cadence.js?v=20260604-ui-system-v21';
+import { attachNotifications } from './js/notifications.js?v=20260604-ui-system-v23';
+import { attachCadence } from './js/cadence.js?v=20260604-ui-system-v23';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260604-ui-system-v21';
+import { attachIdentity } from './js/identity.js?v=20260604-ui-system-v23';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
-import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v21';
-import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v21';
-import { attachStateModule } from './js/state.js?v=20260604-ui-system-v21';
-import { attachRenderModule } from './js/render.js?v=20260604-ui-system-v21';
-import { attachPlanningModule } from './js/planning.js?v=20260604-ui-system-v21';
-import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v21';
-import { attachSocial } from './js/social.js?v=20260604-ui-system-v21';
+import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v23';
+import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v23';
+import { attachStateModule } from './js/state.js?v=20260604-ui-system-v23';
+import { attachRenderModule } from './js/render.js?v=20260604-ui-system-v23';
+import { attachPlanningModule } from './js/planning.js?v=20260604-ui-system-v23';
+import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v23';
+import { attachSocial } from './js/social.js?v=20260604-ui-system-v23';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260604-ui-system-v21',
+    appBuildVersion: '20260604-ui-system-v23',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -1063,14 +1063,31 @@ normalizeSwlsAnswer: function(rawValue) {
         this.stopDeepWorkTicking?.();
     },
 
-    getDeepWorkPresetConfig: function(minutes) {
-        const presets = [
+    getDeepWorkPresetOptions: function() {
+        return [
             { minutes: 15, breakMinutes: 3, label: '15/3' },
             { minutes: 25, breakMinutes: 5, label: '25/5' },
             { minutes: 45, breakMinutes: 10, label: '45/10' },
             { minutes: 50, breakMinutes: 10, label: '50/10' },
             { minutes: 90, breakMinutes: 20, label: '90/20' }
         ];
+    },
+
+    getDeepWorkPresetConfigForRequiredMinutes: function(minutes) {
+        const presets = this.getDeepWorkPresetOptions();
+        const target = Math.max(5, Math.round(Number(minutes) || 25));
+        const chosen = presets.find((preset) => preset.minutes >= target) || presets[presets.length - 1];
+        return {
+            minutes: chosen.minutes,
+            breakMinutes: chosen.breakMinutes,
+            label: chosen.label,
+            targetSec: chosen.minutes * 60,
+            breakSec: chosen.breakMinutes * 60
+        };
+    },
+
+    getDeepWorkPresetConfig: function(minutes) {
+        const presets = this.getDeepWorkPresetOptions();
         const target = Math.max(5, Math.round(Number(minutes) || 25));
         const chosen = presets.reduce((best, preset) => {
             if (!best) return preset;
@@ -1086,24 +1103,19 @@ normalizeSwlsAnswer: function(rawValue) {
     },
 
     getSuggestedFocusPresetMinutes: function(micro) {
+        const executionPlan = this.getMicroLiveExecutionPlan?.(micro, this.getLocalDateKey()) || null;
+        if (executionPlan?.preset?.minutes) return executionPlan.preset.minutes;
         const sessionPreset = Math.max(0, Number(micro?.focusBlockMinutes) || 0);
         if (sessionPreset > 0) {
             return this.getDeepWorkPresetConfig(sessionPreset).minutes;
         }
         const estimatedMinutes = Math.max(1, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
-        const adjustment = this.getCapacityAdjustmentFromCheckin?.(this.getLocalDateKey()) || { factor: 1 };
-        const lowEnergy = Number(adjustment.factor || 1) < 0.78;
-        if (lowEnergy) {
-            if (estimatedMinutes <= 20) return 15;
-            if (estimatedMinutes <= 40) return 25;
-            if (estimatedMinutes <= 75) return 45;
-            return 50;
-        }
-        if (estimatedMinutes <= 20) return 15;
-        if (estimatedMinutes <= 35) return 25;
-        if (estimatedMinutes <= 55) return 45;
-        if (estimatedMinutes <= 80) return 50;
-        return 90;
+        return this.getDeepWorkPresetConfigForRequiredMinutes(estimatedMinutes).minutes;
+    },
+
+    getSuggestedHabitFocusPresetMinutes: function(habit) {
+        const estimatedMinutes = Math.max(5, Number(this.getHabitEstimatedMinutes?.(habit)) || 25);
+        return this.getDeepWorkPresetConfigForRequiredMinutes(estimatedMinutes).minutes;
     },
 
     applyDeepWorkPresetConfig: function(minutes, options = {}) {
@@ -2639,6 +2651,9 @@ _getAudioContext: function() {
             : { message: String(messageOrPayload || '') };
         let title = String(payload.title || '').trim();
         const message = String(payload.body || payload.message || '').trim();
+        const lines = Array.isArray(payload.lines)
+            ? payload.lines.map((line) => String(line || '').trim()).filter(Boolean)
+            : [];
         const iconOverride = String(options.icon || payload.icon || '').trim();
         const isGamificationToast = /\bXP\b|Conquista|nivel|nível|desbloqueado|Gamificacao|Gamificação/i.test(`${title} ${message}`);
         if (!title && isGamificationToast) title = 'Gamificacao';
@@ -2657,11 +2672,14 @@ _getAudioContext: function() {
         const maxWidthClass = options.maxWidthClass || payload.maxWidthClass || (isGamificationToast ? 'max-w-md' : 'max-w-sm');
         
         toast.className = `pointer-events-auto flex ${maxWidthClass} items-start gap-3 px-5 py-3 rounded-2xl shadow-xl transform transition-all duration-500 translate-y-8 opacity-0 ${bgColor} border ${borderColor} ring-4 ${ringColor}`;
+        const bodyHtml = lines.length
+            ? lines.map((line, idx) => `<p class="${idx === 0 ? 'text-sm font-semibold' : 'text-sm font-medium'} leading-relaxed ${isSuccess || isWarning ? 'text-on-surface' : 'text-white'}">${this.escapeHtml(line)}</p>`).join('')
+            : `<p class="text-sm leading-relaxed font-semibold ${isSuccess || isWarning ? 'text-on-surface' : 'text-white'}">${this.escapeHtml(message)}</p>`;
         toast.innerHTML = `
             <span class="material-symbols-outlined notranslate ${textColor} text-xl mt-0.5 shrink-0">${icon}</span>
             <div class="min-w-0 space-y-0.5">
-                ${title ? `<p class="text-[11px] font-bold uppercase tracking-[0.18em] ${isSuccess || isWarning ? 'text-primary' : 'text-white/80'}">${title}</p>` : ''}
-                <p class="text-sm leading-relaxed font-semibold ${isSuccess || isWarning ? 'text-on-surface' : 'text-white'}">${message}</p>
+                ${title ? `<p class="text-[11px] font-bold uppercase tracking-[0.18em] ${isSuccess || isWarning ? 'text-primary' : 'text-white/80'}">${this.escapeHtml(title)}</p>` : ''}
+                ${bodyHtml}
             </div>
         `;
         
@@ -2696,6 +2714,7 @@ _getAudioContext: function() {
     },
     currentView: '',
     pendingFocusMicroId: '',
+    pendingFocusHabitId: '',
     pendingFocusAutoStart: false,
     pendingFocusMinutes: 0,
     painelFilter: 'ciclo',
@@ -7154,10 +7173,14 @@ ensureNotesState: function() {
         const weekKey = this._getWeekKey();
         const weekPlan = (window.sistemaVidaState.weekPlans || {})[weekKey];
         const plannedCount = Array.isArray(weekPlan?.selectedMicros) ? weekPlan.selectedMicros.length : 0;
+        const plannedLoadMinutes = this.getWeeklyPlanLoadMinutes(weekKey);
+        const avgLoadMinutes = this._computeWeeklyCompletionLoadAverage(4);
         const activeHabits = (window.sistemaVidaState.habits || []).length;
-        const heavyLoad = plannedCount + activeHabits >= 10;
+        const heavyLoadByCount = plannedCount + activeHabits >= 10;
+        const heavyLoadByMinutes = avgLoadMinutes > 0 && plannedLoadMinutes > avgLoadMinutes * 1.1;
+        const heavyLoad = heavyLoadByCount || heavyLoadByMinutes;
         const show = (lowEnergy3 || highStress3 || fallingExecution) && heavyLoad;
-        return { show, lowEnergy3, highStress3, fallingExecution, plannedCount, activeHabits };
+        return { show, lowEnergy3, highStress3, fallingExecution, plannedCount, plannedLoadMinutes, avgLoadMinutes, activeHabits };
     },
 
     dismissLoadRecoveryAlert: function() {
@@ -7186,7 +7209,7 @@ ensureNotesState: function() {
                 <div class="min-w-0">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">Sinais de sobrecarga</p>
                     <h4 class="mt-1 font-headline text-xl font-bold text-on-surface">Considere reduzir o ritmo desta semana</h4>
-                    <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Detectei ${this.escapeHtml(reasons || 'carga alta')} com ${signal.plannedCount} ações planejadas e ${signal.activeHabits} habitos ativos.</p>
+                    <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Detectei ${this.escapeHtml(reasons || 'carga alta')} com ${signal.plannedCount} ações planejadas, ${signal.plannedLoadMinutes || 0} min na semana e ${signal.activeHabits} habitos ativos.</p>
                 </div>
                 <button type="button" onclick="window.app.dismissLoadRecoveryAlert()" class="shrink-0 px-4 py-2 rounded-xl bg-surface-container-high text-xs font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container-highest">Dispensar</button>
             </div>`;
@@ -7626,13 +7649,12 @@ ensureNotesState: function() {
         const container = document.getElementById('painel-decision');
         if (!container) return;
         const next = this.getNextBestAction({ scope: 'week' });
-        const avg = this._computeWeeklyCompletionAverage(4);
+        const avg = this._computeWeeklyCompletionLoadAverage(4);
         const weekKey = this._getWeekKey();
-        const plan = (window.sistemaVidaState.weekPlans || {})[weekKey];
-        const plannedCount = Array.isArray(plan?.selectedMicros) ? plan.selectedMicros.length : 0;
+        const plannedLoadMinutes = this.getWeeklyPlanLoadMinutes(weekKey);
         let loadHtml = '';
-        if (avg > 0 && plannedCount > 0) {
-            const ratio = plannedCount / avg;
+        if (avg > 0 && plannedLoadMinutes > 0) {
+            const ratio = plannedLoadMinutes / avg;
             const tone = ratio > 1.5 ? 'text-red-600 dark:text-red-400' : (ratio > 1.1 ? 'text-amber-600 dark:text-amber-400' : 'text-primary');
             const copy = ratio > 1.5
                 ? 'Seu plano está muito acima do ritmo recente. Corte ou adie antes de criar novas ações.'
@@ -7642,14 +7664,14 @@ ensureNotesState: function() {
             loadHtml = `
                 <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-4 shadow-sm">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Execução realista</p>
-                    <p class="mt-2 text-sm text-on-surface"><span class="${tone} font-bold">${plannedCount}</span> ações planejadas para média recente de <span class="font-bold">${avg}</span>.</p>
+                    <p class="mt-2 text-sm text-on-surface"><span class="${tone} font-bold">${plannedLoadMinutes} min</span> planejados para média recente de <span class="font-bold">${avg} min</span>.</p>
                     <p class="mt-1 text-xs text-on-surface-variant leading-relaxed">${copy}</p>
                 </div>`;
         }
         container.innerHTML = this._renderNextActionCard(next, 'panel') + loadHtml;
     },
 
-    renderWeeklyHealthScore: function({ execScore = 0, plannedCount = 0, doneCount = 0 } = {}) {
+    renderWeeklyHealthScore: function({ execScore = 0, plannedCount = 0, doneCount = 0, plannedLoadMinutes = 0 } = {}) {
         const scoreEl = document.getElementById('weekly-health-score');
         const barEl = document.getElementById('weekly-health-bar');
         const labelEl = document.getElementById('weekly-health-label');
@@ -7658,9 +7680,9 @@ ensureNotesState: function() {
         if (!scoreEl && !barEl && !labelEl && !copyEl) return;
         if (headingEl) headingEl.textContent = 'Saúde da semana';
 
-        const avg = this._computeWeeklyCompletionAverage(4);
-        const loadRatio = avg > 0 && plannedCount > 0 ? plannedCount / avg : 1;
-        const loadPenalty = plannedCount > 0 && avg > 0 ? Math.max(0, Math.min(30, Math.round((loadRatio - 1) * 20))) : 0;
+        const avg = this._computeWeeklyCompletionLoadAverage(4);
+        const loadRatio = avg > 0 && plannedLoadMinutes > 0 ? plannedLoadMinutes / avg : 1;
+        const loadPenalty = plannedLoadMinutes > 0 && avg > 0 ? Math.max(0, Math.min(30, Math.round((loadRatio - 1) * 20))) : 0;
         const overdueCount = (window.sistemaVidaState.entities?.micros || []).filter(m => m.status !== 'done' && m.prazo && m.prazo < this.getLocalDateKey()).length;
         const overduePenalty = Math.min(30, overdueCount * 10);
         const score = plannedCount === 0
@@ -7735,6 +7757,41 @@ ensureNotesState: function() {
         return Math.round((total / sortedKeys.length) * 10) / 10;
     },
 
+    getWeeklyPlanLoadMinutes: function(weekKey = this._getWeekKey()) {
+        const state = window.sistemaVidaState || {};
+        const plan = (state.weekPlans || {})[weekKey] || {};
+        const selectedIds = Array.isArray(plan.selectedMicros) ? plan.selectedMicros : [];
+        if (!selectedIds.length) return 0;
+        const micros = state.entities?.micros || [];
+        return selectedIds.reduce((sum, id) => {
+            const micro = micros.find((item) => item.id === id);
+            return sum + Math.max(0, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
+        }, 0);
+    },
+
+    _computeWeeklyCompletionLoadAverage: function(weeks = 4) {
+        const state = window.sistemaVidaState || {};
+        const micros = state.entities?.micros || [];
+        if (!micros.length) return 0;
+
+        const currentWeekKey = this._getWeekKey();
+        const buckets = {};
+
+        micros.forEach((micro) => {
+            if (!micro?.completedDate) return;
+            const completedDate = new Date(`${micro.completedDate}T00:00:00`);
+            if (Number.isNaN(completedDate.getTime())) return;
+            const weekKey = this._getWeekKey(completedDate);
+            if (weekKey === currentWeekKey) return;
+            buckets[weekKey] = (buckets[weekKey] || 0) + Math.max(0, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
+        });
+
+        const sortedKeys = Object.keys(buckets).sort().slice(-weeks);
+        if (!sortedKeys.length) return 0;
+        const total = sortedKeys.reduce((sum, key) => sum + buckets[key], 0);
+        return Math.round(total / sortedKeys.length);
+    },
+
     getNextWeekCarryoverSuggestions: function(sourceWeekKey = this._getWeekKey()) {
         const state = window.sistemaVidaState;
         const micros = (state.entities?.micros || []).filter(m => m.status !== 'done' && !m.completed && m.status !== 'abandoned');
@@ -7767,21 +7824,26 @@ ensureNotesState: function() {
         const avgEl = document.getElementById('wp-load-average');
         if (!countEl || !hintEl || !avgEl) return;
 
-        const checked = document.querySelectorAll('.wp-micro-check:checked').length;
-        const avg = this._computeWeeklyCompletionAverage(4);
+        const checkedIds = Array.from(document.querySelectorAll('.wp-micro-check:checked')).map((checkbox) => checkbox.value);
+        const micros = window.sistemaVidaState?.entities?.micros || [];
+        const plannedLoadMinutes = checkedIds.reduce((sum, id) => {
+            const micro = micros.find((item) => item.id === id);
+            return sum + Math.max(0, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
+        }, 0);
+        const avg = this._computeWeeklyCompletionLoadAverage(4);
 
-        countEl.textContent = String(checked);
-        avgEl.textContent = avg > 0 ? String(avg) : '—';
+        countEl.textContent = `${plannedLoadMinutes} min`;
+        avgEl.textContent = avg > 0 ? `${avg} min` : '—';
 
         // Cor e dica conforme overcommitment
         countEl.classList.remove('text-primary', 'text-amber-600', 'text-red-600', 'dark:text-amber-400', 'dark:text-red-400');
         if (avg <= 0) {
             countEl.classList.add('text-primary');
             hintEl.textContent = 'Sem histórico suficiente ainda.';
-        } else if (checked > avg * 1.5) {
+        } else if (plannedLoadMinutes > avg * 1.5) {
             countEl.classList.add('text-red-600', 'dark:text-red-400');
             hintEl.textContent = 'Muito acima do seu ritmo médio.';
-        } else if (checked > avg * 1.1) {
+        } else if (plannedLoadMinutes > avg * 1.1) {
             countEl.classList.add('text-amber-600', 'dark:text-amber-400');
             hintEl.textContent = 'Acima da média — priorize com cuidado.';
         } else {
@@ -7893,6 +7955,7 @@ ensureNotesState: function() {
             completed: false,
             progress: 0,
             effort,
+            estimatedMinutes: Math.max(0, Math.round(Number(this.getSuggestedMicroEstimatedMinutes?.({ effort, inicioDate, prazo }) || 0))),
             indicator: 'Criada no planejamento semanal',
             createdAt: this.getLocalDateKey()
         };
@@ -8461,7 +8524,8 @@ ensureNotesState: function() {
         if (type === 'habits') {
             state.habits = (state.habits || []).filter((item) => item.id !== entity.id);
         } else {
-            this._deleteEntityWithDescendants(type, entity.id, state);
+            const deletePlan = this._deleteEntityWithDescendants(type, entity.id, state);
+            this.cleanupHabitPlanReferencesAfterDeletion?.(deletePlan, state);
         }
         this.saveState(true);
         document.getElementById('review-entity-modal').classList.add('hidden');

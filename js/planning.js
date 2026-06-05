@@ -969,11 +969,67 @@ _renderNextActionCard: function(next, variant = 'today') {
             </div>`;
     },
 
+isHabitFocusSessionMicro: function(micro) {
+        return String(micro?.sourceType || '').trim().toLowerCase() === 'habit_focus_session';
+    },
+
+getMicroWindowSpanDays: function(input) {
+        const windowState = typeof this.getMicroEffectiveWindow === 'function'
+            ? this.getMicroEffectiveWindow(input)
+            : {
+                valid: !!(input?.inicioDate && input?.prazo),
+                startDate: String(input?.inicioDate || '').trim(),
+                dueDate: String(input?.prazo || '').trim()
+            };
+        if (!windowState?.valid || !windowState.startDate || !windowState.dueDate) return 1;
+        const diffDays = Number(this.getDayDiffBetween?.(windowState.startDate, windowState.dueDate));
+        if (!Number.isFinite(diffDays)) return 1;
+        return Math.max(1, diffDays + 1);
+    },
+
+getMicroRemainingWindowDays: function(input, dateKey = this.getLocalDateKey()) {
+        const windowState = typeof this.getMicroEffectiveWindow === 'function'
+            ? this.getMicroEffectiveWindow(input)
+            : {
+                valid: !!(input?.inicioDate && input?.prazo),
+                startDate: String(input?.inicioDate || '').trim(),
+                dueDate: String(input?.prazo || '').trim()
+            };
+        if (!windowState?.valid || !windowState.dueDate) return 1;
+        const startDate = String(windowState.startDate || '').trim();
+        const safeDateKey = String(dateKey || this.getLocalDateKey()).trim();
+        const anchorDate = startDate && startDate > safeDateKey ? startDate : safeDateKey;
+        const diffDays = Number(this.getDayDiffBetween?.(anchorDate, windowState.dueDate));
+        if (!Number.isFinite(diffDays)) return 1;
+        return Math.max(1, diffDays + 1);
+    },
+
+getMicroExecutedMinutes: function(micro) {
+        if (!micro) return 0;
+        return Math.max(0, Math.round((Number(micro.focusSec) || 0) / 60));
+    },
+
 getSuggestedMicroEstimatedMinutes: function(input = {}) {
         const effort = this.getMicroEffort ? this.getMicroEffort(input) : String(input?.effort || 'medio').trim().toLowerCase();
-        if (effort === 'leve') return 25;
-        if (effort === 'denso') return 90;
-        return 50;
+        const rawWindowDays = Number(input?.windowDays);
+        const windowDays = Math.max(1, Math.min(7, Number.isFinite(rawWindowDays) && rawWindowDays > 0
+            ? Math.round(rawWindowDays)
+            : (this.getMicroWindowSpanDays?.(input) || 1)));
+        if (effort === 'leve') {
+            if (windowDays === 1) return 25;
+            if (windowDays <= 3) return 50;
+            return 90;
+        }
+        if (effort === 'denso') {
+            if (windowDays === 1) return 90;
+            if (windowDays <= 3) return 180;
+            if (windowDays <= 5) return 300;
+            return 420;
+        }
+        if (windowDays === 1) return 50;
+        if (windowDays <= 3) return 90;
+        if (windowDays <= 5) return 180;
+        return 300;
     },
 
 getProtocolEstimatedMinutesById: function(protocolId = '', options = {}) {
@@ -993,14 +1049,7 @@ getProtocolSuggestedStartTime: function(protocolId = '') {
 
 getMicroEstimatedMinutesSource: function(micro) {
         if (!micro) return 'suggested';
-        if (String(micro.sourceType || '') === 'habit_focus_session' && micro.sourceHabitId) {
-            const habit = (window.sistemaVidaState?.habits || []).find(item => String(item?.id || '') === String(micro.sourceHabitId || ''));
-            const mode = this.normalizeHabitTrackMode?.(habit?.trackMode) || String(habit?.trackMode || '').trim().toLowerCase();
-            if (habit?.protocolId && (this.getProtocolEstimatedMinutesById?.(habit.protocolId) || 0) > 0) return 'protocol';
-            if (mode === 'timer') return 'target';
-            if (Math.round(Number(habit?.estimatedMinutes) || 0) > 0) return 'manual';
-            if ((this.getHabitResolvedSteps?.(habit) || []).length > 0) return 'steps';
-        }
+        if (this.isHabitFocusSessionMicro?.(micro)) return 'session';
         const manual = Math.round(Number(micro.estimatedMinutes) || 0);
         if (manual > 0) return 'manual';
         const protocolId = String(micro.protocolId || micro.sourceProtocolId || '').trim();
@@ -1023,23 +1072,113 @@ getEstimateSourceLabel: function(source = '') {
         if (key === 'protocol') return 'Baseado no protocolo';
         if (key === 'target') return 'Baseado na meta do habito';
         if (key === 'steps') return 'Baseado nos passos';
+        if (key === 'session') return 'Sessao congelada do habito';
         if (key === 'suggested') return 'Sugerido automaticamente';
         return '';
     },
 
 getMicroEstimatedMinutes: function(micro) {
         if (!micro) return 0;
-        if (String(micro.sourceType || '') === 'habit_focus_session' && micro.sourceHabitId) {
-            const habit = (window.sistemaVidaState?.habits || []).find(item => String(item?.id || '') === String(micro.sourceHabitId || ''));
-            const habitMinutes = Math.max(0, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
-            if (habitMinutes > 0) return habitMinutes;
+        if (this.isHabitFocusSessionMicro?.(micro)) {
+            const frozenMinutes = Math.max(
+                0,
+                Math.round(Number(micro.estimatedMinutes) || 0),
+                Math.round(Number(micro.focusBlockMinutes) || 0),
+                this.getMicroExecutedMinutes?.(micro) || 0
+            );
+            return frozenMinutes > 0 ? frozenMinutes : 25;
         }
         const manual = Math.round(Number(micro.estimatedMinutes) || 0);
         if (manual > 0) return manual;
         const protocolId = String(micro.protocolId || micro.sourceProtocolId || '').trim();
         const protocolMinutes = this.getProtocolEstimatedMinutesById?.(protocolId) || 0;
         if (protocolMinutes > 0) return protocolMinutes;
-        return this.getSuggestedMicroEstimatedMinutes?.(micro) || 50;
+        return this.getSuggestedMicroEstimatedMinutes?.({
+            ...micro,
+            windowDays: this.getMicroWindowSpanDays?.(micro) || 1
+        }) || 50;
+    },
+
+getMicroLiveExecutionPlan: function(micro, dateKey = this.getLocalDateKey()) {
+        const fallbackPreset = this.getDeepWorkPresetConfig?.(25) || { minutes: 25, breakMinutes: 5, label: '25/5' };
+        if (!micro) {
+            return {
+                isHabitDerived: false,
+                totalLoadMinutes: 0,
+                executedMinutes: 0,
+                remainingMinutes: 0,
+                daysRemaining: 1,
+                suggestedDailyMinutes: 0,
+                sessionMinutes: fallbackPreset.minutes,
+                sessionCount: 0,
+                preset: fallbackPreset,
+                displayLabel: `${fallbackPreset.minutes} min`
+            };
+        }
+
+        const isHabitDerived = !!this.isHabitFocusSessionMicro?.(micro);
+        const totalLoadMinutes = Math.max(1, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
+        const executedMinutes = this.getMicroExecutedMinutes?.(micro) || 0;
+        const isDone = micro.status === 'done' || !!micro.completed;
+        const remainingMinutes = isDone ? 0 : Math.max(0, totalLoadMinutes - executedMinutes);
+
+        if (isHabitDerived) {
+            const preferredSessionMinutes = Math.max(
+                1,
+                Math.round(Number(micro.focusBlockMinutes) || 0),
+                Math.round(Number(micro.estimatedMinutes) || 0),
+                executedMinutes || 0,
+                25
+            );
+            const preset = this.getDeepWorkPresetConfig?.(preferredSessionMinutes) || fallbackPreset;
+            return {
+                isHabitDerived,
+                totalLoadMinutes,
+                executedMinutes,
+                remainingMinutes,
+                daysRemaining: 1,
+                suggestedDailyMinutes: preferredSessionMinutes,
+                sessionMinutes: preset.minutes,
+                sessionCount: remainingMinutes > 0 ? 1 : 0,
+                preset,
+                displayLabel: `${preset.minutes} min`
+            };
+        }
+
+        const daysRemaining = this.getMicroRemainingWindowDays?.(micro, dateKey) || 1;
+        const suggestedDailyMinutes = remainingMinutes > 0
+            ? Math.max(1, Math.ceil(remainingMinutes / Math.max(1, daysRemaining)))
+            : Math.max(1, Math.min(90, totalLoadMinutes));
+        const preset = this.getDeepWorkPresetConfigForRequiredMinutes
+            ? this.getDeepWorkPresetConfigForRequiredMinutes(suggestedDailyMinutes)
+            : (this.getDeepWorkPresetConfig?.(suggestedDailyMinutes) || fallbackPreset);
+        const sessionMinutes = Math.max(1, Number(preset.minutes) || suggestedDailyMinutes);
+        const sessionCount = remainingMinutes > 0
+            ? Math.max(1, Math.ceil(remainingMinutes / sessionMinutes))
+            : 0;
+
+        return {
+            isHabitDerived,
+            totalLoadMinutes,
+            executedMinutes,
+            remainingMinutes,
+            daysRemaining,
+            suggestedDailyMinutes,
+            sessionMinutes,
+            sessionCount,
+            preset,
+            displayLabel: sessionCount > 1 ? `${sessionCount} x ${sessionMinutes} min` : `${sessionMinutes} min`
+        };
+    },
+
+getMicroExecutionTimeBadgeLabel: function(micro, dateKey = this.getLocalDateKey()) {
+        const plan = this.getMicroLiveExecutionPlan?.(micro, dateKey);
+        if (!plan) return '0 min';
+        return plan.displayLabel || `${Math.max(1, Math.round(Number(plan.sessionMinutes) || 0))} min`;
+    },
+
+getMicroSuggestedSchedule: function(micro) {
+        return this.getMicroScheduleContext?.(micro) || { startTime: '', startMinutes: null, dayPart: 'sem_horario', source: '' };
     },
 
 getCapacityAdjustmentFromCheckin: function(dateKey = this.getLocalDateKey()) {
@@ -1079,7 +1218,7 @@ getCapacityAdjustmentFromCheckin: function(dateKey = this.getLocalDateKey()) {
     },
 
 getSuggestedExecutionSchedule: function(input = {}) {
-        const estimatedMinutes = Math.max(1, Math.round(Number(input.estimatedMinutes) || 0));
+        const estimatedMinutes = Math.max(1, Math.round(Number(input.executionMinutes) || Number(input.estimatedMinutes) || 0));
         const effort = String(input.effort || '').trim().toLowerCase();
         const dueDays = Number.isFinite(Number(input.dueDays)) ? Number(input.dueDays) : null;
         const sourceType = String(input.sourceType || '').trim().toLowerCase();
@@ -1151,16 +1290,16 @@ getDayPartByClockMinutes: function(totalMinutes = null) {
 
 getMicroScheduleContext: function(micro) {
         if (!micro) return { startTime: '', startMinutes: null, dayPart: 'sem_horario', source: '' };
-        const state = window.sistemaVidaState || {};
         let startTime = String(micro.startTime || '').trim();
         let source = startTime ? 'micro' : '';
-        if (!startTime && micro.sourceHabitId) {
-            const linkedHabit = (state.habits || []).find((habit) => String(habit?.id || '') === String(micro.sourceHabitId || ''));
-            const inheritedTime = String(linkedHabit?.startTime || '').trim();
-            if (inheritedTime) {
-                startTime = inheritedTime;
-                source = 'inherited_habit';
-            }
+        if (this.isHabitFocusSessionMicro?.(micro)) {
+            const startMinutes = this.toClockMinutes(startTime);
+            return {
+                startTime,
+                startMinutes,
+                dayPart: this.getDayPartByClockMinutes(startMinutes),
+                source
+            };
         }
         if (!startTime) {
             const protocolStartTime = this.getProtocolSuggestedStartTime?.(micro.protocolId || micro.sourceProtocolId || '') || '';
@@ -1174,10 +1313,12 @@ getMicroScheduleContext: function(micro) {
             const dueDays = micro.prazo
                 ? Math.floor((new Date(`${micro.prazo}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000)
                 : null;
+            const livePlan = this.getMicroLiveExecutionPlan?.(micro, today) || null;
             const suggested = this.getSuggestedExecutionSchedule?.({
                 sourceType: 'micro',
                 dimension: micro.dimension || 'Geral',
                 estimatedMinutes: this.getMicroEstimatedMinutes?.(micro) || 0,
+                executionMinutes: livePlan?.sessionMinutes || 0,
                 effort: this.getMicroEffort?.(micro) || '',
                 dueDays
             }) || null;
@@ -1205,6 +1346,11 @@ onCrudEstimatedMinutesInput: function() {
 
 onMicroEffortChange: function() {
         this.refreshCrudEstimatedFieldState?.('micros');
+    },
+
+onCrudDateWindowChange: function() {
+        const currentType = String(document.getElementById('crud-type')?.value || '').trim();
+        if (currentType === 'micros') this.refreshCrudEstimatedFieldState?.('micros');
     },
 
 refreshCrudEstimatedFieldState: function(type = '') {
@@ -1253,18 +1399,20 @@ refreshCrudEstimatedFieldState: function(type = '') {
                 setVisualState({
                     disabled: false,
                     source: estimatedInput.dataset.estimateSource || 'protocol',
-                    note: 'O protocolo sugere a carga total inicial da micro. VocÃª pode ajustar se esta entrega pedir mais ou menos tempo.',
+                    note: 'O protocolo sugere a carga total inicial da micro. Você pode ajustar se esta entrega pedir mais ou menos tempo.',
                     placeholder: 'Ex.: 50'
                 });
                 return;
             }
             const effort = document.getElementById('crud-effort')?.value || 'medio';
-            const suggested = this.getSuggestedMicroEstimatedMinutes?.({ effort }) || 50;
+            const inicioDate = String(document.getElementById('crud-inicio-date')?.value || '').trim();
+            const prazo = String(document.getElementById('crud-prazo-date')?.value || '').trim();
+            const suggested = this.getSuggestedMicroEstimatedMinutes?.({ effort, inicioDate, prazo }) || 50;
             setValueIfAuto(suggested, 'suggested');
             setVisualState({
                 disabled: false,
                 source: estimatedInput.dataset.estimateSource || 'suggested',
-                note: 'O app sugere a carga total pela combinaÃ§Ã£o de esforÃ§o e janela curta da micro. Ajuste sÃ³ quando souber melhor o tamanho real.',
+                note: 'O app sugere a carga total pela combinacao de esforco e prazo da acao. Ajuste so quando souber melhor o tamanho real.',
                 placeholder: 'Ex.: 50'
             });
             return;
@@ -1316,7 +1464,7 @@ refreshCrudEstimatedFieldState: function(type = '') {
                 disabled: false,
                 source: estimatedInput.dataset.estimateSource || (stepsCount > 0 ? 'steps' : 'suggested'),
                 note: stepsCount > 0
-                    ? 'Sem protocolo, o app usa os passos da rotina como base e vocÃª pode refinar o tempo total.'
+                    ? 'Sem protocolo, o app usa os passos da rotina como base e você pode refinar o tempo total.'
                     : 'Sem protocolo nem meta de tempo, o app sugere um total simples para ajudar a encaixar o habito na capacidade do dia.',
                 placeholder: 'Ex.: 15'
             });
@@ -1352,6 +1500,9 @@ getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
                 title: habit.title || (isRoutine ? 'Rotina' : 'Hábito'),
                 dimension: habit.dimension || 'Geral',
                 estimatedMinutes,
+                totalLoadMinutes: estimatedMinutes,
+                executionMinutes: estimatedMinutes,
+                timeLabel: `${estimatedMinutes} min`,
                 startTime: schedule.startTime || '',
                 startMinutes: schedule.startMinutes,
                 dayPart: schedule.dayPart || 'sem_horario',
@@ -1371,7 +1522,8 @@ getTodayActionItems: function(dateKey = this.getLocalDateKey()) {
 
         micros.filter(isMicroInWindow).forEach((micro) => {
             const done = micro.status === 'done' || !!micro.completed;
-            const estimatedMinutes = Math.max(1, Number(this.getMicroEstimatedMinutes(micro)) || 0);
+            const executionPlan = this.getMicroLiveExecutionPlan?.(micro, today) || null;
+            const estimatedMinutes = Math.max(1, Number(executionPlan?.sessionMinutes) || Number(this.getMicroEstimatedMinutes(micro)) || 0);
             const dueDays = micro.prazo
                 ? Math.floor((new Date(`${micro.prazo}T00:00:00`) - now) / 86400000)
                 : null;
@@ -1953,7 +2105,7 @@ saveNewEntity: function() {
                 }
             } else if (type === 'okrs') {
                 if (hasInvalidCurrentParent) {
-                    app.showBlockingMessage('Este Projeto estÃ¡ com a Meta atual fora da Ã¡rea selecionada. Escolha uma Meta compatÃ­vel antes de salvar.');
+                    app.showBlockingMessage('Este Projeto está com a Meta atual fora da área selecionada. Escolha uma Meta compatível antes de salvar.');
                     return;
                 }
                 if (!planParentValidation?.ok) {
@@ -1993,7 +2145,7 @@ saveNewEntity: function() {
             obj.ifThen = ifThen;
             obj.progress = isEditing ? (getOldItem(id, type).progress || 0) : 0;
             if (hasInvalidCurrentParent) {
-                app.showBlockingMessage('Esta Entrega estÃ¡ com o Projeto atual fora da Ã¡rea selecionada. Escolha um Projeto compatÃ­vel antes de salvar.');
+                app.showBlockingMessage('Esta Entrega está com o Projeto atual fora da área selecionada. Escolha um Projeto compatível antes de salvar.');
                 return;
             }
             if (!planParentValidation?.ok) {
