@@ -2498,6 +2498,27 @@
                         <span id="habit-focus-closure-habit-complete-label">Concluir hábito hoje</span>
                     </label>
                 </div>
+                <div id="habit-focus-closure-habit-numeric-wrap" class="hidden rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3 space-y-3">
+                    <div>
+                        <p class="text-xs font-label uppercase tracking-widest text-outline font-bold">Avanço do hábito</p>
+                        <p id="habit-focus-closure-habit-numeric-helper" class="mt-1 text-xs text-on-surface-variant">Registre um número inteiro para refletir o que esta sessão realmente produziu.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" onclick="window.app.setHabitFocusClosureNumericAdvance(0)" class="px-3 py-1.5 rounded-lg border border-outline-variant/20 bg-surface-container-lowest text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">0</button>
+                        <button type="button" onclick="window.app.setHabitFocusClosureNumericAdvance(1)" class="px-3 py-1.5 rounded-lg border border-outline-variant/20 bg-surface-container-lowest text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">+1</button>
+                        <button type="button" onclick="window.app.setHabitFocusClosureNumericAdvance('remaining')" class="px-3 py-1.5 rounded-lg border border-outline-variant/20 bg-surface-container-lowest text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary hover:bg-surface-container-high transition-colors">Completar restante</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="habit-focus-closure-habit-numeric-advance" class="text-xs font-label uppercase tracking-widest text-outline font-bold">Quanto avançou</label>
+                            <input id="habit-focus-closure-habit-numeric-advance" type="number" min="0" step="1" inputmode="numeric" oninput="window.app.updateHabitFocusClosureNumericPreview()" class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm h-11 px-3 text-on-surface" placeholder="0">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <p class="text-xs font-label uppercase tracking-widest text-outline font-bold">Preview de hoje</p>
+                            <p id="habit-focus-closure-habit-numeric-preview" class="min-h-[44px] rounded-lg bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant flex items-center">Hoje: 0/1</p>
+                        </div>
+                    </div>
+                </div>
                 <div id="habit-focus-closure-existing-complete-wrap" class="hidden rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-3">
                     <label class="inline-flex items-center gap-3 text-sm text-on-surface">
                         <input id="habit-focus-closure-existing-complete" type="checkbox" class="w-4 h-4 rounded border-outline-variant/40 text-primary focus:ring-primary/20">

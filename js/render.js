@@ -3683,27 +3683,23 @@ render: {
                         : (typeof app.isHabitScheduledForDate === 'function' ? app.isHabitScheduledForDate(habit, todayStr) : true);
 
                     const icon = habitIconMap[habit.dimension] || 'stars';
-                    const target = habit.targetValue || 1;
-                    const mode = habit.trackMode || 'boolean';
+                    const target = Math.max(1, Number(habit.targetValue) || 1);
+                    const mode = app.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
                     const logs = habit.logs || {};
                     let currentVal = logs[todayStr] || 0;
-                    const steps = Array.isArray(habit.steps) ? habit.steps.filter(Boolean) : [];
+                    const steps = app.getHabitResolvedSteps?.(habit) || [];
                     const hasSteps = steps.length > 0;
-                    const hasProtocolLinked = !!String(habit.protocolId || '').trim();
-                    const effectiveMode = (hasProtocolLinked && hasSteps) ? 'boolean' : mode;
+                    const todayProgress = app.getHabitTodayProgressSnapshot?.(habit, todayStr) || app.getHabitCompletionState?.(habit, todayStr) || { done: false, label: '0/1' };
                     const stepLogs = habit.stepLogs || {};
                     const todayStepMap = stepLogs[todayStr] || {};
                     const todayStepsDone = hasSteps ? steps.reduce((acc, _, idx) => acc + (todayStepMap[idx] || todayStepMap[String(idx)] ? 1 : 0), 0) : 0;
                     const allStepsDone = hasSteps && todayStepsDone === steps.length;
 
-                    let isDone = false;
-                    if (effectiveMode === 'boolean') isDone = currentVal > 0;
-                    else isDone = currentVal >= target;
-                    if (hasSteps && effectiveMode === 'boolean') isDone = allStepsDone;
+                    const isDone = !!todayProgress.done;
 
                     // UI for mode
                     let controlHtml = '';
-                    if (effectiveMode === 'boolean') {
+                    if (hasSteps || mode === 'boolean') {
                         const actionClick = hasSteps
                             ? `window.app.toggleHabitAllSteps('${habit.id}', '${todayStr}', ${allStepsDone ? 'true' : 'false'})`
                             : `window.app.updateHabitLog('${habit.id}', '${todayStr}', ${isDone ? 0 : 1})`;
@@ -3711,7 +3707,7 @@ render: {
                         <div class="w-7 h-7 rounded-full ${isDone ? 'bg-primary' : 'border-2 border-outline-variant hover:border-primary'} ${visibleToday ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'} flex items-center justify-center shrink-0 transition-colors" ${visibleToday ? `onclick="event.stopPropagation(); ${actionClick}"` : `title="Esse hábito não está previsto para hoje."`}>
                             ${isDone ? '<span class="material-symbols-outlined notranslate text-white text-[16px]" style="font-variation-settings: \\\'wght\\\' 700;">check</span>' : ''}
                         </div>`;
-                    } else if (effectiveMode === 'numeric' || effectiveMode === 'timer') {
+                    } else if (mode === 'numeric' || mode === 'timer') {
                         controlHtml = visibleToday ? `
                         <div class="flex items-center gap-1 bg-surface-container rounded-lg p-1 shrink-0" onclick="event.stopPropagation()">
                             <button class="w-6 h-6 flex justify-center items-center rounded-md hover:bg-outline-variant/20 text-on-surface" onclick="window.app.updateHabitLog('${habit.id}', '${todayStr}', Math.max(0, ${currentVal} - 1))">-</button>
@@ -3731,14 +3727,7 @@ render: {
                         const d = new Date(weekStart);
                         d.setDate(weekStart.getDate() + i);
                         const ds = app.getLocalDateKey(d);
-                        const val = logs[ds] || 0;
-                        const dayStepMap = stepLogs[ds] || {};
-                        let dDone = false;
-                        if (hasSteps && effectiveMode === 'boolean') {
-                            const dCount = steps.reduce((acc, _, idx) => acc + (dayStepMap[idx] || dayStepMap[String(idx)] ? 1 : 0), 0);
-                            dDone = dCount === steps.length;
-                        } else if (mode === 'boolean') dDone = val > 0;
-                        else dDone = val >= target;
+                        const dDone = !!app.isHabitDoneOnDate?.(habit, ds);
                         const isTodayBar = ds === todayStr;
                         const isFutureBar = d > nowForWeek;
                         let barClass = 'bg-surface-container-high';
@@ -3750,8 +3739,8 @@ render: {
 
                     // Track progress text
                     let progressText = '';
-                    if (effectiveMode === 'numeric') progressText = `${currentVal}/${target}`;
-                    if (effectiveMode === 'timer') progressText = `${currentVal}m/${target}m`;
+                    if (mode === 'numeric') progressText = `${currentVal}/${target}`;
+                    if (mode === 'timer') progressText = hasSteps ? todayProgress.label : `${currentVal}m/${target}m`;
 
                     // Expandable steps
                     let stepsHtml = '';

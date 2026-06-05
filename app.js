@@ -3646,16 +3646,11 @@ renderProfileChrome: function() {
         const state = window.sistemaVidaState;
         const checkin = (state.profile?.dailyCheckins || []).find(c => c.date === dateKey) || null;
         const log = (state.dailyLogs || {})[dateKey] || null;
-        const habitsDone = (state.habits || []).filter(h => {
-            const steps = Array.isArray(h.steps) ? h.steps.filter(Boolean) : [];
-            if (steps.length) {
-                const stepMap = (h.stepLogs || {})[dateKey] || {};
-                const done = steps.reduce((acc, _, i) => acc + (stepMap[i] || stepMap[String(i)] ? 1 : 0), 0);
-                return done === steps.length;
+        const habitsDone = (state.habits || []).filter((habit) => {
+            if (typeof this.isHabitDoneOnDate === 'function') {
+                return this.isHabitDoneOnDate(habit, dateKey);
             }
-            const val = (h.logs || {})[dateKey] || 0;
-            const mode = h.trackMode || 'boolean';
-            return mode === 'boolean' ? val > 0 : val >= (h.targetValue || 1);
+            return false;
         });
         const microsDone = (state.entities?.micros || []).filter(m =>
             m.completedDate === dateKey || m.doneDate === dateKey

@@ -161,6 +161,79 @@ export function attachHabitFocusModule(app) {
             this.startDeepWorkSession();
         },
 
+        normalizeHabitFocusClosureNumericAdvance: function(rawValue) {
+            const value = String(rawValue ?? '').trim();
+            if (!value) return '';
+            const parsed = Math.floor(Number(value));
+            if (!Number.isFinite(parsed) || parsed < 0) return '0';
+            return String(parsed);
+        },
+
+        getHabitFocusClosureNumericAdvanceValue: function() {
+            const input = document.getElementById('habit-focus-closure-habit-numeric-advance');
+            if (!input) return 0;
+            const normalized = this.normalizeHabitFocusClosureNumericAdvance(input.value);
+            if (normalized !== input.value) input.value = normalized;
+            return normalized ? Math.max(0, Math.floor(Number(normalized) || 0)) : 0;
+        },
+
+        updateHabitFocusClosureNumericPreview: function() {
+            const input = document.getElementById('habit-focus-closure-habit-numeric-advance');
+            const previewEl = document.getElementById('habit-focus-closure-habit-numeric-preview');
+            if (!input || !previewEl) return;
+            const normalized = this.normalizeHabitFocusClosureNumericAdvance(input.value);
+            if (normalized !== input.value) input.value = normalized;
+            const currentValue = Math.max(0, Math.floor(Number(input.dataset.currentValue) || 0));
+            const targetValue = Math.max(1, Math.floor(Number(input.dataset.targetValue) || 1));
+            const advance = normalized ? Math.max(0, Math.floor(Number(normalized) || 0)) : 0;
+            const nextValue = currentValue + advance;
+            const doneLabel = nextValue >= targetValue ? ' · conclui hoje' : '';
+            previewEl.textContent = `Hoje: ${currentValue}/${targetValue} -> ficará ${nextValue}/${targetValue}${doneLabel}`;
+        },
+
+        setHabitFocusClosureNumericAdvance: function(value) {
+            const input = document.getElementById('habit-focus-closure-habit-numeric-advance');
+            if (!input) return;
+            let nextValue = 0;
+            if (value === 'remaining') {
+                const currentValue = Math.max(0, Math.floor(Number(input.dataset.currentValue) || 0));
+                const targetValue = Math.max(1, Math.floor(Number(input.dataset.targetValue) || 1));
+                nextValue = Math.max(0, targetValue - currentValue);
+            } else {
+                nextValue = Math.max(0, Math.floor(Number(value) || 0));
+            }
+            input.value = String(nextValue);
+            this.updateHabitFocusClosureNumericPreview();
+        },
+
+        syncHabitFocusClosureNumericState: function(habit, dateKey, options = {}) {
+            const wrapEl = document.getElementById('habit-focus-closure-habit-numeric-wrap');
+            const helperEl = document.getElementById('habit-focus-closure-habit-numeric-helper');
+            const inputEl = document.getElementById('habit-focus-closure-habit-numeric-advance');
+            const previewEl = document.getElementById('habit-focus-closure-habit-numeric-preview');
+            if (!wrapEl || !helperEl || !inputEl || !previewEl) return;
+            const resetInput = options.resetInput === true;
+            const steps = this.getHabitResolvedSteps?.(habit) || [];
+            const mode = this.normalizeHabitTrackMode?.(habit?.trackMode) || 'boolean';
+            const isNumericHabit = !!habit && mode === 'numeric' && steps.length === 0;
+            if (!isNumericHabit) {
+                wrapEl.classList.add('hidden');
+                inputEl.value = '';
+                delete inputEl.dataset.currentValue;
+                delete inputEl.dataset.targetValue;
+                previewEl.textContent = 'Hoje: 0/1';
+                return;
+            }
+            const currentValue = Math.max(0, Math.floor(Number(habit?.logs?.[dateKey]) || 0));
+            const targetValue = Math.max(1, Math.floor(Number(habit?.targetValue) || 1));
+            wrapEl.classList.remove('hidden');
+            helperEl.textContent = `Hoje: ${currentValue}/${targetValue}. Registre um inteiro para refletir o avanço real desta sessão.`;
+            inputEl.dataset.currentValue = String(currentValue);
+            inputEl.dataset.targetValue = String(targetValue);
+            if (resetInput) inputEl.value = '';
+            this.updateHabitFocusClosureNumericPreview();
+        },
+
         refreshHabitFocusClosureHabitState: function(habitId = '', dateKey = '') {
             const modal = document.getElementById('habit-focus-closure-modal');
             if (!modal || modal.classList.contains('hidden')) return;
@@ -210,6 +283,7 @@ export function attachHabitFocusModule(app) {
                     habitCompleteEl.checked = false;
                 }
             }
+            this.syncHabitFocusClosureNumericState(habit, resolvedDateKey);
         },
 
         createFocusMicroFromHabit: function({ habit, macroId, title, focusSec = 0, sessionPresetMinutes = 0, dateKey = '', markDone = false }) {
@@ -304,12 +378,12 @@ export function attachHabitFocusModule(app) {
                 : 'Passos concluídos definem se o hábito fecha hoje.';
             return `
                 <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-4 space-y-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0 flex-1">
                             <p class="text-[10px] uppercase tracking-widest font-bold text-outline">Checklist do hábito</p>
                             <p class="mt-1 text-xs text-on-surface-variant">${this.escapeHtml(helperCopy)}</p>
                         </div>
-                        <button type="button" onclick="window.app.toggleHabitAllSteps('${this.escapeHtml(habit.id)}','${dateKey}',${allDone ? 'true' : 'false'})" class="shrink-0 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high transition-colors">
+                        <button type="button" onclick="window.app.toggleHabitAllSteps('${this.escapeHtml(habit.id)}','${dateKey}',${allDone ? 'true' : 'false'})" class="self-start shrink-0 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-high transition-colors sm:self-auto">
                             ${allDone ? 'Reabrir passos' : 'Concluir passos'}
                         </button>
                     </div>
@@ -440,6 +514,7 @@ export function attachHabitFocusModule(app) {
                     habitCompleteEl.checked = false;
                 }
             }
+            this.syncHabitFocusClosureNumericState(habit, dateKey, { resetInput: true });
 
             if (existingCompleteWrapEl && existingCompleteEl) {
                 existingCompleteWrapEl.classList.toggle('hidden', !micro);
@@ -523,6 +598,7 @@ export function attachHabitFocusModule(app) {
             const shouldCompleteCreatedMicro = !!document.getElementById('habit-focus-closure-plan-complete')?.checked;
             const shouldCompleteExistingMicro = !!document.getElementById('habit-focus-closure-existing-complete')?.checked;
             const shouldCompleteBooleanHabit = !!document.getElementById('habit-focus-closure-habit-complete')?.checked;
+            const numericAdvance = this.getHabitFocusClosureNumericAdvanceValue?.() || 0;
             const habitSteps = this.getHabitResolvedSteps?.(habit) || [];
             let createdMicro = null;
 
@@ -531,9 +607,9 @@ export function attachHabitFocusModule(app) {
                 if (!habitSteps.length) {
                     if (mode === 'boolean' && shouldCompleteBooleanHabit) {
                         this.updateHabitLog(habit.id, dateKey, 1);
-                    } else if (mode === 'numeric' && shouldCompleteBooleanHabit) {
+                    } else if (mode === 'numeric' && numericAdvance > 0) {
                         const currentValue = Math.max(0, Number(habit.logs?.[dateKey]) || 0);
-                        this.updateHabitLog(habit.id, dateKey, currentValue + 1);
+                        this.updateHabitLog(habit.id, dateKey, currentValue + numericAdvance);
                     }
                 }
             }
