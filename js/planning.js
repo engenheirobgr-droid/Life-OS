@@ -1583,28 +1583,28 @@ getTodayChecklistMicros: function(dateKey = this.getLocalDateKey()) {
     },
 
 getTodayCapacityState: function(dateKey = this.getLocalDateKey()) {
-        const settings = window.sistemaVidaState?.settings || {};
-        const rawProfile = settings.dayCapacityProfile || {};
-        const defaults = {
-            sleepHours: Math.max(4, Math.min(12, Number(rawProfile.sleepHours) || 8)),
-            fixedCommitmentsMinutes: Math.max(0, Math.min(16 * 60, Number(rawProfile.fixedCommitmentsMinutes) || (8 * 60))),
-            dailyBasicsMinutes: Math.max(30, Math.min(8 * 60, Number(rawProfile.dailyBasicsMinutes) || (2 * 60))),
-            bufferMinutes: Math.max(0, Math.min(4 * 60, Number(rawProfile.bufferMinutes) || 60))
-        };
-        defaults.awakeMinutes = Math.max(8 * 60, (24 * 60) - Math.round(defaults.sleepHours * 60));
+        const defaults = this.getDayCapacityProfileSettings
+            ? this.getDayCapacityProfileSettings()
+            : {
+                sleepInterval: { start: '22:00', end: '06:00' },
+                fixedCommitmentIntervals: [],
+                dailyBasicIntervals: [],
+                bufferMinutes: 60,
+                usefulMinutesByDayPart: { manha: 0, tarde: 0, noite: 0 },
+                usefulMinutes: 0,
+                executableMinutes: 0,
+                windowDurations: { manha: 12 * 60, tarde: 6 * 60, noite: 6 * 60 }
+            };
         const labels = {
             all: 'Dia inteiro',
             manha: 'Manha',
             tarde: 'Tarde',
             noite: 'Noite'
         };
-        const totalWindowMinutes = {
-            manha: 6 * 60,
-            tarde: 6 * 60,
-            noite: 4 * 60
-        };
         const checkinAdjustment = this.getCapacityAdjustmentFromCheckin ? this.getCapacityAdjustmentFromCheckin(dateKey) : { factor: 1, extraBufferMinutes: 0, reasons: [], label: '' };
-        const baseCapacityMinutes = Math.max(60, defaults.awakeMinutes - defaults.fixedCommitmentsMinutes - defaults.dailyBasicsMinutes - defaults.bufferMinutes);
+        const usefulWeights = defaults.usefulMinutesByDayPart || { manha: 0, tarde: 0, noite: 0 };
+        const windowWeights = defaults.windowDurations || { manha: 12 * 60, tarde: 6 * 60, noite: 6 * 60 };
+        const baseCapacityMinutes = Math.max(0, Number(defaults.executableMinutes) || 0);
         const capacityMinutes = Math.max(45, Math.round((baseCapacityMinutes * checkinAdjustment.factor) - checkinAdjustment.extraBufferMinutes));
         const items = this.getActiveTodayActionItems
             ? this.getActiveTodayActionItems(dateKey)
@@ -1615,10 +1615,6 @@ getTodayCapacityState: function(dateKey = this.getLocalDateKey()) {
         const activeDayPart = (this.getTodayChecklistMode?.() === 'horario')
             ? this.getTodayChecklistDayPart?.() || 'all'
             : 'all';
-
-        const morningCapacity = Math.round(capacityMinutes * (totalWindowMinutes.manha / defaults.awakeMinutes));
-        const afternoonCapacity = Math.round(capacityMinutes * (totalWindowMinutes.tarde / defaults.awakeMinutes));
-        const nightCapacity = Math.max(0, capacityMinutes - morningCapacity - afternoonCapacity);
 
         const computeStatus = (planned, capacity) => {
             const usage = capacity > 0 ? (planned / capacity) : 0;
@@ -1631,11 +1627,9 @@ getTodayCapacityState: function(dateKey = this.getLocalDateKey()) {
             };
         };
 
-        const segmentCapacities = {
-            manha: morningCapacity,
-            tarde: afternoonCapacity,
-            noite: nightCapacity
-        };
+        const segmentCapacities = this.distributeDayCapacityMinutes
+            ? this.distributeDayCapacityMinutes(capacityMinutes, usefulWeights, windowWeights)
+            : { manha: 0, tarde: 0, noite: 0 };
         const segments = {
             all: null,
             manha: null,

@@ -270,21 +270,41 @@
 <span class="material-symbols-outlined notranslate text-primary">schedule</span>
 <div class="flex-1 min-w-0">
 <p class="text-sm font-medium text-on-surface">Base da Capacidade do Dia</p>
-<p class="text-[11px] text-outline">Define a base do dia antes do check-in: horas acordado, compromissos fixos, basicos e reserva de tempo.</p>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+<div class="rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-3 md:col-span-2">
+<p class="text-[10px] font-bold uppercase tracking-widest text-outline">Sono</p>
+<div class="grid grid-cols-2 gap-3 mt-2">
 <div>
-<label for="day-capacity-sleep-hours" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Sono (h)</label>
-<input id="day-capacity-sleep-hours" type="number" min="4" max="12" step="0.5" onchange="window.app.setDayCapacityProfileSetting('sleepHours', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
+<label for="day-capacity-sleep-start" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Inicio</label>
+<input id="day-capacity-sleep-start" type="time" step="900" onchange="window.app.setDayCapacityProfileSetting('sleepIntervalStart', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
 </div>
 <div>
-<label for="day-capacity-fixed-hours" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Compromissos fixos (h)</label>
-<input id="day-capacity-fixed-hours" type="number" min="0" max="16" step="0.5" onchange="window.app.setDayCapacityProfileSetting('fixedCommitmentsMinutes', Number(this.value) * 60)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
+<label for="day-capacity-sleep-end" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Fim</label>
+<input id="day-capacity-sleep-end" type="time" step="900" onchange="window.app.setDayCapacityProfileSetting('sleepIntervalEnd', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
 </div>
-<div>
-<label for="day-capacity-basics-minutes" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Basicos + descanso (min)</label>
-<input id="day-capacity-basics-minutes" type="number" min="30" max="480" step="15" onchange="window.app.setDayCapacityProfileSetting('dailyBasicsMinutes', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
 </div>
+</div>
+<div class="rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-3 md:col-span-2">
+<div class="flex items-center justify-between gap-3">
 <div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-outline">Compromissos fixos</p>
+<p class="text-[11px] text-outline mt-1">Permite mais de um intervalo.</p>
+</div>
+<button type="button" onclick="window.app.addDayCapacityInterval('fixedCommitmentIntervals')" aria-label="Adicionar compromisso fixo" title="Adicionar compromisso fixo" class="h-9 w-9 rounded-lg border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/10 transition-colors"><span class="material-symbols-outlined notranslate text-[18px] leading-none">add</span></button>
+</div>
+<div id="day-capacity-fixed-intervals" class="space-y-2 mt-3"></div>
+</div>
+<div class="rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-3 md:col-span-2">
+<div class="flex items-center justify-between gap-3">
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-outline">Basicos do dia</p>
+<p class="text-[11px] text-outline mt-1">Use para refeicoes, higiene, deslocamentos e pausas recorrentes.</p>
+</div>
+<button type="button" onclick="window.app.addDayCapacityInterval('dailyBasicIntervals')" aria-label="Adicionar basico do dia" title="Adicionar basico do dia" class="h-9 w-9 rounded-lg border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/10 transition-colors"><span class="material-symbols-outlined notranslate text-[18px] leading-none">add</span></button>
+</div>
+<div id="day-capacity-basic-intervals" class="space-y-2 mt-3"></div>
+</div>
+<div class="md:col-span-2">
 <label for="day-capacity-buffer-minutes" class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1">Reserva de tempo (min)</label>
 <input id="day-capacity-buffer-minutes" type="number" min="0" max="240" step="15" onchange="window.app.setDayCapacityProfileSetting('bufferMinutes', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
 </div>

@@ -20,13 +20,13 @@ import { attachHabitSuggestions } from './js/habitSuggestions.js?v=20260518-exec
 import { attachNotifications } from './js/notifications.js?v=20260604-ui-system-v23';
 import { attachCadence } from './js/cadence.js?v=20260604-ui-system-v23';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
-import { attachIdentity } from './js/identity.js?v=20260604-ui-system-v23';
+import { attachIdentity } from './js/identity.js?v=20260608-capacity-intervals-v1';
 import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v23';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v23';
-import { attachStateModule } from './js/state.js?v=20260604-ui-system-v23';
-import { attachRenderModule } from './js/render.js?v=20260604-ui-system-v23';
-import { attachPlanningModule } from './js/planning.js?v=20260604-ui-system-v23';
+import { attachStateModule } from './js/state.js?v=20260608-capacity-intervals-v1';
+import { attachRenderModule } from './js/render.js?v=20260608-capacity-intervals-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260608-capacity-intervals-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v23';
 import { attachSocial } from './js/social.js?v=20260604-ui-system-v23';
 
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260604-ui-system-v23',
+    appBuildVersion: '20260608-capacity-intervals-v3',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -1884,54 +1884,338 @@ getDimensionIdentity: function(dimension, level) {
         this.showToast(`Tema aplicado: ${next === 'auto' ? 'Automático' : (next === 'dark' ? 'Escuro' : 'Claro')}.`, 'success');
         if (this.currentView === 'perfil' && this.render.perfil) this.render.perfil();
     },
+    getDefaultDayCapacityProfile: function() {
+        return {
+            sleepInterval: { start: '22:00', end: '06:00' },
+            fixedCommitmentIntervals: [],
+            dailyBasicIntervals: [],
+            bufferMinutes: 60
+        };
+    },
+    normalizeDayCapacityClockTime: function(rawValue, fallback = '00:00') {
+        const source = typeof rawValue === 'string' ? rawValue.trim() : '';
+        const match = source.match(/^(\d{1,2}):(\d{2})$/);
+        if (!match) return fallback;
+        const hours = Math.max(0, Math.min(23, Number(match[1]) || 0));
+        const minutes = Math.max(0, Math.min(59, Number(match[2]) || 0));
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    },
+    dayCapacityClockToMinutes: function(rawValue, fallback = 0) {
+        const normalized = this.normalizeDayCapacityClockTime(rawValue, '');
+        if (!normalized) return fallback;
+        const [hours, minutes] = normalized.split(':').map((item) => Number(item) || 0);
+        return (hours * 60) + minutes;
+    },
+    dayCapacityMinutesToClock: function(rawValue) {
+        const total = Number(rawValue);
+        const minutesInDay = 24 * 60;
+        const normalized = ((Number.isFinite(total) ? Math.round(total) : 0) % minutesInDay + minutesInDay) % minutesInDay;
+        const hours = Math.floor(normalized / 60);
+        const minutes = normalized % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    },
+    sanitizeDayCapacityInterval: function(entry, fallbackStart, fallbackEnd, options = {}) {
+        const start = this.normalizeDayCapacityClockTime(entry?.start, fallbackStart);
+        const end = this.normalizeDayCapacityClockTime(entry?.end, fallbackEnd);
+        if (start === end) {
+            if (options.useFallbackOnEqual) {
+                return { start: fallbackStart, end: fallbackEnd };
+            }
+            if (options.allowZero) {
+                return { start, end };
+            }
+            return null;
+        }
+        return { start, end };
+    },
+    sanitizeDayCapacityProfile: function(profile = {}) {
+        const defaults = this.getDefaultDayCapacityProfile();
+        const sanitizeMinutes = (value, fallback, min, max, step = 15) => {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return fallback;
+            const clamped = Math.max(min, Math.min(max, num));
+            return Math.round(clamped / step) * step;
+        };
+        const sanitizeList = (entries, fallbackFactory) => {
+            if (!Array.isArray(entries)) return [];
+            return entries
+                .map((entry, index) => this.sanitizeDayCapacityInterval(
+                    entry,
+                    fallbackFactory(index).start,
+                    fallbackFactory(index).end,
+                    { allowZero: true }
+                ))
+                .filter(Boolean);
+        };
+        const sleepInterval = this.sanitizeDayCapacityInterval(
+            profile.sleepInterval,
+            defaults.sleepInterval.start,
+            defaults.sleepInterval.end,
+            { useFallbackOnEqual: true }
+        ) || { ...defaults.sleepInterval };
+        const fixedCommitmentIntervals = sanitizeList(
+            profile.fixedCommitmentIntervals,
+            () => ({ start: '09:00', end: '10:00' })
+        );
+        const dailyBasicIntervals = sanitizeList(
+            profile.dailyBasicIntervals,
+            () => ({ start: '08:00', end: '09:00' })
+        );
+        const bufferMinutes = sanitizeMinutes(profile.bufferMinutes, defaults.bufferMinutes, 0, 4 * 60);
+        return {
+            sleepInterval,
+            fixedCommitmentIntervals,
+            dailyBasicIntervals,
+            bufferMinutes
+        };
+    },
+    expandDayCapacityInterval: function(interval) {
+        const start = this.dayCapacityClockToMinutes(interval?.start, 0);
+        const end = this.dayCapacityClockToMinutes(interval?.end, 0);
+        if (start === end) return [];
+        if (start < end) return [[start, end]];
+        return [[0, end], [start, 24 * 60]];
+    },
+    mergeDayCapacityRanges: function(ranges = []) {
+        const normalized = ranges
+            .filter((range) => Array.isArray(range) && range.length === 2)
+            .map(([start, end]) => [Math.max(0, Number(start) || 0), Math.min(24 * 60, Number(end) || 0)])
+            .filter(([start, end]) => end > start)
+            .sort((a, b) => a[0] - b[0]);
+        if (!normalized.length) return [];
+        const merged = [normalized[0].slice()];
+        normalized.slice(1).forEach(([start, end]) => {
+            const last = merged[merged.length - 1];
+            if (start <= last[1]) {
+                last[1] = Math.max(last[1], end);
+                return;
+            }
+            merged.push([start, end]);
+        });
+        return merged;
+    },
+    sumDayCapacityRanges: function(ranges = []) {
+        return ranges.reduce((sum, [start, end]) => sum + Math.max(0, end - start), 0);
+    },
+    sumDayCapacityRangeOverlap: function(ranges = [], windowStart = 0, windowEnd = 0) {
+        return ranges.reduce((sum, [start, end]) => {
+            const overlapStart = Math.max(start, windowStart);
+            const overlapEnd = Math.min(end, windowEnd);
+            return sum + Math.max(0, overlapEnd - overlapStart);
+        }, 0);
+    },
+    distributeDayCapacityMinutes: function(totalMinutes, weightsByKey, fallbackWeightsByKey = {}) {
+        const keys = Object.keys(weightsByKey || {});
+        const target = Math.max(0, Math.round(Number(totalMinutes) || 0));
+        if (!keys.length) return {};
+        const prepared = keys.map((key) => ({
+            key,
+            weight: Math.max(0, Number(weightsByKey[key]) || 0),
+            fallback: Math.max(0, Number(fallbackWeightsByKey[key]) || 0)
+        }));
+        let weightTotal = prepared.reduce((sum, item) => sum + item.weight, 0);
+        if (weightTotal <= 0) {
+            weightTotal = prepared.reduce((sum, item) => sum + item.fallback, 0);
+            if (weightTotal <= 0) {
+                return prepared.reduce((acc, item) => {
+                    acc[item.key] = 0;
+                    return acc;
+                }, {});
+            }
+            prepared.forEach((item) => { item.weight = item.fallback; });
+        }
+        const exacts = prepared.map((item) => {
+            const exact = (target * item.weight) / weightTotal;
+            return { ...item, exact, floor: Math.floor(exact), remainder: exact - Math.floor(exact) };
+        });
+        let remaining = target - exacts.reduce((sum, item) => sum + item.floor, 0);
+        exacts.sort((a, b) => {
+            if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+            return b.weight - a.weight;
+        });
+        for (let index = 0; index < exacts.length && remaining > 0; index += 1, remaining -= 1) {
+            exacts[index].floor += 1;
+        }
+        return keys.reduce((acc, key) => {
+            const hit = exacts.find((item) => item.key === key);
+            acc[key] = hit ? hit.floor : 0;
+            return acc;
+        }, {});
+    },
+    getDayCapacityProfileDerived: function(profileInput = null) {
+        const profile = this.sanitizeDayCapacityProfile(profileInput || this.getDefaultDayCapacityProfile());
+        const partWindows = {
+            manha: [0, 12 * 60],
+            tarde: [12 * 60, 18 * 60],
+            noite: [18 * 60, 24 * 60]
+        };
+        const windowDurations = {
+            manha: 12 * 60,
+            tarde: 6 * 60,
+            noite: 6 * 60
+        };
+        const sleepRanges = this.mergeDayCapacityRanges(this.expandDayCapacityInterval(profile.sleepInterval));
+        const fixedRanges = this.mergeDayCapacityRanges(
+            profile.fixedCommitmentIntervals.flatMap((interval) => this.expandDayCapacityInterval(interval))
+        );
+        const basicRanges = this.mergeDayCapacityRanges(
+            profile.dailyBasicIntervals.flatMap((interval) => this.expandDayCapacityInterval(interval))
+        );
+        const blockedRanges = this.mergeDayCapacityRanges([...sleepRanges, ...fixedRanges, ...basicRanges]);
+        const usefulMinutesByDayPart = Object.entries(partWindows).reduce((acc, [key, [start, end]]) => {
+            const blockedMinutes = this.sumDayCapacityRangeOverlap(blockedRanges, start, end);
+            acc[key] = Math.max(0, (end - start) - blockedMinutes);
+            return acc;
+        }, {});
+        const usefulMinutes = Object.values(usefulMinutesByDayPart).reduce((sum, value) => sum + value, 0);
+        return {
+            sleepMinutes: this.sumDayCapacityRanges(sleepRanges),
+            fixedCommitmentsMinutes: this.sumDayCapacityRanges(fixedRanges),
+            dailyBasicsMinutes: this.sumDayCapacityRanges(basicRanges),
+            blockedMinutes: this.sumDayCapacityRanges(blockedRanges),
+            awakeMinutes: Math.max(0, (24 * 60) - this.sumDayCapacityRanges(sleepRanges)),
+            usefulMinutesByDayPart,
+            usefulMinutes,
+            executableMinutes: Math.max(0, usefulMinutes - profile.bufferMinutes),
+            partWindows,
+            windowDurations
+        };
+    },
     getDayCapacityProfileSettings: function() {
         this.ensureSettingsState();
-        const profile = window.sistemaVidaState.settings.dayCapacityProfile || {};
+        const profile = this.sanitizeDayCapacityProfile(window.sistemaVidaState.settings.dayCapacityProfile || {});
         return {
-            sleepHours: Math.max(4, Math.min(12, Number(profile.sleepHours) || 8)),
-            fixedCommitmentsMinutes: Math.max(0, Math.min(16 * 60, Number(profile.fixedCommitmentsMinutes) || (8 * 60))),
-            dailyBasicsMinutes: Math.max(30, Math.min(8 * 60, Number(profile.dailyBasicsMinutes) || (2 * 60))),
-            bufferMinutes: Math.max(0, Math.min(4 * 60, Number(profile.bufferMinutes) || 60))
+            ...profile,
+            ...this.getDayCapacityProfileDerived(profile)
         };
     },
     setDayCapacityProfileSetting: function(field, rawValue) {
         this.ensureSettingsState();
         const profile = window.sistemaVidaState.settings.dayCapacityProfile || (window.sistemaVidaState.settings.dayCapacityProfile = {});
-        const minutesFields = new Set(['fixedCommitmentsMinutes', 'dailyBasicsMinutes', 'bufferMinutes']);
-        if (field === 'sleepHours') {
-            const hours = Math.round((Math.max(4, Math.min(12, Number(rawValue) || 8))) * 2) / 2;
-            profile.sleepHours = hours;
-        } else if (minutesFields.has(field)) {
+        if (field === 'sleepIntervalStart' || field === 'sleepIntervalEnd') {
+            const currentProfile = this.getDayCapacityProfileSettings();
+            const nextSleepInterval = { ...currentProfile.sleepInterval };
+            if (field === 'sleepIntervalStart') nextSleepInterval.start = this.normalizeDayCapacityClockTime(rawValue, currentProfile.sleepInterval.start);
+            if (field === 'sleepIntervalEnd') nextSleepInterval.end = this.normalizeDayCapacityClockTime(rawValue, currentProfile.sleepInterval.end);
+            profile.sleepInterval = this.sanitizeDayCapacityInterval(
+                nextSleepInterval,
+                currentProfile.sleepInterval.start,
+                currentProfile.sleepInterval.end,
+                { useFallbackOnEqual: true }
+            ) || { ...currentProfile.sleepInterval };
+        } else if (field === 'bufferMinutes') {
             const value = Math.round(Math.max(0, Number(rawValue) || 0));
-            if (field === 'fixedCommitmentsMinutes') profile.fixedCommitmentsMinutes = Math.max(0, Math.min(16 * 60, value));
-            if (field === 'dailyBasicsMinutes') profile.dailyBasicsMinutes = Math.max(30, Math.min(8 * 60, value));
-            if (field === 'bufferMinutes') profile.bufferMinutes = Math.max(0, Math.min(4 * 60, value));
+            profile.bufferMinutes = Math.max(0, Math.min(4 * 60, value));
         } else {
             return;
         }
+        window.sistemaVidaState.settings.dayCapacityProfile = this.sanitizeDayCapacityProfile(profile);
         this.saveState(true);
         this.updateDayCapacityProfileControls();
         if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
         this.showToast('Base de capacidade atualizada.', 'success');
     },
+    addDayCapacityInterval: function(group) {
+        this.ensureSettingsState();
+        const allowedGroups = new Set(['fixedCommitmentIntervals', 'dailyBasicIntervals']);
+        if (!allowedGroups.has(group)) return;
+        const profile = this.getDayCapacityProfileSettings();
+        const targetList = Array.isArray(profile[group]) ? [...profile[group]] : [];
+        const fallbackInterval = group === 'fixedCommitmentIntervals'
+            ? { start: '09:00', end: '10:00' }
+            : { start: '08:00', end: '09:00' };
+        targetList.push(fallbackInterval);
+        window.sistemaVidaState.settings.dayCapacityProfile = this.sanitizeDayCapacityProfile({
+            ...profile,
+            [group]: targetList
+        });
+        this.saveState(true);
+        this.updateDayCapacityProfileControls();
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+        this.showToast('Intervalo adicionado.', 'success');
+    },
+    updateDayCapacityInterval: function(group, index, boundary, rawValue) {
+        this.ensureSettingsState();
+        const allowedGroups = new Set(['fixedCommitmentIntervals', 'dailyBasicIntervals']);
+        if (!allowedGroups.has(group) || !['start', 'end'].includes(boundary)) return;
+        const profile = this.getDayCapacityProfileSettings();
+        const targetList = Array.isArray(profile[group]) ? [...profile[group]] : [];
+        if (!targetList[index]) return;
+        targetList[index] = {
+            ...targetList[index],
+            [boundary]: this.normalizeDayCapacityClockTime(rawValue, targetList[index][boundary])
+        };
+        window.sistemaVidaState.settings.dayCapacityProfile = this.sanitizeDayCapacityProfile({
+            ...profile,
+            [group]: targetList
+        });
+        this.saveState(true);
+        this.updateDayCapacityProfileControls();
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+    },
+    removeDayCapacityInterval: function(group, index) {
+        this.ensureSettingsState();
+        const allowedGroups = new Set(['fixedCommitmentIntervals', 'dailyBasicIntervals']);
+        if (!allowedGroups.has(group)) return;
+        const profile = this.getDayCapacityProfileSettings();
+        const targetList = Array.isArray(profile[group]) ? [...profile[group]] : [];
+        if (!targetList[index]) return;
+        targetList.splice(index, 1);
+        window.sistemaVidaState.settings.dayCapacityProfile = this.sanitizeDayCapacityProfile({
+            ...profile,
+            [group]: targetList
+        });
+        this.saveState(true);
+        this.updateDayCapacityProfileControls();
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+        this.showToast('Intervalo removido.', 'success');
+    },
     updateDayCapacityProfileControls: function() {
         this.ensureSettingsState();
         const profile = this.getDayCapacityProfileSettings();
         const fields = {
-            'day-capacity-sleep-hours': profile.sleepHours,
-            'day-capacity-fixed-hours': Math.round((profile.fixedCommitmentsMinutes / 60) * 10) / 10,
-            'day-capacity-basics-minutes': profile.dailyBasicsMinutes,
+            'day-capacity-sleep-start': profile.sleepInterval.start,
+            'day-capacity-sleep-end': profile.sleepInterval.end,
             'day-capacity-buffer-minutes': profile.bufferMinutes
         };
         Object.entries(fields).forEach(([id, value]) => {
             const el = document.getElementById(id);
             if (el) el.value = String(value);
         });
+        const renderIntervalRows = (containerId, group) => {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const intervals = Array.isArray(profile[group]) ? profile[group] : [];
+            if (!intervals.length) {
+                container.innerHTML = '<p class="text-[11px] text-outline">Nenhum intervalo cadastrado.</p>';
+                return;
+            }
+            container.innerHTML = intervals.map((interval, index) => `
+                <div class="space-y-1.5">
+                    <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-center">
+                        <span class="block text-[10px] font-bold uppercase tracking-widest text-outline">Inicio</span>
+                        <span class="block text-[10px] font-bold uppercase tracking-widest text-outline">Fim</span>
+                        <button type="button" onclick="window.app.removeDayCapacityInterval('${group}', ${index})" aria-label="Remover intervalo" title="Remover intervalo" class="h-7 w-7 rounded-full flex items-center justify-center text-outline hover:text-error hover:bg-error/10 transition-colors">
+                            <span class="material-symbols-outlined notranslate text-[16px] leading-none">close</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="time" step="900" value="${interval.start}" onchange="window.app.updateDayCapacityInterval('${group}', ${index}, 'start', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
+                        <input type="time" step="900" value="${interval.end}" onchange="window.app.updateDayCapacityInterval('${group}', ${index}, 'end', this.value)" class="w-full bg-surface-container-high text-on-surface text-xs font-medium rounded-lg px-3 py-2 outline-none" />
+                    </div>
+                </div>
+            `).join('');
+        };
+        renderIntervalRows('day-capacity-fixed-intervals', 'fixedCommitmentIntervals');
+        renderIntervalRows('day-capacity-basic-intervals', 'dailyBasicIntervals');
         const summaryEl = document.getElementById('day-capacity-summary');
         if (summaryEl) {
-            const awakeHours = Math.max(8, 24 - Number(profile.sleepHours || 8));
-            const executableMinutes = Math.max(60, (awakeHours * 60) - profile.fixedCommitmentsMinutes - profile.dailyBasicsMinutes - profile.bufferMinutes);
-            summaryEl.textContent = `Base atual: ${awakeHours}h acordado · ${Math.round(executableMinutes)} min executaveis antes do ajuste dinamico.`;
+            const turnSummary = [
+                `manha ${Math.round(profile.usefulMinutesByDayPart.manha || 0)} min`,
+                `tarde ${Math.round(profile.usefulMinutesByDayPart.tarde || 0)} min`,
+                `noite ${Math.round(profile.usefulMinutesByDayPart.noite || 0)} min`
+            ].join(' · ');
+            summaryEl.textContent = `Base atual: ${Math.round(profile.usefulMinutes)} min uteis brutos · ${Math.round(profile.bufferMinutes)} min de reserva · ${Math.round(profile.executableMinutes)} min executaveis antes do ajuste dinamico. Por turno: ${turnSummary}.`;
         }
     },
         // Extracted in Phase 9: notifications module

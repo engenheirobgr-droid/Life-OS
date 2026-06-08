@@ -196,22 +196,14 @@ ensureSettingsState: function() {
             window.sistemaVidaState.settings.dayCapacityProfile = {};
         }
         const dayCapacityProfile = window.sistemaVidaState.settings.dayCapacityProfile;
-        const sanitizeHours = (value, fallback, min, max, step = 0.5) => {
-            const num = Number(value);
-            if (!Number.isFinite(num)) return fallback;
-            const clamped = Math.max(min, Math.min(max, num));
-            return Math.round(clamped / step) * step;
-        };
-        const sanitizeMinutes = (value, fallback, min, max, step = 15) => {
-            const num = Number(value);
-            if (!Number.isFinite(num)) return fallback;
-            const clamped = Math.max(min, Math.min(max, num));
-            return Math.round(clamped / step) * step;
-        };
-        dayCapacityProfile.sleepHours = sanitizeHours(dayCapacityProfile.sleepHours, 8, 4, 12, 0.5);
-        dayCapacityProfile.fixedCommitmentsMinutes = sanitizeMinutes(dayCapacityProfile.fixedCommitmentsMinutes, 8 * 60, 0, 16 * 60);
-        dayCapacityProfile.dailyBasicsMinutes = sanitizeMinutes(dayCapacityProfile.dailyBasicsMinutes, 2 * 60, 30, 8 * 60);
-        dayCapacityProfile.bufferMinutes = sanitizeMinutes(dayCapacityProfile.bufferMinutes, 60, 0, 4 * 60);
+        window.sistemaVidaState.settings.dayCapacityProfile = this.sanitizeDayCapacityProfile
+            ? this.sanitizeDayCapacityProfile(dayCapacityProfile)
+            : {
+                sleepInterval: { start: '22:00', end: '06:00' },
+                fixedCommitmentIntervals: [],
+                dailyBasicIntervals: [],
+                bufferMinutes: 60
+            };
         if (!['classic', 'ring'].includes(window.sistemaVidaState.settings.deepWorkClockStyle)) {
             window.sistemaVidaState.settings.deepWorkClockStyle = 'classic';
         }
@@ -697,9 +689,9 @@ factoryReset: async function() {
           theme: 'auto',
           deepWorkClockStyle: 'classic',
           dayCapacityProfile: {
-            sleepHours: 8,
-            fixedCommitmentsMinutes: 8 * 60,
-            dailyBasicsMinutes: 2 * 60,
+            sleepInterval: { start: '22:00', end: '06:00' },
+            fixedCommitmentIntervals: [],
+            dailyBasicIntervals: [],
             bufferMinutes: 60
           },
           features: { social: false }
