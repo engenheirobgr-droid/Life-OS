@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v373';
+const CACHE_NAME = 'sistema-vida-v374';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260608-capacity-intervals-v3',
+    './app.js?v=20260608-capacity-intervals-v4',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
     './js/notifications.js?v=20260604-ui-system-v23',
@@ -20,7 +20,7 @@ const ASSETS_TO_CACHE = [
     './views/hoje.html?v=20260604-ui-system-v23',
     './views/planos.html?v=20260604-ui-system-v23',
     './views/proposito.html?v=20260604-ui-system-v23',
-    './views/perfil.html?v=20260608-capacity-intervals-v3',
+    './views/perfil.html?v=20260608-capacity-intervals-v4',
     './views/painel.html?v=20260604-ui-system-v23',
     './views/foco.html?v=20260604-ui-system-v23',
     './views/onboarding.html?v=20260604-ui-system-v23',
