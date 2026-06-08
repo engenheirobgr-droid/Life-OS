@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v374';
+const CACHE_NAME = 'sistema-vida-v375';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260608-capacity-intervals-v4',
+    './app.js?v=20260608-week-fit-v2',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
     './js/notifications.js?v=20260604-ui-system-v23',
@@ -13,7 +13,7 @@ const ASSETS_TO_CACHE = [
     './js/protocols.js?v=20260604-ui-system-v23',
     './js/habitFocus.js?v=20260604-ui-system-v23',
     './js/state.js?v=20260608-capacity-intervals-v1',
-    './js/render.js?v=20260608-capacity-intervals-v1',
+    './js/render.js?v=20260608-week-fit-v2',
     './js/planning.js?v=20260608-capacity-intervals-v1',
     './js/gamification.js?v=20260604-ui-system-v23',
     './js/social.js?v=20260604-ui-system-v23',
@@ -21,7 +21,7 @@ const ASSETS_TO_CACHE = [
     './views/planos.html?v=20260604-ui-system-v23',
     './views/proposito.html?v=20260604-ui-system-v23',
     './views/perfil.html?v=20260608-capacity-intervals-v4',
-    './views/painel.html?v=20260604-ui-system-v23',
+    './views/painel.html?v=20260608-week-fit-v2',
     './views/foco.html?v=20260604-ui-system-v23',
     './views/onboarding.html?v=20260604-ui-system-v23',
     './views/social.html?v=20260604-ui-system-v23'

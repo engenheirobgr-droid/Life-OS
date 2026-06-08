@@ -454,9 +454,18 @@ _renderWeekPlanCard: function(plan, state, isCurrent) {
 
         const selectedMicros = (plan.selectedMicros || []).map(id => micros.find(m => m.id === id)).filter(Boolean);
         const doneMicros = selectedMicros.filter(m => m.status === 'done' || m.completed);
-        const pendingMicros = selectedMicros.filter(m => m.status !== 'done' && !m.completed);
-
         const completionPct = selectedMicros.length > 0 ? Math.round((doneMicros.length / selectedMicros.length) * 100) : 0;
+        const planKey = String(plan.weekKey || (isCurrent ? this._getWeekKey() : ''));
+        const shouldShowFit = !!planKey && planKey >= this._getWeekKey();
+        const fitHtml = shouldShowFit && typeof this.getWeeklyFitIndicators === 'function' && typeof this.buildWeeklyFitSummaryHTML === 'function'
+            ? this.buildWeeklyFitSummaryHTML(
+                this.getWeeklyFitIndicators(planKey, {
+                    selectedMicros: Array.isArray(plan.selectedMicros) ? plan.selectedMicros : [],
+                    energyForecast: Number(plan.energyForecast || 3)
+                }),
+                { compact: true, showDecision: true }
+            )
+            : '';
 
         return `<div class="space-y-4 mt-4">
             ${plan.intention ? `
@@ -476,6 +485,8 @@ _renderWeekPlanCard: function(plan, state, isCurrent) {
                     <p class="text-sm text-on-surface font-bold text-primary">${doneMicros.length}/${selectedMicros.length} <span class="text-outline font-normal">(${completionPct}%)</span></p>
                 </div>` : ''}
             </div>
+
+            ${fitHtml}
 
             ${selectedMicros.length > 0 ? `
             <div class="flex flex-col gap-2">
@@ -2913,10 +2924,10 @@ render: {
             let micros = state.entities.micros || [];
             let macros = state.entities.macros || [];
             
+            const currentWeekKey = app._getWeekKey();
             // Filtro Temporal
             if (filter === 'semana') {
-                const weekKey = app._getWeekKey();
-                const weekPlan = (state.weekPlans || {})[weekKey];
+                const weekPlan = (state.weekPlans || {})[currentWeekKey];
                 const plannedIds = (weekPlan && weekPlan.selectedMicros) || [];
                 if (plannedIds.length > 0) {
                     micros = micros.filter(m => plannedIds.includes(m.id));
@@ -2962,6 +2973,13 @@ render: {
             }
             const plannedLoadMinutes = micros.reduce((sum, micro) => sum + Math.max(0, Number(app.getMicroEstimatedMinutes?.(micro)) || 0), 0);
             app.renderWeeklyHealthScore({ execScore, plannedCount: totalMicros, doneCount: doneMicros, plannedLoadMinutes });
+            app.renderWeeklyFitSummary({
+                containerId: 'weekly-fit-card',
+                weekKey: currentWeekKey,
+                compact: false,
+                showDecision: true,
+                emptyCopy: 'Crie um plano semanal para comparar a carga escolhida com a capacidade util estimada da sua semana.'
+            });
             // ---------------------------------------------------------
             
             // Fix Filter Buttons Highlight

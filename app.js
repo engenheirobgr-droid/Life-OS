@@ -25,7 +25,7 @@ import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
 import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v23';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v23';
 import { attachStateModule } from './js/state.js?v=20260608-capacity-intervals-v1';
-import { attachRenderModule } from './js/render.js?v=20260608-capacity-intervals-v1';
+import { attachRenderModule } from './js/render.js?v=20260608-week-fit-v2';
 import { attachPlanningModule } from './js/planning.js?v=20260608-capacity-intervals-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v23';
 import { attachSocial } from './js/social.js?v=20260604-ui-system-v23';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260608-capacity-intervals-v4',
+    appBuildVersion: '20260608-week-fit-v2',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -8008,6 +8008,39 @@ ensureNotesState: function() {
         }
     },
 
+    renderWeeklyFitSummary: function({
+        containerId,
+        weekKey = this._getWeekKey(),
+        selectedMicros,
+        energyForecast,
+        compact = false,
+        showDecision = true,
+        emptyTitle = 'Encaixe semanal',
+        emptyCopy = 'Selecione micros para comparar a carga planejada com o espaco util estimado da semana.'
+    } = {}) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const fit = this.getWeeklyFitIndicators(weekKey, {
+            selectedMicros,
+            energyForecast
+        });
+
+        if (!fit.selectedMicroCount) {
+            container.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined notranslate text-outline shrink-0">event_upcoming</span>
+                    <div class="min-w-0">
+                        <p class="ui-section-label">${this.escapeHtml(emptyTitle)}</p>
+                        <p class="mt-1 text-[11px] leading-relaxed text-on-surface-variant">${this.escapeHtml(emptyCopy)}</p>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = this.buildWeeklyFitSummaryHTML(fit, { compact, showDecision });
+    },
+
     /**
      * Retorna a média de Micros concluídos por semana nas últimas N semanas
      * (exclui a semana corrente para não contaminar com dados parciais).
@@ -8046,6 +8079,181 @@ ensureNotesState: function() {
             const micro = micros.find((item) => item.id === id);
             return sum + Math.max(0, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
         }, 0);
+    },
+
+    getWeeklyEnergyForecastFactor: function(rawValue = 3) {
+        const level = Math.max(1, Math.min(5, Math.round(Number(rawValue) || 3)));
+        const factorByLevel = {
+            1: 0.76,
+            2: 0.9,
+            3: 1,
+            4: 1.08,
+            5: 1.15
+        };
+        return factorByLevel[level] || 1;
+    },
+
+    getWeeklyRecurringLoadSummary: function(weekKey = this._getWeekKey()) {
+        const habits = (window.sistemaVidaState?.habits || []).filter((habit) =>
+            habit && habit.id && habit.archived !== true && habit.status !== 'archived'
+        );
+        const weekDates = this.getWeekDateKeys ? this.getWeekDateKeys(weekKey) : [];
+        let totalMinutes = 0;
+        let occurrences = 0;
+        let uniqueHabitCount = 0;
+        habits.forEach((habit) => {
+            const estimatedMinutes = Math.max(1, Number(this.getHabitEstimatedMinutes?.(habit)) || 0);
+            const scheduledDates = weekDates.filter((dateKey) =>
+                typeof this.isHabitScheduledForDate === 'function' ? this.isHabitScheduledForDate(habit, dateKey) : true
+            );
+            if (!scheduledDates.length) return;
+            totalMinutes += estimatedMinutes * scheduledDates.length;
+            occurrences += scheduledDates.length;
+            uniqueHabitCount += 1;
+        });
+        return {
+            totalMinutes: Math.round(totalMinutes),
+            occurrences,
+            uniqueHabitCount
+        };
+    },
+
+    getWeeklyFitIndicators: function(weekKey = this._getWeekKey(), options = {}) {
+        const state = window.sistemaVidaState || {};
+        const savedPlan = (state.weekPlans || {})[weekKey] || {};
+        const selectedMicros = Array.isArray(options.selectedMicros)
+            ? options.selectedMicros
+            : (Array.isArray(savedPlan.selectedMicros) ? savedPlan.selectedMicros : []);
+        const energyForecast = Math.max(1, Math.min(5, Math.round(Number(options.energyForecast ?? savedPlan.energyForecast ?? 3) || 3)));
+        const profile = this.getDayCapacityProfileSettings ? this.getDayCapacityProfileSettings() : { executableMinutes: 0 };
+        const weekDates = this.getWeekDateKeys ? this.getWeekDateKeys(weekKey) : [];
+        const baseDailyMinutes = Math.max(0, Math.round(Number(profile.executableMinutes) || 0));
+        const baseCapacityMinutes = baseDailyMinutes * weekDates.length;
+        const energyFactor = this.getWeeklyEnergyForecastFactor(energyForecast);
+        const capacityMinutes = Math.max(0, Math.round(baseCapacityMinutes * energyFactor));
+        const recurring = this.getWeeklyRecurringLoadSummary ? this.getWeeklyRecurringLoadSummary(weekKey) : { totalMinutes: 0, occurrences: 0, uniqueHabitCount: 0 };
+        const discretionaryMinutes = Math.max(0, capacityMinutes - recurring.totalMinutes);
+        const microPlannedMinutes = selectedMicros.reduce((sum, id) => {
+            const micro = (state.entities?.micros || []).find((item) => item.id === id);
+            return sum + Math.max(0, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
+        }, 0);
+        const balanceMinutes = discretionaryMinutes - microPlannedMinutes;
+        const discretionaryReference = Math.max(1, discretionaryMinutes);
+        const overRatio = microPlannedMinutes / discretionaryReference;
+        let fitStatus = 'sem_plano';
+        let fitLabel = 'Sem plano';
+        let tone = 'text-outline';
+        let badgeClass = 'bg-surface-container-high text-outline border-outline-variant/20';
+        let decisionTitle = 'Monte uma semana executável';
+        let decisionCopy = 'Selecione micros para comparar a carga da semana com o espaço real estimado.';
+
+        if (selectedMicros.length > 0) {
+            if (balanceMinutes >= Math.max(90, discretionaryMinutes * 0.15)) {
+                fitStatus = 'saudavel';
+                fitLabel = 'Cabe com folga';
+                tone = 'text-emerald-700 dark:text-emerald-300';
+                badgeClass = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25';
+                decisionTitle = 'Plano coerente com a semana';
+                decisionCopy = 'A carga escolhida cabe com margem na sua semana típica. Preserve o escopo e execute.';
+            } else if (balanceMinutes >= 0) {
+                fitStatus = 'ajustado';
+                fitLabel = 'Cabe ajustado';
+                tone = 'text-primary';
+                badgeClass = 'bg-primary/10 text-primary border-primary/20';
+                decisionTitle = 'Plano possível, com pouca sobra';
+                decisionCopy = 'A semana fecha, mas com margem curta. Proteja as ações essenciais antes de adicionar novas.';
+            } else if (balanceMinutes >= -Math.max(60, discretionaryMinutes * 0.1)) {
+                fitStatus = 'apertado';
+                fitLabel = 'Apertado';
+                tone = 'text-amber-700 dark:text-amber-300';
+                badgeClass = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25';
+                decisionTitle = 'Plano no limite da semana';
+                decisionCopy = 'A carga planejada já encosta no encaixe semanal. Se possível, alivie uma ação densa ou distribua melhor o ritmo.';
+            } else {
+                fitStatus = 'sob_risco';
+                fitLabel = 'Sob risco';
+                tone = 'text-rose-700 dark:text-rose-300';
+                badgeClass = 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/25';
+                decisionTitle = 'Plano acima do encaixe semanal';
+                decisionCopy = 'A carga de micros está acima do espaço discricionário estimado. Adie parte da semana ou reduza escopo antes de expandir.';
+            }
+            if (energyForecast <= 2 && fitStatus !== 'saudavel') {
+                decisionCopy = `${decisionCopy} Como a energia prevista está baixa, o risco de fricção aumenta.`;
+            } else if (energyForecast >= 4 && fitStatus === 'ajustado') {
+                decisionCopy = 'O plano depende de uma semana boa de energia, mas ainda parece sustentável se você proteger os blocos principais.';
+            }
+        }
+
+        return {
+            weekKey,
+            energyForecast,
+            energyFactor,
+            baseDailyMinutes,
+            baseCapacityMinutes,
+            capacityMinutes,
+            recurringMinutes: recurring.totalMinutes,
+            recurringOccurrences: recurring.occurrences,
+            recurringHabitCount: recurring.uniqueHabitCount,
+            discretionaryMinutes,
+            microPlannedMinutes,
+            selectedMicroCount: selectedMicros.length,
+            balanceMinutes,
+            overRatio,
+            fitStatus,
+            fitLabel,
+            tone,
+            badgeClass,
+            decisionTitle,
+            decisionCopy
+        };
+    },
+
+    buildWeeklyFitSummaryHTML: function(fit, options = {}) {
+        if (!fit) return '';
+        const showDecision = options.showDecision !== false;
+        const compact = options.compact === true;
+        const metricClass = compact
+            ? 'rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-2'
+            : 'rounded-xl border border-outline-variant/10 bg-surface-container-low p-3';
+        const valueClass = compact ? 'mt-1 text-sm font-bold text-on-surface' : 'mt-1 text-lg font-bold text-on-surface';
+        const metrics = [
+            { label: 'Capacidade útil', value: `${fit.capacityMinutes} min` },
+            { label: 'Recorrências', value: `${fit.recurringMinutes} min` },
+            { label: 'Saldo p/ micros', value: `${fit.discretionaryMinutes} min` },
+            { label: 'Micros planejadas', value: `${fit.microPlannedMinutes} min` }
+        ];
+        return `
+            <div class="space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="ui-section-label">Encaixe semanal</p>
+                        <p class="mt-1 text-[11px] text-on-surface-variant">Capacidade estimada da semana cruzada com carga recorrente e micros selecionadas.</p>
+                    </div>
+                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${fit.badgeClass}">${fit.fitLabel}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    ${metrics.map((metric) => `
+                        <div class="${metricClass}">
+                            <p class="text-[10px] uppercase tracking-widest text-outline">${this.escapeHtml(metric.label)}</p>
+                            <p class="${valueClass}">${this.escapeHtml(metric.value)}</p>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-2.5">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-[10px] uppercase tracking-widest text-outline">Saldo final</p>
+                        <p class="text-sm font-bold ${fit.balanceMinutes < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}">${fit.balanceMinutes >= 0 ? '+' : ''}${fit.balanceMinutes} min</p>
+                    </div>
+                    <p class="mt-1 text-[11px] text-on-surface-variant">Energia prevista ${fit.energyForecast}/5 · fator ${Math.round(fit.energyFactor * 100)}% sobre a capacidade-base.</p>
+                </div>
+                ${showDecision ? `
+                    <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-3">
+                        <p class="text-[10px] uppercase tracking-widest text-outline">Leitura</p>
+                        <p class="mt-1 text-sm font-bold ${fit.tone}">${this.escapeHtml(fit.decisionTitle)}</p>
+                        <p class="mt-1 text-[11px] leading-relaxed text-on-surface-variant">${this.escapeHtml(fit.decisionCopy)}</p>
+                    </div>
+                ` : ''}
+            </div>`;
     },
 
     _computeWeeklyCompletionLoadAverage: function(weeks = 4) {
@@ -8129,6 +8337,16 @@ ensureNotesState: function() {
             countEl.classList.add('text-primary');
             hintEl.textContent = 'Dentro do seu ritmo.';
         }
+
+        this.renderWeeklyFitSummary({
+            containerId: 'wp-fit-summary',
+            weekKey: this._getWeeklyPlanKey ? this._getWeeklyPlanKey() : this._getWeekKey(),
+            selectedMicros: checkedIds,
+            energyForecast: Number(document.getElementById('wp-energy')?.value || 3),
+            compact: true,
+            showDecision: true,
+            emptyCopy: 'Selecione micros e ajuste a energia prevista para ver se o plano cabe na semana.'
+        });
     },
 
     closeWeeklyPlanModal: function() {
