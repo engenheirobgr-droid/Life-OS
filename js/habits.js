@@ -1,13 +1,18 @@
 export function attachHabits(app) {
     Object.assign(app, {
-        habitsViewMode: 'scheduled',
+        habitsViewMode: 'time',
 
         getHabitsViewMode: function() {
-            return ['intent', 'scheduled'].includes(this.habitsViewMode) ? this.habitsViewMode : 'scheduled';
+            const mode = String(this.habitsViewMode || 'time').trim().toLowerCase();
+            if (mode === 'scheduled') return 'time';
+            return ['intent', 'time', 'dimension'].includes(mode) ? mode : 'time';
         },
 
         setHabitsViewMode: function(mode = 'intent') {
-            this.habitsViewMode = ['intent', 'scheduled'].includes(mode) ? mode : 'intent';
+            const normalized = String(mode || 'intent').trim().toLowerCase();
+            this.habitsViewMode = normalized === 'scheduled'
+                ? 'time'
+                : (['intent', 'time', 'dimension'].includes(normalized) ? normalized : 'intent');
             if (typeof this.render?.hoje === 'function') this.render.hoje();
         },
 

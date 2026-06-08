@@ -3892,9 +3892,9 @@ render: {
                         <div class="mb-2 flex flex-wrap items-center gap-1">
                             ${chipsRow}
                         </div>
-                        <div class="mt-2">
-                            <div class="flex justify-between items-start gap-3">
-                                <div class="min-w-0 overflow-hidden pr-2">
+                        <div class="mt-2 space-y-2">
+                            ${progressText ? `<div class="flex justify-end"><span class="text-[11px] font-semibold text-primary">${progressText}</span></div>` : ''}
+                            <div class="min-w-0">
                                     ${linkedMetaHtml}
                                     ${app.renderHabitIdentityChip(habit)}
                                     ${scheduleHint}
@@ -3904,8 +3904,6 @@ render: {
                                     ${habit.startTime ? `<p class="mt-1 text-[10px] text-outline leading-tight truncate">Horário: ${habit.startTime}${habit.reminderEnabled ? ' - Lembrete ativo' : ''}</p>` : ''}
                                     ${habit.reward ? `<p class="mt-1 text-[10px] text-primary/80 leading-tight line-clamp-1">Recompensa: ${habit.reward}</p>` : ''}
                                     ${focusCta}
-                                </div>
-                                ${progressText ? `<span class="pt-0.5 text-[11px] font-semibold text-primary shrink-0">${progressText}</span>` : ''}
                             </div>
                             ${weekHtml}
                             ${stepsHtml}
@@ -3918,8 +3916,8 @@ render: {
                 toggleButtons.forEach((button) => {
                     const active = button.dataset.habitsViewMode === viewMode;
                     button.className = active
-                        ? 'rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10'
-                        : 'rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface hover:text-primary hover:bg-surface-container transition-colors';
+                        ? 'min-w-0 rounded-xl px-2 py-2 text-[9px] font-bold uppercase tracking-[0.18em] text-primary bg-primary/10'
+                        : 'min-w-0 rounded-xl px-2 py-2 text-[9px] font-bold uppercase tracking-[0.18em] text-on-surface hover:text-primary hover:bg-surface-container transition-colors';
                 });
 
                 const normalizeDim = (dim) => {
@@ -3930,19 +3928,57 @@ render: {
                 const dayPartOrder = ['manha', 'tarde', 'noite', 'sem_horario'];
                 const dimensionOrder = ['Saúde', 'Mente', 'Carreira', 'Finanças', 'Relacionamentos', 'Família', 'Lazer', 'Propósito'];
 
-                const buildScheduledHtml = () => {
+                const buildTimeHtml = () => {
+                    const grouped = { manha: [], tarde: [], noite: [], sem_horario: [] };
+                    state.habits.forEach((habit) => {
+                        const schedule = typeof app.getHabitScheduleContext === 'function'
+                            ? app.getHabitScheduleContext(habit)
+                            : { startTime: String(habit.startTime || '').trim(), dayPart: 'sem_horario' };
+                        const dayPart = dayPartOrder.includes(schedule.dayPart) ? schedule.dayPart : 'sem_horario';
+                        grouped[dayPart].push({ habit, schedule });
+                    });
+
+                    return dayPartOrder.map((part) => {
+                        const items = grouped[part];
+                        if (!items.length) return '';
+                        items.sort((a, b) => {
+                            const aMin = app.toClockMinutes ? app.toClockMinutes(a.schedule.startTime || '') : null;
+                            const bMin = app.toClockMinutes ? app.toClockMinutes(b.schedule.startTime || '') : null;
+                            if (aMin !== bMin) return (aMin || 9999) - (bMin || 9999);
+                            const aDim = normalizeDim(a.habit.dimension);
+                            const bDim = normalizeDim(b.habit.dimension);
+                            if (aDim !== bDim) return aDim.localeCompare(bDim, 'pt-BR');
+                            return String(a.habit.title || '').localeCompare(String(b.habit.title || ''), 'pt-BR');
+                        });
+                        const cards = items.map((item) => buildHabitCard(item.habit)).join('');
+                        return `
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings:'FILL' 1">schedule</span>
+                                    <div class="min-w-0">
+                                        <p class="text-[11px] font-bold uppercase tracking-widest text-outline">${dayPartLabels[part]}</p>
+                                        <p class="text-sm font-semibold text-on-surface truncate">${items.length} hábito${items.length === 1 ? '' : 's'}</p>
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">
+                                    <div class="flex gap-4 min-w-max">${cards}</div>
+                                </div>
+                            </div>`;
+                    }).join('');
+                };
+
+                const buildDimensionHtml = () => {
                     const grouped = {};
                     state.habits.forEach((habit) => {
                         const schedule = typeof app.getHabitScheduleContext === 'function'
                             ? app.getHabitScheduleContext(habit)
                             : { startTime: String(habit.startTime || '').trim(), dayPart: 'sem_horario' };
                         const dimension = normalizeDim(habit.dimension);
-                        const dayPart = dayPartOrder.includes(schedule.dayPart) ? schedule.dayPart : 'sem_horario';
                         grouped[dimension] = grouped[dimension] || {
                             icon: habitIconMap[dimension] || 'stars',
-                            dayParts: { manha: [], tarde: [], noite: [], sem_horario: [] }
+                            items: []
                         };
-                        grouped[dimension].dayParts[dayPart].push({ habit, schedule });
+                        grouped[dimension].items.push({ habit, schedule });
                     });
 
                     const dimensions = Object.keys(grouped).sort((a, b) => {
@@ -3956,45 +3992,35 @@ render: {
 
                     return dimensions.map((dimension) => {
                         const dimGroup = grouped[dimension];
-                        const dayGroups = dayPartOrder.map((part) => {
-                            const items = dimGroup.dayParts[part];
-                            if (!items.length) return '';
-                            items.sort((a, b) => {
-                                const aMin = app.toClockMinutes ? app.toClockMinutes(a.schedule.startTime || '') : null;
-                                const bMin = app.toClockMinutes ? app.toClockMinutes(b.schedule.startTime || '') : null;
-                                if (aMin !== bMin) return (aMin || 9999) - (bMin || 9999);
-                                return String(a.habit.title || '').localeCompare(String(b.habit.title || ''), 'pt-BR');
-                            });
-                            const cards = items.map((item) => buildHabitCard(item.habit)).join('');
-                            return `
-                                <div class="space-y-3">
-                                    <div class="flex items-center gap-2">
-                                        <span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings:'FILL' 1">${dimGroup.icon}</span>
-                                        <div class="min-w-0">
-                                            <p class="text-[11px] font-bold uppercase tracking-widest text-outline">${dayPartLabels[part]}</p>
-                                            <p class="text-sm font-semibold text-on-surface truncate">${dimension} · ${items.length} hábito${items.length === 1 ? '' : 's'}</p>
-                                        </div>
-                                    </div>
-                                    <div class="overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">
-                                        <div class="flex gap-4 min-w-max">${cards}</div>
-                                    </div>
-                                </div>`;
-                        }).join('');
-                        return dayGroups ? `
+                        const items = dimGroup.items.slice().sort((a, b) => {
+                            const aPart = dayPartOrder.indexOf(a.schedule.dayPart);
+                            const bPart = dayPartOrder.indexOf(b.schedule.dayPart);
+                            if (aPart !== bPart) return aPart - bPart;
+                            const aMin = app.toClockMinutes ? app.toClockMinutes(a.schedule.startTime || '') : null;
+                            const bMin = app.toClockMinutes ? app.toClockMinutes(b.schedule.startTime || '') : null;
+                            if (aMin !== bMin) return (aMin || 9999) - (bMin || 9999);
+                            return String(a.habit.title || '').localeCompare(String(b.habit.title || ''), 'pt-BR');
+                        });
+                        const cards = items.map((item) => buildHabitCard(item.habit)).join('');
+                        return cards ? `
                             <div class="space-y-4">
                                 <div class="flex items-center gap-2">
                                     <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings:'FILL' 1">${dimGroup.icon}</span>
                                     <span class="text-sm font-semibold text-on-surface">${dimension}</span>
-                                    <span class="text-[10px] text-outline">${Object.values(dimGroup.dayParts).flat().length} hábito${Object.values(dimGroup.dayParts).flat().length === 1 ? '' : 's'}</span>
+                                    <span class="text-[10px] text-outline">${items.length} hábito${items.length === 1 ? '' : 's'}</span>
                                 </div>
-                                ${dayGroups}
+                                <div class="overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">
+                                    <div class="flex gap-4 min-w-max">${cards}</div>
+                                </div>
                             </div>` : '';
                     }).join('');
                 };
 
                 let habitsHtml = '';
-                if (viewMode === 'scheduled') {
-                    habitsHtml = buildScheduledHtml();
+                if (viewMode === 'time') {
+                    habitsHtml = buildTimeHtml();
+                } else if (viewMode === 'dimension') {
+                    habitsHtml = buildDimensionHtml();
                 } else {
                     // Group habits by intent
                     const intentOrder = ['meta', 'strength', 'shadow', 'loose'];

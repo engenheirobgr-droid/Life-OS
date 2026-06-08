@@ -21,11 +21,11 @@ import { attachNotifications } from './js/notifications.js?v=20260604-ui-system-
 import { attachCadence } from './js/cadence.js?v=20260604-ui-system-v23';
 import { attachOnboarding } from './js/onboarding.js?v=20260523-sprint2-onboarding-v1';
 import { attachIdentity } from './js/identity.js?v=20260608-capacity-intervals-v1';
-import { attachHabits } from './js/habits.js?v=20260520-focus-linkage-audit-v3';
+import { attachHabits } from './js/habits.js?v=20260608-habits-view-v2';
 import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v23';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v23';
 import { attachStateModule } from './js/state.js?v=20260608-capacity-intervals-v1';
-import { attachRenderModule } from './js/render.js?v=20260608-week-fit-v2';
+import { attachRenderModule } from './js/render.js?v=20260608-habits-view-v2';
 import { attachPlanningModule } from './js/planning.js?v=20260608-capacity-intervals-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v23';
 import { attachSocial } from './js/social.js?v=20260604-ui-system-v23';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260608-week-fit-v2',
+    appBuildVersion: '20260608-habits-view-v2',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {

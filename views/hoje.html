@@ -269,9 +269,10 @@
             Sugestões
         </button>
     </div>
-    <div id="habits-view-mode-toggle" class="inline-flex rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-1">
-        <button type="button" data-habits-view-mode="intent" onclick="window.app.setHabitsViewMode('intent')" class="rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10">Por intenção</button>
-        <button type="button" data-habits-view-mode="scheduled" onclick="window.app.setHabitsViewMode('scheduled')" class="rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface hover:text-primary hover:bg-surface-container transition-colors">Por hora/dimensão</button>
+    <div id="habits-view-mode-toggle" class="grid w-full max-w-sm grid-cols-3 rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-1">
+        <button type="button" data-habits-view-mode="intent" onclick="window.app.setHabitsViewMode('intent')" class="min-w-0 rounded-xl px-2 py-2 text-[9px] font-bold uppercase tracking-[0.18em] text-primary bg-primary/10">Intenção</button>
+        <button type="button" data-habits-view-mode="time" onclick="window.app.setHabitsViewMode('time')" class="min-w-0 rounded-xl px-2 py-2 text-[9px] font-bold uppercase tracking-[0.18em] text-on-surface hover:text-primary hover:bg-surface-container transition-colors">Hora</button>
+        <button type="button" data-habits-view-mode="dimension" onclick="window.app.setHabitsViewMode('dimension')" class="min-w-0 rounded-xl px-2 py-2 text-[9px] font-bold uppercase tracking-[0.18em] text-on-surface hover:text-primary hover:bg-surface-container transition-colors">Dimensão</button>
     </div>
 </div>
 <!-- Modal: Biblioteca de Hábitos Sugeridos -->
