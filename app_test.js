@@ -1570,7 +1570,23 @@ const app = {
                         progressVal = parseFloat(progressRaw) || 0;
                     }
                     let numericProgress = (progressVal <= 1 && progressVal > 0) ? progressVal * 100 : progressVal;
-                    let status = (numericProgress >= 100) ? 'done' : 'active';
+                    // Preferir status explicitamente declarado na planilha.
+                    const explicitStatusRaw = String(getValue(row, ['Status', 'status', 'Concluído', 'Done']) || '').trim().toLowerCase();
+                    let status = 'pending';
+                    if (explicitStatusRaw) {
+                        if (explicitStatusRaw.includes('done') || explicitStatusRaw === 'sim' || explicitStatusRaw === 'true') status = 'done';
+                        else if (explicitStatusRaw.includes('abandon')) status = 'abandoned';
+                        else if (explicitStatusRaw.includes('in_progress') || explicitStatusRaw.includes('active')) status = 'in_progress';
+                        else status = 'pending';
+                    } else {
+                        // Se não houver status explícito: micros podem derivar do progresso (são atômicas),
+                        // pais (metas/okrs/macros) não devem virar 'done' automaticamente apenas por progress.
+                        if (type === 'micros') {
+                            status = (numericProgress >= 100) ? 'done' : 'pending';
+                        } else {
+                            status = 'pending';
+                        }
+                    }
                     
                     let obj = {
                         id: 'ent_' + Date.now() + Math.random().toString(36).substr(2, 9),
@@ -1585,7 +1601,11 @@ const app = {
                     
                     if (type === 'metas' || type === 'okrs') { obj.purpose = context; obj.prazo = prazo; }
                     else if (type === 'macros') { obj.description = context; obj.prazo = prazo; }
-                    else if (type === 'micros') { obj.indicator = context; obj.completed = (status === 'done'); obj.prazo = prazo; }
+                    else if (type === 'micros') {
+                        obj.indicator = context;
+                        obj.completed = (status === 'done');
+                        obj.prazo = prazo;
+                    }
 
                     if (window.sistemaVidaState.entities[type]) {
                         window.sistemaVidaState.entities[type].push(obj);
@@ -1675,6 +1695,17 @@ const app = {
             }
 
             // Finalização do Fluxo
+            // Após popular o estado, normalizar e forçar recálculo central antes de persistir.
+            try {
+                if (typeof window.app.normalizeEntitiesState === 'function') {
+                    window.app.normalizeEntitiesState();
+                }
+                if (typeof window.app.reconcilePlanHierarchy === 'function') {
+                    window.app.reconcilePlanHierarchy({ reason: 'import', recordHistory: true });
+                }
+            } catch (err) {
+                console.warn('[Import] Falha ao normalizar/recalcular após import:', err);
+            }
             await window.app.saveState();
             alert('Dados importados com sucesso!');
             window.app.switchView('painel');
