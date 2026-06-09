@@ -8,12 +8,294 @@ formatDateTimeForSheet: function(dateTimeValue, fallbackDate = '') {
         return String(fallbackDate || '').trim();
     },
 
+ensurePlanRecalcState: function() {
+        const state = window.sistemaVidaState || {};
+        if (!state.maintenance || typeof state.maintenance !== 'object' || Array.isArray(state.maintenance)) {
+            state.maintenance = {};
+        }
+        if (!Array.isArray(state.maintenance.planRecalcHistory)) {
+            state.maintenance.planRecalcHistory = [];
+        }
+        return state.maintenance.planRecalcHistory;
+    },
+
+recordPlanRecalcHistory: function(entry = {}) {
+        const history = this.ensurePlanRecalcState();
+        const changed = entry.changed && typeof entry.changed === 'object' ? entry.changed : {};
+        const totalChanged = ['metas', 'okrs', 'macros', 'micros']
+            .reduce((sum, key) => sum + Math.max(0, Number(changed[key]) || 0), 0);
+        if (totalChanged <= 0) return null;
+        const record = {
+            at: new Date().toISOString(),
+            reason: String(entry.reason || 'recalc'),
+            changed: {
+                metas: Math.max(0, Number(changed.metas) || 0),
+                okrs: Math.max(0, Number(changed.okrs) || 0),
+                macros: Math.max(0, Number(changed.macros) || 0),
+                micros: Math.max(0, Number(changed.micros) || 0)
+            },
+            details: entry.details && typeof entry.details === 'object' ? { ...entry.details } : {}
+        };
+        history.unshift(record);
+        if (history.length > 50) history.length = 50;
+        return record;
+    },
+
+createEmptyPlanRecalcResult: function() {
+        return { changed: { metas: 0, okrs: 0, macros: 0, micros: 0 }, totalChanged: 0 };
+    },
+
+clampPlanProgress: function(raw) {
+        const n = Number(raw);
+        if (!Number.isFinite(n)) return 0;
+        return Math.max(0, Math.min(100, Math.round(n)));
+    },
+
+hasActivePlanChildren: function(items = []) {
+        return (items || []).some((item) => item && (item.status === 'in_progress' || item.status === 'done'));
+    },
+
+countDonePlanMicros: function(items = []) {
+        return (items || []).filter((item) => item && (item.status === 'done' || item.completed === true)).length;
+    },
+
+computePlanEntityProgress: function(type, entity) {
+        const state = window.sistemaVidaState || {};
+        const entities = state.entities || {};
+
+        if (!entity || !entity.id) {
+            return { children: [], computedProgress: 0 };
+        }
+
+        if (type === 'macros') {
+            const children = (entities.micros || []).filter((item) => item.macroId === entity.id && item.status !== 'abandoned');
+            const doneCount = this.countDonePlanMicros(children);
+            const computedProgress = children.length > 0 ? Math.round((doneCount / children.length) * 100) : 0;
+            return { children, computedProgress };
+        }
+
+        if (type === 'okrs') {
+            const children = (entities.macros || []).filter((item) => item.okrId === entity.id && item.status !== 'abandoned');
+            const avgMacroProgress = children.length > 0
+                ? children.reduce((sum, item) => sum + this.clampPlanProgress(item.progress), 0) / children.length
+                : 0;
+            const krProgress = this.computeKeyResultsProgress(entity.keyResults);
+            const computedProgress = krProgress !== null
+                ? Math.round((krProgress * 0.7) + (avgMacroProgress * 0.3))
+                : Math.round(avgMacroProgress);
+            return { children, computedProgress };
+        }
+
+        if (type === 'metas') {
+            const childMetas = (entities.metas || []).filter((item) => item.parentMetaId === entity.id && item.status !== 'abandoned');
+            if (childMetas.length > 0) {
+                const computedProgress = Math.round(
+                    childMetas.reduce((sum, item) => sum + this.clampPlanProgress(item.progress), 0) / childMetas.length
+                );
+                return { children: childMetas, computedProgress };
+            }
+            const children = (entities.okrs || []).filter((item) => item.metaId === entity.id && item.status !== 'abandoned');
+            const computedProgress = children.length > 0
+                ? Math.round(children.reduce((sum, item) => sum + this.clampPlanProgress(item.progress), 0) / children.length)
+                : 0;
+            return { children, computedProgress };
+        }
+
+        return { children: [], computedProgress: 0 };
+    },
+
+applyPlanParentState: function(parent, computedProgress, children, type, options = {}, changed = null) {
+        if (!parent || parent.status === 'abandoned') return false;
+
+        const safeProgress = this.clampPlanProgress(computedProgress);
+        const priorStatus = String(parent.status || 'pending');
+        const priorProgress = this.clampPlanProgress(parent.progress);
+        const priorCompleted = parent.completed === true;
+        const allowDoneReopen = options.allowDoneReopen === true;
+        const keepExplicitDone = priorStatus === 'done' && (!allowDoneReopen || safeProgress >= 100);
+
+        let nextStatus = priorStatus;
+        let nextProgress = keepExplicitDone ? 100 : safeProgress;
+
+        if (keepExplicitDone) {
+            nextStatus = 'done';
+        } else if (this.hasActivePlanChildren(children)) {
+            nextStatus = 'in_progress';
+        } else {
+            nextStatus = 'pending';
+        }
+
+        if (nextStatus === 'done') nextProgress = 100;
+        const nextCompleted = nextStatus === 'done';
+
+        parent.status = nextStatus;
+        parent.progress = nextProgress;
+        parent.completed = nextCompleted;
+
+        const didChange = priorStatus !== nextStatus || priorProgress !== nextProgress || priorCompleted !== nextCompleted;
+        if (didChange && changed && typeof changed === 'object' && Object.prototype.hasOwnProperty.call(changed, type)) {
+            changed[type] += 1;
+        }
+        return didChange;
+    },
+
+recalculatePlanEntity: function(type, entityId, options = {}, changed = null) {
+        const entities = window.sistemaVidaState?.entities || {};
+        const list = Array.isArray(entities[type]) ? entities[type] : [];
+        const entity = list.find((item) => item.id === entityId);
+        if (!entity) return false;
+        const { children, computedProgress } = this.computePlanEntityProgress(type, entity);
+        return this.applyPlanParentState(entity, computedProgress, children, type, options, changed);
+    },
+
+reconcilePlanHierarchy: function(options = {}) {
+        const state = window.sistemaVidaState;
+        if (!state.entities || typeof state.entities !== 'object') {
+            state.entities = { metas: [], okrs: [], macros: [], micros: [] };
+            return this.createEmptyPlanRecalcResult();
+        }
+        ['metas', 'okrs', 'macros', 'micros'].forEach((type) => {
+            if (!Array.isArray(state.entities[type])) state.entities[type] = [];
+        });
+
+        const allowDoneReopen = options.allowDoneReopen === true;
+        const recordHistory = options.recordHistory === true;
+        const reason = String(options.reason || 'recalc');
+        const changed = this.createEmptyPlanRecalcResult().changed;
+        const reconcileOptions = { allowDoneReopen };
+
+        state.entities.macros.forEach((macro) => {
+            if (!macro || !macro.id) return;
+            this.recalculatePlanEntity('macros', macro.id, reconcileOptions, changed);
+        });
+
+        state.entities.okrs.forEach((okr) => {
+            if (!okr || !okr.id) return;
+            this.recalculatePlanEntity('okrs', okr.id, reconcileOptions, changed);
+        });
+
+        const getMetaDepth = (meta) => {
+            let depth = 0;
+            let cursor = meta;
+            let guard = 0;
+            while (cursor?.parentMetaId && guard < 20) {
+                cursor = state.entities.metas.find((item) => item.id === cursor.parentMetaId);
+                if (!cursor) break;
+                depth += 1;
+                guard += 1;
+            }
+            return depth;
+        };
+
+        [...state.entities.metas]
+            .sort((left, right) => getMetaDepth(right) - getMetaDepth(left))
+            .forEach((meta) => {
+                if (!meta || !meta.id) return;
+                this.recalculatePlanEntity('metas', meta.id, reconcileOptions, changed);
+            });
+
+        const totalChanged = Object.values(changed).reduce((sum, value) => sum + value, 0);
+        if (recordHistory && totalChanged > 0) {
+            this.recordPlanRecalcHistory({
+                reason,
+                changed,
+                details: {
+                    allowDoneReopen
+                }
+            });
+        }
+        return { changed, totalChanged };
+    },
+
+reconcilePlanLineage: function(entityId, type, options = {}) {
+        const state = window.sistemaVidaState;
+        if (!state?.entities || typeof state.entities !== 'object') {
+            return this.createEmptyPlanRecalcResult();
+        }
+        const changed = this.createEmptyPlanRecalcResult().changed;
+        const reconcileOptions = { allowDoneReopen: options.allowDoneReopen === true };
+        const normalizedType = String(type || '').trim();
+
+        const walkMetaAncestors = (metaId) => {
+            let currentId = String(metaId || '').trim();
+            let guard = 0;
+            while (currentId && guard < 20) {
+                this.recalculatePlanEntity('metas', currentId, reconcileOptions, changed);
+                const currentMeta = state.entities.metas.find((item) => item.id === currentId);
+                currentId = String(currentMeta?.parentMetaId || '').trim();
+                guard += 1;
+            }
+        };
+
+        if (normalizedType === 'metas') {
+            this.recalculatePlanEntity('metas', entityId, reconcileOptions, changed);
+        } else if (normalizedType === 'okrs') {
+            this.recalculatePlanEntity('okrs', entityId, reconcileOptions, changed);
+        } else if (normalizedType === 'macros') {
+            this.recalculatePlanEntity('macros', entityId, reconcileOptions, changed);
+        }
+
+        if (normalizedType === 'micros') {
+            const micro = state.entities.micros.find((item) => item.id === entityId);
+            const macroId = String(micro?.macroId || '').trim();
+            if (macroId) {
+                this.recalculatePlanEntity('macros', macroId, reconcileOptions, changed);
+                const macro = state.entities.macros.find((item) => item.id === macroId);
+                const okrId = String(macro?.okrId || '').trim();
+                if (okrId) {
+                    this.recalculatePlanEntity('okrs', okrId, reconcileOptions, changed);
+                    const okr = state.entities.okrs.find((item) => item.id === okrId);
+                    if (okr?.metaId) walkMetaAncestors(okr.metaId);
+                }
+            }
+        } else if (normalizedType === 'macros') {
+            const macro = state.entities.macros.find((item) => item.id === entityId);
+            const okrId = String(macro?.okrId || '').trim();
+            if (okrId) {
+                this.recalculatePlanEntity('okrs', okrId, reconcileOptions, changed);
+                const okr = state.entities.okrs.find((item) => item.id === okrId);
+                if (okr?.metaId) walkMetaAncestors(okr.metaId);
+            }
+        } else if (normalizedType === 'okrs') {
+            const okr = state.entities.okrs.find((item) => item.id === entityId);
+            if (okr?.metaId) walkMetaAncestors(okr.metaId);
+        } else if (normalizedType === 'metas') {
+            const meta = state.entities.metas.find((item) => item.id === entityId);
+            if (meta?.parentMetaId) walkMetaAncestors(meta.parentMetaId);
+        }
+
+        const totalChanged = Object.values(changed).reduce((sum, value) => sum + value, 0);
+        if (options.recordHistory === true && totalChanged > 0) {
+            this.recordPlanRecalcHistory({
+                reason: String(options.reason || `lineage_${type}`),
+                changed,
+                details: {
+                    allowDoneReopen: reconcileOptions.allowDoneReopen,
+                    entityId: String(entityId || ''),
+                    type: String(type || '')
+                }
+            });
+        }
+        return { changed, totalChanged };
+    },
+
+preparePlanHierarchyForExport: function(reason = 'export') {
+        const result = this.reconcilePlanHierarchy({ reason, recordHistory: true });
+        if (result.totalChanged > 0 && typeof this.saveState === 'function') {
+            this.saveState(true).catch((error) => {
+                console.warn('[Plan export] Falha ao persistir recálculo antes da exportação:', error);
+            });
+        }
+        return result;
+    },
+
 normalizeEntitiesState: function() {
         const state = window.sistemaVidaState;
         if (!state.entities || typeof state.entities !== 'object') {
             state.entities = { metas: [], okrs: [], macros: [], micros: [] };
-            return;
+            return this.createEmptyPlanRecalcResult();
         }
+        this.ensurePlanRecalcState();
         ['metas', 'okrs', 'macros', 'micros'].forEach((type) => {
             if (!Array.isArray(state.entities[type])) state.entities[type] = [];
         });
@@ -128,35 +410,7 @@ normalizeEntitiesState: function() {
             console.log(`[normalizeEntitiesState] Micros filtered: ${beforeCount} → ${state.entities.micros.length}`);
         }
 
-        // Orfanizacao: pais com status in_progress mas sem filhos ativos voltam para pending.
-        // Reproduz a logica do updateCascadeProgress no momento do load para corrigir
-        // estados legados (ex.: macro marcada in_progress antes do refator de cascata).
-        const hasActiveChild = (children) => children.some((c) => c.status === 'in_progress' || c.status === 'done');
-        state.entities.macros.forEach((macro) => {
-            if (macro.status === 'done') return;
-            const microsOfMacro = state.entities.micros.filter((m) => m.macroId === macro.id);
-            if (microsOfMacro.length === 0 || !hasActiveChild(microsOfMacro)) {
-                if (macro.status === 'in_progress') macro.status = 'pending';
-                if (microsOfMacro.length === 0) {
-                    macro.progress = 0;
-                    macro.completed = false;
-                }
-            }
-        });
-        state.entities.okrs.forEach((okr) => {
-            if (okr.status === 'done') return;
-            const macrosOfOkr = state.entities.macros.filter((m) => m.okrId === okr.id);
-            if (macrosOfOkr.length === 0 || !hasActiveChild(macrosOfOkr)) {
-                if (okr.status === 'in_progress') okr.status = 'pending';
-            }
-        });
-        state.entities.metas.forEach((meta) => {
-            if (meta.status === 'done') return;
-            const okrsOfMeta = state.entities.okrs.filter((o) => o.metaId === meta.id);
-            if (okrsOfMeta.length === 0 || !hasActiveChild(okrsOfMeta)) {
-                if (meta.status === 'in_progress') meta.status = 'pending';
-            }
-        });
+        return this.reconcilePlanHierarchy({ reason: 'normalize_entities', recordHistory: true });
     },
 
 ensureSettingsState: function() {
@@ -511,7 +765,7 @@ loadState: async function() {
         this.reconcileOnboardingCompletion?.();
         this.normalizePermaState();
         this.normalizeDimensionsState();
-        this.normalizeEntitiesState();
+        const entityNormalization = this.normalizeEntitiesState();
         this.normalizeSwlsState();
         this.normalizeDailyLogsState();
         this.normalizeDeepWorkState();
@@ -520,7 +774,8 @@ loadState: async function() {
         if (shouldSeedCloudAfterLoad) {
             window.sistemaVidaState._pendingLocalChanges = true;
         }
-        if (window.sistemaVidaState._pendingLocalChanges || shouldSeedCloudAfterLoad) {
+        const shouldPersistHierarchyAfterLoad = Number(entityNormalization?.totalChanged || 0) > 0;
+        if (window.sistemaVidaState._pendingLocalChanges || shouldSeedCloudAfterLoad || shouldPersistHierarchyAfterLoad) {
             this.saveState(true).catch((err) => {
                 console.warn('[SYNC] Retry cloud sync after load failed:', err);
             });
@@ -2407,6 +2662,7 @@ exportToExcelFull: function() {
             return;
         }
 
+        this.preparePlanHierarchyForExport('export_excel_full');
         const wb = XLSX.utils.book_new();
         const state = window.sistemaVidaState;
         const gamification = this.ensureGamificationState ? this.ensureGamificationState() : (state.gamification || {});
@@ -2852,6 +3108,7 @@ exportToExcel: function() {
         }
 
         const wb = XLSX.utils.book_new();
+        this.preparePlanHierarchyForExport('export_excel_friendly');
         const state = window.sistemaVidaState;
         const gamification = this.ensureGamificationState ? this.ensureGamificationState() : (state.gamification || {});
         const exportedAt = new Date().toISOString();

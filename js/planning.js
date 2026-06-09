@@ -2876,72 +2876,11 @@ completeMicroAction: function(id) {
     },
 
 updateCascadeProgress: function(entityId, type) {
-        const state = window.sistemaVidaState;
-
-        const hasActiveChild = (children) => children.some(c => c.status === 'in_progress' || c.status === 'done');
-        const setParentStatus = (parent, children, computedProgress) => {
-            // Reverte done forçado pelo usuário se filha foi reaberta (computedProgress < 100)
-            if (parent.status === 'done' && computedProgress < 100) parent.status = 'in_progress';
-            // Auto-start ao detectar filha ativa
-            if (parent.status === 'pending' && hasActiveChild(children)) parent.status = 'in_progress';
-            // Sem filhas ativas e progress 0 → volta para pending
-            if (children.length === 0 && parent.status === 'in_progress') parent.status = 'pending';
-        };
-
-        if (type === 'micros') {
-            const micro = state.entities.micros.find(m => m.id === entityId);
-            if (micro && micro.macroId) {
-                const siblings = state.entities.micros.filter(m => m.macroId === micro.macroId && m.status !== 'abandoned');
-                const doneCount = siblings.filter(s => s.status === 'done').length;
-                const computed = siblings.length > 0 ? Math.round((doneCount / siblings.length) * 100) : 0;
-                const macro = state.entities.macros.find(m => m.id === micro.macroId);
-                if (macro) {
-                    macro.progress = computed;
-                    setParentStatus(macro, siblings, computed);
-                    this.updateCascadeProgress(macro.id, 'macros');
-                }
-            }
-        } else if (type === 'macros') {
-            const macro = state.entities.macros.find(m => m.id === entityId);
-            if (macro && macro.okrId) {
-                const siblings = state.entities.macros.filter(m => m.okrId === macro.okrId && m.status !== 'abandoned');
-                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
-                const okr = state.entities.okrs.find(o => o.id === macro.okrId);
-                if (okr) {
-                    const krProgress = this.computeKeyResultsProgress(okr.keyResults);
-                    const hasKrs = krProgress !== null;
-                    const computed = hasKrs ? Math.round((krProgress * 0.7) + (avg * 0.3)) : Math.round(avg);
-                    okr.progress = computed;
-                    setParentStatus(okr, siblings, computed);
-                    this.updateCascadeProgress(okr.id, 'okrs');
-                }
-            }
-        } else if (type === 'okrs') {
-            const okr = state.entities.okrs.find(o => o.id === entityId);
-            if (okr && okr.metaId) {
-                const siblings = state.entities.okrs.filter(o => o.metaId === okr.metaId && o.status !== 'abandoned');
-                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
-                const meta = state.entities.metas.find(m => m.id === okr.metaId);
-                if (meta) {
-                    const computed = Math.round(avg);
-                    meta.progress = computed;
-                    setParentStatus(meta, siblings, computed);
-                }
-            }
-        } else if (type === 'metas') {
-            const meta = state.entities.metas.find(m => m.id === entityId);
-            if (meta && meta.parentMetaId) {
-                const siblings = state.entities.metas.filter(m => m.parentMetaId === meta.parentMetaId && m.status !== 'abandoned');
-                const avg = siblings.length > 0 ? siblings.reduce((acc, curr) => acc + (curr.progress || 0), 0) / siblings.length : 0;
-                const parentMeta = state.entities.metas.find(m => m.id === meta.parentMetaId);
-                if (parentMeta) {
-                    const computed = Math.round(avg);
-                    parentMeta.progress = computed;
-                    setParentStatus(parentMeta, siblings, computed);
-                    this.updateCascadeProgress(parentMeta.id, 'metas');
-                }
-            }
-        }
+        return this.reconcilePlanLineage?.(entityId, type, {
+            allowDoneReopen: true,
+            recordHistory: false,
+            reason: `runtime_cascade_${String(type || '')}`
+        });
     },
 
 getPurposeJourneyState: function() {
