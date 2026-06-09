@@ -1506,6 +1506,10 @@
             #crud-form > #crud-estimated-group {
                 align-self: start;
             }
+            #crud-form > #crud-trigger-container {
+                grid-column: span 6;
+                align-self: start;
+            }
             #crud-form > #crud-effort-group,
             #crud-form > #crud-estimated-group {
                 grid-column: span 5;
@@ -1521,6 +1525,23 @@
             }
             #crud-form > #crud-habit-identity > :last-child {
                 grid-column: 1 / -1;
+            }
+            #crud-form[data-crud-type="micros"] > #crud-planning-row {
+                grid-column: 1 / -1;
+            }
+            #crud-form[data-crud-type="micros"] > #crud-effort-group,
+            #crud-form[data-crud-type="micros"] > #crud-estimated-group {
+                grid-column: span 6;
+            }
+            #crud-form[data-crud-type="habits"] > #crud-title-group,
+            #crud-form[data-crud-type="habits"] > #habit-continuous-row,
+            #crud-form[data-crud-type="habits"] > #crud-trigger-container,
+            #crud-form[data-crud-type="habits"] > #crud-estimated-group {
+                grid-column: 1 / -1;
+            }
+            #crud-form[data-crud-type="habits"] > #crud-classification-row,
+            #crud-form[data-crud-type="habits"] > #crud-planning-row {
+                grid-column: span 6;
             }
         }
     </style>

@@ -19,6 +19,7 @@ positionCrudEstimatedGroup: function(type = '') {
         }
     },
 onTypeChange: function(type) {
+        const crudForm = document.getElementById('crud-form');
         const parentGroup = document.getElementById('crud-parent-group');
         const triggerGroup = document.getElementById('crud-trigger-container');
         const habitIdentityGroup = document.getElementById('crud-habit-identity');
@@ -48,6 +49,7 @@ onTypeChange: function(type) {
             el.classList.toggle('flex', visible && displayMode === 'flex');
             el.style.display = visible ? displayMode : 'none';
         };
+        if (crudForm) crudForm.dataset.crudType = String(type || '').toLowerCase();
         
         // Esconde tudo por padrão para resetar estado visual
         if (parentGroup) parentGroup.classList.add('hidden');
