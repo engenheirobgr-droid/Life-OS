@@ -2653,6 +2653,11 @@ getTodayChecklistDayPart: function() {
         return this.todayChecklistDayPart;
     },
 
+getTodayChecklistPlannedOnly: function() {
+        this.todayChecklistPlannedOnly = this.todayChecklistPlannedOnly === true;
+        return this.todayChecklistPlannedOnly;
+    },
+
 setTodayChecklistMode: function(mode = 'dimensao') {
         const nextMode = mode === 'horario' ? 'horario' : 'dimensao';
         this.todayChecklistMode = nextMode;
@@ -2665,6 +2670,23 @@ setTodayChecklistDayPart: function(dayPart = 'all') {
         this.todayChecklistMode = 'horario';
         this.todayChecklistDayPart = allowed.has(dayPart) ? dayPart : 'all';
         if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+    },
+
+setTodayChecklistPlannedOnly: function(enabled = null) {
+        this.todayChecklistPlannedOnly = typeof enabled === 'boolean'
+            ? enabled
+            : !this.getTodayChecklistPlannedOnly();
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
+    },
+
+filterTodayEntriesByPlannedState: function(entries = []) {
+        const list = Array.isArray(entries) ? entries : [];
+        if (!this.getTodayChecklistPlannedOnly()) return list;
+        return list.filter((entry) => {
+            if (entry?.sourceType !== 'micro') return true;
+            const microId = String(entry?.sourceId || entry?.micro?.id || '');
+            return microId ? this._isPlannedThisWeek(microId) : false;
+        });
     },
 
 openDayCapacityProfileSettings: async function() {
@@ -2727,6 +2749,7 @@ renderTodayCapacityMap: function() {
             `<li class="text-[11px] text-on-surface-variant">${this.escapeHtml(item)}</li>`
         ).join('');
         const activeDayPart = state.activeDayPart || 'all';
+        const plannedOnly = this.getTodayChecklistPlannedOnly ? this.getTodayChecklistPlannedOnly() : false;
         const segmentButtons = ['all', 'manha', 'tarde', 'noite'].map((key) => {
             const segment = state.segments?.[key];
             if (!segment) return '';
@@ -2754,18 +2777,25 @@ renderTodayCapacityMap: function() {
                         <p class="mt-1 text-xs text-on-surface-variant">${this.escapeHtml(state.activeLabel || 'Dia inteiro')}</p>
                         ${adjustmentLabel ? `<p class="mt-1 text-[11px] text-outline">${adjustmentLabel}</p>` : ''}
                     </div>
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${cfg.badge} ${cfg.tone}">${cfg.label}</span>
+                    <div class="shrink-0 self-start">
+                        <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${cfg.badge} ${cfg.tone}">${cfg.label}</span>
+                    </div>
                 </div>
                 <div class="mt-3 space-y-2">
                     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <p class="ui-section-label">Organização da lista</p>
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="ui-section-label">Organização da lista</p>
+                            <button type="button" onclick="window.app.openDayCapacityProfileSettings()" class="rounded-lg border border-primary/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap text-primary hover:bg-primary/10 transition-colors">
+                                Ajustar base
+                            </button>
+                        </div>
                         <div class="flex items-center gap-2">
                             <div class="inline-flex rounded-xl border border-outline-variant/15 bg-surface-container-low p-1">
                                 <button type="button" onclick="window.app.setTodayChecklistMode('dimensao')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'dimensao' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Dimensão</button>
                                 <button type="button" onclick="window.app.setTodayChecklistMode('horario')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${mode === 'horario' ? 'bg-primary text-on-primary' : 'text-outline hover:text-primary'}">Horário</button>
                             </div>
-                            <button type="button" onclick="window.app.openDayCapacityProfileSettings()" class="rounded-lg border border-primary/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors">
-                                Ajustar base
+                            <button type="button" onclick="window.app.setTodayChecklistPlannedOnly()" class="rounded-lg border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors ${plannedOnly ? 'border-primary bg-primary text-on-primary' : 'border-outline-variant/15 bg-surface-container-low text-outline hover:text-primary hover:bg-surface-container-high'}">
+                                Planejadas
                             </button>
                         </div>
                     </div>
@@ -2800,6 +2830,9 @@ renderTodayActionList: function() {
         const container = document.getElementById('today-action-list');
         if (!container) return;
         const items = this.getActiveTodayActionItems ? this.getActiveTodayActionItems(this.getLocalDateKey()) : [];
+        const filteredItems = this.filterTodayEntriesByPlannedState
+            ? this.filterTodayEntriesByPlannedState(items)
+            : items;
         const mode = this.getTodayChecklistMode();
         const activeDayPart = this.getTodayChecklistDayPart();
         const labels = {
@@ -2808,7 +2841,7 @@ renderTodayActionList: function() {
             noite: 'Noite',
             sem_horario: 'Sem horário'
         };
-        const pendingItems = items.filter((item) => !item.done);
+        const pendingItems = filteredItems.filter((item) => !item.done);
         const groups = { manha: [], tarde: [], noite: [], sem_horario: [] };
         pendingItems.forEach((item) => {
             const key = groups[item.dayPart] ? item.dayPart : 'sem_horario';
@@ -4240,9 +4273,15 @@ render: {
             // Filtro "Para Hoje": pendentes/in_progress dentro da janela, mantendo a recém-concluída por um pulso visual.
             const todayMode = app.getTodayChecklistMode ? app.getTodayChecklistMode() : 'dimensao';
             const todayDayPart = app.getTodayChecklistDayPart ? app.getTodayChecklistDayPart() : 'all';
+            const todayPlannedOnly = app.getTodayChecklistPlannedOnly ? app.getTodayChecklistPlannedOnly() : false;
             const todayMicros = (app.getTodayChecklistItems
                 ? app.getTodayChecklistItems(todayStr)
                 : [])
+                .filter((entry) => {
+                    if (!todayPlannedOnly) return true;
+                    const microId = String(entry?.micro?.id || entry?.sourceId || '');
+                    return microId ? app._isPlannedThisWeek(microId) : false;
+                })
                 .filter((entry) => {
                     const micro = entry.micro;
                     const completedToday = (micro.status === 'done' || micro.completed) && (micro.completedDate === todayStr || micro.doneDate === todayStr);
@@ -4600,9 +4639,14 @@ render: {
             }
 
             if (!html.trim()) {
-                const emptyLabel = todayMode === 'horario' && todayDayPart !== 'all'
-                    ? `Nenhuma ação neste filtro de ${todayDayPart.replace('_', ' ')}.`
-                    : 'Nenhuma ação prevista para hoje.';
+                let emptyLabel = 'Nenhuma ação prevista para hoje.';
+                if (todayPlannedOnly && todayMode === 'horario' && todayDayPart !== 'all') {
+                    emptyLabel = `Nenhuma ação planejada neste filtro de ${todayDayPart.replace('_', ' ')}.`;
+                } else if (todayPlannedOnly) {
+                    emptyLabel = 'Nenhuma ação planejada neste recorte do dia.';
+                } else if (todayMode === 'horario' && todayDayPart !== 'all') {
+                    emptyLabel = `Nenhuma ação neste filtro de ${todayDayPart.replace('_', ' ')}.`;
+                }
                 html = `<div class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 text-xs text-outline italic">${app.escapeHtml(emptyLabel)}</div>`;
             }
 
