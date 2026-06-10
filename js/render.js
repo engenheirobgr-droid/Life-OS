@@ -2916,63 +2916,28 @@ render: {
         painel: function() {
             const state = window.sistemaVidaState;
             app.syncDeepWorkMicroStatus();
-            const filter = app.painelFilter || 'semana';
 
             // ---------------------------------------------------------
-            // CÁLCULO DE FOCO E EXECUÇÃO
+            // HISTORICO FILTRAVEL + SEMANA ATUAL
             // ---------------------------------------------------------
-            let micros = state.entities.micros || [];
-            let macros = state.entities.macros || [];
-            
             const currentWeekKey = app._getWeekKey();
-            // Filtro Temporal
-            if (filter === 'semana') {
-                const weekPlan = (state.weekPlans || {})[currentWeekKey];
-                const plannedIds = (weekPlan && weekPlan.selectedMicros) || [];
-                if (plannedIds.length > 0) {
-                    micros = micros.filter(m => plannedIds.includes(m.id));
-                    const macroIds = new Set(micros.map(m => m.macroId).filter(Boolean));
-                    macros = macros.filter(m => macroIds.has(m.id));
-                } else {
-                    micros = micros.filter((m) => app.isMicroDateWindowInCurrentWeek ? app.isMicroDateWindowInCurrentWeek(m) : app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
-                    macros = macros.filter((m) => app.isDateWindowInCurrentWeek(m.inicioDate, m.prazo));
-                }
-            } else if (filter === 'mes') {
-                micros = micros.filter((m) => app.isMicroDateWindowInCurrentMonth ? app.isMicroDateWindowInCurrentMonth(m) : app.isDateWindowInCurrentMonth(m.inicioDate, m.prazo));
-                macros = macros.filter((m) => app.isDateWindowInCurrentMonth(m.inicioDate, m.prazo));
+            let weekMicros = state.entities.micros || [];
+            const weekPlan = (state.weekPlans || {})[currentWeekKey];
+            const plannedIds = (weekPlan && weekPlan.selectedMicros) || [];
+            if (plannedIds.length > 0) {
+                weekMicros = weekMicros.filter((micro) => plannedIds.includes(micro.id));
+            } else {
+                weekMicros = weekMicros.filter((micro) => app.isMicroDateWindowInCurrentWeek
+                    ? app.isMicroDateWindowInCurrentWeek(micro)
+                    : app.isDateWindowInCurrentWeek(micro.inicioDate, micro.prazo));
             }
-            
-            // Execução: % de Micro Ações Concluídas
-            const totalMicros = micros.length;
-            const doneMicros = micros.filter(m => m.status === 'done').length;
-            const execScore = totalMicros === 0 ? 0 : Math.round((doneMicros / totalMicros) * 100);
-            
-            // Foco: % de Entrega Ações Concluídas (Visão Tática)
-            const totalEntregas = macros.length;
-            const doneEntregas = macros.filter(m => m.status === 'done').length;
-            const focoScore = totalEntregas === 0 ? 0 : Math.round((doneEntregas / totalEntregas) * 100);
 
-            // Atualiza a UI do Painel
-            const focoVal = document.getElementById('painel-foco-val');
-            const focoBar = document.getElementById('painel-foco-bar');
-            const execVal = document.getElementById('painel-exec-val');
-            const execBar = document.getElementById('painel-exec-bar');
-            const concluidasVal = document.getElementById('painel-concluidas-val');
-            const atrasadasVal = document.getElementById('painel-atrasadas-val');
+            const weekDoneMicros = weekMicros.filter((micro) => micro.status === 'done').length;
+            const weekExecScore = weekMicros.length === 0 ? 0 : Math.round((weekDoneMicros / weekMicros.length) * 100);
+            const plannedLoadMinutes = weekMicros.reduce((sum, micro) => sum + Math.max(0, Number(app.getMicroEstimatedMinutes?.(micro)) || 0), 0);
 
-            if (focoVal) focoVal.textContent = focoScore + '%';
-            if (focoBar) focoBar.style.width = focoScore + '%';
-            if (execVal) execVal.textContent = execScore + '%';
-            if (execBar) execBar.style.width = execScore + '%';
-            if (concluidasVal) concluidasVal.textContent = doneMicros;
-            
-            if (atrasadasVal) {
-                const todayStr = app.getLocalDateKey();
-                const delayedMicros = micros.filter(m => m.status !== 'done' && m.prazo && m.prazo < todayStr).length;
-                atrasadasVal.textContent = delayedMicros;
-            }
-            const plannedLoadMinutes = micros.reduce((sum, micro) => sum + Math.max(0, Number(app.getMicroEstimatedMinutes?.(micro)) || 0), 0);
-            app.renderWeeklyHealthScore({ execScore, plannedCount: totalMicros, doneCount: doneMicros, plannedLoadMinutes });
+            app.renderPainelHistorySummary();
+            app.renderWeeklyHealthScore({ execScore: weekExecScore, plannedCount: weekMicros.length, doneCount: weekDoneMicros, plannedLoadMinutes });
             app.renderWeeklyFitSummary({
                 containerId: 'weekly-fit-card',
                 weekKey: currentWeekKey,
@@ -2981,15 +2946,6 @@ render: {
                 emptyCopy: 'Crie um plano semanal para comparar a carga escolhida com a capacidade util estimada da sua semana.'
             });
             // ---------------------------------------------------------
-            
-            // Fix Filter Buttons Highlight
-            document.querySelectorAll('[data-painel-filter]').forEach(btn => {
-                const btnType = btn.getAttribute('data-painel-filter');
-                const isSelected = btnType === filter;
-                btn.className = isSelected ?
-                    'px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-wider transition-all shadow-sm' :
-                    'px-4 py-2 rounded-lg text-outline text-xs font-bold uppercase tracking-wider hover:bg-surface-container-high transition-all';
-            });
 
             // Cycle Progress Logic
             const cycleStart = new Date((state.cycleStartDate || app.getLocalDateKey()) + 'T00:00:00');

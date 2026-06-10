@@ -56,43 +56,54 @@
                 </button>
             </div>
         </div>
-        <div class="mt-4 mb-3 flex justify-center">
-            <div class="overflow-x-auto no-scrollbar">
-                <div class="inline-flex min-w-max gap-1 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-1 shadow-sm">
-            <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')"
-                class="px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold uppercase tracking-wider transition-all shadow-sm">Ciclo</button>
-            <button data-painel-filter="mes" onclick="app.setPainelFilter('mes')"
-                class="px-4 py-2 rounded-lg text-outline text-xs font-bold uppercase tracking-wider hover:bg-surface-container-high transition-all">Mês</button>
-            <button data-painel-filter="semana" onclick="app.setPainelFilter('semana')"
-                class="px-4 py-2 rounded-lg text-outline text-xs font-bold uppercase tracking-wider hover:bg-surface-container-high transition-all">Semana</button>
-                </div>
-            </div>
-        </div>
     </header>
 
-    <section id="painel-situacao-section" data-painel-screen-content="situacao" class="mt-4 space-y-4">
+    <section data-painel-screen-content="situacao" class="hidden">
         <div class="space-y-1">
             <div class="flex items-center gap-2">
                 <h3 class="font-headline text-2xl italic ui-section-title">Situação</h3>
                 <div class="relative inline-flex group">
                     <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que mostra a situação do painel"><span class="material-symbols-outlined notranslate">info</span></button>
                     <div class="ui-help-tooltip ui-help-tooltip--align-center ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
-                        O estado real do ciclo, da semana e do seu ritmo de execução.
+                        A Situacao separa o historico de execucao por periodo da leitura viva da semana atual.
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Progresso Semana: Foco & Execução -->
-    <section data-painel-screen-content="situacao"
+    <!-- Historico de execucao -->
+    <section id="painel-situacao-section" data-painel-screen-content="situacao"
         class="mt-4 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
+        <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div class="space-y-1">
+                <h4 class="font-headline text-2xl italic text-on-background">Historico de execucao</h4>
+                <p id="painel-history-copy" class="text-sm text-on-surface-variant leading-relaxed">Leia o que aconteceu no periodo selecionado, sem misturar isso com a saude da semana atual.</p>
+            </div>
+            <div class="flex flex-col items-start gap-3 md:items-end">
+                <span id="painel-history-range-label" class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">Ciclo atual</span>
+                <div class="w-full overflow-x-auto no-scrollbar">
+                    <div class="inline-flex min-w-max gap-1 rounded-xl border border-outline-variant/20 bg-surface-container-high/30 p-1 shadow-sm">
+                        <button data-painel-filter="semana" onclick="app.setPainelFilter('semana')"
+                            class="shrink-0 whitespace-nowrap rounded-lg px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-outline hover:bg-surface-container-high transition-all">Semana</button>
+                        <button data-painel-filter="mes" onclick="app.setPainelFilter('mes')"
+                            class="shrink-0 whitespace-nowrap rounded-lg px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-outline hover:bg-surface-container-high transition-all">Mes</button>
+                        <button data-painel-filter="ciclo" onclick="app.setPainelFilter('ciclo')"
+                            class="shrink-0 whitespace-nowrap rounded-lg bg-primary px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-on-primary transition-all shadow-sm">Ciclo</button>
+                        <button data-painel-filter="ano" onclick="app.setPainelFilter('ano')"
+                            class="shrink-0 whitespace-nowrap rounded-lg px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-outline hover:bg-surface-container-high transition-all">Ano</button>
+                        <button data-painel-filter="tudo" onclick="app.setPainelFilter('tudo')"
+                            class="shrink-0 whitespace-nowrap rounded-lg px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-outline hover:bg-surface-container-high transition-all">Tudo</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="grid md:grid-cols-2 gap-8">
             <div class="space-y-3">
                 <div class="flex justify-between items-end">
                     <div class="space-y-0.5">
-                        <span class="text-[10px] font-label uppercase tracking-widest text-outline">Foco Atual</span>
-                        <h4 class="text-xs font-bold text-on-surface">Visão Tática (Entregas)</h4>
+                        <span class="text-[10px] font-label uppercase tracking-widest text-outline">Foco no periodo</span>
+                        <h4 id="painel-history-focus-copy" class="text-xs font-bold text-on-surface">Entregas mobilizadas neste recorte</h4>
                     </div>
                     <span id="painel-foco-val" class="text-2xl font-headline italic text-primary">0%</span>
                 </div>
@@ -105,8 +116,8 @@
             <div class="space-y-3">
                 <div class="flex justify-between items-end">
                     <div class="space-y-0.5">
-                        <span class="text-[10px] font-label uppercase tracking-widest text-outline">Execução</span>
-                        <h4 class="text-xs font-bold text-on-surface">Ações da Semana</h4>
+                        <span class="text-[10px] font-label uppercase tracking-widest text-outline">Execucao no periodo</span>
+                        <h4 id="painel-history-exec-copy" class="text-xs font-bold text-on-surface">Acoes concluidas dentro da janela</h4>
                     </div>
                     <span id="painel-exec-val" class="text-2xl font-headline italic text-secondary">0%</span>
                 </div>
@@ -117,19 +128,63 @@
                 </div>
             </div>
         </div>
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
+            <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-high/30 p-4">
+                <p class="text-[9px] font-bold uppercase tracking-widest text-outline">Concluidas</p>
+                <p id="painel-concluidas-val" class="mt-2 text-2xl font-headline italic text-primary">0</p>
+                <p class="mt-1 text-[11px] text-on-surface-variant">Acoes encerradas no periodo.</p>
+            </div>
+            <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-high/30 p-4">
+                <p class="text-[9px] font-bold uppercase tracking-widest text-outline">Atrasadas</p>
+                <p id="painel-atrasadas-val" class="mt-2 text-2xl font-headline italic text-error">0</p>
+                <p class="mt-1 text-[11px] text-on-surface-variant">Pendencias com prazo na janela.</p>
+            </div>
+            <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-high/30 p-4">
+                <p class="text-[9px] font-bold uppercase tracking-widest text-outline">Dias ativos</p>
+                <p id="painel-active-days-val" class="mt-2 text-2xl font-headline italic text-primary">0</p>
+                <p class="mt-1 text-[11px] text-on-surface-variant">Dias com qualquer atividade registrada.</p>
+            </div>
+            <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-high/30 p-4">
+                <p class="text-[9px] font-bold uppercase tracking-widest text-outline">Sessoes de foco</p>
+                <p id="painel-focus-sessions-val" class="mt-2 text-2xl font-headline italic text-primary">0</p>
+                <p class="mt-1 text-[11px] text-on-surface-variant">Blocos finalizados no periodo.</p>
+            </div>
+            <div class="col-span-2 rounded-2xl border border-outline-variant/10 bg-surface-container-high/30 p-4 md:col-span-1">
+                <p class="text-[9px] font-bold uppercase tracking-widest text-outline">Habitos concluidos</p>
+                <p id="painel-habits-val" class="mt-2 text-2xl font-headline italic text-primary">0</p>
+                <p class="mt-1 text-[11px] text-on-surface-variant">Execucoes de habitos na janela.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Semana atual -->
+    <section data-painel-screen-content="situacao"
+        class="mt-4 bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/10 shadow-sm space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <h4 class="font-headline text-2xl italic text-on-background">Semana atual</h4>
+                <div class="relative inline-flex group">
+                    <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que mostra a semana atual"><span class="material-symbols-outlined notranslate">info</span></button>
+                    <div class="ui-help-tooltip ui-help-tooltip--align-center ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
+                        Este bloco continua fixo na semana em curso para mostrar se o plano esta executavel agora.
+                    </div>
+                </div>
+            </div>
+            <p class="text-sm text-on-surface-variant leading-relaxed">Aqui entra a leitura viva da semana: carga, sustentabilidade e encaixe do plano atual.</p>
+        </div>
         <div id="weekly-health-card" class="rounded-2xl border border-outline-variant/10 bg-surface-container-high/40 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <div class="flex items-center gap-1.5">
-                    <p class="text-[10px] font-label uppercase tracking-widest text-outline">Saúde da semana</p>
+                    <p class="text-[10px] font-label uppercase tracking-widest text-outline">Saude da semana</p>
                     <div class="relative inline-flex group">
-                        <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que significa o índice de saúde da semana"><span class="material-symbols-outlined notranslate">info</span></button>
+                        <button type="button" class="ui-help-button ui-help-button--compact" aria-label="O que significa o indice de saude da semana"><span class="material-symbols-outlined notranslate">info</span></button>
                         <div class="ui-help-tooltip ui-help-tooltip--align-center ui-help-tooltip--contrast hidden group-hover:block group-focus-within:block">
-                            Índice baseado em execução, carga planejada e atrasos.
+                            Indice baseado em execucao, carga planejada e atrasos.
                         </div>
                     </div>
                 </div>
                 <p id="weekly-health-label" class="mt-1 text-sm font-bold text-on-surface">Sem dados suficientes</p>
-                <p id="weekly-health-copy" class="mt-1 text-xs text-on-surface-variant leading-relaxed">Planeje ações para medir se a semana está executável.</p>
+                <p id="weekly-health-copy" class="mt-1 text-xs text-on-surface-variant leading-relaxed">Planeje acoes para medir se a semana esta executavel.</p>
             </div>
             <div class="flex items-center gap-3">
                 <span id="weekly-health-score" class="font-headline text-3xl italic text-primary">--</span>
@@ -139,16 +194,6 @@
             </div>
         </div>
         <div id="weekly-fit-card" class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4"></div>
-        <div class="flex justify-between border-t border-outline-variant/10 pt-4 px-2">
-            <div class="text-center">
-                <span id="painel-concluidas-val" class="block text-2xl font-headline italic text-primary">0</span>
-                <span class="text-[9px] uppercase tracking-[0.2em] text-outline font-bold">Concluídas</span>
-            </div>
-            <div class="text-center">
-                <span id="painel-atrasadas-val" class="block text-2xl font-headline italic text-error">0</span>
-                <span class="text-[9px] uppercase tracking-[0.2em] text-outline font-bold">Atrasadas</span>
-            </div>
-        </div>
     </section>
 
     <section id="painel-diagnostico-section" data-painel-screen-content="diagnostico" class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">

@@ -25,7 +25,7 @@ import { attachHabits } from './js/habits.js?v=20260608-habits-view-v2';
 import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v23';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v23';
 import { attachStateModule } from './js/state.js?v=20260610-plan-contract-v1';
-import { attachRenderModule } from './js/render.js?v=20260610-notes-modal-v2';
+import { attachRenderModule } from './js/render.js?v=20260610-painel-situacao-v3';
 import { attachPlanningModule } from './js/planning.js?v=20260610-plan-contract-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v23';
 import { attachSocial } from './js/social.js?v=20260604-ui-system-v23';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260610-plan-contract-v1',
+    appBuildVersion: '20260610-painel-situacao-v3',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -4040,7 +4040,10 @@ renderProfileChrome: function() {
     },
 
     setPainelFilter: function(filter) {
-        this.painelFilter = filter;
+        const normalizedFilter = ['semana', 'mes', 'ciclo', 'ano', 'tudo'].includes(String(filter || '').trim())
+            ? String(filter || '').trim()
+            : 'ciclo';
+        this.painelFilter = normalizedFilter;
         if (this.render.painel) this.render.painel();
     },
     switchPainelScreen: function(screenId) {
@@ -4171,6 +4174,200 @@ renderProfileChrome: function() {
         const windowState = this.getMicroEffectiveWindow(micro);
         if (!windowState.valid) return false;
         return this.isDateWindowInCurrentMonth(windowState.startDate, windowState.dueDate);
+    },
+
+    getCurrentYearBounds: function(referenceDate = new Date()) {
+        const now = new Date(referenceDate);
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        startOfYear.setHours(0, 0, 0, 0);
+        const endOfYear = new Date(now.getFullYear(), 11, 31);
+        endOfYear.setHours(23, 59, 59, 999);
+        return { startOfYear, endOfYear };
+    },
+
+    getCurrentCycleBounds: function(referenceDate = new Date()) {
+        const fallbackKey = this.getLocalDateKey(referenceDate);
+        const state = window.sistemaVidaState || {};
+        const startKey = String(state.cycleStartDate || fallbackKey).trim() || fallbackKey;
+        const startOfCycle = new Date(`${startKey}T00:00:00`);
+        if (Number.isNaN(startOfCycle.getTime())) {
+            return this.getCurrentWeekBounds(referenceDate);
+        }
+        startOfCycle.setHours(0, 0, 0, 0);
+        const endOfCycle = new Date(startOfCycle);
+        endOfCycle.setDate(endOfCycle.getDate() + 83);
+        endOfCycle.setHours(23, 59, 59, 999);
+        return { startOfCycle, endOfCycle };
+    },
+
+    getPainelHistoryWindow: function(filter = this.painelFilter || 'ciclo', referenceDate = new Date()) {
+        const normalized = ['semana', 'mes', 'ciclo', 'ano', 'tudo'].includes(String(filter || '').trim())
+            ? String(filter || '').trim()
+            : 'ciclo';
+
+        if (normalized === 'tudo') {
+            return {
+                key: normalized,
+                label: 'Todo o historico',
+                summary: 'Mostra tudo o que o app ja registrou, sem recorte temporal.',
+                startDateKey: '',
+                endDateKey: '',
+                isAllTime: true
+            };
+        }
+
+        if (normalized === 'semana') {
+            const { startOfWeek, endOfWeek } = this.getCurrentWeekBounds(referenceDate);
+            return {
+                key: normalized,
+                label: this._formatWeekRange(this._getWeekKey(referenceDate)),
+                summary: 'Mostra o que aconteceu na semana em curso.',
+                startDateKey: this.getLocalDateKey(startOfWeek),
+                endDateKey: this.getLocalDateKey(endOfWeek),
+                isAllTime: false
+            };
+        }
+
+        if (normalized === 'mes') {
+            const { startOfMonth, endOfMonth } = this.getCurrentMonthBounds(referenceDate);
+            const label = startOfMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            return {
+                key: normalized,
+                label: label.charAt(0).toUpperCase() + label.slice(1),
+                summary: 'Mostra o que aconteceu no mes atual.',
+                startDateKey: this.getLocalDateKey(startOfMonth),
+                endDateKey: this.getLocalDateKey(endOfMonth),
+                isAllTime: false
+            };
+        }
+
+        if (normalized === 'ano') {
+            const { startOfYear, endOfYear } = this.getCurrentYearBounds(referenceDate);
+            return {
+                key: normalized,
+                label: `Ano ${startOfYear.getFullYear()}`,
+                summary: 'Mostra o que aconteceu no ano em curso.',
+                startDateKey: this.getLocalDateKey(startOfYear),
+                endDateKey: this.getLocalDateKey(endOfYear),
+                isAllTime: false
+            };
+        }
+
+        const { startOfCycle, endOfCycle } = this.getCurrentCycleBounds(referenceDate);
+        return {
+            key: 'ciclo',
+            label: 'Ciclo atual',
+            summary: 'Mostra o que aconteceu dentro do ciclo atual de 12 semanas.',
+            startDateKey: this.getLocalDateKey(startOfCycle),
+            endDateKey: this.getLocalDateKey(endOfCycle),
+            isAllTime: false
+        };
+    },
+
+    isDateKeyInBounds: function(dateKey, bounds) {
+        if (!dateKey) return false;
+        if (!bounds || bounds.isAllTime) return true;
+        return dateKey >= bounds.startDateKey && dateKey <= bounds.endDateKey;
+    },
+
+    doesDateWindowOverlapBounds: function(startDateStr, endDateStr, bounds) {
+        if (!bounds || bounds.isAllTime) return !!String(endDateStr || startDateStr || '').trim();
+        const endKey = String(endDateStr || startDateStr || '').trim();
+        if (!endKey) return false;
+        const startKey = String(startDateStr || endKey).trim();
+        if (!startKey) return false;
+        return startKey <= bounds.endDateKey && endKey >= bounds.startDateKey;
+    },
+
+    isMicroWindowInBounds: function(micro, bounds) {
+        if (!bounds || bounds.isAllTime) return true;
+        const windowState = this.getMicroEffectiveWindow(micro);
+        if (!windowState.valid) return false;
+        return this.doesDateWindowOverlapBounds(windowState.startDate, windowState.dueDate, bounds);
+    },
+
+    countHabitCompletionsInBounds: function(bounds) {
+        const habits = window.sistemaVidaState?.habits || [];
+        let total = 0;
+        habits.forEach((habit) => {
+            const dateKeys = new Set([
+                ...Object.keys(habit?.logs || {}),
+                ...Object.keys(habit?.stepLogs || {})
+            ]);
+            dateKeys.forEach((dateKey) => {
+                if (!this.isDateKeyInBounds(dateKey, bounds)) return;
+                if (typeof this.isHabitDoneOnDate === 'function' && this.isHabitDoneOnDate(habit, dateKey)) {
+                    total += 1;
+                }
+            });
+        });
+        return total;
+    },
+
+    getPainelHistoryMetrics: function(filter = this.painelFilter || 'ciclo') {
+        const state = window.sistemaVidaState || {};
+        const bounds = this.getPainelHistoryWindow(filter);
+        const allMicros = state.entities?.micros || [];
+        const allMacros = state.entities?.macros || [];
+        const todayStr = this.getLocalDateKey();
+
+        const eligibleMicros = allMicros.filter((micro) => this.isMicroWindowInBounds(micro, bounds));
+        const eligibleMicroIds = new Set(eligibleMicros.map((micro) => micro.id).filter(Boolean));
+        const doneMicrosInPeriod = allMicros.filter((micro) => {
+            const completedKey = String(micro.completedDate || micro.doneDate || '').trim();
+            return this.isDateKeyInBounds(completedKey, bounds);
+        });
+        const doneEligibleMicrosInPeriod = doneMicrosInPeriod.filter((micro) => eligibleMicroIds.has(micro.id));
+
+        const macroIdsWithEligibleMicros = new Set(eligibleMicros.map((micro) => micro.macroId).filter(Boolean));
+        const macroIdsWithDoneMicrosInPeriod = new Set(doneMicrosInPeriod.map((micro) => micro.macroId).filter(Boolean));
+        const eligibleMacros = allMacros.filter((macro) => {
+            if (!macro?.id) return false;
+            if (this.doesDateWindowOverlapBounds(macro.inicioDate, macro.prazo, bounds)) return true;
+            return macroIdsWithEligibleMicros.has(macro.id) || macroIdsWithDoneMicrosInPeriod.has(macro.id);
+        });
+        const eligibleMacroIds = new Set(eligibleMacros.map((macro) => macro.id).filter(Boolean));
+        const touchedMacroIds = new Set(
+            doneMicrosInPeriod
+                .map((micro) => micro.macroId)
+                .filter((macroId) => macroId && eligibleMacroIds.has(macroId))
+        );
+
+        const overdueMicrosInPeriod = allMicros.filter((micro) => {
+            if (micro.status === 'done' || micro.completed) return false;
+            const dueKey = String(micro.prazo || '').trim();
+            if (!dueKey || !this.isDateKeyInBounds(dueKey, bounds)) return false;
+            return dueKey < todayStr;
+        });
+
+        const activeDays = this.getAllActiveDates().filter((dateKey) => this.isDateKeyInBounds(dateKey, bounds)).length;
+        const focusSessionsCount = (state.deepWork?.sessions || []).filter((session) => {
+            const endedKey = String(session?.endedAt || '').slice(0, 10);
+            return this.isDateKeyInBounds(endedKey, bounds);
+        }).length;
+        const habitCompletionCount = this.countHabitCompletionsInBounds(bounds);
+
+        const execScore = eligibleMicros.length > 0
+            ? Math.round((doneEligibleMicrosInPeriod.length / eligibleMicros.length) * 100)
+            : 0;
+        const focusScore = eligibleMacros.length > 0
+            ? Math.round((touchedMacroIds.size / eligibleMacros.length) * 100)
+            : 0;
+
+        return {
+            bounds,
+            execScore,
+            focusScore,
+            eligibleMicrosCount: eligibleMicros.length,
+            doneEligibleMicrosCount: doneEligibleMicrosInPeriod.length,
+            doneMicrosCount: doneMicrosInPeriod.length,
+            eligibleMacrosCount: eligibleMacros.length,
+            touchedMacroCount: touchedMacroIds.size,
+            overdueMicrosCount: overdueMicrosInPeriod.length,
+            activeDaysCount: activeDays,
+            focusSessionsCount,
+            habitCompletionCount
+        };
     },
 
     saveValues: function(essentialValues, importantValues) {
@@ -8027,6 +8224,53 @@ ensureNotesState: function() {
             el.classList.add('ring-2', 'ring-primary/30');
             setTimeout(() => el.classList.remove('ring-2', 'ring-primary/30'), 1800);
         }
+    },
+    renderPainelHistorySummary: function() {
+        const metrics = this.getPainelHistoryMetrics(this.painelFilter || 'ciclo');
+        const rangeLabelEl = document.getElementById('painel-history-range-label');
+        const copyEl = document.getElementById('painel-history-copy');
+        const focusCopyEl = document.getElementById('painel-history-focus-copy');
+        const execCopyEl = document.getElementById('painel-history-exec-copy');
+        const focusVal = document.getElementById('painel-foco-val');
+        const focusBar = document.getElementById('painel-foco-bar');
+        const execVal = document.getElementById('painel-exec-val');
+        const execBar = document.getElementById('painel-exec-bar');
+        const doneVal = document.getElementById('painel-concluidas-val');
+        const overdueVal = document.getElementById('painel-atrasadas-val');
+        const activeDaysVal = document.getElementById('painel-active-days-val');
+        const focusSessionsVal = document.getElementById('painel-focus-sessions-val');
+        const habitsVal = document.getElementById('painel-habits-val');
+
+        if (rangeLabelEl) rangeLabelEl.textContent = metrics.bounds.label;
+        if (copyEl) copyEl.textContent = metrics.bounds.summary;
+        if (focusCopyEl) {
+            focusCopyEl.textContent = metrics.eligibleMacrosCount > 0
+                ? `${metrics.touchedMacroCount} de ${metrics.eligibleMacrosCount} entregas tiveram acoes concluidas no periodo.`
+                : 'Sem entregas elegiveis dentro desta janela.';
+        }
+        if (execCopyEl) {
+            execCopyEl.textContent = metrics.eligibleMicrosCount > 0
+                ? `${metrics.doneEligibleMicrosCount} de ${metrics.eligibleMicrosCount} acoes da janela foram concluidas neste periodo.`
+                : 'Sem acoes elegiveis dentro desta janela.';
+        }
+
+        if (focusVal) focusVal.textContent = `${metrics.focusScore}%`;
+        if (focusBar) focusBar.style.width = `${metrics.focusScore}%`;
+        if (execVal) execVal.textContent = `${metrics.execScore}%`;
+        if (execBar) execBar.style.width = `${metrics.execScore}%`;
+        if (doneVal) doneVal.textContent = metrics.doneMicrosCount;
+        if (overdueVal) overdueVal.textContent = metrics.overdueMicrosCount;
+        if (activeDaysVal) activeDaysVal.textContent = metrics.activeDaysCount;
+        if (focusSessionsVal) focusSessionsVal.textContent = metrics.focusSessionsCount;
+        if (habitsVal) habitsVal.textContent = metrics.habitCompletionCount;
+
+        document.querySelectorAll('[data-painel-filter]').forEach((btn) => {
+            const btnType = btn.getAttribute('data-painel-filter');
+            const isSelected = btnType === (this.painelFilter || 'ciclo');
+            btn.className = isSelected
+                ? 'shrink-0 whitespace-nowrap rounded-lg bg-primary px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-on-primary transition-all shadow-sm'
+                : 'shrink-0 whitespace-nowrap rounded-lg px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-outline hover:bg-surface-container-high transition-all';
+        });
     },
 
     renderPainelDiagnostics: function() {
