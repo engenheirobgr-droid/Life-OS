@@ -1346,6 +1346,43 @@
         #habit-focus-closure-modal .ui-modal-footer {
             background-color: rgba(247, 250, 249, 0.96) !important;
         }
+        #entity-notes-modal {
+            background: rgba(15, 23, 42, 0.7) !important;
+            backdrop-filter: blur(10px);
+        }
+        #entity-notes-modal .ui-modal-shell {
+            background-color: rgba(246, 252, 251, 0.985) !important;
+            border-color: rgba(94, 234, 212, 0.22) !important;
+            box-shadow: 0 30px 72px rgba(2, 8, 23, 0.34);
+            isolation: isolate;
+        }
+        #entity-notes-modal .ui-modal-header {
+            background: linear-gradient(180deg, rgba(234, 247, 245, 0.98), rgba(244, 251, 250, 0.98)) !important;
+        }
+        #entity-notes-modal .ui-modal-body {
+            background: rgba(243, 250, 249, 0.98) !important;
+        }
+        #entity-notes-modal .ui-modal-footer {
+            background: rgba(235, 246, 244, 0.98) !important;
+        }
+        #entity-notes-modal .ui-modal-header button {
+            background: rgba(255, 255, 255, 0.96) !important;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            color: rgba(71, 85, 105, 0.9) !important;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+        #entity-notes-modal .ui-modal-header button:hover {
+            background: rgba(255, 255, 255, 1) !important;
+        }
+        #entity-notes-modal #entity-notes-modal-list > article,
+        #entity-notes-modal #entity-notes-modal-list > div {
+            background: rgba(255, 255, 255, 0.96) !important;
+            border-color: rgba(148, 163, 184, 0.16) !important;
+            box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+        }
+        #entity-notes-modal #entity-notes-modal-list > div {
+            max-width: none;
+        }
         html.dark #habit-focus-closure-modal .ui-modal-shell {
             background-color: var(--lo-dark-card, #111e1d) !important;
             border-color: var(--lo-dark-border, rgba(255,255,255,0.08)) !important;
@@ -1370,6 +1407,30 @@
         html.dark #habit-focus-closure-modal #habit-focus-closure-plan-wrap,
         html.dark #habit-focus-closure-modal .ui-modal-footer {
             background-color: var(--lo-dark-card2, #162120) !important;
+        }
+        html.dark #entity-notes-modal {
+            background: rgba(2, 8, 23, 0.78) !important;
+        }
+        html.dark #entity-notes-modal .ui-modal-shell {
+            background-color: rgba(18, 29, 30, 0.985) !important;
+            border-color: rgba(94, 234, 212, 0.18) !important;
+            box-shadow: 0 32px 76px rgba(0, 0, 0, 0.5);
+        }
+        html.dark #entity-notes-modal .ui-modal-header {
+            background: linear-gradient(180deg, rgba(23, 38, 39, 0.98), rgba(19, 31, 32, 0.98)) !important;
+        }
+        html.dark #entity-notes-modal .ui-modal-body,
+        html.dark #entity-notes-modal .ui-modal-footer,
+        html.dark #entity-notes-modal #entity-notes-modal-list > article,
+        html.dark #entity-notes-modal #entity-notes-modal-list > div {
+            background: rgba(22, 37, 38, 0.98) !important;
+            border-color: rgba(148, 163, 184, 0.14) !important;
+        }
+        html.dark #entity-notes-modal .ui-modal-header button {
+            background: rgba(30, 41, 46, 0.96) !important;
+            border-color: rgba(148, 163, 184, 0.16) !important;
+            color: rgba(226, 232, 240, 0.92) !important;
+            box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
         }
         .ui-modal-footer {
             display: flex;
@@ -2437,7 +2498,7 @@
                 </button>
             </div>
             <div id="entity-notes-modal-list" class="ui-modal-body flex-1 overflow-y-auto space-y-3"></div>
-            <div class="ui-modal-footer bg-surface-container-low/50">
+            <div class="ui-modal-footer bg-surface-container-low/20">
                 <button type="button" onclick="window.app.openNewNoteFromEntityModal()"
                     class="w-full py-3 bg-primary text-on-primary rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:shadow-md active:scale-95 transition-all">
                     <span class="material-symbols-outlined notranslate text-[18px]">add</span>
@@ -3440,7 +3501,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260608-habits-view-v2"></script>
+    <script type="module" src="app.js?v=20260610-notes-modal-v2"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3471,7 +3532,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260608-habits-view-v2')
+                navigator.serviceWorker.register('sw.js?v=20260610-notes-modal-v2')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

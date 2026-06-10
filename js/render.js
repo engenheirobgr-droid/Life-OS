@@ -3088,10 +3088,10 @@ render: {
             const normalizeDim = (dimRaw) => {
                 const low = normalizeText(dimRaw || 'Geral');
                 if (low.includes('sa')) return 'Saude';
+                if (low.includes('relac')) return 'Relacionamentos';
                 if (low.includes('ment')) return 'Mente';
                 if (low.includes('carr')) return 'Carreira';
                 if (low.includes('fin')) return 'Financas';
-                if (low.includes('relac')) return 'Relacionamentos';
                 if (low.includes('fam')) return 'Familia';
                 if (low.includes('laz')) return 'Lazer';
                 if (low.includes('prop')) return 'Proposito';

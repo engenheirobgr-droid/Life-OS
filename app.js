@@ -25,7 +25,7 @@ import { attachHabits } from './js/habits.js?v=20260608-habits-view-v2';
 import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v23';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v23';
 import { attachStateModule } from './js/state.js?v=20260610-plan-contract-v1';
-import { attachRenderModule } from './js/render.js?v=20260608-habits-view-v2';
+import { attachRenderModule } from './js/render.js?v=20260610-notes-modal-v2';
 import { attachPlanningModule } from './js/planning.js?v=20260610-plan-contract-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v23';
 import { attachSocial } from './js/social.js?v=20260604-ui-system-v23';
@@ -6872,16 +6872,20 @@ ensureNotesState: function() {
                 const dateRef = new Date(String(note.updatedAt || note.createdAt || ''));
                 const hasDate = !Number.isNaN(dateRef.getTime());
                 const dateStr = hasDate ? dateRef.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
+                const bodyPreview = String(note.body || '').replace(/\s+/g, ' ').trim();
+                const previewText = bodyPreview
+                    ? (bodyPreview.length > 220 ? `${bodyPreview.slice(0, 217)}...` : bodyPreview)
+                    : '';
                 const metaBadges = [
                     compactContext.badge || 'Nota',
                     String(note?.sourceType || '').toLowerCase().includes('focus') ? 'Foco' : ''
                 ].filter(Boolean);
                 return `
-                    <article class="rounded-xl border border-outline-variant/10 bg-surface-container-low overflow-hidden">
-                        <div class="px-3 py-2 border-b border-outline-variant/10">
+                    <article class="rounded-2xl border border-outline-variant/12 bg-surface-container-low shadow-sm overflow-hidden">
+                        <div class="px-4 py-3">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0 flex-1">
-                                    <h4 class="text-sm font-bold text-on-surface leading-snug truncate">${this.escapeHtml(note.title || 'Nota')}</h4>
+                                    <h4 class="text-sm font-bold text-on-surface leading-snug">${this.escapeHtml(note.title || 'Nota')}</h4>
                                     <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-outline">
                                         ${metaBadges.map((badge, idx) => `<span class="inline-flex rounded-full ${idx === 0 ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'} px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">${this.escapeHtml(badge)}</span>`).join('')}
                                         ${dateStr ? `<span>${dateStr}</span>` : ''}
@@ -6892,12 +6896,29 @@ ensureNotesState: function() {
                                     <span class="material-symbols-outlined notranslate text-[16px]">edit</span>
                                 </button>
                             </div>
+                            ${previewText ? `
+                                <p class="mt-3 text-[13px] leading-5 text-on-surface-variant" style="display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;">
+                                    ${this.escapeHtml(previewText)}
+                                </p>
+                            ` : `
+                                <p class="mt-3 text-[12px] leading-5 text-outline italic">
+                                    Nota sem corpo preenchido. Abra para editar ou complementar o conteudo.
+                                </p>
+                            `}
                         </div>
                     </article>
                 `;
             }).join('');
         } else {
-            listEl.innerHTML = `<p class="text-sm text-outline italic text-center py-6">Nenhuma nota vinculada a esta entidade ainda.</p>`;
+            listEl.innerHTML = `
+                <div class="rounded-2xl border border-dashed border-outline-variant/25 bg-surface-container-low px-5 py-8 text-center">
+                    <span class="material-symbols-outlined notranslate text-[28px] text-outline">sticky_note_2</span>
+                    <p class="mt-3 text-sm font-semibold text-on-surface">Nenhuma nota vinculada ainda</p>
+                    <p class="mt-1 text-[13px] leading-5 text-outline">
+                        Use o botao abaixo para registrar contexto, links, observacoes ou proximos passos desta entidade.
+                    </p>
+                </div>
+            `;
         }
 
         modal.classList.remove('hidden');
