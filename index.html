@@ -3137,6 +3137,45 @@
                 <div class="flex flex-col gap-2">
                     <label class="text-xs uppercase text-primary font-bold tracking-wider">Ações da Semana</label>
                     <p class="text-[11px] text-outline -mt-1">Selecione os itens que planeja trabalhar esta semana.</p>
+                    <div class="rounded-xl border border-outline-variant/15 bg-surface-container-low p-3 flex flex-col gap-3">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <label for="wp-dimension-filter" class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Recorte</label>
+                            <select id="wp-dimension-filter" onchange="window.app.setWeeklyPlanDimensionFilter(this.value)"
+                                class="h-10 rounded-lg border border-outline-variant/20 bg-surface-container px-3 text-xs text-on-surface outline-none focus:ring-2 focus:ring-primary/20">
+                                <option value="all">Todas as dimensoes</option>
+                            </select>
+                        </div>
+                        <div id="wp-status-filters" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                            <button type="button" data-weekly-status="all" onclick="window.app.setWeeklyPlanStatusFilter('all')"
+                                class="wp-status-filter shrink-0 rounded-full border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-outline transition-colors">
+                                Todas
+                            </button>
+                            <button type="button" data-weekly-status="suggested" onclick="window.app.setWeeklyPlanStatusFilter('suggested')"
+                                class="wp-status-filter shrink-0 rounded-full border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-outline transition-colors">
+                                Sugeridas
+                            </button>
+                            <button type="button" data-weekly-status="in_progress" onclick="window.app.setWeeklyPlanStatusFilter('in_progress')"
+                                class="wp-status-filter shrink-0 rounded-full border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-outline transition-colors">
+                                Em andamento
+                            </button>
+                            <button type="button" data-weekly-status="overdue" onclick="window.app.setWeeklyPlanStatusFilter('overdue')"
+                                class="wp-status-filter shrink-0 rounded-full border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-outline transition-colors">
+                                Atrasadas
+                            </button>
+                            <button type="button" data-weekly-status="due_this_week" onclick="window.app.setWeeklyPlanStatusFilter('due_this_week')"
+                                class="wp-status-filter shrink-0 rounded-full border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-outline transition-colors">
+                                Vencendo
+                            </button>
+                            <button type="button" data-weekly-status="future" onclick="window.app.setWeeklyPlanStatusFilter('future')"
+                                class="wp-status-filter shrink-0 rounded-full border border-outline-variant/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-outline transition-colors">
+                                Futuras
+                            </button>
+                            <button type="button" onclick="window.app.clearWeeklyPlanFilters()"
+                                class="shrink-0 rounded-full border border-dashed border-outline-variant/30 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-outline transition-colors hover:border-primary/40 hover:text-primary">
+                                Limpar
+                            </button>
+                        </div>
+                    </div>
                     <div id="wp-micros-list" class="flex flex-col gap-2 max-h-52 overflow-y-auto no-scrollbar rounded-xl bg-surface-container p-3">
                         <p class="text-xs text-outline italic">Nenhuma ação ativa disponível.</p>
                     </div>
@@ -3509,7 +3548,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260610-hoje-planned-filter-v3"></script>
+    <script type="module" src="app.js?v=20260610-weekly-plan-modal-v1"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>
@@ -3540,7 +3579,7 @@
                 if (!swRefreshed) { swRefreshed = true; window.location.reload(); }
             });
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js?v=20260610-hoje-planned-filter-v3')
+                navigator.serviceWorker.register('sw.js?v=20260610-weekly-plan-modal-v1')
                     .then(function(registration) {
                         console.log('[SW] Registered, scope:', registration.scope);
                         registration.update().catch(function() {});

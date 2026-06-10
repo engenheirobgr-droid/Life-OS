@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v394';
+const CACHE_NAME = 'sistema-vida-v395';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260610-hoje-planned-filter-v3',
+    './app.js?v=20260610-weekly-plan-modal-v1',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
     './js/notifications.js?v=20260604-ui-system-v23',
@@ -14,7 +14,7 @@ const ASSETS_TO_CACHE = [
     './js/habitFocus.js?v=20260604-ui-system-v23',
     './js/state.js?v=20260610-plan-contract-v1',
     './js/render.js?v=20260610-hoje-planned-filter-v3',
-    './js/planning.js?v=20260610-plan-contract-v1',
+    './js/planning.js?v=20260610-weekly-plan-modal-v1',
     './js/gamification.js?v=20260604-ui-system-v23',
     './js/social.js?v=20260604-ui-system-v23',
     './views/hoje.html?v=20260610-hoje-planned-filter-v3',

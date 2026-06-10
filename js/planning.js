@@ -690,35 +690,13 @@ openWeeklyPlanModal: function(options = {}) {
         if (energyEl) energyEl.value = existing.energyForecast || 3;
 
         // Monta lista de micros ativos
-        const microsContainer = document.getElementById('wp-micros-list');
-        if (microsContainer) {
-            const activeMicros = (state.entities?.micros || []).filter(m => m.status !== 'done' && !m.completed);
-            if (activeMicros.length === 0) {
-                microsContainer.innerHTML = '<p class="text-xs text-outline italic">Nenhuma ação ativa disponível.</p>';
-            } else {
-                const suggestionSet = new Set(suggestedMicros);
-                const suggestionNotice = carryover.length ? `
-                    <div class="mb-2 rounded-xl bg-primary/10 border border-primary/20 p-3 text-xs text-on-surface-variant leading-relaxed">
-                        <span class="font-bold text-primary">${carryover.length} pendência${carryover.length > 1 ? 's' : ''} pré-selecionada${carryover.length > 1 ? 's' : ''}.</span>
-                        Revise a carga antes de salvar a próxima semana.
-                    </div>` : '';
-                microsContainer.innerHTML = suggestionNotice + activeMicros.map(m => {
-                    const checked = ((existing.selectedMicros || []).includes(m.id) || suggestedMicros.includes(m.id)) ? 'checked' : '';
-                    const macroTitle = state.entities.macros?.find(ma => ma.id === m.macroId)?.title || '';
-                    const details = [
-                        m.dimension || '',
-                        macroTitle,
-                        m.prazo ? `prazo ${this._formatTrailDate ? this._formatTrailDate(m.prazo) : m.prazo}` : ''
-                    ].filter(Boolean).join(' · ');
-                    const carryBadge = suggestionSet.has(m.id) ? '<span class="ml-1 text-[9px] font-bold uppercase tracking-wider text-primary">sugerida</span>' : '';
-                    const sub = details ? `<span class="text-[10px] text-outline block">${this.escapeHtml(details)}${carryBadge}</span>` : '';
-                    return `<label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-primary/5 transition-colors">
-                        <input type="checkbox" class="wp-micro-check mt-0.5 accent-primary" value="${m.id}" ${checked}>
-                        <span class="text-sm text-on-surface leading-snug">${this.escapeHtml(m.title)}${sub}</span>
-                    </label>`;
-                }).join('');
-            }
-        }
+        this._initializeWeeklyPlanModalState({
+            weekKey,
+            existingSelectedMicros: existing.selectedMicros || [],
+            suggestedMicros,
+            carryoverCount: carryover.length
+        });
+        this._refreshWpMicrosList();
 
         document.getElementById('weekly-plan-modal').classList.remove('hidden');
         this._wizardPlanSuggestion = null;
@@ -729,7 +707,7 @@ openWeeklyPlanModal: function(options = {}) {
         if (listEl && !listEl._loadMeterBound) {
             listEl.addEventListener('change', (e) => {
                 if (e.target && e.target.classList && e.target.classList.contains('wp-micro-check')) {
-                    this._updateWeeklyPlanLoadMeter();
+                    this.handleWeeklyPlanMicroToggle(e.target);
                 }
             });
             listEl._loadMeterBound = true;

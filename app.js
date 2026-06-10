@@ -26,7 +26,7 @@ import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v2
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v23';
 import { attachStateModule } from './js/state.js?v=20260610-plan-contract-v1';
 import { attachRenderModule } from './js/render.js?v=20260610-hoje-planned-filter-v3';
-import { attachPlanningModule } from './js/planning.js?v=20260610-plan-contract-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260610-weekly-plan-modal-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v23';
 import { attachSocial } from './js/social.js?v=20260604-ui-system-v23';
 
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260610-hoje-planned-filter-v3',
+    appBuildVersion: '20260610-weekly-plan-modal-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -8690,6 +8690,415 @@ ensureNotesState: function() {
             .map(item => item.micro);
     },
 
+    _isWeeklyPlanMicroActive: function(micro) {
+        return !!micro && micro.status !== 'done' && !micro.completed && micro.status !== 'abandoned';
+    },
+
+    _getWeeklyPlanActiveMicros: function() {
+        return (window.sistemaVidaState?.entities?.micros || []).filter((micro) => this._isWeeklyPlanMicroActive(micro));
+    },
+
+    _getWeeklyPlanModalState: function() {
+        if (!this._weeklyPlanModalState || typeof this._weeklyPlanModalState !== 'object') {
+            this._weeklyPlanModalState = {
+                weekKey: this._getWeeklyPlanKey(),
+                selectedIds: [],
+                suggestedIds: [],
+                pendingAdjustments: {},
+                dimension: 'all',
+                status: 'all',
+                carryoverCount: 0
+            };
+        }
+        return this._weeklyPlanModalState;
+    },
+
+    _initializeWeeklyPlanModalState: function({
+        weekKey = this._getWeeklyPlanKey(),
+        existingSelectedMicros = [],
+        suggestedMicros = [],
+        carryoverCount = 0
+    } = {}) {
+        const activeIds = new Set(this._getWeeklyPlanActiveMicros().map((micro) => String(micro.id || '')));
+        const selectedIds = Array.from(new Set(
+            [...(existingSelectedMicros || []), ...(suggestedMicros || [])]
+                .map((id) => String(id || ''))
+                .filter((id) => activeIds.has(id))
+        ));
+        const safeSuggestedIds = Array.from(new Set(
+            (suggestedMicros || [])
+                .map((id) => String(id || ''))
+                .filter((id) => activeIds.has(id))
+        ));
+
+        this._weeklyPlanModalState = {
+            weekKey,
+            selectedIds,
+            suggestedIds: safeSuggestedIds,
+            pendingAdjustments: {},
+            dimension: 'all',
+            status: 'all',
+            carryoverCount: Math.max(0, Number(carryoverCount) || 0)
+        };
+        this._syncWeeklyPlanFilterControls();
+    },
+
+    _clearWeeklyPlanModalState: function() {
+        this._weeklyPlanModalState = null;
+    },
+
+    _getWeeklyPlanModalSelectedIds: function() {
+        return Array.isArray(this._getWeeklyPlanModalState().selectedIds)
+            ? [...this._getWeeklyPlanModalState().selectedIds]
+            : [];
+    },
+
+    _setWeeklyPlanModalSelectedIds: function(nextIds = []) {
+        const modalState = this._getWeeklyPlanModalState();
+        modalState.selectedIds = Array.from(new Set((nextIds || []).map((id) => String(id || '')).filter(Boolean)));
+    },
+
+    _getWeeklyPlanModalSuggestedSet: function() {
+        return new Set(Array.isArray(this._getWeeklyPlanModalState().suggestedIds) ? this._getWeeklyPlanModalState().suggestedIds : []);
+    },
+
+    _getWeeklyPlanWeekWindow: function(weekKey = this._getWeeklyPlanKey()) {
+        const dates = this.getWeekDateKeys(weekKey);
+        const currentWeekKey = this._getWeekKey();
+        return {
+            weekKey,
+            weekStart: dates[0] || weekKey,
+            weekEnd: dates[6] || weekKey,
+            todayKey: this.getLocalDateKey(),
+            currentWeekKey,
+            isCurrentWeek: weekKey === currentWeekKey,
+            isNextWeek: weekKey > currentWeekKey
+        };
+    },
+
+    _isDateWithinWeekWindow: function(dateKey, weekKey = this._getWeeklyPlanKey()) {
+        if (!dateKey) return false;
+        const { weekStart, weekEnd } = this._getWeeklyPlanWeekWindow(weekKey);
+        return dateKey >= weekStart && dateKey <= weekEnd;
+    },
+
+    _getWeeklyPlanTargetSchedule: function(weekKey = this._getWeeklyPlanKey()) {
+        const windowState = this._getWeeklyPlanWeekWindow(weekKey);
+        const proposedStart = windowState.isCurrentWeek
+            ? (windowState.todayKey > windowState.weekStart ? windowState.todayKey : windowState.weekStart)
+            : windowState.weekStart;
+        const normalized = this.normalizeMicroScheduleContract(
+            { inicioDate: proposedStart, prazo: windowState.weekEnd },
+            { rejectIfMissingPrazo: true }
+        );
+        return {
+            ...windowState,
+            inicioDate: normalized.inicioDate || proposedStart,
+            prazo: normalized.prazo || windowState.weekEnd,
+            rejected: !!normalized.rejected,
+            rejectReason: normalized.rejectReason || '',
+            adjusted: !!normalized.adjusted
+        };
+    },
+
+    _getWeeklyPlanSelectionAdjustment: function(micro, weekKey = this._getWeeklyPlanKey()) {
+        const currentWindow = this.getMicroEffectiveWindow(micro);
+        const targetWindow = this._getWeeklyPlanTargetSchedule(weekKey);
+        if (!currentWindow.valid) {
+            return { needsAdjustment: true, reason: 'invalid', targetWindow, currentWindow };
+        }
+        const alreadyFitsWeek = currentWindow.startDate >= targetWindow.weekStart && currentWindow.dueDate <= targetWindow.weekEnd;
+        if (alreadyFitsWeek) {
+            return { needsAdjustment: false, reason: '', targetWindow, currentWindow };
+        }
+
+        let reason = 'adjust';
+        if (currentWindow.dueDate && currentWindow.dueDate < targetWindow.weekStart) {
+            reason = currentWindow.dueDate < targetWindow.todayKey ? 'overdue' : 'before_week';
+        } else if (currentWindow.startDate && currentWindow.startDate > targetWindow.weekEnd) {
+            reason = 'future';
+        }
+
+        return { needsAdjustment: true, reason, targetWindow, currentWindow };
+    },
+
+    _confirmWeeklyPlanSelectionAdjustment: function(micro, adjustment) {
+        const targetWindow = adjustment?.targetWindow || this._getWeeklyPlanTargetSchedule();
+        if (targetWindow.rejected) {
+            this.showToast(targetWindow.rejectReason || 'Nao foi possivel encaixar a acao na semana planejada.', 'error');
+            return false;
+        }
+
+        const weekLabel = this._formatWeekRange(targetWindow.weekKey).toLowerCase();
+        const startLabel = this._formatTrailDate ? this._formatTrailDate(targetWindow.inicioDate) : targetWindow.inicioDate;
+        const dueLabel = this._formatTrailDate ? this._formatTrailDate(targetWindow.prazo) : targetWindow.prazo;
+        let message = `Para entrar no plano semanal, esta acao precisa caber na ${weekLabel}. Deseja ajustar a janela para ${startLabel} ate ${dueLabel}?`;
+
+        if (adjustment.reason === 'future') {
+            message = `Essa acao esta agendada para depois da ${weekLabel}. Deseja puxar a janela para ${startLabel} ate ${dueLabel}?`;
+        } else if (adjustment.reason === 'overdue') {
+            message = `Essa acao ja esta atrasada. Deseja replanejar a janela para ${startLabel} ate ${dueLabel}?`;
+        } else if (adjustment.reason === 'before_week') {
+            message = `Essa acao vence antes da ${weekLabel}. Deseja replaneja-la para ${startLabel} ate ${dueLabel}?`;
+        }
+
+        return window.confirm(message);
+    },
+
+    _getWeeklyPlanMicroContext: function(micro, weekKey = this._getWeeklyPlanKey()) {
+        const selectedSet = new Set(this._getWeeklyPlanModalSelectedIds());
+        const suggestedSet = this._getWeeklyPlanModalSuggestedSet();
+        const modalState = this._getWeeklyPlanModalState();
+        const timing = this.classifyMicroForDate(micro);
+        const macroTitle = (window.sistemaVidaState?.entities?.macros || []).find((macro) => macro.id === micro.macroId)?.title || '';
+        const isSelected = selectedSet.has(String(micro.id || ''));
+        const isSuggested = suggestedSet.has(String(micro.id || ''));
+        const dueThisWeek = this._isDateWithinWeekWindow(micro.prazo, weekKey);
+        const hasPendingAdjustment = !!modalState.pendingAdjustments?.[String(micro.id || '')];
+
+        let bucket = 'rest';
+        if (isSelected) bucket = 'selected';
+        else if (isSuggested) bucket = 'suggested';
+        else if (micro.status === 'in_progress') bucket = 'in_progress';
+        else if (timing.status === 'overdue') bucket = 'overdue';
+        else if (dueThisWeek) bucket = 'due_this_week';
+        else if (timing.status === 'future') bucket = 'future';
+
+        return {
+            id: String(micro.id || ''),
+            micro,
+            title: String(micro.title || '').trim(),
+            dimension: String(micro.dimension || '').trim() || 'Sem dimensão',
+            macroTitle,
+            timing,
+            dueThisWeek,
+            isSelected,
+            isSuggested,
+            hasPendingAdjustment,
+            bucket
+        };
+    },
+
+    _sortWeeklyPlanEntries: function(entries = []) {
+        const order = {
+            selected: 0,
+            suggested: 1,
+            in_progress: 2,
+            overdue: 3,
+            due_this_week: 4,
+            future: 5,
+            rest: 6
+        };
+        return [...entries].sort((a, b) => {
+            const orderDiff = (order[a.bucket] ?? 99) - (order[b.bucket] ?? 99);
+            if (orderDiff !== 0) return orderDiff;
+            const dueDiff = String(a.micro?.prazo || '9999-12-31').localeCompare(String(b.micro?.prazo || '9999-12-31'));
+            if (dueDiff !== 0) return dueDiff;
+            return String(a.title || '').localeCompare(String(b.title || ''));
+        });
+    },
+
+    _renderWeeklyPlanEntryBadges: function(entry) {
+        const badges = [];
+        if (entry.isSuggested) badges.push({ label: 'Sugerida', tone: 'bg-primary/10 text-primary' });
+        if (entry.micro?.status === 'in_progress') badges.push({ label: 'Em andamento', tone: 'bg-amber-500/10 text-amber-600 dark:text-amber-300' });
+        if (entry.timing?.status === 'overdue') badges.push({ label: 'Atrasada', tone: 'bg-rose-500/10 text-rose-600 dark:text-rose-300' });
+        else if (entry.dueThisWeek) badges.push({ label: 'Vence na semana', tone: 'bg-sky-500/10 text-sky-600 dark:text-sky-300' });
+        else if (entry.timing?.status === 'future') badges.push({ label: 'Futura', tone: 'bg-outline/10 text-outline' });
+        if (entry.hasPendingAdjustment) badges.push({ label: 'Janela ajustada', tone: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300' });
+        return badges.map((badge) => `
+            <span class="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] ${badge.tone}">
+                ${this.escapeHtml(badge.label)}
+            </span>
+        `).join('');
+    },
+
+    _renderWeeklyPlanEntry: function(entry) {
+        const checked = entry.isSelected ? 'checked' : '';
+        const dueLabel = entry.micro?.prazo
+            ? `prazo ${this._formatTrailDate ? this._formatTrailDate(entry.micro.prazo) : entry.micro.prazo}`
+            : '';
+        const details = [entry.dimension, entry.macroTitle, dueLabel].filter(Boolean).join(' · ');
+        const badges = this._renderWeeklyPlanEntryBadges(entry);
+        const selectedClasses = entry.isSelected
+            ? 'border-primary/35 bg-primary/8'
+            : 'border-outline-variant/10 hover:bg-primary/5';
+        return `
+            <label class="flex items-start gap-2 cursor-pointer rounded-xl border p-3 transition-colors ${selectedClasses}">
+                <input type="checkbox" class="wp-micro-check mt-0.5 accent-primary" value="${entry.id}" ${checked}>
+                <span class="min-w-0 flex-1">
+                    <span class="text-sm font-medium text-on-surface leading-snug block">${this.escapeHtml(entry.title || 'Ação sem título')}</span>
+                    ${details ? `<span class="text-[10px] text-outline block mt-0.5">${this.escapeHtml(details)}</span>` : ''}
+                    ${badges ? `<span class="flex flex-wrap gap-1 mt-2">${badges}</span>` : ''}
+                </span>
+            </label>
+        `;
+    },
+
+    _syncWeeklyPlanFilterControls: function() {
+        const modalState = this._getWeeklyPlanModalState();
+        const select = document.getElementById('wp-dimension-filter');
+        if (select) {
+            const dimensions = Array.from(new Set(
+                this._getWeeklyPlanActiveMicros()
+                    .map((micro) => String(micro.dimension || '').trim())
+                    .filter(Boolean)
+            )).sort((a, b) => a.localeCompare(b));
+
+            if (modalState.dimension !== 'all' && !dimensions.includes(modalState.dimension)) {
+                modalState.dimension = 'all';
+            }
+
+            select.innerHTML = [
+                '<option value="all">Todas as dimensões</option>',
+                ...dimensions.map((dimension) => `<option value="${this.escapeHtml(dimension)}">${this.escapeHtml(dimension)}</option>`)
+            ].join('');
+            select.value = modalState.dimension || 'all';
+        }
+
+        document.querySelectorAll('.wp-status-filter').forEach((button) => {
+            const isActive = button.getAttribute('data-weekly-status') === (modalState.status || 'all');
+            button.classList.toggle('bg-primary', isActive);
+            button.classList.toggle('text-on-primary', isActive);
+            button.classList.toggle('border-primary/60', isActive);
+            button.classList.toggle('shadow-sm', isActive);
+            button.classList.toggle('text-outline', !isActive);
+            button.classList.toggle('bg-transparent', !isActive);
+            button.classList.toggle('border-outline-variant/20', !isActive);
+        });
+    },
+
+    setWeeklyPlanDimensionFilter: function(value = 'all') {
+        const modalState = this._getWeeklyPlanModalState();
+        modalState.dimension = value || 'all';
+        this._refreshWpMicrosList();
+    },
+
+    setWeeklyPlanStatusFilter: function(value = 'all') {
+        const modalState = this._getWeeklyPlanModalState();
+        modalState.status = value || 'all';
+        this._refreshWpMicrosList();
+    },
+
+    clearWeeklyPlanFilters: function() {
+        const modalState = this._getWeeklyPlanModalState();
+        modalState.dimension = 'all';
+        modalState.status = 'all';
+        this._refreshWpMicrosList();
+    },
+
+    _renderWeeklyPlanMicrosList: function() {
+        const container = document.getElementById('wp-micros-list');
+        if (!container) return;
+
+        const modalState = this._getWeeklyPlanModalState();
+        this._syncWeeklyPlanFilterControls();
+
+        const micros = this._getWeeklyPlanActiveMicros();
+        if (!micros.length) {
+            container.innerHTML = '<p class="text-xs text-outline italic">Nenhuma ação ativa disponível.</p>';
+            return;
+        }
+
+        const entries = micros.map((micro) => this._getWeeklyPlanMicroContext(micro, modalState.weekKey || this._getWeeklyPlanKey()));
+        const selectedEntries = this._sortWeeklyPlanEntries(entries.filter((entry) => entry.isSelected));
+        const filteredEntries = this._sortWeeklyPlanEntries(entries.filter((entry) => {
+            if (entry.isSelected) return false;
+            if (modalState.dimension && modalState.dimension !== 'all' && entry.dimension !== modalState.dimension) return false;
+            if (modalState.status && modalState.status !== 'all' && entry.bucket !== modalState.status) return false;
+            return true;
+        }));
+
+        const carryoverNotice = modalState.carryoverCount > 0 ? `
+            <div class="rounded-xl bg-primary/10 border border-primary/20 p-3 text-xs text-on-surface-variant leading-relaxed">
+                <span class="font-bold text-primary">${modalState.carryoverCount} pendência${modalState.carryoverCount > 1 ? 's' : ''} sugerida${modalState.carryoverCount > 1 ? 's' : ''}.</span>
+                Revise a carga antes de salvar a semana.
+            </div>
+        ` : '';
+
+        const selectedSection = selectedEntries.length ? `
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Selecionadas</span>
+                    <span class="text-[10px] text-outline">${selectedEntries.length}</span>
+                </div>
+                ${selectedEntries.map((entry) => this._renderWeeklyPlanEntry(entry)).join('')}
+            </div>
+        ` : '';
+
+        const availableSection = filteredEntries.length ? `
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline">Disponíveis</span>
+                    <span class="text-[10px] text-outline">${filteredEntries.length}</span>
+                </div>
+                ${filteredEntries.map((entry) => this._renderWeeklyPlanEntry(entry)).join('')}
+            </div>
+        ` : `
+            <div class="rounded-xl border border-dashed border-outline-variant/20 px-3 py-4 text-center text-xs text-outline">
+                Nenhuma ação disponível com esse recorte agora.
+            </div>
+        `;
+
+        container.innerHTML = [carryoverNotice, selectedSection, availableSection].filter(Boolean).join('<div class="h-1"></div>');
+    },
+
+    handleWeeklyPlanMicroToggle: function(checkbox) {
+        if (!checkbox) return;
+        const microId = String(checkbox.value || '');
+        const modalState = this._getWeeklyPlanModalState();
+        const selectedIds = new Set(this._getWeeklyPlanModalSelectedIds());
+
+        if (checkbox.checked) {
+            const micro = this._getWeeklyPlanActiveMicros().find((item) => String(item.id || '') === microId);
+            if (!micro) {
+                checkbox.checked = false;
+                this.showToast('Ação não encontrada. Atualize a lista e tente novamente.', 'error');
+                this._refreshWpMicrosList();
+                return;
+            }
+
+            const adjustment = this._getWeeklyPlanSelectionAdjustment(micro, modalState.weekKey || this._getWeeklyPlanKey());
+            if (adjustment.needsAdjustment) {
+                const confirmed = this._confirmWeeklyPlanSelectionAdjustment(micro, adjustment);
+                if (!confirmed) {
+                    checkbox.checked = false;
+                    this._refreshWpMicrosList();
+                    return;
+                }
+                modalState.pendingAdjustments[microId] = {
+                    inicioDate: adjustment.targetWindow.inicioDate,
+                    prazo: adjustment.targetWindow.prazo,
+                    reason: adjustment.reason || 'adjust'
+                };
+            } else {
+                delete modalState.pendingAdjustments[microId];
+            }
+
+            selectedIds.add(microId);
+        } else {
+            selectedIds.delete(microId);
+            delete modalState.pendingAdjustments[microId];
+        }
+
+        this._setWeeklyPlanModalSelectedIds(Array.from(selectedIds));
+        this._refreshWpMicrosList();
+    },
+
+    _applyWeeklyPlanPendingAdjustments: function(selectedMicros = []) {
+        const modalState = this._getWeeklyPlanModalState();
+        const selectedSet = new Set((selectedMicros || []).map((id) => String(id || '')));
+        const micros = window.sistemaVidaState?.entities?.micros || [];
+
+        Object.entries(modalState.pendingAdjustments || {}).forEach(([microId, schedule]) => {
+            if (!selectedSet.has(String(microId || ''))) return;
+            const micro = micros.find((item) => String(item.id || '') === String(microId || ''));
+            if (!micro) return;
+            micro.inicioDate = schedule.inicioDate || micro.inicioDate || '';
+            micro.prazo = schedule.prazo || micro.prazo || '';
+        });
+    },
+
     /** Atualiza o medidor de carga no modal de planejamento semanal. */
     _updateWeeklyPlanLoadMeter: function() {
         const countEl = document.getElementById('wp-load-count');
@@ -8739,6 +9148,7 @@ ensureNotesState: function() {
         document.getElementById('weekly-plan-modal').classList.add('hidden');
         this.cancelInlineNewMicro();
         this._weeklyPlanTargetKey = null;
+        this._clearWeeklyPlanModalState();
     },
 
     toggleInlineNewMicro: function() {
@@ -8847,56 +9257,22 @@ ensureNotesState: function() {
         if (!Array.isArray(state.entities.micros)) state.entities.micros = [];
         state.entities.micros.push(newMicro);
 
-        // Mark immediately in current week plan
-        const weekKey = this._getWeeklyPlanKey();
-        if (!state.weekPlans) state.weekPlans = {};
-        const plan = state.weekPlans[weekKey] || {};
-        const selected = Array.isArray(plan.selectedMicros) ? [...plan.selectedMicros] : [];
-        if (!selected.includes(newMicro.id)) selected.push(newMicro.id);
-        state.weekPlans[weekKey] = {
-            ...plan,
-            weekKey,
-            intention: document.getElementById('wp-intention')?.value.trim() || plan.intention || '',
-            energyForecast: Number(document.getElementById('wp-energy')?.value || plan.energyForecast || 3),
-            selectedMicros: selected,
-            savedAt: Date.now()
-        };
+        if (this._weeklyPlanModalState) {
+            const selectedIds = new Set(this._getWeeklyPlanModalSelectedIds());
+            selectedIds.add(newMicro.id);
+            this._setWeeklyPlanModalSelectedIds(Array.from(selectedIds));
+        }
 
         // Refresh list in modal
         this._refreshWpMicrosList();
         this.cancelInlineNewMicro();
         this.saveState(true);
         if (this.renderWeeklyPlans) this.renderWeeklyPlans();
-        this.showToast(`"${title}" criada e adicionada ao plano.`, 'success');
+        this.showToast(`"${title}" criada e selecionada no plano.`, 'success');
     },
 
     _refreshWpMicrosList: function() {
-        const state = window.sistemaVidaState;
-        const weekKey = this._getWeeklyPlanKey();
-        const plan = (state.weekPlans || {})[weekKey] || {};
-        const selectedIds = Array.isArray(plan.selectedMicros) ? plan.selectedMicros : [];
-        const activeMicros = (state.entities?.micros || []).filter(m => m.status !== 'done' && !m.completed);
-        const container = document.getElementById('wp-micros-list');
-        if (!container) return;
-        if (activeMicros.length === 0) {
-            container.innerHTML = '<p class="text-xs text-outline italic">Nenhuma ação ativa disponível.</p>';
-            this._updateWeeklyPlanLoadMeter();
-            return;
-        }
-        container.innerHTML = activeMicros.map(m => {
-            const checked = selectedIds.includes(m.id) ? 'checked' : '';
-            const macroTitle = (state.entities.macros || []).find(ma => ma.id === m.macroId)?.title || '';
-            const details = [
-                m.dimension || '',
-                macroTitle,
-                m.prazo ? `prazo ${this._formatTrailDate ? this._formatTrailDate(m.prazo) : m.prazo}` : ''
-            ].filter(Boolean).join(' · ');
-            const sub = details ? `<span class="text-[10px] text-outline block">${this.escapeHtml(details)}</span>` : '';
-            return `<label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-primary/5 transition-colors">
-                <input type="checkbox" class="wp-micro-check mt-0.5 accent-primary" value="${m.id}" ${checked}>
-                <span class="text-sm text-on-surface leading-snug">${this.escapeHtml(m.title)}${sub}</span>
-            </label>`;
-        }).join('');
+        this._renderWeeklyPlanMicrosList();
         this._updateWeeklyPlanLoadMeter();
     },
 
@@ -8904,7 +9280,10 @@ ensureNotesState: function() {
         const weekKey = this._getWeeklyPlanKey();
         const intention = document.getElementById('wp-intention')?.value.trim() || '';
         const energyForecast = Number(document.getElementById('wp-energy')?.value || 3);
-        const selectedMicros = Array.from(document.querySelectorAll('.wp-micro-check:checked')).map(cb => cb.value);
+        const selectedMicros = this._getWeeklyPlanModalSelectedIds()
+            .filter((microId) => this._getWeeklyPlanActiveMicros().some((micro) => String(micro.id || '') === String(microId || '')));
+
+        this._applyWeeklyPlanPendingAdjustments(selectedMicros);
 
         if (!window.sistemaVidaState.weekPlans) window.sistemaVidaState.weekPlans = {};
         window.sistemaVidaState.weekPlans[weekKey] = {
