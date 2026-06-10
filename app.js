@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Sistema Vida - Core OS
  * Vanilla JS Single Page Application Controller with Data Binding
  */
@@ -8731,16 +8731,55 @@ ensureNotesState: function() {
                 .filter((id) => activeIds.has(id))
         ));
 
+        const pendingAdjustments = {};
         this._weeklyPlanModalState = {
             weekKey,
             selectedIds,
             suggestedIds: safeSuggestedIds,
-            pendingAdjustments: {},
+            pendingAdjustments,
             dimension: 'all',
             status: 'all',
             carryoverCount: Math.max(0, Number(carryoverCount) || 0)
         };
+
+        // Audita silenciosamente as micros pré-selecionadas e registra
+        // os ajustes necessários em pendingAdjustments. O banner na lista
+        // notificará o usuário antes de salvar.
+        this._auditPreselectedAdjustments(selectedIds, weekKey, pendingAdjustments);
+
         this._syncWeeklyPlanFilterControls();
+    },
+
+    /**
+     * Percorre as micros pré-selecionadas e preenche `pendingAdjustments`
+     * para todas que precisam de rebase de janela conforme o contrato.
+     * Chamado na abertura do modal, sem pedir confirmação ao usuário.
+     * O banner na lista exibirá um resumo dos ajustes automáticos.
+     *
+     * @param {string[]} selectedIds  IDs das micros que já estão selecionadas
+     * @param {string}   weekKey      Chave da semana em planejamento
+     * @param {Object}   pendingAdjustments  Objeto a preencher (mutado in-place)
+     */
+    _auditPreselectedAdjustments: function(selectedIds = [], weekKey, pendingAdjustments = {}) {
+        if (!selectedIds.length) return;
+        const activeMicros = this._getWeeklyPlanActiveMicros();
+        const targetWeekKey = weekKey || this._getWeeklyPlanKey();
+
+        selectedIds.forEach((microId) => {
+            const micro = activeMicros.find((m) => String(m.id || '') === String(microId || ''));
+            if (!micro) return;
+
+            const adjustment = this._getWeeklyPlanSelectionAdjustment(micro, targetWeekKey);
+            if (!adjustment.needsAdjustment) return;
+
+            const targetWindow = adjustment.targetWindow;
+            pendingAdjustments[String(microId)] = {
+                inicioDate: targetWindow.inicioDate,
+                prazo: targetWindow.prazo,
+                reason: adjustment.reason || 'adjust',
+                autoAdjusted: true  // flag para distinguir do fluxo de toggle manual
+            };
+        });
     },
 
     _clearWeeklyPlanModalState: function() {
@@ -8808,15 +8847,26 @@ ensureNotesState: function() {
             return { needsAdjustment: true, reason: 'invalid', targetWindow, currentWindow };
         }
         const alreadyFitsWeek = currentWindow.startDate >= targetWindow.weekStart && currentWindow.dueDate <= targetWindow.weekEnd;
-        if (alreadyFitsWeek) {
+
+        // Classifica o status temporal da micro (overdue / future / etc.)
+        const timing = this.classifyMicroForDate ? this.classifyMicroForDate(micro) : {};
+        const isOverdue = timing?.status === 'overdue';
+        const isFuture  = timing?.status === 'future';
+
+        // Só isenta se a janela já cabe E a micro não é atrasada nem futura.
+        // Overdue e future dentro da mesma semana ainda precisam de confirmação
+        // e rebase da janela conforme o contrato alinhado.
+        if (alreadyFitsWeek && !isOverdue && !isFuture) {
             return { needsAdjustment: false, reason: '', targetWindow, currentWindow };
         }
 
         let reason = 'adjust';
-        if (currentWindow.dueDate && currentWindow.dueDate < targetWindow.weekStart) {
-            reason = currentWindow.dueDate < targetWindow.todayKey ? 'overdue' : 'before_week';
-        } else if (currentWindow.startDate && currentWindow.startDate > targetWindow.weekEnd) {
+        if (isOverdue || (currentWindow.dueDate && currentWindow.dueDate < targetWindow.todayKey)) {
+            reason = 'overdue';
+        } else if (isFuture || (currentWindow.startDate && currentWindow.startDate > targetWindow.weekEnd)) {
             reason = 'future';
+        } else if (currentWindow.dueDate && currentWindow.dueDate < targetWindow.weekStart) {
+            reason = 'before_week';
         }
 
         return { needsAdjustment: true, reason, targetWindow, currentWindow };
@@ -9016,6 +9066,35 @@ ensureNotesState: function() {
             </div>
         ` : '';
 
+        // Banner de ajuste automático: exibe quando há micros pré-selecionadas
+        // que foram reagendadas silenciosamente pela auditoria de abertura do modal.
+        const autoAdjusted = Object.entries(modalState.pendingAdjustments || {})
+            .filter(([, adj]) => adj.autoAdjusted)
+            .map(([microId]) => {
+                const micro = this._getWeeklyPlanActiveMicros().find((m) => String(m.id || '') === String(microId || ''));
+                return micro ? this.escapeHtml(micro.title || 'Ação') : null;
+            })
+            .filter(Boolean);
+
+        const adjustmentNotice = autoAdjusted.length > 0 ? (() => {
+            const count = autoAdjusted.length;
+            const noun = count === 1 ? 'ação reagendada automaticamente' : 'ações reagendadas automaticamente';
+            const list = autoAdjusted.length <= 3
+                ? autoAdjusted.map((t) => `"${t}"`).join(', ')
+                : autoAdjusted.slice(0, 2).map((t) => `"${t}"`).join(', ') + ` e mais ${autoAdjusted.length - 2}`;
+            return `
+                <div class="rounded-xl bg-amber-500/10 border border-amber-500/25 p-3 text-xs text-on-surface-variant leading-relaxed">
+                    <div class="flex items-start gap-2">
+                        <span class="material-symbols-outlined notranslate text-amber-600 dark:text-amber-400 text-[16px] shrink-0 mt-0.5">schedule</span>
+                        <div>
+                            <span class="font-bold text-amber-700 dark:text-amber-400">${count} ${noun}.</span>
+                            <span class="block mt-0.5">${list} estava${count === 1 ? '' : 'm'} atrasada${count === 1 ? '' : 's'} ou futura${count === 1 ? '' : 's'} e será${count === 1 ? '' : 'ão'} movida${count === 1 ? '' : 's'} para esta semana ao salvar. Desmarque-a${count === 1 ? '' : 's'} se não quiser incluir no plano.</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        })() : '';
+
         const selectedSection = selectedEntries.length ? `
             <div class="flex flex-col gap-2">
                 <div class="flex items-center justify-between px-1">
@@ -9040,7 +9119,8 @@ ensureNotesState: function() {
             </div>
         `;
 
-        container.innerHTML = [carryoverNotice, selectedSection, availableSection].filter(Boolean).join('<div class="h-1"></div>');
+        container.innerHTML = [carryoverNotice, adjustmentNotice, selectedSection, availableSection].filter(Boolean).join('<div class="h-1"></div>');
+
     },
 
     handleWeeklyPlanMicroToggle: function(checkbox) {
