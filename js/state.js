@@ -119,6 +119,8 @@ applyPlanParentState: function(parent, computedProgress, children, type, options
 
         if (keepExplicitDone) {
             nextStatus = 'done';
+        } else if (safeProgress > 0) {
+            nextStatus = 'in_progress';
         } else if (this.hasActivePlanChildren(children)) {
             nextStatus = 'in_progress';
         } else {
@@ -1232,6 +1234,11 @@ importFromExcel: async function(event) {
             if (['0', 'false', 'nao', 'não', 'no', 'n', 'inativo', 'pendente'].includes(raw)) return false;
             return fallback;
         };
+        const hasImportValue = (value) => {
+            if (value === null || value === undefined) return false;
+            if (typeof value === 'string') return String(value).trim() !== '';
+            return true;
+        };
         const parseList = (value, delimiter = ',') => {
             if (Array.isArray(value)) return value.map(item => String(item || '').trim()).filter(Boolean);
             return String(value || '').split(delimiter).map(item => item.trim()).filter(Boolean);
@@ -1757,7 +1764,18 @@ importFromExcel: async function(event) {
                         progressVal = parseFloat(progressRaw) || 0;
                     }
                     let numericProgress = (progressVal <= 1 && progressVal > 0) ? progressVal * 100 : progressVal;
-                    let status = (numericProgress >= 100) ? 'done' : 'active';
+                    const rawStatusValue = getValue(row, ['Status', 'SituaÃ§Ã£o', 'Situacao']);
+                    const rawCompletedValue = getValue(row, ['ConcluÃ­da', 'Concluida', 'Completed']);
+                    const hasExplicitStatus = hasImportValue(rawStatusValue);
+                    const hasExplicitCompleted = hasImportValue(rawCompletedValue);
+                    let status = 'pending';
+                    if (hasExplicitStatus) {
+                        status = normalizeEntityStatusLabel(rawStatusValue, 'pending');
+                    } else if (hasExplicitCompleted && toBool(rawCompletedValue, false)) {
+                        status = 'done';
+                    } else if (type === 'micros') {
+                        status = (numericProgress >= 100) ? 'done' : 'pending';
+                    }
                     
                     let idFromSheet = getValue(row, ['ID', 'Id', 'id', 'Código', 'Codigo']);
                     const usesVisibleParent = hasAnyHeader(planHeaders, ['Plano Pai', 'Pai', 'Parent']);
@@ -1771,9 +1789,9 @@ importFromExcel: async function(event) {
                         id: idFromSheet ? String(idFromSheet) : ('ent_' + Date.now() + Math.random().toString(36).substr(2, 9)),
                         title: getValue(row, ['Título', 'Titulo', 'Nome', 'Tarefa', 'Title']),
                         dimension: getValue(row, ['Dimensão', 'Área', 'Dimension', 'Area']) || 'Geral',
-                        status: normalizeEntityStatusLabel(getValue(row, ['Status', 'Situação', 'Situacao']), status),
+                        status,
                         progress: Math.min(100, Math.max(0, numericProgress)),
-                        completed: toBool(getValue(row, ['Concluída', 'Concluida', 'Completed']), status === 'done')
+                        completed: toBool(rawCompletedValue, status === 'done')
                     };
                     const successCriteria = String(getValue(row, ['Critério de Sucesso', 'Critério_Sucesso', 'Success Criteria']) || '').trim();
                     const challengeLevel = Number(getValue(row, ['Desafio', 'Challenge', 'Challenge Level']) || 0);
@@ -1809,7 +1827,7 @@ importFromExcel: async function(event) {
                     }
                     else if (type === 'micros') {
                         obj.indicator = context;
-                        obj.completed = toBool(getValue(row, ['Concluída', 'Concluida', 'Completed']), status === 'done');
+                        obj.completed = toBool(rawCompletedValue, status === 'done');
                         obj.inicioDate = inicioDate;
                         obj.prazo = prazo;
                         obj.protocolId = String(getValue(row, ['Protocol_ID', 'Protocolo_ID']) || '').trim();

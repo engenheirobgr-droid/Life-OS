@@ -24,9 +24,9 @@ import { attachIdentity } from './js/identity.js?v=20260608-capacity-intervals-v
 import { attachHabits } from './js/habits.js?v=20260608-habits-view-v2';
 import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v23';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v23';
-import { attachStateModule } from './js/state.js?v=20260609-plan-recalc-v1';
+import { attachStateModule } from './js/state.js?v=20260610-plan-contract-v1';
 import { attachRenderModule } from './js/render.js?v=20260608-habits-view-v2';
-import { attachPlanningModule } from './js/planning.js?v=20260609-plan-recalc-v1';
+import { attachPlanningModule } from './js/planning.js?v=20260610-plan-contract-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v23';
 import { attachSocial } from './js/social.js?v=20260604-ui-system-v23';
 
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260609-plan-recalc-v1',
+    appBuildVersion: '20260610-plan-contract-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -1151,9 +1151,11 @@ normalizeSwlsAnswer: function(rawValue) {
         if (!micro || micro.status === 'done') return false;
         let changed = false;
         if (micro.status !== 'in_progress') {
-            micro.status = 'in_progress';
-            this.cascadeStartUp(micro.id);
-            changed = true;
+            const activation = this.activateMicroInPlanHierarchy(micro.id, {
+                confirmReopen: false,
+                reason: 'deep_work_sync'
+            });
+            changed = activation.ok === true;
         }
         if (micro.completed) {
             micro.completed = false;
@@ -5108,6 +5110,119 @@ openCreateModal: function(type = 'metas', parentId = null) {
             currentId = current?.parentMetaId || '';
         }
         return chain;
+    },
+    getPlanEntityByType: function(type, id, state = window.sistemaVidaState) {
+        const list = (state?.entities && Array.isArray(state.entities[type])) ? state.entities[type] : [];
+        return list.find((item) => item.id === id) || null;
+    },
+    getPlanTypeLabel: function(type, plural = false) {
+        const entry = this.publicTaxonomy?.[type] || {};
+        if (plural) return String(entry.plural || type || '').trim();
+        return String(entry.singular || type || '').trim();
+    },
+    joinHumanList: function(items = []) {
+        const normalized = (items || []).map((item) => String(item || '').trim()).filter(Boolean);
+        if (!normalized.length) return '';
+        if (normalized.length === 1) return normalized[0];
+        if (normalized.length === 2) return `${normalized[0]} e ${normalized[1]}`;
+        return `${normalized.slice(0, -1).join(', ')} e ${normalized[normalized.length - 1]}`;
+    },
+    getPlanAncestors: function(type, entity, state = window.sistemaVidaState) {
+        if (!entity?.id) return [];
+        const entities = state?.entities || {};
+        const ancestors = [];
+        const pushMetaWithParents = (meta) => {
+            if (!meta?.id) return;
+            ancestors.push({ type: 'metas', item: meta });
+            const parentChain = this.getMetaParentChain(meta.id).slice(1);
+            parentChain.forEach((metaId) => {
+                const parentMeta = (entities.metas || []).find((item) => item.id === metaId);
+                if (parentMeta?.id) ancestors.push({ type: 'metas', item: parentMeta });
+            });
+        };
+
+        if (type === 'micros') {
+            const macro = (entities.macros || []).find((item) => item.id === entity.macroId);
+            if (macro?.id) ancestors.push({ type: 'macros', item: macro });
+            const okr = macro?.okrId
+                ? (entities.okrs || []).find((item) => item.id === macro.okrId)
+                : (entities.okrs || []).find((item) => item.id === entity.okrId);
+            if (okr?.id) ancestors.push({ type: 'okrs', item: okr });
+            const meta = okr?.metaId
+                ? (entities.metas || []).find((item) => item.id === okr.metaId)
+                : (entities.metas || []).find((item) => item.id === entity.metaId);
+            if (meta?.id) pushMetaWithParents(meta);
+            return ancestors;
+        }
+
+        if (type === 'macros') {
+            const okr = (entities.okrs || []).find((item) => item.id === entity.okrId);
+            if (okr?.id) ancestors.push({ type: 'okrs', item: okr });
+            const meta = okr?.metaId
+                ? (entities.metas || []).find((item) => item.id === okr.metaId)
+                : (entities.metas || []).find((item) => item.id === entity.metaId);
+            if (meta?.id) pushMetaWithParents(meta);
+            return ancestors;
+        }
+
+        if (type === 'okrs') {
+            const meta = (entities.metas || []).find((item) => item.id === entity.metaId);
+            if (meta?.id) pushMetaWithParents(meta);
+            return ancestors;
+        }
+
+        if (type === 'metas') {
+            this.getMetaParentChain(entity.id).slice(1).forEach((metaId) => {
+                const parentMeta = (entities.metas || []).find((item) => item.id === metaId);
+                if (parentMeta?.id) ancestors.push({ type: 'metas', item: parentMeta });
+            });
+        }
+        return ancestors;
+    },
+    getDonePlanAncestors: function(type, entity, state = window.sistemaVidaState) {
+        return this.getPlanAncestors(type, entity, state).filter(({ item }) => item?.status === 'done');
+    },
+    formatPlanAncestorSummary: function(ancestors = [], options = {}) {
+        const maxItems = Math.max(1, Number(options.maxItems) || 3);
+        const normalized = (ancestors || []).filter(({ item }) => item?.id);
+        if (!normalized.length) return '';
+        const labels = normalized.slice(0, maxItems).map(({ type, item }) => {
+            const typeLabel = this.getPlanTypeLabel(type).toLowerCase();
+            return `${typeLabel} "${String(item.title || '').trim() || 'sem título'}"`;
+        });
+        const moreCount = normalized.length - labels.length;
+        if (moreCount > 0) labels.push(`${moreCount} outro${moreCount > 1 ? 's' : ''}`);
+        return this.joinHumanList(labels);
+    },
+    activateMicroInPlanHierarchy: function(microId, options = {}) {
+        const state = window.sistemaVidaState;
+        const micro = (state.entities?.micros || []).find((item) => item.id === microId);
+        if (!micro) return { ok: false, reason: 'missing_micro' };
+        if (micro.status === 'done') return { ok: false, reason: 'micro_done' };
+
+        const doneAncestors = this.getDonePlanAncestors('micros', micro, state);
+        if (doneAncestors.length && options.confirmReopen === false && options.allowSilentAncestorReopen !== true) {
+            return { ok: false, reason: 'done_ancestor_requires_confirmation', blockedAncestors: doneAncestors.length };
+        }
+        if (doneAncestors.length && options.confirmReopen !== false) {
+            const summary = this.formatPlanAncestorSummary(doneAncestors);
+            const prompt = options.confirmMessage
+                || `${String(options.actionLabel || 'Retomar esta ação').trim()} vai reabrir ${summary}. Deseja continuar?`;
+            if (!window.confirm(prompt)) return { ok: false, cancelled: true };
+        }
+
+        micro.status = 'in_progress';
+        micro.completed = false;
+        micro.progress = 0;
+        delete micro.completedDate;
+        if (typeof this.reconcilePlanLineage === 'function') {
+            this.reconcilePlanLineage(micro.id, 'micros', {
+                allowDoneReopen: doneAncestors.length > 0,
+                recordHistory: false,
+                reason: String(options.reason || 'micro_activate')
+            });
+        }
+        return { ok: true, reopenedAncestors: doneAncestors.length };
     },
     getDayDiffFromNow: function(targetDateStr) {
         if (!targetDateStr) return null;
@@ -9155,10 +9270,11 @@ ensureNotesState: function() {
             this.showToast('Esta ação já está concluída. Reabra antes de iniciar novamente.', 'error');
             return;
         }
-        entity.status = 'in_progress';
-        entity.completed = false;
-        // Micro tem progresso binário: 0 (não-done) ou 100 (done). Início não muda progress.
-        this.cascadeStartUp(entity.id);
+        const activation = this.activateMicroInPlanHierarchy(entity.id, {
+            actionLabel: 'Iniciar esta ação',
+            reason: 'manual_micro_start'
+        });
+        if (!activation.ok) return;
         this.saveState(false);
         if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
         if (this.currentView === 'painel' && this.render.painel) this.render.painel();
@@ -9170,19 +9286,104 @@ ensureNotesState: function() {
         this.startEntity(id, 'micros');
     },
 
+    _collectPlanCascadeDescendants: function(parentType, parentId, state = window.sistemaVidaState) {
+        const entities = state?.entities || {};
+        const result = { metas: [], okrs: [], macros: [], micros: [] };
+        const seen = {
+            metas: new Set(),
+            okrs: new Set(),
+            macros: new Set(),
+            micros: new Set()
+        };
+        const queue = [{ type: parentType, id: parentId }];
+
+        const pushChildren = (type, items = []) => {
+            items.forEach((item) => {
+                if (!item?.id || seen[type].has(item.id)) return;
+                seen[type].add(item.id);
+                result[type].push(item);
+                queue.push({ type, id: item.id });
+            });
+        };
+
+        while (queue.length) {
+            const current = queue.shift();
+            if (current.type === 'metas') {
+                pushChildren('metas', (entities.metas || []).filter((item) => item.parentMetaId === current.id));
+                pushChildren('okrs', (entities.okrs || []).filter((item) => item.metaId === current.id));
+            } else if (current.type === 'okrs') {
+                pushChildren('macros', (entities.macros || []).filter((item) => item.okrId === current.id));
+            } else if (current.type === 'macros') {
+                pushChildren('micros', (entities.micros || []).filter((item) => item.macroId === current.id));
+            }
+        }
+
+        return result;
+    },
+
+    _getPlanManualClosePendingCounts: function(parentType, parentId, state = window.sistemaVidaState) {
+        const descendants = this._collectPlanCascadeDescendants(parentType, parentId, state);
+        return {
+            metas: (descendants.metas || []).filter((item) => item.status !== 'done' && item.status !== 'abandoned').length,
+            okrs: (descendants.okrs || []).filter((item) => item.status !== 'done' && item.status !== 'abandoned').length,
+            macros: (descendants.macros || []).filter((item) => item.status !== 'done' && item.status !== 'abandoned').length,
+            micros: (descendants.micros || []).filter((item) => item.status !== 'done' && item.status !== 'abandoned').length
+        };
+    },
+
+    buildPlanManualCloseMessage: function(item, type, currentProgress, pendingCounts = {}) {
+        const rootLabel = this.getPlanTypeLabel(type).toLowerCase();
+        const totalPending = ['metas', 'okrs', 'macros', 'micros']
+            .reduce((sum, key) => sum + Math.max(0, Number(pendingCounts[key]) || 0), 0);
+        if (totalPending <= 0) {
+            if (currentProgress >= 100) return `Deseja fechar ${rootLabel === 'ação' ? 'esta ação' : `este(a) ${rootLabel}`}?`;
+            return `Este(a) ${rootLabel} está em ${currentProgress}%. Deseja fechar mesmo assim?`;
+        }
+
+        const parts = ['metas', 'okrs', 'macros', 'micros']
+            .filter((key) => Math.max(0, Number(pendingCounts[key]) || 0) > 0)
+            .map((key) => {
+                const count = Math.max(0, Number(pendingCounts[key]) || 0);
+                const label = this.getPlanTypeLabel(key, count > 1).toLowerCase();
+                return `${count} ${label}`;
+            });
+        const prefix = currentProgress >= 100
+            ? `Fechar este(a) ${rootLabel}`
+            : `Este(a) ${rootLabel} está em ${currentProgress}%. Fechar agora`;
+        return `${prefix} também vai concluir automaticamente ${this.joinHumanList(parts)} pendente(s) ou em andamento. Confirmar?`;
+    },
+
     cascadeStatusDown: function(parentId, parentType, newStatus) {
         const state = window.sistemaVidaState;
+        let updatedCount = 0;
         const updateChild = (child, type) => {
-            if (child.status !== 'done') {
+            if (!child || child.status === 'abandoned') return;
+            if (newStatus === 'done' && child.status !== 'done') {
+                child.status = 'done';
+                child.progress = 100;
+                child.completed = true;
+                if (type === 'micros') child.completedDate = child.completedDate || this.getLocalDateKey();
+                updatedCount += 1;
+            } else if (newStatus !== 'done' && child.status !== newStatus) {
                 child.status = newStatus;
-                if (newStatus === 'done') child.progress = 100;
-                if (type === 'micros') child.completed = (newStatus === 'done');
-                this.cascadeStatusDown(child.id, type, newStatus);
+                if (type === 'micros') {
+                    child.completed = false;
+                    child.progress = 0;
+                    delete child.completedDate;
+                }
+                updatedCount += 1;
             }
+            this.cascadeStatusDown(child.id, type, newStatus);
         };
-        if (parentType === 'metas') (state.entities.okrs || []).filter(o => o.metaId === parentId).forEach(c => updateChild(c, 'okrs'));
-        else if (parentType === 'okrs') (state.entities.macros || []).filter(m => m.okrId === parentId).forEach(c => updateChild(c, 'macros'));
-        else if (parentType === 'macros') (state.entities.micros || []).filter(m => m.macroId === parentId).forEach(c => updateChild(c, 'micros'));
+        if (parentType === 'metas') {
+            (state.entities.metas || []).filter(m => m.parentMetaId === parentId).forEach(c => updateChild(c, 'metas'));
+            (state.entities.okrs || []).filter(o => o.metaId === parentId).forEach(c => updateChild(c, 'okrs'));
+        } else if (parentType === 'okrs') {
+            (state.entities.macros || []).filter(m => m.okrId === parentId).forEach(c => updateChild(c, 'macros'));
+        } else if (parentType === 'macros') {
+            (state.entities.micros || []).filter(m => m.macroId === parentId).forEach(c => updateChild(c, 'micros'));
+        }
+        return updatedCount;
     },
 
     forceCompleteEntity: function(id, type) {
@@ -9190,18 +9391,15 @@ ensureNotesState: function() {
         const item = state.entities[type].find(e => e.id === id);
         if (!item) return;
         const currentProgress = Number(item.progress) || 0;
-        const isAtFullProgress = currentProgress >= 100;
-        // Texto adaptado: 100% = simples confirmação; < 100% = aviso de força.
-        const message = isAtFullProgress
-            ? 'Todas as filhas estão concluídas. Deseja fechar este item?'
-            : `Este item está em ${currentProgress}%. Concluir agora vai marcar todas as filhas pendentes como concluídas. Confirmar?`;
+        const pendingCounts = this._getPlanManualClosePendingCounts(type, id, state);
+        const message = this.buildPlanManualCloseMessage(item, type, currentProgress, pendingCounts);
         if (!confirm(message)) return;
         item.progress = 100;
         item.status = 'done';
-        if (type === 'micros') item.completed = true;
-        this.updateCascadeProgress(id, type); // recálculo bottom-up dos pais
-        // Top-down só faz sentido quando força (< 100%); a 100% as filhas já estão done.
-        if (!isAtFullProgress) this.cascadeStatusDown(id, type, 'done');
+        item.completed = true;
+        if (type === 'micros') item.completedDate = item.completedDate || this.getLocalDateKey();
+        if (type !== 'micros') this.cascadeStatusDown(id, type, 'done');
+        if (typeof this.updateCascadeProgress === 'function') this.updateCascadeProgress(id, type);
         this.saveState(false);
         if (this.render.planos) this.render.planos();
         if (this.render.painel) this.render.painel();
@@ -9220,10 +9418,24 @@ ensureNotesState: function() {
             clone.status = 'pending';
             clone.completed = false;
             clone.progress = 0;
+            clone.stepLogs = {};
             delete clone.completedDate;
+            delete clone.focusSec;
+            delete clone.focusSessions;
+            delete clone.lastFocusDate;
         } else if (type === 'macros' || type === 'okrs' || type === 'metas') {
-            if (clone.status === 'abandoned') clone.status = 'pending';
-            if (!Number.isFinite(Number(clone.progress))) clone.progress = 0;
+            clone.status = 'pending';
+            clone.progress = 0;
+            clone.completed = false;
+            if (type === 'okrs') {
+                clone.rewarded70 = false;
+                if (Array.isArray(clone.keyResults)) {
+                    clone.keyResults = clone.keyResults.map((kr) => ({
+                        ...kr,
+                        current: 0
+                    }));
+                }
+            }
         } else if (type === 'habits') {
             clone.completed = false;
             clone.logs = {};
@@ -9461,12 +9673,15 @@ ensureNotesState: function() {
                 : selectedHabit;
             if (linkedMicro && linkedMicro.status !== 'done') {
                 const wasNotInProgress = linkedMicro.status !== 'in_progress';
-                linkedMicro.status = 'in_progress';
-                linkedMicro.completed = false;
+                if (wasNotInProgress) {
+                    this.activateMicroInPlanHierarchy(linkedMicro.id, {
+                        confirmReopen: false,
+                        reason: 'deep_work_countdown_end'
+                    });
+                }
                 linkedMicro.focusSec = Math.max(0, Number(linkedMicro.focusSec) || 0) + focusSec;
                 linkedMicro.focusSessions = Math.max(0, Number(linkedMicro.focusSessions) || 0) + 1;
                 linkedMicro.lastFocusDate = dateKey;
-                if (wasNotInProgress) this.cascadeStartUp(linkedMicro.id);
             }
             if (sessionHabit?.id && typeof this.recordHabitFocusExecution === 'function') {
                 this.recordHabitFocusExecution(sessionHabit.id, focusSec, dateKey);
@@ -9709,10 +9924,19 @@ ensureNotesState: function() {
         if (chosenMicro) {
             const micro = (state.entities.micros || []).find(m => m.id === chosenMicro);
             if (micro && micro.status !== 'done') {
-                const wasNotInProgress = micro.status !== 'in_progress';
-                micro.status = 'in_progress';
-                micro.completed = false;
-                if (wasNotInProgress) this.cascadeStartUp(micro.id);
+                const activation = this.activateMicroInPlanHierarchy(micro.id, {
+                    actionLabel: 'Iniciar este foco',
+                    reason: 'deep_work_start'
+                });
+                if (!activation.ok) {
+                    dw.isRunning = false;
+                    dw.isPaused = false;
+                    dw.microId = '';
+                    dw.habitId = '';
+                    dw.intention = '';
+                    dw.deadlineAtMs = 0;
+                    return;
+                }
             }
         }
 
@@ -9803,10 +10027,13 @@ ensureNotesState: function() {
         if (autoStart && micro.status !== 'done') {
             const sourceMicro = (state.entities?.micros || []).find(m => m.id === micro.id);
             const targetMicro = sourceMicro || micro;
-            const wasNotInProgress = targetMicro.status !== 'in_progress';
-            targetMicro.status = 'in_progress';
-            targetMicro.completed = false;
-            if (wasNotInProgress && sourceMicro) this.cascadeStartUp(sourceMicro.id);
+            if (targetMicro.status !== 'in_progress' && sourceMicro) {
+                const activation = this.activateMicroInPlanHierarchy(sourceMicro.id, {
+                    actionLabel: 'Abrir esta ação no foco',
+                    reason: 'focus_open_autostart'
+                });
+                if (!activation.ok) return;
+            }
         }
         this.pendingFocusMicroId = micro.id;
         this.pendingFocusAutoStart = !!autoStart;

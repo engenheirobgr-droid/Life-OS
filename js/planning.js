@@ -2515,26 +2515,29 @@ processQuarterlyReview: async function() {
                 if (action === 'concluir') {
                     okr.status = 'done';
                     okr.progress = 100;
+                    okr.completed = true;
                     concluded++;
-                    const macros = state.entities.macros.filter(m => m.okrId === id);
-                    macros.forEach(m => {
-                        m.status = 'done';
-                        m.progress = 100;
-                        const micros = state.entities.micros.filter(mic => mic.macroId === m.id);
-                        micros.forEach(mic => {
-                            mic.status = 'done';
-                            mic.completed = true;
-                            mic.progress = 100;
-                        });
-                    });
+                    if (typeof this.cascadeStatusDown === 'function') {
+                        this.cascadeStatusDown(id, 'okrs', 'done');
+                    }
                 } else if (action === 'arquivar') {
                     okr.status = 'abandoned';
+                    okr.progress = 0;
+                    okr.completed = false;
                     archived++;
                     const macros = state.entities.macros.filter(m => m.okrId === id);
                     macros.forEach(m => {
                         m.status = 'abandoned';
+                        m.progress = 0;
+                        m.completed = false;
                         const micros = state.entities.micros.filter(mic => mic.macroId === m.id);
-                        micros.forEach(mic => { if (mic.status !== 'done') mic.status = 'abandoned'; });
+                        micros.forEach(mic => {
+                            if (mic.status === 'done') return;
+                            mic.status = 'abandoned';
+                            mic.completed = false;
+                            mic.progress = 0;
+                            delete mic.completedDate;
+                        });
                     });
                 } else {
                     carried++;
@@ -2555,6 +2558,7 @@ processQuarterlyReview: async function() {
             // Reset do ciclo para a data atual
             state.cycleStartDate = this.getLocalDateKey();
             this.markCadence('cycleReview', state.cycleStartDate);
+            this.reconcilePlanHierarchy?.({ allowDoneReopen: false, recordHistory: true, reason: 'cycle_review_apply' });
             await this.saveState(true);
             this.closeQuarterlyModal();
 
@@ -2773,7 +2777,7 @@ editEntity: function(id, type) {
         }
     },
 
-completeMicroAction: function(id) {
+completeMicroActionLegacy: function(id) {
         const todayKey = this.getLocalDateKey();
         const state = window.sistemaVidaState;
         const micro = state.entities.micros.find(m => m.id === id);
@@ -2792,7 +2796,14 @@ completeMicroAction: function(id) {
         // Define se estamos marcando ou desmarcando a tarefa
         const isCompleting = micro.status !== 'done';
         const wasInProgress = micro.status === 'in_progress';
+        const doneAncestors = !isCompleting
+            ? (this.getDonePlanAncestors?.('micros', micro, state) || [])
+            : [];
         if (!isCompleting) {
+            const ancestorSummary = doneAncestors.length ? this.formatPlanAncestorSummary?.(doneAncestors) : '';
+            const reopenMessage = doneAncestors.length
+                ? `Reabrir esta acao vai remover a conclusao e tambem reabrir ${ancestorSummary}. Deseja continuar?`
+                : 'Reabrir esta acao vai remover a conclusao e recalcular o progresso da trilha. Deseja continuar?';
             const confirmed = confirm('Reabrir esta ação vai remover a conclusão e recalcular o progresso da trilha. Deseja continuar?');
             if (!confirmed) return;
         } else {
@@ -2875,9 +2886,115 @@ completeMicroAction: function(id) {
         if (this.currentView === 'foco' && this.render.foco) this.render.foco();
     },
 
+completeMicroAction: function(id) {
+        const todayKey = this.getLocalDateKey();
+        const state = window.sistemaVidaState;
+        const micro = state.entities.micros.find((item) => item.id === id);
+        if (!micro) {
+            this.showToast('Acao nao encontrada. Atualize a tela e tente novamente.', 'error');
+            return;
+        }
+
+        const steps = Array.isArray(micro.steps) ? micro.steps.filter(Boolean) : [];
+        const hasSteps = steps.length > 0;
+        const stepMap = (micro.stepLogs && typeof micro.stepLogs === 'object') ? (micro.stepLogs[todayKey] || {}) : {};
+        const doneSteps = hasSteps
+            ? steps.reduce((acc, _, idx) => acc + (stepMap[idx] || stepMap[String(idx)] ? 1 : 0), 0)
+            : 0;
+
+        const isCompleting = micro.status !== 'done';
+        const wasInProgress = micro.status === 'in_progress';
+        const doneAncestors = !isCompleting
+            ? (this.getDonePlanAncestors?.('micros', micro, state) || [])
+            : [];
+
+        if (!isCompleting) {
+            const ancestorSummary = doneAncestors.length ? this.formatPlanAncestorSummary?.(doneAncestors) : '';
+            const reopenMessage = doneAncestors.length
+                ? `Reabrir esta acao vai remover a conclusao e tambem reabrir ${ancestorSummary}. Deseja continuar?`
+                : 'Reabrir esta acao vai remover a conclusao e recalcular o progresso da trilha. Deseja continuar?';
+            if (!confirm(reopenMessage)) return;
+        } else {
+            const focusSec = Number(micro.focusSec || 0);
+            const focusSessions = Number(micro.focusSessions || 0);
+            const hasFocusEvidence = focusSec > 0 || focusSessions > 0;
+            if (!hasFocusEvidence && !confirm('Esta acao nao tem tempo de foco registrado. Concluir mesmo assim?')) return;
+        }
+
+        if (isCompleting && hasSteps && doneSteps < steps.length) {
+            const missing = steps.length - doneSteps;
+            const confirmedChecklist = confirm(`Ainda faltam ${missing} passo(s) no checklist. Concluir mesmo assim e marcar os passos de hoje como concluidos?`);
+            if (!confirmedChecklist) return;
+        }
+
+        if (hasSteps) {
+            const markDone = isCompleting;
+            steps.forEach((_, idx) => {
+                if (typeof this._setMicroStepState === 'function') this._setMicroStepState(micro, todayKey, idx, markDone);
+                if (typeof this.syncMicroStepStateToLinkedHabit === 'function') this.syncMicroStepStateToLinkedHabit(micro, todayKey, idx, markDone);
+            });
+        }
+
+        micro.status = isCompleting ? 'done' : 'pending';
+        micro.completed = isCompleting;
+        micro.progress = isCompleting ? 100 : 0;
+
+        if (isCompleting) {
+            micro.completedDate = this.getLocalDateKey();
+            const award = this.awardGamification('micro_complete', {
+                key: `micro:${micro.id}:complete:${micro.completedDate}`,
+                date: micro.completedDate,
+                id: micro.id,
+                title: micro.title,
+                dimension: micro.dimension,
+                planned: this._isPlannedThisWeek ? this._isPlannedThisWeek(micro.id) : false,
+                inProgress: wasInProgress
+            });
+            this.showGamificationToast(award);
+            this.recentCompletedMicroId = micro.id;
+            if (award) this.flashMicroCard(micro.id);
+        } else {
+            delete micro.completedDate;
+        }
+
+        if (!isCompleting) {
+            this.reconcilePlanLineage?.(micro.id, 'micros', {
+                allowDoneReopen: doneAncestors.length > 0,
+                recordHistory: false,
+                reason: 'micro_reopen'
+            });
+        } else {
+            this.updateCascadeProgress(micro.id, 'micros');
+        }
+
+        if (micro.macroId) {
+            const macro = state.entities.macros.find((item) => item.id === micro.macroId);
+            if (macro?.okrId) {
+                const okr = state.entities.okrs.find((item) => item.id === macro.okrId);
+                if (okr) {
+                    if (isCompleting) {
+                        if (okr.progress >= 70 && !okr.rewarded70) {
+                            okr.rewarded70 = true;
+                            if (state.perma) state.perma.A = this.normalizePermaScore((state.perma.A || 0) + 0.5);
+                            if (this.showNotification) this.showNotification('Projeto atingiu 70% (Alvo Ideal). Bonus de realizacao aplicado!');
+                        }
+                    } else if (okr.rewarded70 && okr.progress < 70) {
+                        okr.rewarded70 = false;
+                    }
+                }
+            }
+        }
+
+        this.saveState(false);
+        if (this.currentView === 'hoje' && this.render.hoje) this.render.hoje();
+        if (this.currentView === 'planos' && this.render.planos) this.render.planos();
+        if (this.currentView === 'painel' && this.render.painel) this.render.painel();
+        if (this.currentView === 'foco' && this.render.foco) this.render.foco();
+    },
+
 updateCascadeProgress: function(entityId, type) {
         return this.reconcilePlanLineage?.(entityId, type, {
-            allowDoneReopen: true,
+            allowDoneReopen: false,
             recordHistory: false,
             reason: `runtime_cascade_${String(type || '')}`
         });
