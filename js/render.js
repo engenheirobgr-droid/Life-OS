@@ -3449,8 +3449,18 @@ render: {
             if (dateEl) {
                 // Força data atual local para evitar cache de data de ontem
                 const now = new Date();
-                const opts = { weekday: 'long', day: 'numeric', month: 'long' };
-                let dateStr = now.toLocaleDateString('pt-BR', opts);
+                const isMobileTitle = typeof window !== 'undefined'
+                    && typeof window.matchMedia === 'function'
+                    && window.matchMedia('(max-width: 640px)').matches;
+                let dateStr = '';
+                if (isMobileTitle) {
+                    const weekday = now.toLocaleDateString('pt-BR', { weekday: 'long' }).replace('-feira', '');
+                    const dayMonth = now.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
+                    dateStr = `${weekday}, ${dayMonth}`;
+                } else {
+                    const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+                    dateStr = now.toLocaleDateString('pt-BR', opts);
+                }
                 // Capitaliza primeira letra (ex: Quinta-feira -> Quinta)
                 dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
                 dateEl.textContent = dateStr;
