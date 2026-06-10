@@ -25,7 +25,7 @@ import { attachHabits } from './js/habits.js?v=20260608-habits-view-v2';
 import { attachProtocolsModule } from './js/protocols.js?v=20260604-ui-system-v23';
 import { attachHabitFocusModule } from './js/habitFocus.js?v=20260604-ui-system-v23';
 import { attachStateModule } from './js/state.js?v=20260610-plan-contract-v1';
-import { attachRenderModule } from './js/render.js?v=20260610-hoje-date-mobile-v4';
+import { attachRenderModule } from './js/render.js?v=20260610-hoje-gamification-v2';
 import { attachPlanningModule } from './js/planning.js?v=20260610-plan-contract-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v23';
 import { attachSocial } from './js/social.js?v=20260604-ui-system-v23';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260610-hoje-date-mobile-v4',
+    appBuildVersion: '20260610-hoje-gamification-v2',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -3012,6 +3012,7 @@ _getAudioContext: function() {
     hojeOverdueSelectionOpen: false,
     hojeOverdueSelectedIds: [],
     hojeFutureMicrosOpen: false,
+    hojeGamificationDetailsOpen: false,
     focusTypeFilter: 'Tudo',
     focusStatusFilter: 'Tudo',
     focusDistributionViewMode: 'one_line',
@@ -4079,6 +4080,10 @@ renderProfileChrome: function() {
             const shouldShow = section.getAttribute('data-hoje-screen-content') === nextScreen;
             section.classList.toggle('hidden', !shouldShow);
         });
+    },
+    toggleHojeGamificationDetails: function() {
+        this.hojeGamificationDetailsOpen = !this.hojeGamificationDetailsOpen;
+        if (this.currentView === 'hoje' && this.render?.hoje) this.render.hoje();
     },
     switchPropositoScreen: function(screenId) {
         const nextScreen = String(screenId || this.propositoScreen || 'identidade');

@@ -3533,6 +3533,143 @@ render: {
             }
 
             // Progresso semanal — usa plano selecionado; fallback por datas se não houver plano
+            const gamification = app.ensureGamificationState ? app.ensureGamificationState() : (state.gamification || {});
+            const overallProgress = app.getOverallLevelProgress ? app.getOverallLevelProgress(gamification) : { level: 1, current: 0, next: 80 };
+            const overallIdentity = app.getOverallLevelIdentity ? app.getOverallLevelIdentity(overallProgress.level) : { name: 'Despertar' };
+            const overallEvolution = app.getOverallLevelEvolution ? app.getOverallLevelEvolution(overallProgress.level) : { stages: [['wb_twilight', 'Despertar']], currentIndex: 0 };
+            const overallStage = overallEvolution.stages?.[overallEvolution.currentIndex] || ['wb_twilight', overallIdentity.name || 'Despertar'];
+            const overallIcon = overallStage[0] || 'wb_twilight';
+            const remainingXp = Math.max(0, Math.round((overallProgress.next || 0) - (overallProgress.current || 0)));
+            const dimKeys = app.getGamificationDimensionKeys ? app.getGamificationDimensionKeys() : Object.keys(gamification.dimensionXp || {});
+            let topDimension = '';
+            let topDimensionXp = -1;
+            let weakestDimension = '';
+            let weakestDimensionXp = Number.POSITIVE_INFINITY;
+            dimKeys.forEach((dim) => {
+                const xp = Math.max(0, Number(gamification.dimensionXp?.[dim]) || 0);
+                const dimensionScore = Math.max(0, Number(state.dimensions?.[dim]?.score) || 0);
+                if (xp > topDimensionXp) {
+                    topDimensionXp = xp;
+                    topDimension = dim;
+                } else if (xp === topDimensionXp && topDimension) {
+                    const topScore = Math.max(0, Number(state.dimensions?.[topDimension]?.score) || 0);
+                    if (dimensionScore > topScore) topDimension = dim;
+                }
+                if (xp < weakestDimensionXp) {
+                    weakestDimensionXp = xp;
+                    weakestDimension = dim;
+                } else if (xp === weakestDimensionXp && weakestDimension) {
+                    const weakScore = Math.max(0, Number(state.dimensions?.[weakestDimension]?.score) || 0);
+                    if (dimensionScore < weakScore) weakestDimension = dim;
+                }
+            });
+            const topDimensionProgress = topDimension
+                ? (app.getLevelProgress ? app.getLevelProgress(topDimensionXp) : { level: 1 })
+                : null;
+            const topDimensionIdentity = topDimension && app.getDimensionIdentity
+                ? app.getDimensionIdentity(topDimension, topDimensionProgress?.level || 1)
+                : null;
+            const weakestDimensionProgress = weakestDimension
+                ? (app.getLevelProgress ? app.getLevelProgress(weakestDimensionXp) : { level: 1 })
+                : null;
+            const weakestDimensionIdentity = weakestDimension && app.getDimensionIdentity
+                ? app.getDimensionIdentity(weakestDimension, weakestDimensionProgress?.level || 1)
+                : null;
+
+            const headerGamification = document.getElementById('hoje-gamification-summary');
+            if (headerGamification) {
+                headerGamification.innerHTML = '';
+                headerGamification.classList.add('hidden');
+            }
+
+            const welcomeStack = document.getElementById('welcome-gamification-stack');
+            const overallLine = document.getElementById('welcome-overall-line');
+            const detailsWrap = document.getElementById('welcome-gamification-details');
+            const strongLine = document.getElementById('welcome-strong-line');
+            const weakLine = document.getElementById('welcome-weak-line');
+            if (welcomeStack && overallLine && detailsWrap && strongLine && weakLine) {
+                welcomeStack.classList.remove('hidden');
+                const hasStrongDetail = !!(topDimension && topDimensionIdentity && topDimensionXp > 0);
+                const hasWeakDetail = !!(weakestDimension && weakestDimensionIdentity && weakestDimension !== topDimension);
+                const hasDetails = hasStrongDetail || hasWeakDetail;
+                const detailsOpen = !!app.hojeGamificationDetailsOpen;
+                detailsWrap.classList.toggle('hidden', !hasDetails || !detailsOpen);
+                overallLine.disabled = !hasDetails;
+                overallLine.classList.toggle('cursor-pointer', hasDetails);
+                overallLine.classList.toggle('opacity-90', !hasDetails);
+                overallLine.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined notranslate text-[18px] text-primary shrink-0 mt-0.5">${app.escapeHtml(overallIcon)}</span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-outline">Nivel geral</p>
+                            <p class="mt-0.5 text-sm font-semibold leading-snug text-on-surface">Nivel ${overallProgress.level} • ${app.escapeHtml(overallIdentity.name || 'Despertar')} <span class="font-normal text-on-surface-variant">• ${remainingXp} XP para o proximo</span></p>
+                        </div>
+                    </div>
+                `;
+                overallLine.setAttribute('aria-expanded', hasDetails && detailsOpen ? 'true' : 'false');
+                const overallWrap = overallLine.querySelector('.flex.items-start');
+                const overallBody = overallLine.querySelector('.min-w-0.flex-1');
+                const overallValueLine = overallBody ? overallBody.querySelectorAll('p')[1] : null;
+                if (overallValueLine) {
+                    overallValueLine.textContent = `Nivel ${overallProgress.level} • ${overallIdentity.name || 'Despertar'}`;
+                }
+                if (overallBody) {
+                    let xpLine = overallBody.querySelector('[data-hoje-gamification-xp]');
+                    if (!xpLine) {
+                        xpLine = document.createElement('p');
+                        xpLine.setAttribute('data-hoje-gamification-xp', 'true');
+                        overallBody.appendChild(xpLine);
+                    }
+                    xpLine.className = 'mt-1 text-[11px] leading-snug text-on-surface-variant';
+                    xpLine.textContent = `${remainingXp} XP para o proximo nivel`;
+                }
+                if (overallWrap) {
+                    let chevron = overallWrap.querySelector('[data-hoje-gamification-chevron]');
+                    if (hasDetails) {
+                        if (!chevron) {
+                            chevron = document.createElement('span');
+                            chevron.setAttribute('data-hoje-gamification-chevron', 'true');
+                            chevron.className = 'material-symbols-outlined notranslate text-outline text-[18px] shrink-0 mt-0.5 transition-transform';
+                            chevron.textContent = 'expand_more';
+                            overallWrap.appendChild(chevron);
+                        }
+                        chevron.classList.toggle('rotate-180', detailsOpen);
+                    } else if (chevron) {
+                        chevron.remove();
+                    }
+                }
+                if (hasStrongDetail) {
+                    strongLine.classList.remove('hidden');
+                    strongLine.innerHTML = `
+                        <div class="flex items-start gap-3">
+                            <span class="material-symbols-outlined notranslate text-[18px] text-primary shrink-0 mt-0.5">${app.escapeHtml(topDimensionIdentity.icon || 'stars')}</span>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-primary/80">Dimensao em destaque</p>
+                                <p class="mt-0.5 text-sm font-semibold leading-snug text-on-surface">${app.escapeHtml(topDimension)} <span class="font-normal text-on-surface-variant">• ${app.escapeHtml(topDimensionIdentity.title || 'Em evolucao')}</span></p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    strongLine.classList.add('hidden');
+                    strongLine.innerHTML = '';
+                }
+                if (hasWeakDetail) {
+                    weakLine.classList.remove('hidden');
+                    weakLine.innerHTML = `
+                        <div class="flex items-start gap-3">
+                            <span class="material-symbols-outlined notranslate text-[18px] text-amber-700 dark:text-amber-300 shrink-0 mt-0.5">${app.escapeHtml(weakestDimensionIdentity.icon || 'trending_up')}</span>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">Dimensao a trabalhar</p>
+                                <p class="mt-0.5 text-sm font-semibold leading-snug text-on-surface">${app.escapeHtml(weakestDimension)} <span class="font-normal text-on-surface-variant">• ${app.escapeHtml(weakestDimensionIdentity.title || 'Inicio de jornada')}</span></p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    weakLine.classList.add('hidden');
+                    weakLine.innerHTML = '';
+                }
+            }
+
             const _weekKey = app._getWeekKey();
             const _weekPlan = (state.weekPlans || {})[_weekKey];
             const _selectedIds = (_weekPlan && _weekPlan.selectedMicros) || [];

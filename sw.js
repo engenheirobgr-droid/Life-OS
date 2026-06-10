@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sistema-vida-v389';
+const CACHE_NAME = 'sistema-vida-v391';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260610-hoje-date-mobile-v4',
+    './app.js?v=20260610-hoje-gamification-v2',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
     './js/notifications.js?v=20260604-ui-system-v23',
@@ -13,18 +13,18 @@ const ASSETS_TO_CACHE = [
     './js/protocols.js?v=20260604-ui-system-v23',
     './js/habitFocus.js?v=20260604-ui-system-v23',
     './js/state.js?v=20260610-plan-contract-v1',
-    './js/render.js?v=20260610-hoje-date-mobile-v4',
+    './js/render.js?v=20260610-hoje-gamification-v2',
     './js/planning.js?v=20260610-plan-contract-v1',
     './js/gamification.js?v=20260604-ui-system-v23',
     './js/social.js?v=20260604-ui-system-v23',
-    './views/hoje.html?v=20260610-hoje-date-mobile-v4',
-    './views/planos.html?v=20260610-hoje-date-mobile-v4',
-    './views/proposito.html?v=20260610-hoje-date-mobile-v4',
-    './views/perfil.html?v=20260610-hoje-date-mobile-v4',
-    './views/painel.html?v=20260610-hoje-date-mobile-v4',
-    './views/foco.html?v=20260610-hoje-date-mobile-v4',
-    './views/onboarding.html?v=20260610-hoje-date-mobile-v4',
-    './views/social.html?v=20260610-hoje-date-mobile-v4'
+    './views/hoje.html?v=20260610-hoje-gamification-v2',
+    './views/planos.html?v=20260610-hoje-gamification-v2',
+    './views/proposito.html?v=20260610-hoje-gamification-v2',
+    './views/perfil.html?v=20260610-hoje-gamification-v2',
+    './views/painel.html?v=20260610-hoje-gamification-v2',
+    './views/foco.html?v=20260610-hoje-gamification-v2',
+    './views/onboarding.html?v=20260610-hoje-gamification-v2',
+    './views/social.html?v=20260610-hoje-gamification-v2'
 ];
 
 self.addEventListener('install', (event) => {
