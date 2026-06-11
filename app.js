@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260611-habit-details-v1',
+    appBuildVersion: '20260611-checkin-summary-desktop-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
