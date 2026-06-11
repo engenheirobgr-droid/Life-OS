@@ -4014,16 +4014,16 @@ render: {
                             : 'border-outline-variant/12 bg-surface-container-low';
 
                     return `
-                    <div id="habit-card-${habit.id}" onclick="window.app.editEntity('${habit.id}', 'habits')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer scroll-mt-24">
+                    <div id="habit-card-${habit.id}" onclick="window.app.openHabitDetailsModal('${habit.id}')" class="min-w-[240px] max-w-[280px] p-4 rounded-xl border ${maturityClass} flex flex-col transition-all hover:shadow-md relative group ${isDone ? 'opacity-70' : ''} cursor-pointer scroll-mt-24" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); window.app.openHabitDetailsModal('${habit.id}')}">
                         <div class="flex justify-between items-start gap-2 mb-1">
                             <div class="flex items-start gap-2 min-w-0 flex-1">
                                 <span class="material-symbols-outlined notranslate text-primary text-[22px] shrink-0 mt-0.5">${icon}</span>
-                                <p class="font-semibold text-on-surface text-[14px] leading-tight ${isDone ? 'line-through' : ''} truncate">${habit.title}</p>
+                                <p class="font-semibold text-on-surface text-[14px] leading-tight ${isDone ? 'line-through' : ''} line-clamp-2">${app.escapeHtml(habit.title)}</p>
                             </div>
                             <div class="flex items-center gap-1 shrink-0">
                                 <span class="material-symbols-outlined notranslate text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-all p-1 cursor-pointer ${habit.isKey ? 'text-amber-500' : 'text-outline hover:text-amber-500'}" onclick="event.stopPropagation(); window.app.toggleManualKeyHabit('${habit.id}')" title="${habit.isKey ? 'Remover Hábito-Chave' : 'Marcar como Hábito-Chave'}" style="font-variation-settings:'FILL' ${habit.isKey ? 1 : 0}">key</span>
-                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-primary transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')">edit</span>
-                                <span class="material-symbols-outlined notranslate text-outline text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-error transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')">delete</span>
+                                <button type="button" class="material-symbols-outlined notranslate text-outline text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-primary transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.editEntity('${habit.id}', 'habits')" title="Editar habito" aria-label="Editar habito">edit</button>
+                                <button type="button" class="material-symbols-outlined notranslate text-outline text-[18px] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-error transition-all p-1 cursor-pointer" onclick="event.stopPropagation(); window.app.deleteEntity('${habit.id}', 'habits')" title="Excluir habito" aria-label="Excluir habito">delete</button>
                                 ${controlHtml}
                             </div>
                         </div>

@@ -1,30 +1,30 @@
-const CACHE_NAME = 'sistema-vida-v395';
+const CACHE_NAME = 'sistema-vida-v396';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './app.js?v=20260610-weekly-plan-modal-v1',
+    './app.js?v=20260611-habit-details-v1',
     './js/habitSuggestions.js?v=20260518-exec-flow-v1',
     './js/subjectiveScales.js?v=20260516-wellbeing-prompts-v205',
     './js/notifications.js?v=20260604-ui-system-v23',
     './js/cadence.js?v=20260604-ui-system-v23',
     './js/onboarding.js?v=20260523-sprint2-onboarding-v1',
     './js/identity.js?v=20260608-capacity-intervals-v1',
-    './js/habits.js?v=20260608-habits-view-v2',
+    './js/habits.js?v=20260611-habit-details-v1',
     './js/protocols.js?v=20260604-ui-system-v23',
     './js/habitFocus.js?v=20260604-ui-system-v23',
     './js/state.js?v=20260610-plan-contract-v1',
-    './js/render.js?v=20260610-hoje-planned-filter-v3',
+    './js/render.js?v=20260611-habit-details-v1',
     './js/planning.js?v=20260610-weekly-plan-modal-v1',
     './js/gamification.js?v=20260604-ui-system-v23',
     './js/social.js?v=20260604-ui-system-v23',
-    './views/hoje.html?v=20260610-hoje-planned-filter-v3',
-    './views/planos.html?v=20260610-hoje-planned-filter-v3',
-    './views/proposito.html?v=20260610-hoje-planned-filter-v3',
-    './views/perfil.html?v=20260610-hoje-planned-filter-v3',
-    './views/painel.html?v=20260610-hoje-planned-filter-v3',
-    './views/foco.html?v=20260610-hoje-planned-filter-v3',
-    './views/onboarding.html?v=20260610-hoje-planned-filter-v3',
-    './views/social.html?v=20260610-hoje-planned-filter-v3'
+    './views/hoje.html?v=20260611-habit-details-v1',
+    './views/planos.html?v=20260611-habit-details-v1',
+    './views/proposito.html?v=20260611-habit-details-v1',
+    './views/perfil.html?v=20260611-habit-details-v1',
+    './views/painel.html?v=20260611-habit-details-v1',
+    './views/foco.html?v=20260611-habit-details-v1',
+    './views/onboarding.html?v=20260611-habit-details-v1',
+    './views/social.html?v=20260611-habit-details-v1'
 ];
 
 self.addEventListener('install', (event) => {

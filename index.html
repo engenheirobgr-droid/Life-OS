@@ -1391,6 +1391,34 @@
         #entity-notes-modal #entity-notes-modal-list > div {
             max-width: none;
         }
+        #habit-details-modal {
+            background: rgba(7, 12, 17, 0.72) !important;
+            backdrop-filter: blur(12px);
+        }
+        #habit-details-modal .ui-modal-shell {
+            background-color: rgba(244, 249, 248, 0.99) !important;
+            border-color: rgba(94, 234, 212, 0.2) !important;
+            box-shadow: 0 32px 76px rgba(2, 8, 23, 0.42);
+            isolation: isolate;
+        }
+        #habit-details-modal .ui-modal-header {
+            background: linear-gradient(180deg, rgba(238, 247, 246, 0.99), rgba(246, 251, 250, 0.99)) !important;
+        }
+        #habit-details-modal .ui-modal-body {
+            background: rgba(244, 249, 248, 0.99) !important;
+        }
+        #habit-details-modal .ui-modal-footer {
+            background: rgba(235, 244, 243, 0.99) !important;
+        }
+        #habit-details-modal .ui-modal-header button {
+            background: rgba(255, 255, 255, 0.96) !important;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            color: rgba(71, 85, 105, 0.9) !important;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+        #habit-details-modal .ui-modal-header button:hover {
+            background: rgba(255, 255, 255, 1) !important;
+        }
         html.dark #habit-focus-closure-modal .ui-modal-shell {
             background-color: var(--lo-dark-card, #111e1d) !important;
             border-color: var(--lo-dark-border, rgba(255,255,255,0.08)) !important;
@@ -1435,6 +1463,27 @@
             border-color: rgba(148, 163, 184, 0.14) !important;
         }
         html.dark #entity-notes-modal .ui-modal-header button {
+            background: rgba(30, 41, 46, 0.96) !important;
+            border-color: rgba(148, 163, 184, 0.16) !important;
+            color: rgba(226, 232, 240, 0.92) !important;
+            box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
+        }
+        html.dark #habit-details-modal {
+            background: rgba(2, 8, 23, 0.8) !important;
+        }
+        html.dark #habit-details-modal .ui-modal-shell {
+            background-color: rgba(16, 29, 31, 0.99) !important;
+            border-color: rgba(94, 234, 212, 0.18) !important;
+            box-shadow: 0 34px 82px rgba(0, 0, 0, 0.56);
+        }
+        html.dark #habit-details-modal .ui-modal-header {
+            background: linear-gradient(180deg, rgba(20, 37, 39, 0.99), rgba(17, 31, 32, 0.99)) !important;
+        }
+        html.dark #habit-details-modal .ui-modal-body,
+        html.dark #habit-details-modal .ui-modal-footer {
+            background: rgba(18, 33, 35, 0.99) !important;
+        }
+        html.dark #habit-details-modal .ui-modal-header button {
             background: rgba(30, 41, 46, 0.96) !important;
             border-color: rgba(148, 163, 184, 0.16) !important;
             color: rgba(226, 232, 240, 0.92) !important;
@@ -2516,6 +2565,25 @@
         </div>
     </div>
 
+    <!-- Habit Details Modal -->
+    <div id="habit-details-modal"
+        class="hidden fixed inset-0 z-[111] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+        role="dialog" aria-modal="true" aria-label="Detalhes do habito" onclick="window.app.closeHabitDetailsModal()">
+        <div class="ui-modal-shell w-full max-w-2xl max-h-[88vh]" onclick="event.stopPropagation()">
+            <div class="ui-modal-header">
+                <div class="min-w-0">
+                    <p class="ui-section-label">Resumo do habito</p>
+                </div>
+                <button type="button" onclick="window.app.closeHabitDetailsModal()"
+                    class="shrink-0 p-1.5 rounded-lg hover:bg-surface-container-high text-outline transition-colors"
+                    aria-label="Fechar detalhes do habito">
+                    <span class="material-symbols-outlined notranslate text-xl">close</span>
+                </button>
+            </div>
+            <div id="habit-details-content" class="flex min-h-0 flex-col"></div>
+        </div>
+    </div>
+
     <div id="deep-work-immersive-overlay" class="hidden fixed inset-0 z-[109] bg-[rgba(8,15,17,0.92)] backdrop-blur-md">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(19,155,145,0.18),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_55%)]"></div>
         <div class="relative h-full overflow-y-auto">
@@ -3548,7 +3616,7 @@
     <div id="global-toast-container" class="fixed bottom-24 right-4 z-[10000] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 pointer-events-none"></div>
 
     <!-- SPA Logic entry -->
-    <script type="module" src="app.js?v=20260610-weekly-plan-modal-v1"></script>
+    <script type="module" src="app.js?v=20260611-habit-details-v1"></script>
 
     <!-- Dead-man's switch: if app.js module fails to load in 18s, show recovery button -->
     <script>

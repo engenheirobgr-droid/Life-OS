@@ -514,6 +514,162 @@ renderHabitMaturityChip: function(habit) {
         </span>`;
     },
 
+getHabitFrequencyLabel: function(habit) {
+        const frequency = String(habit?.frequency || 'daily').trim();
+        const days = Array.isArray(habit?.specificDays) ? habit.specificDays.map(String) : [];
+        const dayNames = {
+            0: 'Domingo',
+            1: 'Segunda',
+            2: 'Terca',
+            3: 'Quarta',
+            4: 'Quinta',
+            5: 'Sexta',
+            6: 'Sabado'
+        };
+        if (frequency === 'specific') {
+            if (!days.length) return 'Dias especificos';
+            return days.map(day => dayNames[day] || day).join(', ');
+        }
+        if (frequency === 'every_x_days') {
+            const interval = Math.max(2, Math.round(Number(habit?.intervalDays) || 0));
+            return `A cada ${interval} dias`;
+        }
+        if (frequency === 'monthly') {
+            const day = Math.max(1, Math.min(31, Math.round(Number(habit?.dayOfMonth) || 1)));
+            return `Todo dia ${day} do mes`;
+        }
+        if (frequency === 'manual') return 'Manual';
+        if (frequency === 'weekly') return 'Semanal';
+        if (frequency === 'weekdays') return 'Dias uteis';
+        return 'Todo dia';
+    },
+
+getHabitTimeLabel: function(habit) {
+        const schedule = typeof this.getHabitScheduleContext === 'function'
+            ? this.getHabitScheduleContext(habit)
+            : { startTime: String(habit?.startTime || '').trim(), source: habit?.startTime ? 'habit' : '' };
+        const sourceLabels = {
+            habit: 'definido no habito',
+            protocol: 'sugerido pelo protocolo',
+            suggested: 'sugerido pelo app'
+        };
+        const time = String(schedule?.startTime || habit?.startTime || '').trim();
+        if (!time) return 'Sem horario definido';
+        const source = sourceLabels[schedule?.source] ? ` (${sourceLabels[schedule.source]})` : '';
+        return `${time}${source}`;
+    },
+
+getHabitReminderLabel: function(habit) {
+        if (!habit?.reminderEnabled) return 'Sem lembrete ativo';
+        if (habit.reminderIntervalEnabled) {
+            const start = String(habit.reminderWindowStart || '').trim();
+            const end = String(habit.reminderWindowEnd || '').trim();
+            const interval = Math.max(5, Math.round(Number(habit.reminderIntervalMin) || 60));
+            const windowLabel = start && end ? ` entre ${start} e ${end}` : '';
+            return `A cada ${interval} min${windowLabel}`;
+        }
+        const time = String(habit.reminderTime || habit.startTime || '').trim();
+        return time ? `Lembrete as ${time}` : 'Lembrete ativo';
+    },
+
+openHabitDetailsModal: function(habitId) {
+        const habit = (window.sistemaVidaState?.habits || []).find(item => item.id === habitId);
+        const modal = document.getElementById('habit-details-modal');
+        const content = document.getElementById('habit-details-content');
+        if (!habit || !modal || !content) return;
+
+        const state = window.sistemaVidaState || {};
+        const today = this.getLocalDateKey();
+        const esc = (value) => this.escapeHtml?.(value) || String(value || '');
+        const mode = this.normalizeHabitTrackMode?.(habit.trackMode) || 'boolean';
+        const progress = this.getHabitTodayProgressSnapshot?.(habit, today) || this.getHabitCompletionState?.(habit, today) || { done: false, label: '0/1', percent: 0 };
+        const steps = this.getHabitResolvedSteps?.(habit) || [];
+        const meta = habit.linkedMetaId
+            ? (state.entities?.metas || []).find(item => item.id === habit.linkedMetaId)
+            : null;
+        const protocol = habit.protocolId && typeof this.getProtocolById === 'function'
+            ? this.getProtocolById(habit.protocolId)
+            : null;
+        const strengthId = this._getHabitSourceStrengthId?.(habit);
+        const shadowId = this._getHabitSourceShadowId?.(habit);
+        const strength = strengthId ? this.getIdentityItemById?.('strengths', strengthId) : null;
+        const shadow = shadowId ? this.getIdentityItemById?.('shadows', shadowId) : null;
+        const estimatedMinutes = Math.max(0, Math.round(Number(this.getHabitEstimatedMinutes?.(habit)) || 0));
+        const isScheduledToday = habit.frequency === 'manual'
+            ? true
+            : (typeof this.isHabitScheduledForDate === 'function' ? this.isHabitScheduledForDate(habit, today) : true);
+        const statusLabel = progress.done ? 'Concluido hoje' : (isScheduledToday ? 'Previsto para hoje' : 'Nao previsto para hoje');
+        const modeLabel = mode === 'timer' ? 'Tempo' : (mode === 'numeric' ? 'Numero' : 'Sim/nao');
+        const identityRows = [
+            strength ? { icon: 'workspace_premium', label: 'Forca', value: strength.title } : null,
+            shadow ? { icon: 'change_circle', label: 'Sombra', value: shadow.title } : null
+        ].filter(Boolean);
+        const infoRow = (icon, label, value) => value ? `
+            <div class="flex items-start gap-3 rounded-xl border border-outline-variant/15 bg-surface-container-low/50 px-3 py-2.5">
+                <span class="material-symbols-outlined notranslate mt-0.5 text-[18px] text-primary">${icon}</span>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-outline">${label}</p>
+                    <p class="mt-0.5 text-sm font-semibold leading-snug text-on-surface break-words">${esc(value)}</p>
+                </div>
+            </div>` : '';
+        const textBlock = (label, value) => value ? `
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">${label}</p>
+                <p class="mt-1 text-sm leading-relaxed text-on-surface-variant whitespace-pre-line break-words">${esc(value)}</p>
+            </div>` : '';
+        const stepsHtml = steps.length ? `
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Passos</p>
+                <ul class="mt-2 space-y-1.5">
+                    ${steps.slice(0, 8).map(step => `<li class="flex items-start gap-2 text-sm leading-snug text-on-surface-variant"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70"></span><span>${esc(step)}</span></li>`).join('')}
+                </ul>
+                ${steps.length > 8 ? `<p class="mt-2 text-xs text-outline">+${steps.length - 8} passos no editor</p>` : ''}
+            </div>` : '';
+        const identityHtml = identityRows.length ? `
+            <div class="grid gap-2 sm:grid-cols-2">
+                ${identityRows.map(row => infoRow(row.icon, row.label, row.value)).join('')}
+            </div>` : '';
+
+        content.innerHTML = `
+            <div class="ui-modal-body space-y-4 overflow-y-auto">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined notranslate mt-1 text-primary text-[24px]">repeat</span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Habito</p>
+                        <h3 class="mt-1 text-xl font-bold leading-tight text-on-background break-words">${esc(habit.title || 'Habito sem titulo')}</h3>
+                        <p class="mt-1 text-sm leading-relaxed text-on-surface-variant">${esc(statusLabel)} · ${esc(progress.label || '0/1')}</p>
+                    </div>
+                </div>
+                <div class="grid gap-2 sm:grid-cols-2">
+                    ${infoRow('event_repeat', 'Frequencia', this.getHabitFrequencyLabel(habit))}
+                    ${infoRow('schedule', 'Horario', this.getHabitTimeLabel(habit))}
+                    ${infoRow('notifications', 'Lembrete', this.getHabitReminderLabel(habit))}
+                    ${infoRow('track_changes', 'Acompanhamento', `${modeLabel} · alvo ${progress.target || habit.targetValue || 1}`)}
+                    ${infoRow('timer', 'Duracao estimada', estimatedMinutes ? `${estimatedMinutes} min` : 'Nao estimada')}
+                    ${infoRow('category', 'Dimensao', habit.dimension || 'Geral')}
+                </div>
+                ${meta ? infoRow('flag', 'Meta vinculada', meta.title || '') : ''}
+                ${protocol ? infoRow('rule', 'Protocolo', protocol.title || '') : ''}
+                ${identityHtml}
+                ${textBlock('Gatilho', habit.trigger || '')}
+                ${textBlock('Rotina', habit.routine || habit.context || '')}
+                ${textBlock('Recompensa', habit.reward || '')}
+                ${stepsHtml}
+            </div>
+            <div class="ui-modal-footer flex flex-wrap items-center justify-end gap-3 bg-surface-container-low/30">
+                ${this.canStartFocusFromHabit?.(habit) ? `<button type="button" onclick="window.app.closeHabitDetailsModal(); window.app.startFocusFromHabitDirect('${habit.id}')" class="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/15 transition-colors"><span class="material-symbols-outlined notranslate text-[17px]">timer</span>Iniciar foco</button>` : ''}
+                <button type="button" onclick="window.app.closeHabitDetailsModal(); window.app.editEntity('${habit.id}', 'habits')" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-md hover:shadow-lg active:scale-95 transition-all"><span class="material-symbols-outlined notranslate text-[17px]">edit</span>Editar</button>
+            </div>`;
+        modal.classList.remove('hidden');
+    },
+
+closeHabitDetailsModal: function() {
+        const modal = document.getElementById('habit-details-modal');
+        const content = document.getElementById('habit-details-content');
+        if (modal) modal.classList.add('hidden');
+        if (content) content.innerHTML = '';
+    },
+
 evaluateIdentityAchievements: function() {
         const unlocked = [];
         this.ensureIdentityState();
