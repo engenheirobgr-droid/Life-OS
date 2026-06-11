@@ -7790,8 +7790,14 @@ ensureNotesState: function() {
         const fallingExecution = Number.isFinite(Number(recentMicro)) && Number.isFinite(Number(priorMicro)) && recentMicro + 0.15 < priorMicro;
         const weekKey = this._getWeekKey();
         const weekPlan = (window.sistemaVidaState.weekPlans || {})[weekKey];
-        const plannedCount = Array.isArray(weekPlan?.selectedMicros) ? weekPlan.selectedMicros.length : 0;
-        const plannedLoadMinutes = this.getWeeklyPlanLoadMinutes(weekKey);
+        const micros = window.sistemaVidaState.entities?.micros || [];
+        const plannedCount = Array.isArray(weekPlan?.selectedMicros)
+            ? weekPlan.selectedMicros.reduce((sum, id) => {
+                const micro = micros.find((item) => item.id === id);
+                return sum + ((micro && micro.status !== 'done' && !micro.completed) ? 1 : 0);
+            }, 0)
+            : 0;
+        const plannedLoadMinutes = this.getWeeklyPlanLoadMinutes(weekKey, { mode: 'remaining_week' });
         const avgLoadMinutes = this._computeWeeklyCompletionLoadAverage(4);
         const activeHabits = (window.sistemaVidaState.habits || []).length;
         const heavyLoadByCount = plannedCount + activeHabits >= 10;
@@ -7827,7 +7833,7 @@ ensureNotesState: function() {
                 <div class="min-w-0">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">Sinais de sobrecarga</p>
                     <h4 class="mt-1 font-headline text-xl font-bold text-on-surface">Considere reduzir o ritmo desta semana</h4>
-                    <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Detectei ${this.escapeHtml(reasons || 'carga alta')} com ${signal.plannedCount} ações planejadas, ${signal.plannedLoadMinutes || 0} min na semana e ${signal.activeHabits} habitos ativos.</p>
+                    <p class="mt-2 text-sm text-on-surface-variant leading-relaxed">Detectei ${this.escapeHtml(reasons || 'carga alta')} com ${signal.plannedCount} ações ainda abertas, ${signal.plannedLoadMinutes || 0} min restantes na semana e ${signal.activeHabits} habitos ativos.</p>
                 </div>
                 <button type="button" onclick="window.app.dismissLoadRecoveryAlert()" class="shrink-0 px-4 py-2 rounded-xl bg-surface-container-high text-xs font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container-highest">Dispensar</button>
             </div>`;
@@ -8316,7 +8322,7 @@ ensureNotesState: function() {
         const next = this.getNextBestAction({ scope: 'week' });
         const avg = this._computeWeeklyCompletionLoadAverage(4);
         const weekKey = this._getWeekKey();
-        const plannedLoadMinutes = this.getWeeklyPlanLoadMinutes(weekKey);
+        const plannedLoadMinutes = this.getWeeklyPlanLoadMinutes(weekKey, { mode: 'remaining_week' });
         let loadHtml = '';
         if (avg > 0 && plannedLoadMinutes > 0) {
             const ratio = plannedLoadMinutes / avg;
@@ -8329,7 +8335,7 @@ ensureNotesState: function() {
             loadHtml = `
                 <div class="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-4 shadow-sm">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-outline">Execução realista</p>
-                    <p class="mt-2 text-sm text-on-surface"><span class="${tone} font-bold">${plannedLoadMinutes} min</span> planejados para média recente de <span class="font-bold">${avg} min</span>.</p>
+                    <p class="mt-2 text-sm text-on-surface"><span class="${tone} font-bold">${plannedLoadMinutes} min</span> restantes para média recente de <span class="font-bold">${avg} min</span>.</p>
                     <p class="mt-1 text-xs text-on-surface-variant leading-relaxed">${copy}</p>
                 </div>`;
         }
@@ -8399,6 +8405,7 @@ ensureNotesState: function() {
         weekKey = this._getWeekKey(),
         selectedMicros,
         energyForecast,
+        mode = 'full_week',
         compact = false,
         showDecision = true,
         emptyTitle = 'Encaixe semanal',
@@ -8409,7 +8416,8 @@ ensureNotesState: function() {
 
         const fit = this.getWeeklyFitIndicators(weekKey, {
             selectedMicros,
-            energyForecast
+            energyForecast,
+            mode
         });
 
         if (!fit.selectedMicroCount) {
@@ -8455,14 +8463,27 @@ ensureNotesState: function() {
         return Math.round((total / sortedKeys.length) * 10) / 10;
     },
 
-    getWeeklyPlanLoadMinutes: function(weekKey = this._getWeekKey()) {
+    getWeeklyFitDateKeys: function(weekKey = this._getWeekKey(), { mode = 'full_week', todayKey = this.getLocalDateKey() } = {}) {
+        const weekDates = this.getWeekDateKeys ? this.getWeekDateKeys(weekKey) : [];
+        if (mode !== 'remaining_week') return weekDates;
+
+        const currentWeekKey = this._getWeekKey();
+        if (weekKey < currentWeekKey) return [];
+        if (weekKey > currentWeekKey) return weekDates;
+        return weekDates.filter((dateKey) => dateKey >= todayKey);
+    },
+
+    getWeeklyPlanLoadMinutes: function(weekKey = this._getWeekKey(), options = {}) {
         const state = window.sistemaVidaState || {};
         const plan = (state.weekPlans || {})[weekKey] || {};
         const selectedIds = Array.isArray(plan.selectedMicros) ? plan.selectedMicros : [];
         if (!selectedIds.length) return 0;
         const micros = state.entities?.micros || [];
+        const mode = options.mode === 'remaining_week' ? 'remaining_week' : 'full_week';
         return selectedIds.reduce((sum, id) => {
             const micro = micros.find((item) => item.id === id);
+            if (!micro) return sum;
+            if (mode === 'remaining_week' && (micro.status === 'done' || micro.completed)) return sum;
             return sum + Math.max(0, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
         }, 0);
     },
@@ -8479,11 +8500,13 @@ ensureNotesState: function() {
         return factorByLevel[level] || 1;
     },
 
-    getWeeklyRecurringLoadSummary: function(weekKey = this._getWeekKey()) {
+    getWeeklyRecurringLoadSummary: function(weekKey = this._getWeekKey(), options = {}) {
         const habits = (window.sistemaVidaState?.habits || []).filter((habit) =>
             habit && habit.id && habit.archived !== true && habit.status !== 'archived'
         );
-        const weekDates = this.getWeekDateKeys ? this.getWeekDateKeys(weekKey) : [];
+        const weekDates = Array.isArray(options.dateKeys)
+            ? options.dateKeys
+            : (this.getWeekDateKeys ? this.getWeekDateKeys(weekKey) : []);
         let totalMinutes = 0;
         let occurrences = 0;
         let uniqueHabitCount = 0;
@@ -8510,28 +8533,42 @@ ensureNotesState: function() {
         const selectedMicros = Array.isArray(options.selectedMicros)
             ? options.selectedMicros
             : (Array.isArray(savedPlan.selectedMicros) ? savedPlan.selectedMicros : []);
+        const mode = options.mode === 'remaining_week' ? 'remaining_week' : 'full_week';
         const energyForecast = Math.max(1, Math.min(5, Math.round(Number(options.energyForecast ?? savedPlan.energyForecast ?? 3) || 3)));
         const profile = this.getDayCapacityProfileSettings ? this.getDayCapacityProfileSettings() : { executableMinutes: 0 };
-        const weekDates = this.getWeekDateKeys ? this.getWeekDateKeys(weekKey) : [];
+        const weekDates = this.getWeeklyFitDateKeys ? this.getWeeklyFitDateKeys(weekKey, { mode }) : (this.getWeekDateKeys ? this.getWeekDateKeys(weekKey) : []);
         const baseDailyMinutes = Math.max(0, Math.round(Number(profile.executableMinutes) || 0));
         const baseCapacityMinutes = baseDailyMinutes * weekDates.length;
         const energyFactor = this.getWeeklyEnergyForecastFactor(energyForecast);
         const capacityMinutes = Math.max(0, Math.round(baseCapacityMinutes * energyFactor));
-        const recurring = this.getWeeklyRecurringLoadSummary ? this.getWeeklyRecurringLoadSummary(weekKey) : { totalMinutes: 0, occurrences: 0, uniqueHabitCount: 0 };
+        const recurring = this.getWeeklyRecurringLoadSummary ? this.getWeeklyRecurringLoadSummary(weekKey, { dateKeys: weekDates }) : { totalMinutes: 0, occurrences: 0, uniqueHabitCount: 0 };
         const discretionaryMinutes = Math.max(0, capacityMinutes - recurring.totalMinutes);
-        const microPlannedMinutes = selectedMicros.reduce((sum, id) => {
-            const micro = (state.entities?.micros || []).find((item) => item.id === id);
+        const selectedMicroObjects = selectedMicros
+            .map((id) => (state.entities?.micros || []).find((item) => item.id === id))
+            .filter(Boolean);
+        const loadRelevantMicros = mode === 'remaining_week'
+            ? selectedMicroObjects.filter((micro) => micro.status !== 'done' && !micro.completed)
+            : selectedMicroObjects;
+        const microPlannedMinutes = loadRelevantMicros.reduce((sum, micro) => {
             return sum + Math.max(0, Number(this.getMicroEstimatedMinutes?.(micro)) || 0);
         }, 0);
+        const remainingMicroCount = loadRelevantMicros.length;
         const balanceMinutes = discretionaryMinutes - microPlannedMinutes;
         const discretionaryReference = Math.max(1, discretionaryMinutes);
         const overRatio = microPlannedMinutes / discretionaryReference;
+        const contextLabel = mode === 'remaining_week' ? 'restante da semana' : 'semana';
+        const capacityCopy = mode === 'remaining_week'
+            ? 'Capacidade restante da semana cruzada com recorrencias restantes e micros ainda abertas.'
+            : 'Capacidade estimada da semana cruzada com carga recorrente e micros selecionadas.';
+        const microMetricLabel = mode === 'remaining_week' ? 'Micros restantes' : 'Micros planejadas';
         let fitStatus = 'sem_plano';
         let fitLabel = 'Sem plano';
         let tone = 'text-outline';
         let badgeClass = 'bg-surface-container-high text-outline border-outline-variant/20';
-        let decisionTitle = 'Monte uma semana executável';
-        let decisionCopy = 'Selecione micros para comparar a carga da semana com o espaço real estimado.';
+        let decisionTitle = mode === 'remaining_week' ? 'Leia o restante da semana' : 'Monte uma semana executável';
+        let decisionCopy = mode === 'remaining_week'
+            ? 'Compare a carga que ainda falta com o espaço real que resta na semana.'
+            : 'Selecione micros para comparar a carga da semana com o espaço real estimado.';
 
         if (selectedMicros.length > 0) {
             if (balanceMinutes >= Math.max(90, discretionaryMinutes * 0.15)) {
@@ -8539,42 +8576,57 @@ ensureNotesState: function() {
                 fitLabel = 'Cabe com folga';
                 tone = 'text-emerald-700 dark:text-emerald-300';
                 badgeClass = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25';
-                decisionTitle = 'Plano coerente com a semana';
-                decisionCopy = 'A carga escolhida cabe com margem na sua semana típica. Preserve o escopo e execute.';
+                decisionTitle = mode === 'remaining_week' ? 'Restante coerente com a semana' : 'Plano coerente com a semana';
+                decisionCopy = mode === 'remaining_week'
+                    ? 'O que ainda falta cabe com margem no restante da semana. Preserve o escopo e execute o essencial.'
+                    : 'A carga escolhida cabe com margem na sua semana típica. Preserve o escopo e execute.';
             } else if (balanceMinutes >= 0) {
                 fitStatus = 'ajustado';
                 fitLabel = 'Cabe ajustado';
                 tone = 'text-primary';
                 badgeClass = 'bg-primary/10 text-primary border-primary/20';
-                decisionTitle = 'Plano possível, com pouca sobra';
-                decisionCopy = 'A semana fecha, mas com margem curta. Proteja as ações essenciais antes de adicionar novas.';
+                decisionTitle = mode === 'remaining_week' ? 'Restante possível, com pouca sobra' : 'Plano possível, com pouca sobra';
+                decisionCopy = mode === 'remaining_week'
+                    ? 'O que ainda sobrou da semana fecha, mas com margem curta. Proteja o que falta antes de adicionar novas frentes.'
+                    : 'A semana fecha, mas com margem curta. Proteja as ações essenciais antes de adicionar novas.';
             } else if (balanceMinutes >= -Math.max(60, discretionaryMinutes * 0.1)) {
                 fitStatus = 'apertado';
                 fitLabel = 'Apertado';
                 tone = 'text-amber-700 dark:text-amber-300';
                 badgeClass = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25';
-                decisionTitle = 'Plano no limite da semana';
-                decisionCopy = 'A carga planejada já encosta no encaixe semanal. Se possível, alivie uma ação densa ou distribua melhor o ritmo.';
+                decisionTitle = mode === 'remaining_week' ? 'Restante no limite da semana' : 'Plano no limite da semana';
+                decisionCopy = mode === 'remaining_week'
+                    ? 'O que ainda falta já encosta no tempo restante. Vale aliviar uma ação densa ou redistribuir o ritmo.'
+                    : 'A carga planejada já encosta no encaixe semanal. Se possível, alivie uma ação densa ou distribua melhor o ritmo.';
             } else {
                 fitStatus = 'sob_risco';
                 fitLabel = 'Sob risco';
                 tone = 'text-rose-700 dark:text-rose-300';
                 badgeClass = 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/25';
-                decisionTitle = 'Plano acima do encaixe semanal';
-                decisionCopy = 'A carga de micros está acima do espaço discricionário estimado. Adie parte da semana ou reduza escopo antes de expandir.';
+                decisionTitle = mode === 'remaining_week' ? 'Restante acima do encaixe da semana' : 'Plano acima do encaixe semanal';
+                decisionCopy = mode === 'remaining_week'
+                    ? 'O que ainda falta está acima do espaço restante estimado. Corte escopo, adie parte da semana ou renegocie o plano.'
+                    : 'A carga de micros está acima do espaço discricionário estimado. Adie parte da semana ou reduza escopo antes de expandir.';
             }
             if (energyForecast <= 2 && fitStatus !== 'saudavel') {
                 decisionCopy = `${decisionCopy} Como a energia prevista está baixa, o risco de fricção aumenta.`;
             } else if (energyForecast >= 4 && fitStatus === 'ajustado') {
-                decisionCopy = 'O plano depende de uma semana boa de energia, mas ainda parece sustentável se você proteger os blocos principais.';
+                decisionCopy = mode === 'remaining_week'
+                    ? 'O que ainda falta depende de uma semana boa de energia, mas parece sustentável se você proteger os blocos principais.'
+                    : 'O plano depende de uma semana boa de energia, mas ainda parece sustentável se você proteger os blocos principais.';
             }
         }
 
         return {
             weekKey,
+            mode,
+            contextLabel,
+            capacityCopy,
+            microMetricLabel,
             energyForecast,
             energyFactor,
             baseDailyMinutes,
+            activeDateCount: weekDates.length,
             baseCapacityMinutes,
             capacityMinutes,
             recurringMinutes: recurring.totalMinutes,
@@ -8582,6 +8634,7 @@ ensureNotesState: function() {
             recurringHabitCount: recurring.uniqueHabitCount,
             discretionaryMinutes,
             microPlannedMinutes,
+            remainingMicroCount,
             selectedMicroCount: selectedMicros.length,
             balanceMinutes,
             overRatio,
@@ -8602,18 +8655,19 @@ ensureNotesState: function() {
             ? 'rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-2'
             : 'rounded-xl border border-outline-variant/10 bg-surface-container-low p-3';
         const valueClass = compact ? 'mt-1 text-sm font-bold text-on-surface' : 'mt-1 text-lg font-bold text-on-surface';
+        const recurringLabel = fit.mode === 'remaining_week' ? 'Recorrências restantes' : 'Recorrências';
         const metrics = [
             { label: 'Capacidade útil', value: `${fit.capacityMinutes} min` },
-            { label: 'Recorrências', value: `${fit.recurringMinutes} min` },
+            { label: recurringLabel, value: `${fit.recurringMinutes} min` },
             { label: 'Saldo p/ micros', value: `${fit.discretionaryMinutes} min` },
-            { label: 'Micros planejadas', value: `${fit.microPlannedMinutes} min` }
+            { label: fit.microMetricLabel || 'Micros planejadas', value: `${fit.microPlannedMinutes} min` }
         ];
         return `
             <div class="space-y-3">
                 <div class="flex items-center justify-between gap-3">
                     <div>
                         <p class="ui-section-label">Encaixe semanal</p>
-                        <p class="mt-1 text-[11px] text-on-surface-variant">Capacidade estimada da semana cruzada com carga recorrente e micros selecionadas.</p>
+                        <p class="mt-1 text-[11px] text-on-surface-variant">${this.escapeHtml(fit.capacityCopy || 'Capacidade estimada da semana cruzada com carga recorrente e micros selecionadas.')}</p>
                     </div>
                     <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${fit.badgeClass}">${fit.fitLabel}</span>
                 </div>
@@ -8630,7 +8684,7 @@ ensureNotesState: function() {
                         <p class="text-[10px] uppercase tracking-widest text-outline">Saldo final</p>
                         <p class="text-sm font-bold ${fit.balanceMinutes < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}">${fit.balanceMinutes >= 0 ? '+' : ''}${fit.balanceMinutes} min</p>
                     </div>
-                    <p class="mt-1 text-[11px] text-on-surface-variant">Energia prevista ${fit.energyForecast}/5 · fator ${Math.round(fit.energyFactor * 100)}% sobre a capacidade-base.</p>
+                    <p class="mt-1 text-[11px] text-on-surface-variant">Energia prevista ${fit.energyForecast}/5 · fator ${Math.round(fit.energyFactor * 100)}% sobre a capacidade-base de ${this.escapeHtml(fit.contextLabel || 'semana')}.</p>
                 </div>
                 ${showDecision ? `
                     <div class="rounded-xl border border-outline-variant/10 bg-surface-container-low px-3 py-3">

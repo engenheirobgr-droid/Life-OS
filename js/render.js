@@ -2967,16 +2967,18 @@ render: {
 
             const weekDoneMicros = weekMicros.filter((micro) => micro.status === 'done').length;
             const weekExecScore = weekMicros.length === 0 ? 0 : Math.round((weekDoneMicros / weekMicros.length) * 100);
-            const plannedLoadMinutes = weekMicros.reduce((sum, micro) => sum + Math.max(0, Number(app.getMicroEstimatedMinutes?.(micro)) || 0), 0);
+            const remainingWeekMicros = weekMicros.filter((micro) => micro.status !== 'done' && !micro.completed);
+            const plannedLoadMinutes = remainingWeekMicros.reduce((sum, micro) => sum + Math.max(0, Number(app.getMicroEstimatedMinutes?.(micro)) || 0), 0);
 
             app.renderPainelHistorySummary();
             app.renderWeeklyHealthScore({ execScore: weekExecScore, plannedCount: weekMicros.length, doneCount: weekDoneMicros, plannedLoadMinutes });
             app.renderWeeklyFitSummary({
                 containerId: 'weekly-fit-card',
                 weekKey: currentWeekKey,
+                mode: 'remaining_week',
                 compact: false,
                 showDecision: true,
-                emptyCopy: 'Crie um plano semanal para comparar a carga escolhida com a capacidade util estimada da sua semana.'
+                emptyCopy: 'Crie um plano semanal para comparar a carga que ainda falta com a capacidade util restante da sua semana.'
             });
             // ---------------------------------------------------------
 
