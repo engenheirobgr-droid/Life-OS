@@ -8846,27 +8846,36 @@ ensureNotesState: function() {
         if (!currentWindow.valid) {
             return { needsAdjustment: true, reason: 'invalid', targetWindow, currentWindow };
         }
-        const alreadyFitsWeek = currentWindow.startDate >= targetWindow.weekStart && currentWindow.dueDate <= targetWindow.weekEnd;
+        const startInsideWeek = currentWindow.startDate >= targetWindow.weekStart && currentWindow.startDate <= targetWindow.weekEnd;
+        const dueInsideWeek = currentWindow.dueDate >= targetWindow.weekStart && currentWindow.dueDate <= targetWindow.weekEnd;
+        const alreadyFitsWeek = startInsideWeek && dueInsideWeek;
 
         // Classifica o status temporal da micro (overdue / future / etc.)
         const timing = this.classifyMicroForDate ? this.classifyMicroForDate(micro) : {};
         const isOverdue = timing?.status === 'overdue';
         const isFuture  = timing?.status === 'future';
 
-        // Só isenta se a janela já cabe E a micro não é atrasada nem futura.
-        // Overdue e future dentro da mesma semana ainda precisam de confirmação
-        // e rebase da janela conforme o contrato alinhado.
-        if (alreadyFitsWeek && !isOverdue && !isFuture) {
+        // Regra de produto:
+        // - overdue sempre pede ajuste, mesmo dentro da semana;
+        // - future com início dentro da semana entra normal, mesmo se o prazo cair depois;
+        // - os demais casos só entram sem ajuste quando a janela inteira já cabe na semana.
+        if (isOverdue) {
+            return { needsAdjustment: true, reason: 'overdue', targetWindow, currentWindow };
+        }
+        if (isFuture && startInsideWeek) {
+            return { needsAdjustment: false, reason: '', targetWindow, currentWindow };
+        }
+        if (alreadyFitsWeek && !isFuture) {
             return { needsAdjustment: false, reason: '', targetWindow, currentWindow };
         }
 
         let reason = 'adjust';
-        if (isOverdue || (currentWindow.dueDate && currentWindow.dueDate < targetWindow.todayKey)) {
-            reason = 'overdue';
-        } else if (isFuture || (currentWindow.startDate && currentWindow.startDate > targetWindow.weekEnd)) {
+        if (isFuture || (currentWindow.startDate && currentWindow.startDate > targetWindow.weekEnd)) {
             reason = 'future';
         } else if (currentWindow.dueDate && currentWindow.dueDate < targetWindow.weekStart) {
             reason = 'before_week';
+        } else if (currentWindow.dueDate && currentWindow.dueDate < targetWindow.todayKey) {
+            reason = 'overdue';
         }
 
         return { needsAdjustment: true, reason, targetWindow, currentWindow };
