@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260611-checkin-summary-desktop-v1',
+    appBuildVersion: '20260611-checkin-summary-desktop-v2',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
@@ -7449,11 +7449,16 @@ ensureNotesState: function() {
         };
         return `
             <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center justify-between gap-2">
                     <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${state.tone}">
                         <span class="text-sm leading-none">${state.emoji}</span>
                         ${this.escapeHtml(state.title)}
                     </span>
+                    <button type="button" onclick="window.app.expandDailyCheckinPanel(true)"
+                        class="inline-flex items-center justify-center gap-1 rounded-lg border border-outline-variant/20 bg-surface-container-high px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container transition-colors shrink-0">
+                        <span class="material-symbols-outlined notranslate text-[13px]">edit</span>
+                        Detalhes
+                    </button>
                 </div>
                 <div class="mt-3 grid grid-cols-2 gap-2">
                     ${chips.map((chip) => `
