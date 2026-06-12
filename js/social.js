@@ -1,4 +1,4 @@
-import { db, auth, doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp, collection, query, orderBy, limit, getDocs, LOCAL_USER_SCOPE } from './firebase.js';
+import { db, auth, doc, setDoc, getDoc, onSnapshot, deleteDoc, serverTimestamp, collection, query, orderBy, limit, getDocs, where, LOCAL_USER_SCOPE } from './firebase.js';
 
 const DEFAULT_SOCIAL_VISIBILITY = {
     name: true,
@@ -39,6 +39,10 @@ const SOCIAL_CHALLENGES = {
     streak_5: { label: '5 dias em sequencia no grupo', target: 5, metric: 'sharedStreak' },
     xp_100: { label: '100 XP coletivos', target: 100, metric: 'collectiveXp' }
 };
+
+function isSharedSocialChallenge(challenge) {
+    return String(challenge?.scope || '') === 'shared_1_1';
+}
 
 function makeSocialCode() {
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -214,6 +218,14 @@ export function attachSocial(app) {
             return doc(db, 'users', userId, 'private', 'engagement');
         },
 
+        getSocialChallengesCollectionRef: function() {
+            return collection(db, 'socialChallenges');
+        },
+
+        getSocialChallengeDocRef: function(challengeId) {
+            return doc(db, 'socialChallenges', String(challengeId || '').trim());
+        },
+
         getSocialInviteCodeDocRef: function(code) {
             return doc(db, 'inviteCodes', String(code || '').trim().toUpperCase());
         },
@@ -224,6 +236,122 @@ export function attachSocial(app) {
 
         getSocialInboxDocRef: function(userId, eventId) {
             return doc(db, 'users', userId, 'private', 'social', 'inbox', eventId);
+        },
+
+        setSocialChallengeTarget: function(value) {
+            this._socialChallengeTargetUid = String(value || '').trim();
+        },
+
+        getSocialChallengeTarget: function(activeIds = []) {
+            const ids = Array.isArray(activeIds) ? activeIds.filter(Boolean) : [];
+            const selected = String(this._socialChallengeTargetUid || '').trim();
+            if (selected && ids.includes(selected)) return selected;
+            const next = ids[0] || '';
+            this._socialChallengeTargetUid = next;
+            return next;
+        },
+
+        getSharedSocialChallengesMap: function() {
+            if (!this._sharedSocialChallenges || typeof this._sharedSocialChallenges !== 'object') {
+                this._sharedSocialChallenges = {};
+            }
+            return this._sharedSocialChallenges;
+        },
+
+        getSharedSocialChallengesForConnection: async function(otherUid) {
+            const target = String(otherUid || '').trim();
+            const userId = this.getActiveUserId();
+            if (!target || !userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return [];
+            const byId = new Map();
+            const includeChallenge = (challenge) => {
+                if (!isSharedSocialChallenge(challenge)) return;
+                if (!Array.isArray(challenge.participantUids) || !challenge.participantUids.includes(target)) return;
+                if (['cancelled', 'declined'].includes(String(challenge.status || ''))) return;
+                byId.set(challenge.id, challenge);
+            };
+            Object.values(this.getSharedSocialChallengesMap()).forEach(includeChallenge);
+            try {
+                const challengesQuery = query(
+                    this.getSocialChallengesCollectionRef(),
+                    where('participantUids', 'array-contains', userId),
+                    limit(100)
+                );
+                const snap = await getDocs(challengesQuery);
+                snap.forEach((challengeDoc) => {
+                    includeChallenge({ id: challengeDoc.id, ...challengeDoc.data() });
+                });
+            } catch (_) {}
+            return Array.from(byId.values());
+        },
+
+        getSharedSocialChallengeById: async function(challengeId) {
+            const id = String(challengeId || '').trim();
+            if (!id) return null;
+            let challenge = this.getSharedSocialChallengesMap()[id] || null;
+            if (challenge) return challenge;
+            try {
+                const snap = await getDoc(this.getSocialChallengeDocRef(id));
+                if (snap.exists()) {
+                    challenge = { id: snap.id, ...snap.data() };
+                    this._sharedSocialChallenges[snap.id] = challenge;
+                }
+            } catch (_) {}
+            return challenge || null;
+        },
+
+        setSocialChallengeInboxStatus: async function(challengeId, status, readAt = '') {
+            const id = String(challengeId || '').trim();
+            if (!id) return;
+            const userId = this.getActiveUserId();
+            const items = Array.isArray(window.sistemaVidaState.profile?.social?.notifications?.items)
+                ? window.sistemaVidaState.profile.social.notifications.items
+                : [];
+            const matches = items.filter((item) => item?.payload?.challengeId === id && item.type === 'challenge_invite');
+            matches.forEach((item) => {
+                item.status = status;
+                if (readAt) item.readAt = readAt;
+            });
+            if (userId && userId !== LOCAL_USER_SCOPE && !auth.currentUser?.isAnonymous) {
+                const remoteIds = new Set(matches.map((item) => String(item.id || '')).filter(Boolean));
+                try {
+                    const inboxQuery = query(
+                        this.getSocialInboxCollectionRef(userId),
+                        where('payload.challengeId', '==', id),
+                        limit(20)
+                    );
+                    const snap = await getDocs(inboxQuery);
+                    snap.forEach((itemDoc) => {
+                        const data = itemDoc.data() || {};
+                        if (data.type === 'challenge_invite') remoteIds.add(itemDoc.id);
+                    });
+                } catch (_) {}
+                await Promise.all(Array.from(remoteIds).map(async (eventId) => {
+                    try {
+                        const patch = { status };
+                        if (readAt) patch.readAt = readAt;
+                        await setDoc(this.getSocialInboxDocRef(userId, eventId), patch, { merge: true });
+                    } catch (_) {}
+                }));
+            }
+        },
+
+        notifySocialChallengeUpdate: async function(challenge, status, sourceUid, sourceName, targetUid, nowIso) {
+            if (!challenge || !targetUid || !sourceUid || sourceUid === targetUid) return;
+            const updateEventId = `challenge_update_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            await setDoc(this.getSocialInboxDocRef(targetUid, updateEventId), {
+                type: 'challenge_update',
+                sourceUid,
+                sourceName: sourceName || 'Usuario',
+                targetUid,
+                status,
+                readAt: '',
+                createdAt: nowIso,
+                payload: {
+                    challengeId: challenge.id,
+                    challengeLabel: challenge.label,
+                    weekKey: challenge.weekKey
+                }
+            }, { merge: false });
         },
 
         pushSocialInternalNotification: async function(type, payload = {}) {
@@ -271,11 +399,10 @@ export function attachSocial(app) {
             if (!item || item.readAt) return;
             const nowIso = new Date().toISOString();
             item.readAt = nowIso;
-            item.status = 'read';
             this.saveState(true);
             const userId = this.getActiveUserId();
             if (userId && userId !== LOCAL_USER_SCOPE && !auth.currentUser?.isAnonymous) {
-                try { await setDoc(this.getSocialInboxDocRef(userId, id), { readAt: nowIso, status: 'read' }, { merge: true }); } catch (_) {}
+                try { await setDoc(this.getSocialInboxDocRef(userId, id), { readAt: nowIso }, { merge: true }); } catch (_) {}
             }
             this.renderAppNotificationCenter();
             this.refreshSocialConnectionsSurface();
@@ -290,13 +417,12 @@ export function attachSocial(app) {
             const nowIso = new Date().toISOString();
             unread.forEach((entry) => {
                 entry.readAt = nowIso;
-                entry.status = 'read';
             });
             this.saveState(true);
             const userId = this.getActiveUserId();
             if (userId && userId !== LOCAL_USER_SCOPE && !auth.currentUser?.isAnonymous) {
                 await Promise.all(unread.map(async (entry) => {
-                    try { await setDoc(this.getSocialInboxDocRef(userId, entry.id), { readAt: nowIso, status: 'read' }, { merge: true }); } catch (_) {}
+                    try { await setDoc(this.getSocialInboxDocRef(userId, entry.id), { readAt: nowIso }, { merge: true }); } catch (_) {}
                 }));
             }
             this.renderAppNotificationCenter();
@@ -461,10 +587,13 @@ export function attachSocial(app) {
             const key = String(type || '');
             const meta = {
                 invite_request: { group: 'social', title: 'Convite recebido', icon: 'mail', tone: 'text-primary' },
+                connection_created: { group: 'social', title: 'Nova conexao', icon: 'how_to_reg', tone: 'text-primary' },
+                challenge_invite: { group: 'social', title: 'Desafio 1:1 recebido', icon: 'flag', tone: 'text-primary' },
+                challenge_update: { group: 'social', title: 'Desafio 1:1 atualizado', icon: 'flag', tone: 'text-primary' },
                 reaction: { group: 'social', title: 'Reacao recebida', icon: 'favorite', tone: 'text-primary' },
                 social_activity: { group: 'social', title: 'Conquista da conexao', icon: 'emoji_events', tone: 'text-primary' },
                 social_profile_sync: { group: 'social', title: 'Perfil atualizado', icon: 'sync', tone: 'text-primary' },
-                challenge: { group: 'social', title: 'Desafio social', icon: 'flag', tone: 'text-primary' },
+                challenge: { group: 'social', title: 'Objetivo social', icon: 'flag', tone: 'text-primary' },
                 xp_gain: { group: 'app', title: 'XP ganho', icon: 'bolt', tone: 'text-primary' },
                 level_up: { group: 'app', title: 'Novo nivel', icon: 'trending_up', tone: 'text-primary' },
                 achievement_unlock: { group: 'app', title: 'Conquista desbloqueada', icon: 'military_tech', tone: 'text-primary' },
@@ -579,18 +708,15 @@ export function attachSocial(app) {
             const nowIso = new Date().toISOString();
             unread.forEach((entry) => {
                 entry.readAt = nowIso;
-                entry.status = 'seen';
             });
             this.saveState(true);
             const userId = this.getActiveUserId();
             if (userId && userId !== LOCAL_USER_SCOPE && !auth.currentUser?.isAnonymous) {
-                await Promise.all(unread
-                    .filter((entry) => String(entry.id || '').startsWith('evt_'))
-                    .map(async (entry) => {
-                        try {
-                            await setDoc(this.getSocialInboxDocRef(userId, entry.id), { readAt: nowIso, status: 'seen' }, { merge: true });
-                        } catch (_) {}
-                    }));
+                await Promise.all(unread.map(async (entry) => {
+                    try {
+                        await setDoc(this.getSocialInboxDocRef(userId, entry.id), { readAt: nowIso }, { merge: true });
+                    } catch (_) {}
+                }));
             }
         },
 
@@ -600,6 +726,7 @@ export function attachSocial(app) {
             this.ensureSocialState();
             if (this.isSocialFeatureEnabled()) {
                 this.startSocialInboxListener();
+                this.startSocialChallengesListener();
             }
             if (!notificationsEl) return;
             const notifications = Array.isArray(window.sistemaVidaState.profile.social.notifications?.items)
@@ -624,12 +751,32 @@ export function attachSocial(app) {
                 let body = baseDetail;
                 let actions = '';
                 if (item.type === 'invite_request') {
-                    body = `${item.sourceName || 'Usuario'} quer se conectar com voce.`;
-                    if (item.status === 'pending') {
+                    body = `${item.sourceName || 'Usuario'} usou seu codigo de convite.`;
+                } else if (item.type === 'connection_created') {
+                    body = `${item.sourceName || 'Usuario'} agora faz parte das suas conexoes.`;
+                } else if (item.type === 'challenge_invite') {
+                    if (item.status === 'accepted') {
+                        body = `Voce aceitou ${item.payload?.challengeLabel || 'o desafio 1:1'}.`;
+                    } else if (item.status === 'declined') {
+                        body = `Voce recusou ${item.payload?.challengeLabel || 'o desafio 1:1'}.`;
+                    } else if (item.status === 'cancelled') {
+                        body = `${item.sourceName || 'Usuario'} cancelou ${item.payload?.challengeLabel || 'o desafio 1:1'}.`;
+                    } else {
+                        body = `${item.sourceName || 'Usuario'} compartilhou ${item.payload?.challengeLabel || 'um desafio 1:1'} com voce.`;
+                    }
+                    if (item.payload?.challengeId && item.status === 'pending') {
                         actions = `<div class="flex flex-wrap gap-2 pt-2">
-                            <button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(item.id)}','${this.escapeHtml(item.sourceUid)}',true)" class="h-9 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider">Aceitar</button>
-                            <button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(item.id)}','${this.escapeHtml(item.sourceUid)}',false)" class="h-9 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider">Recusar</button>
+                            <button type="button" onclick="window.app.acceptSocialChallenge('${this.escapeHtml(item.payload.challengeId)}')" class="h-9 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider">Aceitar aqui</button>
+                            <button type="button" onclick="window.app.declineSocialChallenge('${this.escapeHtml(item.payload.challengeId)}')" class="h-9 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider">Recusar</button>
                         </div>`;
+                    }
+                } else if (item.type === 'challenge_update') {
+                    if (item.status === 'declined') {
+                        body = `${item.sourceName || 'Usuario'} recusou ${item.payload?.challengeLabel || 'o desafio 1:1'}.`;
+                    } else if (item.status === 'cancelled') {
+                        body = `${item.sourceName || 'Usuario'} cancelou ${item.payload?.challengeLabel || 'o desafio 1:1'}.`;
+                    } else {
+                        body = `${item.sourceName || 'Usuario'} aceitou ${item.payload?.challengeLabel || 'o desafio 1:1'}.`;
                     }
                 } else if (item.type === 'reaction') {
                     const cfg = SOCIAL_REACTIONS[item.reactionType] || SOCIAL_REACTIONS.strength;
@@ -766,6 +913,7 @@ export function attachSocial(app) {
                 console.warn('[SOCIAL] Nao foi possivel iniciar listener de conexoes:', err);
             }
             this.startSocialInboxListener();
+            this.startSocialChallengesListener();
         },
 
         stopSocialConnectionsListener: function() {
@@ -777,6 +925,32 @@ export function attachSocial(app) {
                 try { this._socialInboxUnsub(); } catch (_) {}
                 this._socialInboxUnsub = null;
             }
+            if (this._socialChallengesUnsub) {
+                try { this._socialChallengesUnsub(); } catch (_) {}
+                this._socialChallengesUnsub = null;
+            }
+            this._sharedSocialChallenges = {};
+        },
+
+        startSocialChallengesListener: function() {
+            if (this._socialChallengesUnsub || !this.isSocialFeatureEnabled()) return;
+            const userId = this.getActiveUserId();
+            if (!userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return;
+            const challengesQuery = query(
+                this.getSocialChallengesCollectionRef(),
+                where('participantUids', 'array-contains', userId),
+                limit(30)
+            );
+            this._socialChallengesUnsub = onSnapshot(challengesQuery, (snap) => {
+                const nextMap = {};
+                snap.forEach((challengeDoc) => {
+                    nextMap[challengeDoc.id] = { id: challengeDoc.id, ...challengeDoc.data() };
+                });
+                this._sharedSocialChallenges = nextMap;
+                this.refreshSocialConnectionsSurface();
+            }, (err) => {
+                console.warn('[SOCIAL] Listener de desafios compartilhados falhou:', err);
+            });
         },
 
         startSocialInboxListener: function() {
@@ -795,7 +969,7 @@ export function attachSocial(app) {
                 snap.forEach((itemDoc) => {
                     const data = itemDoc.data();
                     items.push({ id: itemDoc.id, ...data });
-                    if (!data.processed && (data.type === 'invite_decision' || data.type === 'connection_removed' || data.type === 'social_profile_sync')) {
+                    if (!data.processed && (data.type === 'invite_request' || data.type === 'invite_decision' || data.type === 'connection_created' || data.type === 'connection_removed' || data.type === 'social_profile_sync')) {
                         toProcess.push({ id: itemDoc.id, ...data });
                     }
                 });
@@ -809,6 +983,45 @@ export function attachSocial(app) {
                         const nowIso = new Date().toISOString();
                         
                         for (const evt of toProcess) {
+                            if (evt.type === 'invite_request' || evt.type === 'connection_created') {
+                                meConnections[evt.sourceUid] = {
+                                    uid: evt.sourceUid,
+                                    status: 'active',
+                                    source: 'invite',
+                                    inviteCode: String(evt.inviteCode || meConnections[evt.sourceUid]?.inviteCode || ''),
+                                    requestedAt: String(meConnections[evt.sourceUid]?.requestedAt || evt.createdAt || nowIso),
+                                    acceptedAt: String(evt.connectedAt || evt.createdAt || nowIso),
+                                    removedAt: ''
+                                };
+                                changed = true;
+                                const inboxPatch = {
+                                    processed: true,
+                                    type: 'connection_created',
+                                    status: 'connected',
+                                    connectedAt: String(evt.connectedAt || evt.createdAt || nowIso)
+                                };
+                                await setDoc(this.getSocialInboxDocRef(userId, evt.id), inboxPatch, { merge: true });
+
+                                if (evt.type === 'invite_request') {
+                                    const reciprocalId = `connection_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                                    await setDoc(this.getSocialInboxDocRef(evt.sourceUid, reciprocalId), {
+                                        type: 'connection_created',
+                                        sourceUid: userId,
+                                        sourceName: window.sistemaVidaState.profile?.name || 'Usuario',
+                                        targetUid: evt.sourceUid,
+                                        inviteCode: String(evt.inviteCode || ''),
+                                        status: 'connected',
+                                        readAt: '',
+                                        processed: false,
+                                        createdAt: nowIso,
+                                        connectedAt: nowIso,
+                                        payload: {
+                                            migratedFrom: 'invite_request'
+                                        }
+                                    }, { merge: false });
+                                }
+                                continue;
+                            }
                             if (evt.type === 'invite_decision') {
                                 meConnections[evt.sourceUid] = {
                                     uid: evt.sourceUid,
@@ -864,6 +1077,39 @@ export function attachSocial(app) {
                                 title: 'Life OS - Area Social',
                                 body: `${entry.sourceName || 'Companheiro'} quer se conectar com voce.`,
                                 tag: `lifeos-social-invite-${String(entry.id || '')}`,
+                                url: '/?view=social'
+                            }, 'info');
+                        } else if (entry?.type === 'connection_created') {
+                            this.showNotification({
+                                title: 'Life OS - Area Social',
+                                body: `${entry.sourceName || 'Companheiro'} agora faz parte das suas conexoes.`,
+                                tag: `lifeos-social-connection-${String(entry.id || '')}`,
+                                url: '/?view=social'
+                            }, 'info');
+                        } else if (entry?.type === 'challenge_invite') {
+                            let body = `${entry.sourceName || 'Companheiro'} compartilhou ${entry.payload?.challengeLabel || 'um desafio 1:1'} com voce.`;
+                            if (entry.status === 'declined') {
+                                body = `Voce recusou ${entry.payload?.challengeLabel || 'o desafio 1:1'}.`;
+                            } else if (entry.status === 'cancelled') {
+                                body = `${entry.sourceName || 'Companheiro'} cancelou ${entry.payload?.challengeLabel || 'o desafio 1:1'}.`;
+                            }
+                            this.showNotification({
+                                title: 'Life OS - Area Social',
+                                body,
+                                tag: `lifeos-social-challenge-invite-${String(entry.id || '')}`,
+                                url: '/?view=social'
+                            }, 'info');
+                        } else if (entry?.type === 'challenge_update') {
+                            let body = `${entry.sourceName || 'Companheiro'} aceitou ${entry.payload?.challengeLabel || 'o desafio 1:1'}.`;
+                            if (entry.status === 'declined') {
+                                body = `${entry.sourceName || 'Companheiro'} recusou ${entry.payload?.challengeLabel || 'o desafio 1:1'}.`;
+                            } else if (entry.status === 'cancelled') {
+                                body = `${entry.sourceName || 'Companheiro'} cancelou ${entry.payload?.challengeLabel || 'o desafio 1:1'}.`;
+                            }
+                            this.showNotification({
+                                title: 'Life OS - Area Social',
+                                body,
+                                tag: `lifeos-social-challenge-update-${String(entry.id || '')}`,
                                 url: '/?view=social'
                             }, 'info');
                         }
@@ -944,16 +1190,25 @@ export function attachSocial(app) {
                     this.showToast('Esse convite nao esta ativo.', 'error');
                     return;
                 }
+                const expiresAt = Number(invite.expiresAt || 0);
+                if (expiresAt > 0 && Date.now() > expiresAt) {
+                    this.showToast('Esse convite expirou.', 'error');
+                    return;
+                }
                 const nowIso = new Date().toISOString();
                 const myDocSnap = await getDoc(this.getSocialConnectionsDocRef(userId));
                 const myConnections = this.normalizeSocialConnectionMap(myDocSnap.exists() ? (myDocSnap.data()?.connections || {}) : {});
+                if (myConnections[otherUid]?.status === 'active') {
+                    this.showToast('Essa conexao ja esta ativa.', 'success');
+                    return;
+                }
                 myConnections[otherUid] = {
                     uid: otherUid,
-                    status: 'pending_outgoing',
+                    status: 'active',
                     source: 'invite',
                     inviteCode: code,
-                    requestedAt: nowIso,
-                    acceptedAt: '',
+                    requestedAt: String(myConnections[otherUid]?.requestedAt || nowIso),
+                    acceptedAt: nowIso,
                     removedAt: ''
                 };
                 await setDoc(this.getSocialConnectionsDocRef(userId), {
@@ -961,23 +1216,26 @@ export function attachSocial(app) {
                     updatedAt: serverTimestamp()
                 }, { merge: true });
 
-                const eventId = `invite_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                const eventId = `connection_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
                 await setDoc(this.getSocialInboxDocRef(otherUid, eventId), {
-                    type: 'invite_request',
+                    type: 'connection_created',
                     sourceUid: userId,
                     sourceName: window.sistemaVidaState.profile?.name || 'Usuario',
                     targetUid: otherUid,
                     inviteCode: code,
-                    status: 'pending',
+                    status: 'connected',
                     readAt: '',
-                    createdAt: new Date().toISOString()
+                    processed: false,
+                    createdAt: nowIso,
+                    connectedAt: nowIso
                 }, { merge: false });
 
                 window.sistemaVidaState.profile.social.connections[otherUid] = myConnections[otherUid];
                 await this.refreshSocialConnectionProfiles();
                 this.saveState(true);
+                await this.notifySocialConnectionPush({ targetUid: otherUid }).catch(() => {});
                 this.renderSocialConnectionsPanel();
-                this.showToast('Pedido enviado. A conexao ativa apos aceite final do dono do codigo.', 'success');
+                this.showToast('Conexao ativada. O outro perfil recebera o aviso em Social.', 'success');
             } catch (err) {
                 console.warn('[SOCIAL] Falha ao aceitar convite:', err);
                 this.showToast('Nao consegui aceitar o codigo. Confira se ele esta correto e tente novamente.', 'error');
@@ -1033,9 +1291,10 @@ export function attachSocial(app) {
             const userId = this.getActiveUserId();
             const target = String(otherUid || '');
             if (!target || !userId || userId === LOCAL_USER_SCOPE || auth.currentUser?.isAnonymous) return;
+            const nowIso = new Date().toISOString();
             
             try {
-                const removed = { uid: target, status: 'removed', removedAt: new Date().toISOString() };
+                const removed = { uid: target, status: 'removed', removedAt: nowIso };
                 await setDoc(this.getSocialConnectionsDocRef(userId), {
                     connections: { [target]: removed },
                     updatedAt: serverTimestamp()
@@ -1049,15 +1308,39 @@ export function attachSocial(app) {
                     targetUid: target,
                     status: 'removed',
                     readAt: '',
-                    createdAt: new Date().toISOString()
+                    createdAt: nowIso
                 }, { merge: false });
+
+                const sharedChallenges = await this.getSharedSocialChallengesForConnection(target);
+                await Promise.all(sharedChallenges.map(async (challenge) => {
+                    const ownState = challenge?.participants?.[userId] || {};
+                    const targetState = challenge?.participants?.[target] || {};
+                    try {
+                        await setDoc(this.getSocialChallengeDocRef(challenge.id), {
+                            status: 'cancelled',
+                            updatedAt: nowIso,
+                            participants: {
+                                [userId]: {
+                                    ...ownState,
+                                    status: ownState.status === 'declined' ? 'declined' : 'cancelled',
+                                    cancelledAt: nowIso
+                                },
+                                [target]: {
+                                    ...targetState,
+                                    status: targetState.status === 'declined' ? 'declined' : 'cancelled',
+                                    cancelledAt: nowIso
+                                }
+                            }
+                        }, { merge: true });
+                    } catch (_) {}
+                }));
 
                 if (this.currentView === 'social') this.renderSocialConnectionsPanel();
             } catch (err) {
                 console.warn('[SOCIAL] Erro ao remover conexao:', err);
                 this.showToast('Erro ao remover conexao.', 'error');
             }
-            window.sistemaVidaState.profile.social.connections[target] = { uid: target, status: 'removed', removedAt: new Date().toISOString() };
+            window.sistemaVidaState.profile.social.connections[target] = { uid: target, status: 'removed', removedAt: nowIso };
             delete window.sistemaVidaState.profile.social.connectionProfiles[target];
             this.saveState(true);
             this.renderSocialConnectionsPanel();
@@ -1168,6 +1451,35 @@ export function attachSocial(app) {
             } catch (_) {}
         },
 
+        notifySocialConnectionPush: async function({ targetUid } = {}) {
+            try {
+                const currentUser = auth.currentUser;
+                if (!currentUser || currentUser.isAnonymous || !targetUid) return;
+                const idToken = await currentUser.getIdToken();
+                const payload = {
+                    targetUid: String(targetUid || ''),
+                    sourceName: String(window.sistemaVidaState.profile?.name || 'Usuario')
+                };
+                const endpoints = [
+                    '/api/social-connection-push',
+                    'https://life-os-mu-ashy.vercel.app/api/social-connection-push'
+                ];
+                for (const endpoint of endpoints) {
+                    try {
+                        const res = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${idToken}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        if (res.ok) return;
+                    } catch (_) {}
+                }
+            } catch (_) {}
+        },
+
         getSocialChallengeWeekKey: function() {
             return this._getWeekKey ? this._getWeekKey() : new Date().toISOString().slice(0, 10);
         },
@@ -1177,35 +1489,210 @@ export function attachSocial(app) {
             const type = SOCIAL_CHALLENGES[challengeType] ? challengeType : 'key_habits_3';
             const ids = this.getSocialActiveConnectionIds();
             if (!ids.length) {
-                this.showToast('Adicione uma conexao antes de criar desafio.', 'error');
+                this.showToast('Adicione uma conexao antes de criar um desafio 1:1.', 'error');
                 return;
             }
+            const targetUid = this.getSocialChallengeTarget(ids);
+            if (!targetUid || !ids.includes(targetUid)) {
+                this.showToast('Escolha uma conexao para criar o desafio 1:1.', 'error');
+                return;
+            }
+            const targetProfile = window.sistemaVidaState.profile?.social?.connectionProfiles?.[targetUid] || {};
             const weekKey = this.getSocialChallengeWeekKey();
+            const userId = this.getActiveUserId();
+            const createdAt = new Date().toISOString();
+            const existingShared = Object.values(this.getSharedSocialChallengesMap()).find((item) =>
+                isSharedSocialChallenge(item)
+                && item.creatorUid === userId
+                && item.targetUid === targetUid
+                && item.weekKey === weekKey
+                && item.type === type
+                && !['cancelled', 'declined'].includes(String(item.status || ''))
+            );
+            if (existingShared) {
+                this.showToast('Ja existe um desafio 1:1 ativo para essa conexao nesta semana.', 'warning');
+                return;
+            }
             const challenge = {
-                id: `challenge_${weekKey}_${type}`,
+                id: `challenge_${weekKey}_${type}_${Math.random().toString(36).slice(2, 8)}`,
                 type,
                 label: SOCIAL_CHALLENGES[type].label,
                 status: 'pending',
+                scope: 'shared_1_1',
+                sharedView: 'per_participant',
                 weekKey,
-                participants: [this.getActiveUserId(), ...ids].filter(Boolean),
-                createdAt: new Date().toISOString(),
-                acceptedAt: ''
+                creatorUid: userId,
+                creatorName: window.sistemaVidaState.profile?.name || 'Usuario',
+                targetUid,
+                targetName: String(targetProfile.name || ''),
+                participantUids: [userId, targetUid],
+                participants: {
+                    [userId]: {
+                        uid: userId,
+                        role: 'creator',
+                        status: 'accepted',
+                        acceptedAt: createdAt
+                    },
+                    [targetUid]: {
+                        uid: targetUid,
+                        role: 'participant',
+                        status: 'pending',
+                        acceptedAt: ''
+                    }
+                },
+                createdAt,
+                updatedAt: createdAt
             };
-            window.sistemaVidaState.profile.social.challenges[challenge.id] = challenge;
-            await this.persistSocialEngagement();
+            await setDoc(this.getSocialChallengeDocRef(challenge.id), challenge, { merge: false });
+            const inviteEventId = `challenge_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            await setDoc(this.getSocialInboxDocRef(targetUid, inviteEventId), {
+                type: 'challenge_invite',
+                sourceUid: userId,
+                sourceName: window.sistemaVidaState.profile?.name || 'Usuario',
+                targetUid,
+                status: 'pending',
+                readAt: '',
+                createdAt,
+                payload: {
+                    challengeId: challenge.id,
+                    challengeLabel: challenge.label,
+                    weekKey: challenge.weekKey
+                }
+            }, { merge: false });
             this.renderSocialConnectionsPanel();
-            this.showToast('Desafio semanal criado.', 'success');
+            this.showToast(`Desafio 1:1 enviado para ${targetProfile.name || 'sua conexao'}.`, 'success');
         },
 
         acceptSocialChallenge: async function(challengeId) {
             this.ensureSocialState();
-            const challenge = window.sistemaVidaState.profile.social.challenges?.[challengeId];
-            if (!challenge) return;
-            challenge.status = 'accepted';
-            challenge.acceptedAt = new Date().toISOString();
-            await this.persistSocialEngagement();
+            const sharedChallenge = await this.getSharedSocialChallengeById(challengeId);
+            if (!sharedChallenge || !isSharedSocialChallenge(sharedChallenge)) return;
+            if (sharedChallenge.status === 'cancelled' || sharedChallenge.status === 'declined') {
+                this.showToast('Esse desafio 1:1 nao esta mais disponivel.', 'warning');
+                return;
+            }
+            const userId = this.getActiveUserId();
+            const participantState = this.getSocialChallengeParticipantState(sharedChallenge, userId);
+            if (!participantState) return;
+            if (participantState.status === 'accepted') {
+                this.showToast('Seu aceite neste desafio 1:1 ja esta registrado.', 'success');
+                return;
+            }
+            const nowIso = new Date().toISOString();
+            await setDoc(this.getSocialChallengeDocRef(challengeId), {
+                participants: {
+                    [userId]: {
+                        ...participantState,
+                        status: 'accepted',
+                        acceptedAt: nowIso
+                    }
+                },
+                status: 'active',
+                updatedAt: nowIso
+            }, { merge: true });
+            await this.setSocialChallengeInboxStatus(challengeId, 'accepted', nowIso);
+            const creatorUid = String(sharedChallenge.creatorUid || '');
+            await this.notifySocialChallengeUpdate(
+                sharedChallenge,
+                'accepted',
+                userId,
+                window.sistemaVidaState.profile?.name || 'Usuario',
+                creatorUid,
+                nowIso
+            );
             this.renderSocialConnectionsPanel();
-            this.showToast('Desafio aceito.', 'success');
+            this.showToast('Desafio 1:1 aceito.', 'success');
+        },
+
+        declineSocialChallenge: async function(challengeId) {
+            this.ensureSocialState();
+            const sharedChallenge = await this.getSharedSocialChallengeById(challengeId);
+            if (!sharedChallenge || !isSharedSocialChallenge(sharedChallenge)) return;
+            if (sharedChallenge.status === 'cancelled' || sharedChallenge.status === 'declined') {
+                this.showToast('Esse desafio 1:1 ja foi encerrado.', 'warning');
+                return;
+            }
+            const userId = this.getActiveUserId();
+            const participantState = this.getSocialChallengeParticipantState(sharedChallenge, userId);
+            if (!participantState) return;
+            if (participantState.status === 'declined') {
+                this.showToast('Sua recusa neste desafio 1:1 ja esta registrada.', 'success');
+                return;
+            }
+            if (participantState.status === 'accepted') {
+                this.showToast('Use cancelar para encerrar um desafio 1:1 ja aceito.', 'warning');
+                return;
+            }
+            const nowIso = new Date().toISOString();
+            await setDoc(this.getSocialChallengeDocRef(challengeId), {
+                participants: {
+                    [userId]: {
+                        ...participantState,
+                        status: 'declined',
+                        declinedAt: nowIso
+                    }
+                },
+                status: 'declined',
+                updatedAt: nowIso
+            }, { merge: true });
+            await this.setSocialChallengeInboxStatus(challengeId, 'declined', nowIso);
+            const creatorUid = String(sharedChallenge.creatorUid || '');
+            await this.notifySocialChallengeUpdate(
+                sharedChallenge,
+                'declined',
+                userId,
+                window.sistemaVidaState.profile?.name || 'Usuario',
+                creatorUid,
+                nowIso
+            );
+            this.renderSocialConnectionsPanel();
+            this.showToast('Desafio 1:1 recusado.', 'success');
+        },
+
+        cancelSocialChallenge: async function(challengeId) {
+            this.ensureSocialState();
+            const sharedChallenge = await this.getSharedSocialChallengeById(challengeId);
+            if (!sharedChallenge || !isSharedSocialChallenge(sharedChallenge)) return;
+            if (sharedChallenge.status === 'cancelled') {
+                this.showToast('Esse desafio 1:1 ja foi cancelado.', 'success');
+                return;
+            }
+            const userId = this.getActiveUserId();
+            const participantState = this.getSocialChallengeParticipantState(sharedChallenge, userId);
+            if (!participantState) return;
+            const counterpartUid = this.getSocialChallengeCounterpartUid(sharedChallenge, userId);
+            const counterpartState = counterpartUid ? (sharedChallenge?.participants?.[counterpartUid] || {}) : {};
+            const nowIso = new Date().toISOString();
+            const participantsPatch = {
+                [userId]: {
+                    ...participantState,
+                    status: participantState.status === 'declined' ? 'declined' : 'cancelled',
+                    cancelledAt: nowIso
+                }
+            };
+            if (counterpartUid) {
+                participantsPatch[counterpartUid] = {
+                    ...counterpartState,
+                    status: counterpartState.status === 'declined' ? 'declined' : 'cancelled',
+                    cancelledAt: nowIso
+                };
+            }
+            await setDoc(this.getSocialChallengeDocRef(challengeId), {
+                status: 'cancelled',
+                updatedAt: nowIso,
+                participants: participantsPatch
+            }, { merge: true });
+            await this.setSocialChallengeInboxStatus(challengeId, 'cancelled', nowIso);
+            await this.notifySocialChallengeUpdate(
+                sharedChallenge,
+                'cancelled',
+                userId,
+                window.sistemaVidaState.profile?.name || 'Usuario',
+                counterpartUid,
+                nowIso
+            );
+            this.renderSocialConnectionsPanel();
+            this.showToast('Desafio 1:1 cancelado.', 'success');
         },
 
         getSocialCollectiveMetrics: function() {
@@ -1221,9 +1708,37 @@ export function attachSocial(app) {
             };
         },
 
+        getSocialChallengeCounterpartUid: function(challenge, userId = this.getActiveUserId()) {
+            const ids = Array.isArray(challenge?.participantUids) ? challenge.participantUids : [];
+            return ids.find((uid) => uid && uid !== userId) || '';
+        },
+
+        getSocialChallengeParticipantState: function(challenge, userId = this.getActiveUserId()) {
+            return challenge?.participants?.[userId] || null;
+        },
+
+        getSocialChallengeMetrics: function(challenge) {
+            if (!isSharedSocialChallenge(challenge)) {
+                return this.getSocialCollectiveMetrics();
+            }
+            const own = this.buildPublicProfilePayload();
+            const counterpartUid = this.getSocialChallengeCounterpartUid(challenge);
+            const counterpartProfile = counterpartUid
+                ? (window.sistemaVidaState.profile?.social?.connectionProfiles?.[counterpartUid] || null)
+                : null;
+            const pairProfiles = [own];
+            if (counterpartProfile?.visible) pairProfiles.push(counterpartProfile);
+            return {
+                people: pairProfiles.length,
+                collectiveXp: pairProfiles.reduce((sum, item) => sum + (Number(item?.xp) || 0), 0),
+                keyHabitsDone: pairProfiles.reduce((sum, item) => sum + (Number(item?.keyHabitsDone) || 0), 0),
+                sharedStreak: pairProfiles.reduce((sum, item) => sum + (Number(item?.streak) || 0), 0)
+            };
+        },
+
         getSocialChallengeProgress: function(challenge) {
             const cfg = SOCIAL_CHALLENGES[challenge?.type] || SOCIAL_CHALLENGES.key_habits_3;
-            const metrics = this.getSocialCollectiveMetrics();
+            const metrics = this.getSocialChallengeMetrics(challenge);
             const value = Math.max(0, Number(metrics[cfg.metric]) || 0);
             const target = Math.max(1, Number(cfg.target) || 1);
             return { value, target, pct: Math.min(100, Math.round((value / target) * 100)) };
@@ -1396,7 +1911,7 @@ export function attachSocial(app) {
             const statusEl = document.getElementById('social-access-status');
             if (statusEl) {
                 statusEl.textContent = enabled
-                    ? 'Fases sociais ativas neste perfil. A area social agora tem uma pagina propria para compartilhamento, conexoes e desafios.'
+                    ? 'Fases sociais ativas neste perfil. A area social agora tem uma pagina propria para compartilhamento, conexoes e objetivos sociais leves.'
                     : 'Fases sociais instaladas, mas ainda ocultas neste perfil. Ative para liberar a pagina da area social.';
                 statusEl.className = enabled ? 'text-xs text-primary leading-relaxed' : 'text-xs text-outline leading-relaxed';
             }
@@ -1447,7 +1962,9 @@ export function attachSocial(app) {
                 ? window.sistemaVidaState.profile.social.notifications.items
                 : [];
             this.syncSocialReceivedReactionsFromNotifications(notifications);
-            const pendingIncomingEvents = notifications.filter(item => item.type === 'invite_request' && item.status === 'pending');
+            const recentConnectionEvents = notifications
+                .filter(item => item.type === 'connection_created')
+                .slice(0, 4);
 
             const list = document.getElementById('social-connections-list');
             const dashboardEl = document.getElementById('social-connections-dashboard');
@@ -1455,6 +1972,7 @@ export function attachSocial(app) {
             const metricsEl = document.getElementById('social-collective-metrics');
             const challengesEl = document.getElementById('social-challenges-list');
             const reactionsEl = document.getElementById('social-reactions-list');
+            const challengeTargetSelect = document.getElementById('social-challenge-target');
             const filterInput = document.getElementById('social-connection-filter-input');
             const filterStatus = document.getElementById('social-connection-filter-status');
             const filter = this.getSocialConnectionFilterState();
@@ -1465,14 +1983,19 @@ export function attachSocial(app) {
                 if (list) {
                     list.innerHTML = `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
                         <p class="text-sm font-semibold text-on-surface">Area social desativada neste perfil.</p>
-                        <p class="mt-1 text-xs text-outline">Ative para liberar conexoes, convites e desafios.</p>
+                        <p class="mt-1 text-xs text-outline">Ative para liberar conexoes, convites e objetivos sociais leves.</p>
                         <button type="button" onclick="window.app.setSocialFeatureEnabled(true)" class="mt-3 h-9 px-3 rounded-lg bg-primary text-on-primary text-[11px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Ativar area social</button>
                     </div>`;
                 }
                 if (metricsEl) metricsEl.innerHTML = '';
                 if (dashboardEl) dashboardEl.innerHTML = '';
-                if (challengesEl) challengesEl.innerHTML = '<p class="text-xs text-outline italic">Ative a area social para exibir desafios.</p>';
+                if (challengesEl) challengesEl.innerHTML = '<p class="text-xs text-outline italic">Ative a area social para exibir objetivos sociais.</p>';
                 if (reactionsEl) reactionsEl.innerHTML = '<p class="text-xs text-outline italic">Ative a area social para acompanhar reacoes.</p>';
+                if (challengeTargetSelect) {
+                    challengeTargetSelect.innerHTML = '<option value="">Selecione uma conexao</option>';
+                    challengeTargetSelect.value = '';
+                    challengeTargetSelect.disabled = true;
+                }
                 this.renderAppNotificationCenter();
                 return;
             }
@@ -1483,6 +2006,19 @@ export function attachSocial(app) {
             const receivedAll = Array.isArray(window.sistemaVidaState.profile.social.reactions?.received)
                 ? window.sistemaVidaState.profile.social.reactions.received
                 : [];
+            if (challengeTargetSelect) {
+                const targetIds = activeIds.slice();
+                const selectedTarget = this.getSocialChallengeTarget(targetIds);
+                challengeTargetSelect.innerHTML = targetIds.length
+                    ? targetIds.map((uid) => {
+                        const profile = profiles[uid] || {};
+                        const label = profile.name || 'Companheiro';
+                        return `<option value="${this.escapeHtml(uid)}">${this.escapeHtml(label)}</option>`;
+                    }).join('')
+                    : '<option value="">Selecione uma conexao</option>';
+                challengeTargetSelect.disabled = targetIds.length === 0;
+                challengeTargetSelect.value = selectedTarget;
+            }
 
             if (dashboardEl) {
                 const privateCount = activeIds.filter((uid) => {
@@ -1681,41 +2217,38 @@ export function attachSocial(app) {
 
             if (pendingList) {
                 let pendingHtml = '';
-                if (pendingIncomingEvents.length || pendingOutgoingIds.length) {
-                    pendingHtml += '<p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-1 mt-2">Convites pendentes</p>';
-                    
-                    pendingIncomingEvents.forEach(evt => {
-                         const uid = evt.sourceUid;
-                         const profile = profiles[uid] || { uid };
-                         const name = profile.name || evt.sourceName || 'Companheiro';
-                         pendingHtml += `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10 space-y-3">
-                             <div class="flex items-center justify-between gap-3 min-w-0">
-                                 <div class="min-w-0 flex-1">
-                                    <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(name)}</p>
-                                    <p class="text-[10px] text-outline uppercase tracking-wider">Convite recebido</p>
-                                 </div>
-                                 <div class="flex gap-2 shrink-0">
-                                     <button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(evt.id)}','${this.escapeHtml(uid)}',true)" class="h-8 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">Aceitar</button>
-                                     <button type="button" onclick="window.app.handleSocialInviteDecision('${this.escapeHtml(evt.id)}','${this.escapeHtml(uid)}',false)" class="h-8 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider hover:bg-outline/10 transition-colors">Recusar</button>
-                                 </div>
-                             </div>
-                         </div>`;
+                if (recentConnectionEvents.length || pendingOutgoingIds.length) {
+                    pendingHtml += '<p class="text-[10px] font-bold uppercase tracking-[0.18em] text-outline mb-1 mt-2">Conexoes recentes</p>';
+
+                    recentConnectionEvents.forEach((evt) => {
+                        const uid = evt.sourceUid;
+                        const profile = profiles[uid] || { uid };
+                        const name = profile.name || evt.sourceName || 'Companheiro';
+                        pendingHtml += `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+                            <div class="flex items-center justify-between gap-3 min-w-0">
+                                <div class="min-w-0 flex-1">
+                                   <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(name)}</p>
+                                   <p class="text-[10px] text-outline uppercase tracking-wider">Conexao ativada</p>
+                                </div>
+                                <span class="text-[10px] text-outline shrink-0">${this.escapeHtml(this.formatSocialTimestamp(evt.connectedAt || evt.createdAt))}</span>
+                            </div>
+                        </div>`;
                     });
-                    
-                    pendingOutgoingIds.forEach(uid => {
-                         const profile = profiles[uid] || { uid };
-                         const name = profile.name || 'Companheiro';
-                         pendingHtml += `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
-                             <div class="flex items-center justify-between gap-3 min-w-0">
-                                 <div class="min-w-0 flex-1">
-                                    <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(name)}</p>
-                                    <p class="text-[10px] text-outline uppercase tracking-wider">Aguardando aceite</p>
-                                 </div>
-                                 <button type="button" onclick="window.app.removeSocialConnection('${this.escapeHtml(uid)}')" class="text-outline hover:text-error transition-colors" title="Cancelar convite">
-                                     <span class="material-symbols-outlined notranslate text-[18px]">cancel</span>
-                                 </button>
-                             </div>
-                         </div>`;
+
+                    pendingOutgoingIds.forEach((uid) => {
+                        const profile = profiles[uid] || { uid };
+                        const name = profile.name || 'Companheiro';
+                        pendingHtml += `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+                            <div class="flex items-center justify-between gap-3 min-w-0">
+                                <div class="min-w-0 flex-1">
+                                   <p class="text-sm font-bold text-on-surface truncate">${this.escapeHtml(name)}</p>
+                                   <p class="text-[10px] text-outline uppercase tracking-wider">Conexao antiga em sincronizacao</p>
+                                </div>
+                                <button type="button" onclick="window.app.removeSocialConnection('${this.escapeHtml(uid)}')" class="text-outline hover:text-error transition-colors" title="Cancelar conexao">
+                                    <span class="material-symbols-outlined notranslate text-[18px]">cancel</span>
+                                </button>
+                            </div>
+                        </div>`;
                     });
                 }
                 pendingList.innerHTML = pendingHtml;
@@ -1732,23 +2265,60 @@ export function attachSocial(app) {
             }
 
             if (challengesEl) {
-                const challenges = Object.values(window.sistemaVidaState.profile.social.challenges || {})
-                    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
-                    .slice(0, 4);
-                challengesEl.innerHTML = challenges.length ? challenges.map((challenge) => {
+                const sharedChallenges = Object.values(this.getSharedSocialChallengesMap())
+                    .filter((challenge) => !['cancelled', 'declined'].includes(String(challenge.status || '')))
+                    .sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+                const cards = [];
+
+                sharedChallenges.forEach((challenge) => {
                     const progress = this.getSocialChallengeProgress(challenge);
-                    return `<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+                    const myState = this.getSocialChallengeParticipantState(challenge) || {};
+                    const counterpartUid = this.getSocialChallengeCounterpartUid(challenge);
+                    const counterpartState = challenge?.participants?.[counterpartUid] || {};
+                    const counterpartProfile = profiles[counterpartUid] || {};
+                    const counterpartName = counterpartProfile.name || challenge.targetName || 'Companheiro';
+                    const overallLabel = challenge.status === 'active' ? 'ativo 1:1' : 'aguardando aceite';
+                    const ownStatusLabel = myState.status === 'accepted' ? 'aceito' : (myState.status === 'declined' ? 'recusado' : 'pendente');
+                    const counterpartStatusLabel = counterpartState.status === 'accepted'
+                        ? 'aceito'
+                        : (counterpartState.status === 'declined' ? 'recusado' : 'pendente');
+                    const counterpartLabel = counterpartState.status === 'accepted'
+                        ? `${counterpartName} ja aceitou`
+                        : (counterpartState.status === 'declined'
+                            ? `${counterpartName} recusou`
+                            : `Aguardando aceite de ${counterpartName}`);
+                    const actions = myState.status === 'pending'
+                        ? `<div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="window.app.acceptSocialChallenge('${this.escapeHtml(challenge.id)}')" class="h-8 px-3 rounded-lg bg-primary text-on-primary text-[10px] font-bold uppercase tracking-wider">Aceitar</button>
+                            <button type="button" onclick="window.app.declineSocialChallenge('${this.escapeHtml(challenge.id)}')" class="h-8 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider">Recusar</button>
+                        </div>`
+                        : `<button type="button" onclick="window.app.cancelSocialChallenge('${this.escapeHtml(challenge.id)}')" class="h-8 px-3 rounded-lg bg-surface-container-high text-outline text-[10px] font-bold uppercase tracking-wider">Cancelar</button>`;
+                    cards.push(`<div class="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <p class="text-sm font-bold text-on-surface">${this.escapeHtml(challenge.label || 'Desafio semanal')}</p>
-                                <p class="text-[10px] text-outline uppercase tracking-wider">${this.escapeHtml(challenge.weekKey || '')} · ${challenge.status === 'accepted' ? 'aceito' : 'pendente'}</p>
+                                <p class="text-sm font-bold text-on-surface">${this.escapeHtml(challenge.label || 'Desafio 1:1')}</p>
+                                <p class="text-[10px] text-outline uppercase tracking-wider">${this.escapeHtml(challenge.weekKey || '')} · ${this.escapeHtml(overallLabel)}</p>
                             </div>
-                            ${challenge.status === 'accepted' ? '<span class="material-symbols-outlined notranslate text-primary text-[18px]">check_circle</span>' : `<button type="button" onclick="window.app.acceptSocialChallenge('${this.escapeHtml(challenge.id)}')" class="text-[10px] font-bold uppercase tracking-wider text-primary">Aceitar</button>`}
+                            ${actions}
                         </div>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <div class="rounded-lg bg-surface-container-high px-3 py-2">
+                                <p class="text-[10px] text-outline uppercase tracking-wider">Seu estado</p>
+                                <p class="mt-1 text-xs font-bold text-on-surface">${this.escapeHtml(ownStatusLabel)}</p>
+                            </div>
+                            <div class="rounded-lg bg-surface-container-high px-3 py-2">
+                                <p class="text-[10px] text-outline uppercase tracking-wider">Outra pessoa</p>
+                                <p class="mt-1 text-xs font-bold text-on-surface">${this.escapeHtml(counterpartStatusLabel)}</p>
+                            </div>
+                        </div>
+                        <p class="mt-2 text-[11px] text-outline leading-relaxed">${this.escapeHtml(counterpartLabel)}. O progresso abaixo usa apenas os perfis visiveis deste par.</p>
                         <div class="mt-3 h-1.5 rounded-full bg-outline-variant/20 overflow-hidden"><div class="h-full bg-primary rounded-full" style="width:${progress.pct}%"></div></div>
                         <p class="mt-2 text-[10px] text-outline">${progress.value}/${progress.target}</p>
-                    </div>`;
-                }).join('') : '<p class="text-xs text-outline italic">Nenhum desafio criado ainda.</p>';
+                    </div>`);
+                });
+                challengesEl.innerHTML = cards.length
+                    ? cards.slice(0, 6).join('')
+                    : '<p class="text-xs text-outline italic">Nenhum desafio 1:1 ativo agora.</p>';
             }
             if (reactionsEl) {
                 const sent = Array.isArray(window.sistemaVidaState.profile.social.reactions?.sent)

@@ -918,16 +918,17 @@ manualGuideChapters: [
             id: 'social',
             icon: 'groups',
             title: 'Área Social',
-            subtitle: 'Companheiros, convites e desafios leves',
-            what: 'A <strong>Área Social</strong> fica no Perfil e é opcional. Ela permite ativar compartilhamento público, escolher exatamente quais campos podem aparecer, gerar código de convite, conectar companheiros, enviar reações leves e criar desafios semanais.',
+            subtitle: 'Companheiros, convites e desafios 1:1 leves',
+            what: 'A <strong>Área Social</strong> fica no Perfil e é opcional. Ela permite ativar compartilhamento público, escolher exatamente quais campos podem aparecer, gerar código de convite, conectar companheiros, enviar reações leves e criar desafios 1:1 com contexto social.',
             why: 'Apoio social pode aumentar continuidade porque cria contexto compartilhado sem transformar a rotina em competição pesada. No Life OS, o compartilhamento é reduzido e depende da sua escolha: diário, check-in emocional, valores, sombras, propósito, notas, projetos, ações e respostas de bem-estar continuam privados.',
             refs: ['Social accountability', 'Self-Determination Theory - relatedness', 'LGPD - minimizacao de dados'],
             how: [
                 'No Perfil, ative Área Social e depois ligue Privacidade e Compartilhamento se quiser aparecer para companheiros.',
                 'Em Campos compartilháveis, desligue qualquer dado que você não queira mostrar no perfil público.',
-                'Para conectar, uma pessoa gera um código e a outra aceita. Se a conexão não aparecer para os dois, cada lado pode aceitar o código do outro.',
+                'Para conectar, uma pessoa gera um código e a outra aceita. Quando o código é válido, a conexão entra no Social e o outro lado recebe o aviso pela inbox social.',
                 'Dias em sequência é a soma das sequências atuais dos companheiros visíveis, incluindo você. Exemplo: 3 dias seus + 2 dias de um companheiro = 5 dias em sequência no grupo.',
-                'Use reações e desafios como apoio leve; eles não revelam diário, emoções ou conteúdo privado.'
+                'Use reações e desafios 1:1 como apoio leve; eles não revelam diário, emoções ou conteúdo privado.',
+                'Os desafios 1:1 aparecem para os dois participantes e cada lado aceita, recusa ou cancela no próprio perfil.'
             ],
             cta: { label: 'Abrir Área Social', view: 'perfil', sectionId: 'social-access-section' }
         },

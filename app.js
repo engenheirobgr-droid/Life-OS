@@ -28,7 +28,7 @@ import { attachStateModule } from './js/state.js?v=20260610-plan-contract-v1';
 import { attachRenderModule } from './js/render.js?v=20260611-habit-details-v1';
 import { attachPlanningModule } from './js/planning.js?v=20260610-weekly-plan-modal-v1';
 import { attachGamificationModule } from './js/gamification.js?v=20260604-ui-system-v23';
-import { attachSocial } from './js/social.js?v=20260604-ui-system-v23';
+import { attachSocial } from './js/social.js?v=20260612-social-contract-v1';
 
 const AUTH_SIGNED_OUT_KEY = 'lifeos_auth_signed_out';
 const AUTH_FORCE_CLOUD_UID_KEY = 'lifeos_force_cloud_uid';
@@ -214,7 +214,7 @@ const app = {
         micros: { singular: 'Ação', plural: 'Ações' }
     },
     webPushPublicKey: null,
-    appBuildVersion: '20260611-checkin-summary-desktop-v2',
+    appBuildVersion: '20260612-social-contract-v1',
     forceOnboardingResetKey: 'lifeos_force_onboarding_after_reset',
     lastAccountErrorMessage: '',
     getActiveUserId: function(user = auth.currentUser) {
